@@ -12,9 +12,10 @@ import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
 
 import Sidebar from '../../component/Partials/Sidebar';
-import OrderTable from '../../component/OrderTable';
-import OrderList from '../../component/OrderList';
+// import OrderTable from '../../component/OrderTable';
+// import OrderList from '../../component/OrderList';
 import Header from '../../component/Partials/Header';
+import PurchaseOrder from '../../component/PurchaseOrderSummary';
 
 function ProjectBalance() {
   return (
@@ -63,10 +64,10 @@ function ProjectBalance() {
                 href=""
                 sx={{ fontSize: 12, fontWeight: 500 }}
               >
-                Accounting
+                Accounts
               </Link>
               <Typography color="primary" sx={{ fontWeight: 500, fontSize: 12 }}>
-                Project Balances
+                Purchase Order Summary
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -82,7 +83,7 @@ function ProjectBalance() {
             }}
           >
             <Typography level="h2" component="h1">
-              Project Balances
+              Purchase Order Summary
             </Typography>
             <Box
              sx={{
@@ -100,7 +101,14 @@ function ProjectBalance() {
               
               size="sm"
             >
-              Add New Project +
+              Add PO +
+            </Button>
+               <Button
+              color="primary"
+              
+              size="sm"
+            >
+              Add Vendor +
             </Button>
             <Button
               color="primary"
@@ -112,8 +120,9 @@ function ProjectBalance() {
             </Box>
            
           </Box>
-          <OrderTable />
-          <OrderList />
+          <PurchaseOrder />
+          {/* <OrderTable /> */}
+          {/* <OrderList /> */}
         </Box>
       </Box>
     </CssVarsProvider>

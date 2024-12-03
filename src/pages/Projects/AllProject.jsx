@@ -11,10 +11,10 @@ import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
 
-import Sidebar from '../../component/Sidebar';
+import Sidebar from '../../component/Partials/Sidebar';
 // import OrderTable from '../../component/OrderTable';
 // import OrderList from '../../component/OrderList';
-import Header from '../../component/Header';
+import Header from '../../component/Partials/Header';
 import AllProject from '../../component/AllProject';
 
 function ProjectBalance() {

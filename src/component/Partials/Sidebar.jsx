@@ -29,15 +29,15 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import BrightnessAutoRoundedIcon from '@mui/icons-material/BrightnessAutoRounded';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import Main_Logo from '../assets/protrac_logo.png';
+import Main_Logo from '../../assets/protrac_logo.png';
 // import Main_Logo2 from '../assets/white_logo.png';
-import Project from '../assets/project-management.png';
-import SupplyChain from '../assets/recycle.png';
+import Project from '../../assets/project-management.png';
+import SupplyChain from '../../assets/recycle.png';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { useNavigate } from 'react-router-dom';
 import ColorSchemeToggle from './ColorSchemeToggle';
-import { closeSidebar } from '../utils/utils';
+import { closeSidebar } from '../../utils/utils';
 
 function Toggler({ defaultExpanded = false, renderToggle, children }) {
   const [open, setOpen] = useState(defaultExpanded);
@@ -193,7 +193,7 @@ function Toggler({ defaultExpanded = false, renderToggle, children }) {
             >
               <List sx={{ gap: 0.5 }}>
                 <ListItem sx={{ mt: 0.5 }}>
-                  <ListItemButton>Add User</ListItemButton>
+                  <ListItemButton onClick={() => navigate('/User/add-user')}>Add User</ListItemButton>
                 </ListItem>
               </List>
             </Toggler>
@@ -224,10 +224,10 @@ function Toggler({ defaultExpanded = false, renderToggle, children }) {
             >
               <List sx={{ gap: 0.5 }}>
                 <ListItem sx={{ mt: 0.5 }}>
-                  <ListItemButton>Leads</ListItemButton>
+                  <ListItemButton onClick={() => navigate('/BD/initial-leads')}>Leads</ListItemButton>
                 </ListItem>
                 <ListItem>
-                  <ListItemButton>Commercial Offer</ListItemButton>
+                  <ListItemButton onClick={() => navigate('/BD/commercial-offer')}>Commercial Offer</ListItemButton>
                 </ListItem>
                 
               </List>
@@ -260,7 +260,7 @@ function Toggler({ defaultExpanded = false, renderToggle, children }) {
             >
               <List sx={{ gap: 0.5 }}>
                 <ListItem sx={{ mt: 0.5 }}>
-                  <ListItemButton onClick={() => navigate('/Accounts/ProjectBalances')}>
+                  <ListItemButton  onClick={() => navigate('/project-balance')}>
                     Project Balances
                   </ListItemButton>
                 </ListItem>
@@ -303,13 +303,13 @@ function Toggler({ defaultExpanded = false, renderToggle, children }) {
             >
               <List sx={{ gap: 0.5 }}>
                 <ListItem sx={{ mt: 0.5 }}>
-                  <ListItemButton>Purchase Order</ListItemButton>
+                  <ListItemButton onClick={() => navigate('/purchase-order')}>Purchase Order</ListItemButton>
                 </ListItem>
                 <ListItem>
-                  <ListItemButton>Material Status</ListItemButton>
+                  <ListItemButton onClick={() => navigate('SCM/material-tracker')}>Material Status</ListItemButton>
                 </ListItem>
                 <ListItem>
-                  <ListItemButton>Vendor Bill</ListItemButton>
+                  <ListItemButton onClick={() => navigate('SCM/vendor-bill')}>Vendor Bill</ListItemButton>
                 </ListItem>
 
               </List>
@@ -342,10 +342,10 @@ function Toggler({ defaultExpanded = false, renderToggle, children }) {
             >
               <List sx={{ gap: 0.5 }}>
                 <ListItem sx={{ mt: 0.5 }}>
-                  <ListItemButton onClick={() => navigate('/Projects/All Project')}>All Projects</ListItemButton>
+                  <ListItemButton onClick={() => navigate('/all-project')}>All Projects</ListItemButton>
                 </ListItem>
                 <ListItem>
-                  <ListItemButton>Site Projects</ListItemButton>
+                  <ListItemButton onClick={() => navigate('/Projects/site-project')}>Site Projects</ListItemButton>
                 </ListItem>
                 
               </List>
