@@ -7,49 +7,88 @@ import {
     Checkbox,
     Link,
     FormControlLabel,
-    Box,
+    Paper,
+    Box, 
     Typography,
     IconButton,
     InputAdornment
 } from "@mui/material";
 import { useState } from 'react';
-import Img1 from '../../../assets/Img_01.png';
-import Img2 from '../../../assets/slnko_white_logo.png';
-import Img3 from '../../../assets/Protrac_blue.png';
+import Img1 from '../../../assets/New_Solar1.png';
+import Img2 from '../../../assets/New_Solar2.png';
+import ImgX from '../../../assets/slnko_white_logo.png';
+import Img4 from '../../../assets/New_Solar3.png';
+import Img5 from '../../../assets/Protrac_blue.png';
 import { useNavigate } from "react-router-dom";
 // import Axios from '../../../utils/Axios';
 import axios from 'axios';
+import "slick-carousel/slick/slick.css"; 
+import "slick-carousel/slick/slick-theme.css";
+import Slider from "react-slick";
 import { useFormik } from "formik";
 import * as Yup from "yup";
+import LockIcon from "@mui/icons-material/Lock";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
+import Colors from '../../../utils/colors';
+
 
 
 const Login = () => {
     const navigate = useNavigate();
     const [showPassword, setShowPassword] = useState(false);
 
-    const togglePasswordVisibility = () => {
-        setShowPassword(!showPassword);
-    };
+ 
 
-    const [isRemembered, setIsRemembered] = useState(false);
+    const paperStyle = {
+        width:"400px",
+        padding: "20px",
+        display: "flex",
+        flexDirection: "column",
+        borderRadius: 25,
+      };
 
-    const handleCheckboxChange = (event) => {
-        setIsRemembered(event.target.checked);
-    };
+      const submitButtonStyle = {
+        padding: "12px",
+        margin: "20px 0",
+        borderRadius: 15,
+        fontWeight: "600",
+        backgroundColor: Colors.palette.secondary.main,
+        display: "block",
+        textAlign: "center",
+        marginTop: "5%",
+        marginLeft: { xs: "20%", sm: "30%" },
+      };
 
-    const LoginUser = async () => {
-        const data = {
-          userName: formik.values.userName,
-          passWord: formik.values.passWord,
-        };
-    
+      const formStyle = {
+        width: "100%",
+        marginTop: "10%",
+        position: "center",
+      };
+     
+      const sliderSettings = {
+        // dots: true,
+        infinite: true,
+        speed: 500,
+        slidesToShow: 1,
+        slidesToScroll: 1,
+        autoplay: true,
+        autoplaySpeed: 3000,
+        
+      };
+
+
+      const LoginUser = async () => {
         try {
-          const response = await axios.post("https://backendslnko.onrender.com/v1/login", data);
+          const response = await axios.get("https://backendslnko.onrender.com/v1/get-all-user", {
+            params: {
+              userName: formik.values.userName,
+              passWord: formik.values.passWord,
+            },
+          });
           console.log("Login successful:", response.data);
           navigate("/");
         } catch (error) {
-          console.error("Login failed:", error);
+          console.error("Login failed:", error.response ? error.response.data : error.message);
         }
       };
 
@@ -78,133 +117,144 @@ const Login = () => {
   });
 
     return (
-        <Container maxWidth="xxl" sx={{ padding: '0px!important', backgroundColor: '#12263F' }}>
-            {/* <Grid container sx={{display: 'flex',justifyContent: 'center',alignItems: 'center'}}> */}
-            <Grid container sx={{ display: 'flex', flexDirection: 'row' }}>
-                <Grid item xs={12} md={7} sx={{ height: '100vh' }}>
-                    <img src={Img1} alt='picture1' style={{ height: '100%', width: '100%', position: 'relative',opacity:0.5, visibility: {xl:'flex', md:'none'} }} />
-                    <img src={Img2} alt='picture2' style={{ position: 'absolute', top: '-160px', left: '-75px', zIndex: '1' }} />
-                    {/* </Grid> */}
-                </Grid>
-                <Grid item xs={12} md={5} sx={{ height: '100vh', display: 'flex' }}>
-                    <Grid container justifyContent="center" alignItems="center">
 
-                        <Card sx={{ boxShadow: 3, padding: 3, borderRadius: 10 }}>
-                            <Box textAlign="center" mb={3}>
-                                <img src={Img3} alt="Logo" style={{ width: '70%', height: 'auto' }} />
-                            </Box>
-                            <form method="post" noValidate action="" onSubmit={formik.handleSubmit}>
-                                <Box mb={2}>
-                                    <Typography variant="h6" sx={{ fontFamily: 'Playfair Display', fontWeight: 'bold', color: 'cornflowerblue' }}>
-                                        Username
-                                    </Typography>
-                                    <TextField
-                                        variant="outlined"
-                                        fullWidth
-                                        name="userName"
-                                        placeholder="Enter username"
-                                        value={formik.values.userName}
-                                        onChange={formik.handleChange}
-                                        error={
-                                          formik.touched.userName && Boolean(formik.errors.userName)
-                                        }
-                                        helperText={
-                                          formik.touched.userName && formik.errors.userName
-                                        }
-                                      
-                                        sx={{ borderWidth: 3 }}
-                                    />
+      <Box
+      sx={{
+        background: "radial-gradient(circle at 100% 100%, #023159, #1F476A, #F5F5F5)",
+        height: "100%",
+        width: "100%",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <Grid container spacing={2} sx={{ width: "100%", height: "100%" }}>
+        {/* Left Grid with Slider */}
+        <Grid
+          item
+          xs={12}
+          md={7}
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          
+             <Slider {...sliderSettings} style={{ width: "100%" }}>
+            <img src={ImgX} alt="Solar 2" style={{ width: "100%", height: "auto" }} />
+            <img src={Img1} alt="Solar 1" style={{ width: "100%", height: "auto" }} />
+            {/* <img src={Img2} alt="Solar 2" style={{ width: "100%", height: "auto" }} /> */}
+            
+            {/* <img src={Img3} alt="Solar 3" style={{ width: "100%", height: "auto" }} /> */}
+            <img src={Img4} alt="Solar 4" style={{ width: "100%", height: "auto" }} />
+          </Slider>
+         
+         
+        </Grid>
 
-                                </Box>
+        {/* Right Grid with Form */}
+        <Grid
+          item
+          xs={12}
+          md={5}
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Paper
+            elevation={3}
+            style={paperStyle}
+            sx={{
+              background: `linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8))`,
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                mb: 2,
+              }}
+            >
+              <img src={Img5} alt="Logo" style={{ width: "100%", maxWidth: "150px" }} />
+            </Box>
 
-                                <Box mb={3}>
-                                    <Typography variant="h6" sx={{ fontFamily: 'Playfair Display', fontWeight: 'bold', color: 'cornflowerblue' }}>
-                                        Password
-                                    </Typography>
-                                    <Box display="flex" alignItems="center" position="relative">
-                                        
-                                        <TextField
-                                            variant="outlined"
-                                            fullWidth
-                                            name="passWord"
-                                           
-                                            type={showPassword ? "text" : "passWord"}
-                                            value={formik.values.passWord}
-                                            onChange={formik.handleChange}
-                                            error={
-                                              formik.touched.passWord && Boolean(formik.errors.passWord)
-                                            }
-                                            helperText={
-                                              formik.touched.passWord && formik.errors.passWord
-                                            }
-                                            InputProps={{
-                                              endAdornment: (
-                                                <InputAdornment position="end">
-                                                  <IconButton
-                                                    onClick={() => setShowPassword(!showPassword)}
-                                                  >
-                                                    {showPassword ? <Visibility /> : <VisibilityOff />}
-                                                  </IconButton>
-                                                </InputAdornment>
-                                              ),
-                                            }}
-                                            sx={{ borderWidth: 3 }}
-                                        />
-
-                                        {/* <Box
-                                            onClick={togglePasswordVisibility}
-                                            sx={{
-                                                position: 'absolute',
-                                                right: 10,
-                                                cursor: 'pointer',
-                                            }}
-                                        >
-                                            👁️
-                                        </Box> */}
-
-                                    </Box>
-                                </Box>
-                                
-                                    <Grid container spacing={2}  alignItems="flex-start">
-                                        <Grid item xs={12} md={6} sm={6}>
-                                            <FormControlLabel
-                                                control={
-                                                    <Checkbox
-                                                        id="remember-checkbox"
-                                                        checked={isRemembered}
-                                                        onChange={handleCheckboxChange}
-                                                    />
-                                                }
-                                                label="Remember me"
-                                            />
-                                        </Grid>
-                                        <Grid item xs={12} md={6} sm={6}>
-                                            <Link href="#" className="forgot-pass-link" underline="hover" style={{float:'right', marginTop:'10px'}}>
-                                                Forgot Your Password?
-                                            </Link>
-                                        </Grid>
-                                    </Grid>
-                                
-
-                                <Box display="flex" justifyContent="center">
-                                    <Button
-                                        variant="contained"
-                                        color="primary"
-                                        type="submit"
-                                        sx={{ padding: '10px 30px', fontSize: '1rem' }}
-                                        onClick={() => LoginUser()}
-                                    >
-                                        Log In
-                                    </Button>
-                                </Box>
-                            </form>
-                        </Card>
-                    </Grid>
-                    {/* </Grid> */}
-                </Grid>
-
-            </Grid>
-        </Container>
+            <form
+              noValidate
+              onSubmit={formik.handleSubmit}
+              style={{ width: "100%", marginTop: "10%" }}
+            >
+              <TextField
+                variant="outlined"
+                placeholder="Enter your UserName"
+                id="userName"
+                name="userName"
+                fullWidth
+                size="small"
+                type="text"
+                value={formik.values.userName}
+                onChange={formik.handleChange}
+                error={formik.touched.userName && Boolean(formik.errors.userName)}
+                helperText={formik.touched.userName && formik.errors.userName}
+                sx={{ marginBottom: "20px" }}
+              />
+               <TextField
+                    variant="outlined"
+                    placeholder="Password"
+                    id="passWord"
+                    name="passWord"
+                    fullWidth
+                    size="small"
+                    type={showPassword ? "text" : "passWord"}
+                    value={formik.values.passWord}
+                    onChange={formik.handleChange}
+                    error={
+                      formik.touched.passWord && Boolean(formik.errors.passWord)
+                    }
+                    helperText={
+                      formik.touched.passWord && formik.errors.passWord
+                    }
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          {/* <IconButton
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? <Visibility /> : <VisibilityOff />}
+                          </IconButton> */}
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+              <Typography
+                sx={{
+                  color: "#023159",
+                  display: "flex",
+                  mt: "1.2rem",
+                  cursor: "pointer",
+                }}
+                onClick={() => navigate("#")}
+              >
+                <LockIcon sx={{ mr: "1rem" }} />
+                Forgot password?
+              </Typography>
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                style={submitButtonStyle}
+                onClick={() => LoginUser()}
+              >
+                Login
+              </Button>
+            </form>
+          </Paper>
+        </Grid>
+      </Grid>
+    </Box>
 
     );
 };

@@ -1,0 +1,1 @@
+export const baseurl = 'https://backendslnko.onrender.com/v1';
