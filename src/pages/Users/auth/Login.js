@@ -28,7 +28,7 @@ import Slider from "react-slick";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import LockIcon from "@mui/icons-material/Lock";
-import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { Label, Visibility, VisibilityOff } from "@mui/icons-material";
 import Colors from '../../../utils/colors';
 
 
@@ -40,7 +40,9 @@ const Login = () => {
  
 
     const paperStyle = {
-        width:"400px",
+        background: Colors.palette.primary.main,
+        
+        height: 'auto',
         padding: "20px",
         display: "flex",
         flexDirection: "column",
@@ -59,20 +61,19 @@ const Login = () => {
         marginLeft: { xs: "20%", sm: "30%" },
       };
 
-      const formStyle = {
-        width: "100%",
-        marginTop: "10%",
-        position: "center",
-      };
+    
      
       const sliderSettings = {
-        // dots: true,
+       
         infinite: true,
         speed: 500,
         slidesToShow: 1,
         slidesToScroll: 1,
         autoplay: true,
         autoplaySpeed: 3000,
+      
+        
+        
         
       };
 
@@ -86,7 +87,7 @@ const Login = () => {
             },
           });
           console.log("Login successful:", response.data);
-          navigate("/");
+          navigate("/all-project");
         } catch (error) {
           console.error("Login failed:", error.response ? error.response.data : error.message);
         }
@@ -112,7 +113,7 @@ const Login = () => {
     validationSchema: validationSchema,
     onSubmit: (values) => {
       console.log("On Submit: ", values);
-      // LoginUser();
+      LoginUser();
     },
   });
 
@@ -121,24 +122,29 @@ const Login = () => {
       <Box
       sx={{
         background: "radial-gradient(circle at 100% 100%, #023159, #1F476A, #F5F5F5)",
-        height: "100%",
-        width: "100%",
+        height: "100vh",
+        width: "100vw",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
+        overflow:'hidden'
+        
       }}
     >
-      <Grid container spacing={2} sx={{ width: "100%", height: "100%" }}>
+      <Grid container spacing={2} sx={{ width: "100%", height: "100%",  }}>
         {/* Left Grid with Slider */}
         <Grid
           item
           xs={12}
           md={7}
           sx={{
-            display: "flex",
+            display: { xs: "none", sm: "none", md: "flex" },
+            
             justifyContent: "center",
             alignItems: "center",
-          }}
+            height: "100%",
+          
+            }}
         >
           
              <Slider {...sliderSettings} style={{ width: "100%" }}>
@@ -159,9 +165,11 @@ const Login = () => {
           xs={12}
           md={5}
           sx={{
+
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
+            height: "100%",
           }}
         >
           <Paper
@@ -169,6 +177,7 @@ const Login = () => {
             style={paperStyle}
             sx={{
               background: `linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8))`,
+              width:{sm:'60%',xl:'60%', md:'85%'},
             }}
           >
             <Box
@@ -179,14 +188,16 @@ const Login = () => {
                 mb: 2,
               }}
             >
-              <img src={Img5} alt="Logo" style={{ width: "100%", maxWidth: "150px" }} />
+              <img src={Img5} alt="Logo" style={{ width: "100%", maxWidth: "250px" }} />
             </Box>
 
             <form
               noValidate
+              encType="multipart/form-data"
               onSubmit={formik.handleSubmit}
-              style={{ width: "100%", marginTop: "10%" }}
+              style={{ width: "100%", }}
             >
+              <Typography>UserName:</Typography>
               <TextField
                 variant="outlined"
                 placeholder="Enter your UserName"
@@ -201,6 +212,7 @@ const Login = () => {
                 helperText={formik.touched.userName && formik.errors.userName}
                 sx={{ marginBottom: "20px" }}
               />
+              <Typography>Password:</Typography>
                <TextField
                     variant="outlined"
                     placeholder="Password"
@@ -236,7 +248,7 @@ const Login = () => {
                   mt: "1.2rem",
                   cursor: "pointer",
                 }}
-                onClick={() => navigate("#")}
+                onClick={() => navigate("/forgot-password")}
               >
                 <LockIcon sx={{ mr: "1rem" }} />
                 Forgot password?

@@ -4,6 +4,7 @@ import ProjectBalance from '../pages/Accounts/ProjectBalance';
 import PurchaseOrder from '../pages/SCM/POSummary';
 import { Route, Routes } from 'react-router-dom';
 import Login from '../pages/Users/auth/Login';
+import ForgotPassword from '../pages/Users/auth/ForgotPassword';
 
 function index() {
   return (
@@ -12,10 +13,12 @@ function index() {
 {/*============ Pages ==========*/}
 
     {/*---------dashboard -------- */}
-          <Route path="/" element={<AllProjects />} />
+          <Route path="/" element={<Login />} />
 
     {/*------ User---------- */}
             <Route path='/login' element={<Login />} ></Route>
+            <Route path='/forgot-password' element={<ForgotPassword />} ></Route>
+     
           {/* <Route path="/User/add-user" element={<ProjectBalance />} ></Route> */}
 
     {/*------ BD ---------- */}

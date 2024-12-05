@@ -466,7 +466,7 @@ function Toggler({ defaultExpanded = false, renderToggle, children }) {
             <Typography fontWeight="lg">Slnko Energy </Typography>
             <Typography level="body-sm">admin@slnko.co</Typography>
           </Stack>
-          <IconButton size="sm" variant="plain" color="danger" sx={{ ml: 'auto' }}>
+          <IconButton onClick={() => navigate('/login')} size="sm" variant="plain" color="danger" sx={{ ml: 'auto' }}>
             <LogoutRoundedIcon />
           </IconButton>
         </Card>
