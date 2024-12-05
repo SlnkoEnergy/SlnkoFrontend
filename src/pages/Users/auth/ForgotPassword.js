@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import Colors from "../../../utils/colors";
+import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import { useLocation, useNavigate } from "react-router-dom";
 // import Axios from "../../../utils/Axios1";
 
@@ -111,7 +112,10 @@ function PasswordReset() {
             alignItems: "center",
           }}
         >
+           
+
           <Container maxWidth="sm">
+            
             <Grid container>
               <Paper
                 elevation={3}
@@ -126,6 +130,24 @@ function PasswordReset() {
                   noValidate
                   onSubmit={formik.handleSubmit}
                 >
+                  <Box sx={{ display: "flex" }}>
+                  {/* <NavLink
+                    to="/"
+                    style={{
+                      textDecoration: "none",
+                      color: Colors.palette.secondary.main,
+                    }}
+                  > */}
+                  <Button
+                    sx={{
+                      color: Colors.palette.secondary.main,
+                      justifyContent: "flex-start",
+                    }}
+                    onClick={() => navigate("/login")}
+                  >
+                    <ArrowBackIosIcon />
+                  </Button>
+                  {/* </NavLink> */}
                   <Typography
                     variant="h4"
                     sx={{
@@ -134,8 +156,15 @@ function PasswordReset() {
                       textAlign: "center",
                     }}
                   >
-                    Reset Password
+                    Forgot Password?
                   </Typography>
+                </Box>
+                <Box>
+
+               
+                <Typography>
+                  Enter Your Registered Email
+                </Typography>
                   <TextField
                     fullWidth
                     id="password"
@@ -211,6 +240,7 @@ function PasswordReset() {
                   >
                     Reset Password
                   </Button>
+                </Box>
                 </form>
               </Paper>
             </Grid>
