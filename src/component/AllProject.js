@@ -85,7 +85,6 @@ function AllProjects() {
           : [];
         setProjects(projectsData);
 
-        // Extract unique state and customer names
         const uniqueStates = [
           ...new Set(projectsData.map((project) => project.state)),
         ].filter(Boolean);
