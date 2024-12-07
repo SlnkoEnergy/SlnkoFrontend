@@ -39,7 +39,7 @@ const Login = () => {
 
   const paperStyle = {
     background: Colors.palette.primary.main,
-
+    marginTop:'20%',
     height: "auto",
     padding: "20px",
     display: "flex",
@@ -66,6 +66,7 @@ const Login = () => {
     slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 3000,
+    arrows: false,
   };
 
   const LoginUser = async () => {
@@ -80,7 +81,7 @@ const Login = () => {
       );
       console.log("Login successful:", response.data);
       localStorage.setItem("authToken", response.data.token || "dummyToken");
-      toast.success(`Login successful! Welcome !!`, {
+      toast.success(`Login successful! Welcome`, {
         position: "top-right",
         autoClose: 3000,
       });
@@ -99,12 +100,12 @@ const Login = () => {
   };
 
   const validationSchema = Yup.object({
-    name: Yup.string().required("Name is required"),
+    name: Yup.string().required("Name is required !!"),
     password: Yup.string()
-      .required("password is required")
+      .required("Incorrect Password !!")
       .matches(
-        /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])/,
-        "password Should have one Capital Letter, one number, and one special character"
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])/,
+        "password Should have one Capital/Small Letter, one number, and one special character"
       )
       .min(8, "password must be at least 8 characters in length"),
   });
@@ -125,12 +126,12 @@ const Login = () => {
       sx={{
         background:
           "radial-gradient(circle at 100% 100%, #023159, #1F476A, #F5F5F5)",
-        height: "100vh",
-        width: "100vw",
+        height: "100%",
+        width: "100%",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        overflow: "hidden",
+        // overflow: "hidden",
       }}
     >
       <Grid container spacing={2} sx={{ width: "100%", height: "100%" }}>
