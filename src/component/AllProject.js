@@ -52,9 +52,9 @@ function RowMenu() {
       </MenuButton>
       <Menu size="sm" sx={{ minWidth: 140 }}>
         <MenuItem>Edit</MenuItem>
-        <MenuItem>Rename</MenuItem>
-        <MenuItem>Move</MenuItem>
-        <Divider />
+        {/* <MenuItem>Rename</MenuItem>
+        <MenuItem>Move</MenuItem> */}
+        {/* <Divider /> */}
         <MenuItem color="danger">Delete</MenuItem>
       </Menu>
     </Dropdown>

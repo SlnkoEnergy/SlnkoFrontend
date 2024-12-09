@@ -36,6 +36,7 @@ const Login = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting , setIsSubmitting] = useState(false);
 
   const paperStyle = {
     background: Colors.palette.primary.main,
@@ -70,6 +71,7 @@ const Login = () => {
   };
 
   const LoginUser = async () => {
+    setIsSubmitting(true);
     const postData = {
       name: formik.values.name,
       password: formik.values.password,
@@ -80,7 +82,12 @@ const Login = () => {
         postData
       );
       console.log("Login successful:", response.data);
+      
+      const expirationTime = new Date().getTime() + 3 * 24 * 60 * 60 * 1000;
+  
       localStorage.setItem("authToken", response.data.token || "dummyToken");
+      localStorage.setItem("authTokenExpiration", expirationTime);
+  
       toast.success(`Login successful! Welcome`, {
         position: "top-right",
         autoClose: 3000,
@@ -96,8 +103,11 @@ const Login = () => {
         autoClose: 3000,
       });
       formik.setFieldValue("password", "");
+    } finally {
+      setIsSubmitting(false);
     }
   };
+  
 
   const validationSchema = Yup.object({
     name: Yup.string().required("Name is required !!"),
@@ -118,7 +128,7 @@ const Login = () => {
     validationSchema: validationSchema,
     onSubmit: (values) => {
       LoginUser();
-    },
+    }
   });
 
   return (
@@ -267,9 +277,11 @@ const Login = () => {
                 fullWidth
                 variant="contained"
                 style={submitButtonStyle}
-                onClick={() => LoginUser()}
+                disabled = {isSubmitting}
+                // onClick={() => LoginUser()}
+                
               >
-                Login
+                {isSubmitting ? "Logging in..." : "Login"}
               </Button>
             </form>
           </Paper>

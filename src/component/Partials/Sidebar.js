@@ -29,6 +29,8 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import BrightnessAutoRoundedIcon from '@mui/icons-material/BrightnessAutoRounded';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import SolarPowerIcon from '@mui/icons-material/SolarPower';
+import MiscellaneousServicesIcon from '@mui/icons-material/MiscellaneousServices';
 import Main_Logo from '../../assets/protrac_logo.png';
 // import Main_Logo2 from '../assets/white_logo.png';
 import Project from '../../assets/project-management.png';
@@ -65,7 +67,20 @@ function Toggler({ defaultExpanded = false, renderToggle, children }) {
 
  function Sidebar() {
  
- const navigate = useNavigate();
+  const navigate = useNavigate();
+  
+  // Retrieve name and email from localStorage or session (adjust according to your setup)
+  const userName = localStorage.getItem('name'); // Replace with actual key
+  const userEmail = localStorage.getItem('email'); // Replace with actual key
+
+  const handleLogout = () => {
+    // Clear session data and navigate to login page
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('authTokenExpiration');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userEmail');
+    navigate('/login');
+  };
   return (
     <Sheet
       className="Sidebar"
@@ -282,8 +297,8 @@ function Toggler({ defaultExpanded = false, renderToggle, children }) {
             <Toggler
               renderToggle={({ open, setOpen }) => (
                 <ListItemButton onClick={() => setOpen(!open)}>
-                  {/* <AssignmentRoundedIcon /> */}
-                  <img src={SupplyChain} alt='' style={{width:'20px', height:'20px'}}/>
+                  <MiscellaneousServicesIcon />
+                  {/* <img src={SupplyChain} alt='' style={{width:'20px', height:'20px'}}/> */}
                   <ListItemContent>
                     <Typography level="title-sm">SCM</Typography>
                   </ListItemContent>
@@ -321,8 +336,8 @@ function Toggler({ defaultExpanded = false, renderToggle, children }) {
             <Toggler
               renderToggle={({ open, setOpen }) => (
                 <ListItemButton onClick={() => setOpen(!open)}>
-                  {/* <AssignmentRoundedIcon /> */}
-                  <img src={Project} alt='' style={{width:'20px', height:'20px'}}/>
+                  <SolarPowerIcon />
+                  {/* <img src={Project} alt='' style={{width:'20px', height:'20px'}}/> */}
                   <ListItemContent>
                     <Typography level="title-sm">Projects</Typography>
                   </ListItemContent>
@@ -441,35 +456,39 @@ function Toggler({ defaultExpanded = false, renderToggle, children }) {
               Support
             </ListItemButton>
           </ListItem>
-          <ListItem>
+          {/* <ListItem>
             <ListItemButton>
               <SettingsRoundedIcon />
               Settings
             </ListItemButton>
-          </ListItem>
+          </ListItem> */}
         </List>
+
+
         <Card
-          invertedColors
-          variant="soft"
-          color="danger"
-          orientation="horizontal"
-          sx={{
-            flexGrow: 0,
-            py: 1,
-            px: 0,
-            gap: 2,
-            bgcolor: 'transparent',
-          }}
-        >
-          <Avatar />
-          <Stack>
-            <Typography fontWeight="lg">Slnko Energy </Typography>
-            <Typography level="body-sm">admin@slnko.co</Typography>
-          </Stack>
-          <IconButton onClick={() => navigate('/login')} size="sm" variant="plain" color="danger" sx={{ ml: 'auto' }}>
-            <LogoutRoundedIcon />
-          </IconButton>
-        </Card>
+      invertedColors
+      variant="soft"
+      color="danger"
+      orientation="horizontal"
+      sx={{
+        flexGrow: 0,
+        py: 1,
+        px: 0,
+        gap: 2,
+        bgcolor: 'transparent',
+      }}
+    >
+      <Avatar />
+      <Stack>
+        <Typography fontWeight="lg">{userName || 'Slnko Energy'}</Typography>
+        <Typography level="body-sm">{userEmail || 'admin@slnko.co'}</Typography>
+      </Stack>
+      <IconButton onClick={handleLogout} size="sm" variant="plain" color="danger" sx={{ ml: 'auto' }}>
+        <LogoutRoundedIcon />
+      </IconButton>
+    </Card>
+
+        
       </Box>
     </Sheet>
   );
