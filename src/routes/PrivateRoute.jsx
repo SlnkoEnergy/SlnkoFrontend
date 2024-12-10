@@ -7,28 +7,27 @@ const PrivateRoute = ({ children }) => {
   const authTokenExpiration = localStorage.getItem('authTokenExpiration');
   const currentTime = new Date().getTime();
 
-  // Logout handler to clear session and redirect to login
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('authTokenExpiration');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('userEmail');
+    localStorage.removeItem('name');
+    localStorage.removeItem('email');
     navigate("/login");
   };
 
   useEffect(() => {
-    // Check if token exists and is valid
+    
     if (!authToken || !authTokenExpiration || currentTime > authTokenExpiration) {
-      handleLogout(); // Automatically log out if session is expired or token is missing
+      handleLogout(); 
     }
   }, [authToken, authTokenExpiration, currentTime, navigate]);
 
-  // If the session is expired or missing, redirect to login
+
   if (!authToken || !authTokenExpiration || currentTime > authTokenExpiration) {
     return <Navigate to="/login" />;
   }
 
-  return children; // If the user is authenticated, render the children (protected content)
+  return children;
 };
 
 export default PrivateRoute;

@@ -6,6 +6,9 @@ import { Route, Routes, Navigate} from 'react-router-dom';
 import Login from '../pages/Users/auth/Login';
 import ForgotPassword from '../pages/Users/auth/ForgotPassword';
 import PrivateRoute from './PrivateRoute';
+import PaymentRequest from '../pages/Accounts/PaymentRequest';
+import PaymentApproval from '../pages/Accounts/PaymentApproval';
+import PaymentApproved from '../pages/Accounts/PaymentApproved';
 
 function index() {
   return (
@@ -31,9 +34,9 @@ function index() {
     
 
           <Route path="/project-balance" element={<PrivateRoute><ProjectBalance /></PrivateRoute>} />
-          {/* <Route path="/Accounts/daily-payment-request" element={<PrivateRoute><PaymentRequest/></PrivateRoute>} />
-          <Route path="/Accounts/payment-approval" element={<PrivateRoute><PaymentApproval/></PrivateRoute>} />
-          <Route path="/Accounts/payment-approved" element={<PrivateRoute><PaymentApproved /></PrivateRoute>} /> */}
+          <Route path="/daily-payment-request" element={<PrivateRoute><PaymentRequest /></PrivateRoute>} />
+          <Route path="/payment-approval" element={<PrivateRoute><PaymentApproval /></PrivateRoute>} />
+          <Route path="/payment-approved" element={<PrivateRoute><PaymentApproved /></PrivateRoute>} />
 
 
 

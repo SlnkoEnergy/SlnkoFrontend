@@ -32,7 +32,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import SolarPowerIcon from '@mui/icons-material/SolarPower';
 import MiscellaneousServicesIcon from '@mui/icons-material/MiscellaneousServices';
 import Main_Logo from '../../assets/protrac_logo.png';
-// import Main_Logo2 from '../assets/white_logo.png';
+import Main_Logo2 from '../../assets/white_logo.png';
 import Project from '../../assets/project-management.png';
 import SupplyChain from '../../assets/recycle.png';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
@@ -40,6 +40,10 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { useNavigate } from 'react-router-dom';
 import ColorSchemeToggle from './ColorSchemeToggle';
 import { closeSidebar } from '../../utils/utils';
+import { useColorScheme } from "@mui/joy/styles";
+
+
+
 
 function Toggler({ defaultExpanded = false, renderToggle, children }) {
   const [open, setOpen] = useState(defaultExpanded);
@@ -68,13 +72,14 @@ function Toggler({ defaultExpanded = false, renderToggle, children }) {
  function Sidebar() {
  
   const navigate = useNavigate();
-  
-  // Retrieve name and email from localStorage or session (adjust according to your setup)
-  const userName = localStorage.getItem('name'); // Replace with actual key
-  const userEmail = localStorage.getItem('email'); // Replace with actual key
+  ;const { mode } = useColorScheme(); 
+
+ 
+  const userName = localStorage.getItem('name');
+  const userEmail = localStorage.getItem('email');
 
   const handleLogout = () => {
-    // Clear session data and navigate to login page
+   
     localStorage.removeItem('authToken');
     localStorage.removeItem('authTokenExpiration');
     localStorage.removeItem('userName');
@@ -134,23 +139,21 @@ function Toggler({ defaultExpanded = false, renderToggle, children }) {
         onClick={() => closeSidebar()}
       />
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-      {/* {ColorSchemeToggle && (<ColorSchemeToggle sx={{ ml: 'auto' }} />)}
-  {ColorSchemeToggle ? (
-    <IconButton variant="soft" color="primary" size="sm">
-      <img src={Main_Logo} alt="Protrac" style={{ width: '70px', height: '60px' }} />
-    </IconButton>
-  ) : (
-    <IconButton variant="soft" color="primary" size="sm">
-      <img src={Main_Logo2} alt="Protrac" style={{ width: '70px', height: '60px' }} />
-    </IconButton>
-  )} */}
+      <IconButton variant="soft" color="primary" size="sm">
+          <img
+            src={mode === "light" ? Main_Logo : Main_Logo2}
+            alt="Protrac"
+            style={{ width: "70px", height: "60px" }}
+          />
+        </IconButton>
+        <ColorSchemeToggle sx={{ ml: "auto" }} />
         
-       <IconButton variant="soft" color="primary" size="sm">
+       {/* <IconButton variant="soft" color="primary" size="sm">
       <img src={Main_Logo} alt="Protrac" style={{ width: '70px', height: '60px' }} />
-    </IconButton>
+    </IconButton> */}
         {/* <Typography level="title-lg">Protrac</Typography> */}
 
-        <ColorSchemeToggle sx={{ ml: 'auto' }} />
+        {/* <ColorSchemeToggle sx={{ ml: 'auto' }} /> */}
       </Box>
       <Input size="sm" startDecorator={<SearchRoundedIcon />} placeholder="Search" />
       <Box
@@ -280,13 +283,13 @@ function Toggler({ defaultExpanded = false, renderToggle, children }) {
                   </ListItemButton>
                 </ListItem>
                 <ListItem>
-                  <ListItemButton onClick={() => navigate('/Accounts/paymentRequest')}>Daily Payment Request</ListItemButton>
+                  <ListItemButton onClick={() => navigate('/daily-payment-request')}>Daily Payment Request</ListItemButton>
                 </ListItem>
                 <ListItem>
-                  <ListItemButton onClick={() => navigate('/Accounts/ProjectApproval')}>Payment Approval</ListItemButton>
+                  <ListItemButton onClick={() => navigate('/payment-approval')}>Payment Approval</ListItemButton>
                 </ListItem>
                   <ListItem>
-                  <ListItemButton onClick={() => navigate('/Accounts/ApprovedPayment')}>Approved Payment</ListItemButton>
+                  <ListItemButton onClick={() => navigate('/payment-approved')}>Approved Payment</ListItemButton>
                 </ListItem>
               </List>
             </Toggler>

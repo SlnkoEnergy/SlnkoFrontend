@@ -22,28 +22,10 @@ import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import axios from "axios";
-import Checkbox from "@mui/joy/Checkbox";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
-import HistoryIcon from "@mui/icons-material/History";
-import EditNoteIcon from "@mui/icons-material/EditNote";
 import * as React from "react";
+import Checkbox from "@mui/joy/Checkbox";
 import { useEffect, useState } from "react";
 
-// function descendingComparator(a, b, orderBy) {
-//   if (b[orderBy] < a[orderBy]) {
-//     return -1;
-//   }
-//   if (b[orderBy] > a[orderBy]) {
-//     return 1;
-//   }
-//   return 0;
-// }
-
-// function getComparator(order, orderBy) {
-//   return order === "desc"
-//     ? (a, b) => descendingComparator(a, b, orderBy)
-//     : (a, b) => -descendingComparator(a, b, orderBy);
-// }
 
 function RowMenu() {
   return (
@@ -55,38 +37,63 @@ function RowMenu() {
         <MoreHorizRoundedIcon />
       </MenuButton>
       <Menu size="sm" sx={{ minWidth: 140 }}>
-        <MenuItem> <AddCircleOutlineIcon />
-        <Typography>Add Bill</Typography>
-        </MenuItem>
-        <MenuItem>
-        <HistoryIcon/>
-        <Typography>Bill History</Typography>
-        </MenuItem>
-        <Divider sx={{backgroundColor:'lightblue'}}/>
-        <MenuItem>
-        <EditNoteIcon/>
-        <Typography>Edit PO</Typography>
-        </MenuItem>
-        <MenuItem>
-        <HistoryIcon/>
-        <Typography>PO History</Typography>
-        </MenuItem>
-        <Divider sx={{backgroundColor:'lightblue'}}/>
-        <MenuItem color="primary" style={{fontWeight:'bold'}}>Adjust Bill</MenuItem>
+        <MenuItem>Pending Payment</MenuItem>
+        {/* <MenuItem>Rename</MenuItem>
+        <MenuItem>Move</MenuItem> */}
+        {/* <Divider /> */}
+        <MenuItem color="danger">Delete</MenuItem>
       </Menu>
     </Dropdown>
   );
 }
 
-function PurchaseOrderSummary() {
-  const [pos, setPo] = useState([]);
+function PaymentRequest() {
+  const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [stateFilter, setStateFilter] = useState("");
+  // const [states, setStates] = useState([]);
+  // const [customers, setCustomers] = useState([]);
+  // const [stateFilter, setStateFilter] = useState("");
+  // const [customerFilter, setCustomerFilter] = useState("");
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(15);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
+
+   useEffect(() => {
+    const fetchTableData = async () => {
+      try {
+        const response = await axios.get(
+          "https://backendslnko.onrender.com/v1/get-pay-summary"
+        );
+
+        const paymentsData = Array.isArray(response.data)
+          ? response.data
+          : [];
+        setPayments(paymentsData);
+        console.log("Payments Data are :", paymentsData);
+        
+
+        // const uniqueStates = [
+        //   ...new Set(paymentsData.map((payment) => payment.state)),
+        // ].filter(Boolean);
+
+        // const uniqueCustomers = [
+        //   ...new Set(paymentsData.map((payment) => payment.customer)),
+        // ].filter(Boolean);
+
+        // setStates(uniqueStates);
+        // setCustomers(uniqueCustomers);
+      } catch (err) {
+        console.error("API Error:", err);
+        setError("Failed to fetch table data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTableData();
+  }, []);
 
   const renderFilters = () => (
     <>
@@ -95,34 +102,38 @@ function PurchaseOrderSummary() {
         <Select
           size="sm"
           placeholder="Filter by state"
-          onChange={(e) => setStateFilter(e.target.value)}
-          slotProps={{ button: { sx: { whiteSpace: "nowrap" } } }}
+          // value={stateFilter}
+          // onChange={(e) => setStateFilter(e.target.value)}
         >
           <Option value="">All</Option>
-          <Option value="A">A</Option>
-          <Option value="B">B</Option>
-          <Option value="C">C</Option>
-          <Option value="D">D</Option>
+          {/* {states.map((state, index) => (
+            <Option key={index} value={state}>
+              {state}
+            </Option>
+          ))} */}
         </Select>
       </FormControl>
       <FormControl size="sm">
         <FormLabel>Customer</FormLabel>
-        <Select size="sm" placeholder="All">
-          <Option value="all">All</Option>
-          <Option value="olivia">Olivia Rhye</Option>
-          <Option value="steve">Steve Hampton</Option>
-          <Option value="ciaran">Ciaran Murray</Option>
-          <Option value="marina">Marina Macdonald</Option>
-          <Option value="charles">Charles Fulton</Option>
-          <Option value="jay">Jay Hoper</Option>
+        <Select
+          size="sm"
+          placeholder="Filter by customer"
+          // value={customerFilter}
+          // onChange={(e) => setCustomerFilter(e.target.value)}
+        >
+          <Option value="">All</Option>
+          {/* {customers.map((customer, index) => (
+            <Option key={index} value={customer}>
+              {customer}
+            </Option>
+          ))} */}
         </Select>
       </FormControl>
     </>
   );
-
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelected(paginatedPo.map((row) => row.id));
+      setSelected(paginatedPayments.map((row) => row.id));
     } else {
       setSelected([]);
     }
@@ -135,7 +146,6 @@ function PurchaseOrderSummary() {
         : prevSelected.filter((item) => item !== id)
     );
   };
-
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
 
@@ -165,29 +175,9 @@ function PurchaseOrderSummary() {
 
     return pages;
   };
+  const totalPages = Math.ceil(payments.length / itemsPerPage);
 
-  useEffect(() => {
-    const fetchTableData = async () => {
-      try {
-        const response = await axios.get(
-          "https://backendslnko.onrender.com/v1/get-all-po"
-        );
-        setPo(Array.isArray(response.data.data) ? response.data.data : []);
-        console.log("PO Data:", response.data.data);
-      } catch (err) {
-        console.error("Error fetching table data:", err);
-        setError("Failed to fetch table data.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTableData();
-  }, []);
-
-  const totalPages = Math.ceil(pos.length / itemsPerPage);
-
-  const paginatedPo = pos.slice(
+  const paginatedPayments = payments.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -197,6 +187,8 @@ function PurchaseOrderSummary() {
       setCurrentPage(page);
     }
   };
+
+
 
   // if (loading) {
   //   return <Typography>Loading...</Typography>;
@@ -282,7 +274,7 @@ function PurchaseOrderSummary() {
           minHeight: 0,
         }}
       >
-         {error ? (
+        {error ? (
         <Typography color="danger" textAlign="center">
           {error}
         </Typography>
@@ -294,40 +286,38 @@ function PurchaseOrderSummary() {
             <Box component="tr">
               <Box
                 component="th"
-                sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid", fontWeight: "bold" }}
+                sx={{
+                  borderBottom: "1px solid #ddd",
+                  padding: "8px",
+                  textAlign: "center",
+                }}
               >
                 <Checkbox
+                  size="sm"
+                  checked={selected.length === paginatedPayments.length}
+                  onChange={(event) => handleRowSelect("all", event.target.checked)}
                   indeterminate={
-                    selected.length > 0 &&
-                    selected.length !== paginatedPo.length
+                    selected.length > 0 && selected.length < paginatedPayments.length
                   }
-                  checked={selected.length === paginatedPo.length}
-                  onChange={handleSelectAll}
-                  color={selected.length > 0 ? "primary" : "neutral"}
                 />
               </Box>
               {[
-                "Project ID",
-                "PO Number",
-                "PO Date",
-                "Partial Billing",
-                "Item Name",
-                "Vendor",
-                "PO Value with GST",
-                "Advance Paid",
-                "Bill Status",
-                "Bill Delay",
-                "Total Billed",
-                "Action",
+                "Payment Id",
+                "Request Date",
+                "Paid To",
+                "Client Name",
+                "Amount ()",
+                "Payment Status",
+                "UTR",
                 ""
-              ].map((header) => (
+              ].map((header, index) => (
                 <Box
                   component="th"
-                  key={header}
+                  key={index}
                   sx={{
-                    padding: 1,
+                    borderBottom: "1px solid #ddd",
+                    padding: "8px",
                     textAlign: "center",
-                    borderBottom: "1px solid",
                     fontWeight: "bold",
                   }}
                 >
@@ -337,11 +327,11 @@ function PurchaseOrderSummary() {
             </Box>
           </Box>
           <Box component="tbody">
-            {paginatedPo.length > 0 ? (
-              paginatedPo.map((po) => (
+            {paginatedPayments.length > 0 ? (
+              paginatedPayments.map((payment, index) => (
                 <Box
                   component="tr"
-                  key={po.id}
+                  key={index}
                   sx={{
                     "&:hover": { backgroundColor: "neutral.plainHoverBg" },
                   }}
@@ -349,62 +339,97 @@ function PurchaseOrderSummary() {
                   <Box
                     component="td"
                     sx={{
-                      padding: 1,
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
                       textAlign: "center",
-                      borderBottom: "1px solid",
                     }}
                   >
                     <Checkbox
-                      checked={selected.includes(po.id)}
+                      size="sm"
+                      checked={selected.includes(payment.code)}
                       onChange={(event) =>
-                        handleRowSelect(po.id, event.target.checked)
+                        handleRowSelect(payment.code, event.target.checked)
                       }
-                      color={selected.includes(po.id) ? "primary" : "neutral"}
                     />
                   </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {po.p_id}
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {payment.pay_id}
                   </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {po.po_number}
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {payment.dbt_date}
                   </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {po.date}
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {payment.vendor}
                   </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {po.partial_billing}
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {payment.customer || "-"}
                   </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {po.item}
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {payment.amt_for_customer}
                   </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {po.vendor}
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {payment.approved}
                   </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {new Intl.NumberFormat("en-IN", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    }).format(po.po_value)}
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {payment.utr|| "-"}
                   </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {new Intl.NumberFormat("en-IN", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    }).format(po.amount_paid)}
-                  </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {po.bill_status || "-"}
-                  </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {po.bill_delay || "-"}
-                  </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {po.total_billed || "-"}
-                  </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {po.action || "-"}
-                  </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
                     {RowMenu()}
                   </Box>
                 </Box>
@@ -413,8 +438,12 @@ function PurchaseOrderSummary() {
               <Box component="tr">
                 <Box
                   component="td"
-                  colSpan={13}
-                  sx={{ padding: 2, textAlign: "center", fontStyle: "italic" }}
+                  colSpan={9}
+                  sx={{
+                    padding: "8px",
+                    textAlign: "center",
+                    fontStyle: "italic",
+                  }}
                 >
                   No data available
                 </Box>
@@ -468,7 +497,6 @@ function PurchaseOrderSummary() {
             )
           )}
         </Box>
-
         {/* <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
     {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
       <IconButton
@@ -497,4 +525,4 @@ function PurchaseOrderSummary() {
     </>
   );
 }
-export default PurchaseOrderSummary;
+export default PaymentRequest;

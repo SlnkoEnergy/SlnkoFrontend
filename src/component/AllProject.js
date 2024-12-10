@@ -23,23 +23,9 @@ import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import axios from "axios";
 import * as React from "react";
+import Checkbox from "@mui/joy/Checkbox";
 import { useEffect, useState } from "react";
 
-function descendingComparator(a, b, orderBy) {
-  if (b[orderBy] < a[orderBy]) {
-    return -1;
-  }
-  if (b[orderBy] > a[orderBy]) {
-    return 1;
-  }
-  return 0;
-}
-
-function getComparator(order, orderBy) {
-  return order === "desc"
-    ? (a, b) => descendingComparator(a, b, orderBy)
-    : (a, b) => -descendingComparator(a, b, orderBy);
-}
 
 function RowMenu() {
   return (
@@ -72,6 +58,7 @@ function AllProjects() {
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [selected, setSelected] = useState([]);
 
    useEffect(() => {
     const fetchTableData = async () => {
@@ -142,7 +129,21 @@ function AllProjects() {
       </FormControl>
     </>
   );
+  const handleSelectAll = (event) => {
+    if (event.target.checked) {
+      setSelected(paginatedProjects.map((row) => row.id));
+    } else {
+      setSelected([]);
+    }
+  };
 
+  const handleRowSelect = (id, isSelected) => {
+    setSelected((prevSelected) =>
+      isSelected
+        ? [...prevSelected, id]
+        : prevSelected.filter((item) => item !== id)
+    );
+  };
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
 
@@ -272,174 +273,183 @@ function AllProjects() {
         }}
       >
         {error ? (
-          <p style={{ color: "red", textAlign: "center" }}>{error}</p>
-        ) : loading ? (
-          <p style={{ textAlign: "center" }}>Loading...</p>
-        ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                <th
-                  style={{
+        <Typography color="danger" textAlign="center">
+          {error}
+        </Typography>
+      ) : loading ? (
+        <Typography textAlign="center">Loading...</Typography>
+      ) : (
+        <Box component="table" sx={{ width: "100%", borderCollapse: "collapse" }}>
+          <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
+            <Box component="tr">
+              <Box
+                component="th"
+                sx={{
+                  borderBottom: "1px solid #ddd",
+                  padding: "8px",
+                  textAlign: "center",
+                }}
+              >
+                <Checkbox
+                  size="sm"
+                  checked={selected.length === paginatedProjects.length}
+                  onChange={(event) => handleRowSelect("all", event.target.checked)}
+                  indeterminate={
+                    selected.length > 0 && selected.length < paginatedProjects.length
+                  }
+                />
+              </Box>
+              {[
+                "Project ID",
+                "Customer",
+                "Project Name",
+                "Email",
+                "Mobile",
+                "State",
+                "Slnko Service Charges (with GST)",
+                ""
+              ].map((header, index) => (
+                <Box
+                  component="th"
+                  key={index}
+                  sx={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
                     textAlign: "center",
+                    fontWeight: "bold",
                   }}
                 >
-                  Project ID
-                </th>
-                <th
-                  style={{
-                    borderBottom: "1px solid #ddd",
-                    padding: "8px",
-                    textAlign: "center",
+                  {header}
+                </Box>
+              ))}
+            </Box>
+          </Box>
+          <Box component="tbody">
+            {paginatedProjects.length > 0 ? (
+              paginatedProjects.map((project, index) => (
+                <Box
+                  component="tr"
+                  key={index}
+                  sx={{
+                    "&:hover": { backgroundColor: "neutral.plainHoverBg" },
                   }}
                 >
-                  Customer
-                </th>
-                <th
-                  style={{
-                    borderBottom: "1px solid #ddd",
-                    padding: "8px",
-                    textAlign: "center",
-                  }}
-                >
-                  Project Name
-                </th>
-                <th
-                  style={{
-                    borderBottom: "1px solid #ddd",
-                    padding: "8px",
-                    textAlign: "center",
-                  }}
-                >
-                  Email
-                </th>
-                <th
-                  style={{
-                    borderBottom: "1px solid #ddd",
-                    padding: "8px",
-                    textAlign: "center",
-                  }}
-                >
-                  Mobile
-                </th>
-                <th
-                  style={{
-                    borderBottom: "1px solid #ddd",
-                    padding: "8px",
-                    textAlign: "center",
-                  }}
-                >
-                  State
-                </th>
-                <th
-                  colSpan={2}
-                  style={{
-                    borderBottom: "1px solid #ddd",
-                    padding: "8px",
-                    textAlign: "center",
-                  }}
-                >
-                  Slnko Service Charges (with GST)
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedProjects.length > 0 ? (
-                paginatedProjects.map((project, index) => (
-                  <tr key={index}>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.code}
-                    </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.customer}
-                    </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.name}
-                    </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.email}
-                    </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.number}
-                    </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.state}
-                    </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.service}
-                    </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {RowMenu()}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan="7"
-                    style={{
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
                       padding: "8px",
                       textAlign: "center",
-                      fontStyle: "italic",
                     }}
                   >
-                    No data available
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        )}
+                    <Checkbox
+                      size="sm"
+                      checked={selected.includes(project.code)}
+                      onChange={(event) =>
+                        handleRowSelect(project.code, event.target.checked)
+                      }
+                    />
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.code}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.customer}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.name}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.email}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.number}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.state}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.service}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {RowMenu()}
+                  </Box>
+                </Box>
+              ))
+            ) : (
+              <Box component="tr">
+                <Box
+                  component="td"
+                  colSpan={9}
+                  sx={{
+                    padding: "8px",
+                    textAlign: "center",
+                    fontStyle: "italic",
+                  }}
+                >
+                  No data available
+                </Box>
+              </Box>
+            )}
+          </Box>
+        </Box>
+      )}
       </Sheet>
 
       {/* Pagination */}
