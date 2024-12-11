@@ -24,6 +24,10 @@ import Typography from "@mui/joy/Typography";
 import axios from "axios";
 import * as React from "react";
 import Checkbox from "@mui/joy/Checkbox";
+import Chip from '@mui/joy/Chip';
+import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
+import BlockIcon from '@mui/icons-material/Block';
+import AutorenewRoundedIcon from '@mui/icons-material/AutorenewRounded';
 import { useEffect, useState } from "react";
 
 
@@ -95,6 +99,8 @@ function PaymentRequest() {
     fetchTableData();
   }, []);
 
+ 
+  
   const renderFilters = () => (
     <>
       <FormControl size="sm">
@@ -306,7 +312,7 @@ function PaymentRequest() {
                 "Request Date",
                 "Paid To",
                 "Client Name",
-                "Amount ()",
+                "Amount (₹)",
                 "Payment Status",
                 "UTR",
                 ""
@@ -409,8 +415,26 @@ function PaymentRequest() {
                       padding: "8px",
                       textAlign: "center",
                     }}
-                  >
+                  ><Chip
+                  variant="soft"
+                  size="sm"
+                  startDecorator={
+                    {
+                      Approved: <CheckRoundedIcon />,
+                      Pending: <AutorenewRoundedIcon />,
+                      Rejected: <BlockIcon />,
+                    }[payment.approved]
+                  }
+                  color={
+                    {
+                      Approved: 'success',
+                      Pending: 'neutral',
+                      Rejected: 'danger',
+                    }[payment.approved]
+                  }
+                >
                     {payment.approved}
+                </Chip>
                   </Box>
                   <Box
                     component="td"
