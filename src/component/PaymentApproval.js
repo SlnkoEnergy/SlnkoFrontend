@@ -40,12 +40,27 @@ function RowMenu() {
       >
         <MoreHorizRoundedIcon />
       </MenuButton>
-      <Menu size="sm" sx={{ minWidth: 140 }}>
-        <MenuItem>Pending Payment</MenuItem>
-        {/* <MenuItem>Rename</MenuItem>
-        <MenuItem>Move</MenuItem> */}
-        {/* <Divider /> */}
-        <MenuItem color="danger">Delete</MenuItem>
+      <Menu size="sm" sx={{ minWidth: 100 }}>
+        <MenuItem>
+        <Chip
+            variant="soft"
+            size="sm"
+            startDecorator={<CheckRoundedIcon />}
+            color="success"
+          >
+          Approved
+        </Chip>
+        </MenuItem>
+        <MenuItem>
+         <Chip
+            variant="soft"
+            size="sm"
+            startDecorator={<BlockIcon />}
+            color="danger"
+          >
+                    Rejected
+                </Chip>
+        </MenuItem>
       </Menu>
     </Dropdown>
   );
@@ -63,44 +78,11 @@ function PaymentRequest() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [mergedData, setMergedData] = useState([]);
 
-   useEffect(() => {
-    const fetchTableData = async () => {
-      try {
-        const response = await axios.get(
-          "https://backendslnko.onrender.com/v1/get-pay-summary"
-        );
+ 
 
-        const paymentsData = Array.isArray(response.data)
-          ? response.data
-          : [];
-        setPayments(paymentsData);
-        console.log("Payments Data are :", paymentsData);
-        
-
-        // const uniqueStates = [
-        //   ...new Set(paymentsData.map((payment) => payment.state)),
-        // ].filter(Boolean);
-
-        // const uniqueCustomers = [
-        //   ...new Set(paymentsData.map((payment) => payment.customer)),
-        // ].filter(Boolean);
-
-        // setStates(uniqueStates);
-        // setCustomers(uniqueCustomers);
-      } catch (err) {
-        console.error("API Error:", err);
-        setError("Failed to fetch table data.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTableData();
-  }, []);
-
-
-  
   const renderFilters = () => (
     <>
       <FormControl size="sm">
@@ -137,6 +119,9 @@ function PaymentRequest() {
       </FormControl>
     </>
   );
+
+
+  
   const handleSelectAll = (event) => {
     if (event.target.checked) {
       setSelected(paginatedPayments.map((row) => row.id));
@@ -183,10 +168,6 @@ function PaymentRequest() {
   };
   const totalPages = Math.ceil(payments.length / itemsPerPage);
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toISOString().split('T')[0];
-  };
   
  
   const paginatedPayments = payments.slice(
@@ -194,10 +175,6 @@ function PaymentRequest() {
     currentPage * itemsPerPage
   );
 
-  const paymentsWithFormattedDate = paginatedPayments.map(payment => ({
-    ...payment,
-    formattedDate: formatDate(payment.dbt_date),
-  }));
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
@@ -320,12 +297,16 @@ function PaymentRequest() {
               {[
                 "Payment Id",
                 "Request Date",
-                "Paid To",
+                "Project Id",
+                "Project Name",
                 "Client Name",
-                "Amount (₹)",
-                "Payment Status",
-                "UTR",
-                ""
+                "Group Name",
+                "Request For",
+                "Payment Description",
+                "Amount Requested",
+                "Client Balance",
+                "Group Balance",
+                "Action"
               ].map((header, index) => (
                 <Box
                   component="th"
@@ -343,8 +324,8 @@ function PaymentRequest() {
             </Box>
           </Box>
           <Box component="tbody">
-          {paymentsWithFormattedDate.length > 0 ? (
-    paymentsWithFormattedDate.map((payment, index) => (
+          {mergedData.length > 0 ? (
+    mergedData.map((payment, index) => (
                 <Box
                   component="tr"
                   key={index}
@@ -360,13 +341,11 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    <Checkbox
-                      size="sm"
-                      checked={selected.includes(payment.code)}
-                      onChange={(event) =>
-                        handleRowSelect(payment.code, event.target.checked)
-                      }
-                    />
+                     <Checkbox
+                        size="sm"
+                        checked={selected.includes(payment.pay_id)}
+                        onChange={(event) => handleRowSelect(payment.pay_id, event.target.checked)}
+                      />
                   </Box>
                   <Box
                     component="td"
@@ -386,7 +365,7 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    {payment.formattedDate}
+                    {payment.dbt_date}
                   </Box>
                   <Box
                     component="td"
@@ -396,7 +375,7 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    {payment.vendor}
+                    {payment.projectDetails}
                   </Box>
                   <Box
                     component="td"
@@ -406,7 +385,7 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    {payment.customer || "-"}
+                    {payment.projectName || "-"}
                   </Box>
                   <Box
                     component="td"
@@ -416,35 +395,7 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    {payment.amt_for_customer}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  ><Chip
-                  variant="soft"
-                  size="sm"
-                  startDecorator={
-                    {
-                      Approved: <CheckRoundedIcon />,
-                      Pending: <AutorenewRoundedIcon />,
-                      Rejected: <BlockIcon />,
-                    }[payment.approved]
-                  }
-                  color={
-                    {
-                      Approved: 'success',
-                      Pending: 'neutral',
-                      Rejected: 'danger',
-                    }[payment.approved]
-                  }
-                >
-                    {payment.approved}
-                </Chip>
+                    {payment.projectCustomer || "-"}
                   </Box>
                   <Box
                     component="td"
@@ -454,7 +405,60 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    {payment.utr|| "-"}
+                    {payment.projectGroup || "-"}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {payment.paid_for}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {payment.comment || "-"}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >{new Intl.NumberFormat("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }).format(payment.amt_for_customer)}
+                   
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {payment.clientname|| "-"}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {payment.groupname|| "-"}
                   </Box>
                   <Box
                     component="td"

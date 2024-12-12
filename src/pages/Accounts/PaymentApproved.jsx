@@ -2,18 +2,17 @@ import React from 'react';
 import { CssVarsProvider } from '@mui/joy/styles';
 import CssBaseline from '@mui/joy/CssBaseline';
 import Box from '@mui/joy/Box';
-import Button from '@mui/joy/Button';
+// import Button from '@mui/joy/Button';
 import Breadcrumbs from '@mui/joy/Breadcrumbs';
 import Link from '@mui/joy/Link';
 import Typography from '@mui/joy/Typography';
 
-import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
+// import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
-import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
-
+// import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
+import PaymentApproved from '../../component/PaymentApproved';
 import Sidebar from '../../component/Partials/Sidebar';
-import OrderTable from '../../component/OrderTable';
-import OrderList from '../../component/OrderList';
+
 import Header from '../../component/Partials/Header';
 
 function ProjectBalance() {
@@ -111,8 +110,9 @@ function ProjectBalance() {
             </Box>
            
           </Box>
-          <OrderTable />
-          <OrderList />
+          <PaymentApproved />
+          {/* <OrderTable />
+          <OrderList /> */}
         </Box>
       </Box>
     </CssVarsProvider>
