@@ -120,11 +120,50 @@ function PaymentRequest() {
     </>
   );
 
+  useEffect(() => {
+    const fetchPaymentsAndProjects = async () => {
+      setLoading(true);
+      try {
+        const [paymentResponse, projectResponse] = await Promise.all([
+          axios.get("https://backendslnko.onrender.com/v1/get-pay-summary"),
+          axios.get("https://backendslnko.onrender.com/v1/get-all-project"),
+        ]);
+        setPayments(paymentResponse.data);
+        console.log("Payment Data are:", paymentResponse.data);
+        
+        setProjects(projectResponse.data.data);
+        console.log("Project Data are:", projectResponse.data.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchPaymentsAndProjects();
+  }, []);
 
+  useEffect(() => {
+    if (payments.length > 0 && projects.length > 0) {
+      const merged = payments.map((payment) => {
+        const matchingProject = projects.find(
+          (project) => project.p_id === payment.p_id
+        );
+        return {
+          ...payment,
+          projectCode: matchingProject?.code || "-", 
+          projectName: matchingProject?.name || "-", 
+          projectCustomer: matchingProject?.customer || "-", 
+          projectGroup: matchingProject?.p_group || "-", 
+        };
+      });
+      setMergedData(merged);
+    }
+  }, [payments, projects]);
   
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelected(paginatedPayments.map((row) => row.id));
+      setSelected(mergedData.map((row) => row.id));
     } else {
       setSelected([]);
     }
@@ -166,11 +205,11 @@ function PaymentRequest() {
 
     return pages;
   };
-  const totalPages = Math.ceil(payments.length / itemsPerPage);
+  const totalPages = Math.ceil(mergedData.length / itemsPerPage);
 
   
  
-  const paginatedPayments = payments.slice(
+  const paginatedPayments = mergedData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -324,8 +363,8 @@ function PaymentRequest() {
             </Box>
           </Box>
           <Box component="tbody">
-          {mergedData.length > 0 ? (
-    mergedData.map((payment, index) => (
+          {paginatedPayments.length > 0 ? (
+                paginatedPayments.map((payment,index) => (
                 <Box
                   component="tr"
                   key={index}
@@ -375,7 +414,7 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    {payment.projectDetails}
+                    {payment.projectCode}
                   </Box>
                   <Box
                     component="td"
