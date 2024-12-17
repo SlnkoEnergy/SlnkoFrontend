@@ -27,29 +27,14 @@ import Checkbox from "@mui/joy/Checkbox";
 import Chip from '@mui/joy/Chip';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import BlockIcon from '@mui/icons-material/Block';
-import AutorenewRoundedIcon from '@mui/icons-material/AutorenewRounded';
+// import AutorenewRoundedIcon from '@mui/icons-material/AutorenewRounded';
 import { useEffect, useState } from "react";
+import MatchRow from "./Button/MatchRow";
 
 
-function RowMenu() {
-  return (
-    <Dropdown>
-      <MenuButton
-        slots={{ root: IconButton }}
-        slotProps={{ root: { variant: "plain", color: "neutral", size: "sm" } }}
-      >
-        <MoreHorizRoundedIcon />
-      </MenuButton>
-      <Menu size="sm" sx={{ minWidth: 140 }}>
-        <MenuItem>Pending Payment</MenuItem>
-        {/* <MenuItem>Rename</MenuItem>
-        <MenuItem>Move</MenuItem> */}
-        {/* <Divider /> */}
-        <MenuItem color="danger">Delete</MenuItem>
-      </Menu>
-    </Dropdown>
-  );
-}
+
+
+
 
 function PaymentRequest() {
   const [payments, setPayments] = useState([]);
@@ -63,44 +48,12 @@ function PaymentRequest() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
-
-   useEffect(() => {
-    const fetchTableData = async () => {
-      try {
-        const response = await axios.get(
-          "https://backendslnko.onrender.com/v1/get-pay-summary"
-        );
-
-        const paymentsData = Array.isArray(response.data)
-          ? response.data
-          : [];
-        setPayments(paymentsData);
-        console.log("Payments Data are :", paymentsData);
-        
-
-        // const uniqueStates = [
-        //   ...new Set(paymentsData.map((payment) => payment.state)),
-        // ].filter(Boolean);
-
-        // const uniqueCustomers = [
-        //   ...new Set(paymentsData.map((payment) => payment.customer)),
-        // ].filter(Boolean);
-
-        // setStates(uniqueStates);
-        // setCustomers(uniqueCustomers);
-      } catch (err) {
-        console.error("API Error:", err);
-        setError("Failed to fetch table data.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTableData();
-  }, []);
+  const [projects, setProjects] = useState([]);
+  const [mergedData, setMergedData] = useState([]);
 
 
-  
+
+
   const renderFilters = () => (
     <>
       <FormControl size="sm">
@@ -137,9 +90,51 @@ function PaymentRequest() {
       </FormControl>
     </>
   );
+
+  useEffect(() => {
+    const fetchPaymentsAndProjects = async () => {
+      setLoading(true);
+      try {
+        const [paymentResponse, projectResponse] = await Promise.all([
+          axios.get("https://backendslnko.onrender.com/v1/get-pay-summary"),
+          axios.get("https://backendslnko.onrender.com/v1/get-all-project"),
+        ]);
+        setPayments(paymentResponse.data);
+        console.log("Payment Data are:", paymentResponse.data);
+        
+        setProjects(projectResponse.data.data);
+        console.log("Project Data are:", projectResponse.data.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchPaymentsAndProjects();
+  }, []);
+
+  useEffect(() => {
+    if (payments.length > 0 && projects.length > 0) {
+      const merged = payments.map((payment) => {
+        const matchingProject = projects.find(
+          (project) => project.p_id === payment.p_id
+        );
+        return {
+          ...payment,
+          projectCode: matchingProject?.code || "-", 
+          projectName: matchingProject?.name || "-", 
+          // projectCustomer: matchingProject?.customer || "-", 
+          // projectGroup: matchingProject?.p_group || "-", 
+        };
+      });
+      setMergedData(merged);
+    }
+  }, [payments, projects]);
+  
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelected(paginatedPayments.map((row) => row.id));
+      setSelected(mergedData.map((row) => row.id));
     } else {
       setSelected([]);
     }
@@ -181,23 +176,15 @@ function PaymentRequest() {
 
     return pages;
   };
-  const totalPages = Math.ceil(payments.length / itemsPerPage);
+  const totalPages = Math.ceil(mergedData.length / itemsPerPage);
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toISOString().split('T')[0];
-  };
   
  
-  const paginatedPayments = payments.slice(
+  const paginatedPayments = mergedData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
-  const paymentsWithFormattedDate = paginatedPayments.map(payment => ({
-    ...payment,
-    formattedDate: formatDate(payment.dbt_date),
-  }));
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
@@ -318,14 +305,16 @@ function PaymentRequest() {
                 />
               </Box>
               {[
-                "Payment Id",
-                "Request Date",
-                "Paid To",
-                "Client Name",
-                "Amount (₹)",
-                "Payment Status",
+               "Payment Id",
+                "Project Id",
+                "Project Name",
+                "Requested For",
+                "Vendor",
+                "Payment Description",
+                "Requested Amount",
+                "Bank Detail",
+                "Validation",
                 "UTR",
-                ""
               ].map((header, index) => (
                 <Box
                   component="th"
@@ -343,8 +332,8 @@ function PaymentRequest() {
             </Box>
           </Box>
           <Box component="tbody">
-          {paymentsWithFormattedDate.length > 0 ? (
-    paymentsWithFormattedDate.map((payment, index) => (
+          {paginatedPayments.length > 0 ? (
+                paginatedPayments.map((payment,index) => (
                 <Box
                   component="tr"
                   key={index}
@@ -360,13 +349,11 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    <Checkbox
-                      size="sm"
-                      checked={selected.includes(payment.code)}
-                      onChange={(event) =>
-                        handleRowSelect(payment.code, event.target.checked)
-                      }
-                    />
+                     <Checkbox
+                        size="sm"
+                        checked={selected.includes(payment.pay_id)}
+                        onChange={(event) => handleRowSelect(payment.pay_id, event.target.checked)}
+                      />
                   </Box>
                   <Box
                     component="td"
@@ -386,7 +373,7 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    {payment.formattedDate}
+                    {payment.projectCode}
                   </Box>
                   <Box
                     component="td"
@@ -396,7 +383,7 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    {payment.vendor}
+                    {payment.projectName || "-"}
                   </Box>
                   <Box
                     component="td"
@@ -406,7 +393,7 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    {payment.customer || "-"}
+                    {payment.paid_for || "-"}
                   </Box>
                   <Box
                     component="td"
@@ -416,7 +403,40 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    {payment.amt_for_customer}
+                    {payment.vendor || "-"}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {payment.comment || "-"}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {new Intl.NumberFormat("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }).format(payment.amt_for_customer)}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {<MatchRow />}
                   </Box>
                   <Box
                     component="td"
@@ -429,21 +449,19 @@ function PaymentRequest() {
                   variant="soft"
                   size="sm"
                   startDecorator={
-                    {
-                      Approved: <CheckRoundedIcon />,
-                      Pending: <AutorenewRoundedIcon />,
-                      Rejected: <BlockIcon />,
-                    }[payment.approved]
+                    payment.acc_match === "matched" ? (
+                      <CheckRoundedIcon />
+                    ) : (
+                      <BlockIcon />
+                    )
                   }
                   color={
-                    {
-                      Approved: 'success',
-                      Pending: 'neutral',
-                      Rejected: 'danger',
-                    }[payment.approved]
+                    payment.acc_match === "matched"
+                      ? "success"
+                      : "neutral"
                   }
                 >
-                    {payment.approved}
+                  {payment.acc_match === "matched" ? payment.acc_match : "match"}
                 </Chip>
                   </Box>
                   <Box
@@ -454,17 +472,7 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    {payment.utr|| "-"}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {RowMenu()}
+                    
                   </Box>
                 </Box>
               ))
