@@ -29,7 +29,9 @@ import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import BlockIcon from '@mui/icons-material/Block';
 // import AutorenewRoundedIcon from '@mui/icons-material/AutorenewRounded';
 import { useEffect, useState } from "react";
-import MatchRow from "./Button/MatchRow";
+import MatchRow from "./Button/Account_Match";
+import Account_Match from "./Button/Account_Match";
+// import Match_Row from "./Button/Match_Row";
 
 
 
@@ -436,7 +438,7 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    {<MatchRow />}
+                    {<Account_Match />}
                   </Box>
                   <Box
                     component="td"
@@ -445,7 +447,9 @@ function PaymentRequest() {
                       padding: "8px",
                       textAlign: "center",
                     }}
-                  ><Chip
+                  >
+                    {/* {<Match_Row />} */}
+                    {/* <Chip
                   variant="soft"
                   size="sm"
                   startDecorator={
@@ -462,7 +466,8 @@ function PaymentRequest() {
                   }
                 >
                   {payment.acc_match === "matched" ? payment.acc_match : "match"}
-                </Chip>
+                </Chip> */}
+
                   </Box>
                   <Box
                     component="td"
