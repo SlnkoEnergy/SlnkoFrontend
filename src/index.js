@@ -11,7 +11,9 @@ root.render(
   <React.StrictMode>
       <BrowserRouter> 
       <CssVarsProvider>
+
           <App />
+          
         </CssVarsProvider>
       </BrowserRouter>
   </React.StrictMode>
