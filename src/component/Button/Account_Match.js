@@ -1,36 +1,44 @@
-import React, { useState } from "react";
-import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
-import Dropdown from "@mui/joy/Dropdown";
-import IconButton from "@mui/joy/IconButton";
-import Input from "@mui/joy/Input";
-import Menu from "@mui/joy/Menu";
-import MenuButton from "@mui/joy/MenuButton";
-import MenuItem from "@mui/joy/MenuItem";
-import Button from "@mui/joy/Button";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
+import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
+import { Dropdown, IconButton, MenuButton, Menu, MenuItem, Input, Button } from "@mui/joy";
 
-function AccountMatch() {
-  const [accountNumber, setAccountNumber] = useState("");
-  const [ifscCode, setIfscCode] = useState("");
-  const [error, setError] = useState("");
+const Account_Match = ({ PaymentId }) => {
+  const [accNumber, setAccNumber] = useState("");
+  const [ifsc, setIfsc] = useState("");
+  const [error, setError] = useState(null);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
 
-    try {
-      const response = await axios.get(
-        "https://backendslnko.onrender.com/v1/add-pay-request",
-        {
-          params: { acc_number: accountNumber, ifsc: ifscCode },
+  useEffect(() => {
+    const fetchAccountDetails = async () => {
+      try {
+        const response = await axios.get(`https://backendslnko.onrender.com/v1/get-pay-summary/${PaymentId}`);
+        
+        if (response.data.success) {
+          if (response.data.PaymentId === PaymentId) {
+            setAccNumber(response.data.acc_number || ""); 
+            setIfsc(response.data.ifsc || "");
+            setError(null);
+          } else {
+            setError("Pay ID does not match any records.");
+            setAccNumber("");
+            setIfsc("");
+          }
+        } else {
+          setError("Failed to fetch account details.");
+          setAccNumber("");
+          setIfsc("");
         }
-      );
-      console.log("Response Data:", response.data);
-      setError("");
-    } catch (err) {
-      console.error("Fetch Error:", err);
-      setError("Failed to fetch data.");
-    }
-  };
+      } catch (err) {
+        setError("Error fetching account details.");
+        setAccNumber("");
+        setIfsc("");
+        console.error("Fetch error:", err);
+      }
+    };
+
+    fetchAccountDetails();
+  }, [PaymentId]);
 
   return (
     <Dropdown>
@@ -41,37 +49,32 @@ function AccountMatch() {
         <MoreHorizRoundedIcon />
       </MenuButton>
       <Menu size="sm" sx={{ minWidth: 250, padding: 1 }}>
-        <form onSubmit={handleSubmit}>
-          <MenuItem>
-            <Input
-              placeholder="Account Number"
-              value={accountNumber}
-              onChange={(e) => setAccountNumber(e.target.value)}
-              sx={{ width: "100%" }}
-            />
+        <MenuItem>
+          <Input
+            placeholder="Account Number"
+            value={accNumber}
+            name="acc_number"
+            sx={{ width: "100%" }}
+            disabled // Make input readonly since data comes from API
+          />
+        </MenuItem>
+        <MenuItem>
+          <Input
+            placeholder="IFSC Code"
+            value={ifsc}
+            name="ifsc"
+            sx={{ width: "100%" }}
+            disabled // Make input readonly since data comes from API
+          />
+        </MenuItem>
+        {error && (
+          <MenuItem sx={{ color: "red", fontSize: "0.875rem" }}>
+            {error}
           </MenuItem>
-          <MenuItem>
-            <Input
-              placeholder="IFSC Code"
-              value={ifscCode}
-              onChange={(e) => setIfscCode(e.target.value)}
-              sx={{ width: "100%" }}
-            />
-          </MenuItem>
-          {error && (
-            <MenuItem sx={{ color: "red", fontSize: "0.875rem" }}>
-              {error}
-            </MenuItem>
-          )}
-          <MenuItem>
-            <Button type="submit" variant="solid" color="primary" size="sm" sx={{ width: "100%" }}>
-              Fetch Data
-            </Button>
-          </MenuItem>
-        </form>
+        )}
       </Menu>
     </Dropdown>
   );
-}
+};
 
-export default AccountMatch;
+export default Account_Match;

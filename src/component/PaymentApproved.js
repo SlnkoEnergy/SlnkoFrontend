@@ -27,11 +27,8 @@ import Checkbox from "@mui/joy/Checkbox";
 import Chip from '@mui/joy/Chip';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import BlockIcon from '@mui/icons-material/Block';
-// import AutorenewRoundedIcon from '@mui/icons-material/AutorenewRounded';
 import { useEffect, useState } from "react";
-import MatchRow from "./Button/Account_Match";
-import Account_Match from "./Button/Account_Match";
-// import Match_Row from "./Button/Match_Row";
+
 
 
 
@@ -52,6 +49,8 @@ function PaymentRequest() {
   const [selected, setSelected] = useState([]);
   const [projects, setProjects] = useState([]);
   const [mergedData, setMergedData] = useState([]);
+  const [accountNumber, setAccountNumber] = useState([]);
+  const [ifscCode, setIfscCode] = useState([]);
 
 
 
@@ -101,8 +100,8 @@ function PaymentRequest() {
           axios.get("https://backendslnko.onrender.com/v1/get-pay-summary"),
           axios.get("https://backendslnko.onrender.com/v1/get-all-project"),
         ]);
-        setPayments(paymentResponse.data);
-        console.log("Payment Data are:", paymentResponse.data);
+        setPayments(paymentResponse.data.data);
+        console.log("Payment Data are:", paymentResponse.data.data);
         
         setProjects(projectResponse.data.data);
         console.log("Project Data are:", projectResponse.data.data);
@@ -193,15 +192,77 @@ function PaymentRequest() {
     }
   };
 
+  /*****Account Match Logic ******/
+  const AccountMatch = ({ payment }) => (
+    <Dropdown>
+      <MenuButton
+        slots={{ root: IconButton }}
+        slotProps={{ root: { variant: "plain", color: "neutral", size: "sm" } }}
+      >
+        <MoreHorizRoundedIcon />
+      </MenuButton>
+      <Menu size="sm" sx={{ minWidth: 250, padding: 1 }}>
+        <form>
+          <MenuItem>
+            <Input
+              placeholder="Account Number"
+              name="acc_number"
+              value={payment.acc_number || ""}
+              onChange={(e) => {
+                payment.acc_number = e.target.value;
+              }}
+              sx={{ width: "100%" }}
+            />
+          </MenuItem>
+          <MenuItem>
+            <Input
+              placeholder="IFSC Code"
+              name="ifsc"
+              value={payment.ifsc || ""}
+              onChange={(e) => {
+                payment.ifsc = e.target.value;
+              }}
+              sx={{ width: "100%" }}
+            />
+          </MenuItem>
+          {error && (
+            <MenuItem sx={{ color: "red", fontSize: "0.875rem" }}>
+              {error}
+            </MenuItem>
+          )}
+          <MenuItem>
+            <Button
+              type="submit"
+              variant="solid"
+              color="primary"
+              size="sm"
+              sx={{ width: "100%" }}
+            >
+              Fetch Data
+            </Button>
+          </MenuItem>
+        </form>
+      </Menu>
+    </Dropdown>
+  );
+/***** Match Logic ******/
+  const MatchRow = ({ payment }) => (
+    <Chip
+      variant="soft"
+      size="sm"
+      startDecorator={
+        payment.acc_match === "matched" ? (
+          <CheckRoundedIcon />
+        ) : (
+          <BlockIcon />
+        )
+      }
+      color={payment.acc_match === "matched" ? "success" : "neutral"}
+    >
+      {payment.acc_match === "matched" ? payment.acc_match : "match"}
+    </Chip>
+  );
 
-
-  // if (loading) {
-  //   return <Typography>Loading...</Typography>;
-  // }
-
-  // if (error) {
-  //   return <Typography color="danger">{error}</Typography>;
-  // }
 
   return (
     <>
@@ -438,7 +499,7 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    {<Account_Match />}
+                    <AccountMatch payment={payment} />
                   </Box>
                   <Box
                     component="td"
@@ -448,26 +509,7 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    {/* {<Match_Row />} */}
-                    {/* <Chip
-                  variant="soft"
-                  size="sm"
-                  startDecorator={
-                    payment.acc_match === "matched" ? (
-                      <CheckRoundedIcon />
-                    ) : (
-                      <BlockIcon />
-                    )
-                  }
-                  color={
-                    payment.acc_match === "matched"
-                      ? "success"
-                      : "neutral"
-                  }
-                >
-                  {payment.acc_match === "matched" ? payment.acc_match : "match"}
-                </Chip> */}
-
+                    <MatchRow payment={payment} />
                   </Box>
                   <Box
                     component="td"

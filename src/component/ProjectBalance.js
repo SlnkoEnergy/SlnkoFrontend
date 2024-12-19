@@ -41,33 +41,15 @@ function RowMenu() {
         <MoreHorizRoundedIcon />
       </MenuButton>
       <Menu size="sm" sx={{ minWidth: 100 }}>
-        <MenuItem>
-        <Chip
-            variant="soft"
-            size="sm"
-            startDecorator={<CheckRoundedIcon />}
-            color="success"
-          >
-          Approved
-        </Chip>
-        </MenuItem>
-        <MenuItem>
-         <Chip
-            variant="soft"
-            size="sm"
-            startDecorator={<BlockIcon />}
-            color="danger"
-          >
-                    Rejected
-                </Chip>
-        </MenuItem>
+      <MenuItem>Add Money</MenuItem>
+      <MenuItem>View More</MenuItem>
       </Menu>
     </Dropdown>
   );
 }
 
-function PaymentRequest() {
-  const [payments, setPayments] = useState([]);
+function ProjectBalances() {
+  const [credits, setCredits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   // const [states, setStates] = useState([]);
@@ -124,14 +106,14 @@ function PaymentRequest() {
     const fetchPaymentsAndProjects = async () => {
       setLoading(true);
       try {
-        const [paymentResponse, projectResponse] = await Promise.all([
-          axios.get("https://backendslnko.onrender.com/v1/get-pay-summary"),
+        const [CreditResponse, projectResponse] = await Promise.all([
+          axios.get("https://backendslnko.onrender.com/v1/all-bill"),
           axios.get("https://backendslnko.onrender.com/v1/get-all-project"),
         ]);
-        setPayments(paymentResponse.data.data);
-        console.log("Payment Data are:", paymentResponse.data.data);
+        setCredits(CreditResponse.data);
+        console.log("Credit Data are:", CreditResponse.data);
         
-        setProjects(projectResponse.data.data);
+        setProjects(projectResponse.data);
         console.log("Project Data are:", projectResponse.data.data);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -144,22 +126,23 @@ function PaymentRequest() {
   }, []);
   
   useEffect(() => {
-    if (payments.length > 0 && projects.length > 0) {
-      const merged = payments.map((payment) => {
+    if (credits.length > 0 && projects.length > 0) {
+      const merged = credits.map((credit) => {
         const matchingProject = projects.find(
-          (project) => project.p_id === payment.p_id
+          (project) => project.p_id === credit.p_id
         );
         return {
-          ...payment,
+          ...credit,
           projectCode: matchingProject?.code || "-", 
           projectName: matchingProject?.name || "-", 
           projectCustomer: matchingProject?.customer || "-", 
-          projectGroup: matchingProject?.p_group || "-", 
+          projectGroup: matchingProject?.p_group || "-",
+          projectKwp: matchingProject?.project_kwp || "-", 
         };
       });
       setMergedData(merged);
     }
-  }, [payments, projects]);
+  }, [credits, projects]);
   
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -334,18 +317,18 @@ function PaymentRequest() {
                 />
               </Box>
               {[
-                "Payment Id",
-                "Request Date",
                 "Project Id",
                 "Project Name",
                 "Client Name",
                 "Group Name",
-                "Request For",
-                "Payment Description",
-                "Amount Requested",
-                "Client Balance",
-                "Group Balance",
-                "Action"
+                "Plant Capacity (MW AC)",
+                "Total Credit",
+                "Total Debit",
+                "Amount Amount(Old)",
+                "Balance with SLnko",
+                "Balance Payable to Vendors",
+                "Balance Required",
+                "View More"
               ].map((header, index) => (
                 <Box
                   component="th"
@@ -364,7 +347,7 @@ function PaymentRequest() {
           </Box>
           <Box component="tbody">
           {paginatedPayments.length > 0 ? (
-                paginatedPayments.map((payment,index) => (
+                paginatedPayments.map((credit,index) => (
                 <Box
                   component="tr"
                   key={index}
@@ -382,8 +365,8 @@ function PaymentRequest() {
                   >
                      <Checkbox
                         size="sm"
-                        checked={selected.includes(payment.pay_id)}
-                        onChange={(event) => handleRowSelect(payment.pay_id, event.target.checked)}
+                        checked={selected.includes(credit.p_id)}
+                        onChange={(event) => handleRowSelect(credit.p_id, event.target.checked)}
                       />
                   </Box>
                   <Box
@@ -394,7 +377,7 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    {payment.pay_id}
+                    {credit.projectCode}
                   </Box>
                   <Box
                     component="td"
@@ -404,7 +387,7 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    {payment.dbt_date}
+                    {credit.projectName || "-"}
                   </Box>
                   <Box
                     component="td"
@@ -414,7 +397,7 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    {payment.projectCode}
+                    {credit.projectCustomer || "-"}
                   </Box>
                   <Box
                     component="td"
@@ -424,7 +407,7 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    {payment.projectName || "-"}
+                    {credit.projectGroup || "-"}
                   </Box>
                   <Box
                     component="td"
@@ -434,7 +417,7 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    {payment.projectCustomer || "-"}
+                    {credit.projectKwp || "-"}
                   </Box>
                   <Box
                     component="td"
@@ -444,39 +427,10 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    {payment.projectGroup || "-"}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {payment.paid_for}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {payment.comment || "-"}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >{new Intl.NumberFormat("en-IN", {
+                    {new Intl.NumberFormat("en-IN", {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
-                  }).format(payment.amt_for_customer)}
+                  }).format(credit.cr_amount || "-")}
                    
                   </Box>
                   <Box
@@ -487,7 +441,11 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    {payment.clientname|| "-"}
+                    {new Intl.NumberFormat("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }).format(credit.db_amount || "-")}
+                   
                   </Box>
                   <Box
                     component="td"
@@ -497,7 +455,53 @@ function PaymentRequest() {
                       textAlign: "center",
                     }}
                   >
-                    {payment.groupname|| "-"}
+                    {new Intl.NumberFormat("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }).format(credit.db_amount || "-")}
+                   
+                  </Box> 
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {new Intl.NumberFormat("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }).format(credit.db_amount || "-")}
+                   
+                  </Box> 
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {new Intl.NumberFormat("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }).format(credit.db_amount || "-")}
+                   
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {new Intl.NumberFormat("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }).format(credit.db_amount || "-")}
+                   
                   </Box>
                   <Box
                     component="td"
@@ -602,4 +606,5 @@ function PaymentRequest() {
     </>
   );
 }
-export default PaymentRequest;
+export default ProjectBalances;
+ 

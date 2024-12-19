@@ -12,8 +12,7 @@ import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
 
 import Sidebar from '../../component/Partials/Sidebar';
-import OrderTable from '../../component/OrderTable';
-import OrderList from '../../component/OrderList';
+import ProjectBalances from '../../component/ProjectBalance';
 import Header from '../../component/Partials/Header';
 
 function ProjectBalance() {
@@ -112,8 +111,7 @@ function ProjectBalance() {
             </Box>
            
           </Box>
-          <OrderTable />
-          <OrderList />
+        <ProjectBalances />
         </Box>
       </Box>
     </CssVarsProvider>

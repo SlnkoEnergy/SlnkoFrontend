@@ -71,8 +71,8 @@ function PaymentRequest() {
           "https://backendslnko.onrender.com/v1/get-pay-summary"
         );
 
-        const paymentsData = Array.isArray(response.data)
-          ? response.data
+        const paymentsData = Array.isArray(response.data.data)
+          ? response.data.data
           : [];
         setPayments(paymentsData);
         console.log("Payments Data are :", paymentsData);
