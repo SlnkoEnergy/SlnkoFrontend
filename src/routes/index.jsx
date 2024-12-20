@@ -9,6 +9,8 @@ import PrivateRoute from './PrivateRoute';
 import PaymentRequest from '../pages/Accounts/PaymentRequest';
 import PaymentApproval from '../pages/Accounts/PaymentApproval';
 import PaymentApproved from '../pages/Accounts/PaymentApproved';
+import AddProject from '../pages/Projects/Add_Project';
+import AddMoney from '../pages/Accounts/Add_Money';
 
 function index() {
   return (
@@ -55,7 +57,9 @@ function index() {
          {/* If user goes to an undefined route, redirect to login */}
         <Route path="*" element={<Navigate to="/login" />} />
 
-
+        {/** -----------------All Forms -----------*/}
+        <Route path="/add_project" element ={<PrivateRoute><AddProject /></PrivateRoute>} />
+        <Route path="/add_money" element ={<PrivateRoute><AddMoney /></PrivateRoute>} />
     </Routes>
     </>
   )

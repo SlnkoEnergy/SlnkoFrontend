@@ -6,24 +6,17 @@ import Button from '@mui/joy/Button';
 import Breadcrumbs from '@mui/joy/Breadcrumbs';
 import Link from '@mui/joy/Link';
 import Typography from '@mui/joy/Typography';
-
-import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
-import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
-import { useNavigate } from 'react-router-dom';
+
 import Sidebar from '../../component/Partials/Sidebar';
-import ProjectBalances from '../../component/ProjectBalance';
 import Header from '../../component/Partials/Header';
+import AddProject from '../../component/Forms/Add_Project';
 
-
-
-
-function ProjectBalance() {
-const navigate = useNavigate();
+function Add_Project() {
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
-      <Box sx={{ display: 'flex', minHeight: '100dvh' }}>
+      <Box sx={{ display: 'flex', minHeight: '100%' }}>
         <Header />
         <Sidebar />
         <Box
@@ -66,10 +59,10 @@ const navigate = useNavigate();
                 href=""
                 sx={{ fontSize: 12, fontWeight: 500 }}
               >
-                Accounting
+                All Projects
               </Link>
               <Typography color="primary" sx={{ fontWeight: 500, fontSize: 12 }}>
-                Project Balances
+                Add Project
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -84,41 +77,16 @@ const navigate = useNavigate();
               justifyContent: 'space-between',
             }}
           >
-            <Typography level="h2" component="h1">
-              Project Balances
-            </Typography>
-            <Box
-             sx={{
-              display: 'flex',
-              mb: 1,
-              gap: 1,
-              flexDirection: { xs: 'column', sm: 'row' },
-              alignItems: { xs: 'start', sm: 'center' },
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-            }}
-            >
-               <Button
-              color="primary"
-              onClick={() => navigate('/add_project')}
-              size="sm"
-            >
-              Add New Project +
-            </Button>
-            <Button
-              color="primary"
-              startDecorator={<DownloadRoundedIcon />}
-              size="sm"
-            >
-              Export to CSV
-            </Button>
-            </Box>
+           <AddProject />
            
           </Box>
-        <ProjectBalances />
+          
+          
+          {/* <OrderTable /> */}
+          {/* <OrderList /> */}
         </Box>
       </Box>
     </CssVarsProvider>
   );
 }
-export default ProjectBalance;
+export default Add_Project;

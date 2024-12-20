@@ -99,10 +99,10 @@ function ProjectBalances() {
           axios.get("https://backendslnko.onrender.com/v1/all-bill"),
           axios.get("https://backendslnko.onrender.com/v1/get-all-project"),
         ]);
-        setCredits(CreditResponse.data.bill);
-        console.log("Credit Data are:", CreditResponse.data.bill);
+        setCredits(CreditResponse.data);
+        console.log("Credit Data are:", CreditResponse.data);
 
-        setProjects(projectResponse.data.data);
+        setProjects(projectResponse.data);
         console.log("Project Data are:", projectResponse.data);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -121,7 +121,7 @@ function ProjectBalances() {
     if (credits.length > 0 && projects.length > 0) {
       const merged = projects.map((project) => {
         const matchingCredit = credits.find(
-          (credit) => Number(credit.p_id)  === Number(project.p_id)
+          (credit) => credit.p_id === project.p_id
         );
 
         return {
@@ -179,13 +179,11 @@ function ProjectBalances() {
     return pages;
   };
   const totalPages = Math.ceil(mergedData.length / itemsPerPage);
-  console.log("Total Pages:", totalPages);
 
   const paginatedPayments = mergedData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-  console.log("Paginated Payments:", paginatedPayments);
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -425,7 +423,7 @@ function ProjectBalances() {
                       {new Intl.NumberFormat("en-IN", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
-                      }).format(project.creditAmount || "-")}
+                      }).format(project.DebitAmount || "-")}
                     </Box>
                     <Box
                       component="td"
@@ -438,7 +436,7 @@ function ProjectBalances() {
                       {new Intl.NumberFormat("en-IN", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
-                      }).format(project.creditAmount || "-")}
+                      }).format(project.requiredAmount || "-")}
                     </Box>
                     <Box
                       component="td"

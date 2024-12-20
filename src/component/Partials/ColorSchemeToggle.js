@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { useColorScheme } from '@mui/joy/styles';
-import IconButton from '@mui/joy/IconButton';
-import DarkModeRoundedIcon from '@mui/icons-material/DarkModeRounded';
-import LightModeIcon from '@mui/icons-material/LightMode';
+import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import IconButton from "@mui/joy/IconButton";
+import { useColorScheme } from "@mui/joy/styles";
+import React, { useEffect, useState } from "react";
 
 const ColorSchemeToggle = ({ onClick, sx, ...other }) => {
   const { mode, setMode } = useColorScheme();
@@ -13,7 +13,6 @@ const ColorSchemeToggle = ({ onClick, sx, ...other }) => {
   }, []);
 
   if (!mounted) {
-   
     return (
       <IconButton
         size="sm"
@@ -33,18 +32,19 @@ const ColorSchemeToggle = ({ onClick, sx, ...other }) => {
       color="neutral"
       {...other}
       onClick={(event) => {
-        setMode(mode === 'light' ? 'dark' : 'light');
+        setMode(mode === "light" ? "dark" : "light");
         if (onClick) {
           onClick(event);
         }
       }}
       sx={[
         {
-          '& > *:first-child': {
-            display: mode === 'light' ? 'initial' : 'none',
+          "& > *:first-of-type": {
+            // Changed from :first-child to :first-of-type
+            display: mode === "light" ? "initial" : "none",
           },
-          '& > *:last-child': {
-            display: mode === 'dark' ? 'initial' : 'none',
+          "& > *:last-child": {
+            display: mode === "dark" ? "initial" : "none",
           },
         },
         ...(Array.isArray(sx) ? sx : [sx]),

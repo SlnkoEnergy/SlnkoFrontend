@@ -1,0 +1,101 @@
+body {
+    position: relative;
+height: 100vh;
+width: 100%;
+background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
+  url(/assets/img/solar-body.png);
+background-size: cover;
+background-position: center;
+}
+.select2.select2-container.select2-container--default{
+  width:100%!important;
+}
+.select2-selection.select2-selection--single{
+  background: rgba(255, 255, 255, 0.2)!important;
+border: 1px solid rgba(255, 255, 255, 0.3)!important;
+backdrop-filter: blur(10px)!important;
+  border-radius: 20px!important;
+  /* margin-bottom: 25px; */
+  padding: 5px 10px!important;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2)!important;
+  height: auto!important;
+}
+.pay-request-form{
+  background: rgba(255, 255, 255, 0.2);
+border: 1px solid rgba(255, 255, 255, 0.3);
+backdrop-filter: blur(10px);
+border-radius: 10px;
+/* margin-top: 5rem!important; */
+margin: auto;
+padding: 20px 20px;
+border-top-left-radius: 30px;
+border-top-right-radius: 30px;
+box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+
+}
+.pay-request-form .item{
+    background: rgba(255, 255, 255, 0.2);
+border: 1px solid rgba(255, 255, 255, 0.3);
+/*backdrop-filter: blur(10px);*/
+  border-radius: 20px;
+  /* margin-bottom: 25px; */
+  padding: 10px 20px;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+  height: auto;
+}
+
+.title-row{
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+}
+.image-container {
+padding: 10px;
+display: flex;
+justify-content: center;
+align-items: center;
+border: 2px solid #5791ff;
+background-color: #f9f9f9;
+border-radius: 50%;
+max-width: 90px;
+margin: auto;
+
+}
+
+#back-button{
+border-radius: 30px;
+padding: 10px 20px;
+font-size: 18px;
+font-weight: bold;
+background-color: #6f7580;
+border: none;
+color: white;
+text-decoration:none;
+}
+#back-button:hover{
+background-color: lightsteelblue;
+}
+.image-container img {
+border-radius: 4px;
+max-height: 70px;
+display: block;
+}
+#standby-button{
+border-radius: 30px;
+padding: 10px 20px;
+font-size: 18px;
+font-weight: bold;
+background-color:#CF6C53;
+border: none;
+color: white;
+text-decoration:none;
+}
+#standby-button:hover{
+background-color: #DE3A11;
+}
+.image-container img {
+border-radius: 4px;
+max-height: 70px;
+display: block;
+}

@@ -72,7 +72,7 @@ function Toggler({ defaultExpanded = false, renderToggle, children }) {
  function Sidebar() {
  
   const navigate = useNavigate();
-  ;const { mode } = useColorScheme(); 
+  const { mode } = useColorScheme(); 
 
  
   const userName = localStorage.getItem('name');
