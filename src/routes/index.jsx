@@ -11,6 +11,8 @@ import PaymentApproval from '../pages/Accounts/PaymentApproval';
 import PaymentApproved from '../pages/Accounts/PaymentApproved';
 import AddProject from '../pages/Projects/Add_Project';
 import AddMoney from '../pages/Accounts/Add_Money';
+import All_project_csv from '../csv/All_project_csv';
+
 
 function index() {
   return (
@@ -56,6 +58,9 @@ function index() {
 
          {/* If user goes to an undefined route, redirect to login */}
         <Route path="*" element={<Navigate to="/login" />} />
+
+        
+        <Route path="/csv" element ={<All_project_csv />} />
 
         {/** -----------------All Forms -----------*/}
         <Route path="/add_project" element ={<PrivateRoute><AddProject /></PrivateRoute>} />
