@@ -78,7 +78,7 @@ const Login = () => {
     };
     try {
       const response = await axios.post(
-        "https:147.93.20.206:8080/v1/login",
+        "http:147.93.20.206:8080/v1/login",
         postData
       );
       console.log("Login successful:", response.data);
