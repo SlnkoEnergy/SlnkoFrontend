@@ -31,6 +31,7 @@ import { Label, Visibility, VisibilityOff } from "@mui/icons-material";
 import Colors from "../../../utils/colors";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Axios from "../../../utils/Axios";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -77,8 +78,8 @@ const Login = () => {
       password: formik.values.password,
     };
     try {
-      const response = await axios.post(
-        "http:147.93.20.206:8080/v1/login",
+      const response = await Axios.post(
+        "/login",
         postData
       );
       console.log("Login successful:", response.data);

@@ -1,0 +1,1 @@
+const baseurl = process.env.REACT_APP_API_BASE_URL || "http://147.93.20.206:8080/v1";
