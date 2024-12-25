@@ -53,6 +53,7 @@ function ProjectBalances() {
   const [selected, setSelected] = useState([]);
   const [projects, setProjects] = useState([]);
   const [mergedData, setMergedData] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const renderFilters = () => (
     <>
@@ -100,10 +101,10 @@ function ProjectBalances() {
           Axios.get("/get-all-project"),
         ]);
         setCredits(CreditResponse.data.bill);
-        console.log("Credit Data are:", CreditResponse.data.bill);
+        // console.log("Credit Data are:", CreditResponse.data.bill);
 
         setProjects(projectResponse.data.data);
-        console.log("Project Data are:", projectResponse.data);
+        // console.log("Project Data are:", projectResponse.data);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -115,8 +116,8 @@ function ProjectBalances() {
   }, []);
 
   useEffect(() => {
-    console.log("Credits:", credits);
-    console.log("Projects:", projects);
+    // console.log("Credits:", credits);
+    // console.log("Projects:", projects);
 
     if (credits.length > 0 && projects.length > 0) {
       const merged = projects.map((project) => {
@@ -133,6 +134,28 @@ function ProjectBalances() {
       setMergedData(merged);
     }
   }, [credits, projects]);
+
+  const handleSearch = (query) => {
+    setSearchQuery(query.toLowerCase());
+  };
+
+  const filteredAndSortedData = mergedData
+    .filter((project) =>
+      ["code", "customer", "name", "p_group"].some((key) =>
+        project[key]?.toLowerCase().includes(searchQuery)
+      )
+    )
+    .sort((a, b) => {
+      if (a.name?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.name?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.code?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.code?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.p_group?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.p_group?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.customer?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.customer?.toLowerCase().includes(searchQuery)) return 1;
+      return 0;
+    });
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -178,14 +201,14 @@ function ProjectBalances() {
 
     return pages;
   };
-  const totalPages = Math.ceil(mergedData.length / itemsPerPage);
-  console.log("Total Pages:", totalPages);
+  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
+  // console.log("Total Pages:", totalPages);
 
-  const paginatedPayments = mergedData.slice(
+  const paginatedPayments = filteredAndSortedData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-  console.log("Paginated Payments:", paginatedPayments);
+  // console.log("Paginated Payments:", paginatedPayments);
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -246,11 +269,13 @@ function ProjectBalances() {
         }}
       >
         <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search here</FormLabel>
+          <FormLabel>Search</FormLabel>
           <Input
             size="sm"
-            placeholder="Search"
+            placeholder="Search by Project ID, Customer, or Name"
             startDecorator={<SearchIcon />}
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
         {renderFilters()}

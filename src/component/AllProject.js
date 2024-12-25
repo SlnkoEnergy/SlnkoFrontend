@@ -58,6 +58,7 @@ function AllProjects() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [selected, setSelected] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const fetchTableData = async () => {
@@ -72,6 +73,8 @@ function AllProjects() {
         const uniqueStates = [
           ...new Set(projectsData.map((project) => project.state)),
         ].filter(Boolean);
+
+        console.log("states are:", uniqueStates);
 
         const uniqueCustomers = [
           ...new Set(projectsData.map((project) => project.customer)),
@@ -98,7 +101,11 @@ function AllProjects() {
           size="sm"
           placeholder="Filter by state"
           value={stateFilter}
-          onChange={(e) => setStateFilter(e.target.value)}
+          onChange={(e) => {
+            const selectedValue = e.target.value;
+            console.log("Selected State:", selectedValue);
+            setStateFilter(selectedValue);
+          }}
         >
           <Option value="">All</Option>
           {states.map((state, index) => (
@@ -141,6 +148,23 @@ function AllProjects() {
         : prevSelected.filter((item) => item !== id)
     );
   };
+  const handleSearch = (query) => {
+    setSearchQuery(query.toLowerCase());
+  };
+
+  const filteredAndSortedData = projects
+    .filter((project) => {
+      const matchesState = stateFilter ? project.state === stateFilter : true;
+      return matchesState;
+    })
+    .sort((a, b) => {
+      if (a.name?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.name?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.customer?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.customer?.toLowerCase().includes(searchQuery)) return 1;
+      return 0;
+    });
+
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
 
@@ -170,9 +194,9 @@ function AllProjects() {
 
     return pages;
   };
-  const totalPages = Math.ceil(projects.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
 
-  const paginatedProjects = projects.slice(
+  const paginatedProjects = filteredAndSortedData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -182,14 +206,6 @@ function AllProjects() {
       setCurrentPage(page);
     }
   };
-
-  // if (loading) {
-  //   return <Typography>Loading...</Typography>;
-  // }
-
-  // if (error) {
-  //   return <Typography color="danger">{error}</Typography>;
-  // }
 
   return (
     <>
@@ -244,11 +260,13 @@ function AllProjects() {
         }}
       >
         <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search here</FormLabel>
+          <FormLabel>Search</FormLabel>
           <Input
             size="sm"
-            placeholder="Search"
+            placeholder="Search by Project ID, Customer, or Name"
             startDecorator={<SearchIcon />}
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
         {renderFilters()}
