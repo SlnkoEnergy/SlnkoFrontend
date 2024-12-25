@@ -1,3 +1,5 @@
+import BlockIcon from "@mui/icons-material/Block";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
@@ -5,6 +7,8 @@ import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
+import Checkbox from "@mui/joy/Checkbox";
+import Chip from "@mui/joy/Chip";
 import Divider from "@mui/joy/Divider";
 import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
@@ -21,19 +25,9 @@ import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import axios from "axios";
 import * as React from "react";
-import Checkbox from "@mui/joy/Checkbox";
-import Chip from '@mui/joy/Chip';
-import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
-import BlockIcon from '@mui/icons-material/Block';
 import { useEffect, useState } from "react";
-
-
-
-
-
-
+import Axios from "../utils/Axios";
 
 function PaymentRequest() {
   const [payments, setPayments] = useState([]);
@@ -51,9 +45,6 @@ function PaymentRequest() {
   const [mergedData, setMergedData] = useState([]);
   const [accountNumber, setAccountNumber] = useState([]);
   const [ifscCode, setIfscCode] = useState([]);
-
-
-
 
   const renderFilters = () => (
     <>
@@ -97,12 +88,12 @@ function PaymentRequest() {
       setLoading(true);
       try {
         const [paymentResponse, projectResponse] = await Promise.all([
-          axios.get("https://backendslnko.onrender.com/v1/get-pay-summary"),
-          axios.get("https://backendslnko.onrender.com/v1/get-all-project"),
+          Axios.get("/get-pay-summary"),
+          Axios.get("/get-all-project"),
         ]);
         setPayments(paymentResponse.data.data);
         console.log("Payment Data are:", paymentResponse.data.data);
-        
+
         setProjects(projectResponse.data.data);
         console.log("Project Data are:", projectResponse.data.data);
       } catch (error) {
@@ -111,7 +102,7 @@ function PaymentRequest() {
         setLoading(false);
       }
     };
-  
+
     fetchPaymentsAndProjects();
   }, []);
 
@@ -123,16 +114,16 @@ function PaymentRequest() {
         );
         return {
           ...payment,
-          projectCode: matchingProject?.code || "-", 
-          projectName: matchingProject?.name || "-", 
-          // projectCustomer: matchingProject?.customer || "-", 
-          // projectGroup: matchingProject?.p_group || "-", 
+          projectCode: matchingProject?.code || "-",
+          projectName: matchingProject?.name || "-",
+          // projectCustomer: matchingProject?.customer || "-",
+          // projectGroup: matchingProject?.p_group || "-",
         };
       });
       setMergedData(merged);
     }
   }, [payments, projects]);
-  
+
   const handleSelectAll = (event) => {
     if (event.target.checked) {
       setSelected(mergedData.map((row) => row.id));
@@ -179,8 +170,6 @@ function PaymentRequest() {
   };
   const totalPages = Math.ceil(mergedData.length / itemsPerPage);
 
-  
- 
   const paginatedPayments = mergedData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
@@ -245,24 +234,19 @@ function PaymentRequest() {
       </Menu>
     </Dropdown>
   );
-/***** Match Logic ******/
+  /***** Match Logic ******/
   const MatchRow = ({ payment }) => (
     <Chip
       variant="soft"
       size="sm"
       startDecorator={
-        payment.acc_match === "matched" ? (
-          <CheckRoundedIcon />
-        ) : (
-          <BlockIcon />
-        )
+        payment.acc_match === "matched" ? <CheckRoundedIcon /> : <BlockIcon />
       }
       color={payment.acc_match === "matched" ? "success" : "neutral"}
     >
       {payment.acc_match === "matched" ? payment.acc_match : "match"}
     </Chip>
   );
-
 
   return (
     <>
@@ -341,206 +325,212 @@ function PaymentRequest() {
         }}
       >
         {error ? (
-        <Typography color="danger" textAlign="center">
-          {error}
-        </Typography>
-      ) : loading ? (
-        <Typography textAlign="center">Loading...</Typography>
-      ) : (
-        <Box component="table" sx={{ width: "100%", borderCollapse: "collapse" }}>
-          <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
-            <Box component="tr">
-              <Box
-                component="th"
-                sx={{
-                  borderBottom: "1px solid #ddd",
-                  padding: "8px",
-                  textAlign: "center",
-                }}
-              >
-                <Checkbox
-                  size="sm"
-                  checked={selected.length === paginatedPayments.length}
-                  onChange={(event) => handleRowSelect("all", event.target.checked)}
-                  indeterminate={
-                    selected.length > 0 && selected.length < paginatedPayments.length
-                  }
-                />
-              </Box>
-              {[
-               "Payment Id",
-                "Project Id",
-                "Project Name",
-                "Requested For",
-                "Vendor",
-                "Payment Description",
-                "Requested Amount",
-                "Bank Detail",
-                "Validation",
-                "UTR",
-              ].map((header, index) => (
+          <Typography color="danger" textAlign="center">
+            {error}
+          </Typography>
+        ) : loading ? (
+          <Typography textAlign="center">Loading...</Typography>
+        ) : (
+          <Box
+            component="table"
+            sx={{ width: "100%", borderCollapse: "collapse" }}
+          >
+            <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
+              <Box component="tr">
                 <Box
                   component="th"
-                  key={index}
                   sx={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
                     textAlign: "center",
-                    fontWeight: "bold",
                   }}
                 >
-                  {header}
+                  <Checkbox
+                    size="sm"
+                    checked={selected.length === paginatedPayments.length}
+                    onChange={(event) =>
+                      handleRowSelect("all", event.target.checked)
+                    }
+                    indeterminate={
+                      selected.length > 0 &&
+                      selected.length < paginatedPayments.length
+                    }
+                  />
                 </Box>
-              ))}
-            </Box>
-          </Box>
-          <Box component="tbody">
-          {paginatedPayments.length > 0 ? (
-                paginatedPayments.map((payment,index) => (
-                <Box
-                  component="tr"
-                  key={index}
-                  sx={{
-                    "&:hover": { backgroundColor: "neutral.plainHoverBg" },
-                  }}
-                >
+                {[
+                  "Payment Id",
+                  "Project Id",
+                  "Project Name",
+                  "Requested For",
+                  "Vendor",
+                  "Payment Description",
+                  "Requested Amount",
+                  "Bank Detail",
+                  "Validation",
+                  "UTR",
+                ].map((header, index) => (
                   <Box
-                    component="td"
+                    component="th"
+                    key={index}
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
                       textAlign: "center",
+                      fontWeight: "bold",
                     }}
                   >
-                     <Checkbox
+                    {header}
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+            <Box component="tbody">
+              {paginatedPayments.length > 0 ? (
+                paginatedPayments.map((payment, index) => (
+                  <Box
+                    component="tr"
+                    key={index}
+                    sx={{
+                      "&:hover": { backgroundColor: "neutral.plainHoverBg" },
+                    }}
+                  >
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      <Checkbox
                         size="sm"
                         checked={selected.includes(payment.pay_id)}
-                        onChange={(event) => handleRowSelect(payment.pay_id, event.target.checked)}
+                        onChange={(event) =>
+                          handleRowSelect(payment.pay_id, event.target.checked)
+                        }
                       />
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {payment.pay_id}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {payment.projectCode}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {payment.projectName || "-"}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {payment.paid_for || "-"}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {payment.vendor || "-"}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {payment.comment || "-"}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {new Intl.NumberFormat("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }).format(payment.amt_for_customer)}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      <AccountMatch payment={payment} />
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      <MatchRow payment={payment} />
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    ></Box>
                   </Box>
+                ))
+              ) : (
+                <Box component="tr">
                   <Box
                     component="td"
+                    colSpan={9}
                     sx={{
-                      borderBottom: "1px solid #ddd",
                       padding: "8px",
                       textAlign: "center",
+                      fontStyle: "italic",
                     }}
                   >
-                    {payment.pay_id}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {payment.projectCode}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {payment.projectName || "-"}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {payment.paid_for || "-"}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {payment.vendor || "-"}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {payment.comment || "-"}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {new Intl.NumberFormat("en-IN", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  }).format(payment.amt_for_customer)}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    <AccountMatch payment={payment} />
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    <MatchRow payment={payment} />
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    
+                    No data available
                   </Box>
                 </Box>
-              ))
-            ) : (
-              <Box component="tr">
-                <Box
-                  component="td"
-                  colSpan={9}
-                  sx={{
-                    padding: "8px",
-                    textAlign: "center",
-                    fontStyle: "italic",
-                  }}
-                >
-                  No data available
-                </Box>
-              </Box>
-            )}
+              )}
+            </Box>
           </Box>
-        </Box>
-      )}
+        )}
       </Sheet>
 
       {/* Pagination */}

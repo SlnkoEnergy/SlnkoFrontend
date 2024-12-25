@@ -1,3 +1,6 @@
+import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
+import BlockIcon from "@mui/icons-material/Block";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
@@ -5,6 +8,8 @@ import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
+import Checkbox from "@mui/joy/Checkbox";
+import Chip from "@mui/joy/Chip";
 import Divider from "@mui/joy/Divider";
 import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
@@ -21,15 +26,9 @@ import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import axios from "axios";
 import * as React from "react";
-import Checkbox from "@mui/joy/Checkbox";
-import Chip from '@mui/joy/Chip';
-import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
-import BlockIcon from '@mui/icons-material/Block';
-import AutorenewRoundedIcon from '@mui/icons-material/AutorenewRounded';
 import { useEffect, useState } from "react";
-
+import Axios from "../utils/Axios";
 
 function RowMenu() {
   return (
@@ -64,19 +63,16 @@ function PaymentRequest() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
 
-   useEffect(() => {
+  useEffect(() => {
     const fetchTableData = async () => {
       try {
-        const response = await axios.get(
-          "https://backendslnko.onrender.com/v1/get-pay-summary"
-        );
+        const response = await Axios.get("/get-pay-summary");
 
         const paymentsData = Array.isArray(response.data.data)
           ? response.data.data
           : [];
         setPayments(paymentsData);
         console.log("Payments Data are :", paymentsData);
-        
 
         // const uniqueStates = [
         //   ...new Set(paymentsData.map((payment) => payment.state)),
@@ -99,8 +95,6 @@ function PaymentRequest() {
     fetchTableData();
   }, []);
 
-
-  
   const renderFilters = () => (
     <>
       <FormControl size="sm">
@@ -185,16 +179,15 @@ function PaymentRequest() {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toISOString().split('T')[0];
+    return date.toISOString().split("T")[0];
   };
-  
- 
+
   const paginatedPayments = payments.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
-  const paymentsWithFormattedDate = paginatedPayments.map(payment => ({
+  const paymentsWithFormattedDate = paginatedPayments.map((payment) => ({
     ...payment,
     formattedDate: formatDate(payment.dbt_date),
   }));
@@ -203,8 +196,6 @@ function PaymentRequest() {
       setCurrentPage(page);
     }
   };
-
-
 
   // if (loading) {
   //   return <Typography>Loading...</Typography>;
@@ -291,201 +282,208 @@ function PaymentRequest() {
         }}
       >
         {error ? (
-        <Typography color="danger" textAlign="center">
-          {error}
-        </Typography>
-      ) : loading ? (
-        <Typography textAlign="center">Loading...</Typography>
-      ) : (
-        <Box component="table" sx={{ width: "100%", borderCollapse: "collapse" }}>
-          <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
-            <Box component="tr">
-              <Box
-                component="th"
-                sx={{
-                  borderBottom: "1px solid #ddd",
-                  padding: "8px",
-                  textAlign: "center",
-                }}
-              >
-                <Checkbox
-                  size="sm"
-                  checked={selected.length === paginatedPayments.length}
-                  onChange={(event) => handleRowSelect("all", event.target.checked)}
-                  indeterminate={
-                    selected.length > 0 && selected.length < paginatedPayments.length
-                  }
-                />
-              </Box>
-              {[
-                "Payment Id",
-                "Request Date",
-                "Paid To",
-                "Client Name",
-                "Amount (₹)",
-                "Payment Status",
-                "UTR",
-                ""
-              ].map((header, index) => (
+          <Typography color="danger" textAlign="center">
+            {error}
+          </Typography>
+        ) : loading ? (
+          <Typography textAlign="center">Loading...</Typography>
+        ) : (
+          <Box
+            component="table"
+            sx={{ width: "100%", borderCollapse: "collapse" }}
+          >
+            <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
+              <Box component="tr">
                 <Box
                   component="th"
-                  key={index}
                   sx={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
                     textAlign: "center",
-                    fontWeight: "bold",
                   }}
                 >
-                  {header}
+                  <Checkbox
+                    size="sm"
+                    checked={selected.length === paginatedPayments.length}
+                    onChange={(event) =>
+                      handleRowSelect("all", event.target.checked)
+                    }
+                    indeterminate={
+                      selected.length > 0 &&
+                      selected.length < paginatedPayments.length
+                    }
+                  />
                 </Box>
-              ))}
+                {[
+                  "Payment Id",
+                  "Request Date",
+                  "Paid To",
+                  "Client Name",
+                  "Amount (₹)",
+                  "Payment Status",
+                  "UTR",
+                  "",
+                ].map((header, index) => (
+                  <Box
+                    component="th"
+                    key={index}
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {header}
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+            <Box component="tbody">
+              {paymentsWithFormattedDate.length > 0 ? (
+                paymentsWithFormattedDate.map((payment, index) => (
+                  <Box
+                    component="tr"
+                    key={index}
+                    sx={{
+                      "&:hover": { backgroundColor: "neutral.plainHoverBg" },
+                    }}
+                  >
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      <Checkbox
+                        size="sm"
+                        checked={selected.includes(payment.code)}
+                        onChange={(event) =>
+                          handleRowSelect(payment.code, event.target.checked)
+                        }
+                      />
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {payment.pay_id}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {payment.formattedDate}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {payment.vendor}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {payment.customer || "-"}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {payment.amt_for_customer}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      <Chip
+                        variant="soft"
+                        size="sm"
+                        startDecorator={
+                          {
+                            Approved: <CheckRoundedIcon />,
+                            Pending: <AutorenewRoundedIcon />,
+                            Rejected: <BlockIcon />,
+                          }[payment.approved]
+                        }
+                        color={
+                          {
+                            Approved: "success",
+                            Pending: "neutral",
+                            Rejected: "danger",
+                          }[payment.approved]
+                        }
+                      >
+                        {payment.approved}
+                      </Chip>
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {payment.utr || "-"}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {RowMenu()}
+                    </Box>
+                  </Box>
+                ))
+              ) : (
+                <Box component="tr">
+                  <Box
+                    component="td"
+                    colSpan={9}
+                    sx={{
+                      padding: "8px",
+                      textAlign: "center",
+                      fontStyle: "italic",
+                    }}
+                  >
+                    No data available
+                  </Box>
+                </Box>
+              )}
             </Box>
           </Box>
-          <Box component="tbody">
-          {paymentsWithFormattedDate.length > 0 ? (
-    paymentsWithFormattedDate.map((payment, index) => (
-                <Box
-                  component="tr"
-                  key={index}
-                  sx={{
-                    "&:hover": { backgroundColor: "neutral.plainHoverBg" },
-                  }}
-                >
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    <Checkbox
-                      size="sm"
-                      checked={selected.includes(payment.code)}
-                      onChange={(event) =>
-                        handleRowSelect(payment.code, event.target.checked)
-                      }
-                    />
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {payment.pay_id}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {payment.formattedDate}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {payment.vendor}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {payment.customer || "-"}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {payment.amt_for_customer}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  ><Chip
-                  variant="soft"
-                  size="sm"
-                  startDecorator={
-                    {
-                      Approved: <CheckRoundedIcon />,
-                      Pending: <AutorenewRoundedIcon />,
-                      Rejected: <BlockIcon />,
-                    }[payment.approved]
-                  }
-                  color={
-                    {
-                      Approved: 'success',
-                      Pending: 'neutral',
-                      Rejected: 'danger',
-                    }[payment.approved]
-                  }
-                >
-                    {payment.approved}
-                </Chip>
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {payment.utr|| "-"}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {RowMenu()}
-                  </Box>
-                </Box>
-              ))
-            ) : (
-              <Box component="tr">
-                <Box
-                  component="td"
-                  colSpan={9}
-                  sx={{
-                    padding: "8px",
-                    textAlign: "center",
-                    fontStyle: "italic",
-                  }}
-                >
-                  No data available
-                </Box>
-              </Box>
-            )}
-          </Box>
-        </Box>
-      )}
+        )}
       </Sheet>
 
       {/* Pagination */}

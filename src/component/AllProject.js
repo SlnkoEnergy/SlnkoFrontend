@@ -5,6 +5,7 @@ import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
+import Checkbox from "@mui/joy/Checkbox";
 import Divider from "@mui/joy/Divider";
 import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
@@ -21,11 +22,9 @@ import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import axios from "axios";
 import * as React from "react";
-import Checkbox from "@mui/joy/Checkbox";
 import { useEffect, useState } from "react";
-
+import Axios from "../utils/Axios";
 
 function RowMenu() {
   return (
@@ -60,12 +59,10 @@ function AllProjects() {
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [selected, setSelected] = useState([]);
 
-   useEffect(() => {
+  useEffect(() => {
     const fetchTableData = async () => {
       try {
-        const response = await axios.get(
-          "https://backendslnko.onrender.com/v1/get-all-project"
-        );
+        const response = await Axios.get("/get-all-project");
 
         const projectsData = Array.isArray(response.data.data)
           ? response.data.data
@@ -186,8 +183,6 @@ function AllProjects() {
     }
   };
 
-
-
   // if (loading) {
   //   return <Typography>Loading...</Typography>;
   // }
@@ -273,183 +268,189 @@ function AllProjects() {
         }}
       >
         {error ? (
-        <Typography color="danger" textAlign="center">
-          {error}
-        </Typography>
-      ) : loading ? (
-        <Typography textAlign="center">Loading...</Typography>
-      ) : (
-        <Box component="table" sx={{ width: "100%", borderCollapse: "collapse" }}>
-          <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
-            <Box component="tr">
-              <Box
-                component="th"
-                sx={{
-                  borderBottom: "1px solid #ddd",
-                  padding: "8px",
-                  textAlign: "center",
-                }}
-              >
-                <Checkbox
-                  size="sm"
-                  checked={selected.length === paginatedProjects.length}
-                  onChange={(event) => handleRowSelect("all", event.target.checked)}
-                  indeterminate={
-                    selected.length > 0 && selected.length < paginatedProjects.length
-                  }
-                />
-              </Box>
-              {[
-                "Project ID",
-                "Customer",
-                "Project Name",
-                "Email",
-                "Mobile",
-                "State",
-                "Slnko Service Charges (with GST)",
-                ""
-              ].map((header, index) => (
+          <Typography color="danger" textAlign="center">
+            {error}
+          </Typography>
+        ) : loading ? (
+          <Typography textAlign="center">Loading...</Typography>
+        ) : (
+          <Box
+            component="table"
+            sx={{ width: "100%", borderCollapse: "collapse" }}
+          >
+            <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
+              <Box component="tr">
                 <Box
                   component="th"
-                  key={index}
                   sx={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
                     textAlign: "center",
-                    fontWeight: "bold",
                   }}
                 >
-                  {header}
+                  <Checkbox
+                    size="sm"
+                    checked={selected.length === paginatedProjects.length}
+                    onChange={(event) =>
+                      handleRowSelect("all", event.target.checked)
+                    }
+                    indeterminate={
+                      selected.length > 0 &&
+                      selected.length < paginatedProjects.length
+                    }
+                  />
                 </Box>
-              ))}
+                {[
+                  "Project ID",
+                  "Customer",
+                  "Project Name",
+                  "Email",
+                  "Mobile",
+                  "State",
+                  "Slnko Service Charges (with GST)",
+                  "",
+                ].map((header, index) => (
+                  <Box
+                    component="th"
+                    key={index}
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {header}
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+            <Box component="tbody">
+              {paginatedProjects.length > 0 ? (
+                paginatedProjects.map((project, index) => (
+                  <Box
+                    component="tr"
+                    key={index}
+                    sx={{
+                      "&:hover": { backgroundColor: "neutral.plainHoverBg" },
+                    }}
+                  >
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      <Checkbox
+                        size="sm"
+                        checked={selected.includes(project.code)}
+                        onChange={(event) =>
+                          handleRowSelect(project.code, event.target.checked)
+                        }
+                      />
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {project.code}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {project.customer}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {project.name}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {project.email}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {project.number}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {project.state}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {project.service}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {RowMenu()}
+                    </Box>
+                  </Box>
+                ))
+              ) : (
+                <Box component="tr">
+                  <Box
+                    component="td"
+                    colSpan={9}
+                    sx={{
+                      padding: "8px",
+                      textAlign: "center",
+                      fontStyle: "italic",
+                    }}
+                  >
+                    No data available
+                  </Box>
+                </Box>
+              )}
             </Box>
           </Box>
-          <Box component="tbody">
-            {paginatedProjects.length > 0 ? (
-              paginatedProjects.map((project, index) => (
-                <Box
-                  component="tr"
-                  key={index}
-                  sx={{
-                    "&:hover": { backgroundColor: "neutral.plainHoverBg" },
-                  }}
-                >
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    <Checkbox
-                      size="sm"
-                      checked={selected.includes(project.code)}
-                      onChange={(event) =>
-                        handleRowSelect(project.code, event.target.checked)
-                      }
-                    />
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {project.code}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {project.customer}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {project.name}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {project.email}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {project.number}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {project.state}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {project.service}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {RowMenu()}
-                  </Box>
-                </Box>
-              ))
-            ) : (
-              <Box component="tr">
-                <Box
-                  component="td"
-                  colSpan={9}
-                  sx={{
-                    padding: "8px",
-                    textAlign: "center",
-                    fontStyle: "italic",
-                  }}
-                >
-                  No data available
-                </Box>
-              </Box>
-            )}
-          </Box>
-        </Box>
-      )}
+        )}
       </Sheet>
 
       {/* Pagination */}

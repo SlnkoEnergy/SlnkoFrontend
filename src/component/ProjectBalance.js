@@ -22,9 +22,9 @@ import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import axios from "axios";
 import * as React from "react";
 import { useEffect, useState } from "react";
+import Axios from "../utils/Axios";
 
 function RowMenu() {
   return (
@@ -96,8 +96,8 @@ function ProjectBalances() {
       setLoading(true);
       try {
         const [CreditResponse, projectResponse] = await Promise.all([
-          axios.get("https://backendslnko.onrender.com/v1/all-bill"),
-          axios.get("https://backendslnko.onrender.com/v1/get-all-project"),
+          Axios.get("/all-bill"),
+          Axios.get("/get-all-project"),
         ]);
         setCredits(CreditResponse.data.bill);
         console.log("Credit Data are:", CreditResponse.data.bill);
@@ -121,7 +121,7 @@ function ProjectBalances() {
     if (credits.length > 0 && projects.length > 0) {
       const merged = projects.map((project) => {
         const matchingCredit = credits.find(
-          (credit) => Number(credit.p_id)  === Number(project.p_id)
+          (credit) => Number(credit.p_id) === Number(project.p_id)
         );
 
         return {

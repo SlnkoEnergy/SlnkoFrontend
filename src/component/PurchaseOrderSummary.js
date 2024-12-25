@@ -1,10 +1,14 @@
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import EditNoteIcon from "@mui/icons-material/EditNote";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
+import HistoryIcon from "@mui/icons-material/History";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
+import Checkbox from "@mui/joy/Checkbox";
 import Divider from "@mui/joy/Divider";
 import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
@@ -21,13 +25,9 @@ import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import axios from "axios";
-import Checkbox from "@mui/joy/Checkbox";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
-import HistoryIcon from "@mui/icons-material/History";
-import EditNoteIcon from "@mui/icons-material/EditNote";
 import * as React from "react";
 import { useEffect, useState } from "react";
+import Axios from "../utils/Axios";
 
 // function descendingComparator(a, b, orderBy) {
 //   if (b[orderBy] < a[orderBy]) {
@@ -55,24 +55,28 @@ function RowMenu() {
         <MoreHorizRoundedIcon />
       </MenuButton>
       <Menu size="sm" sx={{ minWidth: 140 }}>
-        <MenuItem> <AddCircleOutlineIcon />
-        <Typography>Add Bill</Typography>
+        <MenuItem>
+          {" "}
+          <AddCircleOutlineIcon />
+          <Typography>Add Bill</Typography>
         </MenuItem>
         <MenuItem>
-        <HistoryIcon/>
-        <Typography>Bill History</Typography>
+          <HistoryIcon />
+          <Typography>Bill History</Typography>
         </MenuItem>
-        <Divider sx={{backgroundColor:'lightblue'}}/>
+        <Divider sx={{ backgroundColor: "lightblue" }} />
         <MenuItem>
-        <EditNoteIcon/>
-        <Typography>Edit PO</Typography>
+          <EditNoteIcon />
+          <Typography>Edit PO</Typography>
         </MenuItem>
         <MenuItem>
-        <HistoryIcon/>
-        <Typography>PO History</Typography>
+          <HistoryIcon />
+          <Typography>PO History</Typography>
         </MenuItem>
-        <Divider sx={{backgroundColor:'lightblue'}}/>
-        <MenuItem color="primary" style={{fontWeight:'bold'}}>Adjust Bill</MenuItem>
+        <Divider sx={{ backgroundColor: "lightblue" }} />
+        <MenuItem color="primary" style={{ fontWeight: "bold" }}>
+          Adjust Bill
+        </MenuItem>
       </Menu>
     </Dropdown>
   );
@@ -169,9 +173,7 @@ function PurchaseOrderSummary() {
   useEffect(() => {
     const fetchTableData = async () => {
       try {
-        const response = await axios.get(
-          "https://backendslnko.onrender.com/v1/get-all-po"
-        );
+        const response = await Axios.get("/get-all-po");
         setPo(Array.isArray(response.data.data) ? response.data.data : []);
         console.log("PO Data:", response.data.data);
       } catch (err) {
@@ -282,48 +284,21 @@ function PurchaseOrderSummary() {
           minHeight: 0,
         }}
       >
-         {error ? (
-        <Typography color="danger" textAlign="center">
-          {error}
-        </Typography>
-      ) : loading ? (
-        <Typography textAlign="center">Loading...</Typography>
-      ) : (
-        <Box component="table" sx={{ width: "100%", borderCollapse: "collapse" }}>
-          <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
-            <Box component="tr">
-              <Box
-                component="th"
-                sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid", fontWeight: "bold" }}
-              >
-                <Checkbox
-                  indeterminate={
-                    selected.length > 0 &&
-                    selected.length !== paginatedPo.length
-                  }
-                  checked={selected.length === paginatedPo.length}
-                  onChange={handleSelectAll}
-                  color={selected.length > 0 ? "primary" : "neutral"}
-                />
-              </Box>
-              {[
-                "Project ID",
-                "PO Number",
-                "PO Date",
-                "Partial Billing",
-                "Item Name",
-                "Vendor",
-                "PO Value with GST",
-                "Advance Paid",
-                "Bill Status",
-                "Bill Delay",
-                "Total Billed",
-                "Action",
-                ""
-              ].map((header) => (
+        {error ? (
+          <Typography color="danger" textAlign="center">
+            {error}
+          </Typography>
+        ) : loading ? (
+          <Typography textAlign="center">Loading...</Typography>
+        ) : (
+          <Box
+            component="table"
+            sx={{ width: "100%", borderCollapse: "collapse" }}
+          >
+            <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
+              <Box component="tr">
                 <Box
                   component="th"
-                  key={header}
                   sx={{
                     padding: 1,
                     textAlign: "center",
@@ -331,98 +306,228 @@ function PurchaseOrderSummary() {
                     fontWeight: "bold",
                   }}
                 >
-                  {header}
+                  <Checkbox
+                    indeterminate={
+                      selected.length > 0 &&
+                      selected.length !== paginatedPo.length
+                    }
+                    checked={selected.length === paginatedPo.length}
+                    onChange={handleSelectAll}
+                    color={selected.length > 0 ? "primary" : "neutral"}
+                  />
                 </Box>
-              ))}
-            </Box>
-          </Box>
-          <Box component="tbody">
-            {paginatedPo.length > 0 ? (
-              paginatedPo.map((po) => (
-                <Box
-                  component="tr"
-                  key={po.id}
-                  sx={{
-                    "&:hover": { backgroundColor: "neutral.plainHoverBg" },
-                  }}
-                >
+                {[
+                  "Project ID",
+                  "PO Number",
+                  "PO Date",
+                  "Partial Billing",
+                  "Item Name",
+                  "Vendor",
+                  "PO Value with GST",
+                  "Advance Paid",
+                  "Bill Status",
+                  "Bill Delay",
+                  "Total Billed",
+                  "Action",
+                  "",
+                ].map((header) => (
                   <Box
-                    component="td"
+                    component="th"
+                    key={header}
                     sx={{
                       padding: 1,
                       textAlign: "center",
                       borderBottom: "1px solid",
+                      fontWeight: "bold",
                     }}
                   >
-                    <Checkbox
-                      checked={selected.includes(po.id)}
-                      onChange={(event) =>
-                        handleRowSelect(po.id, event.target.checked)
-                      }
-                      color={selected.includes(po.id) ? "primary" : "neutral"}
-                    />
+                    {header}
                   </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {po.p_id}
-                  </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {po.po_number}
-                  </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {po.date}
-                  </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {po.partial_billing}
-                  </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {po.item}
-                  </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {po.vendor}
-                  </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {new Intl.NumberFormat("en-IN", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    }).format(po.po_value)}
-                  </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {new Intl.NumberFormat("en-IN", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    }).format(po.amount_paid)}
-                  </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {po.bill_status || "-"}
-                  </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {po.bill_delay || "-"}
-                  </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {po.total_billed || "-"}
-                  </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {po.action || "-"}
-                  </Box>
-                  <Box component="td" sx={{ padding: 1, textAlign: "center", borderBottom: "1px solid" }}>
-                    {RowMenu()}
-                  </Box>
-                </Box>
-              ))
-            ) : (
-              <Box component="tr">
-                <Box
-                  component="td"
-                  colSpan={13}
-                  sx={{ padding: 2, textAlign: "center", fontStyle: "italic" }}
-                >
-                  No data available
-                </Box>
+                ))}
               </Box>
-            )}
+            </Box>
+            <Box component="tbody">
+              {paginatedPo.length > 0 ? (
+                paginatedPo.map((po) => (
+                  <Box
+                    component="tr"
+                    key={po.id}
+                    sx={{
+                      "&:hover": { backgroundColor: "neutral.plainHoverBg" },
+                    }}
+                  >
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "center",
+                        borderBottom: "1px solid",
+                      }}
+                    >
+                      <Checkbox
+                        checked={selected.includes(po.id)}
+                        onChange={(event) =>
+                          handleRowSelect(po.id, event.target.checked)
+                        }
+                        color={selected.includes(po.id) ? "primary" : "neutral"}
+                      />
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "center",
+                        borderBottom: "1px solid",
+                      }}
+                    >
+                      {po.p_id}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "center",
+                        borderBottom: "1px solid",
+                      }}
+                    >
+                      {po.po_number}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "center",
+                        borderBottom: "1px solid",
+                      }}
+                    >
+                      {po.date}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "center",
+                        borderBottom: "1px solid",
+                      }}
+                    >
+                      {po.partial_billing}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "center",
+                        borderBottom: "1px solid",
+                      }}
+                    >
+                      {po.item}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "center",
+                        borderBottom: "1px solid",
+                      }}
+                    >
+                      {po.vendor}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "center",
+                        borderBottom: "1px solid",
+                      }}
+                    >
+                      {new Intl.NumberFormat("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }).format(po.po_value)}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "center",
+                        borderBottom: "1px solid",
+                      }}
+                    >
+                      {new Intl.NumberFormat("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }).format(po.amount_paid)}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "center",
+                        borderBottom: "1px solid",
+                      }}
+                    >
+                      {po.bill_status || "-"}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "center",
+                        borderBottom: "1px solid",
+                      }}
+                    >
+                      {po.bill_delay || "-"}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "center",
+                        borderBottom: "1px solid",
+                      }}
+                    >
+                      {po.total_billed || "-"}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "center",
+                        borderBottom: "1px solid",
+                      }}
+                    >
+                      {po.action || "-"}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "center",
+                        borderBottom: "1px solid",
+                      }}
+                    >
+                      {RowMenu()}
+                    </Box>
+                  </Box>
+                ))
+              ) : (
+                <Box component="tr">
+                  <Box
+                    component="td"
+                    colSpan={13}
+                    sx={{
+                      padding: 2,
+                      textAlign: "center",
+                      fontStyle: "italic",
+                    }}
+                  >
+                    No data available
+                  </Box>
+                </Box>
+              )}
+            </Box>
           </Box>
-        </Box>
-      )}
+        )}
       </Sheet>
 
       {/* Pagination */}
