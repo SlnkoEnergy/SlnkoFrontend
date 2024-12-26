@@ -12,6 +12,8 @@ import {
 import axios from "axios";
 import Img9 from "../../assets/solar.png";
 import { useNavigate } from "react-router-dom";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 
 const states = [
   "Andhra Pradesh",
@@ -77,6 +79,7 @@ const Add_Project = () => {
     service: "",
   });
   const [responseMessage, setResponseMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -104,6 +107,7 @@ const Add_Project = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       const response = await axios.post(
         "https://backendslnko.onrender.com/v1/add-new-project",
@@ -134,6 +138,8 @@ const Add_Project = () => {
     } catch (error) {
       console.error("Error adding project:", error.response?.data || error.message);
       setResponseMessage("Failed to add project. Please try again.");
+    } finally{
+      setIsLoading(false); 
     }
   };
 
@@ -143,8 +149,9 @@ const Add_Project = () => {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        minHeight: "100%",
+        minHeight: "100vh",
         backgroundColor: "#f5f5f5",
+        padding: 2,
       }}
     >
       <Sheet
@@ -153,10 +160,16 @@ const Add_Project = () => {
           width: { xs: "100%", sm: "80%", md: "80%" },
           padding: { xs: 2, md: 4 },
           borderRadius: "md",
+          boxShadow: 3,
+          marginLeft: {sm:'0', md:"30%", lg:"18%", xl:"10%"}
         }}
       >
         <Box textAlign="center" sx={{ mb: 4 }}>
-          <img src={Img9} alt="Logo" style={{ height: "50px", marginBottom: "10px" }} />
+        {isLoading ? (
+            <Skeleton circle width={50} height={50} />
+          ) : (
+          <img src={Img9} alt="Logo" style={{ height: "50px", marginBottom: "10px",maxWidth: "100%", }} />
+          )}
           <Typography level="h4" fontWeight="bold" color="warning">
             Add Project
           </Typography>
@@ -164,46 +177,60 @@ const Add_Project = () => {
         </Box>
 
         <Box component="form" onSubmit={handleSubmit}>
+          
           <Grid container spacing={2}>
             <Grid item="true" xs={12} md={6}>
             <label htmlFor="code">Project ID</label>
-              <Input
-                
-                name="code"
-                placeholder="Enter project ID"
-                value={formData.code}
-                onChange={handleChange}
-                fullWidth
-                required
-                variant="soft"
-              />
+            {isLoading ? (
+                <Skeleton height={40} />
+              ) : (
+                <Input
+                  name="code"
+                  placeholder="Enter project ID"
+                  value={formData.code}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  variant="soft"
+                />
+              )}
             </Grid>
             <Grid item="true" xs={12} md={6}>
             <label htmlFor="customer">Customer Name</label>
-              <Input
-                
-                name="customer"
-                placeholder="Enter customer name"
-                value={formData.customer}
-                onChange={handleChange}
-                fullWidth
-                required
-                variant="soft"
-              />
+            {isLoading ? (
+                <Skeleton height={40} />
+              ) : (
+                <Input
+                  name="customer"
+                  placeholder="Enter customer name"
+                  value={formData.customer}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  variant="soft"
+                />
+              )}
             </Grid>
             <Grid item="true" xs={12} md={6}>
             <label htmlFor="project">Project Name</label>
-              <Input
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                fullWidth
-                required
-                variant="soft"
-              />
+            {isLoading ? (
+                <Skeleton height={40} />
+              ) : (
+                <Input
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  variant="soft"
+                />
+              )}
             </Grid>
             <Grid item="true" xs={12} md={6}>
             <label htmlFor="group">Group Name</label>
+               {isLoading ? (
+                <Skeleton height={40} />
+              ) : (
               <Input
                 name="p_group"
                 value={formData.p_group}
@@ -211,10 +238,14 @@ const Add_Project = () => {
                 fullWidth
                 variant="soft"
               />
+              )}
             </Grid>
 
             <Grid item="true" xs={12} md={4}>
             <label htmlFor="email">Email Id</label>
+               {isLoading ? (
+                <Skeleton height={40} />
+              ) : (
               <Input
                 name="email"
                 value={formData.email}
@@ -224,9 +255,13 @@ const Add_Project = () => {
                 required
                 variant="soft"
               />
+              )}
             </Grid>
             <Grid item="true" xs={12} md={4}>
             <label htmlFor="mobile">Mobile Number</label>
+               {isLoading ? (
+                <Skeleton height={40} />
+              ) : (
               <Input
                 name="number"
                 value={formData.number}
@@ -235,9 +270,13 @@ const Add_Project = () => {
                 required
                 variant="soft"
               />
+              )}
             </Grid>
             <Grid item="true" xs={12} md={4}>
             <label htmlFor="alt_mobile">Alternate Mobile Number</label>
+               {isLoading ? (
+                <Skeleton height={40} />
+              ) : (
               <Input
                
                 name="alt_mobile_number"
@@ -246,10 +285,18 @@ const Add_Project = () => {
                 fullWidth
                 variant="soft"
               />
+              )}
             </Grid>
 
             <Grid item="true" xs={12} md={6}>
             <label htmlFor="address">Billing Address</label>
+                    {isLoading ? (
+            <Box>
+              <Skeleton height={40} style={{ marginBottom: "10px" }} />
+              <Skeleton height={40} />
+            </Box>
+          ) : (
+            <Box>
               <Input
                 
                 value={formData.billing_address.village_name}
@@ -260,8 +307,8 @@ const Add_Project = () => {
                 required
                 variant="soft"
               />
+              
               <Input
-                
                 value={formData.billing_address.district_name}
                 onChange={(e) =>
                   handleNestedChange("billing_address", "district_name", e.target.value)
@@ -271,9 +318,18 @@ const Add_Project = () => {
                 required
                 sx={{ mt: 2 }}
               />
+              </Box>
+              )}
             </Grid>
             <Grid item="true" xs={12} md={6}>
             <label htmlFor="site-address">Site Address</label>
+            {isLoading ? (
+            <Box>
+              <Skeleton height={40} style={{ marginBottom: "10px" }} />
+              <Skeleton height={40} />
+            </Box>
+          ) : (
+            <Box>
               <Input
                 
                 value={formData.site_address.village_name}
@@ -295,10 +351,15 @@ const Add_Project = () => {
                 variant="soft"
                 sx={{ mt: 2 }}
               />
+              </Box>
+          )}
             </Grid>
 
             <Grid item="true" xs={12}>
             <label htmlFor="state">State</label>
+            {isLoading ? (
+                <Skeleton height={40} />
+              ) : (
               <Autocomplete
                 options={states}
                 value={formData.state || null}
@@ -309,9 +370,13 @@ const Add_Project = () => {
                 variant="soft"
                 sx={{ width: "100%" }}
               />
+              )}
             </Grid>
             <Grid item="true" xs={12} md={6}>
             <label htmlFor="category">Category</label>
+            {isLoading ? (
+                <Skeleton height={40} />
+              ) : (
               <Autocomplete
                 options={categories}
                 value={formData.project_category || null}
@@ -322,9 +387,13 @@ const Add_Project = () => {
                 variant="soft"
                 sx={{ width: "100%" }}
               />
+              )}
             </Grid>
             <Grid item="true" xs={12} md={6}>
             <label htmlFor="plant">Plant Capacity (MW)</label>
+               {isLoading ? (
+                <Skeleton height={40} />
+              ) : (
               <Input
                 name="project_kwp"
                 value={formData.project_kwp}
@@ -334,10 +403,14 @@ const Add_Project = () => {
                 variant="soft"
                 required
               />
+              )}
             </Grid>
 
             <Grid item="true" xs={12} md={6}>
             <label htmlFor="sub_station">Sub Station Distance (KM)</label>
+               {isLoading ? (
+                <Skeleton height={40} />
+              ) : (
               <Input
                 label="Sub Station Distance (KM)"
                 name="distance"
@@ -348,9 +421,13 @@ const Add_Project = () => {
                 variant="soft"
                 required
               />
+              )}
             </Grid>
             <Grid item="true" xs={12} md={6}>
             <label htmlFor="tarriff">Tariff (₹ per unit)</label>
+               {isLoading ? (
+                <Skeleton height={40} />
+              ) : (
               <Input
                
                 name="tariff"
@@ -361,10 +438,14 @@ const Add_Project = () => {
                 variant="soft"
                 required
               />
+              )}
             </Grid>
 
             <Grid item="true" xs={12}>
             <label htmlFor="land">Land Acres</label>
+               {isLoading ? (
+                <Skeleton height={40} />
+              ) : (
               <Input
                 label="Land Acres"
                 name="acres"
@@ -380,9 +461,13 @@ const Add_Project = () => {
                 variant="soft"
                 required
               />
+              )}
             </Grid>
             <Grid item="true" xs={12}>
             <label htmlFor="types">Land Types</label>
+            {isLoading ? (
+                <Skeleton height={40} />
+              ) : (
               <Autocomplete
                 options={landTypes}
                 value={formData.land.type || null}
@@ -398,10 +483,14 @@ const Add_Project = () => {
                 required
                 sx={{ width: "100%" }}
               />
+              )}
             </Grid>
 
             <Grid item="true" xs={12}>
             <label htmlFor="service">SLnko Service Charges (incl. GST)</label>
+               {isLoading ? (
+                <Skeleton height={40} />
+              ) : (
               <Input
                 name="service"
                 value={formData.service}
@@ -411,6 +500,7 @@ const Add_Project = () => {
                 variant="soft"
                 required
               />
+              )}
             </Grid>
           </Grid>
 
@@ -427,6 +517,12 @@ const Add_Project = () => {
               Back
             </Button>
           </Box>
+
+          {isLoading && (
+            <Box textAlign="center" sx={{ mt: 2 }}>
+              <Skeleton height={40} width={100} /> 
+            </Box>
+          )}
 
           {responseMessage && (
             <Typography level="body2" textAlign="center" sx={{ mt: 2 }}>

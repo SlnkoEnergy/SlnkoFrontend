@@ -23,13 +23,13 @@ function Add_Project() {
           component="main"
           className="MainContent"
           sx={{
-            px: { xs: 2, md: 6 },
-            pt: {
-              xs: 'calc(12px + var(--Header-height))',
-              sm: 'calc(12px + var(--Header-height))',
-              md: 3,
-            },
-            pb: { xs: 2, sm: 2, md: 3 },
+            // px: { xs: 2, md: 6 },
+            // pt: {
+            //   xs: 'calc(12px + var(--Header-height))',
+            //   sm: 'calc(12px + var(--Header-height))',
+            //   md: 3,
+            // },
+            // pb: { xs: 2, sm: 2, md: 3 },
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
@@ -38,7 +38,7 @@ function Add_Project() {
             gap: 1,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', marginLeft:{xl:"16%",lg:"20%", md:"30%"}}}>
             <Breadcrumbs
               size="sm"
               aria-label="breadcrumbs"

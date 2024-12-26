@@ -63,7 +63,7 @@ function index() {
         <Route path="/csv" element ={<All_project_csv />} />
 
         {/** -----------------All Forms -----------*/}
-        <Route path="/add_project" element ={<PrivateRoute><AddProject /></PrivateRoute>} />
+        <Route path="/add_project" element ={<AddProject />} />
         <Route path="/add_money" element ={<PrivateRoute><AddMoney /></PrivateRoute>} />
     </Routes>
     </>

@@ -60,6 +60,9 @@ function AllProjects() {
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // const states = ["California", "Texas", "New York", "Florida"];
+
+
   useEffect(() => {
     const fetchTableData = async () => {
       try {
@@ -74,7 +77,7 @@ function AllProjects() {
           ...new Set(projectsData.map((project) => project.state)),
         ].filter(Boolean);
 
-        console.log("states are:", uniqueStates);
+        // console.log("states are:", uniqueStates);
 
         const uniqueCustomers = [
           ...new Set(projectsData.map((project) => project.customer)),
@@ -93,46 +96,7 @@ function AllProjects() {
     fetchTableData();
   }, []);
 
-  const renderFilters = () => (
-    <>
-      <FormControl size="sm">
-        <FormLabel>State</FormLabel>
-        <Select
-          size="sm"
-          placeholder="Filter by state"
-          value={stateFilter}
-          onChange={(e) => {
-            const selectedValue = e.target.value;
-            console.log("Selected State:", selectedValue);
-            setStateFilter(selectedValue);
-          }}
-        >
-          <Option value="">All</Option>
-          {states.map((state, index) => (
-            <Option key={index} value={state}>
-              {state}
-            </Option>
-          ))}
-        </Select>
-      </FormControl>
-      <FormControl size="sm">
-        <FormLabel>Customer</FormLabel>
-        <Select
-          size="sm"
-          placeholder="Filter by customer"
-          value={customerFilter}
-          onChange={(e) => setCustomerFilter(e.target.value)}
-        >
-          <Option value="">All</Option>
-          {customers.map((customer, index) => (
-            <Option key={index} value={customer}>
-              {customer}
-            </Option>
-          ))}
-        </Select>
-      </FormControl>
-    </>
-  );
+
   const handleSelectAll = (event) => {
     if (event.target.checked) {
       setSelected(paginatedProjects.map((row) => row.id));
@@ -153,13 +117,29 @@ function AllProjects() {
   };
 
   const filteredAndSortedData = projects
-    .filter((project) => {
-      const matchesState = stateFilter ? project.state === stateFilter : true;
-      return matchesState;
-    })
+  .filter((project) => {
+    const matchesSearchQuery = 
+    ["code", "customer", "name"].some((key) =>
+      project[key]?.toLowerCase().includes(searchQuery)
+    )
+     // Apply the state filter
+     const matchesStateFilter =
+     !stateFilter || project.state === stateFilter;
+     console.log("MatchStates are: ", matchesStateFilter);
+     
+
+   // Apply the customer filter
+   const matchesCustomerFilter =
+     !customerFilter || project.customer === customerFilter;
+
+   // Combine all filters
+   return matchesSearchQuery && matchesStateFilter && matchesCustomerFilter;
+  })
     .sort((a, b) => {
       if (a.name?.toLowerCase().includes(searchQuery)) return -1;
       if (b.name?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.code?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.code?.toLowerCase().includes(searchQuery)) return 1;
       if (a.customer?.toLowerCase().includes(searchQuery)) return -1;
       if (b.customer?.toLowerCase().includes(searchQuery)) return 1;
       return 0;
@@ -206,6 +186,47 @@ function AllProjects() {
       setCurrentPage(page);
     }
   };
+  
+  const renderFilters = () => (
+    <>
+      <FormControl size="sm">
+        <FormLabel>State</FormLabel>
+        <Select
+          size="sm"
+          placeholder="Filter by state"
+          value={stateFilter}
+          onChange={(e) => {
+            const selectedValue = e.target.value;
+            console.log("Selected State:", selectedValue);
+            setStateFilter(selectedValue);
+          }}
+        >
+          <Option value="">All</Option>
+          {states.map((state, index) => (
+            <Option key={index} value={state}>
+              {state}
+            </Option>
+          ))}
+        </Select>
+      </FormControl>
+      <FormControl size="sm">
+        <FormLabel>Customer</FormLabel>
+        <Select
+          size="sm"
+          placeholder="Filter by customer"
+          value={customerFilter}
+          onChange={(e) => setCustomerFilter(e.target.value)}
+        >
+          <Option value="">All</Option>
+          {customers.map((customer, index) => (
+            <Option key={index} value={customer}>
+              {customer}
+            </Option>
+          ))}
+        </Select>
+      </FormControl>
+    </>
+  );
 
   return (
     <>

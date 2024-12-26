@@ -90,7 +90,7 @@ function Toggler({ defaultExpanded = false, renderToggle, children }) {
     <Sheet
       className="Sidebar"
       sx={{
-        position: { xs: 'fixed', md: 'sticky' },
+        position: 'fixed',
         transform: {
           xs: 'translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1)))',
           md: 'none',
@@ -112,7 +112,7 @@ function Toggler({ defaultExpanded = false, renderToggle, children }) {
       <GlobalStyles
         styles={(theme) => ({
           ':root': {
-            '--Sidebar-width': '220px',
+            '--Sidebar-width': '260px',
             [theme.breakpoints.up('lg')]: {
               '--Sidebar-width': '240px',
             },
@@ -453,12 +453,12 @@ function Toggler({ defaultExpanded = false, renderToggle, children }) {
             mb: 2,
           }}
         >
-          <ListItem>
+          {/* <ListItem>
             <ListItemButton>
               <SupportRoundedIcon />
               Support
             </ListItemButton>
-          </ListItem>
+          </ListItem> */}
           {/* <ListItem>
             <ListItemButton>
               <SettingsRoundedIcon />

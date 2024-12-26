@@ -40,7 +40,6 @@ const ColorSchemeToggle = ({ onClick, sx, ...other }) => {
       sx={[
         {
           "& > *:first-of-type": {
-            // Changed from :first-child to :first-of-type
             display: mode === "light" ? "initial" : "none",
           },
           "& > *:last-child": {
