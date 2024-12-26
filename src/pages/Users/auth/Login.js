@@ -137,7 +137,7 @@ const Login = () => {
       sx={{
         background:
           "radial-gradient(circle at 100% 100%, #023159, #1F476A, #F5F5F5)",
-        height: "100%",
+        height: {sm:"100%",xs:"100vh"},
         width: "100%",
         display: "flex",
         justifyContent: "center",
