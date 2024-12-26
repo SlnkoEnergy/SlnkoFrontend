@@ -1,19 +1,20 @@
-import React, { useState } from "react";
 import {
+  Autocomplete,
   Box,
   Button,
+  Divider,
   Grid,
   Input,
-  Typography,
-  Divider,
-  Autocomplete,
   Sheet,
+  Typography,
 } from "@mui/joy";
-import axios from "axios";
-import Img9 from "../../assets/solar.png";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import Img9 from "../../assets/solar.png";
+import Axios from "../../utils/Axios";
 
 const states = [
   "Andhra Pradesh",
@@ -49,7 +50,7 @@ const categories = ["KUSUM A", "KUSUM C", "OTHER"];
 const landTypes = ["Leased", "Owned"];
 
 const Add_Project = () => {
-    const navigate = useNavigate(); 
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     code: "",
     p_id: "",
@@ -58,7 +59,7 @@ const Add_Project = () => {
     p_group: "",
     email: "",
     number: "",
-    alternate_mobile_number: "",
+    alt_number: "",
     billing_address: {
       village_name: "",
       district_name: "",
@@ -77,6 +78,7 @@ const Add_Project = () => {
       acres: "",
     },
     service: "",
+    project_status: "incomplete",
   });
   const [responseMessage, setResponseMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -109,12 +111,11 @@ const Add_Project = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const response = await axios.post(
-        "https://backendslnko.onrender.com/v1/add-new-project",
-        payload
-      );
+      const response = await Axios.post("/add-new-project", payload);
       setResponseMessage("Project added successfully!");
       console.log("Response from server:", response.data);
+
+      toast.success("Project added successfully!!");
 
       setFormData({
         p_id: "",
@@ -124,7 +125,7 @@ const Add_Project = () => {
         p_group: "",
         email: "",
         number: "",
-        alternate_mobile_number: "",
+        alt_number: "",
         billing_address: { village_name: "", district_name: "" },
         site_address: { village_name: "", district_name: "" },
         state: "",
@@ -134,12 +135,19 @@ const Add_Project = () => {
         tariff: "",
         land: { type: "", acres: "" },
         service: "",
+        project_status: "incomplete",
       });
+      navigate("/all-Project");
     } catch (error) {
-      console.error("Error adding project:", error.response?.data || error.message);
+      console.error(
+        "Error adding project:",
+        error.response?.data || error.message
+      );
       setResponseMessage("Failed to add project. Please try again.");
-    } finally{
-      setIsLoading(false); 
+
+      toast.error("Failed to add project. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -161,14 +169,18 @@ const Add_Project = () => {
           padding: { xs: 2, md: 4 },
           borderRadius: "md",
           boxShadow: 3,
-          marginLeft: {sm:'0', md:"30%", lg:"18%", xl:"10%"}
+          marginLeft: { sm: "0", md: "30%", lg: "18%", xl: "10%" },
         }}
       >
         <Box textAlign="center" sx={{ mb: 4 }}>
-        {isLoading ? (
+          {isLoading ? (
             <Skeleton circle width={50} height={50} />
           ) : (
-          <img src={Img9} alt="Logo" style={{ height: "50px", marginBottom: "10px",maxWidth: "100%", }} />
+            <img
+              src={Img9}
+              alt="Logo"
+              style={{ height: "50px", marginBottom: "10px", maxWidth: "100%" }}
+            />
           )}
           <Typography level="h4" fontWeight="bold" color="warning">
             Add Project
@@ -177,11 +189,10 @@ const Add_Project = () => {
         </Box>
 
         <Box component="form" onSubmit={handleSubmit}>
-          
           <Grid container spacing={2}>
             <Grid item="true" xs={12} md={6}>
-            <label htmlFor="code">Project ID</label>
-            {isLoading ? (
+              <label htmlFor="code">Project ID</label>
+              {isLoading ? (
                 <Skeleton height={40} />
               ) : (
                 <Input
@@ -196,15 +207,21 @@ const Add_Project = () => {
               )}
             </Grid>
             <Grid item="true" xs={12} md={6}>
-            <label htmlFor="customer">Customer Name</label>
-            {isLoading ? (
+              <label htmlFor="customer">Customer Name</label>
+              {isLoading ? (
                 <Skeleton height={40} />
               ) : (
                 <Input
                   name="customer"
                   placeholder="Enter customer name"
                   value={formData.customer}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    handleChange(e);
+                    setFormData((prev) => ({
+                      ...prev,
+                      p_id: e.target.value,
+                    }));
+                  }}
                   fullWidth
                   required
                   variant="soft"
@@ -212,8 +229,8 @@ const Add_Project = () => {
               )}
             </Grid>
             <Grid item="true" xs={12} md={6}>
-            <label htmlFor="project">Project Name</label>
-            {isLoading ? (
+              <label htmlFor="project">Project Name</label>
+              {isLoading ? (
                 <Skeleton height={40} />
               ) : (
                 <Input
@@ -227,279 +244,294 @@ const Add_Project = () => {
               )}
             </Grid>
             <Grid item="true" xs={12} md={6}>
-            <label htmlFor="group">Group Name</label>
-               {isLoading ? (
+              <label htmlFor="group">Group Name</label>
+              {isLoading ? (
                 <Skeleton height={40} />
               ) : (
-              <Input
-                name="p_group"
-                value={formData.p_group}
-                onChange={handleChange}
-                fullWidth
-                variant="soft"
-              />
+                <Input
+                  name="p_group"
+                  value={formData.p_group}
+                  onChange={handleChange}
+                  fullWidth
+                  variant="soft"
+                />
               )}
             </Grid>
 
             <Grid item="true" xs={12} md={4}>
-            <label htmlFor="email">Email Id</label>
-               {isLoading ? (
+              <label htmlFor="email">Email Id</label>
+              {isLoading ? (
                 <Skeleton height={40} />
               ) : (
-              <Input
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                type="email"
-                fullWidth
-                required
-                variant="soft"
-              />
+                <Input
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  type="email"
+                  fullWidth
+                  required
+                  variant="soft"
+                />
               )}
             </Grid>
             <Grid item="true" xs={12} md={4}>
-            <label htmlFor="mobile">Mobile Number</label>
-               {isLoading ? (
+              <label htmlFor="mobile">Mobile Number</label>
+              {isLoading ? (
                 <Skeleton height={40} />
               ) : (
-              <Input
-                name="number"
-                value={formData.number}
-                onChange={handleChange}
-                fullWidth
-                required
-                variant="soft"
-              />
+                <Input
+                  name="number"
+                  value={formData.number}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  variant="soft"
+                />
               )}
             </Grid>
             <Grid item="true" xs={12} md={4}>
-            <label htmlFor="alt_mobile">Alternate Mobile Number</label>
-               {isLoading ? (
+              <label htmlFor="alt_mobile">Alternate Mobile Number</label>
+              {isLoading ? (
                 <Skeleton height={40} />
               ) : (
-              <Input
-               
-                name="alt_mobile_number"
-                value={formData.alt_mobile_number}
-                onChange={handleChange}
-                fullWidth
-                variant="soft"
-              />
+                <Input
+                  name="alt_number"
+                  value={formData.alt_number}
+                  onChange={handleChange}
+                  fullWidth
+                  variant="soft"
+                />
               )}
             </Grid>
 
             <Grid item="true" xs={12} md={6}>
-            <label htmlFor="address">Billing Address</label>
-                    {isLoading ? (
-            <Box>
-              <Skeleton height={40} style={{ marginBottom: "10px" }} />
-              <Skeleton height={40} />
-            </Box>
-          ) : (
-            <Box>
-              <Input
-                
-                value={formData.billing_address.village_name}
-                onChange={(e) =>
-                  handleNestedChange("billing_address", "village_name", e.target.value)
-                }
-                fullWidth
-                required
-                variant="soft"
-              />
-              
-              <Input
-                value={formData.billing_address.district_name}
-                onChange={(e) =>
-                  handleNestedChange("billing_address", "district_name", e.target.value)
-                }
-                fullWidth
-                variant="soft"
-                required
-                sx={{ mt: 2 }}
-              />
-              </Box>
-              )}
-            </Grid>
-            <Grid item="true" xs={12} md={6}>
-            <label htmlFor="site-address">Site Address</label>
-            {isLoading ? (
-            <Box>
-              <Skeleton height={40} style={{ marginBottom: "10px" }} />
-              <Skeleton height={40} />
-            </Box>
-          ) : (
-            <Box>
-              <Input
-                
-                value={formData.site_address.village_name}
-                onChange={(e) =>
-                  handleNestedChange("site_address", "village_name", e.target.value)
-                }
-                fullWidth
-                variant="soft"
-                required
-              />
-              <Input
-               
-                value={formData.site_address.district_name}
-                onChange={(e) =>
-                  handleNestedChange("site_address", "district_name", e.target.value)
-                }
-                fullWidth
-                required
-                variant="soft"
-                sx={{ mt: 2 }}
-              />
-              </Box>
-          )}
-            </Grid>
+              <label htmlFor="address">Billing Address</label>
+              {isLoading ? (
+                <Box>
+                  <Skeleton height={40} style={{ marginBottom: "10px" }} />
+                  <Skeleton height={40} />
+                </Box>
+              ) : (
+                <Box>
+                  <Input
+                    value={formData.billing_address.village_name}
+                    onChange={(e) =>
+                      handleNestedChange(
+                        "billing_address",
+                        "village_name",
+                        e.target.value
+                      )
+                    }
+                    fullWidth
+                    required
+                    variant="soft"
+                  />
 
-            <Grid item="true" xs={12}>
-            <label htmlFor="state">State</label>
-            {isLoading ? (
-                <Skeleton height={40} />
-              ) : (
-              <Autocomplete
-                options={states}
-                value={formData.state || null}
-                onChange={(e, value) => handleAutocompleteChange("state", value)}
-                placeholder="State"
-                isOptionEqualToValue={(option, value) => option === value}
-                required
-                variant="soft"
-                sx={{ width: "100%" }}
-              />
+                  <Input
+                    value={formData.billing_address.district_name}
+                    onChange={(e) =>
+                      handleNestedChange(
+                        "billing_address",
+                        "district_name",
+                        e.target.value
+                      )
+                    }
+                    fullWidth
+                    variant="soft"
+                    required
+                    sx={{ mt: 2 }}
+                  />
+                </Box>
               )}
             </Grid>
             <Grid item="true" xs={12} md={6}>
-            <label htmlFor="category">Category</label>
-            {isLoading ? (
-                <Skeleton height={40} />
+              <label htmlFor="site-address">Site Address</label>
+              {isLoading ? (
+                <Box>
+                  <Skeleton height={40} style={{ marginBottom: "10px" }} />
+                  <Skeleton height={40} />
+                </Box>
               ) : (
-              <Autocomplete
-                options={categories}
-                value={formData.project_category || null}
-                onChange={(e, value) => handleAutocompleteChange("project_category", value)}
-                placeholder="Category"
-                isOptionEqualToValue={(option, value) => option === value}
-                required
-                variant="soft"
-                sx={{ width: "100%" }}
-              />
-              )}
-            </Grid>
-            <Grid item="true" xs={12} md={6}>
-            <label htmlFor="plant">Plant Capacity (MW)</label>
-               {isLoading ? (
-                <Skeleton height={40} />
-              ) : (
-              <Input
-                name="project_kwp"
-                value={formData.project_kwp}
-                onChange={handleChange}
-                type="number"
-                fullWidth
-                variant="soft"
-                required
-              />
-              )}
-            </Grid>
-
-            <Grid item="true" xs={12} md={6}>
-            <label htmlFor="sub_station">Sub Station Distance (KM)</label>
-               {isLoading ? (
-                <Skeleton height={40} />
-              ) : (
-              <Input
-                label="Sub Station Distance (KM)"
-                name="distance"
-                value={formData.distance}
-                onChange={handleChange}
-                type="number"
-                fullWidth
-                variant="soft"
-                required
-              />
-              )}
-            </Grid>
-            <Grid item="true" xs={12} md={6}>
-            <label htmlFor="tarriff">Tariff (₹ per unit)</label>
-               {isLoading ? (
-                <Skeleton height={40} />
-              ) : (
-              <Input
-               
-                name="tariff"
-                value={formData.tariff}
-                onChange={handleChange}
-                type="number"
-                fullWidth
-                variant="soft"
-                required
-              />
+                <Box>
+                  <Input
+                    value={formData.site_address.village_name}
+                    onChange={(e) =>
+                      handleNestedChange(
+                        "site_address",
+                        "village_name",
+                        e.target.value
+                      )
+                    }
+                    fullWidth
+                    variant="soft"
+                    required
+                  />
+                  <Input
+                    value={formData.site_address.district_name}
+                    onChange={(e) =>
+                      handleNestedChange(
+                        "site_address",
+                        "district_name",
+                        e.target.value
+                      )
+                    }
+                    fullWidth
+                    required
+                    variant="soft"
+                    sx={{ mt: 2 }}
+                  />
+                </Box>
               )}
             </Grid>
 
             <Grid item="true" xs={12}>
-            <label htmlFor="land">Land Acres</label>
-               {isLoading ? (
+              <label htmlFor="state">State</label>
+              {isLoading ? (
                 <Skeleton height={40} />
               ) : (
-              <Input
-                label="Land Acres"
-                name="acres"
-                value={formData.land.acres}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    land: { ...prev.land, acres: e.target.value },
-                  }))
-                }
-                type="number"
-                fullWidth
-                variant="soft"
-                required
-              />
+                <Autocomplete
+                  options={states}
+                  value={formData.state || null}
+                  onChange={(e, value) =>
+                    handleAutocompleteChange("state", value)
+                  }
+                  placeholder="State"
+                  isOptionEqualToValue={(option, value) => option === value}
+                  required
+                  variant="soft"
+                  sx={{ width: "100%" }}
+                />
               )}
             </Grid>
-            <Grid item="true" xs={12}>
-            <label htmlFor="types">Land Types</label>
-            {isLoading ? (
+            <Grid item="true" xs={12} md={6}>
+              <label htmlFor="category">Category</label>
+              {isLoading ? (
                 <Skeleton height={40} />
               ) : (
-              <Autocomplete
-                options={landTypes}
-                value={formData.land.type || null}
-                onChange={(e, value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    land: { ...prev.land, type: value },
-                  }))
-                }
-                placeholder="Land Type"
-                isOptionEqualToValue={(option, value) => option === value}
-                variant="soft"
-                required
-                sx={{ width: "100%" }}
-              />
+                <Autocomplete
+                  options={categories}
+                  value={formData.project_category || null}
+                  onChange={(e, value) =>
+                    handleAutocompleteChange("project_category", value)
+                  }
+                  placeholder="Category"
+                  isOptionEqualToValue={(option, value) => option === value}
+                  required
+                  variant="soft"
+                  sx={{ width: "100%" }}
+                />
+              )}
+            </Grid>
+            <Grid item="true" xs={12} md={6}>
+              <label htmlFor="plant">Plant Capacity (MW)</label>
+              {isLoading ? (
+                <Skeleton height={40} />
+              ) : (
+                <Input
+                  name="project_kwp"
+                  value={formData.project_kwp}
+                  onChange={handleChange}
+                  type="number"
+                  fullWidth
+                  variant="soft"
+                  required
+                />
+              )}
+            </Grid>
+
+            <Grid item="true" xs={12} md={6}>
+              <label htmlFor="sub_station">Sub Station Distance (KM)</label>
+              {isLoading ? (
+                <Skeleton height={40} />
+              ) : (
+                <Input
+                  label="Sub Station Distance (KM)"
+                  name="distance"
+                  value={formData.distance}
+                  onChange={handleChange}
+                  type="number"
+                  fullWidth
+                  variant="soft"
+                  required
+                />
+              )}
+            </Grid>
+            <Grid item="true" xs={12} md={6}>
+              <label htmlFor="tarriff">Tariff (₹ per unit)</label>
+              {isLoading ? (
+                <Skeleton height={40} />
+              ) : (
+                <Input
+                  name="tariff"
+                  value={formData.tariff}
+                  onChange={handleChange}
+                  type="number"
+                  fullWidth
+                  variant="soft"
+                  required
+                />
               )}
             </Grid>
 
             <Grid item="true" xs={12}>
-            <label htmlFor="service">SLnko Service Charges (incl. GST)</label>
-               {isLoading ? (
+              <label htmlFor="land">Land Acres</label>
+              {isLoading ? (
                 <Skeleton height={40} />
               ) : (
-              <Input
-                name="service"
-                value={formData.service}
-                onChange={handleChange}
-                type="number"
-                fullWidth
-                variant="soft"
-                required
-              />
+                <Input
+                  label="Land Acres"
+                  name="acres"
+                  value={formData.land.acres}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      land: { ...prev.land, acres: e.target.value },
+                    }))
+                  }
+                  type="number"
+                  fullWidth
+                  variant="soft"
+                  required
+                />
+              )}
+            </Grid>
+            <Grid item="true" xs={12}>
+              <label htmlFor="types">Land Types</label>
+              {isLoading ? (
+                <Skeleton height={40} />
+              ) : (
+                <Autocomplete
+                  options={landTypes}
+                  value={formData.land.type || null}
+                  onChange={(e, value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      land: { ...prev.land, type: value },
+                    }))
+                  }
+                  placeholder="Land Type"
+                  isOptionEqualToValue={(option, value) => option === value}
+                  variant="soft"
+                  required
+                  sx={{ width: "100%" }}
+                />
+              )}
+            </Grid>
+
+            <Grid item="true" xs={12}>
+              <label htmlFor="service">SLnko Service Charges (incl. GST)</label>
+              {isLoading ? (
+                <Skeleton height={40} />
+              ) : (
+                <Input
+                  name="service"
+                  value={formData.service}
+                  onChange={handleChange}
+                  type="number"
+                  fullWidth
+                  variant="soft"
+                  required
+                />
               )}
             </Grid>
           </Grid>
@@ -512,7 +544,7 @@ const Add_Project = () => {
               variant="soft"
               color="neutral"
               sx={{ ml: 2 }}
-              onClick={() => navigate('/all-Project')}
+              onClick={() => navigate("/all-Project")}
             >
               Back
             </Button>
@@ -520,7 +552,7 @@ const Add_Project = () => {
 
           {isLoading && (
             <Box textAlign="center" sx={{ mt: 2 }}>
-              <Skeleton height={40} width={100} /> 
+              <Skeleton height={40} width={100} />
             </Box>
           )}
 

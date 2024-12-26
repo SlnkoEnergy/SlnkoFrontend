@@ -1,15 +1,13 @@
-import React from 'react'
-// import ProjectBalance from './pages/Accounts/ProjectBalance';
-// import AllProject from './pages/Projects/AllProject';
-import Index from './routes/index';
-
+import React from "react";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import Index from "./routes/index";
 
 export default function App() {
   return (
     <div>
+      <ToastContainer position="top-right" autoClose={3000} />
       <Index />
-      {/* <ProjectBalance />
-      <AllProject /> */}
     </div>
-  )
+  );
 }

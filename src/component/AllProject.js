@@ -62,7 +62,6 @@ function AllProjects() {
 
   // const states = ["California", "Texas", "New York", "Florida"];
 
-
   useEffect(() => {
     const fetchTableData = async () => {
       try {
@@ -96,7 +95,6 @@ function AllProjects() {
     fetchTableData();
   }, []);
 
-
   const handleSelectAll = (event) => {
     if (event.target.checked) {
       setSelected(paginatedProjects.map((row) => row.id));
@@ -117,24 +115,21 @@ function AllProjects() {
   };
 
   const filteredAndSortedData = projects
-  .filter((project) => {
-    const matchesSearchQuery = 
-    ["code", "customer", "name"].some((key) =>
-      project[key]?.toLowerCase().includes(searchQuery)
-    )
-     // Apply the state filter
-     const matchesStateFilter =
-     !stateFilter || project.state === stateFilter;
-     console.log("MatchStates are: ", matchesStateFilter);
-     
+    .filter((project) => {
+      const matchesSearchQuery = ["code", "customer", "name"].some((key) =>
+        project[key]?.toLowerCase().includes(searchQuery)
+      );
+      // Apply the state filter
+      const matchesStateFilter = !stateFilter || project.state === stateFilter;
+      console.log("MatchStates are: ", matchesStateFilter);
 
-   // Apply the customer filter
-   const matchesCustomerFilter =
-     !customerFilter || project.customer === customerFilter;
+      // Apply the customer filter
+      const matchesCustomerFilter =
+        !customerFilter || project.customer === customerFilter;
 
-   // Combine all filters
-   return matchesSearchQuery && matchesStateFilter && matchesCustomerFilter;
-  })
+      // Combine all filters
+      return matchesSearchQuery && matchesStateFilter && matchesCustomerFilter;
+    })
     .sort((a, b) => {
       if (a.name?.toLowerCase().includes(searchQuery)) return -1;
       if (b.name?.toLowerCase().includes(searchQuery)) return 1;
@@ -186,7 +181,7 @@ function AllProjects() {
       setCurrentPage(page);
     }
   };
-  
+
   const renderFilters = () => (
     <>
       <FormControl size="sm">
@@ -270,6 +265,7 @@ function AllProjects() {
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
+          marginLeft: { xl: "16%", lg: "18%", md: "25%" },
           borderRadius: "sm",
           py: 2,
           display: { xs: "none", sm: "flex" },
@@ -304,6 +300,8 @@ function AllProjects() {
           flexShrink: 1,
           overflow: "auto",
           minHeight: 0,
+          marginLeft: { md: "25%", lg: "18%" },
+          maxWidth: { lg: "85%", sm: "100%", md: "75%" },
         }}
       >
         {error ? (
@@ -501,6 +499,7 @@ function AllProjects() {
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: { xs: "none", md: "flex" },
           alignItems: "center",
+          marginLeft: { md: "25%", lg: "18%" },
         }}
       >
         <Button

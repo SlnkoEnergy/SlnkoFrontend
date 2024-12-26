@@ -1,47 +1,30 @@
-import { Container, Grid } from "@mui/material";
-import React, { useRef } from "react";
-import {
-  Card,
-  Button,
-  TextField,
-  Checkbox,
-  Link,
-  FormControlLabel,
-  Paper,
-  Box,
-  Typography,
-  IconButton,
-  InputAdornment,
-} from "@mui/material";
-import { useState } from "react";
+import LockIcon from "@mui/icons-material/Lock";
+import { Box, Button, Grid, Paper, TextField, Typography } from "@mui/material";
+import { useFormik } from "formik";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Slider from "react-slick";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import "slick-carousel/slick/slick-theme.css";
+import "slick-carousel/slick/slick.css";
+import * as Yup from "yup";
 import Img1 from "../../../assets/New_Solar1.png";
-import Img2 from "../../../assets/New_Solar2.png";
-import ImgX from "../../../assets/slnko_white_logo.png";
 import Img4 from "../../../assets/New_Solar3.png";
 import Img5 from "../../../assets/Protrac_blue.png";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
-import Slider from "react-slick";
-import { useFormik } from "formik";
-import * as Yup from "yup";
-import LockIcon from "@mui/icons-material/Lock";
-import { Label, Visibility, VisibilityOff } from "@mui/icons-material";
-import Colors from "../../../utils/colors";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import ImgX from "../../../assets/slnko_white_logo.png";
 import Axios from "../../../utils/Axios";
+import Colors from "../../../utils/colors";
 
 const Login = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [isSubmitting , setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const paperStyle = {
     background: Colors.palette.primary.main,
-    marginTop:'20%',
+    marginTop: "20%",
     height: "auto",
     padding: "20px",
     display: "flex",
@@ -78,21 +61,18 @@ const Login = () => {
       password: formik.values.password,
     };
     try {
-      const response = await Axios.post(
-        "/login",
-        postData
-      );
+      const response = await Axios.post("/login", postData);
       console.log("Login successful:", response.data);
-      
+
       const expirationTime = new Date().getTime() + 3 * 24 * 60 * 60 * 1000;
-  
+
       localStorage.setItem("authToken", response.data.token || "dummyToken");
       localStorage.setItem("authTokenExpiration", expirationTime);
-  
-      toast.success(`Login successful! Welcome`, {
-        position: "top-right",
-        autoClose: 3000,
-      });
+
+      // toast.success(`Login successful! Welcome`, {
+      //   position: "top-right",
+      //   autoClose: 3000,
+      // });
       setErrorMessage("");
       navigate("/all-project");
     } catch (error) {
@@ -108,7 +88,6 @@ const Login = () => {
       setIsSubmitting(false);
     }
   };
-  
 
   const validationSchema = Yup.object({
     name: Yup.string().required("Name is required !!"),
@@ -129,7 +108,7 @@ const Login = () => {
     validationSchema: validationSchema,
     onSubmit: (values) => {
       LoginUser();
-    }
+    },
   });
 
   return (
@@ -137,7 +116,7 @@ const Login = () => {
       sx={{
         background:
           "radial-gradient(circle at 100% 100%, #023159, #1F476A, #F5F5F5)",
-        height: {sm:"100%",xs:"100vh"},
+        height: { sm: "100%", xs: "100vh" },
         width: "100%",
         display: "flex",
         justifyContent: "center",
@@ -278,9 +257,8 @@ const Login = () => {
                 fullWidth
                 variant="contained"
                 style={submitButtonStyle}
-                disabled = {isSubmitting}
+                disabled={isSubmitting}
                 // onClick={() => LoginUser()}
-                
               >
                 {isSubmitting ? "Logging you in..." : "Login"}
               </Button>
