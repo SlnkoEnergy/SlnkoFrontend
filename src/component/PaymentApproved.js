@@ -290,7 +290,7 @@ function PaymentRequest() {
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
-          marginLeft: { xl: "16%", lg: "18%", md: "25%" },
+          marginLeft: { xl: "15%", lg: "18%", md: "25%" },
           borderRadius: "sm",
           py: 2,
           display: { xs: "none", sm: "flex" },
@@ -323,7 +323,7 @@ function PaymentRequest() {
           flexShrink: 1,
           overflow: "auto",
           minHeight: 0,
-          marginLeft: { md: "25%", lg: "18%" },
+          marginLeft: { md: "25%", lg: "18%", xl: "15%" },
           maxWidth: { lg: "85%", sm: "100%", md: "75%" },
         }}
       >
@@ -545,7 +545,7 @@ function PaymentRequest() {
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: { xs: "none", md: "flex" },
           alignItems: "center",
-          marginLeft: { md: "25%", lg: "18%" },
+          marginLeft: { md: "25%", lg: "18%", xl: "15%" },
         }}
       >
         <Button

@@ -47,7 +47,7 @@ function ProjectBalance() {
             sx={{
               display: "flex",
               alignItems: "center",
-              marginLeft: { xl: "16%", lg: "18%", md: "25%" },
+              marginLeft: { xl: "15%", lg: "18%", md: "25%" },
             }}
           >
             <Breadcrumbs
@@ -89,7 +89,7 @@ function ProjectBalance() {
               alignItems: { xs: "start", sm: "center" },
               flexWrap: "wrap",
               justifyContent: "space-between",
-              marginLeft: { md: "25%", lg: "18%" },
+              marginLeft: { xl: "15%", md: "25%", lg: "18%" },
             }}
           >
             <Typography level="h2" component="h1">

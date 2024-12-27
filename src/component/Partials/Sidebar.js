@@ -114,7 +114,7 @@ function Toggler({ defaultExpanded = false, renderToggle, children }) {
           ':root': {
             '--Sidebar-width': '260px',
             [theme.breakpoints.up('lg')]: {
-              '--Sidebar-width': '240px',
+              '--Sidebar-width': '260px',
             },
           },
         })}
