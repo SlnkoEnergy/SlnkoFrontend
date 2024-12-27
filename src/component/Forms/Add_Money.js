@@ -9,8 +9,8 @@ import {
   CircularProgress,
   Alert,
 } from "@mui/joy";
-import axios from "axios";
 import Img6 from "../../assets/add_money.png";
+import Axios from "../../utils/Axios";
 
 const Add_Money = () => {
   const [formValues, setFormValues] = useState({
@@ -33,8 +33,8 @@ const Add_Money = () => {
     const fetchProjectData = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(
-          "https://backendslnko.onrender.com/v1/get-all-project"
+        const response = await Axios.get(
+          "/get-all-project"
         );
         const data = response.data?.data?.[0];
 
@@ -91,9 +91,9 @@ const Add_Money = () => {
       comment: formValues.comment,
     };
 
-    try {
-      const response = await axios.post(
-        "https://backendslnko.onrender.com/v1/Add-Money",
+    try { 
+      const response = await Axios.post(
+        "/Add-Money",
         payload
       );
 

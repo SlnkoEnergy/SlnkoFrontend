@@ -23,27 +23,14 @@ import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
+import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Axios from "../utils/Axios";
 
-function RowMenu() {
-  return (
-    <Dropdown>
-      <MenuButton
-        slots={{ root: IconButton }}
-        slotProps={{ root: { variant: "plain", color: "neutral", size: "sm" } }}
-      >
-        <MoreHorizRoundedIcon />
-      </MenuButton>
-      <Menu size="sm" sx={{ minWidth: 100 }}>
-        <MenuItem>Add Money</MenuItem>
-        <MenuItem>View More</MenuItem>
-      </Menu>
-    </Dropdown>
-  );
-}
+
 
 function ProjectBalances() {
+  const navigate = useNavigate();
   const [credits, setCredits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -54,6 +41,34 @@ function ProjectBalances() {
   const [projects, setProjects] = useState([]);
   const [mergedData, setMergedData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const RowMenu = () => (
+    <> 
+    
+    <Dropdown>
+        <MenuButton
+          slots={{ root: IconButton }}
+          slotProps={{ root: { variant: "plain", color: "neutral", size: "sm" } }}
+        >
+          <MoreHorizRoundedIcon />
+        </MenuButton>
+        <Menu size="sm" sx={{ minWidth: 100 }}>
+          <MenuItem color="primary" onClick={() => navigate("/add_money")}>
+            Add Money
+          </MenuItem>
+          <MenuItem>View More</MenuItem>
+        </Menu>
+      </Dropdown>
+      </> 
+
+  )
+    
+    
+    
+   
+ 
+
+
 
   const renderFilters = () => (
     <>
