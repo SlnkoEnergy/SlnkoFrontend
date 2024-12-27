@@ -1,7 +1,7 @@
 import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import All_project_csv from "../csv/All_project_csv";
-import AddMoney from "../pages/Accounts/Add_Money";
+import AddMoney_Page from "../pages/Accounts/AddMoney_Page";
 import PaymentApproval from "../pages/Accounts/PaymentApproval";
 import PaymentApproved from "../pages/Accounts/PaymentApproved";
 import PaymentRequest from "../pages/Accounts/PaymentRequest";
@@ -110,7 +110,7 @@ function index() {
           path="/add_money"
           element={
             <PrivateRoute>
-              <AddMoney />
+              <AddMoney_Page />
             </PrivateRoute>
           }
         />

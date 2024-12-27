@@ -6,12 +6,12 @@ import Link from "@mui/joy/Link";
 import { CssVarsProvider } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
 import React from "react";
-
 import AddMoney from "../../component/Forms/Add_Money";
 import Header from "../../component/Partials/Header";
 import Sidebar from "../../component/Partials/Sidebar";
 
-function Add_Money() {
+function AddMoney_Page() {
+  
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -95,4 +95,4 @@ function Add_Money() {
     </CssVarsProvider>
   );
 }
-export default Add_Money;
+export default AddMoney_Page;
