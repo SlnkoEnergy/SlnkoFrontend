@@ -45,6 +45,7 @@ function PaymentRequest() {
   const [mergedData, setMergedData] = useState([]);
   const [accountNumber, setAccountNumber] = useState([]);
   const [ifscCode, setIfscCode] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const renderFilters = () => (
     <>
@@ -124,6 +125,26 @@ function PaymentRequest() {
     }
   }, [payments, projects]);
 
+  const handleSearch = (query) => {
+    setSearchQuery(query.toLowerCase());
+  };
+
+  const filteredAndSortedData = mergedData
+    .filter((project) =>
+      ["projectName", "projectCode", "pay_id", ].some((key) =>
+        project[key]?.toLowerCase().includes(searchQuery)
+      )
+    )
+    .sort((a, b) => {
+      if (a.projectName?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.projectName?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.projectCode?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.projectCode?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.pay_id?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.pay_id?.toLowerCase().includes(searchQuery)) return 1;
+      return 0;
+    });
+
   const handleSelectAll = (event) => {
     if (event.target.checked) {
       setSelected(mergedData.map((row) => row.id));
@@ -168,9 +189,9 @@ function PaymentRequest() {
 
     return pages;
   };
-  const totalPages = Math.ceil(mergedData.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
 
-  const paginatedPayments = mergedData.slice(
+  const paginatedPayments = filteredAndSortedData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -305,8 +326,10 @@ function PaymentRequest() {
           <FormLabel>Search here</FormLabel>
           <Input
             size="sm"
-            placeholder="Search"
+            placeholder="Search by Pay ID, Customer, or Name"
             startDecorator={<SearchIcon />}
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
         {renderFilters()}
