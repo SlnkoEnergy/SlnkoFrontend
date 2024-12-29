@@ -53,7 +53,6 @@ const Add_Project = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     code: "",
-    p_id: "",
     customer: "",
     name: "",
     p_group: "",
@@ -112,13 +111,12 @@ const Add_Project = () => {
     setIsLoading(true);
     try {
       const response = await Axios.post("/add-new-project", payload);
-      setResponseMessage("Project added successfully!");
-      console.log("Response from server:", response.data);
+      const { message, p_id } = response.data;
 
-      toast.success("Project added successfully!!");
+      setResponseMessage(message);
+      toast.success("Project added successfully with ID: " + p_id);
 
       setFormData({
-        p_id: "",
         code: "",
         customer: "",
         name: "",
@@ -143,7 +141,7 @@ const Add_Project = () => {
         "Error adding project:",
         error.response?.data || error.message
       );
-      setResponseMessage("Failed to add project. Please try again.");
+      setResponseMessage("Failed to add project. Please try again!!");
 
       toast.error("Failed to add project. Please try again.");
     } finally {
@@ -215,13 +213,7 @@ const Add_Project = () => {
                   name="customer"
                   placeholder="Enter customer name"
                   value={formData.customer}
-                  onChange={(e) => {
-                    handleChange(e);
-                    setFormData((prev) => ({
-                      ...prev,
-                      p_id: e.target.value,
-                    }));
-                  }}
+                  onChange={handleChange}
                   fullWidth
                   required
                   variant="soft"

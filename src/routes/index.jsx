@@ -13,6 +13,7 @@ import PurchaseOrder from "../pages/SCM/POSummary";
 import ForgotPassword from "../pages/Users/auth/ForgotPassword";
 import Login from "../pages/Users/auth/Login";
 import PrivateRoute from "./PrivateRoute";
+import Edit_Project from "../pages/Projects/Edit_Project";
 
 function index() {
   return (
@@ -108,6 +109,14 @@ function index() {
           }
         />
         <Route
+          path="/edit_project"
+          element={
+            <PrivateRoute>
+              <Edit_Project />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/add_money"
           element={
             <PrivateRoute>
@@ -115,7 +124,7 @@ function index() {
             </PrivateRoute>
           }
         />
-         <Route
+        <Route
           path="/pay_request"
           element={
             <PrivateRoute>

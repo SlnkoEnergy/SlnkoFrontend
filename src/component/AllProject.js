@@ -24,29 +24,11 @@ import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Axios from "../utils/Axios";
 
-function RowMenu() {
-  return (
-    <Dropdown>
-      <MenuButton
-        slots={{ root: IconButton }}
-        slotProps={{ root: { variant: "plain", color: "neutral", size: "sm" } }}
-      >
-        <MoreHorizRoundedIcon />
-      </MenuButton>
-      <Menu size="sm" sx={{ minWidth: 140 }}>
-        <MenuItem>Edit</MenuItem>
-        {/* <MenuItem>Rename</MenuItem>
-        <MenuItem>Move</MenuItem> */}
-        {/* <Divider /> */}
-        <MenuItem color="danger">Delete</MenuItem>
-      </Menu>
-    </Dropdown>
-  );
-}
-
 function AllProjects() {
+  const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -94,6 +76,27 @@ function AllProjects() {
 
     fetchTableData();
   }, []);
+
+  const RowMenu = () => (
+    <>
+      <Dropdown>
+        <MenuButton
+          slots={{ root: IconButton }}
+          slotProps={{
+            root: { variant: "plain", color: "neutral", size: "sm" },
+          }}
+        >
+          <MoreHorizRoundedIcon />
+        </MenuButton>
+        <Menu size="sm" sx={{ minWidth: 140 }}>
+          <MenuItem color="primary" onClick={() => navigate("/edit_project")}>
+            Edit
+          </MenuItem>
+          <MenuItem color="danger">Delete</MenuItem>
+        </Menu>
+      </Dropdown>
+    </>
+  );
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
