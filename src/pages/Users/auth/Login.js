@@ -62,17 +62,17 @@ const Login = () => {
     };
     try {
       const response = await Axios.post("/login", postData);
-      console.log("Login successful:", response.data);
+      const user = response.data;
+      console.log("Login successful:", user);
 
       const expirationTime = new Date().getTime() + 3 * 24 * 60 * 60 * 1000;
 
       localStorage.setItem("authToken", response.data.token || "dummyToken");
       localStorage.setItem("authTokenExpiration", expirationTime);
 
-      // toast.success(`Login successful! Welcome`, {
-      //   position: "top-right",
-      //   autoClose: 3000,
-      // });
+      // Store the dynamic userID in localStorage
+      localStorage.setItem("userID", user._id);
+
       setErrorMessage("");
       navigate("/all-project");
     } catch (error) {

@@ -34,19 +34,24 @@ const Add_Money = () => {
   useEffect(() => {
     const fetchUsername = async () => {
       try {
-        const response = await Axios.get("/get-all-user");
-        const username = response.data.data;
+        const userID = localStorage.getItem("userID"); // Get userID from localStorage or sessionStorage
+        if (!userID) {
+          setError("No user ID found. Please log in.");
+          return;
+        }
+        // Call your API with the userID to get the user's details
+        const response = await Axios.get(`/get-all-user/${userID}`);
+        const user = response.data.data; // Assuming the response returns the user object
 
-        // console.log("UserList are :", username);
+        console.log("Logged User:", user);
 
-        if (username) {
+        if (user) {
           setFormValues((prev) => ({
             ...prev,
-            submittedBy: username.name,
+            submittedBy: user.name, // Set the logged-in user's name
           }));
-          console.log("Logged User are: ", username.name);
         } else {
-          setError("Unable to fetch user details. Please log in.");
+          setError("Unable to fetch user details.");
         }
       } catch (err) {
         console.error("Error fetching username:", err);
@@ -212,20 +217,13 @@ const Add_Money = () => {
           <Grid container spacing={2}>
             {/* Static Fields */}
             <Grid xs={12}>
-              <Typography
+              <Input
                 fullWidth
-                variant="body1"
-                sx={{
-                  fontWeight: "medium",
-                  padding: "8px",
-                  backgroundColor: "background.paper",
-                  borderRadius: "4px",
-                  textAlign: "center",
-                  color: "text.primary",
-                }}
-              >
-                {formValues.submittedBy || "Loading..."}
-              </Typography>
+                placeholder="Submitted By"
+                name="submittedBy"
+                value={formValues.submittedBy || "Loading ..."}
+                disabled
+              />
             </Grid>
             <Grid xs={12} sm={6}>
               <Input
