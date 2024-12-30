@@ -34,7 +34,7 @@ const Add_Money = () => {
   useEffect(() => {
     const fetchUsername = async () => {
       try {
-        const userID = localStorage.getItem("userID"); // Get userID from localStorage or sessionStorage
+        const userID = localStorage.getItem("userID");
         if (!userID) {
           setError("No user ID found. Please log in.");
           return;

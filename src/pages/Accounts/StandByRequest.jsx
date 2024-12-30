@@ -5,28 +5,18 @@ import CssBaseline from "@mui/joy/CssBaseline";
 import Link from "@mui/joy/Link";
 import { CssVarsProvider } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
-import React, { useRef } from "react";
+import React from "react";
 
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
+
 import { useNavigate } from "react-router-dom";
 import Header from "../../component/Partials/Header";
 import Sidebar from "../../component/Partials/Sidebar";
-import ProjectBalances from "../../component/ProjectBalance";
+import PaymentRequest from "../../component/PaymentRequest";
 
 function ProjectBalance() {
   const navigate = useNavigate();
-  
-  // Create a ref for ProjectBalances component
-  const projectBalancesRef = useRef();
-
-  // Function to handle CSV export
-  const handleExportToCSV = () => {
-    if (projectBalancesRef.current) {
-      projectBalancesRef.current.exportToCSV();
-    }
-  };
-
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -65,10 +55,17 @@ function ProjectBalance() {
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
               sx={{ pl: 0 }}
             >
-              <Link
-                underline="hover"
+              {/* <Link
+                underline="none"
                 color="neutral"
-                href=""
+                href="#some-link"
+                aria-label="Home"
+              >
+                <HomeRoundedIcon />
+              </Link> */}
+              <Link
+                underline="none"
+                color="neutral"
                 sx={{ fontSize: 12, fontWeight: 500 }}
               >
                 Accounting
@@ -77,7 +74,7 @@ function ProjectBalance() {
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Project Balances
+                Daily Payment Request
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -94,7 +91,7 @@ function ProjectBalance() {
             }}
           >
             <Typography level="h2" component="h1">
-              Project Balances
+              Payment Records
             </Typography>
             <Box
               sx={{
@@ -109,26 +106,26 @@ function ProjectBalance() {
             >
               <Button
                 color="primary"
-                onClick={() => navigate("/add_project")}
                 size="sm"
+                onClick={() => navigate("/pay_Request")}
               >
-                Add New Project +
+                Add New Payment +
               </Button>
               <Button
                 color="primary"
                 startDecorator={<DownloadRoundedIcon />}
                 size="sm"
-                onClick={handleExportToCSV} // Call the export function on click
               >
                 Export to CSV
               </Button>
             </Box>
           </Box>
-          <ProjectBalances ref={projectBalancesRef} /> {/* Pass the ref to the component */}
+          <PaymentRequest />
+          {/* <OrderTable />
+          <OrderList /> */}
         </Box>
       </Box>
     </CssVarsProvider>
   );
 }
-
 export default ProjectBalance;

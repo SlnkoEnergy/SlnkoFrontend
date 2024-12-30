@@ -1,3 +1,6 @@
+import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
+import BlockIcon from "@mui/icons-material/Block";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
@@ -6,6 +9,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
+import Chip from "@mui/joy/Chip";
 import Divider from "@mui/joy/Divider";
 import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
@@ -23,29 +27,73 @@ import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
-import { useNavigate } from "react-router-dom";
-import { useEffect, useState ,forwardRef, useImperativeHandle} from "react";
+import { useEffect, useState } from "react";
 import Axios from "../utils/Axios";
-import { useSearchParams } from "react-router-dom";
 
+function RowMenu() {
+  return (
+    <Dropdown>
+      <MenuButton
+        slots={{ root: IconButton }}
+        slotProps={{ root: { variant: "plain", color: "neutral", size: "sm" } }}
+      >
+        <MoreHorizRoundedIcon />
+      </MenuButton>
+      <Menu size="sm" sx={{ minWidth: 140 }}>
+        <MenuItem>Pending Payment</MenuItem>
+        {/* <MenuItem>Rename</MenuItem>
+        <MenuItem>Move</MenuItem> */}
+        {/* <Divider /> */}
+        <MenuItem color="danger">Delete</MenuItem>
+      </Menu>
+    </Dropdown>
+  );
+}
 
-
-const  ProjectBalances = forwardRef((props, ref) => {
-  const navigate = useNavigate();
-  const [credits, setCredits] = useState([]);
+function PaymentRequest() {
+  const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // const [states, setStates] = useState([]);
+  // const [customers, setCustomers] = useState([]);
+  // const [stateFilter, setStateFilter] = useState("");
+  // const [customerFilter, setCustomerFilter] = useState("");
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [mergedData, setMergedData] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchParams, setSearchParams] = useSearchParams();
 
- 
+  useEffect(() => {
+    const fetchTableData = async () => {
+      try {
+        const response = await Axios.get("/get-pay-summary");
 
+        const paymentsData = Array.isArray(response.data.data)
+          ? response.data.data
+          : [];
+        setPayments(paymentsData);
+        console.log("Payments Data are :", paymentsData);
+
+        // const uniqueStates = [
+        //   ...new Set(paymentsData.map((payment) => payment.state)),
+        // ].filter(Boolean);
+
+        // const uniqueCustomers = [
+        //   ...new Set(paymentsData.map((payment) => payment.customer)),
+        // ].filter(Boolean);
+
+        // setStates(uniqueStates);
+        // setCustomers(uniqueCustomers);
+      } catch (err) {
+        console.error("API Error:", err);
+        setError("Failed to fetch table data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTableData();
+  }, []);
 
   const renderFilters = () => (
     <>
@@ -83,126 +131,32 @@ const  ProjectBalances = forwardRef((props, ref) => {
       </FormControl>
     </>
   );
-
-  useEffect(() => {
-    const fetchAccountsandIfsc = async () => {
-      setLoading(true);
-      try {
-        const [CreditResponse, projectResponse] = await Promise.all([
-          Axios.get("/all-bill"),
-          Axios.get("/get-all-project"),
-        ]);
-        setCredits(CreditResponse.data.bill);
-        // console.log("Credit Data are:", CreditResponse.data.bill);
-
-        setProjects(projectResponse.data.data);
-        console.log("Project Data are:", projectResponse.data);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAccountsandIfsc();
-  }, []);
-
-  useEffect(() => {
-    // console.log("Credits:", credits);
-    // console.log("Projects:", projects);
-
-    if (credits.length > 0 && projects.length > 0) {
-      const merged = projects.map((project) => {
-        const matchingCredit = credits.find(
-          (credit) => Number(credit.p_id) === Number(project.p_id)
-        );
-
-        return {
-          ...project,
-          creditAmount: matchingCredit ? matchingCredit.cr_amount : "Not Found",
-        };
-      });
-
-      setMergedData(merged);
-    }
-  }, [credits, projects]);
-
-  const RowMenu = (currentPage, p_id) => {
-    console.log("currentPage:", currentPage, "p_id:", p_id);
-
-    return(
-      <> 
-    
-    <Dropdown>
-        <MenuButton
-          slots={{ root: IconButton }}
-          slotProps={{ root: { variant: "plain", color: "neutral", size: "sm" } }}
-        >
-          <MoreHorizRoundedIcon />
-        </MenuButton>
-        <Menu size="sm" sx={{ minWidth: 100 }}>
-          <MenuItem color="primary" onClick={() => {
-             const page = (currentPage); 
-             const projectId = (p_id);
-             console.log(`/add_money?page=${page}&p_id=${projectId}`);
-            navigate(`/add_money?page=${page}&p_id=${projectId}`)
-          }
-            }>
-            Add Money
-          </MenuItem>
-          <MenuItem onClick={() => navigate("/view_detail")}>View More</MenuItem>
-        </Menu>
-      </Dropdown>
-      </> 
-    )
-  
-    
-  }
-    
-
-
-
-  const handleSearch = (query) => {
-    setSearchQuery(query.toLowerCase());
-  };
-
-  const filteredAndSortedData = mergedData
-    .filter((project) =>
-      ["code", "customer", "name", "p_group"].some((key) =>
-        project[key]?.toLowerCase().includes(searchQuery)
-      )
-    )
-    .sort((a, b) => {
-      if (a.name?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.name?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.code?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.code?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.p_group?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.p_group?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.customer?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.customer?.toLowerCase().includes(searchQuery)) return 1;
-      return 0;
-    });
-
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelected(mergedData.map((row) => row.code));
+      setSelected(paginatedPayments.map((row) => row.id));
     } else {
       setSelected([]);
     }
   };
 
-  const handleRowSelect = (code, isSelected) => {
+  const handleRowSelect = (id, isSelected) => {
     setSelected((prevSelected) =>
       isSelected
-        ? [...prevSelected, code]
-        : prevSelected.filter((item) => item !== code)
+        ? [...prevSelected, id]
+        : prevSelected.filter((item) => item !== id)
     );
   };
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
-    if (currentPage > 2) pages.push(1);
-    if (currentPage > 3) pages.push("...");
+
+    if (currentPage > 2) {
+      pages.push(1);
+    }
+
+    if (currentPage > 3) {
+      pages.push("...");
+    }
+
     for (
       let i = Math.max(1, currentPage - 1);
       i <= Math.min(totalPages, currentPage + 1);
@@ -210,68 +164,46 @@ const  ProjectBalances = forwardRef((props, ref) => {
     ) {
       pages.push(i);
     }
-    if (currentPage < totalPages - 2) pages.push("...");
-    if (currentPage < totalPages - 1) pages.push(totalPages);
+
+    if (currentPage < totalPages - 2) {
+      pages.push("...");
+    }
+
+    if (currentPage < totalPages - 1) {
+      pages.push(totalPages);
+    }
+
     return pages;
   };
+  const totalPages = Math.ceil(payments.length / itemsPerPage);
 
-  useEffect(() => {
-    // Set current page based on URL parameter
-    const page = parseInt(searchParams.get("page")) || 1;
-    setCurrentPage(page);
-  }, [searchParams]);
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toISOString().split("T")[0];
+  };
 
-  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
-
-  const paginatedPayments = filteredAndSortedData.slice(
+  const paginatedPayments = payments.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
+  const paymentsWithFormattedDate = paginatedPayments.map((payment) => ({
+    ...payment,
+    formattedDate: formatDate(payment.dbt_date),
+  }));
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
-      setSearchParams({ page }); // Update URL parameter
       setCurrentPage(page);
     }
   };
-  
-  useImperativeHandle(ref, () => ({
-    exportToCSV() {
-      // Implement your CSV export logic here
-      console.log("Exporting data to CSV...");
-      const headers = [
-        "Project Id", "Project Name", "Client Name", "Group Name", "Plant Capacity (MW AC)", 
-        "Total Credit", "Total Debit", "Amount Amount(Old)", "Balance with SLnko", 
-        "Balance Payable to Vendors", "Balance Required", "View More"
-      ];
-  
-      const rows = mergedData.map((project) => [
-        project.code || "-",
-        project.name || "-",
-        project.customer || "-",
-        project.p_group || "-",
-        project.project_kwp || "-",
-        project.creditAmount || "-",
-        project.debitAmount || "-",
-        project.oldAmount || "-",
-        project.balanceSLnko || "-",
-        project.balancePayableToVendors || "-",
-        project.balanceRequired || "-",
-        project.viewMore || "-",
-      ]);
-  
-      const csvContent = [
-        headers.join(","),
-        ...rows.map((row) => row.join(","))
-      ].join("\n");
-  
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "exported_data.csv";
-      link.click();
-    },
-  }));
+
+  // if (loading) {
+  //   return <Typography>Loading...</Typography>;
+  // }
+
+  // if (error) {
+  //   return <Typography color="danger">{error}</Typography>;
+  // }
 
   return (
     <>
@@ -327,13 +259,11 @@ const  ProjectBalances = forwardRef((props, ref) => {
         }}
       >
         <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search</FormLabel>
+          <FormLabel>Search here</FormLabel>
           <Input
             size="sm"
-            placeholder="Search by Project ID, Customer, or Name"
+            placeholder="Search"
             startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
         {renderFilters()}
@@ -377,23 +307,25 @@ const  ProjectBalances = forwardRef((props, ref) => {
                 >
                   <Checkbox
                     size="sm"
-                    checked={selected.length === mergedData.length}
-                    onChange={handleSelectAll}
+                    checked={selected.length === paginatedPayments.length}
+                    onChange={(event) =>
+                      handleRowSelect("all", event.target.checked)
+                    }
+                    indeterminate={
+                      selected.length > 0 &&
+                      selected.length < paginatedPayments.length
+                    }
                   />
                 </Box>
                 {[
-                  "Project Id",
-                  "Project Name",
+                  "Payment Id",
+                  "Request Date",
+                  "Paid To",
                   "Client Name",
-                  "Group Name",
-                  "Plant Capacity (MW AC)",
-                  "Total Credit",
-                  "Total Debit",
-                  "Amount Amount(Old)",
-                  "Balance with SLnko",
-                  "Balance Payable to Vendors",
-                  "Balance Required",
-                  "View More",
+                  "Amount (₹)",
+                  "Payment Status",
+                  "UTR",
+                  "",
                 ].map((header, index) => (
                   <Box
                     component="th"
@@ -411,8 +343,8 @@ const  ProjectBalances = forwardRef((props, ref) => {
               </Box>
             </Box>
             <Box component="tbody">
-              {paginatedPayments.length > 0 ? (
-                paginatedPayments.map((project, index) => (
+              {paymentsWithFormattedDate.length > 0 ? (
+                paymentsWithFormattedDate.map((payment, index) => (
                   <Box
                     component="tr"
                     key={index}
@@ -430,9 +362,9 @@ const  ProjectBalances = forwardRef((props, ref) => {
                     >
                       <Checkbox
                         size="sm"
-                        checked={selected.includes(project.code)}
+                        checked={selected.includes(payment.code)}
                         onChange={(event) =>
-                          handleRowSelect(project.code, event.target.checked)
+                          handleRowSelect(payment.code, event.target.checked)
                         }
                       />
                     </Box>
@@ -444,7 +376,7 @@ const  ProjectBalances = forwardRef((props, ref) => {
                         textAlign: "center",
                       }}
                     >
-                      {project.code}
+                      {payment.pay_id}
                     </Box>
                     <Box
                       component="td"
@@ -454,7 +386,7 @@ const  ProjectBalances = forwardRef((props, ref) => {
                         textAlign: "center",
                       }}
                     >
-                      {project.name || "-"}
+                      {payment.formattedDate}
                     </Box>
                     <Box
                       component="td"
@@ -464,7 +396,7 @@ const  ProjectBalances = forwardRef((props, ref) => {
                         textAlign: "center",
                       }}
                     >
-                      {project.customer || "-"}
+                      {payment.vendor}
                     </Box>
                     <Box
                       component="td"
@@ -474,7 +406,7 @@ const  ProjectBalances = forwardRef((props, ref) => {
                         textAlign: "center",
                       }}
                     >
-                      {project.p_group || "-"}
+                      {payment.customer || "-"}
                     </Box>
                     <Box
                       component="td"
@@ -484,7 +416,7 @@ const  ProjectBalances = forwardRef((props, ref) => {
                         textAlign: "center",
                       }}
                     >
-                      {project.project_kwp || "-"}
+                      {payment.amt_for_customer}
                     </Box>
                     <Box
                       component="td"
@@ -494,10 +426,26 @@ const  ProjectBalances = forwardRef((props, ref) => {
                         textAlign: "center",
                       }}
                     >
-                      {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      }).format(project.creditAmount || "-")}
+                      <Chip
+                        variant="soft"
+                        size="sm"
+                        startDecorator={
+                          {
+                            Approved: <CheckRoundedIcon />,
+                            Pending: <AutorenewRoundedIcon />,
+                            Rejected: <BlockIcon />,
+                          }[payment.approved]
+                        }
+                        color={
+                          {
+                            Approved: "success",
+                            Pending: "neutral",
+                            Rejected: "danger",
+                          }[payment.approved]
+                        }
+                      >
+                        {payment.approved}
+                      </Chip>
                     </Box>
                     <Box
                       component="td"
@@ -507,10 +455,7 @@ const  ProjectBalances = forwardRef((props, ref) => {
                         textAlign: "center",
                       }}
                     >
-                      {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      }).format(project.creditAmount || "-")}
+                      {payment.utr || "-"}
                     </Box>
                     <Box
                       component="td"
@@ -520,59 +465,7 @@ const  ProjectBalances = forwardRef((props, ref) => {
                         textAlign: "center",
                       }}
                     >
-                      {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      }).format(project.creditAmount || "-")}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      }).format(project.creditAmount || "-")}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      }).format(project.creditAmount || "-")}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      }).format(project.creditAmount || "-")}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <RowMenu currentPage={currentPage} p_id={project.p_id} />
+                      {RowMenu()}
                     </Box>
                   </Box>
                 ))
@@ -605,7 +498,7 @@ const  ProjectBalances = forwardRef((props, ref) => {
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: { xs: "none", md: "flex" },
           alignItems: "center",
-          marginLeft: { xl: "15%", md: "25%", lg: "18%" },
+          marginLeft: {xl: "15%", md: "25%", lg: "18%" },
         }}
       >
         <Button
@@ -667,5 +560,5 @@ const  ProjectBalances = forwardRef((props, ref) => {
       </Box>
     </>
   );
-});
-export default ProjectBalances;
+}
+export default PaymentRequest;

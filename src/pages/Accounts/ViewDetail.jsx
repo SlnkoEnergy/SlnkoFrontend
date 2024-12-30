@@ -5,28 +5,18 @@ import CssBaseline from "@mui/joy/CssBaseline";
 import Link from "@mui/joy/Link";
 import { CssVarsProvider } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
-import React, { useRef } from "react";
+import React from "react";
 
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
+
 import { useNavigate } from "react-router-dom";
 import Header from "../../component/Partials/Header";
 import Sidebar from "../../component/Partials/Sidebar";
-import ProjectBalances from "../../component/ProjectBalance";
+import View_Detail from "../../component/ViewDetails/View_Detail";
 
-function ProjectBalance() {
+function ViewDetail() {
   const navigate = useNavigate();
-  
-  // Create a ref for ProjectBalances component
-  const projectBalancesRef = useRef();
-
-  // Function to handle CSV export
-  const handleExportToCSV = () => {
-    if (projectBalancesRef.current) {
-      projectBalancesRef.current.exportToCSV();
-    }
-  };
-
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -50,13 +40,14 @@ function ProjectBalance() {
             minWidth: 0,
             height: "100dvh",
             gap: 1,
+            
           }}
         >
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
-              marginLeft: { xl: "15%", lg: "18%", md: "25%" },
+              marginLeft: { xl: "15%", lg: "20%", md: "27%" },
             }}
           >
             <Breadcrumbs
@@ -65,19 +56,26 @@ function ProjectBalance() {
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
               sx={{ pl: 0 }}
             >
-              <Link
-                underline="hover"
+              {/* <Link
+                underline="none"
                 color="neutral"
-                href=""
+                href="#some-link"
+                aria-label="Home"
+              >
+                <HomeRoundedIcon />
+              </Link> */}
+              <Link
+                underline="none"
+                color="neutral"
                 sx={{ fontSize: 12, fontWeight: 500 }}
               >
-                Accounting
+                Daily Payment Request
               </Link>
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Project Balances
+                Customer Payment Summary
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -90,12 +88,12 @@ function ProjectBalance() {
               alignItems: { xs: "start", sm: "center" },
               flexWrap: "wrap",
               justifyContent: "space-between",
-              marginLeft: { xl: "15%", md: "25%", lg: "18%" },
+              
             }}
           >
-            <Typography level="h2" component="h1">
-              Project Balances
-            </Typography>
+            {/* <Typography level="h2" component="h1">
+              Payment Records
+            </Typography> */}
             <Box
               sx={{
                 display: "flex",
@@ -107,28 +105,28 @@ function ProjectBalance() {
                 justifyContent: "center",
               }}
             >
-              <Button
+              {/* <Button
                 color="primary"
-                onClick={() => navigate("/add_project")}
                 size="sm"
+                onClick={() => navigate("/pay_Request")}
               >
-                Add New Project +
+                Add New Payment +
               </Button>
               <Button
                 color="primary"
                 startDecorator={<DownloadRoundedIcon />}
                 size="sm"
-                onClick={handleExportToCSV} // Call the export function on click
               >
                 Export to CSV
-              </Button>
+              </Button> */}
             </Box>
           </Box>
-          <ProjectBalances ref={projectBalancesRef} /> {/* Pass the ref to the component */}
+          <View_Detail />
+          {/* <OrderTable />
+          <OrderList /> */}
         </Box>
       </Box>
     </CssVarsProvider>
   );
 }
-
-export default ProjectBalance;
+export default ViewDetail;

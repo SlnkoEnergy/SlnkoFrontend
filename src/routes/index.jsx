@@ -14,126 +14,165 @@ import ForgotPassword from "../pages/Users/auth/ForgotPassword";
 import Login from "../pages/Users/auth/Login";
 import PrivateRoute from "./PrivateRoute";
 import Edit_Project from "../pages/Projects/Edit_Project";
+import ViewDetail from "../pages/Accounts/ViewDetail";
+import PaySummary from "../pages/Accounts/PaySummary";
+import StandBySummary from "../pages/Accounts/StandBySummary";
+import StandByRequest from "../pages/Accounts/StandByRequest";
+import AddUser from "../pages/Users/AddUser";
+import EditUser from "../pages/Users/EditUser";
 
 function index() {
   return (
-    <>
-      <Routes>
-        {/*============ Pages ==========*/}
+    <Routes>
+    {/*============ Pages ==========*/}
 
-        {/*---------dashboard -------- */}
-        <Route path="/" element={<Login />} />
+    {/*---------dashboard -------- */}
+    <Route path="/" element={<Login />} />
 
-        {/*------ User---------- */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
+    {/*------ User---------- */}
+    <Route path="/login" element={<Login />} />
+    <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* <Route path="/User/add-user" element={<PrivateRoute><ProjectBalance /></PrivateRoute>} /> */}
+    <Route
+      path="add_user"
+      element={
+        <PrivateRoute>
+          <AddUser />
+        </PrivateRoute>
+      }
+    />
+    <Route
+      path="edit_user"
+      element={
+        <PrivateRoute>
+          <EditUser />
+        </PrivateRoute>
+      }
+    />
 
-        {/*------ BD ---------- */}
-        {/* <Route path="/BD/initial-leads" element={<PrivateRoute><InitialLeads /></PrivateRoute>} />
-          <Route path="/BD/commercial-offer" element={<PrivateRoute><CommercialOffer /></PrivateRoute>} /> */}
+    {/*-------Accounting------- */}
+    <Route
+      path="/project-balance"
+      element={
+        <PrivateRoute>
+          <ProjectBalance />
+        </PrivateRoute>
+      }
+    />
+    <Route
+      path="/daily-payment-request"
+      element={
+        <PrivateRoute>
+          <PaymentRequest />
+        </PrivateRoute>
+      }
+    />
+    <Route
+      path="/payment-approval"
+      element={
+        <PrivateRoute>
+          <PaymentApproval />
+        </PrivateRoute>
+      }
+    />
+    <Route
+      path="/payment-approved"
+      element={
+        <PrivateRoute>
+          <PaymentApproved />
+        </PrivateRoute>
+      }
+    />
+    <Route
+      path="/view_detail"
+      element={
+        <PrivateRoute>
+          <ViewDetail />
+        </PrivateRoute>
+      }
+    />
+    <Route
+      path="/standby_request"
+      element={
+        <PrivateRoute>
+          <StandByRequest />
+        </PrivateRoute>
+      }
+    />
 
-        {/*-------Accouting------- */}
+    {/*----------SCM ----------*/}
+    <Route
+      path="/purchase-order"
+      element={
+        <PrivateRoute>
+          <PurchaseOrder />
+        </PrivateRoute>
+      }
+    />
 
-        <Route
-          path="/project-balance"
-          element={
-            <PrivateRoute>
-              <ProjectBalance />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/daily-payment-request"
-          element={
-            <PrivateRoute>
-              <PaymentRequest />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/payment-approval"
-          element={
-            <PrivateRoute>
-              <PaymentApproval />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/payment-approved"
-          element={
-            <PrivateRoute>
-              <PaymentApproved />
-            </PrivateRoute>
-          }
-        />
+    {/*-------Project------- */}
+    <Route
+      path="/all-project"
+      element={
+        <PrivateRoute>
+          <AllProjects />
+        </PrivateRoute>
+      }
+    />
 
-        {/*----------SCM ----------*/}
+    {/* If user goes to an undefined route, redirect to login */}
+    <Route path="*" element={<Navigate to="/login" />} />
 
-        <Route
-          path="/purchase-order"
-          element={
-            <PrivateRoute>
-              <PurchaseOrder />
-            </PrivateRoute>
-          }
-        />
-        {/* <Route path="/SCM/material-tracker" element={<PrivateRoute><MaterialTracker /></PrivateRoute>} /> */}
-        {/* <Route path="/SCM/vendor-bill" element={<PrivateRoute><VendorBill /></PrivateRoute>} /> */}
-
-        {/*-------Project------- */}
-
-        <Route
-          path="/all-project"
-          element={
-            <PrivateRoute>
-              <AllProjects />
-            </PrivateRoute>
-          }
-        />
-        {/* <Route path="/Projects/site-project" element ={<PrivateRoute><SiteProject /></PrivateRoute>} /> */}
-
-        {/* If user goes to an undefined route, redirect to login */}
-        <Route path="*" element={<Navigate to="/login" />} />
-
-        <Route path="/csv" element={<All_project_csv />} />
-
-        {/** -----------------All Forms -----------*/}
-        <Route
-          path="/add_project"
-          element={
-            <PrivateRoute>
-              <AddProject />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/edit_project"
-          element={
-            <PrivateRoute>
-              <Edit_Project />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/add_money"
-          element={
-            <PrivateRoute>
-              <AddMoney_Page />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/pay_request"
-          element={
-            <PrivateRoute>
-              <AddPayment_Request />
-            </PrivateRoute>
-          }
-        />
-      </Routes>
-    </>
+    {/* -----------------All Forms -----------*/}
+    <Route
+      path="/add_project"
+      element={
+        <PrivateRoute>
+          <AddProject />
+        </PrivateRoute>
+      }
+    />
+    <Route
+      path="/edit_project"
+      element={
+        <PrivateRoute>
+          <Edit_Project />
+        </PrivateRoute>
+      }
+    />
+    <Route
+      path="/add_money"
+      element={
+        <PrivateRoute>
+          <AddMoney_Page />
+        </PrivateRoute>
+      }
+    />
+    <Route
+      path="/pay_request"
+      element={
+        <PrivateRoute>
+          <AddPayment_Request />
+        </PrivateRoute>
+      }
+    />
+    <Route
+      path="/pay_summary"
+      element={
+        <PrivateRoute>
+          <PaySummary />
+        </PrivateRoute>
+      }
+    />
+    <Route
+      path="/standby_summary"
+      element={
+        <PrivateRoute>
+          <StandBySummary />
+        </PrivateRoute>
+      }
+    />
+  </Routes>
   );
 }
 
