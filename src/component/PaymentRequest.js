@@ -27,47 +27,58 @@ import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import Axios from "../utils/Axios";
 import { useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 
 
-function PaymentRequest() {
+
+const PaymentRequest= forwardRef((props, ref) => {
   const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  // const [states, setStates] = useState([]);
-  // const [customers, setCustomers] = useState([]);
-  // const [stateFilter, setStateFilter] = useState("");
-  // const [customerFilter, setCustomerFilter] = useState("");
   const [open, setOpen] = useState(false);
+  const [vendors, setVendors] = useState([]);
+  const [vendorFilter, setVendorFilter] = useState("");
+  const [statuses, setStatuses] = useState([]);
+  const [statusFilter, setStatusFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [mergedData, setMergedData] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     const fetchTableData = async () => {
       try {
-        const response = await Axios.get("/get-pay-summary");
+        const [paymentResponse, projectResponse] = await Promise.all([
+          Axios.get("/get-pay-summary"),
+          Axios.get("/get-all-project"),
+        ]);
+        setPayments(paymentResponse.data.data);
+        console.log("Payment Data are:", paymentResponse.data.data);
 
-        const paymentsData = Array.isArray(response.data.data)
-          ? response.data.data
-          : [];
-        setPayments(paymentsData);
-        console.log("Payments Data are :", paymentsData);
+        setProjects(projectResponse.data.data);
+        console.log("Project Data are:", projectResponse.data.data);
 
-        // const uniqueStates = [
-        //   ...new Set(paymentsData.map((payment) => payment.state)),
-        // ].filter(Boolean);
+        const uniqueVendors = [
+          ...new Set(paymentResponse.data.data.map((payment) => payment.vendor)),
+        ].filter(Boolean);
 
-        // const uniqueCustomers = [
-        //   ...new Set(paymentsData.map((payment) => payment.customer)),
-        // ].filter(Boolean);
+        // console.log("Vendors are: ", uniqueVendors);
+        const uniqueStatuses = [
+          ...new Set(paymentResponse.data.data.map((payment) => payment.approved)),
+        ].filter(Boolean);
 
-        // setStates(uniqueStates);
-        // setCustomers(uniqueCustomers);
+        // console.log("Vendors are: ", uniqueVendors);
+        
+        setStatuses(uniqueStatuses);
+        setVendors(uniqueVendors);
       } catch (err) {
         console.error("API Error:", err);
         setError("Failed to fetch table data.");
@@ -79,38 +90,64 @@ function PaymentRequest() {
     fetchTableData();
   }, []);
 
+  useEffect(() => {
+    if (payments.length > 0 && projects.length > 0) {
+      const merged = payments.map((payment) => {
+        const matchingProject = projects.find(
+          (project) => Number(project.p_id) === Number(payment.p_id)
+        );
+        return {
+          ...payment,
+          // projectCode: matchingProject?.code || "-",
+          // projectName: matchingProject?.name || "-",
+          projectCustomer: matchingProject?.customer || "-",
+          // projectGroup: matchingProject?.p_group || "-",
+        };
+      });
+      setMergedData(merged);
+    }
+  }, [payments, projects]);
+
   const renderFilters = () => (
     <>
       <FormControl size="sm">
-        <FormLabel>State</FormLabel>
+        <FormLabel>Status</FormLabel>
         <Select
           size="sm"
-          placeholder="Filter by state"
-          // value={stateFilter}
-          // onChange={(e) => setStateFilter(e.target.value)}
+          placeholder="Status"
+          value={statusFilter}
+          onChange={(e) => {
+            const selectedValue = e.target.value;
+            console.log("Selected State:", selectedValue);
+            setStatusFilter(selectedValue);
+          }}
         >
           <Option value="">All</Option>
-          {/* {states.map((state, index) => (
-            <Option key={index} value={state}>
-              {state}
+          {statuses.map((status, index) => (
+            <Option key={index} value={status}>
+              {status}
             </Option>
-          ))} */}
+          ))}
         </Select>
-      </FormControl>
+        </FormControl>
       <FormControl size="sm">
-        <FormLabel>Customer</FormLabel>
+        <FormLabel>Vendor</FormLabel>
         <Select
           size="sm"
-          placeholder="Filter by customer"
-          // value={customerFilter}
-          // onChange={(e) => setCustomerFilter(e.target.value)}
+          placeholder="Filter by Vendors"
+          value={vendorFilter}
+          onChange={(e) => {
+            const selectedValue = e.target.value;
+            console.log("Selected State:", selectedValue);
+            setVendorFilter(selectedValue);
+          }}
         >
           <Option value="">All</Option>
-          {/* {customers.map((customer, index) => (
-            <Option key={index} value={customer}>
-              {customer}
+          {vendors.map((vendor, index) => (
+            <Option key={index} value={vendor}>
+              {vendor}
             </Option>
-          ))} */}
+          ))}
         </Select>
       </FormControl>
     </>
@@ -123,8 +160,7 @@ function PaymentRequest() {
     }
   };
 
-  const RowMenu = (currentPage, p_id) => {
-    console.log("currentPage:", currentPage, "p_id:", p_id);
+  const RowMenu = () => {
 
     return(
       <> 
@@ -158,6 +194,39 @@ function PaymentRequest() {
         : prevSelected.filter((item) => item !== id)
     );
   };
+
+  const handleSearch = (query) => {
+    setSearchQuery(query.toLowerCase());
+  };
+
+  const filteredAndSortedData = mergedData
+    .filter((payment) => {
+      const matchesSearchQuery = ["pay_id", "vendor", "approved", "projectCustomer"].some((key) =>
+        payment[key]?.toLowerCase().includes(searchQuery)
+      );
+     
+      const matchesStatusFilter = !statusFilter || payment.approved === statusFilter;
+      // console.log("MatchVendors are: ", matchesStatusFilter);
+
+      const matchesVendorFilter = !vendorFilter || payment.vendor === vendorFilter;
+      // console.log("MatchVendors are: ", matchesVendorFilter);
+
+
+    
+      return matchesSearchQuery && matchesVendorFilter && matchesStatusFilter;
+    })
+    .sort((a, b) => {
+      if (a.pay_id?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.pay_id?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.projectCustomer?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.projectCustomer?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.vendor?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.vendor?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.approved?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.approved?.toLowerCase().includes(searchQuery)) return 1;
+      return 0;
+    });
+
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
 
@@ -187,14 +256,30 @@ function PaymentRequest() {
 
     return pages;
   };
-  const totalPages = Math.ceil(payments.length / itemsPerPage);
+
+    useEffect(() => {
+      const page = parseInt(searchParams.get("page")) || 1;
+      setCurrentPage(page);
+    }, [searchParams]);
+
+  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
 
   const formatDate = (dateString) => {
+    if (!dateString) {
+      return "-";
+    }
     const date = new Date(dateString);
-    return date.toISOString().split("T")[0];
+    if (isNaN(date.getTime())) {
+      console.warn(`Invalid date value: "${dateString}"`);
+      return "-";
+    }
+    const options = { day: "2-digit", month: "short", year: "numeric" };
+    return new Intl.DateTimeFormat("en-GB", options).format(date).replace(/ /g, "/");
   };
+  
+  
 
-  const paginatedPayments = payments.slice(
+  const paginatedPayments = filteredAndSortedData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -205,6 +290,7 @@ function PaymentRequest() {
   }));
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
+      setSearchParams({ page });
       setCurrentPage(page);
     }
   };
@@ -216,6 +302,41 @@ function PaymentRequest() {
   // if (error) {
   //   return <Typography color="danger">{error}</Typography>;
   // }
+  useImperativeHandle(ref, () => ({
+    exportToCSV() {
+      console.log("Exporting data to CSV...");
+      const headers = [
+            "Payment Id",
+            "Request Date",
+            "Paid To",
+            "Client Name",
+            "Amount (₹)",
+            "Payment Status",
+            "UTR",
+      ];
+  
+      const rows = mergedData.map((payment) => [
+        payment.pay_id || "-",
+        payment.formattedDate || "-",
+        payment.vendor || "-",
+        payment.ProjectCustomer || "-",
+        payment.amt_for_customer || "-",
+        payment.approved || "-",
+        payment.utr || "-",
+      ]);
+  
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row) => row.join(","))
+      ].join("\n");
+  
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "Daily_Payment_Request.csv";
+      link.click();
+    },
+  }));
 
   return (
     <>
@@ -274,12 +395,18 @@ function PaymentRequest() {
           <FormLabel>Search here</FormLabel>
           <Input
             size="sm"
-            placeholder="Search"
+            placeholder="Search by Project ID, Customer, or Name"
             startDecorator={<SearchIcon />}
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
         {renderFilters()}
       </Box>
+      
+   
+  
+       
 
       {/* Table */}
       <Sheet
@@ -319,13 +446,13 @@ function PaymentRequest() {
                 >
                   <Checkbox
                     size="sm"
-                    checked={selected.length === paginatedPayments.length}
+                    checked={selected.length === paymentsWithFormattedDate.length}
                     onChange={(event) =>
                       handleRowSelect("all", event.target.checked)
                     }
                     indeterminate={
                       selected.length > 0 &&
-                      selected.length < paginatedPayments.length
+                      selected.length < paymentsWithFormattedDate.length
                     }
                   />
                 </Box>
@@ -374,9 +501,9 @@ function PaymentRequest() {
                     >
                       <Checkbox
                         size="sm"
-                        checked={selected.includes(payment.code)}
+                        checked={selected.includes(payment.pay_id)}
                         onChange={(event) =>
-                          handleRowSelect(payment.code, event.target.checked)
+                          handleRowSelect(payment.pay_id, event.target.checked)
                         }
                       />
                     </Box>
@@ -418,7 +545,7 @@ function PaymentRequest() {
                         textAlign: "center",
                       }}
                     >
-                      {payment.customer || "-"}
+                      {payment.projectCustomer || "-"}
                     </Box>
                     <Box
                       component="td"
@@ -545,20 +672,6 @@ function PaymentRequest() {
             )
           )}
         </Box>
-        {/* <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
-    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-      <IconButton
-        key={page}
-        size="sm"
-        variant={page === currentPage ? "contained" : "outlined"}
-        color="neutral"
-        onClick={() => handlePageChange(page)}
-      >
-        {page}
-      </IconButton>
-    ))}
-  </Box> */}
-
         <Button
           size="sm"
           variant="outlined"
@@ -572,5 +685,5 @@ function PaymentRequest() {
       </Box>
     </>
   );
-}
+});
 export default PaymentRequest;

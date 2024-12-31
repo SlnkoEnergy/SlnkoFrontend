@@ -28,15 +28,14 @@ import Typography from "@mui/joy/Typography";
 import * as React from "react";
 import { useEffect, useState } from "react";
 import Axios from "../utils/Axios";
+import { useSearchParams } from "react-router-dom";
 
 function PaymentRequest() {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  // const [states, setStates] = useState([]);
-  // const [customers, setCustomers] = useState([]);
-  // const [stateFilter, setStateFilter] = useState("");
-  // const [customerFilter, setCustomerFilter] = useState("");
+  const [vendors, setVendors] = useState([]);
+  const [vendorFilter, setVendorFilter] = useState("");
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -46,39 +45,28 @@ function PaymentRequest() {
   const [accountNumber, setAccountNumber] = useState([]);
   const [ifscCode, setIfscCode] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const renderFilters = () => (
     <>
       <FormControl size="sm">
-        <FormLabel>State</FormLabel>
+        <FormLabel>Vendor</FormLabel>
         <Select
           size="sm"
-          placeholder="Filter by state"
-          // value={stateFilter}
-          // onChange={(e) => setStateFilter(e.target.value)}
+          placeholder="Filter by Vendors"
+          value={vendorFilter}
+          onChange={(e) => {
+            const selectedValue = e.target.value;
+            console.log("Selected State:", selectedValue);
+            setVendorFilter(selectedValue);
+          }}
         >
           <Option value="">All</Option>
-          {/* {states.map((state, index) => (
-            <Option key={index} value={state}>
-              {state}
+          {vendors.map((vendor, index) => (
+            <Option key={index} value={vendor}>
+              {vendor}
             </Option>
-          ))} */}
-        </Select>
-      </FormControl>
-      <FormControl size="sm">
-        <FormLabel>Customer</FormLabel>
-        <Select
-          size="sm"
-          placeholder="Filter by customer"
-          // value={customerFilter}
-          // onChange={(e) => setCustomerFilter(e.target.value)}
-        >
-          <Option value="">All</Option>
-          {/* {customers.map((customer, index) => (
-            <Option key={index} value={customer}>
-              {customer}
-            </Option>
-          ))} */}
+          ))}
         </Select>
       </FormControl>
     </>
@@ -97,6 +85,17 @@ function PaymentRequest() {
 
         setProjects(projectResponse.data.data);
         console.log("Project Data are:", projectResponse.data.data);
+
+        const uniqueVendors = [
+          ...new Set(paymentResponse.data.data.map((payment) => payment.vendor)),
+        ].filter(Boolean);
+
+        console.log("Vendors are: ", uniqueVendors);
+        
+
+        setVendors(uniqueVendors);
+
+
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -111,7 +110,7 @@ function PaymentRequest() {
     if (payments.length > 0 && projects.length > 0) {
       const merged = payments.map((payment) => {
         const matchingProject = projects.find(
-          (project) => project.p_id === payment.p_id
+          (project) => Number(project.p_id) === Number(payment.p_id)
         );
         return {
           ...payment,
@@ -130,16 +129,25 @@ function PaymentRequest() {
   };
 
   const filteredAndSortedData = mergedData
-    .filter((project) =>
-      ["projectName", "projectCode", "pay_id", ].some((key) =>
+    .filter((project) => {
+      const matchesSearchQuery = ["pay_id", "projectName", "vendor"].some((key) =>
         project[key]?.toLowerCase().includes(searchQuery)
-      )
-    )
+      );
+     
+      const matchesVendorFilter = !vendorFilter || project.vendor === vendorFilter;
+      console.log("MatchVendors are: ", matchesVendorFilter);
+
+
+    
+      return matchesSearchQuery && matchesVendorFilter ;
+    })
+    
+     
     .sort((a, b) => {
       if (a.projectName?.toLowerCase().includes(searchQuery)) return -1;
       if (b.projectName?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.projectCode?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.projectCode?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.vendor?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.vendor?.toLowerCase().includes(searchQuery)) return 1;
       if (a.pay_id?.toLowerCase().includes(searchQuery)) return -1;
       if (b.pay_id?.toLowerCase().includes(searchQuery)) return 1;
       return 0;
@@ -189,6 +197,12 @@ function PaymentRequest() {
 
     return pages;
   };
+
+      useEffect(() => {
+        const page = parseInt(searchParams.get("page")) || 1;
+        setCurrentPage(page);
+      }, [searchParams]);
+
   const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
 
   const paginatedPayments = filteredAndSortedData.slice(
@@ -196,8 +210,9 @@ function PaymentRequest() {
     currentPage * itemsPerPage
   );
 
-  const handlePageChange = (page) => {
+   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
+      setSearchParams({ page });
       setCurrentPage(page);
     }
   };

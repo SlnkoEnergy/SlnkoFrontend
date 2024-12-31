@@ -28,6 +28,7 @@ import Typography from "@mui/joy/Typography";
 import * as React from "react";
 import { useEffect, useState } from "react";
 import Axios from "../utils/Axios";
+import { useSearchParams } from "react-router-dom";
 
 function RowMenu() {
   return (
@@ -68,33 +69,37 @@ function PaymentRequest() {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  // const [states, setStates] = useState([]);
-  // const [customers, setCustomers] = useState([]);
-  // const [stateFilter, setStateFilter] = useState("");
-  // const [customerFilter, setCustomerFilter] = useState("");
+  const [groups, setGroups] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [groupFilter, setGroupFilter] = useState("");
+  const [customerFilter, setCustomerFilter] = useState("");
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
   const [projects, setProjects] = useState([]);
   const [mergedData, setMergedData] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+
+
 
   const renderFilters = () => (
     <>
       <FormControl size="sm">
-        <FormLabel>State</FormLabel>
+        <FormLabel>Group Name</FormLabel>
         <Select
           size="sm"
-          placeholder="Filter by state"
-          // value={stateFilter}
-          // onChange={(e) => setStateFilter(e.target.value)}
+          placeholder="Filter by group"
+          value={groupFilter}
+          onChange={(e) => setGroupFilter(e.target.value)}
         >
           <Option value="">All</Option>
-          {/* {states.map((state, index) => (
-            <Option key={index} value={state}>
-              {state}
+          {groups.map((group, index) => (
+            <Option key={index} value={group}>
+              {group}
             </Option>
-          ))} */}
+          ))}
         </Select>
       </FormControl>
       <FormControl size="sm">
@@ -102,15 +107,15 @@ function PaymentRequest() {
         <Select
           size="sm"
           placeholder="Filter by customer"
-          // value={customerFilter}
-          // onChange={(e) => setCustomerFilter(e.target.value)}
+          value={customerFilter}
+          onChange={(e) => setCustomerFilter(e.target.value)}
         >
           <Option value="">All</Option>
-          {/* {customers.map((customer, index) => (
+          {customers.map((customer, index) => (
             <Option key={index} value={customer}>
               {customer}
             </Option>
-          ))} */}
+          ))}
         </Select>
       </FormControl>
     </>
@@ -129,6 +134,18 @@ function PaymentRequest() {
 
         setProjects(projectResponse.data.data);
         console.log("Project Data are:", projectResponse.data.data);
+
+        const uniqueCustomers = [
+          ...new Set(projectResponse.data.data.map((project) => project.customer)),
+        ].filter(Boolean);
+
+        const uniqueGroups = [
+          ...new Set(projectResponse.data.data.map((project) => project.p_group)),
+        ].filter(Boolean);
+
+        setCustomers(uniqueCustomers);
+        setGroups(uniqueGroups);
+
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -143,7 +160,7 @@ function PaymentRequest() {
     if (payments.length > 0 && projects.length > 0) {
       const merged = payments.map((payment) => {
         const matchingProject = projects.find(
-          (project) => project.p_id === payment.p_id
+          (project) => Number(project.p_id) === Number(payment.p_id)
         );
         return {
           ...payment,
@@ -172,6 +189,40 @@ function PaymentRequest() {
         : prevSelected.filter((item) => item !== id)
     );
   };
+  const handleSearch = (query) => {
+    setSearchQuery(query.toLowerCase());
+  };
+
+  const filteredAndSortedData = mergedData
+    .filter((merged) => {
+      const matchesSearchQuery = ["pay_id","projectCode", "projectCustomer", "projectName", "paid_for"].some((key) =>
+        merged[key]?.toLowerCase().includes(searchQuery)
+      );
+      
+      const matchesGroupFilter = !groupFilter || merged.group === groupFilter;
+      console.log("MatchGroup are: ", matchesGroupFilter);
+
+      
+      const matchesCustomerFilter =
+        !customerFilter || merged.customer === customerFilter;
+
+      
+      return matchesSearchQuery && matchesGroupFilter && matchesCustomerFilter;
+    })
+    .sort((a, b) => {
+      if (a.pay_id?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.pay_id?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.paid_for?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.paid_for?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.projectCode?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.projectCode?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.projectCustomer?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.projectCustomer?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.projectName?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.projectName?.toLowerCase().includes(searchQuery)) return 1;
+      return 0;
+    });
+
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
 
@@ -201,15 +252,39 @@ function PaymentRequest() {
 
     return pages;
   };
-  const totalPages = Math.ceil(mergedData.length / itemsPerPage);
 
-  const paginatedPayments = mergedData.slice(
+    useEffect(() => {
+        const page = parseInt(searchParams.get("page")) || 1;
+        setCurrentPage(page);
+      }, [searchParams]);
+
+  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
+
+  const formatDate = (dateString) => {
+    if (!dateString) {
+      return "-";
+    }
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      console.warn(`Invalid date value: "${dateString}"`);
+      return "-";
+    }
+    const options = { day: "2-digit", month: "short", year: "numeric" };
+    return new Intl.DateTimeFormat("en-GB", options).format(date).replace(/ /g, "/");
+  };
+
+  const paginatedPayments = filteredAndSortedData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
+  const paymentsWithFormattedDate = paginatedPayments.map((payment) => ({
+    ...payment,
+    formattedDate: formatDate(payment.dbt_date),
+  }));
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
+      setSearchParams({ page });
       setCurrentPage(page);
     }
   };
@@ -279,8 +354,10 @@ function PaymentRequest() {
           <FormLabel>Search here</FormLabel>
           <Input
             size="sm"
-            placeholder="Search"
+            placeholder="Search by Project ID, Customer, or Name"
             startDecorator={<SearchIcon />}
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
         {renderFilters()}
@@ -324,13 +401,13 @@ function PaymentRequest() {
                 >
                   <Checkbox
                     size="sm"
-                    checked={selected.length === paginatedPayments.length}
+                    checked={selected.length === paymentsWithFormattedDate.length}
                     onChange={(event) =>
                       handleRowSelect("all", event.target.checked)
                     }
                     indeterminate={
                       selected.length > 0 &&
-                      selected.length < paginatedPayments.length
+                      selected.length < paymentsWithFormattedDate.length
                     }
                   />
                 </Box>
@@ -364,8 +441,8 @@ function PaymentRequest() {
               </Box>
             </Box>
             <Box component="tbody">
-              {paginatedPayments.length > 0 ? (
-                paginatedPayments.map((payment, index) => (
+              {paymentsWithFormattedDate.length > 0 ? (
+                paymentsWithFormattedDate.map((payment, index) => (
                   <Box
                     component="tr"
                     key={index}
@@ -407,7 +484,7 @@ function PaymentRequest() {
                         textAlign: "center",
                       }}
                     >
-                      {payment.dbt_date}
+                      {payment.formattedDate}
                     </Box>
                     <Box
                       component="td"
@@ -578,19 +655,6 @@ function PaymentRequest() {
             )
           )}
         </Box>
-        {/* <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
-    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-      <IconButton
-        key={page}
-        size="sm"
-        variant={page === currentPage ? "contained" : "outlined"}
-        color="neutral"
-        onClick={() => handlePageChange(page)}
-      >
-        {page}
-      </IconButton>
-    ))}
-  </Box> */}
 
         <Button
           size="sm"

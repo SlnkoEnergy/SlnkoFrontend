@@ -118,13 +118,13 @@ function ProjectBalance() {
                 color="primary"
                 startDecorator={<DownloadRoundedIcon />}
                 size="sm"
-                onClick={handleExportToCSV} // Call the export function on click
+                onClick={handleExportToCSV} 
               >
                 Export to CSV
               </Button>
             </Box>
           </Box>
-          <ProjectBalances ref={projectBalancesRef} /> {/* Pass the ref to the component */}
+          <ProjectBalances ref={projectBalancesRef} />
         </Box>
       </Box>
     </CssVarsProvider>

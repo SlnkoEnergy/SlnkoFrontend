@@ -10,9 +10,9 @@ import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 
 import Sidebar from '../../component/Partials/Sidebar';
 import Header from '../../component/Partials/Header';
-import AddProject from '../../component/Forms/Add_Project';
+import EditUser from '../../component/Forms/User/EditUser';
 
-function Add_Project() {
+function Add_User() {
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -75,9 +75,10 @@ function Add_Project() {
               alignItems: { xs: 'start', sm: 'center' },
               flexWrap: 'wrap',
               justifyContent: 'space-between',
+              marginLeft:{xl:"40%", lg:"35%", md:"30%"}
             }}
           >
-           <AddProject />
+           <EditUser />
            
           </Box>
           
@@ -89,4 +90,4 @@ function Add_Project() {
     </CssVarsProvider>
   );
 }
-export default Add_Project;
+export default Add_User;

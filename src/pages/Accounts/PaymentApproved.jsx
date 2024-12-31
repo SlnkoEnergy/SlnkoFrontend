@@ -2,14 +2,14 @@ import Box from "@mui/joy/Box";
 import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider } from "@mui/joy/styles";
 import React from "react";
+import Button from "@mui/joy/Button";
 // import Button from '@mui/joy/Button';
 import Breadcrumbs from "@mui/joy/Breadcrumbs";
 import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
-
 // import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-// import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
+import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
 import Sidebar from "../../component/Partials/Sidebar";
 import PaymentApproved from "../../component/PaymentApproved";
 
@@ -109,14 +109,14 @@ function ProjectBalance() {
               size="sm"
             >
               Add New Project +
-            </Button>
+            </Button> */}
             <Button
               color="primary"
               startDecorator={<DownloadRoundedIcon />}
               size="sm"
             >
-              Export to CSV
-            </Button> */}
+              Payment Detail
+            </Button>
             </Box>
           </Box>
           <PaymentApproved />

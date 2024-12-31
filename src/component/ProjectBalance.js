@@ -237,7 +237,6 @@ const  ProjectBalances = forwardRef((props, ref) => {
   
   useImperativeHandle(ref, () => ({
     exportToCSV() {
-      // Implement your CSV export logic here
       console.log("Exporting data to CSV...");
       const headers = [
         "Project Id", "Project Name", "Client Name", "Group Name", "Plant Capacity (MW AC)", 
@@ -640,19 +639,7 @@ const  ProjectBalances = forwardRef((props, ref) => {
             )
           )}
         </Box>
-        {/* <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
-    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-      <IconButton
-        key={page}
-        size="sm"
-        variant={page === currentPage ? "contained" : "outlined"}
-        color="neutral"
-        onClick={() => handlePageChange(page)}
-      >
-        {page}
-      </IconButton>
-    ))}
-  </Box> */}
+       
 
         <Button
           size="sm"

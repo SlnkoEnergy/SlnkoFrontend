@@ -121,7 +121,7 @@ function index() {
     />
 
     {/* If user goes to an undefined route, redirect to login */}
-    <Route path="*" element={<Navigate to="/login" />} />
+    <Route path="*" element={<Navigate to="#" />} />
 
     {/* -----------------All Forms -----------*/}
     <Route

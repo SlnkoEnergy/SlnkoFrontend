@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { CssVarsProvider } from '@mui/joy/styles';
 import CssBaseline from '@mui/joy/CssBaseline';
 import Box from '@mui/joy/Box';
@@ -18,6 +18,14 @@ import Header from '../../component/Partials/Header';
 import AllProject from '../../component/AllProject';
 
 function ProjectBalance() {
+      const allProjectRef = useRef();
+    
+  
+      const handleExportToCSV = () => {
+        if (allProjectRef.current) {
+          allProjectRef.current.exportToCSV();
+        }
+      };
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -117,12 +125,13 @@ function ProjectBalance() {
                 color="primary"
                 startDecorator={<DownloadRoundedIcon />}
                 size="sm"
+                onClick={handleExportToCSV} 
               >
                 Export to CSV
               </Button>
             </Box>
           </Box>
-          <AllProject />
+          <AllProject ref={allProjectRef} />
           {/* <OrderTable /> */}
           {/* <OrderList /> */}
         </Box>

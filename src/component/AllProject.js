@@ -23,11 +23,12 @@ import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import { useNavigate } from "react-router-dom";
 import Axios from "../utils/Axios";
+import { useSearchParams } from "react-router-dom";
 
-function AllProjects() {
+const AllProjects = forwardRef((props, ref) => {
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +42,7 @@ function AllProjects() {
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // const states = ["California", "Texas", "New York", "Florida"];
 
@@ -172,6 +174,12 @@ function AllProjects() {
 
     return pages;
   };
+
+    useEffect(() => {
+     const page = parseInt(searchParams.get("page")) || 1;
+        setCurrentPage(page);
+      }, [searchParams]);
+
   const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
 
   const paginatedProjects = filteredAndSortedData.slice(
@@ -181,6 +189,7 @@ function AllProjects() {
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
+      setSearchParams({ page });
       setCurrentPage(page);
     }
   };
@@ -225,6 +234,43 @@ function AllProjects() {
       </FormControl>
     </>
   );
+
+  useImperativeHandle(ref, () => ({
+      exportToCSV() {
+        console.log("Exporting data to CSV...");
+        const headers = [
+                  "Project ID",
+                  "Customer",
+                  "Project Name",
+                  "Email",
+                  "Mobile",
+                  "State",
+                  "Slnko Service Charges (with GST)",
+        ];
+    
+        const rows = projects.map((project) => [
+          project.code || "-",
+          project.customer || "-",
+          project.name || "-",
+          project.email || "-",
+          project.number || "-",
+          project.state || "-",
+          project.service || "-",
+        ]);
+    
+        const csvContent = [
+          headers.join(","),
+          ...rows.map((row) => row.join(","))
+        ].join("\n");
+    
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "All_Project.csv";
+        link.click();
+      },
+    }));
+  
 
   return (
     <>
@@ -564,5 +610,5 @@ function AllProjects() {
       </Box>
     </>
   );
-}
+})
 export default AllProjects;

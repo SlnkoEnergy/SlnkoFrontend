@@ -195,8 +195,13 @@ function Sidebar() {
             >
               <List sx={{ gap: 0.5 }}>
                 <ListItem sx={{ mt: 0.5 }}>
-                  <ListItemButton onClick={() => navigate("/User/add-user")}>
+                  <ListItemButton onClick={() => navigate("/add_user")}>
                     Add User
+                  </ListItemButton>
+                </ListItem>
+                <ListItem sx={{ mt: 0.5 }}>
+                  <ListItemButton onClick={() => navigate("/edit_user")}>
+                    Edit User
                   </ListItemButton>
                 </ListItem>
               </List>
