@@ -9,213 +9,198 @@ import {
   Grid,
   Input,
   Option,
-  Select,
   Sheet,
   Typography,
 } from "@mui/joy";
 import Img9 from "../../assets/solar.png";
+import { useNavigate } from "react-router-dom";
+import Select from "react-select"
 import Axios from "../../utils/Axios";
 
 function PaymentRequestForm() {
-  const [projectIDs, setProjectIDs] = useState([]);
-  const [poNumbers, setPoNumbers] = useState([]);
-  const [vendors, setVendors] = useState([]);
-  const [selectedPoDetails, setSelectedPoDetails] = useState({});
+  const navigate = useNavigate();
+  const [getFormData, setGetFormData] = useState({
+    projectIDs: [],
+    poNumbers: [],
+    vendors: [],
+  });
+
+
   const [formData, setFormData] = useState({
     p_id: "",
     name: "",
     customer: "",
     p_group: "",
-    pay_id: "",
     pay_type: "",
     po_number: "",
     amt_for_customer: "",
     dbt_date: "",
-    item: "",
+    paid_for: "",
     vendor: "",
     comment: "",
     po_value: "",
     amount_paid: "",
-    total_advance_paid:"",
     po_balance: "",
     benificiary: "",
     acc_number: "",
     ifsc: "",
     branch: "",
-    paymentMode: "Account Transfer",
+    total_advance_paid:""
   });
 
   useEffect(() => {
-    const fetchProjectIDs = async () => {
+    const fetchData = async () => {
       try {
-        const response = await Axios.get("/get-all-project");
-        console.log("Project IDs fetched:", response.data);
-        setProjectIDs(response.data.data || []);
+        const [projectsResponse, poNumbersResponse, vendorsResponse] = await Promise.all([
+          Axios.get("/get-all-project"),
+          Axios.get("/get-all-po"),
+          Axios.get("/get-all-vendor"),
+        ]);
+
+        setGetFormData({
+          projectIDs: projectsResponse.data.data || [],
+          poNumbers: poNumbersResponse.data.data || [],
+          vendors: vendorsResponse.data.data || [],
+        });
+
+        console.log("Fetched all data:", {
+          projectIDs: projectsResponse.data.data,
+          poNumbers: poNumbersResponse.data.data,
+          vendors: vendorsResponse.data.data,
+        });
       } catch (error) {
-        console.error("Error fetching project IDs:", error);
+        console.error("Error fetching data with Promise.all:", error);
       }
     };
 
-    const fetchPoNumbers = async () => {
-      try {
-        const response = await Axios.get("/get-all-po");
-        console.log("PO Numbers fetched:", response.data);
-        setPoNumbers(response.data.data || []);
-      } catch (error) {
-        console.error("Error fetching PO numbers:", error);
-      }
-    };
-
-    fetchProjectIDs();
-    fetchPoNumbers();
+    fetchData();
   }, []);
 
-  const getVendorDetails = async (vendorName) => {
-    try {
-      const response = await Axios.get("/get-all-vendor");
-      console.log("All vendor details fetched:", response.data);
-
-      const matchedVendor = response.data.data?.find(
-        (vendor) => vendor.name === vendorName
-      );
-
-      if (matchedVendor) {
-        console.log(`Vendor details found for ${vendorName}:`, matchedVendor);
-        return matchedVendor;
-      } else {
-        console.warn(`No details found for vendor: ${vendorName}`);
-        return {};
-      }
-    } catch (error) {
-      console.error("Error fetching vendor details:", error);
-      return {};
-    }
-  };
-
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-// Handle conditional logic for pay_type
-if (name === "pay_type") {
-  if (value === "adjustment") {
-   
-    setFormData((prev) => ({
-      ...prev,
-      item: "Customer Adjustment",
-      po_number: "N/A",
-      po_value: "N/A",
-      amount_paid: "N/A",
-      po_balance: "N/A",
-      benificiary: "",
-      acc_number: "",
-      ifsc: "",
-      branch: "",
-    }));
-  } else if (value === "slnko_service_charge") {
-    
-    setFormData((prev) => ({
-      ...prev,
-      item: "Slnko Service Charge",
-      benificiary: "Slnko Energy PVT LTD",
-      acc_number: "N/A",
-      ifsc: "N/A",
-      branch: "N/A",
-    }));
-  } else {
-    // Reset values if it's another payment type
-    setFormData((prev) => ({
-      ...prev,
-      item: "",
-      benificiary: "",
-      acc_number: "",
-      ifsc: "",
-      branch: "",
-    }));
-  }
-}
-
-
-    if (name === "po_number" && value) {
-      const selectedPo = poNumbers.find((po) => po.po_number === value);
-      if (selectedPo) {
-        console.log("Selected PO details:", selectedPo);
-        setSelectedPoDetails(selectedPo);
-        const po_balance = selectedPo.po_value - selectedPo.amount_paid;
+    if (name === "pay_type") {
+      if (value === "adjustment") {
         setFormData((prev) => ({
           ...prev,
-          item: selectedPo.item || "",
-          vendor: selectedPo.vendor || "",
-          po_value: selectedPo.po_value || "",
-          amount_paid: selectedPo.amount_paid || "",
-          po_balance: po_balance !== null && po_balance !== undefined ? po_balance : "", // Handle `0` properly
+          paid_for: "Customer Adjustment",
+          po_number: "N/A",
+          po_value: "N/A",
+          total_advance_paid: "N/A",
+          po_balance: "N/A",
+          benificiary: "",
+          acc_number: "",
+          ifsc: "",
+          branch: "",
         }));
-
-      
-        if (selectedPo.vendor) {
-          console.log("Fetching details for vendor:", selectedPo.vendor);
-          getVendorDetails(selectedPo.vendor).then((vendorDetails) => {
-            console.log("Fetched beneficiary details:", vendorDetails);
-            setFormData((prev) => ({
-              ...prev,
-              benificiary: vendorDetails.benificiary || "",
-              acc_number: vendorDetails.acc_number || "",
-              ifsc: vendorDetails.ifsc || "",
-              branch: vendorDetails.branch || "",
-              paymentMode: "Account Transfer",
-            }));
-          });
-        }
+      } else if (value === "slnko_service_charge") {
+        setFormData((prev) => ({
+          ...prev,
+          paid_for: "Slnko Service Charge",
+          benificiary: "Slnko Energy PVT LTD",
+          acc_number: "N/A",
+          ifsc: "N/A",
+          branch: "N/A",
+        }));
       } else {
-        console.warn("PO number not found in the list:", value);
+        setFormData((prev) => ({
+          ...prev,
+          paid_for: "",
+          benificiary: "",
+          acc_number: "",
+          ifsc: "",
+          branch: "",
+        }));
       }
     }
 
- // If Amount Requested changes, validate that it does not exceed Current PO Balance
- if (name === "amount_paid") {
-  const amount_paid = parseFloat(value);
-  const po_balance = parseFloat(formData.po_balance);
+    if (name === "amount_paid") {
+      const amount_paid = parseFloat(value);
+      const po_balance = parseFloat(formData.po_balance);
 
-  if (amount_paid > po_balance) {
-    // You can show an alert or message to the user
-    alert("Amount Requested cannot be greater than Current PO Balance!");
-    // Reset the value to the previous one or set it to the maximum allowed
-    setFormData((prev) => ({
-      ...prev,
-      amount_paid: po_balance,
-    }));
-  }
-}
+      if (amount_paid > po_balance) {
+        alert("Amount Requested cannot be greater than Current PO Balance!");
+        setFormData((prev) => ({
+          ...prev,
+          amount_paid: po_balance,
+        }));
+      }
+    }
 
     if (name === "p_id" && value) {
-      const selectedProject = projectIDs.find((project) => project.code === value);
+      const selectedProject = getFormData.projectIDs.find(
+        (project) => project.p_id === value
+      );
+    
       if (selectedProject) {
-        console.log("Selected Project details:", selectedProject);
-        setFormData((prev) => ({
+        console.log("Selected project:", selectedProject);
+        setFormData((prev) => ( {
           ...prev,
           name: selectedProject.name || "",
           customer: selectedProject.customer || "",
           p_group: selectedProject.p_group || "",
         }));
       } else {
-        console.warn("Project ID not found in the list:", value);
+        console.warn("No project found for projectID:", value); // Log if project isn't found
       }
     }
   };
 
-   const handleSubmit = async (e) => {
+  const handleSelectChange = (selectedOption: { value: string; label: string }) => {
+    if (selectedOption) {
+      setFormData((prev) => ({
+        ...prev,
+        p_id: selectedOption.value,
+        name: selectedOption.label, // assuming label corresponds to the project name
+      }));
+    }
+  };
+
+  const handlePoChange = (selectedOption: { value: string; label: string }) => {
+    const selectedPo = getFormData.poNumbers.find((po) => po.po_number === selectedOption?.value);
+    if (selectedPo) {
+      const poValue = parseFloat(selectedPo.po_value || "0");
+      const totalAdvancePaid = parseFloat(selectedPo.total_advance_paid || "0");
+      const po_balance = poValue - totalAdvancePaid;
+      setFormData((prev) => ({
+        ...prev,
+        po_number: selectedPo.po_number,
+        paid_for: selectedPo.item || "",
+        vendor: selectedPo.vendor || "",
+        po_value: poValue.toString(),
+        total_advance_paid: totalAdvancePaid.toString(),
+        po_balance: po_balance.toString(),
+      }));
+
+      // Update beneficiary and other details if vendor is found
+      if (selectedPo.vendor) {
+        const matchedVendor = getFormData.vendors.find(
+          (vendor) => vendor.name === selectedPo.vendor
+        );
+
+        if (matchedVendor) {
+          setFormData((prev) => ({
+            ...prev,
+            benificiary: matchedVendor.Beneficiary_Name || "",
+            acc_number: matchedVendor.Account_No || "",
+            ifsc: matchedVendor.IFSC_Code || "",
+            branch: matchedVendor.Bank_Name || "",
+            
+          }));
+        }
+      }
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log("Form data submitted:", formData);
     try {
-      const response = await Axios.post(
-        "/add-pay-request",
-        formData
-      );
+      const response = await Axios.post("/add-pay-request", formData);
       console.log("Payment request submitted successfully:", response.data);
-      // Handle success (show a success message, reset the form, etc.)
     } catch (error) {
       console.error("Error submitting payment request:", error);
-      // Handle error (show an error message, etc.)
     }
   };
   
@@ -253,27 +238,23 @@ if (name === "pay_type") {
           <Box component="form" onSubmit={handleSubmit}>
             <Grid container spacing={2}>
               <Grid xs={12} sm={6}>
-                <Select
-                  name="p_id"
-                  value={formData.p_id|| ""}
-                  onChange={(e, value) =>
-                    handleChange({ target: { name: "p_id", value } })
-                  }
-                  placeholder="Project ID"
-                  required
-                >
-                  {projectIDs.map((project) => (
-                    <Option key={project._id} value={project.code}>
-                      {project.code}
-                    </Option>
-                  ))}
-                </Select>
+              <Select
+                name="p_id"
+                value={formData.p_id}
+                onChange={(e) => handleChange({ target: { name: "p_id", value: e.value } })}
+                options={getFormData.projectIDs.map((project) => ({
+                  label: project.code,
+                  value: project.p_id
+                }))}
+                placeholder="Select Project"
+                getOptionLabel={(e) => `${e.label} - ${e.value}`} 
+              />
               </Grid>
 
               <Grid xs={12} sm={6}>
                 <Input
-                  name="projectName"
-                  value={formData.name}
+                  name="name"
+                  value={formData.name || ""}
                   onChange={handleChange}
                   placeholder="Project Name"
                   required
@@ -282,8 +263,8 @@ if (name === "pay_type") {
 
               <Grid xs={12} sm={6}>
                 <Input
-                  name="clientName"
-                  value={formData.customer}
+                  name="customer"
+                  value={formData.customer || ""}
                   onChange={handleChange}
                   placeholder="Client Name"
                   required
@@ -292,68 +273,66 @@ if (name === "pay_type") {
 
               <Grid xs={12} sm={6}>
                 <Input
-                  name="groupName"
-                  value={formData.p_group}
+                  name="p_group"
+                  value={formData.p_group || ""}
                   onChange={handleChange}
                   placeholder="Group Name"
                   
                 />
               </Grid>
 
-              <Grid xs={12} sm={4}>
+              {/* <Grid xs={12} sm={4}>
                 <Input
-                  name="paymentID"
+                  name="pay_id"
                   value={formData.pay_id}
                   onChange={handleChange}
                   placeholder="Payment ID"
                   required
                 />
-              </Grid>
+              </Grid> */}
 
               <Grid xs={12} sm={4}>
-                <Select
+              <Select
                   name="pay_type"
-                  value={formData.pay_type}
-                  onChange={(e, value) =>
-                    handleChange({ target: { name: "pay_type", value } })
-                  }
+                  value={formData.pay_type ? { label: formData.pay_type, value: formData.pay_type } : null}
+                  onChange={(selectedOption) => handleChange({ target: { name: "pay_type", value: selectedOption?.value } })}
+                  options={[
+                    { label: "Payment Against PO", value: "against_po" },
+                    { label: "Adjustment", value: "adjustment" },
+                    { label: "Slnko Service Charge", value: "slnko_service_charge" },
+                    { label: "Other", value: "Other" },
+                  ]}
                   placeholder="Payment Type"
                   required
-                >
-                  <Option value="against_po">Payment Against PO</Option>
-                  <Option value="adjustment">Adjustment</Option>
-                   <Option value="slnko_service_charge">Slnko Service Charge</Option>
-                  <Option value="Other">Other</Option> 
-                </Select>
+                />
               </Grid>
 
               <Grid xs={12} sm={4}>
-  <Select
-    name="po_number"
-    value={formData.po_number}
-    onChange={(e, value) => handleChange({ target: { name: "po_number", value } })}
-    placeholder="PO Number"
-    disabled={formData.pay_type === "adjustment"}
-  >
-    {poNumbers.map((po) => (
-      <Option key={po._id} value={po.po_number}>
-        {po.po_number}
-      </Option>
-    ))}
-    {/* If PO number is set to N/A, show that as an option */}
-    {formData.pay_type === "adjustment" && (
-      <Option value="N/A">N/A</Option>
-    )}
-  </Select>
-</Grid>
+              <Select
+                  name="po_number"
+                  value={formData.po_number ? { label: formData.po_number, value: formData.po_number } : null}
+                  onChange={handlePoChange}
+                  options={getFormData.poNumbers.map((po) => ({
+                    value: po.po_number,
+                    label: po.po_number,
+                  }))}
+                  placeholder="PO Number"
+                  isDisabled={formData.pay_type === "adjustment"}
+                />
+              </Grid>
 
 
               <Grid xs={12} sm={4}>
                 <Input
-                  type="number"
-                  name="amount_paid"
+                  
                   value={formData.amount_paid}
-                  onChange={handleChange}
+  onChange={(e) =>
+    setFormData((prev) => ({
+      ...prev,
+      amount_paid: e.target.value, 
+    }))
+  }
+                  
                   placeholder="Amount Requested (INR)"
                   required
                 />
@@ -361,9 +340,9 @@ if (name === "pay_type") {
 
               <Grid xs={12} sm={4}>
                 <Input
-                  type="number"
+                  
                   name="amt_for_customer"
-                  value={formData.amt_for_customer}
+                  value={formData.amt_for_customer || ""}
                   onChange={handleChange}
                   placeholder="Amount for Customers (INR)"
                 />
@@ -372,7 +351,7 @@ if (name === "pay_type") {
               <Grid xs={12} sm={4}>
                 <Input
                   type="date"
-                  name="requestDate"
+                  name="dbt_date"
                   value={formData.dbt_date}
                   onChange={handleChange}
                   placeholder="Request Date"
@@ -381,19 +360,24 @@ if (name === "pay_type") {
               </Grid>
 
               <Grid xs={12} sm={4}>
-                <Input
-                  name="requestedFor"
-                  value={formData.item}
-                  onChange={handleChange}
-                  placeholder="Requested For"
-                  required
-                />
+              <Input
+    name="paid_for"
+    value={formData.item ||formData.paid_for }
+    onChange={(e) =>
+      setFormData((prev) => ({
+        ...prev,
+        paid_for: e.target.value, 
+      }))
+    }
+    placeholder="Requested For"
+    required
+  />
               </Grid>
 
               <Grid xs={12} sm={4}>
                 <Input
                   name="vendor"
-                  value={formData.vendor}
+                  value={formData.vendor || ""}
                   onChange={handleChange}
                   placeholder="Vendor/Credited to"
                   required
@@ -412,8 +396,8 @@ if (name === "pay_type") {
 
               <Grid xs={12} sm={4}>
                 <Input
-                  name="poValue"
-                  value={formData.po_value}
+                  name="po_value"
+                  value={formData.po_value || ""}
                   onChange={handleChange}
                   placeholder="PO Value"
                   required
@@ -422,18 +406,23 @@ if (name === "pay_type") {
 
               <Grid xs={12} sm={4}>
                 <Input
-                  name="totalAdvancePaid"
-                  value={formData.amount_paid}
-                  onChange={handleChange}
-                  placeholder="Total Advance Paid"
-                  required
+                  name="total_advance_paid"
+                  value={formData.total_advance_paid} // Use only total_advance_paid
+  onChange={(e) =>
+    setFormData((prev) => ({
+      ...prev,
+      total_advance_paid: e.target.value, 
+    }))
+  }
+  placeholder="Total Advance Paid"
+  readOnly // This field is read-only, so no manual input
                 />
               </Grid>
 
               <Grid xs={12} sm={4}>
                 <Input
                   name="po_balance"
-                  value={formData.po_balance}
+                  value={formData.po_balance || ""}
                   onChange={handleChange}
                   placeholder="Current PO Balance"
                   required
@@ -448,18 +437,16 @@ if (name === "pay_type") {
 
               <Grid xs={12} sm={12}>
                 <Input
-                  name="paymentMode"
-                  value={formData.paymentMode}
+                defaultValue={"Account Transfer"}
                   onChange={handleChange}
-                  placeholder="Payment Mode"
-                  required
+                  disabled
                 />
               </Grid>
 
               <Grid xs={12} sm={6}>
                 <Input
                   name="benificiary"
-                  value={formData.benificiary}
+                  value={formData.benificiary || ""}
                   onChange={handleChange}
                   placeholder="Beneficiary Name"
                   required
@@ -469,7 +456,7 @@ if (name === "pay_type") {
               <Grid xs={12} sm={6}>
                 <Input
                   name="acc_number"
-                  value={formData.acc_number}
+                  value={formData.acc_number || ""}
                   onChange={handleChange}
                   placeholder="Beneficiary Account Number"
                   required
@@ -479,7 +466,7 @@ if (name === "pay_type") {
               <Grid xs={12} sm={6}>
                 <Input
                   name="ifsc"
-                  value={formData.ifsc}
+                  value={formData.ifsc || ""}
                   onChange={handleChange}
                   placeholder="Beneficiary IFSC Code"
                   required
@@ -489,7 +476,7 @@ if (name === "pay_type") {
               <Grid xs={12} sm={6}>
                 <Input
                   name="branch"
-                  value={formData.branch}
+                  value={formData.branch || ""}
                   onChange={handleChange}
                   placeholder="Bank Name"
                   required
@@ -505,13 +492,13 @@ if (name === "pay_type") {
               </Grid>
 
               <Grid>
-                <Button variant="outlined" color="neutral">
+                <Button variant="outlined" color="neutral" onClick={() => navigate("/standby-request")}>
                   StandBy
                 </Button>
               </Grid>
 
               <Grid>
-                <Button variant="outlined" color="neutral">
+                <Button variant="outlined" color="neutral" onClick={() => navigate("/daily-payment-request")}>
                   Back
                 </Button>
               </Grid>

@@ -1,33 +1,39 @@
-import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import Box from "@mui/joy/Box";
 import Breadcrumbs from "@mui/joy/Breadcrumbs";
+import Button from "@mui/joy/Button";
 import CssBaseline from "@mui/joy/CssBaseline";
 import Link from "@mui/joy/Link";
 import { CssVarsProvider } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
 import React from "react";
-import StandBysummary from "../../component/Forms/StandbySummary";
+
+import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
+
+import { useNavigate } from "react-router-dom";
 import Header from "../../component/Partials/Header";
 import Sidebar from "../../component/Partials/Sidebar";
+import StandByRequest from "../../component/StandBySummary";
 
-function Edit_Project() {
+function ProjectBalance() {
+  const navigate = useNavigate();
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
-      <Box sx={{ display: "flex", minHeight: "100%" }}>
+      <Box sx={{ display: "flex", minHeight: "100dvh" }}>
         <Header />
         <Sidebar />
         <Box
           component="main"
           className="MainContent"
           sx={{
-            // px: { xs: 2, md: 6 },
-            // pt: {
-            //   xs: 'calc(12px + var(--Header-height))',
-            //   sm: 'calc(12px + var(--Header-height))',
-            //   md: 3,
-            // },
-            // pb: { xs: 2, sm: 2, md: 3 },
+            px: { xs: 2, md: 6 },
+            pt: {
+              xs: "calc(12px + var(--Header-height))",
+              sm: "calc(12px + var(--Header-height))",
+              md: 3,
+            },
+            pb: { xs: 2, sm: 2, md: 3 },
             flex: 1,
             display: "flex",
             flexDirection: "column",
@@ -40,7 +46,7 @@ function Edit_Project() {
             sx={{
               display: "flex",
               alignItems: "center",
-              marginLeft: { xl: "16%", lg: "20%", md: "30%" },
+              marginLeft: { xl: "15%", lg: "18%", md: "25%" },
             }}
           >
             <Breadcrumbs
@@ -58,18 +64,17 @@ function Edit_Project() {
                 <HomeRoundedIcon />
               </Link> */}
               <Link
-                underline="hover"
+                underline="none"
                 color="neutral"
-                href=""
                 sx={{ fontSize: 12, fontWeight: 500 }}
               >
-                Pending Payments Request
+                Daily Payment Request
               </Link>
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                StandBy Summary
+                StandBy Records
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -82,16 +87,45 @@ function Edit_Project() {
               alignItems: { xs: "start", sm: "center" },
               flexWrap: "wrap",
               justifyContent: "space-between",
+              marginLeft: { xl: "15%", md: "25%", lg: "18%" },
             }}
           >
-            <StandBysummary />
+            <Typography level="h2" component="h1">
+              StandBy Records
+            </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                mb: 1,
+                gap: 1,
+                flexDirection: { xs: "column", sm: "row" },
+                alignItems: { xs: "start", sm: "center" },
+                flexWrap: "wrap",
+                justifyContent: "center",
+              }}
+            >
+              {/* <Button
+                color="primary"
+                size="sm"
+                onClick={() => navigate("/pay_Request")}
+              >
+                Add New Payment +
+              </Button> */}
+              <Button
+                color="primary"
+                startDecorator={<DownloadRoundedIcon />}
+                size="sm"
+              >
+                Export to CSV
+              </Button>
+            </Box>
           </Box>
-
-          {/* <OrderTable /> */}
-          {/* <OrderList /> */}
+          <StandByRequest />
+          {/* <OrderTable />
+          <OrderList /> */}
         </Box>
       </Box>
     </CssVarsProvider>
   );
 }
-export default Edit_Project;
+export default ProjectBalance;

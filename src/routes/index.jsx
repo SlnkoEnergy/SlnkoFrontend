@@ -16,8 +16,8 @@ import PrivateRoute from "./PrivateRoute";
 import Edit_Project from "../pages/Projects/Edit_Project";
 import ViewDetail from "../pages/Accounts/ViewDetail";
 import PaySummary from "../pages/Accounts/PaySummary";
-import StandBySummary from "../pages/Accounts/StandBySummary";
-import StandByRequest from "../pages/Accounts/StandByRequest";
+import StandBy_ReqSummary from "../pages/Accounts/StandByRequest";
+import StandByRecords from "../pages/Accounts/StandByRecords";
 import AddUser from "../pages/Users/AddUser";
 import EditUser from "../pages/Users/EditUser";
 
@@ -92,10 +92,10 @@ function index() {
       }
     />
     <Route
-      path="/standby_request"
+      path="/standby_records"
       element={
         <PrivateRoute>
-          <StandByRequest />
+          <StandByRecords />
         </PrivateRoute>
       }
     />
@@ -165,10 +165,10 @@ function index() {
       }
     />
     <Route
-      path="/standby_summary"
+      path="/standby_Request"
       element={
         <PrivateRoute>
-          <StandBySummary />
+          <StandBy_ReqSummary />
         </PrivateRoute>
       }
     />

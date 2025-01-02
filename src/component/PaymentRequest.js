@@ -176,7 +176,7 @@ const PaymentRequest= forwardRef((props, ref) => {
           <MenuItem color="primary" onClick={() => navigate("/pay_summary")}>
             Pay Summary
           </MenuItem>
-          <MenuItem color="primary" onClick={() => navigate("/standby_request")}>
+          <MenuItem color="primary" onClick={() => navigate("/standby_records")}>
             Pending payments
           </MenuItem>
           <MenuItem color="danger">Delete</MenuItem>

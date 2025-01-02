@@ -169,19 +169,21 @@ const Add_Money = () => {
         justifyContent: "center",
         alignItems: "center",
         minHeight: "100vh",
+        width:'100%',
         backgroundColor: "neutral.softBg",
         padding: 3,
+        
       }}
     >
       <Box
         sx={{
           maxWidth: 900,
-          width: { xs: "100%", sm: "80%", md: "80%" },
+          width: '100%',
           padding: { xs: 2, md: 4 },
           boxShadow: 3,
           borderRadius: "md",
           backgroundColor: "background.surface",
-          marginLeft: { sm: "0", md: "30%", lg: "18%", xl: "10%" },
+          
         }}
       >
         <Box textAlign="center" mb={4}>

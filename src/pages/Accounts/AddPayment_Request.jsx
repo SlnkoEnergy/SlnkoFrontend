@@ -38,7 +38,7 @@ function Add_Project() {
             gap: 1,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', marginLeft:{xl:"16%",lg:"20%", md:"30%"}}}>
+          <Box sx={{ display: 'flex', alignItems: 'center', marginLeft:{xl:"16%",lg:"22%", md:"30%"}}}>
             <Breadcrumbs
               size="sm"
               aria-label="breadcrumbs"
@@ -75,6 +75,7 @@ function Add_Project() {
               alignItems: { xs: 'start', sm: 'center' },
               flexWrap: 'wrap',
               justifyContent: 'space-between',
+              marginLeft:{xl:"8%",lg:"20%", md:"30%"},
             }}
           >
            <PayRequest />

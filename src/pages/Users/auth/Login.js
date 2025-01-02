@@ -5,6 +5,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Slider from "react-slick";
 import { toast } from "react-toastify";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import "react-toastify/dist/ReactToastify.css";
 import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
@@ -21,6 +23,8 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleTogglePassword = () => setShowPassword((prev) => !prev);
 
   const paperStyle = {
     background: Colors.palette.primary.main,
@@ -218,7 +222,7 @@ const Login = () => {
               <Typography>Password:</Typography>
               <TextField
                 variant="outlined"
-                placeholder="password"
+                placeholder="Password"
                 id="password"
                 name="password"
                 fullWidth
@@ -231,6 +235,17 @@ const Login = () => {
                   formik.touched.password && Boolean(formik.errors.password)
                 }
                 helperText={formik.touched.password && formik.errors.password}
+                InputProps={{
+                  endAdornment: (
+                    <Button
+                      aria-label="toggle password visibility"
+                      onClick={handleTogglePassword}
+                      onMouseDown={(e) => e.preventDefault()}
+                    >
+                      {showPassword ? <Visibility /> : <VisibilityOff />}
+                    </Button>
+                  ),
+                }}
               />
               {/* Error Message */}
               {errorMessage && (

@@ -40,7 +40,7 @@ function RowMenu() {
         <MoreHorizRoundedIcon />
       </MenuButton>
       <Menu size="sm" sx={{ minWidth: 140 }}>
-        <MenuItem>Pending Payment</MenuItem>
+        <MenuItem>StandBy Summary</MenuItem>
         {/* <MenuItem>Rename</MenuItem>
         <MenuItem>Move</MenuItem> */}
         {/* <Divider /> */}
@@ -50,7 +50,7 @@ function RowMenu() {
   );
 }
 
-function PaymentRequest() {
+function StandByRequest() {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -561,4 +561,4 @@ function PaymentRequest() {
     </>
   );
 }
-export default PaymentRequest;
+export default StandByRequest;
