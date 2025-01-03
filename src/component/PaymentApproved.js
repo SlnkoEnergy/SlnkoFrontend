@@ -77,20 +77,27 @@ function PaymentRequest() {
       setLoading(true);
       try {
         const [paymentResponse, projectResponse] = await Promise.all([
-          Axios.get("/get-pay-summary"),
+          Axios.get("/get-pay-summary", {
+            params: { approved: "Approved", acc_match: "" }
+          }),
           Axios.get("/get-all-project"),
         ]);
-        setPayments(paymentResponse.data.data);
-        console.log("Payment Data are:", paymentResponse.data.data);
+
+        const approvedPayments = paymentResponse.data.data.filter(
+          (payment) => (payment.approved === "Approved") && payment.acc_match === ""
+        );
+
+        setPayments(approvedPayments);
+        // console.log("Payment Data (approved) are:", approvedPayments);
 
         setProjects(projectResponse.data.data);
-        console.log("Project Data are:", projectResponse.data.data);
+        // console.log("Project Data are:", projectResponse.data.data);
 
         const uniqueVendors = [
           ...new Set(paymentResponse.data.data.map((payment) => payment.vendor)),
         ].filter(Boolean);
 
-        console.log("Vendors are: ", uniqueVendors);
+        // console.log("Vendors are: ", uniqueVendors);
         
 
         setVendors(uniqueVendors);
@@ -123,6 +130,105 @@ function PaymentRequest() {
       setMergedData(merged);
     }
   }, [payments, projects]);
+
+  const handleAccountMatch = async (paymentId, accountMatch, IFSC) => {
+    try {
+      const response = await Axios.put("/acc-matched", {
+        params:{
+        pay_id: paymentId,
+        acc_number: accountMatch,
+        ifsc: IFSC,
+        }
+      });
+  
+      if (response.status === 200) {
+        setPayments((prevPayments) =>
+          prevPayments.map((payment) =>
+            payment.pay_id === paymentId
+              ? { ...payment, acc_number: accountMatch, ifsc: IFSC }
+              : payment
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Error updating approval status:", error);
+    }
+  };
+
+    /*****Account Match Logic ******/
+    const AccountMatch = ({ paymentId }) => {
+      const [accountMatch, setAccountMatch] = useState("");
+      const [ifsc, setIfsc] = useState("");
+      const [error, setError] = useState(null);
+    
+      const handleSubmit = async (e) => {
+        e.preventDefault(); // Prevent form default behavior
+        
+        if (!accountMatch || !ifsc) {
+          setError("Both Account Number and IFSC Code are required.");
+          return;
+        }
+        setError(null); // Clear any previous error
+    
+        try {
+          await handleAccountMatch(paymentId, accountMatch, ifsc); // Call the passed function
+          setError("Account matched successfully!");
+        } catch (err) {
+          setError("Failed to update account match. Please try again.");
+        }
+      };
+    
+      return (
+        <form onSubmit={handleSubmit}>  {/* Form submission handler */}
+          <div>
+            <input
+              type="text"
+              placeholder="Account Number"
+              value={accountMatch}
+              onChange={(e) => setAccountMatch(e.target.value)}
+              style={{ width: "100%", marginBottom: "1rem" }}
+            />
+          </div>
+          <div>
+            <input
+              type="text"
+              placeholder="IFSC Code"
+              value={ifsc}
+              onChange={(e) => setIfsc(e.target.value)}
+              style={{ width: "100%", marginBottom: "1rem" }}
+            />
+          </div>
+          {error && (
+            <div
+              style={{
+                color: error.includes("successfully") ? "green" : "red",
+                fontSize: "0.875rem",
+              }}
+            >
+              {error}
+            </div>
+          )}
+          <div>
+            <button
+              type="submit"  // Submit the form
+              style={{
+                width: "100%",
+                padding: "0.5rem",
+                backgroundColor: "#007bff",
+                color: "white",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              Match
+            </button>
+          </div>
+        </form>
+      );
+    };
+    
+    
+    
 
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
@@ -217,59 +323,8 @@ function PaymentRequest() {
     }
   };
 
-  /*****Account Match Logic ******/
-  const AccountMatch = ({ payment }) => (
-    <Dropdown>
-      <MenuButton
-        slots={{ root: IconButton }}
-        slotProps={{ root: { variant: "plain", color: "neutral", size: "sm" } }}
-      >
-        <MoreHorizRoundedIcon />
-      </MenuButton>
-      <Menu size="sm" sx={{ minWidth: 250, padding: 1 }}>
-        <form>
-          <MenuItem>
-            <Input
-              placeholder="Account Number"
-              name="acc_number"
-              value={payment.acc_number || ""}
-              onChange={(e) => {
-                payment.acc_number = e.target.value;
-              }}
-              sx={{ width: "100%" }}
-            />
-          </MenuItem>
-          <MenuItem>
-            <Input
-              placeholder="IFSC Code"
-              name="ifsc"
-              value={payment.ifsc || ""}
-              onChange={(e) => {
-                payment.ifsc = e.target.value;
-              }}
-              sx={{ width: "100%" }}
-            />
-          </MenuItem>
-          {error && (
-            <MenuItem sx={{ color: "red", fontSize: "0.875rem" }}>
-              {error}
-            </MenuItem>
-          )}
-          <MenuItem>
-            <Button
-              type="submit"
-              variant="solid"
-              color="primary"
-              size="sm"
-              sx={{ width: "100%" }}
-            >
-              Fetch Data
-            </Button>
-          </MenuItem>
-        </form>
-      </Menu>
-    </Dropdown>
-  );
+
+  
   /***** Match Logic ******/
   const MatchRow = ({ payment }) => (
     <Chip
@@ -408,7 +463,7 @@ function PaymentRequest() {
                   "Requested Amount",
                   "Bank Detail",
                   "Validation",
-                  "UTR",
+                  
                 ].map((header, index) => (
                   <Box
                     component="th"
@@ -544,21 +599,14 @@ function PaymentRequest() {
                     >
                       <MatchRow payment={payment} />
                     </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    ></Box>
+                    
                   </Box>
                 ))
               ) : (
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={9}
+                    colSpan={8}
                     sx={{
                       padding: "8px",
                       textAlign: "center",
@@ -596,7 +644,9 @@ function PaymentRequest() {
         >
           Previous
         </Button>
-
+        <Box>
+    Showing {paginatedPayments.length} of {filteredAndSortedData.length} results
+  </Box>
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >

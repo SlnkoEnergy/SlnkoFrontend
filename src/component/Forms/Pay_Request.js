@@ -15,6 +15,7 @@ import {
 import Img9 from "../../assets/solar.png";
 import { useNavigate } from "react-router-dom";
 import Select from "react-select"
+import { toast } from "react-toastify";
 import Axios from "../../utils/Axios";
 
 function PaymentRequestForm() {
@@ -45,6 +46,8 @@ function PaymentRequestForm() {
     acc_number: "",
     ifsc: "",
     branch: "",
+    acc_match:"",
+    utr:"",
     total_advance_paid:""
   });
 
@@ -63,11 +66,11 @@ function PaymentRequestForm() {
           vendors: vendorsResponse.data.data || [],
         });
 
-        console.log("Fetched all data:", {
-          projectIDs: projectsResponse.data.data,
-          poNumbers: poNumbersResponse.data.data,
-          vendors: vendorsResponse.data.data,
-        });
+        // console.log("Fetched all data:", {
+        //   projectIDs: projectsResponse.data.data,
+        //   poNumbers: poNumbersResponse.data.data,
+        //   vendors: vendorsResponse.data.data,
+        // });
       } catch (error) {
         console.error("Error fetching data with Promise.all:", error);
       }
@@ -142,7 +145,7 @@ function PaymentRequestForm() {
           p_group: selectedProject.p_group || "",
         }));
       } else {
-        console.warn("No project found for projectID:", value); // Log if project isn't found
+        console.warn("No project found for projectID:", value);
       }
     }
   };
@@ -192,20 +195,38 @@ function PaymentRequestForm() {
       }
     }
   };
+  const [responseMessage, setResponseMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form data submitted:", formData);
+    
+    setIsLoading(true);
+    // console.log("Form data submitted:", formData);
+
     try {
       const response = await Axios.post("/add-pay-request", formData);
-      console.log("Payment request submitted successfully:", response.data);
+      const { message } = response.data;
+
+    setResponseMessage(message);
+    toast.success("Payment request submitted successfully:", response.data);
+
+      // console.log("Payment request submitted successfully", response.data);
+      navigate("/daily-payment-request");
     } catch (error) {
-      console.error("Error submitting payment request:", error);
-    }
+          console.error(
+            "Error submitting payment request:",
+            error.response?.data || error.message
+          );
+          setResponseMessage("Failed to add payment. Please try again!!");
+    
+          toast.error("Failed to add payment. Please try again.");
+        } finally {
+          setIsLoading(false);
+        }
   };
   
 
-  
 
   return (
     <CssBaseline>
@@ -407,7 +428,7 @@ function PaymentRequestForm() {
               <Grid xs={12} sm={4}>
                 <Input
                   name="total_advance_paid"
-                  value={formData.total_advance_paid} // Use only total_advance_paid
+                  value={formData.total_advance_paid}
   onChange={(e) =>
     setFormData((prev) => ({
       ...prev,
@@ -415,7 +436,7 @@ function PaymentRequestForm() {
     }))
   }
   placeholder="Total Advance Paid"
-  readOnly // This field is read-only, so no manual input
+  readOnly
                 />
               </Grid>
 

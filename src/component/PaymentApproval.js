@@ -30,40 +30,7 @@ import { useEffect, useState } from "react";
 import Axios from "../utils/Axios";
 import { useSearchParams } from "react-router-dom";
 
-function RowMenu() {
-  return (
-    <Dropdown>
-      <MenuButton
-        slots={{ root: IconButton }}
-        slotProps={{ root: { variant: "plain", color: "neutral", size: "sm" } }}
-      >
-        <MoreHorizRoundedIcon />
-      </MenuButton>
-      <Menu size="sm" sx={{ minWidth: 100 }}>
-        <MenuItem>
-          <Chip
-            variant="soft"
-            size="sm"
-            startDecorator={<CheckRoundedIcon />}
-            color="success"
-          >
-            Approved
-          </Chip>
-        </MenuItem>
-        <MenuItem>
-          <Chip
-            variant="soft"
-            size="sm"
-            startDecorator={<BlockIcon />}
-            color="danger"
-          >
-            Rejected
-          </Chip>
-        </MenuItem>
-      </Menu>
-    </Dropdown>
-  );
-}
+
 
 function PaymentRequest() {
   const [payments, setPayments] = useState([]);
@@ -121,19 +88,26 @@ function PaymentRequest() {
     </>
   );
 
+ 
+
   useEffect(() => {
     const fetchPaymentsAndProjects = async () => {
       setLoading(true);
       try {
         const [paymentResponse, projectResponse] = await Promise.all([
-          Axios.get("/get-pay-summary"),
+          Axios.get("/get-pay-summary", {
+            params: { approved: "Pending" }
+          }),
           Axios.get("/get-all-project"),
+
         ]);
-        setPayments(paymentResponse.data.data);
-        console.log("Payment Data are:", paymentResponse.data.data);
+        const pendingPayments = paymentResponse.data.data.filter(payment => payment.approved === "Pending");
+
+        setPayments(pendingPayments);
+        // console.log("Payment Data (Pending) are:", pendingPayments);
 
         setProjects(projectResponse.data.data);
-        console.log("Project Data are:", projectResponse.data.data);
+        // console.log("Project Data are:", projectResponse.data.data);
 
         const uniqueCustomers = [
           ...new Set(projectResponse.data.data.map((project) => project.customer)),
@@ -156,6 +130,7 @@ function PaymentRequest() {
     fetchPaymentsAndProjects();
   }, []);
 
+
   useEffect(() => {
     if (payments.length > 0 && projects.length > 0) {
       const merged = payments.map((payment) => {
@@ -173,6 +148,62 @@ function PaymentRequest() {
       setMergedData(merged);
     }
   }, [payments, projects]);
+
+  const handleApprovalUpdate = async (paymentId, newStatus) => {
+    try {
+      const response = await Axios.put("/approval", {
+        pay_id: paymentId,
+        status: newStatus,
+      });
+
+      if (response.status === 200) {
+        setPayments((prevPayments) =>
+          prevPayments.map((payment) =>
+            payment.pay_id === paymentId
+              ? { ...payment, status: newStatus }
+              : payment
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Error updating approval status:", error);
+    }
+  };
+
+  const RowMenu = ({paymentId}) => {
+    return (
+      <Dropdown>
+        <MenuButton
+          slots={{ root: IconButton }}
+          slotProps={{ root: { variant: "plain", color: "neutral", size: "sm" } }}
+        >
+          <MoreHorizRoundedIcon />
+        </MenuButton>
+        <Menu size="sm" sx={{ minWidth: 100 }}>
+          <MenuItem onClick={() => handleApprovalUpdate(paymentId, "Approved")}>
+            <Chip
+              variant="soft"
+              size="sm"
+              startDecorator={<CheckRoundedIcon />}
+              color="success"
+            >
+              Approved
+            </Chip>
+          </MenuItem>
+          <MenuItem onClick={() => handleApprovalUpdate(paymentId, "Rejected")}>
+            <Chip
+              variant="soft"
+              size="sm"
+              startDecorator={<BlockIcon />}
+              color="danger"
+            >
+              Rejected
+            </Chip>
+          </MenuItem>
+        </Menu>
+      </Dropdown>
+    );
+  }
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -193,35 +224,16 @@ function PaymentRequest() {
     setSearchQuery(query.toLowerCase());
   };
 
-  const filteredAndSortedData = mergedData
-    .filter((merged) => {
-      const matchesSearchQuery = ["pay_id","projectCode", "projectCustomer", "projectName", "paid_for"].some((key) =>
-        merged[key]?.toLowerCase().includes(searchQuery)
-      );
-      
-      const matchesGroupFilter = !groupFilter || merged.group === groupFilter;
-      console.log("MatchGroup are: ", matchesGroupFilter);
+  const filteredData = mergedData
+  .filter((merged) => {
+    const matchesSearchQuery = ["pay_id", "projectCode", "projectCustomer", "projectName", "paid_for"].some((key) =>
+      merged[key]?.toLowerCase().includes(searchQuery)
+    );
+    const matchesGroupFilter = !groupFilter || merged.projectGroup === groupFilter;
+    const matchesCustomerFilter = !customerFilter || merged.projectCustomer === customerFilter;
 
-      
-      const matchesCustomerFilter =
-        !customerFilter || merged.customer === customerFilter;
-
-      
-      return matchesSearchQuery && matchesGroupFilter && matchesCustomerFilter;
-    })
-    .sort((a, b) => {
-      if (a.pay_id?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.pay_id?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.paid_for?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.paid_for?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.projectCode?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.projectCode?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.projectCustomer?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.projectCustomer?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.projectName?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.projectName?.toLowerCase().includes(searchQuery)) return 1;
-      return 0;
-    });
+    return matchesSearchQuery && matchesGroupFilter && matchesCustomerFilter;
+  });
 
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
@@ -258,7 +270,7 @@ function PaymentRequest() {
         setCurrentPage(page);
       }, [searchParams]);
 
-  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
+      const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
   const formatDate = (dateString) => {
     if (!dateString) {
@@ -273,12 +285,12 @@ function PaymentRequest() {
     return new Intl.DateTimeFormat("en-GB", options).format(date).replace(/ /g, "/");
   };
 
-  const paginatedPayments = filteredAndSortedData.slice(
+  const paginatedData = filteredData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
-  const paymentsWithFormattedDate = paginatedPayments.map((payment) => ({
+  const paymentsWithFormattedDate = paginatedData.map((payment) => ({
     ...payment,
     formattedDate: formatDate(payment.dbt_date),
   }));
@@ -288,14 +300,6 @@ function PaymentRequest() {
       setCurrentPage(page);
     }
   };
-
-  // if (loading) {
-  //   return <Typography>Loading...</Typography>;
-  // }
-
-  // if (error) {
-  //   return <Typography color="danger">{error}</Typography>;
-  // }
 
   return (
     <>
@@ -441,8 +445,8 @@ function PaymentRequest() {
               </Box>
             </Box>
             <Box component="tbody">
-              {paymentsWithFormattedDate.length > 0 ? (
-                paymentsWithFormattedDate.map((payment, index) => (
+            {paymentsWithFormattedDate.length > 0 ? (
+    paymentsWithFormattedDate.map((payment,index) => (
                   <Box
                     component="tr"
                     key={index}
@@ -579,6 +583,7 @@ function PaymentRequest() {
                     >
                       {payment.groupname || "-"}
                     </Box>
+                    
                     <Box
                       component="td"
                       sx={{
@@ -587,7 +592,8 @@ function PaymentRequest() {
                         textAlign: "center",
                       }}
                     >
-                      {RowMenu()}
+                      
+                      <RowMenu paymentId={payment.pay_id} />
                     </Box>
                   </Box>
                 ))
@@ -633,7 +639,9 @@ function PaymentRequest() {
         >
           Previous
         </Button>
-
+        <Box>
+    Showing {paginatedData.length} of {filteredData.length} results
+  </Box>
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >

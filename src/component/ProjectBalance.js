@@ -23,16 +23,14 @@ import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
-import { useNavigate } from "react-router-dom";
-import { useEffect, useState ,forwardRef, useImperativeHandle} from "react";
+import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Axios from "../utils/Axios";
-import { useSearchParams } from "react-router-dom";
 
-
-
-const  ProjectBalances = forwardRef((props, ref) => {
+const ProjectBalances = forwardRef((props, ref) => {
   const navigate = useNavigate();
   const [credits, setCredits] = useState([]);
+  const [debits, setDebits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [open, setOpen] = useState(false);
@@ -43,9 +41,6 @@ const  ProjectBalances = forwardRef((props, ref) => {
   const [mergedData, setMergedData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
-
- 
-
 
   const renderFilters = () => (
     <>
@@ -88,15 +83,19 @@ const  ProjectBalances = forwardRef((props, ref) => {
     const fetchAccountsandIfsc = async () => {
       setLoading(true);
       try {
-        const [CreditResponse, projectResponse] = await Promise.all([
-          Axios.get("/all-bill"),
-          Axios.get("/get-all-project"),
-        ]);
+        const [CreditResponse, DebitResponse,  ProjectResponse] =
+          await Promise.all([
+            Axios.get("/all-bill"),
+            Axios.get("/get-subtract-amount"),
+            Axios.get("/get-all-project"),
+          ]);
         setCredits(CreditResponse.data.bill);
-        // console.log("Credit Data are:", CreditResponse.data.bill);
-
-        setProjects(projectResponse.data.data);
-        console.log("Project Data are:", projectResponse.data);
+        console.log("Credit Data are:", CreditResponse.data.bill);
+        setDebits(DebitResponse.data.data);
+        
+        setProjects(ProjectResponse.data.data);
+        console.log("Project Data are:", ProjectResponse.data.data);
+        console.log("Debits Data are :", DebitResponse.data.data);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -108,59 +107,83 @@ const  ProjectBalances = forwardRef((props, ref) => {
   }, []);
 
   useEffect(() => {
-    // console.log("Credits:", credits);
-    // console.log("Projects:", projects);
+    if (credits.length > 0 && projects.length > 0 && debits.length > 0) {
+      const creditSumMap = credits.reduce((acc, credit) => {
+        const projectId = credit.p_id;
+        if (!acc[projectId]) {
+          acc[projectId] = 0;
+        }
+        acc[projectId] += Number(credit.cr_amount);
+        return acc;
+      }, {});
 
-    if (credits.length > 0 && projects.length > 0) {
+      const debitSumMap = debits.reduce((acc, debit) => {
+        const projectId = debit.p_id;
+        const amountPaid = Number(debit.amount_paid);
+
+        if (!acc[projectId]) {
+          acc[projectId] = 0;
+        }
+
+        if (!isNaN(amountPaid)) {
+          acc[projectId] += amountPaid;
+        }
+
+        return acc;
+      }, {});
+
+      // Merging data with both credit and debit amounts
       const merged = projects.map((project) => {
-        const matchingCredit = credits.find(
-          (credit) => Number(credit.p_id) === Number(project.p_id)
-        );
+        const totalCredit = creditSumMap[project.p_id] || 0;
+        const totalDebit = debitSumMap[project.p_id] || 0;
+        const AvailableAmount = totalCredit - totalDebit ;
 
         return {
           ...project,
-          creditAmount: matchingCredit ? matchingCredit.cr_amount : "Not Found",
+          creditAmount: totalCredit,
+          debitAmount: totalDebit,
+          oldAmount : AvailableAmount,
         };
       });
 
       setMergedData(merged);
     }
-  }, [credits, projects]);
+  }, [credits, projects, debits]);
 
-  const RowMenu = (currentPage, p_id) => {
-    console.log("currentPage:", currentPage, "p_id:", p_id);
+  const RowMenu = ({ currentPage, p_id }) => {
+    // console.log("currentPage:", currentPage, "p_id:", p_id);
 
-    return(
-      <> 
-    
-    <Dropdown>
-        <MenuButton
-          slots={{ root: IconButton }}
-          slotProps={{ root: { variant: "plain", color: "neutral", size: "sm" } }}
-        >
-          <MoreHorizRoundedIcon />
-        </MenuButton>
-        <Menu size="sm" sx={{ minWidth: 100 }}>
-          <MenuItem color="primary" onClick={() => {
-             const page = (currentPage); 
-             const projectId = (p_id);
-             console.log(`/add_money?page=${page}&p_id=${projectId}`);
-            navigate(`/add_money?page=${page}&p_id=${projectId}`)
-          }
-            }>
-            Add Money
-          </MenuItem>
-          <MenuItem onClick={() => navigate("/view_detail")}>View More</MenuItem>
-        </Menu>
-      </Dropdown>
-      </> 
-    )
-  
-    
-  }
-    
-
-
+    return (
+      <>
+        <Dropdown>
+          <MenuButton
+            slots={{ root: IconButton }}
+            slotProps={{
+              root: { variant: "plain", color: "neutral", size: "sm" },
+            }}
+          >
+            <MoreHorizRoundedIcon />
+          </MenuButton>
+          <Menu size="sm" sx={{ minWidth: 100 }}>
+            <MenuItem
+              color="primary"
+              onClick={() => {
+                const page = currentPage;
+                const projectId = p_id;
+                console.log(`/add_money?page=${page}&p_id=${projectId}`);
+                navigate(`/add_money?page=${page}&p_id=${projectId}`);
+              }}
+            >
+              Add Money
+            </MenuItem>
+            <MenuItem onClick={() => navigate("/view_detail")}>
+              View More
+            </MenuItem>
+          </Menu>
+        </Dropdown>
+      </>
+    );
+  };
 
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
@@ -234,16 +257,25 @@ const  ProjectBalances = forwardRef((props, ref) => {
       setCurrentPage(page);
     }
   };
-  
+
   useImperativeHandle(ref, () => ({
     exportToCSV() {
       console.log("Exporting data to CSV...");
       const headers = [
-        "Project Id", "Project Name", "Client Name", "Group Name", "Plant Capacity (MW AC)", 
-        "Total Credit", "Total Debit", "Amount Amount(Old)", "Balance with SLnko", 
-        "Balance Payable to Vendors", "Balance Required", "View More"
+        "Project Id",
+        "Project Name",
+        "Client Name",
+        "Group Name",
+        "Plant Capacity (MW AC)",
+        "Total Credit",
+        "Total Debit",
+        "Amount Amount(Old)",
+        "Balance with SLnko",
+        "Balance Payable to Vendors",
+        "Balance Required",
+        "View More",
       ];
-  
+
       const rows = mergedData.map((project) => [
         project.code || "-",
         project.name || "-",
@@ -258,12 +290,12 @@ const  ProjectBalances = forwardRef((props, ref) => {
         project.balanceRequired || "-",
         project.viewMore || "-",
       ]);
-  
+
       const csvContent = [
         headers.join(","),
-        ...rows.map((row) => row.join(","))
+        ...rows.map((row) => row.join(",")),
       ].join("\n");
-  
+
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
@@ -388,7 +420,7 @@ const  ProjectBalances = forwardRef((props, ref) => {
                   "Plant Capacity (MW AC)",
                   "Total Credit",
                   "Total Debit",
-                  "Amount Amount(Old)",
+                  "Available Amount(Old)",
                   "Balance with SLnko",
                   "Balance Payable to Vendors",
                   "Balance Required",
@@ -509,7 +541,7 @@ const  ProjectBalances = forwardRef((props, ref) => {
                       {new Intl.NumberFormat("en-IN", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
-                      }).format(project.creditAmount || "-")}
+                      }).format(project.debitAmount || "-")}
                     </Box>
                     <Box
                       component="td"
@@ -522,7 +554,7 @@ const  ProjectBalances = forwardRef((props, ref) => {
                       {new Intl.NumberFormat("en-IN", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
-                      }).format(project.creditAmount || "-")}
+                      }).format(project.oldAmount || "-")}
                     </Box>
                     <Box
                       component="td"
@@ -598,7 +630,7 @@ const  ProjectBalances = forwardRef((props, ref) => {
       {/* Pagination */}
       <Box
         className="Pagination-laptopUp"
-        sx={{
+         sx={{
           pt: 2,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
@@ -639,7 +671,6 @@ const  ProjectBalances = forwardRef((props, ref) => {
             )
           )}
         </Box>
-       
 
         <Button
           size="sm"
