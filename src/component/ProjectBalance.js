@@ -170,7 +170,7 @@ const ProjectBalances = forwardRef((props, ref) => {
               onClick={() => {
                 const page = currentPage;
                 const projectId = p_id;
-                console.log(`/add_money?page=${page}&p_id=${projectId}`);
+                // console.log(`/add_money?page=${page}&p_id=${projectId}`);
                 navigate(`/add_money?page=${page}&p_id=${projectId}`);
               }}
             >
@@ -239,7 +239,7 @@ const ProjectBalances = forwardRef((props, ref) => {
   };
 
   useEffect(() => {
-    // Set current page based on URL parameter
+   
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
   }, [searchParams]);
@@ -253,7 +253,7 @@ const ProjectBalances = forwardRef((props, ref) => {
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
-      setSearchParams({ page }); // Update URL parameter
+      setSearchParams({ page }); 
       setCurrentPage(page);
     }
   };

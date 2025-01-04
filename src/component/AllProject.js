@@ -60,7 +60,7 @@ const AllProjects = forwardRef((props, ref) => {
           ...new Set(projectsData.map((project) => project.state)),
         ].filter(Boolean);
 
-        // console.log("states are:", uniqueStates);
+        console.log("states are:", uniqueStates);
 
         const uniqueCustomers = [
           ...new Set(projectsData.map((project) => project.customer)),
@@ -79,7 +79,11 @@ const AllProjects = forwardRef((props, ref) => {
     fetchTableData();
   }, []);
 
-  const RowMenu = () => (
+  const RowMenu = ({ currentPage, p_id }) => {
+    console.log("CurrentPage: ", currentPage ,"p_Id:", p_id);
+    return(
+
+    
     <>
       <Dropdown>
         <MenuButton
@@ -91,7 +95,12 @@ const AllProjects = forwardRef((props, ref) => {
           <MoreHorizRoundedIcon />
         </MenuButton>
         <Menu size="sm" sx={{ minWidth: 140 }}>
-          <MenuItem color="primary" onClick={() => navigate("/edit_project")}>
+          <MenuItem color="primary" onClick={() => {
+                const page = currentPage;
+                const ID = p_id;
+                // console.log(`/add_money?page=${page}&p_id=${projectId}`);
+                navigate(`/edit_project?page=${page}&_id=${ID}`);
+              }}>
             Edit
           </MenuItem>
           <MenuItem color="danger">Delete</MenuItem>
@@ -99,6 +108,7 @@ const AllProjects = forwardRef((props, ref) => {
       </Dropdown>
     </>
   );
+}
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -515,7 +525,7 @@ const AllProjects = forwardRef((props, ref) => {
                         textAlign: "center",
                       }}
                     >
-                      {RowMenu()}
+                      <RowMenu currentPage={currentPage} p_id={project.p_id} />
                     </Box>
                   </Box>
                 ))

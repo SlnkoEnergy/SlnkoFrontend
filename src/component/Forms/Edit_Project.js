@@ -1,14 +1,20 @@
+import React, { useState, useEffect } from "react";
 import {
   Box,
-  Button,
   Container,
-  Grid,
-  TextField,
   Typography,
-} from "@mui/material";
-import React, { useState } from "react";
+  Grid,
+  Input,
+  Button,
+  Sheet,
+  Skeleton,
+} from "@mui/joy";
+import Axios from "../../utils/Axios";
+import { useParams } from 'react-router-dom';
 
 const UpdateProject = () => {
+  const { p_id } = useParams();
+  console.log("p_ID:", p_id)
   const [formData, setFormData] = useState({
     p_id: "",
     code: "",
@@ -36,243 +42,349 @@ const UpdateProject = () => {
       acres: "",
     },
     service: "",
+    status : "incomplete",
   });
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchProjectData = async () => {
+      try {
+        setLoading(true);
+        const response = await Axios.get(
+          `/get-all-project/${p_id}`
+        );
+        const data = response.data?.data?.[0];
+        
+        console.log("Fetched Project Data:", data);
+
+        if (data) {
+          setFormData((prev) => ({
+            ...prev,
+            p_id: data.p_id || "",
+            code: data.code || "",
+            name: data.name || "",
+            customer: data.customer || "",
+            p_group: data.p_group || "",
+            email: data.email || "",
+            number: data.number || "",
+            alternate_mobile_number: data.alternate_mobile_number || "",
+            billing_address: {
+              village_name: data.billing_address?.village_name || "",
+              district_name: data.billing_address?.district_name || "",
+            },
+            site_address: {
+              village_name: data.site_address?.village_name || "",
+              district_name: data.site_address?.district_name || "",
+            },
+            state: data.state || "",
+            project_category: data.project_category || "",
+            project_kwp: data.project_kwp || "",
+            distance: data.distance || "",
+            tariff: data.tariff || "",
+            land: {
+              type: data.land?.type || "",
+              acres: data.land?.acres || "",
+            },
+            service: data.service || "",
+          }));
+        } else {
+          setError("No projects found. Please add projects before proceeding.");
+        }
+      } catch (err) {
+        console.error("Error fetching project data:", err);
+        setError("Failed to fetch project data. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjectData();
+  }, [p_id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    console.log(`Field "${name}" changed to:`, value);
+
+    if (name.includes(".")) {
+      const [parent, child] = name.split(".");
+      setFormData((prev) => ({
+        ...prev,
+        [parent]: {
+          ...prev[parent],
+          [child]: value,
+        },
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Updated Project Data:", formData);
-    // Add your API call here to submit the form data.
+
+    console.log("Form Data before Submission:", formData); 
+
+  
   };
 
   return (
-    <Box sx={{ backgroundColor: "#f4f6f8", minHeight: "100vh", py: 4 }}>
+    <Box sx={{ backgroundColor: "neutral.softBg", minHeight: "100vh",width:'100%', py: 4 }}>
       <Container maxWidth="md">
-        <Box
+        <Sheet
+          variant="outlined"
           sx={{
-            boxShadow: 3,
             p: 4,
-            borderRadius: 2,
-            backgroundColor: "#ffffff",
+            borderRadius: "md",
+            boxShadow: "sm",
+            backgroundColor: "neutral.surface",
           }}
         >
-          <Typography variant="h4" sx={{ fontWeight: "bold", mb: 3 }}>
+          <Typography level="h3" fontWeight="bold" mb={2} textAlign="center">
             Update Project
           </Typography>
-          <form onSubmit={handleSubmit}>
-            <Grid container spacing={3}>
-              {/* Project ID */}
-              <Grid item xs={12}>
-                <TextField
-                  label="Project ID"
-                  name="code"
-                  fullWidth
-                  required
-                  value={formData.code}
-                  onChange={handleChange}
-                />
-              </Grid>
+          {loading ? (
+            <Skeleton variant="rectangular" height={400} />
+          ) : (
+            <form onSubmit={handleSubmit}>
+              <Grid container spacing={2}>
+                <Grid xs={12}>
+                  <Typography level="body1" fontWeight="bold" mb={1}>
+                    Project ID
+                  </Typography>
+                  <Input
+                    placeholder="Enter Project ID"
+                    name="code"
+                    required
+                    fullWidth
+                    value={formData.code}
+                    onChange={handleChange}
+                  />
+                </Grid>
 
-              {/* Customer Name */}
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Customer Name"
-                  name="customer"
-                  fullWidth
-                  required
-                  value={formData.customer}
-                  onChange={handleChange}
-                />
-              </Grid>
+                <Grid xs={12} sm={6}>
+                  <Typography level="body1" fontWeight="bold" mb={1}>
+                    Customer Name
+                  </Typography>
+                  <Input
+                    placeholder="Enter Customer Name"
+                    name="customer"
+                    required
+                    fullWidth
+                    value={formData.customer}
+                    onChange={handleChange}
+                  />
+                </Grid>
 
-              {/* Project Name */}
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Project Name"
-                  name="name"
-                  fullWidth
-                  value={formData.name}
-                  onChange={handleChange}
-                />
-              </Grid>
+                <Grid xs={12} sm={6}>
+                  <Typography level="body1" fontWeight="bold" mb={1}>
+                    Project Name
+                  </Typography>
+                  <Input
+                    placeholder="Enter Project Name"
+                    name="name"
+                    fullWidth
+                    value={formData.name}
+                    onChange={handleChange}
+                  />
+                </Grid>
 
-              {/* Project Group */}
-              <Grid item xs={12}>
-                <TextField
-                  label="Project Group"
-                  name="p_group"
-                  fullWidth
-                  value={formData.p_group}
-                  onChange={handleChange}
-                />
-              </Grid>
+                <Grid xs={12}>
+                  <Typography level="body1" fontWeight="bold" mb={1}>
+                    Project Group
+                  </Typography>
+                  <Input
+                    placeholder="Enter Project Group"
+                    name="p_group"
+                    fullWidth
+                    value={formData.p_group}
+                    onChange={handleChange}
+                  />
+                </Grid>
 
-              {/* Email */}
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Email ID"
-                  name="email"
-                  type="email"
-                  fullWidth
-                  value={formData.email}
-                  onChange={handleChange}
-                />
-              </Grid>
+                <Grid xs={12} sm={6}>
+                  <Typography level="body1" fontWeight="bold" mb={1}>
+                    Email ID
+                  </Typography>
+                  <Input
+                    placeholder="Enter Email ID"
+                    name="email"
+                    type="email"
+                    fullWidth
+                    value={formData.email}
+                    onChange={handleChange}
+                  />
+                </Grid>
 
-              {/* Mobile Number */}
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Mobile Number"
-                  name="number"
-                  type="number"
-                  fullWidth
-                  required
-                  value={formData.number}
-                  onChange={handleChange}
-                />
-              </Grid>
+                <Grid xs={12} sm={6}>
+                  <Typography level="body1" fontWeight="bold" mb={1}>
+                    Mobile Number
+                  </Typography>
+                  <Input
+                    placeholder="Enter Mobile Number"
+                    name="number"
+                    type="number"
+                    required
+                    fullWidth
+                    value={formData.number}
+                    onChange={handleChange}
+                  />
+                </Grid>
 
-              {/* Alternate Mobile Number */}
-              <Grid item xs={12}>
-                <TextField
-                  label="Alternate Mobile Number"
-                  name="alt_number"
-                  type="number"
-                  fullWidth
-                  value={formData.alt_number}
-                  onChange={handleChange}
-                />
-              </Grid>
+                <Grid xs={12}>
+                  <Typography level="body1" fontWeight="bold" mb={1}>
+                    Alternate Mobile Number
+                  </Typography>
+                  <Input
+                    placeholder="Enter Alternate Mobile Number"
+                    name="alternate_mobile_number"
+                    type="number"
+                    fullWidth
+                    value={formData.alternate_mobile_number}
+                    onChange={handleChange}
+                  />
+                </Grid>
 
-              {/* Billing Address */}
-              <Grid item xs={12}>
-                <TextField
-                  label="Billing Address"
-                  name="village"
-                  fullWidth
-                  required
-                  value={formData.village}
-                  onChange={handleChange}
-                />
-              </Grid>
+                <Grid xs={12} sm={6}>
+                  <Typography level="body1" fontWeight="bold" mb={1}>
+                    Billing Address (Village Name)
+                  </Typography>
+                  <Input
+                    placeholder="Enter Billing Village Name"
+                    name="billing_address.village_name"
+                    required
+                    fullWidth
+                    value={formData.billing_address.village_name}
+                    onChange={handleChange}
+                  />
+                </Grid>
 
-              {/* Site Address */}
-              <Grid item xs={12}>
-                <TextField
-                  label="Site Address"
-                  name="s_village"
-                  fullWidth
-                  required
-                  value={formData.s_village}
-                  onChange={handleChange}
-                />
-              </Grid>
+                <Grid xs={12} sm={6}>
+                  <Typography level="body1" fontWeight="bold" mb={1}>
+                    Site Address (Village Name)
+                  </Typography>
+                  <Input
+                    placeholder="Enter Site Village Name"
+                    name="site_address.village_name"
+                    required
+                    fullWidth
+                    value={formData.site_address.village_name}
+                    onChange={handleChange}
+                  />
+                </Grid>
 
-              {/* State */}
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="State"
-                  name="state"
-                  fullWidth
-                  required
-                  value={formData.state}
-                  onChange={handleChange}
-                />
-              </Grid>
+                <Grid xs={12} sm={6}>
+                  <Typography level="body1" fontWeight="bold" mb={1}>
+                    State
+                  </Typography>
+                  <Input
+                    placeholder=" State"
+                    name="state"
+                    required
+                    fullWidth
+                    value={formData.state}
+                    onChange={handleChange}
+                  />
+                </Grid>
 
-              {/* Category */}
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Category"
-                  name="category"
-                  fullWidth
-                  required
-                  value={formData.category}
-                  onChange={handleChange}
-                />
-              </Grid>
+                <Grid xs={12} sm={6}>
+                  <Typography level="body1" fontWeight="bold" mb={1}>
+                    Category
+                  </Typography>
+                  <Input
+                    placeholder="Enter Project Category"
+                    name="project_category"
+                    required
+                    fullWidth
+                    value={formData.project_category}
+                    onChange={handleChange}
+                  />
+                </Grid>
 
-              {/* Project Capacity */}
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Project Capacity (MW)"
-                  name="kwh"
-                  type="number"
-                  fullWidth
-                  required
-                  value={formData.kwh}
-                  onChange={handleChange}
-                />
-              </Grid>
+                <Grid xs={12} sm={6}>
+                  <Typography level="body1" fontWeight="bold" mb={1}>
+                    Project Capacity (MW)
+                  </Typography>
+                  <Input
+                    placeholder="Enter Capacity in MW"
+                    name="project_kwp"
+                    type="number"
+                    required
+                    fullWidth
+                    value={formData.project_kwp}
+                    onChange={handleChange}
+                  />
+                </Grid>
 
-              {/* Substation Distance */}
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Substation Distance (KM)"
-                  name="distance"
-                  type="number"
-                  fullWidth
-                  required
-                  value={formData.distance}
-                  onChange={handleChange}
-                />
-              </Grid>
+                <Grid xs={12} sm={6}>
+                  <Typography level="body1" fontWeight="bold" mb={1}>
+                    Substation Distance (KM)
+                  </Typography>
+                  <Input
+                    placeholder="Enter Distance in KM"
+                    name="distance"
+                    type="number"
+                    required
+                    fullWidth
+                    value={formData.distance}
+                    onChange={handleChange}
+                  />
+                </Grid>
 
-              {/* Tariff */}
-              <Grid item xs={12}>
-                <TextField
-                  label="Tariff (per Unit)"
-                  name="tariff"
-                  type="number"
-                  fullWidth
-                  value={formData.tariff}
-                  onChange={handleChange}
-                />
-              </Grid>
+                <Grid xs={12}>
+                  <Typography level="body1" fontWeight="bold" mb={1}>
+                    Tariff (per Unit)
+                  </Typography>
+                  <Input
+                    placeholder="Enter Tariff"
+                    name="tariff"
+                    type="number"
+                    fullWidth
+                    value={formData.tariff}
+                    onChange={handleChange}
+                  />
+                </Grid>
 
-              {/* Land Available */}
-              <Grid item xs={12}>
-                <TextField
-                  label="Land Available (Acres)"
-                  name="land"
-                  fullWidth
-                  required
-                  value={formData.land}
-                  onChange={handleChange}
-                />
-              </Grid>
+                <Grid xs={12}>
+                  <Typography level="body1" fontWeight="bold" mb={1}>
+                    Land Available (Acres)
+                  </Typography>
+                  <Input
+                    placeholder="Enter Land Area in Acres"
+                    name="land.acres"
+                    fullWidth
+                    required
+                    value={formData.land.acres}
+                    onChange={handleChange}
+                  />
+                </Grid>
 
-              {/* Service Charges */}
-              <Grid item xs={12}>
-                <TextField
-                  label="SLnko Service Charges (incl. GST)"
-                  name="service"
-                  type="number"
-                  fullWidth
-                  required
-                  value={formData.service}
-                  onChange={handleChange}
-                />
-              </Grid>
+                <Grid xs={12}>
+                  <Typography level="body1" fontWeight="bold" mb={1}>
+                    Service Charges (incl. GST)
+                  </Typography>
+                  <Input
+                    placeholder="Enter Service Charges"
+                    name="service"
+                    type="number"
+                    required
+                    fullWidth
+                    value={formData.service}
+                    onChange={handleChange}
+                  />
+                </Grid>
 
-              {/* Submit Button */}
-              <Grid item xs={12}>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                  fullWidth
-                >
-                  Update
-                </Button>
+                <Grid xs={12}>
+                  <Button type="submit" fullWidth color="primary" sx={{ mt: 2 }}>
+                    Update Project
+                  </Button>
+                </Grid>
               </Grid>
-            </Grid>
-          </form>
-        </Box>
+            </form>
+          )}
+        </Sheet>
       </Container>
     </Box>
   );

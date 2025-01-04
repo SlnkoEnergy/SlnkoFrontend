@@ -220,7 +220,7 @@ function PaymentRequestForm() {
           );
           setResponseMessage("Failed to add payment. Please try again!!");
     
-          toast.error("Failed to add payment. Please try again.");
+          toast.error("Something Went Wrong?");
         } finally {
           setIsLoading(false);
         }
@@ -345,7 +345,7 @@ function PaymentRequestForm() {
 
               <Grid xs={12} sm={4}>
                 <Input
-                  
+                  type="number"
                   value={formData.amount_paid}
   onChange={(e) =>
     setFormData((prev) => ({
@@ -361,11 +361,12 @@ function PaymentRequestForm() {
 
               <Grid xs={12} sm={4}>
                 <Input
-                  
+                  type="number"
                   name="amt_for_customer"
                   value={formData.amt_for_customer || ""}
                   onChange={handleChange}
                   placeholder="Amount for Customers (INR)"
+                  required
                 />
               </Grid>
 

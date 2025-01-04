@@ -3,21 +3,16 @@ import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
 import Chip from "@mui/joy/Chip";
 import Divider from "@mui/joy/Divider";
-import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
-import Menu from "@mui/joy/Menu";
-import MenuButton from "@mui/joy/MenuButton";
-import MenuItem from "@mui/joy/MenuItem";
 import Modal from "@mui/joy/Modal";
 import ModalClose from "@mui/joy/ModalClose";
 import ModalDialog from "@mui/joy/ModalDialog";
@@ -25,10 +20,11 @@ import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
+import { useSnackbar } from "notistack";
 import * as React from "react";
 import { useEffect, useState } from "react";
-import Axios from "../utils/Axios";
 import { useSearchParams } from "react-router-dom";
+import Axios from "../utils/Axios";
 
 function PaymentRequest() {
   const [payments, setPayments] = useState([]);
@@ -78,13 +74,14 @@ function PaymentRequest() {
       try {
         const [paymentResponse, projectResponse] = await Promise.all([
           Axios.get("/get-pay-summary", {
-            params: { approved: "Approved", acc_match: "" }
+            params: { approved: "Approved", acc_match: "" },
           }),
           Axios.get("/get-all-project"),
         ]);
 
         const approvedPayments = paymentResponse.data.data.filter(
-          (payment) => (payment.approved === "Approved") && payment.acc_match === ""
+          (payment) =>
+            payment.approved === "Approved" && payment.acc_match === ""
         );
 
         setPayments(approvedPayments);
@@ -94,15 +91,14 @@ function PaymentRequest() {
         // console.log("Project Data are:", projectResponse.data.data);
 
         const uniqueVendors = [
-          ...new Set(paymentResponse.data.data.map((payment) => payment.vendor)),
+          ...new Set(
+            paymentResponse.data.data.map((payment) => payment.vendor)
+          ),
         ].filter(Boolean);
 
         // console.log("Vendors are: ", uniqueVendors);
-        
 
         setVendors(uniqueVendors);
-
-
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -131,61 +127,109 @@ function PaymentRequest() {
     }
   }, [payments, projects]);
 
-  const handleAccountMatch = async (paymentId, accountMatch, IFSC) => {
-    try {
-      const response = await Axios.put("/acc-matched", {
-        params:{
-        pay_id: paymentId,
-        acc_number: accountMatch,
-        ifsc: IFSC,
-        }
-      });
-  
-      if (response.status === 200) {
-        setPayments((prevPayments) =>
-          prevPayments.map((payment) =>
-            payment.pay_id === paymentId
-              ? { ...payment, acc_number: accountMatch, ifsc: IFSC }
-              : payment
-          )
-        );
-      }
-    } catch (error) {
-      console.error("Error updating approval status:", error);
-    }
-  };
 
-    /*****Account Match Logic ******/
-    const AccountMatch = ({ paymentId }) => {
-      const [accountMatch, setAccountMatch] = useState("");
-      const [ifsc, setIfsc] = useState("");
-      const [error, setError] = useState(null);
-    
-      const handleSubmit = async (e) => {
-        e.preventDefault(); // Prevent form default behavior
-        
-        if (!accountMatch || !ifsc) {
-          setError("Both Account Number and IFSC Code are required.");
-          return;
+  /**Account Match Logic ***/
+  const AccountMatchAndUTR = ({
+    paymentId,
+    initialAccountMatch = "",
+    initialIfsc = "",
+    onAccountMatchSuccess,
+  }) => {
+    const { enqueueSnackbar } = useSnackbar();
+    const [accountMatch, setAccountMatch] = useState(initialAccountMatch || "");
+    const [ifsc, setIfsc] = useState(initialIfsc || "");
+    const [utr, setUtr] = useState("");
+    const [error, setError] = useState(null);
+    const [isMatched, setIsMatched] = useState(false); // Tracks account match status
+    const [isSubmitting, setIsSubmitting] = useState(false);
+  
+    // Handle account matching process
+    const handleAccountMatch = async () => {
+      try {
+        const response = await Axios.put("/acc-matched", {
+          pay_id: paymentId,
+          acc_number: accountMatch,
+          ifsc: ifsc,
+        });
+  
+        if (response.status === 200) {
+          setIsMatched(true); // Set the matched status to true
+          enqueueSnackbar("Account matched successfully!", {
+            variant: "success",
+          });
+          if (onAccountMatchSuccess) {
+            onAccountMatchSuccess(); // Pass success callback to parent
+          }
+        } else {
+          enqueueSnackbar("Failed to match account. Please try again.", {
+            variant: "error",
+          });
         }
-        setError(null); // Clear any previous error
-    
-        try {
-          await handleAccountMatch(paymentId, accountMatch, ifsc); // Call the passed function
-          setError("Account matched successfully!");
-        } catch (err) {
-          setError("Failed to update account match. Please try again.");
+      } catch (error) {
+        console.error("Error matching account:", error);
+        enqueueSnackbar("Something went wrong. Please try again.", {
+          variant: "error",
+        });
+      }
+    };
+  
+    // Handle UTR submission
+    const handleUtrSubmit = async () => {
+      if (!utr) {
+        enqueueSnackbar("Please enter a valid UTR.", { variant: "warning" });
+        return;
+      }
+  
+      setIsSubmitting(true);
+      try {
+        const response = await Axios.put("/utr-update", {
+          pay_id: paymentId,
+          utr: utr,
+        });
+  
+        if (response.status === 200) {
+          enqueueSnackbar("UTR submitted successfully!", {
+            variant: "success",
+          });
+          if (onAccountMatchSuccess) {
+            onAccountMatchSuccess(utr); // Pass UTR to parent
+          }
+        } else {
+          enqueueSnackbar("Failed to submit UTR. Please try again.", {
+            variant: "error",
+          });
         }
-      };
-    
-      return (
-        <form onSubmit={handleSubmit}>  {/* Form submission handler */}
+      } catch (error) {
+        console.error("Error submitting UTR:", error);
+        enqueueSnackbar("Something went wrong. Please try again.", {
+          variant: "error",
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+  
+    return (
+      <div>
+        {/* Account Match Section */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!accountMatch) {
+              setError("Account Number are required.");
+              return;
+            }
+            setError(null);
+            handleAccountMatch();
+          }}
+        >
           <div>
             <input
               type="text"
               placeholder="Account Number"
               value={accountMatch}
               onChange={(e) => setAccountMatch(e.target.value)}
+              disabled={isMatched} // Disable if matched
               style={{ width: "100%", marginBottom: "1rem" }}
             />
           </div>
@@ -195,40 +239,99 @@ function PaymentRequest() {
               placeholder="IFSC Code"
               value={ifsc}
               onChange={(e) => setIfsc(e.target.value)}
+              disabled={isMatched} // Disable if matched
               style={{ width: "100%", marginBottom: "1rem" }}
             />
           </div>
           {error && (
             <div
               style={{
-                color: error.includes("successfully") ? "green" : "red",
+                color: "red",
                 fontSize: "0.875rem",
+                marginBottom: "1rem",
               }}
             >
               {error}
             </div>
           )}
-          <div>
+          <button
+            type="submit"
+            disabled={isMatched} // Disable after match
+            style={{
+              width: "100%",
+              padding: "0.5rem",
+              backgroundColor: isMatched ? "gray" : "#007bff",
+              color: "white",
+              border: "none",
+              cursor: isMatched ? "not-allowed" : "pointer",
+            }}
+          >
+            {isMatched ? "Matched" : "Match Account"}
+          </button>
+        </form>
+  
+        {/* UTR Submission Section */}
+        {isMatched && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleUtrSubmit();
+            }}
+            style={{ marginTop: "1rem" }}
+          >
+            <div>
+              <input
+                type="text"
+                placeholder="Enter UTR"
+                value={utr}
+                onChange={(e) => setUtr(e.target.value)}
+                style={{ width: "100%", marginBottom: "1rem" }}
+              />
+            </div>
             <button
-              type="submit"  // Submit the form
+              type="submit"
+              disabled={isSubmitting} // Disable while submitting
               style={{
                 width: "100%",
                 padding: "0.5rem",
-                backgroundColor: "#007bff",
+                backgroundColor: "#28a745",
                 color: "white",
                 border: "none",
-                cursor: "pointer",
+                cursor: isSubmitting ? "not-allowed" : "pointer",
               }}
             >
-              Match
+              {isSubmitting ? "Submitting..." : "Submit UTR"}
             </button>
-          </div>
-        </form>
-      );
-    };
-    
-    
-    
+          </form>
+        )}
+      </div>
+    );
+  };
+  
+
+  const handleAccountMatchUpdate = (paymentId) => {
+    setPayments((prevPayments) =>
+      prevPayments.map((payment) =>
+        payment.pay_id === paymentId
+          ? { ...payment, acc_match: "matched" }
+          : payment
+      )
+    );
+  };
+
+   /** Match Logic ***/
+   const MatchRow = ({ payment }) => (
+    <Chip
+      variant="soft"
+      size="sm"
+      startDecorator={
+        payment.acc_match === "matched" ? <CheckRoundedIcon /> : <BlockIcon />
+      }
+      color={payment.acc_match === "matched" ? "success" : "danger"}
+    >
+      {payment.acc_match === "matched" ? payment.acc_match : "match"}
+    </Chip>
+  );
 
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
@@ -236,19 +339,17 @@ function PaymentRequest() {
 
   const filteredAndSortedData = mergedData
     .filter((project) => {
-      const matchesSearchQuery = ["pay_id", "projectName", "vendor"].some((key) =>
-        project[key]?.toLowerCase().includes(searchQuery)
+      const matchesSearchQuery = ["pay_id", "projectName", "vendor"].some(
+        (key) => project[key]?.toLowerCase().includes(searchQuery)
       );
-     
-      const matchesVendorFilter = !vendorFilter || project.vendor === vendorFilter;
+
+      const matchesVendorFilter =
+        !vendorFilter || project.vendor === vendorFilter;
       console.log("MatchVendors are: ", matchesVendorFilter);
 
-
-    
-      return matchesSearchQuery && matchesVendorFilter ;
+      return matchesSearchQuery && matchesVendorFilter;
     })
-    
-     
+
     .sort((a, b) => {
       if (a.projectName?.toLowerCase().includes(searchQuery)) return -1;
       if (b.projectName?.toLowerCase().includes(searchQuery)) return 1;
@@ -304,10 +405,10 @@ function PaymentRequest() {
     return pages;
   };
 
-      useEffect(() => {
-        const page = parseInt(searchParams.get("page")) || 1;
-        setCurrentPage(page);
-      }, [searchParams]);
+  useEffect(() => {
+    const page = parseInt(searchParams.get("page")) || 1;
+    setCurrentPage(page);
+  }, [searchParams]);
 
   const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
 
@@ -316,28 +417,14 @@ function PaymentRequest() {
     currentPage * itemsPerPage
   );
 
-   const handlePageChange = (page) => {
+  const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setSearchParams({ page });
       setCurrentPage(page);
     }
   };
 
-
-  
-  /***** Match Logic ******/
-  const MatchRow = ({ payment }) => (
-    <Chip
-      variant="soft"
-      size="sm"
-      startDecorator={
-        payment.acc_match === "matched" ? <CheckRoundedIcon /> : <BlockIcon />
-      }
-      color={payment.acc_match === "matched" ? "success" : "neutral"}
-    >
-      {payment.acc_match === "matched" ? payment.acc_match : "match"}
-    </Chip>
-  );
+ 
 
   return (
     <>
@@ -463,7 +550,6 @@ function PaymentRequest() {
                   "Requested Amount",
                   "Bank Detail",
                   "Validation",
-                  
                 ].map((header, index) => (
                   <Box
                     component="th"
@@ -587,7 +673,12 @@ function PaymentRequest() {
                         textAlign: "center",
                       }}
                     >
-                      <AccountMatch payment={payment} />
+                      <AccountMatchAndUTR
+                        paymentId={payment.pay_id}
+                        initialAccountMatch={payment.acc_number}
+                        initialIfsc={payment.ifsc}
+                        onAccountMatchSuccess={(utr) => handleAccountMatchUpdate(payment.pay_id, utr)}
+                      />
                     </Box>
                     <Box
                       component="td"
@@ -599,7 +690,6 @@ function PaymentRequest() {
                     >
                       <MatchRow payment={payment} />
                     </Box>
-                    
                   </Box>
                 ))
               ) : (
@@ -645,8 +735,9 @@ function PaymentRequest() {
           Previous
         </Button>
         <Box>
-    Showing {paginatedPayments.length} of {filteredAndSortedData.length} results
-  </Box>
+          Showing {paginatedPayments.length} of {filteredAndSortedData.length}{" "}
+          results
+        </Box>
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
