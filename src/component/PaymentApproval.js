@@ -27,10 +27,8 @@ import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
 import { useEffect, useState } from "react";
-import Axios from "../utils/Axios";
 import { useSearchParams } from "react-router-dom";
-
-
+import Axios from "../utils/Axios";
 
 function PaymentRequest() {
   const [payments, setPayments] = useState([]);
@@ -48,8 +46,6 @@ function PaymentRequest() {
   const [mergedData, setMergedData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
-
-
 
   const renderFilters = () => (
     <>
@@ -88,20 +84,19 @@ function PaymentRequest() {
     </>
   );
 
- 
-
   useEffect(() => {
     const fetchPaymentsAndProjects = async () => {
       setLoading(true);
       try {
         const [paymentResponse, projectResponse] = await Promise.all([
           Axios.get("/get-pay-summary", {
-            params: { approved: "Pending" }
+            params: { approved: "Pending" },
           }),
           Axios.get("/get-all-project"),
-
         ]);
-        const pendingPayments = paymentResponse.data.data.filter(payment => payment.approved === "Pending");
+        const pendingPayments = paymentResponse.data.data.filter(
+          (payment) => payment.approved === "Pending"
+        );
 
         setPayments(pendingPayments);
         // console.log("Payment Data (Pending) are:", pendingPayments);
@@ -110,16 +105,19 @@ function PaymentRequest() {
         // console.log("Project Data are:", projectResponse.data.data);
 
         const uniqueCustomers = [
-          ...new Set(projectResponse.data.data.map((project) => project.customer)),
+          ...new Set(
+            projectResponse.data.data.map((project) => project.customer)
+          ),
         ].filter(Boolean);
 
         const uniqueGroups = [
-          ...new Set(projectResponse.data.data.map((project) => project.p_group)),
+          ...new Set(
+            projectResponse.data.data.map((project) => project.p_group)
+          ),
         ].filter(Boolean);
 
         setCustomers(uniqueCustomers);
         setGroups(uniqueGroups);
-
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -129,7 +127,6 @@ function PaymentRequest() {
 
     fetchPaymentsAndProjects();
   }, []);
-
 
   useEffect(() => {
     if (payments.length > 0 && projects.length > 0) {
@@ -170,12 +167,14 @@ function PaymentRequest() {
     }
   };
 
-  const RowMenu = ({paymentId}) => {
+  const RowMenu = ({ paymentId }) => {
     return (
       <Dropdown>
         <MenuButton
           slots={{ root: IconButton }}
-          slotProps={{ root: { variant: "plain", color: "neutral", size: "sm" } }}
+          slotProps={{
+            root: { variant: "plain", color: "neutral", size: "sm" },
+          }}
         >
           <MoreHorizRoundedIcon />
         </MenuButton>
@@ -203,7 +202,7 @@ function PaymentRequest() {
         </Menu>
       </Dropdown>
     );
-  }
+  };
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -224,13 +223,18 @@ function PaymentRequest() {
     setSearchQuery(query.toLowerCase());
   };
 
-  const filteredData = mergedData
-  .filter((merged) => {
-    const matchesSearchQuery = ["pay_id", "projectCode", "projectCustomer", "projectName", "paid_for"].some((key) =>
-      merged[key]?.toLowerCase().includes(searchQuery)
-    );
-    const matchesGroupFilter = !groupFilter || merged.projectGroup === groupFilter;
-    const matchesCustomerFilter = !customerFilter || merged.projectCustomer === customerFilter;
+  const filteredData = mergedData.filter((merged) => {
+    const matchesSearchQuery = [
+      "pay_id",
+      "projectCode",
+      "projectCustomer",
+      "projectName",
+      "paid_for",
+    ].some((key) => merged[key]?.toLowerCase().includes(searchQuery));
+    const matchesGroupFilter =
+      !groupFilter || merged.projectGroup === groupFilter;
+    const matchesCustomerFilter =
+      !customerFilter || merged.projectCustomer === customerFilter;
 
     return matchesSearchQuery && matchesGroupFilter && matchesCustomerFilter;
   });
@@ -265,12 +269,12 @@ function PaymentRequest() {
     return pages;
   };
 
-    useEffect(() => {
-        const page = parseInt(searchParams.get("page")) || 1;
-        setCurrentPage(page);
-      }, [searchParams]);
+  useEffect(() => {
+    const page = parseInt(searchParams.get("page")) || 1;
+    setCurrentPage(page);
+  }, [searchParams]);
 
-      const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
   const formatDate = (dateString) => {
     if (!dateString) {
@@ -282,7 +286,9 @@ function PaymentRequest() {
       return "-";
     }
     const options = { day: "2-digit", month: "short", year: "numeric" };
-    return new Intl.DateTimeFormat("en-GB", options).format(date).replace(/ /g, "/");
+    return new Intl.DateTimeFormat("en-GB", options)
+      .format(date)
+      .replace(/ /g, "/");
   };
 
   const paginatedData = filteredData.slice(
@@ -364,7 +370,7 @@ function PaymentRequest() {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {renderFilters()}
+        {/* {renderFilters()} */}
       </Box>
 
       {/* Table */}
@@ -405,7 +411,9 @@ function PaymentRequest() {
                 >
                   <Checkbox
                     size="sm"
-                    checked={selected.length === paymentsWithFormattedDate.length}
+                    checked={
+                      selected.length === paymentsWithFormattedDate.length
+                    }
                     onChange={(event) =>
                       handleRowSelect("all", event.target.checked)
                     }
@@ -445,8 +453,8 @@ function PaymentRequest() {
               </Box>
             </Box>
             <Box component="tbody">
-            {paymentsWithFormattedDate.length > 0 ? (
-    paymentsWithFormattedDate.map((payment,index) => (
+              {paymentsWithFormattedDate.length > 0 ? (
+                paymentsWithFormattedDate.map((payment, index) => (
                   <Box
                     component="tr"
                     key={index}
@@ -583,7 +591,7 @@ function PaymentRequest() {
                     >
                       {payment.groupname || "-"}
                     </Box>
-                    
+
                     <Box
                       component="td"
                       sx={{
@@ -592,7 +600,6 @@ function PaymentRequest() {
                         textAlign: "center",
                       }}
                     >
-                      
                       <RowMenu paymentId={payment.pay_id} />
                     </Box>
                   </Box>
@@ -640,8 +647,8 @@ function PaymentRequest() {
           Previous
         </Button>
         <Box>
-    Showing {paginatedData.length} of {filteredData.length} results
-  </Box>
+          Showing {paginatedData.length} of {filteredData.length} results
+        </Box>
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >

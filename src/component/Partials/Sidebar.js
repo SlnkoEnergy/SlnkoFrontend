@@ -21,8 +21,8 @@ import Sheet from "@mui/joy/Sheet";
 import Stack from "@mui/joy/Stack";
 import { useColorScheme } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Main_Logo from "../../assets/protrac_logo.png";
 import Main_Logo2 from "../../assets/white_logo.png";
 import { closeSidebar } from "../../utils/utils";
@@ -54,18 +54,32 @@ function Toggler({ defaultExpanded = false, renderToggle, children }) {
 function Sidebar() {
   const navigate = useNavigate();
   const { mode } = useColorScheme();
+  const [admin, setAdmin] = useState("");
+  const [department, setDepartment] = useState("");
+  const [role, setRole] = useState("");
+  const [username, setUsername] = useState("");
+  const [user, setUser] = useState(null);
 
-  const userName = localStorage.getItem("name");
-  const userEmail = localStorage.getItem("email");
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+    console.log("details are :", userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    console.log("Only this needed :", userData);
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
 
   const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("authTokenExpiration");
-    localStorage.removeItem("userName");
-    localStorage.removeItem("userEmail");
-    localStorage.removeItem("userID");
+    localStorage.clear();
     navigate("/login");
   };
+
   return (
     <Sheet
       className="Sidebar"
@@ -164,6 +178,7 @@ function Sidebar() {
             <ListItemButton>
               <HomeRoundedIcon />
               <ListItemContent>
+                <Link to="/dashboard"></Link>
                 <Typography level="title-sm">Dashboard</Typography>
               </ListItemContent>
             </ListItemButton>
@@ -195,13 +210,13 @@ function Sidebar() {
             >
               <List sx={{ gap: 0.5 }}>
                 <ListItem sx={{ mt: 0.5 }}>
-                  <ListItemButton onClick={() => navigate("/add_user")}>
-                    Add User
+                  <ListItemButton>
+                    <Link to="/add_user">Add User</Link>
                   </ListItemButton>
                 </ListItem>
                 <ListItem sx={{ mt: 0.5 }}>
-                  <ListItemButton onClick={() => navigate("/edit_user")}>
-                    Edit User
+                  <ListItemButton>
+                    <Link to="/edit_user">Edit User</Link>
                   </ListItemButton>
                 </ListItem>
               </List>
@@ -233,71 +248,78 @@ function Sidebar() {
             >
               <List sx={{ gap: 0.5 }}>
                 <ListItem sx={{ mt: 0.5 }}>
-                  <ListItemButton onClick={() => navigate("/BD/initial-leads")}>
-                    Leads
+                  <ListItemButton>
+                    <Link to="/initial-leads">Leads</Link>
                   </ListItemButton>
                 </ListItem>
                 <ListItem>
-                  <ListItemButton
-                    onClick={() => navigate("/BD/commercial-offer")}
-                  >
-                    Commercial Offer
+                  <ListItemButton>
+                    <Link to="/commercial-offer">Commercial Offer</Link>
                   </ListItemButton>
                 </ListItem>
               </List>
             </Toggler>
           </ListItem>
 
-          {/*---------Accounting -------------*/}
-          <ListItem nested>
-            <Toggler
-              renderToggle={({ open, setOpen }) => (
-                <ListItemButton onClick={() => setOpen(!open)}>
-                  {/* <AssignmentRoundedIcon /> */}
-                  <AccountBalanceIcon />
-                  <ListItemContent>
-                    <Typography level="title-sm">Accounting</Typography>
-                  </ListItemContent>
-                  <KeyboardArrowDownIcon
-                    sx={[
-                      open
-                        ? {
-                            transform: "rotate(180deg)",
-                          }
-                        : {
-                            transform: "none",
-                          },
-                    ]}
-                  />
-                </ListItemButton>
-              )}
-            >
-              <List sx={{ gap: 0.5 }}>
-                <ListItem sx={{ mt: 0.5 }}>
-                  <ListItemButton onClick={() => navigate("/project-balance")}>
-                    Project Balances
-                  </ListItemButton>
-                </ListItem>
-                <ListItem>
-                  <ListItemButton
-                    onClick={() => navigate("/daily-payment-request")}
+          {/*--------- Accounting -------------*/}
+          {user?.department === "Accounts" &&
+            user?.role === "manager" &&
+            (() => {
+              console.log("Accounting section is visible to the user:", {
+                department: user?.department,
+                role: user?.role,
+              });
+              return (
+                <ListItem nested>
+                  <Toggler
+                    renderToggle={({ open, setOpen }) => (
+                      <ListItemButton onClick={() => setOpen(!open)}>
+                        <AccountBalanceIcon />
+                        <ListItemContent>
+                          <Typography level="title-sm">Accounting</Typography>
+                        </ListItemContent>
+                        <KeyboardArrowDownIcon
+                          sx={[
+                            open
+                              ? {
+                                  transform: "rotate(180deg)",
+                                }
+                              : {
+                                  transform: "none",
+                                },
+                          ]}
+                        />
+                      </ListItemButton>
+                    )}
                   >
-                    Daily Payment Request
-                  </ListItemButton>
+                    <List sx={{ gap: 0.5 }}>
+                      <ListItem sx={{ mt: 0.5 }}>
+                        <ListItemButton>
+                          <Link to="/project-balance">Project Balances</Link>
+                        </ListItemButton>
+                      </ListItem>
+                      <ListItem>
+                        <ListItemButton>
+                          <Link to="/daily-payment-request">
+                            Daily Payment Request
+                          </Link>
+                        </ListItemButton>
+                      </ListItem>
+                      <ListItem>
+                        <ListItemButton>
+                          <Link to="/payment-approval">Payment Approval</Link>
+                        </ListItemButton>
+                      </ListItem>
+                      <ListItem>
+                        <ListItemButton>
+                          <Link to="/payment-approved">Approved Payment</Link>
+                        </ListItemButton>
+                      </ListItem>
+                    </List>
+                  </Toggler>
                 </ListItem>
-                <ListItem>
-                  <ListItemButton onClick={() => navigate("/payment-approval")}>
-                    Payment Approval
-                  </ListItemButton>
-                </ListItem>
-                <ListItem>
-                  <ListItemButton onClick={() => navigate("/payment-approved")}>
-                    Approved Payment
-                  </ListItemButton>
-                </ListItem>
-              </List>
-            </Toggler>
-          </ListItem>
+              );
+            })()}
 
           {/*--------- SCM -------------*/}
           <ListItem nested>
@@ -325,20 +347,18 @@ function Sidebar() {
             >
               <List sx={{ gap: 0.5 }}>
                 <ListItem sx={{ mt: 0.5 }}>
-                  <ListItemButton onClick={() => navigate("/purchase-order")}>
-                    Purchase Order
+                  <ListItemButton>
+                    <Link to="/purchase-order">Purchase Order</Link>
                   </ListItemButton>
                 </ListItem>
                 <ListItem>
-                  <ListItemButton
-                    onClick={() => navigate("SCM/material-tracker")}
-                  >
-                    Material Status
+                  <ListItemButton>
+                    <Link to="/material-tracker">Material Status</Link>
                   </ListItemButton>
                 </ListItem>
                 <ListItem>
-                  <ListItemButton onClick={() => navigate("SCM/vendor-bill")}>
-                    Vendor Bill
+                  <ListItemButton>
+                    <Link to="/vendor-bill">Vendor Bill</Link>
                   </ListItemButton>
                 </ListItem>
               </List>
@@ -371,15 +391,13 @@ function Sidebar() {
             >
               <List sx={{ gap: 0.5 }}>
                 <ListItem sx={{ mt: 0.5 }}>
-                  <ListItemButton onClick={() => navigate("/all-project")}>
-                    All Projects
+                  <ListItemButton>
+                    <Link to="/all-project">All Projects</Link>
                   </ListItemButton>
                 </ListItem>
                 <ListItem>
-                  <ListItemButton
-                    onClick={() => navigate("/Projects/site-project")}
-                  >
-                    Site Projects
+                  <ListItemButton>
+                    <Link to="/site-project">Site Projects</Link>
                   </ListItemButton>
                 </ListItem>
               </List>
@@ -493,12 +511,8 @@ function Sidebar() {
         >
           <Avatar />
           <Stack>
-            <Typography fontWeight="lg">
-              {userName || "Slnko Energy"}
-            </Typography>
-            <Typography level="body-sm">
-              {userEmail || "admin@slnko.co"}
-            </Typography>
+            <Typography fontWeight="lg">{"Slnko Energy"}</Typography>
+            <Typography level="body-sm">{"admin@slnko.co"}</Typography>
           </Stack>
           <IconButton
             onClick={handleLogout}

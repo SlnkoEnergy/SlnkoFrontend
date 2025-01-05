@@ -1,20 +1,20 @@
 import LockIcon from "@mui/icons-material/Lock";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { Box, Button, Grid, Paper, TextField, Typography } from "@mui/material";
 import { useFormik } from "formik";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Slider from "react-slick";
 import { toast } from "react-toastify";
-import Visibility from "@mui/icons-material/Visibility";
-import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import "react-toastify/dist/ReactToastify.css";
 import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
 import * as Yup from "yup";
-import Img1 from "../../../assets/New_Solar1.png";
-import Img4 from "../../../assets/New_Solar3.png";
 import Img5 from "../../../assets/Protrac_blue.png";
 import ImgX from "../../../assets/slnko_white_logo.png";
+import Img1 from "../../../assets/solar1.jpg";
+import Img4 from "../../../assets/solar3.jpg";
 import Axios from "../../../utils/Axios";
 import Colors from "../../../utils/colors";
 
@@ -58,63 +58,68 @@ const Login = () => {
     arrows: false,
   };
 
-  const LoginUser = async () => {
+  const LoginUser = async (values) => {
     setIsSubmitting(true);
     const postData = {
-      name: formik.values.name,
-      password: formik.values.password,
+      name: values.name,
+      password: values.password,
     };
     try {
       const response = await Axios.post("/login", postData);
       const user = response.data;
+
       console.log("Login successful:", user);
 
-      const expirationTime = new Date().getTime() + 3 * 24 * 60 * 60 * 1000;
+      const response2 = await Axios.get("/get-all-user");
+      console.log(response2.data?.data);
 
-      localStorage.setItem("authToken", response.data.token || "dummyToken");
+      response2.data.data.map((item) => {
+        if (user.userID == item._id) {
+          const userdata = {
+            name: item.name,
+            email: item.email,
+            phone: item.phone,
+            role: item.role,
+            department: item.department || "",
+            userID: item._id,
+          };
+
+          console.log(userdata);
+          localStorage.setItem("userDetails", JSON.stringify(userdata));
+        }
+      });
+
+      const expirationTime = new Date().getTime() + 3 * 24 * 60 * 60 * 1000;
+      localStorage.setItem("authToken", user.token || "dummyToken");
       localStorage.setItem("authTokenExpiration", expirationTime);
 
-      // Store the dynamic userID in localStorage
-      localStorage.setItem("userID", user._id);
-
-      setErrorMessage("");
       navigate("/all-project");
     } catch (error) {
       const errorMessage = error.response
         ? error.response.data.message
         : "An unexpected error occurred.";
-      toast.error(`Login failed: ${errorMessage}`, {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      formik.setFieldValue("password", "");
+      toast.error(`Login failed: ${errorMessage}`, { position: "top-right" });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const validationSchema = Yup.object({
-    name: Yup.string().required("Name is required !!"),
+    name: Yup.string().required("Name is required!"),
     password: Yup.string()
-      .required("Incorrect Password !!")
+      .required("Password is required!")
       .matches(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])/,
-        "password Should have one Capital/Small Letter, one number, and one special character"
+        "Password must contain one uppercase letter, one lowercase letter, one number, and one special character."
       )
-      .min(8, "password must be at least 8 characters in length"),
+      .min(8, "Password must be at least 8 characters long."),
   });
 
   const formik = useFormik({
-    initialValues: {
-      name: "",
-      password: "",
-    },
+    initialValues: { name: "", password: "" },
     validationSchema: validationSchema,
-    onSubmit: (values) => {
-      LoginUser();
-    },
+    onSubmit: LoginUser,
   });
-
   return (
     <Box
       sx={{

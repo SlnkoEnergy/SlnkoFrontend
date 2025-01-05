@@ -1,20 +1,18 @@
-import React, { useState, useEffect } from "react";
 import {
   Box,
+  Button,
   Container,
-  Typography,
   Grid,
   Input,
-  Button,
   Sheet,
   Skeleton,
+  Typography,
 } from "@mui/joy";
+import React, { useEffect, useState } from "react";
 import Axios from "../../utils/Axios";
-import { useParams } from 'react-router-dom';
 
 const UpdateProject = () => {
-  const { p_id } = useParams();
-  console.log("p_ID:", p_id)
+  // const { p_id } = useParams();
   const [formData, setFormData] = useState({
     p_id: "",
     code: "",
@@ -23,7 +21,7 @@ const UpdateProject = () => {
     p_group: "",
     email: "",
     number: "",
-    alternate_mobile_number: "",
+    alt_number: "",
     billing_address: {
       village_name: "",
       district_name: "",
@@ -36,13 +34,13 @@ const UpdateProject = () => {
     project_category: "",
     project_kwp: "",
     distance: "",
-    tariff: "",
+    tarrif: "",
     land: {
       type: "",
       acres: "",
     },
     service: "",
-    status : "incomplete",
+    status: "incomplete",
   });
 
   const [loading, setLoading] = useState(true);
@@ -52,45 +50,70 @@ const UpdateProject = () => {
     const fetchProjectData = async () => {
       try {
         setLoading(true);
-        const response = await Axios.get(
-          `/get-all-project/${p_id}`
-        );
-        const data = response.data?.data?.[0];
-        
-        console.log("Fetched Project Data:", data);
 
-        if (data) {
-          setFormData((prev) => ({
-            ...prev,
-            p_id: data.p_id || "",
-            code: data.code || "",
-            name: data.name || "",
-            customer: data.customer || "",
-            p_group: data.p_group || "",
-            email: data.email || "",
-            number: data.number || "",
-            alternate_mobile_number: data.alternate_mobile_number || "",
-            billing_address: {
-              village_name: data.billing_address?.village_name || "",
-              district_name: data.billing_address?.district_name || "",
-            },
-            site_address: {
-              village_name: data.site_address?.village_name || "",
-              district_name: data.site_address?.district_name || "",
-            },
-            state: data.state || "",
-            project_category: data.project_category || "",
-            project_kwp: data.project_kwp || "",
-            distance: data.distance || "",
-            tariff: data.tariff || "",
-            land: {
-              type: data.land?.type || "",
-              acres: data.land?.acres || "",
-            },
-            service: data.service || "",
-          }));
+        const response = await Axios.get("/get-all-project");
+        let project = localStorage.getItem("idd");
+
+        project = Number.parseInt(project);
+
+        console.log(project);
+        // console.log(project, "idd");
+
+        // if (response) {
+        //   const data = response.data.data.map((item) => {
+        //     if (item.p_id == project) {
+        //       console.log(item);
+        //     }
+        //   });
+        // }
+
+        // const data = response.data?.data?.[0];
+
+        // console.log("Fetched Project Data:", response.data);
+
+        if (response && response.data && response.data.data) {
+          const matchingItem = response.data.data.find(
+            (item) => item.p_id === project
+          );
+
+          if (matchingItem) {
+            console.log("Matching Project Data:", matchingItem);
+
+            setFormData((prev) => ({
+              ...prev,
+              p_id: matchingItem.p_id || "",
+              code: matchingItem.code || "",
+              name: matchingItem.name || "",
+              customer: matchingItem.customer || "",
+              p_group: matchingItem.p_group || "",
+              email: matchingItem.email || "",
+              number: matchingItem.number || "",
+              alternate_mobile_number: matchingItem.alt_number || "",
+              billing_address: {
+                village_name: matchingItem.billing_address?.village_name || "",
+                district_name:
+                  matchingItem.billing_address?.district_name || "",
+              },
+              site_address: {
+                village_name: matchingItem.site_address?.village_name || "",
+                district_name: matchingItem.site_address?.district_name || "",
+              },
+              state: matchingItem.state || "",
+              project_category: matchingItem.project_category || "",
+              project_kwp: matchingItem.project_kwp || "",
+              distance: matchingItem.distance || "",
+              tarrif: matchingItem.tarrif || "",
+              land: {
+                type: matchingItem.land?.type || "",
+                acres: matchingItem.land?.acres || "",
+              },
+              service: matchingItem.service || "",
+            }));
+          } else {
+            setError("No matching project found for the given ID.");
+          }
         } else {
-          setError("No projects found. Please add projects before proceeding.");
+          setError("No project data available. Please add projects first.");
         }
       } catch (err) {
         console.error("Error fetching project data:", err);
@@ -101,7 +124,7 @@ const UpdateProject = () => {
     };
 
     fetchProjectData();
-  }, [p_id]);
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -125,13 +148,18 @@ const UpdateProject = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    console.log("Form Data before Submission:", formData); 
-
-  
+    console.log("Form Data before Submission:", formData);
   };
 
   return (
-    <Box sx={{ backgroundColor: "neutral.softBg", minHeight: "100vh",width:'100%', py: 4 }}>
+    <Box
+      sx={{
+        backgroundColor: "neutral.softBg",
+        minHeight: "100vh",
+        width: "100%",
+        py: 4,
+      }}
+    >
       <Container maxWidth="md">
         <Sheet
           variant="outlined"
@@ -239,10 +267,10 @@ const UpdateProject = () => {
                   </Typography>
                   <Input
                     placeholder="Enter Alternate Mobile Number"
-                    name="alternate_mobile_number"
+                    name="alt_number"
                     type="number"
                     fullWidth
-                    value={formData.alternate_mobile_number}
+                    value={formData.alt_number}
                     onChange={handleChange}
                   />
                 </Grid>
@@ -339,10 +367,9 @@ const UpdateProject = () => {
                   </Typography>
                   <Input
                     placeholder="Enter Tariff"
-                    name="tariff"
-                    type="number"
+                    name="tarrif"
                     fullWidth
-                    value={formData.tariff}
+                    value={formData.tarrif}
                     onChange={handleChange}
                   />
                 </Grid>
@@ -353,10 +380,10 @@ const UpdateProject = () => {
                   </Typography>
                   <Input
                     placeholder="Enter Land Area in Acres"
-                    name="land.acres"
+                    name="land"
                     fullWidth
                     required
-                    value={formData.land.acres}
+                    value={formData.land.type.acres}
                     onChange={handleChange}
                   />
                 </Grid>
@@ -377,7 +404,12 @@ const UpdateProject = () => {
                 </Grid>
 
                 <Grid xs={12}>
-                  <Button type="submit" fullWidth color="primary" sx={{ mt: 2 }}>
+                  <Button
+                    type="submit"
+                    fullWidth
+                    color="primary"
+                    sx={{ mt: 2 }}
+                  >
                     Update Project
                   </Button>
                 </Grid>

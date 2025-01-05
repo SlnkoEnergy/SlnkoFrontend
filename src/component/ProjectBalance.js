@@ -83,19 +83,19 @@ const ProjectBalances = forwardRef((props, ref) => {
     const fetchAccountsandIfsc = async () => {
       setLoading(true);
       try {
-        const [CreditResponse, DebitResponse,  ProjectResponse] =
+        const [CreditResponse, DebitResponse, ProjectResponse] =
           await Promise.all([
             Axios.get("/all-bill"),
             Axios.get("/get-subtract-amount"),
             Axios.get("/get-all-project"),
           ]);
         setCredits(CreditResponse.data.bill);
-        console.log("Credit Data are:", CreditResponse.data.bill);
+        // console.log("Credit Data are:", CreditResponse.data.bill);
         setDebits(DebitResponse.data.data);
-        
+
         setProjects(ProjectResponse.data.data);
-        console.log("Project Data are:", ProjectResponse.data.data);
-        console.log("Debits Data are :", DebitResponse.data.data);
+        // console.log("Project Data are:", ProjectResponse.data.data);
+        // console.log("Debits Data are :", DebitResponse.data.data);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -136,13 +136,13 @@ const ProjectBalances = forwardRef((props, ref) => {
       const merged = projects.map((project) => {
         const totalCredit = creditSumMap[project.p_id] || 0;
         const totalDebit = debitSumMap[project.p_id] || 0;
-        const AvailableAmount = totalCredit - totalDebit ;
+        const AvailableAmount = totalCredit - totalDebit;
 
         return {
           ...project,
           creditAmount: totalCredit,
           debitAmount: totalDebit,
-          oldAmount : AvailableAmount,
+          oldAmount: AvailableAmount,
         };
       });
 
@@ -239,7 +239,6 @@ const ProjectBalances = forwardRef((props, ref) => {
   };
 
   useEffect(() => {
-   
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
   }, [searchParams]);
@@ -253,7 +252,7 @@ const ProjectBalances = forwardRef((props, ref) => {
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
-      setSearchParams({ page }); 
+      setSearchParams({ page });
       setCurrentPage(page);
     }
   };
@@ -367,7 +366,7 @@ const ProjectBalances = forwardRef((props, ref) => {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {renderFilters()}
+        {/* {renderFilters()} */}
       </Box>
 
       {/* Table */}
@@ -630,7 +629,7 @@ const ProjectBalances = forwardRef((props, ref) => {
       {/* Pagination */}
       <Box
         className="Pagination-laptopUp"
-         sx={{
+        sx={{
           pt: 2,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },

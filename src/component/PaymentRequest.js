@@ -27,15 +27,11 @@ import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
-import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Axios from "../utils/Axios";
-import { useNavigate } from "react-router-dom";
-import { useSearchParams } from "react-router-dom";
 
-
-
-
-const PaymentRequest= forwardRef((props, ref) => {
+const PaymentRequest = forwardRef((props, ref) => {
   const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -67,16 +63,20 @@ const PaymentRequest= forwardRef((props, ref) => {
         console.log("Project Data are:", projectResponse.data.data);
 
         const uniqueVendors = [
-          ...new Set(paymentResponse.data.data.map((payment) => payment.vendor)),
+          ...new Set(
+            paymentResponse.data.data.map((payment) => payment.vendor)
+          ),
         ].filter(Boolean);
 
         // console.log("Vendors are: ", uniqueVendors);
         const uniqueStatuses = [
-          ...new Set(paymentResponse.data.data.map((payment) => payment.approved)),
+          ...new Set(
+            paymentResponse.data.data.map((payment) => payment.approved)
+          ),
         ].filter(Boolean);
 
         // console.log("Vendors are: ", uniqueVendors);
-        
+
         setStatuses(uniqueStatuses);
         setVendors(uniqueVendors);
       } catch (err) {
@@ -129,7 +129,7 @@ const PaymentRequest= forwardRef((props, ref) => {
             </Option>
           ))}
         </Select>
-        </FormControl>
+      </FormControl>
       <FormControl size="sm">
         <FormLabel>Vendor</FormLabel>
         <Select
@@ -161,32 +161,33 @@ const PaymentRequest= forwardRef((props, ref) => {
   };
 
   const RowMenu = () => {
-
-    return(
-      <> 
-    
-    <Dropdown>
-        <MenuButton
-          slots={{ root: IconButton }}
-          slotProps={{ root: { variant: "plain", color: "neutral", size: "sm" } }}
-        >
-          <MoreHorizRoundedIcon />
-        </MenuButton>
-        <Menu size="sm" sx={{ minWidth: 100 }}>
-          <MenuItem color="primary" onClick={() => navigate("/pay_summary")}>
-            Pay Summary
-          </MenuItem>
-          <MenuItem color="primary" onClick={() => navigate("/standby_records")}>
-            Pending payments
-          </MenuItem>
-          <MenuItem color="danger">Delete</MenuItem>
-        </Menu>
-      </Dropdown>
-      </> 
-    )
-  
-    
-  }
+    return (
+      <>
+        <Dropdown>
+          <MenuButton
+            slots={{ root: IconButton }}
+            slotProps={{
+              root: { variant: "plain", color: "neutral", size: "sm" },
+            }}
+          >
+            <MoreHorizRoundedIcon />
+          </MenuButton>
+          <Menu size="sm" sx={{ minWidth: 100 }}>
+            <MenuItem color="primary" onClick={() => navigate("/pay_summary")}>
+              Pay Summary
+            </MenuItem>
+            <MenuItem
+              color="primary"
+              onClick={() => navigate("/standby_records")}
+            >
+              Pending payments
+            </MenuItem>
+            <MenuItem color="danger">Delete</MenuItem>
+          </Menu>
+        </Dropdown>
+      </>
+    );
+  };
   const handleRowSelect = (id, isSelected) => {
     setSelected((prevSelected) =>
       isSelected
@@ -201,18 +202,21 @@ const PaymentRequest= forwardRef((props, ref) => {
 
   const filteredAndSortedData = mergedData
     .filter((payment) => {
-      const matchesSearchQuery = ["pay_id", "vendor", "approved", "projectCustomer"].some((key) =>
-        payment[key]?.toLowerCase().includes(searchQuery)
-      );
-     
-      const matchesStatusFilter = !statusFilter || payment.approved === statusFilter;
+      const matchesSearchQuery = [
+        "pay_id",
+        "vendor",
+        "approved",
+        "projectCustomer",
+      ].some((key) => payment[key]?.toLowerCase().includes(searchQuery));
+
+      const matchesStatusFilter =
+        !statusFilter || payment.approved === statusFilter;
       // console.log("MatchVendors are: ", matchesStatusFilter);
 
-      const matchesVendorFilter = !vendorFilter || payment.vendor === vendorFilter;
+      const matchesVendorFilter =
+        !vendorFilter || payment.vendor === vendorFilter;
       // console.log("MatchVendors are: ", matchesVendorFilter);
 
-
-    
       return matchesSearchQuery && matchesVendorFilter && matchesStatusFilter;
     })
     .sort((a, b) => {
@@ -257,10 +261,10 @@ const PaymentRequest= forwardRef((props, ref) => {
     return pages;
   };
 
-    useEffect(() => {
-      const page = parseInt(searchParams.get("page")) || 1;
-      setCurrentPage(page);
-    }, [searchParams]);
+  useEffect(() => {
+    const page = parseInt(searchParams.get("page")) || 1;
+    setCurrentPage(page);
+  }, [searchParams]);
 
   const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
 
@@ -274,10 +278,10 @@ const PaymentRequest= forwardRef((props, ref) => {
       return "-";
     }
     const options = { day: "2-digit", month: "short", year: "numeric" };
-    return new Intl.DateTimeFormat("en-GB", options).format(date).replace(/ /g, "/");
+    return new Intl.DateTimeFormat("en-GB", options)
+      .format(date)
+      .replace(/ /g, "/");
   };
-  
-  
 
   const paginatedPayments = filteredAndSortedData.slice(
     (currentPage - 1) * itemsPerPage,
@@ -306,15 +310,15 @@ const PaymentRequest= forwardRef((props, ref) => {
     exportToCSV() {
       console.log("Exporting data to CSV...");
       const headers = [
-            "Payment Id",
-            "Request Date",
-            "Paid To",
-            "Client Name",
-            "Amount (₹)",
-            "Payment Status",
-            "UTR",
+        "Payment Id",
+        "Request Date",
+        "Paid To",
+        "Client Name",
+        "Amount (₹)",
+        "Payment Status",
+        "UTR",
       ];
-  
+
       const rows = mergedData.map((payment) => [
         payment.pay_id || "-",
         payment.formattedDate || "-",
@@ -324,12 +328,12 @@ const PaymentRequest= forwardRef((props, ref) => {
         payment.approved || "-",
         payment.utr || "-",
       ]);
-  
+
       const csvContent = [
         headers.join(","),
-        ...rows.map((row) => row.join(","))
+        ...rows.map((row) => row.join(",")),
       ].join("\n");
-  
+
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
@@ -401,12 +405,8 @@ const PaymentRequest= forwardRef((props, ref) => {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {renderFilters()}
+        {/* {renderFilters()} */}
       </Box>
-      
-   
-  
-       
 
       {/* Table */}
       <Sheet
@@ -446,7 +446,9 @@ const PaymentRequest= forwardRef((props, ref) => {
                 >
                   <Checkbox
                     size="sm"
-                    checked={selected.length === paymentsWithFormattedDate.length}
+                    checked={
+                      selected.length === paymentsWithFormattedDate.length
+                    }
                     onChange={(event) =>
                       handleRowSelect("all", event.target.checked)
                     }
@@ -637,7 +639,7 @@ const PaymentRequest= forwardRef((props, ref) => {
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: { xs: "none", md: "flex" },
           alignItems: "center",
-          marginLeft: {xl: "15%", md: "25%", lg: "18%" },
+          marginLeft: { xl: "15%", md: "25%", lg: "18%" },
         }}
       >
         <Button

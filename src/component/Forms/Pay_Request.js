@@ -1,5 +1,3 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
 import {
   Box,
   Button,
@@ -8,14 +6,14 @@ import {
   Divider,
   Grid,
   Input,
-  Option,
   Sheet,
-  Typography,
+  Typography
 } from "@mui/joy";
-import Img9 from "../../assets/solar.png";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Select from "react-select"
+import Select from "react-select";
 import { toast } from "react-toastify";
+import Img9 from "../../assets/solar.png";
 import Axios from "../../utils/Axios";
 
 function PaymentRequestForm() {
@@ -120,13 +118,13 @@ function PaymentRequestForm() {
 
     if (name === "amount_paid") {
       const amount_paid = parseFloat(value);
-      const po_balance = parseFloat(formData.po_balance);
+      const po_value = parseFloat(formData.po_value);
 
-      if (amount_paid > po_balance) {
-        alert("Amount Requested cannot be greater than Current PO Balance!");
+      if (amount_paid > po_value) {
+        alert("Amount Requested is greater than PO value!");
         setFormData((prev) => ({
           ...prev,
-          amount_paid: po_balance,
+          amount_paid: po_value,
         }));
       }
     }

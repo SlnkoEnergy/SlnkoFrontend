@@ -19,6 +19,7 @@ import ModalDialog from "@mui/joy/ModalDialog";
 import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
+import Tooltip from "@mui/joy/Tooltip";
 import Typography from "@mui/joy/Typography";
 import { useSnackbar } from "notistack";
 import * as React from "react";
@@ -41,6 +42,7 @@ function PaymentRequest() {
   const [accountNumber, setAccountNumber] = useState([]);
   const [ifscCode, setIfscCode] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isUtrSubmitted, setIsUtrSubmitted] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const renderFilters = () => (
@@ -90,15 +92,15 @@ function PaymentRequest() {
         setProjects(projectResponse.data.data);
         // console.log("Project Data are:", projectResponse.data.data);
 
-        const uniqueVendors = [
-          ...new Set(
-            paymentResponse.data.data.map((payment) => payment.vendor)
-          ),
-        ].filter(Boolean);
+        // const uniqueVendors = [
+        //   ...new Set(
+        //     paymentResponse.data.data.map((payment) => payment.vendor)
+        //   ),
+        // ].filter(Boolean);
 
         // console.log("Vendors are: ", uniqueVendors);
 
-        setVendors(uniqueVendors);
+        // setVendors(uniqueVendors);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -127,39 +129,44 @@ function PaymentRequest() {
     }
   }, [payments, projects]);
 
-
   /**Account Match Logic ***/
   const AccountMatchAndUTR = ({
     paymentId,
     initialAccountMatch = "",
     initialIfsc = "",
+    isMatched: matchedFromParent,
     onAccountMatchSuccess,
   }) => {
+    const [isMatched, setIsMatched] = useState(matchedFromParent || false);
+    useEffect(() => {
+      setIsMatched(matchedFromParent);
+    }, [matchedFromParent]);
     const { enqueueSnackbar } = useSnackbar();
-    const [accountMatch, setAccountMatch] = useState(initialAccountMatch || "");
-    const [ifsc, setIfsc] = useState(initialIfsc || "");
+    const [accountMatch, setAccountMatch] = useState("");
+    const [ifsc, setIfsc] = useState("");
     const [utr, setUtr] = useState("");
     const [error, setError] = useState(null);
-    const [isMatched, setIsMatched] = useState(false); // Tracks account match status
     const [isSubmitting, setIsSubmitting] = useState(false);
-  
-    // Handle account matching process
+    const [isUtrSubmitted, setIsUtrSubmitted] = useState(false);
+
     const handleAccountMatch = async () => {
+      if (!accountMatch) {
+        setError("Account Number required!!");
+        return;
+      }
+      setError(null);
       try {
         const response = await Axios.put("/acc-matched", {
           pay_id: paymentId,
           acc_number: accountMatch,
           ifsc: ifsc,
         });
-  
+
         if (response.status === 200) {
-          setIsMatched(true); // Set the matched status to true
+          setIsMatched(true);
           enqueueSnackbar("Account matched successfully!", {
             variant: "success",
           });
-          if (onAccountMatchSuccess) {
-            onAccountMatchSuccess(); // Pass success callback to parent
-          }
         } else {
           enqueueSnackbar("Failed to match account. Please try again.", {
             variant: "error",
@@ -172,27 +179,47 @@ function PaymentRequest() {
         });
       }
     };
-  
+    useEffect(() => {
+      console.log("isMatched changed:", isMatched);
+    }, [isMatched]);
+
+    // useEffect(() => {
+    //   console.log("isMatched now:", isMatched); // Log when `isMatched` changes
+
+    //   if (isMatched) {
+    //     // Call parent callback when account is successfully matched
+    //     if (onAccountMatchSuccess) {
+    //       onAccountMatchSuccess();
+    //     }
+    //   }
+    // }, [isMatched, onAccountMatchSuccess]); // Trigger this when `isMatched` changes
+
     // Handle UTR submission
     const handleUtrSubmit = async () => {
       if (!utr) {
         enqueueSnackbar("Please enter a valid UTR.", { variant: "warning" });
         return;
       }
-  
+
       setIsSubmitting(true);
       try {
         const response = await Axios.put("/utr-update", {
           pay_id: paymentId,
           utr: utr,
         });
-  
+
         if (response.status === 200) {
           enqueueSnackbar("UTR submitted successfully!", {
             variant: "success",
           });
+          setIsUtrSubmitted(true);
+
+          setPayments((prevPayments) =>
+            prevPayments.filter((payment) => payment.pay_id !== paymentId)
+          );
+
           if (onAccountMatchSuccess) {
-            onAccountMatchSuccess(utr); // Pass UTR to parent
+            onAccountMatchSuccess(utr);
           }
         } else {
           enqueueSnackbar("Failed to submit UTR. Please try again.", {
@@ -208,119 +235,144 @@ function PaymentRequest() {
         setIsSubmitting(false);
       }
     };
-  
+
     return (
       <div>
-        {/* Account Match Section */}
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (!accountMatch) {
-              setError("Account Number are required.");
-              return;
-            }
-            setError(null);
             handleAccountMatch();
           }}
         >
-          <div>
-            <input
-              type="text"
-              placeholder="Account Number"
-              value={accountMatch}
-              onChange={(e) => setAccountMatch(e.target.value)}
-              disabled={isMatched} // Disable if matched
-              style={{ width: "100%", marginBottom: "1rem" }}
-            />
+          <div style={{ marginBottom: "0.5rem" }}>
+            <Tooltip title="Enter the Account Number">
+              <input
+                type="text"
+                placeholder="Account Number"
+                value={accountMatch}
+                disabled={isMatched}
+                onChange={(e) => setAccountMatch(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "0.5rem",
+                  border: "1px solid #ccc",
+                  marginBottom: "0.5rem",
+                }}
+              />
+            </Tooltip>
           </div>
-          <div>
-            <input
-              type="text"
-              placeholder="IFSC Code"
-              value={ifsc}
-              onChange={(e) => setIfsc(e.target.value)}
-              disabled={isMatched} // Disable if matched
-              style={{ width: "100%", marginBottom: "1rem" }}
-            />
+          <div style={{ marginBottom: "0.5rem" }}>
+            <Tooltip title="Enter the IFSC Code">
+              <input
+                type="text"
+                placeholder="IFSC Code"
+                value={ifsc}
+                disabled={isMatched}
+                onChange={(e) => setIfsc(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "0.5rem",
+                  border: "1px solid #ccc",
+                  marginBottom: "0.5rem",
+                }}
+              />
+            </Tooltip>
           </div>
+
           {error && (
-            <div
-              style={{
-                color: "red",
-                fontSize: "0.875rem",
-                marginBottom: "1rem",
-              }}
-            >
-              {error}
-            </div>
+            <div style={{ color: "red", marginBottom: "0.5rem" }}>{error}</div>
           )}
-          <button
+
+          <Button
             type="submit"
-            disabled={isMatched} // Disable after match
-            style={{
+            disabled={isMatched || !accountMatch || !ifsc}
+            sx={{
               width: "100%",
               padding: "0.5rem",
               backgroundColor: isMatched ? "gray" : "#007bff",
               color: "white",
               border: "none",
-              cursor: isMatched ? "not-allowed" : "pointer",
+              cursor:
+                isMatched || !accountMatch || !ifsc ? "not-allowed" : "pointer",
             }}
           >
             {isMatched ? "Matched" : "Match Account"}
-          </button>
+          </Button>
         </form>
-  
+
         {/* UTR Submission Section */}
-        {isMatched && (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleUtrSubmit();
-            }}
-            style={{ marginTop: "1rem" }}
-          >
-            <div>
+        {isMatched && !isUtrSubmitted && (
+          <div style={{ marginTop: "0.5rem" }}>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleUtrSubmit();
+              }}
+            >
               <input
                 type="text"
                 placeholder="Enter UTR"
                 value={utr}
                 onChange={(e) => setUtr(e.target.value)}
-                style={{ width: "100%", marginBottom: "1rem" }}
+                disabled={isSubmitting}
+                style={{
+                  width: "100%",
+                  marginBottom: "0.5rem",
+                  padding: "0.5rem",
+                  border: "1px solid #ccc",
+                }}
               />
-            </div>
-            <button
-              type="submit"
-              disabled={isSubmitting} // Disable while submitting
-              style={{
+              <Button
+                type="submit"
+                disabled={isSubmitting || !utr}
+                sx={{
+                  width: "100%",
+                  padding: "0.5rem",
+                  backgroundColor: "#28a745",
+                  color: "white",
+                  border: "none",
+                  cursor: isSubmitting || !utr ? "not-allowed" : "pointer",
+                }}
+              >
+                {isSubmitting ? "Submitting..." : "Submit UTR"}
+              </Button>
+            </form>
+          </div>
+        )}
+
+        {/* UTR Submitted Message */}
+        {isUtrSubmitted && (
+          <div style={{ marginTop: "1rem" }}>
+            <p>UTR: {utr}</p>
+            <Button
+              sx={{
                 width: "100%",
                 padding: "0.5rem",
-                backgroundColor: "#28a745",
+                backgroundColor: "gray",
                 color: "white",
                 border: "none",
-                cursor: isSubmitting ? "not-allowed" : "pointer",
+                cursor: "not-allowed",
               }}
+              disabled
             >
-              {isSubmitting ? "Submitting..." : "Submit UTR"}
-            </button>
-          </form>
+              Submitted
+            </Button>
+          </div>
         )}
       </div>
     );
   };
-  
 
   const handleAccountMatchUpdate = (paymentId) => {
     setPayments((prevPayments) =>
       prevPayments.map((payment) =>
-        payment.pay_id === paymentId
-          ? { ...payment, acc_match: "matched" }
-          : payment
+        payment.pay_id === paymentId ? { ...payment, isMatched: true } : payment
       )
     );
   };
 
-   /** Match Logic ***/
-   const MatchRow = ({ payment }) => (
+  /** Match Logic ***/
+  const MatchRow = ({ payment }) => (
     <Chip
       variant="soft"
       size="sm"
@@ -343,11 +395,11 @@ function PaymentRequest() {
         (key) => project[key]?.toLowerCase().includes(searchQuery)
       );
 
-      const matchesVendorFilter =
-        !vendorFilter || project.vendor === vendorFilter;
-      console.log("MatchVendors are: ", matchesVendorFilter);
+      // const matchesVendorFilter =
+      //   !vendorFilter || project.vendor === vendorFilter;
+      // console.log("MatchVendors are: ", matchesVendorFilter);
 
-      return matchesSearchQuery && matchesVendorFilter;
+      return matchesSearchQuery;
     })
 
     .sort((a, b) => {
@@ -424,8 +476,6 @@ function PaymentRequest() {
     }
   };
 
- 
-
   return (
     <>
       {/* Mobile Filters */}
@@ -489,7 +539,7 @@ function PaymentRequest() {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {renderFilters()}
+        {/* {renderFilters()} */}
       </Box>
 
       {/* Table */}
@@ -549,7 +599,7 @@ function PaymentRequest() {
                   "Payment Description",
                   "Requested Amount",
                   "Bank Detail",
-                  "Validation",
+                  // "Validation",
                 ].map((header, index) => (
                   <Box
                     component="th"
@@ -677,10 +727,13 @@ function PaymentRequest() {
                         paymentId={payment.pay_id}
                         initialAccountMatch={payment.acc_number}
                         initialIfsc={payment.ifsc}
-                        onAccountMatchSuccess={(utr) => handleAccountMatchUpdate(payment.pay_id, utr)}
+                        isMatched={payment.isMatched || false}
+                        onAccountMatchSuccess={() =>
+                          handleAccountMatchUpdate(payment.pay_id)
+                        }
                       />
                     </Box>
-                    <Box
+                    {/* <Box
                       component="td"
                       sx={{
                         borderBottom: "1px solid #ddd",
@@ -689,14 +742,14 @@ function PaymentRequest() {
                       }}
                     >
                       <MatchRow payment={payment} />
-                    </Box>
+                    </Box> */}
                   </Box>
                 ))
               ) : (
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={8}
+                    colSpan={7}
                     sx={{
                       padding: "8px",
                       textAlign: "center",

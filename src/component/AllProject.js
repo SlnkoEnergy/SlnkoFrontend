@@ -23,10 +23,9 @@ import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
-import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
-import { useNavigate } from "react-router-dom";
+import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Axios from "../utils/Axios";
-import { useSearchParams } from "react-router-dom";
 
 const AllProjects = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -60,7 +59,7 @@ const AllProjects = forwardRef((props, ref) => {
           ...new Set(projectsData.map((project) => project.state)),
         ].filter(Boolean);
 
-        console.log("states are:", uniqueStates);
+        // console.log("states are:", uniqueStates);
 
         const uniqueCustomers = [
           ...new Set(projectsData.map((project) => project.customer)),
@@ -80,35 +79,37 @@ const AllProjects = forwardRef((props, ref) => {
   }, []);
 
   const RowMenu = ({ currentPage, p_id }) => {
-    console.log("CurrentPage: ", currentPage ,"p_Id:", p_id);
-    return(
-
-    
-    <>
-      <Dropdown>
-        <MenuButton
-          slots={{ root: IconButton }}
-          slotProps={{
-            root: { variant: "plain", color: "neutral", size: "sm" },
-          }}
-        >
-          <MoreHorizRoundedIcon />
-        </MenuButton>
-        <Menu size="sm" sx={{ minWidth: 140 }}>
-          <MenuItem color="primary" onClick={() => {
+    // console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
+    return (
+      <>
+        <Dropdown>
+          <MenuButton
+            slots={{ root: IconButton }}
+            slotProps={{
+              root: { variant: "plain", color: "neutral", size: "sm" },
+            }}
+          >
+            <MoreHorizRoundedIcon />
+          </MenuButton>
+          <Menu size="sm" sx={{ minWidth: 140 }}>
+            <MenuItem
+              color="primary"
+              onClick={() => {
                 const page = currentPage;
                 const ID = p_id;
+                localStorage.setItem("idd", ID);
                 // console.log(`/add_money?page=${page}&p_id=${projectId}`);
-                navigate(`/edit_project?page=${page}&_id=${ID}`);
-              }}>
-            Edit
-          </MenuItem>
-          <MenuItem color="danger">Delete</MenuItem>
-        </Menu>
-      </Dropdown>
-    </>
-  );
-}
+                navigate(`/edit_project?page=${page}&p_id=${ID}`);
+              }}
+            >
+              Edit
+            </MenuItem>
+            <MenuItem color="danger">Delete</MenuItem>
+          </Menu>
+        </Dropdown>
+      </>
+    );
+  };
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -136,7 +137,7 @@ const AllProjects = forwardRef((props, ref) => {
       );
       // Apply the state filter
       const matchesStateFilter = !stateFilter || project.state === stateFilter;
-      console.log("MatchStates are: ", matchesStateFilter);
+      // console.log("MatchStates are: ", matchesStateFilter);
 
       // Apply the customer filter
       const matchesCustomerFilter =
@@ -185,10 +186,10 @@ const AllProjects = forwardRef((props, ref) => {
     return pages;
   };
 
-    useEffect(() => {
-     const page = parseInt(searchParams.get("page")) || 1;
-        setCurrentPage(page);
-      }, [searchParams]);
+  useEffect(() => {
+    const page = parseInt(searchParams.get("page")) || 1;
+    setCurrentPage(page);
+  }, [searchParams]);
 
   const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
 
@@ -246,41 +247,40 @@ const AllProjects = forwardRef((props, ref) => {
   );
 
   useImperativeHandle(ref, () => ({
-      exportToCSV() {
-        console.log("Exporting data to CSV...");
-        const headers = [
-                  "Project ID",
-                  "Customer",
-                  "Project Name",
-                  "Email",
-                  "Mobile",
-                  "State",
-                  "Slnko Service Charges (with GST)",
-        ];
-    
-        const rows = projects.map((project) => [
-          project.code || "-",
-          project.customer || "-",
-          project.name || "-",
-          project.email || "-",
-          project.number || "-",
-          project.state || "-",
-          project.service || "-",
-        ]);
-    
-        const csvContent = [
-          headers.join(","),
-          ...rows.map((row) => row.join(","))
-        ].join("\n");
-    
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = "All_Project.csv";
-        link.click();
-      },
-    }));
-  
+    exportToCSV() {
+      console.log("Exporting data to CSV...");
+      const headers = [
+        "Project ID",
+        "Customer",
+        "Project Name",
+        "Email",
+        "Mobile",
+        "State",
+        "Slnko Service Charges (with GST)",
+      ];
+
+      const rows = projects.map((project) => [
+        project.code || "-",
+        project.customer || "-",
+        project.name || "-",
+        project.email || "-",
+        project.number || "-",
+        project.state || "-",
+        project.service || "-",
+      ]);
+
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row) => row.join(",")),
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "All_Project.csv";
+      link.click();
+    },
+  }));
 
   return (
     <>
@@ -345,7 +345,7 @@ const AllProjects = forwardRef((props, ref) => {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {renderFilters()}
+        {/* {renderFilters()} */}
       </Box>
 
       {/* Table */}
@@ -620,5 +620,5 @@ const AllProjects = forwardRef((props, ref) => {
       </Box>
     </>
   );
-})
+});
 export default AllProjects;
