@@ -83,6 +83,7 @@ function Edit_Project() {
               alignItems: { xs: "start", sm: "center" },
               flexWrap: "wrap",
               justifyContent: "space-between",
+              marginLeft: { xl: "16%", lg: "20%", md: "30%" },
             }}
           >
             <PaySummary />

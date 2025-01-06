@@ -1,24 +1,13 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
-import axios from "axios";
-import {
-  Box,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
-  Checkbox,
-  Paper,
-} from "@mui/material";
+import { Box, Button, Typography, Checkbox } from "@mui/joy";
+import Axios from "../utils/Axios";
 
 const PaymentDetail = forwardRef((props, ref) => {
   const [data, setData] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [payments, setPayments] = useState("");
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -31,13 +20,15 @@ const PaymentDetail = forwardRef((props, ref) => {
 
   useEffect(() => {
     const fetchData = async () => {
-      console.log("Fetching data...");
-
       try {
         const [paySummaryRes, projectRes] = await Promise.all([
-          axios.get("/get-pay-summary"),
-          axios.get("/get-all-project"),
+          Axios.get("/get-pay-summary", {
+            params: { approved: "Approved", acc_match: "matched" },
+          }),
+          Axios.get("/get-all-project"),
         ]);
+        
+
 
         const paySummary = paySummaryRes.data?.data || [];
         const projects = projectRes.data?.data || [];
@@ -50,6 +41,7 @@ const PaymentDetail = forwardRef((props, ref) => {
             return {
               id: item.id || Math.random(),
               debitAccount: "025305008971",
+              Approved: item.approved || "",
               acc_number: item.acc_number || "",
               benificiary: item.benificiary || "",
               amount_paid: item.amount_paid || 0,
@@ -61,14 +53,13 @@ const PaymentDetail = forwardRef((props, ref) => {
             };
           });
 
-          console.log("Structured payment data with remarks:", structuredData);
           setData(structuredData);
+          console.log("Structured data are:", structuredData);
+          
         } else {
-          console.error("Invalid data format received from APIs.", { paySummary, projects });
           setError("Invalid data format. Unable to load payment details.");
         }
       } catch (err) {
-        console.error("Error fetching data:", err.message);
         setError("Failed to fetch data. Please try again later.");
       } finally {
         setLoading(false);
@@ -79,101 +70,78 @@ const PaymentDetail = forwardRef((props, ref) => {
   }, []);
 
   const handleCheckboxChange = (id) => {
-    console.log(`Toggling selection for row with ID: ${id}`);
     setSelectedRows((prev) =>
       prev.includes(id) ? prev.filter((row) => row !== id) : [...prev, id]
     );
   };
 
+  const escapeValue = (value) => {
+    return `"${String(value).replace(/"/g, '""')}"`;
+  };
+  
   useImperativeHandle(ref, () => ({
     downloadSelectedRows() {
-      console.log("Preparing to download selected rows...");
       const selectedData = data.filter(
-        (row) => selectedRows.includes(row.id) && row.acc_match === "matched"
+        (row) => selectedRows.includes(row.id) && row.acc_match === "matched" && row.approved === "Approved"
       );
-      console.log("Selected rows data:", selectedData);
-
+  
       const headers = [
-        "Debit Ac No",
-        "Beneficiary Ac No",
-        "Beneficiary Name",
-        "Amt",
-        "Pay Mod",
-        "Date",
-        "IFSC",
-        "Payable Location",
-        "Print Location",
-        "Bene Mobile No.",
-        "Bene Email ID",
-        "Bene add1",
-        "Bene add2",
-        "Bene add3",
-        "Bene add4",
-        "Add Details 1",
-        "Add Details 2",
-        "Add Details 3",
-        "Add Details 4",
-        "Add Details 5",
-        "Remarks",
+        "Debit Ac No", "Beneficiary Ac No", "Beneficiary Name", "Amt", "Pay Mod", "Date", "IFSC",
+        "Payable Location", "Print Location", "Bene Mobile No.", "Bene Email ID", "Bene add1", "Bene add2",
+        "Bene add3", "Bene add4", "Add Details 1", "Add Details 2", "Add Details 3", "Add Details 4",
+        "Add Details 5", "Remarks"
       ];
-
+  
       const csvContent =
         [headers.join(",")] +
         "\n" +
         selectedData
           .map((row) =>
             [
-              row.debitAccount,
-              row.acc_number,
-              row.benificiary,
-              row.amount_paid,
-              row.pay_mod,
-              row.dbt_date,
-              row.ifsc,
-              row.payable_location,
-              row.print_location,
-              row.bene_mobile_no,
-              row.bene_email_id,
-              row.bene_add1,
-              row.bene_add2,
-              row.bene_add3,
-              row.bene_add4,
-              row.add_details_1,
-              row.add_details_2,
-              row.add_details_3,
-              row.add_details_4,
-              row.add_details_5,
-              row.comment,
+              escapeValue(row.debitAccount),
+              escapeValue(row.acc_number),
+              escapeValue(row.benificiary),
+              escapeValue(row.amount_paid),
+              escapeValue(row.pay_mod),
+              escapeValue(row.dbt_date),
+              escapeValue(row.ifsc),
+              escapeValue(row.payable_location),
+              escapeValue(row.print_location),
+              escapeValue(row.bene_mobile_no),
+              escapeValue(row.bene_email_id),
+              escapeValue(row.bene_add1),
+              escapeValue(row.bene_add2),
+              escapeValue(row.bene_add3),
+              escapeValue(row.bene_add4),
+              escapeValue(row.add_details_1),
+              escapeValue(row.add_details_2),
+              escapeValue(row.add_details_3),
+              escapeValue(row.add_details_4),
+              escapeValue(row.add_details_5),
+              escapeValue(row.comment),
             ].join(",")
           )
           .join("\n");
-
+  
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download = "Payment_Detail.csv";
       link.click();
     },
   }));
+  
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
 
   return (
-    <Box>
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        p={2}
-        bgcolor="#e2e8f5"
-      >
-        <Typography variant="h5" textAlign="center" style={{ flex: 1 }}>
-          Payment Detail
-        </Typography>
+    <Box sx={{marginLeft: { xl: "15%", md: "25%", lg: "18%" },
+    maxWidth: { lg: "85%", sm: "100%", md: "75%" }}}> 
+      <Box display="flex" justifyContent="space-between" alignItems="center" p={2} bgcolor="neutral.soft" >
+        {/* <Typography level="h4">Payment Detail</Typography> */}
         <Button
-          variant="contained"
+          variant="solid"
           color="success"
           onClick={() => ref.current.downloadSelectedRows()}
         >
@@ -181,69 +149,70 @@ const PaymentDetail = forwardRef((props, ref) => {
         </Button>
       </Box>
 
-      <TableContainer component={Paper} sx={{ mt: 2 }}>
-        <Table>
-          <TableHead>
-            <TableRow style={{ backgroundColor: "#f5f5f5" }}>
-              <TableCell style={{ fontSize: "1.2rem", fontWeight: "500", padding: "8px" }}>Select</TableCell>
-              <TableCell style={{ fontSize: "1.2rem", fontWeight: "500", padding: "8px" }}>Debit Ac No</TableCell>
-              <TableCell style={{ fontSize: "1.2rem", fontWeight: "500", padding: "8px" }}>Beneficiary Ac No</TableCell>
-              <TableCell style={{ fontSize: "1.2rem", fontWeight: "500", padding: "8px" }}>Beneficiary Name</TableCell>
-              <TableCell style={{ fontSize: "1.2rem", fontWeight: "500", padding: "8px" }}>Amt</TableCell>
-              <TableCell style={{ fontSize: "1.2rem", fontWeight: "500", padding: "8px" }}>Pay Mod</TableCell>
-              <TableCell style={{ fontSize: "1.2rem", fontWeight: "500", padding: "8px" }}>Date</TableCell>
-              <TableCell style={{ fontSize: "1.2rem", fontWeight: "500", padding: "8px" }}>IFSC</TableCell>
-              <TableCell style={{ fontSize: "1.2rem", fontWeight: "500", padding: "8px" }}>Payable Location</TableCell>
-              <TableCell style={{ fontSize: "1.2rem", fontWeight: "500", padding: "8px" }}>Print Location</TableCell>
-              <TableCell style={{ fontSize: "1.2rem", fontWeight: "500", padding: "8px" }}>Bene Mobile No.</TableCell>
-              <TableCell style={{ fontSize: "1.2rem", fontWeight: "500", padding: "8px" }}>Bene Email ID</TableCell>
-              <TableCell style={{ fontSize: "1.2rem", fontWeight: "500", padding: "8px" }}>Bene add1</TableCell>
-              <TableCell style={{ fontSize: "1.2rem", fontWeight: "500", padding: "8px" }}>Bene add2</TableCell>
-              <TableCell style={{ fontSize: "1.2rem", fontWeight: "500", padding: "8px" }}>Bene add3</TableCell>
-              <TableCell style={{ fontSize: "1.2rem", fontWeight: "500", padding: "8px" }}>Bene add4</TableCell>
-              <TableCell style={{ fontSize: "1.2rem", fontWeight: "500", padding: "8px" }}>Add Details 1</TableCell>
-              <TableCell style={{ fontSize: "1.2rem", fontWeight: "500", padding: "8px" }}>Add Details 2</TableCell>
-              <TableCell style={{ fontSize: "1.2rem", fontWeight: "500", padding: "8px" }}>Add Details 3</TableCell>
-              <TableCell style={{ fontSize: "1.2rem", fontWeight: "500", padding: "8px" }}>Add Details 4</TableCell>
-              <TableCell style={{ fontSize: "1.2rem", fontWeight: "500", padding: "8px" }}>Add Details 5</TableCell>
-              <TableCell style={{ fontSize: "1.2rem", fontWeight: "500", padding: "8px" }}>Remarks</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {data.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell>
-                  <Checkbox
-                    checked={selectedRows.includes(row.id)}
-                    onChange={() => handleCheckboxChange(row.id)}
-                  />
-                </TableCell>
-                <TableCell style={{ fontSize: "1rem", fontWeight: "300" }}>{row.debitAccount}</TableCell>
-                <TableCell style={{ fontSize: "1rem", fontWeight: "300" }}>{row.acc_number}</TableCell>
-                <TableCell style={{ fontSize: "1rem", fontWeight: "300" }}>{row.benificiary}</TableCell>
-                <TableCell style={{ fontSize: "1rem", fontWeight: "300" }}>{row.amount_paid}</TableCell>
-                <TableCell style={{ fontSize: "1rem", fontWeight: "300" }}>{row.pay_mod}</TableCell>
-                <TableCell style={{ fontSize: "1rem", fontWeight: "300" }}>{row.dbt_date}</TableCell>
-                <TableCell style={{ fontSize: "1rem", fontWeight: "300" }}>{row.ifsc}</TableCell>
-                <TableCell style={{ fontSize: "1rem", fontWeight: "300" }}>{row.payable_location}</TableCell>
-                <TableCell style={{ fontSize: "1rem", fontWeight: "300" }}>{row.print_location}</TableCell>
-                <TableCell style={{ fontSize: "1rem", fontWeight: "300" }}>{row.bene_mobile_no}</TableCell>
-                <TableCell style={{ fontSize: "1rem", fontWeight: "300" }}>{row.bene_email_id}</TableCell>
-                <TableCell style={{ fontSize: "1rem", fontWeight: "300" }}>{row.bene_add1}</TableCell>
-                <TableCell style={{ fontSize: "1rem", fontWeight: "300" }}>{row.bene_add2}</TableCell>
-                <TableCell style={{ fontSize: "1rem", fontWeight: "300" }}>{row.bene_add3}</TableCell>
-                <TableCell style={{ fontSize: "1rem", fontWeight: "300" }}>{row.bene_add4}</TableCell>
-                <TableCell style={{ fontSize: "1rem", fontWeight: "300" }}>{row.add_details_1}</TableCell>
-                <TableCell style={{ fontSize: "1rem", fontWeight: "300" }}>{row.add_details_2}</TableCell>
-                <TableCell style={{ fontSize: "1rem", fontWeight: "300" }}>{row.add_details_3}</TableCell>
-                <TableCell style={{ fontSize: "1rem", fontWeight: "300" }}>{row.add_details_4}</TableCell>
-                <TableCell style={{ fontSize: "1rem", fontWeight: "300" }}>{row.add_details_5}</TableCell>
-                <TableCell style={{ fontSize: "1rem", fontWeight: "300" }}>{row.comment}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <div style={{ overflowX: 'auto', margin: '20px 0' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead>
+          <tr style={{ backgroundColor: '#f5f5f5' }}>
+            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd', fontWeight: 'bold', backgroundColor: '#e2e2e2' }}>Select</th>
+            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Debit Ac No</th>
+            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Beneficiary Ac No</th>
+            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Beneficiary Name</th>
+            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Amt</th>
+            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Pay Mod</th>
+            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Date</th>
+            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>IFSC</th>
+            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Payable Location</th>
+            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Print Location</th>
+            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Bene Mobile No.</th>
+            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Bene Email ID</th>
+            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Bene add1</th>
+            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Bene add2</th>
+            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Bene add3</th>
+            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Bene add4</th>
+            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Add Details 1</th>
+            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Add Details 2</th>
+            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Add Details 3</th>
+            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Add Details 4</th>
+            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Add Details 5</th>
+            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Remarks</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((row) => (
+            <tr key={row.id} style={{ backgroundColor: row.id % 2 === 0 ? '#f9f9f9' : '#fff' }}>
+              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>
+                <input
+                  type="checkbox"
+                  checked={selectedRows.includes(row.id)}
+                  onChange={() => handleCheckboxChange(row.id)}
+                />
+              </td>
+              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.debitAccount}</td>
+              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.acc_number}</td>
+              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.benificiary}</td>
+              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.amount_paid}</td>
+              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.pay_mod}</td>
+              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.dbt_date}</td>
+              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.ifsc}</td>
+              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.payable_location}</td>
+              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.print_location}</td>
+              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.bene_mobile_no}</td>
+              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.bene_email_id}</td>
+              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.bene_add1}</td>
+              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.bene_add2}</td>
+              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.bene_add3}</td>
+              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.bene_add4}</td>
+              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.add_details_1}</td>
+              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.add_details_2}</td>
+              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.add_details_3}</td>
+              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.add_details_4}</td>
+              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.add_details_5}</td>
+              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.comment}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
     </Box>
   );
 });

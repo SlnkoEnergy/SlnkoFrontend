@@ -38,7 +38,7 @@ function Add_Project() {
             gap: 1,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', marginLeft:{xl:"16%",lg:"22%", md:"30%"}}}>
+          <Box sx={{ display: 'flex', alignItems: 'center', marginLeft:{xl:"17%",lg:"22%", md:"30%"}}}>
             <Breadcrumbs
               size="sm"
               aria-label="breadcrumbs"
@@ -59,7 +59,7 @@ function Add_Project() {
                 href=""
                 sx={{ fontSize: 12, fontWeight: 500 }}
               >
-                Daily Pyament Request
+                Daily Payment Request
               </Link>
               <Typography color="primary" sx={{ fontWeight: 500, fontSize: 12 }}>
                 Add New Payment

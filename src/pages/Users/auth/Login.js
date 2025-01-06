@@ -13,8 +13,8 @@ import "slick-carousel/slick/slick.css";
 import * as Yup from "yup";
 import Img5 from "../../../assets/Protrac_blue.png";
 import ImgX from "../../../assets/slnko_white_logo.png";
-import Img1 from "../../../assets/solar1.jpg";
-import Img4 from "../../../assets/solar3.jpg";
+import Img1 from "../../../assets/New_Solar3.png";
+// import Img4 from "../../../assets/solar3.jpg";
 import Axios from "../../../utils/Axios";
 import Colors from "../../../utils/colors";
 
@@ -159,11 +159,11 @@ const Login = () => {
               style={{ width: "100%", height: "auto" }}
             />
 
-            <img
+            {/* <img
               src={Img4}
               alt="Solar 4"
               style={{ width: "100%", height: "auto" }}
-            />
+            /> */}
           </Slider>
         </Grid>
 

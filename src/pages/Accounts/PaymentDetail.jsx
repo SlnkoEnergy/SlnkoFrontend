@@ -14,8 +14,9 @@ import Sidebar from "../../component/Partials/Sidebar";
 import PaymentApproved from "../../component/PaymentApproved";
 
 import Header from "../../component/Partials/Header";
+import PaymentDetail from "../../component/PaymentDetail";
 
-const Payment_Approved = () => {
+const Payment_Detail = () => {
       const PaymentDetailRef = useRef();
     
   
@@ -83,6 +84,12 @@ const Payment_Approved = () => {
               >
                 Payment Approved
               </Typography>
+              <Typography
+                color="primary"
+                sx={{ fontWeight: 500, fontSize: 12 }}
+              >
+                Payment Detail
+              </Typography>
             </Breadcrumbs>
           </Box>
           <Box
@@ -98,7 +105,7 @@ const Payment_Approved = () => {
             }}
           >
             <Typography level="h2" component="h1">
-              Payment Approved
+              Payment Detail
             </Typography>
             <Box
               sx={{
@@ -109,6 +116,9 @@ const Payment_Approved = () => {
                 alignItems: { xs: "start", sm: "center" },
                 flexWrap: "wrap",
                 justifyContent: "center",
+                marginLeft: { xl: "15%", md: "25%", lg: "18%" },
+                maxWidth: { lg: "85%", sm: "100%", md: "75%" },
+
               }}
             >
               {/* <Button
@@ -118,17 +128,17 @@ const Payment_Approved = () => {
             >
               Add New Project +
             </Button> */}
-            <Button
+            {/* <Button
               color="primary"
               startDecorator={<DownloadRoundedIcon />}
               size="sm"
               onClick={handleExportToCSV} 
             >
               Payment Detail
-            </Button>
+            </Button> */}
             </Box>
           </Box>
-          <PaymentApproved ref={PaymentDetailRef} />
+          <PaymentDetail ref={PaymentDetailRef} />
           {/* <OrderTable />
           <OrderList /> */}
         </Box>
@@ -136,4 +146,4 @@ const Payment_Approved = () => {
     </CssVarsProvider>
   );
 }
-export default Payment_Approved;
+export default Payment_Detail;

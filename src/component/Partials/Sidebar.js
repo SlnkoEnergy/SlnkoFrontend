@@ -178,7 +178,6 @@ function Sidebar() {
             <ListItemButton>
               <HomeRoundedIcon />
               <ListItemContent>
-                <Link to="/dashboard"></Link>
                 <Typography level="title-sm">Dashboard</Typography>
               </ListItemContent>
             </ListItemButton>
@@ -192,7 +191,7 @@ function Sidebar() {
                   {/* <AssignmentRoundedIcon /> */}
                   <AccountCircleIcon />
                   <ListItemContent>
-                    <Typography level="title-sm">User</Typography>
+                    <Typography level="title-sm"> User</Typography>
                   </ListItemContent>
                   <KeyboardArrowDownIcon
                     sx={[
@@ -210,13 +209,13 @@ function Sidebar() {
             >
               <List sx={{ gap: 0.5 }}>
                 <ListItem sx={{ mt: 0.5 }}>
-                  <ListItemButton>
-                    <Link to="/add_user">Add User</Link>
+                  <ListItemButton onClick={() => navigate("/add_user")}>
+                    <Link to="/add_user" style={{textDecoration:"none",}}> Add User</Link>
                   </ListItemButton>
                 </ListItem>
                 <ListItem sx={{ mt: 0.5 }}>
-                  <ListItemButton>
-                    <Link to="/edit_user">Edit User</Link>
+                  <ListItemButton onClick={() => navigate("/edit_user")}>
+                    Edit User
                   </ListItemButton>
                 </ListItem>
               </List>
@@ -248,13 +247,13 @@ function Sidebar() {
             >
               <List sx={{ gap: 0.5 }}>
                 <ListItem sx={{ mt: 0.5 }}>
-                  <ListItemButton>
-                    <Link to="/initial-leads">Leads</Link>
+                  <ListItemButton onClick={() => navigate("#")}>
+                   Leads
                   </ListItemButton>
                 </ListItem>
                 <ListItem>
-                  <ListItemButton>
-                    <Link to="/commercial-offer">Commercial Offer</Link>
+                  <ListItemButton onClick={() => navigate("#")}>
+                    Commercial Offer
                   </ListItemButton>
                 </ListItem>
               </List>
@@ -262,14 +261,14 @@ function Sidebar() {
           </ListItem>
 
           {/*--------- Accounting -------------*/}
-          {user?.department === "Accounts" &&
+          {/* {user?.department === "Accounts" &&
             user?.role === "manager" &&
             (() => {
               console.log("Accounting section is visible to the user:", {
                 department: user?.department,
                 role: user?.role,
               });
-              return (
+              return ( */}
                 <ListItem nested>
                   <Toggler
                     renderToggle={({ open, setOpen }) => (
@@ -294,32 +293,30 @@ function Sidebar() {
                   >
                     <List sx={{ gap: 0.5 }}>
                       <ListItem sx={{ mt: 0.5 }}>
-                        <ListItemButton>
-                          <Link to="/project-balance">Project Balances</Link>
+                      <ListItemButton onClick={() => navigate("/project-balance")}>
+                          Project Balances
                         </ListItemButton>
                       </ListItem>
                       <ListItem>
-                        <ListItemButton>
-                          <Link to="/daily-payment-request">
+                        <ListItemButton onClick={() => navigate("/daily-payment-request")}>
                             Daily Payment Request
-                          </Link>
                         </ListItemButton>
                       </ListItem>
                       <ListItem>
-                        <ListItemButton>
-                          <Link to="/payment-approval">Payment Approval</Link>
+                        <ListItemButton onClick={() => navigate("/payment-approval")}>
+                        Payment Approval
                         </ListItemButton>
                       </ListItem>
                       <ListItem>
-                        <ListItemButton>
-                          <Link to="/payment-approved">Approved Payment</Link>
+                        <ListItemButton onClick={() => navigate("/payment-approved")}>
+                          Approved Payment
                         </ListItemButton>
                       </ListItem>
                     </List>
                   </Toggler>
                 </ListItem>
-              );
-            })()}
+              {/* );
+            })()} */}
 
           {/*--------- SCM -------------*/}
           <ListItem nested>
@@ -347,18 +344,18 @@ function Sidebar() {
             >
               <List sx={{ gap: 0.5 }}>
                 <ListItem sx={{ mt: 0.5 }}>
-                  <ListItemButton>
-                    <Link to="/purchase-order">Purchase Order</Link>
+                  <ListItemButton onClick={() => navigate("/purchase-order")}>
+                    <Link to="/purchase-order" style={{textDecoration:"none",}}>Purchase Order</Link>
                   </ListItemButton>
                 </ListItem>
                 <ListItem>
-                  <ListItemButton>
-                    <Link to="/material-tracker">Material Status</Link>
+                  <ListItemButton onClick={() => navigate("#")}>
+                    <Link to="/material-tracker" style={{textDecoration:"none",}}>Material Status</Link>
                   </ListItemButton>
                 </ListItem>
                 <ListItem>
-                  <ListItemButton>
-                    <Link to="/vendor-bill">Vendor Bill</Link>
+                  <ListItemButton onClick={() => navigate("#")}>
+                    <Link to="/vendor-bill" style={{textDecoration:"none",}}> Vendor Bill</Link>
                   </ListItemButton>
                 </ListItem>
               </List>
@@ -391,13 +388,13 @@ function Sidebar() {
             >
               <List sx={{ gap: 0.5 }}>
                 <ListItem sx={{ mt: 0.5 }}>
-                  <ListItemButton>
-                    <Link to="/all-project">All Projects</Link>
+                  <ListItemButton onClick={() => navigate("/all-project")}>
+                    All Projects
                   </ListItemButton>
                 </ListItem>
                 <ListItem>
-                  <ListItemButton>
-                    <Link to="/site-project">Site Projects</Link>
+                  <ListItemButton onClick={() => navigate("#")}>
+                    Site Projects
                   </ListItemButton>
                 </ListItem>
               </List>

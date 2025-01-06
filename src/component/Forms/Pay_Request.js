@@ -116,18 +116,18 @@ function PaymentRequestForm() {
       }
     }
 
-    if (name === "amount_paid") {
-      const amount_paid = parseFloat(value);
-      const po_value = parseFloat(formData.po_value);
+    // if (name === "amount_paid") {
+    //   const amount_paid = parseFloat(value);
+    //   const po_value = parseFloat(formData.po_value);
 
-      if (amount_paid > po_value) {
-        alert("Amount Requested is greater than PO value!");
-        setFormData((prev) => ({
-          ...prev,
-          amount_paid: po_value,
-        }));
-      }
-    }
+    //   if (amount_paid > po_value) {
+    //     alert("Amount Requested is greater than PO value!");
+    //     setFormData((prev) => ({
+    //       ...prev,
+    //       amount_paid: po_value,
+    //     }));
+    //   }
+    // }
 
     if (name === "p_id" && value) {
       const selectedProject = getFormData.projectIDs.find(
@@ -207,9 +207,9 @@ function PaymentRequestForm() {
       const { message } = response.data;
 
     setResponseMessage(message);
-    toast.success("Payment request submitted successfully:", response.data);
+    toast.success("Payment Requested Successfully ", response.data);
 
-      // console.log("Payment request submitted successfully", response.data);
+      // console.log("Payment request are", response.data);
       navigate("/daily-payment-request");
     } catch (error) {
           console.error(
@@ -258,16 +258,22 @@ function PaymentRequestForm() {
             <Grid container spacing={2}>
               <Grid xs={12} sm={6}>
               <Select
-                name="p_id"
-                value={formData.p_id}
-                onChange={(e) => handleChange({ target: { name: "p_id", value: e.value } })}
-                options={getFormData.projectIDs.map((project) => ({
-                  label: project.code,
-                  value: project.p_id
-                }))}
-                placeholder="Select Project"
-                getOptionLabel={(e) => `${e.label} - ${e.value}`} 
-              />
+          name="p_id"
+          value={formData.p_id? {label: getFormData.projectIDs.find((project) => project.p_id === formData.p_id)?.code,
+          value: formData.p_id,
+        }: null}
+  onChange={(e) =>handleChange({
+      target: {
+        name: "p_id",
+        value: e?.value,
+      },
+    })}
+  options={getFormData.projectIDs.map((project) => ({
+    label: project.code,
+    value: project.p_id,
+  }))}
+  placeholder="Select Project"
+/>
               </Grid>
 
               <Grid xs={12} sm={6}>
@@ -316,9 +322,9 @@ function PaymentRequestForm() {
                   value={formData.pay_type ? { label: formData.pay_type, value: formData.pay_type } : null}
                   onChange={(selectedOption) => handleChange({ target: { name: "pay_type", value: selectedOption?.value } })}
                   options={[
-                    { label: "Payment Against PO", value: "against_po" },
-                    { label: "Adjustment", value: "adjustment" },
-                    { label: "Slnko Service Charge", value: "slnko_service_charge" },
+                    { label: "Payment Against PO", value: "Payment Against PO" },
+                    { label: "Adjustment", value: "Adjustment" },
+                    { label: "Slnko Service Charge", value: "Slnko Service Charge" },
                     { label: "Other", value: "Other" },
                   ]}
                   placeholder="Payment Type"
@@ -342,19 +348,30 @@ function PaymentRequestForm() {
 
 
               <Grid xs={12} sm={4}>
-                <Input
-                  type="number"
-                  value={formData.amount_paid}
-  onChange={(e) =>
-    setFormData((prev) => ({
-      ...prev,
-      amount_paid: e.target.value, 
-    }))
-  }
-                  
-                  placeholder="Amount Requested (INR)"
-                  required
-                />
+              <Input
+  type="number"
+  value={formData.amount_paid}
+  onChange={(e) => {
+    const value = parseFloat(e.target.value) || "";
+    const po_balance = parseFloat(formData.po_balance) || 0;
+
+    if (value > po_balance) {
+      toast.warning("Amount Requested can't be  greater than PO Balance!");
+      setFormData((prev) => ({
+        ...prev,
+        amount_paid: po_balance,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        amount_paid: value,
+      }));
+    }
+  }}
+  placeholder="Amount Requested (INR)"
+  required
+/>
+
               </Grid>
 
               <Grid xs={12} sm={4}>
@@ -489,7 +506,6 @@ function PaymentRequestForm() {
                   value={formData.ifsc || ""}
                   onChange={handleChange}
                   placeholder="Beneficiary IFSC Code"
-                  required
                 />
               </Grid>
 

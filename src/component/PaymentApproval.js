@@ -29,6 +29,7 @@ import * as React from "react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Axios from "../utils/Axios";
+import { toast } from "react-toastify";
 
 function PaymentRequest() {
   const [payments, setPayments] = useState([]);
@@ -152,7 +153,7 @@ function PaymentRequest() {
         pay_id: paymentId,
         status: newStatus,
       });
-
+  
       if (response.status === 200) {
         setPayments((prevPayments) =>
           prevPayments.map((payment) =>
@@ -161,6 +162,13 @@ function PaymentRequest() {
               : payment
           )
         );
+  
+        // Show a success toast if the status is "Approved"
+        if (newStatus === "Approved") {
+          toast.success('Payment Approved! Please Refresh it', {
+            autoClose: 3000, 
+          });
+        }
       }
     } catch (error) {
       console.error("Error updating approval status:", error);

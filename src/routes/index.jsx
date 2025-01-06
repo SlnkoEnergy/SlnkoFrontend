@@ -20,6 +20,7 @@ import StandBy_ReqSummary from "../pages/Accounts/StandByRequest";
 import StandByRecords from "../pages/Accounts/StandByRecords";
 import AddUser from "../pages/Users/AddUser";
 import EditUser from "../pages/Users/EditUser";
+import Payment_Detail from "../pages/Accounts/PaymentDetail";
 
 function index() {
   return (
@@ -99,6 +100,15 @@ function index() {
         </PrivateRoute>
       }
     />
+        <Route
+      path="/payment_detail"
+      element={
+        <PrivateRoute>
+          <Payment_Detail />
+        </PrivateRoute>
+      }
+    />
+
 
     {/*----------SCM ----------*/}
     <Route

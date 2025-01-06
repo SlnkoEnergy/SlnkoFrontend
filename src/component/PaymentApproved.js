@@ -285,7 +285,7 @@ function PaymentRequest() {
 
           <Button
             type="submit"
-            disabled={isMatched || !accountMatch || !ifsc}
+            disabled={isMatched || !accountMatch}
             sx={{
               width: "100%",
               padding: "0.5rem",
@@ -293,7 +293,7 @@ function PaymentRequest() {
               color: "white",
               border: "none",
               cursor:
-                isMatched || !accountMatch || !ifsc ? "not-allowed" : "pointer",
+                isMatched || !accountMatch ? "not-allowed" : "pointer",
             }}
           >
             {isMatched ? "Matched" : "Match Account"}

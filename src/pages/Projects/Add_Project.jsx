@@ -38,7 +38,7 @@ function Add_Project() {
             gap: 1,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', marginLeft:{xl:"16%",lg:"20%", md:"30%"}}}>
+          <Box sx={{ display: 'flex', alignItems: 'center', marginLeft:{xl:"17%",lg:"20%", md:"30%"}}}>
             <Breadcrumbs
               size="sm"
               aria-label="breadcrumbs"

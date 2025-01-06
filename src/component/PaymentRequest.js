@@ -160,7 +160,8 @@ const PaymentRequest = forwardRef((props, ref) => {
     }
   };
 
-  const RowMenu = () => {
+  const RowMenu = ({currentPage, pay_id, p_id}) => {
+    // console.log("currentPage:", currentPage, "pay_id:", pay_id, "p_id:", p_id);
     return (
       <>
         <Dropdown>
@@ -173,15 +174,24 @@ const PaymentRequest = forwardRef((props, ref) => {
             <MoreHorizRoundedIcon />
           </MenuButton>
           <Menu size="sm" sx={{ minWidth: 100 }}>
-            <MenuItem color="primary" onClick={() => navigate("/pay_summary")}>
+            <MenuItem color="primary" 
+            onClick={() => {
+              const page = currentPage;
+              const payId = String(pay_id);
+              const projectID = Number(p_id);
+              localStorage.setItem("pay_summary", payId);
+              localStorage.setItem("p_id", projectID);
+              navigate(`/pay_summary?page=${page}&pay_id=${payId}`);
+            }}
+            >
               Pay Summary
             </MenuItem>
-            <MenuItem
+            {/* <MenuItem
               color="primary"
               onClick={() => navigate("/standby_records")}
             >
               Pending payments
-            </MenuItem>
+            </MenuItem> */}
             <MenuItem color="danger">Delete</MenuItem>
           </Menu>
         </Dropdown>
@@ -606,7 +616,7 @@ const PaymentRequest = forwardRef((props, ref) => {
                         textAlign: "center",
                       }}
                     >
-                      {RowMenu()}
+                      <RowMenu currentPage={currentPage} pay_id={payment.pay_id} p_id={payment.p_id} />
                     </Box>
                   </Box>
                 ))

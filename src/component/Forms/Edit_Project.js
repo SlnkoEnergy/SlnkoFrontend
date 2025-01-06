@@ -10,9 +10,11 @@ import {
 } from "@mui/joy";
 import React, { useEffect, useState } from "react";
 import Axios from "../../utils/Axios";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 const UpdateProject = () => {
-  // const { p_id } = useParams();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     p_id: "",
     code: "",
@@ -48,77 +50,85 @@ const UpdateProject = () => {
 
   useEffect(() => {
     const fetchProjectData = async () => {
+      console.log("Initializing data fetch...");
+
       try {
         setLoading(true);
+        setError("");
 
-        const response = await Axios.get("/get-all-project");
         let project = localStorage.getItem("idd");
 
-        project = Number.parseInt(project);
-
-        console.log(project);
-        // console.log(project, "idd");
-
-        // if (response) {
-        //   const data = response.data.data.map((item) => {
-        //     if (item.p_id == project) {
-        //       console.log(item);
-        //     }
-        //   });
-        // }
-
-        // const data = response.data?.data?.[0];
-
-        // console.log("Fetched Project Data:", response.data);
-
-        if (response && response.data && response.data.data) {
-          const matchingItem = response.data.data.find(
-            (item) => item.p_id === project
+        if (!project) {
+          console.error(
+            "No project ID found in localStorage. Setting a dummy ID for testing."
           );
+          setError(
+            "Project ID is missing. Please ensure it is set in localStorage."
+          );
+          localStorage.setItem("idd", "1"); // Dummy value for testing
+          project = "1"; // Set a default for fallback
+        }
 
-          if (matchingItem) {
-            console.log("Matching Project Data:", matchingItem);
+        project = Number.parseInt(project);
+        console.log("Parsed Project ID after retrieval:", project);
 
-            setFormData((prev) => ({
-              ...prev,
-              p_id: matchingItem.p_id || "",
-              code: matchingItem.code || "",
-              name: matchingItem.name || "",
-              customer: matchingItem.customer || "",
-              p_group: matchingItem.p_group || "",
-              email: matchingItem.email || "",
-              number: matchingItem.number || "",
-              alternate_mobile_number: matchingItem.alt_number || "",
-              billing_address: {
-                village_name: matchingItem.billing_address?.village_name || "",
-                district_name:
-                  matchingItem.billing_address?.district_name || "",
-              },
-              site_address: {
-                village_name: matchingItem.site_address?.village_name || "",
-                district_name: matchingItem.site_address?.district_name || "",
-              },
-              state: matchingItem.state || "",
-              project_category: matchingItem.project_category || "",
-              project_kwp: matchingItem.project_kwp || "",
-              distance: matchingItem.distance || "",
-              tarrif: matchingItem.tarrif || "",
-              land: {
-                type: matchingItem.land?.type || "",
-                acres: matchingItem.land?.acres || "",
-              },
-              service: matchingItem.service || "",
-            }));
-          } else {
-            setError("No matching project found for the given ID.");
-          }
-        } else {
+        if (isNaN(project)) {
+          console.error("Project ID from localStorage is invalid.");
+          setError("Invalid Project ID. Please check your input.");
+          return;
+        }
+
+        console.log("Sending API request to fetch projects...");
+        const response = await Axios.get(
+          "/get-all-project"
+        );
+        console.log("API Response:", response);
+
+        if (!response || !response.data || !response.data.data) {
+          console.error("Invalid API response structure.");
           setError("No project data available. Please add projects first.");
+          return;
+        }
+
+        const projects = response.data.data;
+        console.log("Projects Fetched:", projects);
+
+        const matchingItem = projects.find(
+          (item) => Number(item.p_id) === project
+        );
+
+        if (matchingItem) {
+          console.log("Matching Project Data Found:", matchingItem);
+          setFormData({
+            ...formData,
+            _id: matchingItem._id, 
+            p_id: matchingItem.p_id || "",
+            code: matchingItem.code || "",
+            name: matchingItem.name || "",
+            customer: matchingItem.customer || "",
+            p_group: matchingItem.p_group || "",
+            email: matchingItem.email || "",
+            number: matchingItem.number || "",
+            alt_number: matchingItem.alt_number || "",
+            billing_address: matchingItem.billing_address || "",
+            site_address: matchingItem.site_address || "",
+            state: matchingItem.state || "",
+            project_category: matchingItem.project_category || "",
+            project_kwp: matchingItem.project_kwp || "",
+            distance: matchingItem.distance || "",
+            tarrif: matchingItem.tarrif || "",
+            land: matchingItem.land || "",
+            service: matchingItem.service || "",
+          });
+        } else {
+          console.error("No matching project found for the given ID.");
+          setError("No matching project found for the given ID.");
         }
       } catch (err) {
         console.error("Error fetching project data:", err);
         setError("Failed to fetch project data. Please try again later.");
       } finally {
+        console.log("Data fetch completed. Setting loading to false.");
         setLoading(false);
       }
     };
@@ -128,8 +138,7 @@ const UpdateProject = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
-    console.log(`Field "${name}" changed to:`, value);
+    // console.log(`Field "${name}" changed to:`, value);
 
     if (name.includes(".")) {
       const [parent, child] = name.split(".");
@@ -145,10 +154,40 @@ const UpdateProject = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("Submitting form with data:", formData);
 
-    console.log("Form Data before Submission:", formData);
+    try {
+      setLoading(true);
+      setError("");
+
+      // Ensure we have the correct ID before sending the request
+      if (!formData._id) {
+        setError("Project ID is missing. Cannot update project.");
+        return;
+      }
+
+      // Send the PUT request to update the project
+      const response = await Axios.put(
+        `/update-project/${formData._id}`,
+        formData
+      );
+      console.log("API Response:", response);
+
+      if (response && response.data) {
+        console.log("Project updated successfully:", response.data);
+        // alert("Project updated successfully.");
+        toast.success("Project updated successfully.");
+        navigate("/all-project")
+      }
+    } catch (err) {
+      console.error("Error during project update:", err);
+      toast.error("oops!! something went wrong..")
+      setError("Failed to update project. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -173,6 +212,11 @@ const UpdateProject = () => {
           <Typography level="h3" fontWeight="bold" mb={2} textAlign="center">
             Update Project
           </Typography>
+          {error && (
+            <Typography color="danger" mb={2} textAlign="center">
+              {error}
+            </Typography>
+          )}
           {loading ? (
             <Skeleton variant="rectangular" height={400} />
           ) : (
@@ -281,10 +325,10 @@ const UpdateProject = () => {
                   </Typography>
                   <Input
                     placeholder="Enter Billing Village Name"
-                    name="billing_address.village_name"
+                    name="billing_address"
                     required
                     fullWidth
-                    value={formData.billing_address.village_name}
+                    value={formData.billing_address}
                     onChange={handleChange}
                   />
                 </Grid>
@@ -295,10 +339,10 @@ const UpdateProject = () => {
                   </Typography>
                   <Input
                     placeholder="Enter Site Village Name"
-                    name="site_address.village_name"
+                    name="site_address"
                     required
                     fullWidth
-                    value={formData.site_address.village_name}
+                    value={formData.site_address}
                     onChange={handleChange}
                   />
                 </Grid>
@@ -383,7 +427,7 @@ const UpdateProject = () => {
                     name="land"
                     fullWidth
                     required
-                    value={formData.land.type.acres}
+                    value={formData.land}
                     onChange={handleChange}
                   />
                 </Grid>

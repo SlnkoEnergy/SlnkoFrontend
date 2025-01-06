@@ -14,8 +14,10 @@ import Sidebar from "../../component/Partials/Sidebar";
 import PaymentApproved from "../../component/PaymentApproved";
 
 import Header from "../../component/Partials/Header";
+import { useNavigate } from "react-router-dom";
 
 function ProjectBalance() {
+  const navigate = useNavigate();
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -114,6 +116,7 @@ function ProjectBalance() {
               color="primary"
               startDecorator={<DownloadRoundedIcon />}
               size="sm"
+              onClick={() => navigate("/payment_detail")}
             >
               Payment Detail
             </Button>

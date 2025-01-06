@@ -12,6 +12,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Img6 from "../../assets/add_money.png";
 import Axios from "../../utils/Axios";
+import { toast } from "react-toastify";
 
 const Add_Money = () => {
   const navigate = useNavigate();
@@ -30,54 +31,56 @@ const Add_Money = () => {
 
   const [error, setError] = useState("");
   const [responseMessage, setResponseMessage] = useState("");
+  const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    const fetchUsername = async () => {
-      try {
-        const userID = localStorage.getItem("userID");
-        if (!userID) {
-          setError("No user ID found. Please log in.");
-          return;
-        }
-        // Call your API with the userID to get the user's details
-        const response = await Axios.get(`/get-all-user/${userID}`);
-        const user = response.data.data; // Assuming the response returns the user object
-
-        console.log("Logged User:", user);
-
-        if (user) {
-          setFormValues((prev) => ({
-            ...prev,
-            submittedBy: user.name, // Set the logged-in user's name
-          }));
-        } else {
-          setError("Unable to fetch user details.");
-        }
-      } catch (err) {
-        console.error("Error fetching username:", err);
-        setError("Failed to fetch user details. Please try again.");
+   useEffect(() => {
+    const userData = getUserData();
+  if (userData && userData.name) {
+    setFormValues((prev) => ({
+      ...prev,
+      submittedBy: userData.name,
+    }));
+  }
+  setUser(userData);
+  // console.log("details are :", userData);
+}, []);
+  
+    const getUserData = () => {
+      const userData = localStorage.getItem("userDetails");
+      console.log("Add money :", userData);
+      if (userData) {
+        return JSON.parse(userData);
       }
+      return null;
     };
-
-    fetchUsername();
-  }, []);
 
   // Fetch project data
   useEffect(() => {
     const fetchProjectData = async () => {
       try {
         const response = await Axios.get("/get-all-project");
-        const data = response.data?.data?.[0];
+        let project = localStorage.getItem("add_money");
 
-        if (data) {
+        project = Number.parseInt(project);
+
+        // console.log(project);
+
+        if (response && response.data && response.data.data) {
+          const matchingItem = response.data.data.find(
+            (item) => item.p_id === project
+          );
+
+          if (matchingItem) {
+            // console.log("Matching Add Money Data:", matchingItem);
           setFormValues((prev) => ({
             ...prev,
-            p_id: data.code || "",
-            name: data.name || "",
-            customer: data.customer || "",
-            p_group: data.p_group || "",
+            p_id: matchingItem.p_id || "",
+            code: matchingItem.code || "",
+            name: matchingItem.name || "",
+            customer: matchingItem.customer || "",
+            p_group: matchingItem.p_group || "",
           }));
-        } else {
+        }} else {
           setError("No projects found. Please add projects before proceeding.");
         }
       } catch (err) {
@@ -90,36 +93,36 @@ const Add_Money = () => {
   }, []);
 
   // Fetch data for the selected project ID
-  useEffect(() => {
-    const fetchDataByPId = async (p_id) => {
-      if (!p_id) return;
-      try {
-        const response = await Axios.get(`/get-all-project?p_id=${p_id}`);
-        const data = response.data?.data;
+  // useEffect(() => {
+  //   const fetchDataByPId = async (p_id) => {
+  //     if (!p_id) return;
+  //     try {
+  //       const response = await Axios.get(`/get-all-project?p_id=${p_id}`);
+  //       const data = response.data?.data;
 
-        if (data) {
-          setFormValues((prev) => ({
-            ...prev,
-            cr_amount: data.cr_amount || "",
-            cr_date: data.cr_date || "",
-            cr_mode: data.cr_mode || "",
-            comment: data.comment || "",
-          }));
-        } else {
-          setError("No data found for the selected project ID.");
-        }
-      } catch (err) {
-        console.error("Error fetching data by project ID:", err);
-        setError(
-          "Failed to fetch data for the selected project ID. Please try again."
-        );
-      }
-    };
+  //       if (data) {
+  //         setFormValues((prev) => ({
+  //           ...prev,
+  //           cr_amount: data.cr_amount || "",
+  //           cr_date: data.cr_date || "",
+  //           cr_mode: data.cr_mode || "",
+  //           comment: data.comment || "",
+  //         }));
+  //       } else {
+  //         setError("No data found for the selected project ID.");
+  //       }
+  //     } catch (err) {
+  //       console.error("Error fetching data by project ID:", err);
+  //       setError(
+  //         "Failed to fetch data for the selected project ID. Please try again."
+  //       );
+  //     }
+  //   };
 
-    if (formValues.p_id) {
-      fetchDataByPId(formValues.p_id);
-    }
-  }, [formValues.p_id]);
+  //   if (formValues.p_id) {
+  //     fetchDataByPId(formValues.p_id);
+  //   }
+  // }, [formValues.p_id]);
 
   // Handle form changes
   const handleChange = (e) => {
@@ -135,7 +138,7 @@ const Add_Money = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const { cr_amount, cr_date, cr_mode, comment, submittedBy } = formValues;
+    const { cr_amount, cr_date, cr_mode, comment, submittedBy, p_id } = formValues;
 
     if (!cr_amount || !cr_date || !cr_mode || !comment || !submittedBy) {
       alert("All fields are required. Please fill out the form completely.");
@@ -143,21 +146,24 @@ const Add_Money = () => {
     }
 
     const payload = {
-      p_id: formValues.p_id,
+      p_id,
       p_group: formValues.p_group,
       cr_amount,
       cr_date,
       cr_mode,
       comment,
-      submittedBy,
+      submittedBy
     };
 
     try {
       const response = await Axios.post("/Add-Money", payload);
       setResponseMessage("Form submitted successfully!");
-      console.log("Form submission response:", response.data);
+      toast.success("Money Added Successfully ")
+      navigate("/project-balance");
+      // console.log("Form submission response:", response.data);
     } catch (error) {
       console.error("Error submitting form:", error);
+      toast.error("Something went Error !!")
       setResponseMessage("Failed to add money. Please try again.");
     }
   };
@@ -232,7 +238,7 @@ const Add_Money = () => {
                 fullWidth
                 placeholder="Project ID"
                 name="p_id"
-                value={formValues.p_id}
+                value={formValues.code}
                 disabled
               />
             </Grid>

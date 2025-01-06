@@ -170,13 +170,19 @@ const ProjectBalances = forwardRef((props, ref) => {
               onClick={() => {
                 const page = currentPage;
                 const projectId = p_id;
+                localStorage.setItem("add_money", projectId);
                 // console.log(`/add_money?page=${page}&p_id=${projectId}`);
                 navigate(`/add_money?page=${page}&p_id=${projectId}`);
               }}
             >
               Add Money
             </MenuItem>
-            <MenuItem onClick={() => navigate("/view_detail")}>
+            <MenuItem 
+            onClick={() => {
+                const page = currentPage;
+                const projectId = p_id;
+                localStorage.setItem("view_detail", projectId);
+              navigate(`/view_detail?page=${page}&p_id=${projectId}`)}}>
               View More
             </MenuItem>
           </Menu>
