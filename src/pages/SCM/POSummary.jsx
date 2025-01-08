@@ -5,7 +5,7 @@ import CssBaseline from "@mui/joy/CssBaseline";
 import Link from "@mui/joy/Link";
 import { CssVarsProvider } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
-import React from "react";
+import React, { useRef } from "react";
 
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
@@ -16,7 +16,14 @@ import Sidebar from "../../component/Partials/Sidebar";
 import Header from "../../component/Partials/Header";
 import PurchaseOrder from "../../component/PurchaseOrderSummary";
 
-function ProjectBalance() {
+function POSummary() {
+  const poSummaryRef = useRef();
+
+  const handleExportToCSV = () => {
+    if (poSummaryRef.current) {
+      poSummaryRef.current.exportToCSV();
+    }
+  };
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -115,12 +122,13 @@ function ProjectBalance() {
                 color="primary"
                 startDecorator={<DownloadRoundedIcon />}
                 size="sm"
+                onClick={handleExportToCSV}
               >
                 Export to CSV
               </Button>
             </Box>
           </Box>
-          <PurchaseOrder />
+          <PurchaseOrder ref={poSummaryRef} />
           {/* <OrderTable /> */}
           {/* <OrderList /> */}
         </Box>
@@ -128,4 +136,4 @@ function ProjectBalance() {
     </CssVarsProvider>
   );
 }
-export default ProjectBalance;
+export default POSummary;

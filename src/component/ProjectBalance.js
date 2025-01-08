@@ -30,7 +30,7 @@ import Axios from "../utils/Axios";
 const ProjectBalances = forwardRef((props, ref) => {
   const { balanceSLnko, balancePayable, balanceRequired } = props;
   console.log(balanceSLnko, balancePayable, balanceRequired);
-  
+
   const navigate = useNavigate();
   const [credits, setCredits] = useState([]);
   const [debits, setDebits] = useState([]);
@@ -135,11 +135,10 @@ const ProjectBalances = forwardRef((props, ref) => {
         return acc;
       }, {});
 
-     
       const merged = projects.map((project) => {
-        const totalCredit = creditSumMap[project.p_id] || 0;
-        const totalDebit = debitSumMap[project.p_id] || 0;
-        const AvailableAmount = totalCredit - totalDebit;
+        const totalCredit = creditSumMap[project.p_id] || "0";
+        const totalDebit = debitSumMap[project.p_id] || "0";
+        const AvailableAmount = totalCredit - totalDebit || "0";
 
         return {
           ...project,
@@ -180,12 +179,14 @@ const ProjectBalances = forwardRef((props, ref) => {
             >
               Add Money
             </MenuItem>
-            <MenuItem 
-            onClick={() => {
+            <MenuItem
+              onClick={() => {
                 const page = currentPage;
                 const projectId = p_id;
                 localStorage.setItem("view_detail", projectId);
-              navigate(`/view_detail?page=${page}&p_id=${projectId}`)}}>
+                navigate(`/view_detail?page=${page}&p_id=${projectId}`);
+              }}
+            >
               View More
             </MenuItem>
           </Menu>
@@ -534,7 +535,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                       }}
                     >
                       {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 2,
+                        minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
                       }).format(project.creditAmount || "-")}
                     </Box>
@@ -547,7 +548,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                       }}
                     >
                       {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 2,
+                        minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
                       }).format(project.debitAmount || "-")}
                     </Box>
@@ -560,7 +561,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                       }}
                     >
                       {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 2,
+                        minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
                       }).format(project.oldAmount || "-")}
                     </Box>
@@ -573,7 +574,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                       }}
                     >
                       {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 2,
+                        minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
                       }).format(project.creditAmount || "-")}
                     </Box>
@@ -586,7 +587,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                       }}
                     >
                       {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 2,
+                        minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
                       }).format(project.creditAmount || "-")}
                     </Box>
@@ -599,7 +600,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                       }}
                     >
                       {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 2,
+                        minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
                       }).format(project.creditAmount || "-")}
                     </Box>

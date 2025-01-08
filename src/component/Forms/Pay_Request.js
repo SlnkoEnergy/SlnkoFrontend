@@ -77,12 +77,12 @@ function PaymentRequestForm() {
     fetchData();
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e)  => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
     if (name === "pay_type") {
-      if (value === "adjustment") {
+      if (value === "Adjustment") {
         setFormData((prev) => ({
           ...prev,
           paid_for: "Customer Adjustment",
@@ -90,12 +90,14 @@ function PaymentRequestForm() {
           po_value: "N/A",
           total_advance_paid: "N/A",
           po_balance: "N/A",
+          amt_for_customer: "",
+          amount_paid:"",
           benificiary: "",
           acc_number: "",
           ifsc: "",
           branch: "",
         }));
-      } else if (value === "slnko_service_charge") {
+      } else if (value === "Slnko Service Charge") {
         setFormData((prev) => ({
           ...prev,
           paid_for: "Slnko Service Charge",
@@ -209,7 +211,7 @@ function PaymentRequestForm() {
     setResponseMessage(message);
     toast.success("Payment Requested Successfully ", response.data);
 
-      // console.log("Payment request are", response.data);
+      console.log("Payment request are", response.data);
       navigate("/daily-payment-request");
     } catch (error) {
           console.error(
@@ -317,19 +319,21 @@ function PaymentRequestForm() {
               </Grid> */}
 
               <Grid xs={12} sm={4}>
-              <Select
-                  name="pay_type"
-                  value={formData.pay_type ? { label: formData.pay_type, value: formData.pay_type } : null}
-                  onChange={(selectedOption) => handleChange({ target: { name: "pay_type", value: selectedOption?.value } })}
-                  options={[
-                    { label: "Payment Against PO", value: "Payment Against PO" },
-                    { label: "Adjustment", value: "Adjustment" },
-                    { label: "Slnko Service Charge", value: "Slnko Service Charge" },
-                    { label: "Other", value: "Other" },
-                  ]}
-                  placeholder="Payment Type"
-                  required
-                />
+             <Select
+  name="pay_type"
+  value={formData.pay_type ? { label: formData.pay_type, value: formData.pay_type } : null}
+  onChange={(selectedOption) =>
+    handleChange({ target: { name: "pay_type", value: selectedOption.value } })
+  }
+  options={[
+    { label: "Payment Against PO", value: "Payment Against PO" },
+    { label: "Adjustment", value: "Adjustment" },
+    { label: "Slnko Service Charge", value: "Slnko Service Charge" },
+    { label: "Other", value: "Other" },
+  ]}
+  placeholder="Payment Type"
+  required
+/>
               </Grid>
 
               <Grid xs={12} sm={4}>
@@ -342,7 +346,7 @@ function PaymentRequestForm() {
                     label: po.po_number,
                   }))}
                   placeholder="PO Number"
-                  isDisabled={formData.pay_type === "adjustment"}
+                  isDisabled={formData.pay_type === "Adjustment"}
                 />
               </Grid>
 
@@ -356,7 +360,7 @@ function PaymentRequestForm() {
     const po_balance = parseFloat(formData.po_balance) || 0;
 
     if (value > po_balance) {
-      toast.warning("Amount Requested can't be  greater than PO Balance!");
+      toast.warning("Amount Requested can't be greater than PO Balance!");
       setFormData((prev) => ({
         ...prev,
         amount_paid: po_balance,

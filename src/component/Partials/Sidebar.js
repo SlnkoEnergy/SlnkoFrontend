@@ -22,7 +22,7 @@ import Stack from "@mui/joy/Stack";
 import { useColorScheme } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Main_Logo from "../../assets/protrac_logo.png";
 import Main_Logo2 from "../../assets/white_logo.png";
 import { closeSidebar } from "../../utils/utils";
@@ -210,7 +210,7 @@ function Sidebar() {
               <List sx={{ gap: 0.5 }}>
                 <ListItem sx={{ mt: 0.5 }}>
                   <ListItemButton onClick={() => navigate("/add_user")}>
-                    <Link to="/add_user" style={{textDecoration:"none",}}> Add User</Link>
+                    Add User
                   </ListItemButton>
                 </ListItem>
                 <ListItem sx={{ mt: 0.5 }}>
@@ -248,7 +248,7 @@ function Sidebar() {
               <List sx={{ gap: 0.5 }}>
                 <ListItem sx={{ mt: 0.5 }}>
                   <ListItemButton onClick={() => navigate("#")}>
-                   Leads
+                    Leads
                   </ListItemButton>
                 </ListItem>
                 <ListItem>
@@ -269,53 +269,55 @@ function Sidebar() {
                 role: user?.role,
               });
               return ( */}
-                <ListItem nested>
-                  <Toggler
-                    renderToggle={({ open, setOpen }) => (
-                      <ListItemButton onClick={() => setOpen(!open)}>
-                        <AccountBalanceIcon />
-                        <ListItemContent>
-                          <Typography level="title-sm">Accounting</Typography>
-                        </ListItemContent>
-                        <KeyboardArrowDownIcon
-                          sx={[
-                            open
-                              ? {
-                                  transform: "rotate(180deg)",
-                                }
-                              : {
-                                  transform: "none",
-                                },
-                          ]}
-                        />
-                      </ListItemButton>
-                    )}
-                  >
-                    <List sx={{ gap: 0.5 }}>
-                      <ListItem sx={{ mt: 0.5 }}>
-                      <ListItemButton onClick={() => navigate("/project-balance")}>
-                          Project Balances
-                        </ListItemButton>
-                      </ListItem>
-                      <ListItem>
-                        <ListItemButton onClick={() => navigate("/daily-payment-request")}>
-                            Daily Payment Request
-                        </ListItemButton>
-                      </ListItem>
-                      <ListItem>
-                        <ListItemButton onClick={() => navigate("/payment-approval")}>
-                        Payment Approval
-                        </ListItemButton>
-                      </ListItem>
-                      <ListItem>
-                        <ListItemButton onClick={() => navigate("/payment-approved")}>
-                          Approved Payment
-                        </ListItemButton>
-                      </ListItem>
-                    </List>
-                  </Toggler>
+          <ListItem nested>
+            <Toggler
+              renderToggle={({ open, setOpen }) => (
+                <ListItemButton onClick={() => setOpen(!open)}>
+                  <AccountBalanceIcon />
+                  <ListItemContent>
+                    <Typography level="title-sm">Accounting</Typography>
+                  </ListItemContent>
+                  <KeyboardArrowDownIcon
+                    sx={[
+                      open
+                        ? {
+                            transform: "rotate(180deg)",
+                          }
+                        : {
+                            transform: "none",
+                          },
+                    ]}
+                  />
+                </ListItemButton>
+              )}
+            >
+              <List sx={{ gap: 0.5 }}>
+                <ListItem sx={{ mt: 0.5 }}>
+                  <ListItemButton onClick={() => navigate("/project-balance")}>
+                    Project Balances
+                  </ListItemButton>
                 </ListItem>
-              {/* );
+                <ListItem>
+                  <ListItemButton
+                    onClick={() => navigate("/daily-payment-request")}
+                  >
+                    Daily Payment Request
+                  </ListItemButton>
+                </ListItem>
+                <ListItem>
+                  <ListItemButton onClick={() => navigate("/payment-approval")}>
+                    Payment Approval
+                  </ListItemButton>
+                </ListItem>
+                <ListItem>
+                  <ListItemButton onClick={() => navigate("/payment-approved")}>
+                    Approved Payment
+                  </ListItemButton>
+                </ListItem>
+              </List>
+            </Toggler>
+          </ListItem>
+          {/* );
             })()} */}
 
           {/*--------- SCM -------------*/}
@@ -345,17 +347,17 @@ function Sidebar() {
               <List sx={{ gap: 0.5 }}>
                 <ListItem sx={{ mt: 0.5 }}>
                   <ListItemButton onClick={() => navigate("/purchase-order")}>
-                    <Link to="/purchase-order" style={{textDecoration:"none",}}>Purchase Order</Link>
+                    Purchase Order
                   </ListItemButton>
                 </ListItem>
                 <ListItem>
                   <ListItemButton onClick={() => navigate("#")}>
-                    <Link to="/material-tracker" style={{textDecoration:"none",}}>Material Status</Link>
+                    Material Status
                   </ListItemButton>
                 </ListItem>
                 <ListItem>
                   <ListItemButton onClick={() => navigate("#")}>
-                    <Link to="/vendor-bill" style={{textDecoration:"none",}}> Vendor Bill</Link>
+                    Vendor Bill
                   </ListItemButton>
                 </ListItem>
               </List>

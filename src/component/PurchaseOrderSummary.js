@@ -26,7 +26,8 @@ import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
-import { useEffect, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Axios from "../utils/Axios";
 
 // function descendingComparator(a, b, orderBy) {
@@ -73,17 +74,18 @@ function RowMenu() {
           <HistoryIcon />
           <Typography>PO History</Typography>
         </MenuItem>
-        <Divider sx={{ backgroundColor: "lightblue" }} />
-        <MenuItem color="primary" style={{ fontWeight: "bold" }}>
+        {/* <Divider sx={{ backgroundColor: "lightblue" }} /> */}
+        {/* <MenuItem color="primary" style={{ fontWeight: "bold" }}>
           Adjust Bill
-        </MenuItem>
+        </MenuItem> */}
       </Menu>
     </Dropdown>
   );
 }
 
-function PurchaseOrderSummary() {
-  const [pos, setPo] = useState([]);
+const PurchaseOrderSummary = forwardRef((props, ref) => {
+  const navigate = useNavigate();
+  const [pos, setPos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stateFilter, setStateFilter] = useState("");
@@ -91,6 +93,8 @@ function PurchaseOrderSummary() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(15);
   const [selected, setSelected] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const renderFilters = () => (
     <>
@@ -124,6 +128,23 @@ function PurchaseOrderSummary() {
     </>
   );
 
+  useEffect(() => {
+    const fetchTableData = async () => {
+      try {
+        const response = await Axios.get("/get-all-po");
+        setPos(Array.isArray(response.data.data) ? response.data.data : []);
+        console.log("PO Data:", response.data.data);
+      } catch (err) {
+        console.error("Error fetching table data:", err);
+        setError("Failed to fetch table data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTableData();
+  }, []);
+
   const handleSelectAll = (event) => {
     if (event.target.checked) {
       setSelected(paginatedPo.map((row) => row.id));
@@ -131,6 +152,42 @@ function PurchaseOrderSummary() {
       setSelected([]);
     }
   };
+
+  const handleSearch = (query) => {
+    setSearchQuery(query.toLowerCase());
+  };
+
+  const filteredAndSortedData = pos
+    .filter((po) => {
+      const matchesSearchQuery = [
+        "p_id",
+        "po_number",
+        "bill_status",
+        "vendor",
+      ].some((key) => po[key]?.toLowerCase().includes(searchQuery));
+      // Apply the state filter
+      // const matchesStateFilter =
+      //   !stateFilter || project.state === stateFilter;
+      // console.log("MatchStates are: ", matchesStateFilter);
+
+      // Apply the customer filter
+      // const matchesCustomerFilter =
+      //   !customerFilter || project.customer === customerFilter;
+
+      // Combine all filters
+      return matchesSearchQuery;
+    })
+    .sort((a, b) => {
+      if (a.p_id?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.p_id?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.po_number?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.po_number?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.bill_status?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.bill_status?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.vendor?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.vendor?.toLowerCase().includes(searchQuery)) return 1;
+      return 0;
+    });
 
   const handleRowSelect = (id, isSelected) => {
     setSelected((prevSelected) =>
@@ -171,31 +228,20 @@ function PurchaseOrderSummary() {
   };
 
   useEffect(() => {
-    const fetchTableData = async () => {
-      try {
-        const response = await Axios.get("/get-all-po");
-        setPo(Array.isArray(response.data.data) ? response.data.data : []);
-        console.log("PO Data:", response.data.data);
-      } catch (err) {
-        console.error("Error fetching table data:", err);
-        setError("Failed to fetch table data.");
-      } finally {
-        setLoading(false);
-      }
-    };
+    const page = parseInt(searchParams.get("page")) || 1;
+    setCurrentPage(page);
+  }, [searchParams]);
 
-    fetchTableData();
-  }, []);
+  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
 
-  const totalPages = Math.ceil(pos.length / itemsPerPage);
-
-  const paginatedPo = pos.slice(
+  const paginatedPo = filteredAndSortedData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
+      setSearchParams({ page });
       setCurrentPage(page);
     }
   };
@@ -207,6 +253,53 @@ function PurchaseOrderSummary() {
   // if (error) {
   //   return <Typography color="danger">{error}</Typography>;
   // }
+
+  useImperativeHandle(ref, () => ({
+    exportToCSV() {
+      // console.log("Exporting data to CSV...");
+      const headers = [
+        "Project ID",
+        "PO Number",
+        "PO Date",
+        "Partial Billing",
+        "Item Name",
+        "Vendor",
+        "PO Value with GST",
+        "Advance Paid",
+        "Bill Status",
+        "Bill Delay",
+        "Total Billed",
+        "Action",
+      ];
+
+      const rows = pos.map((po) => [
+        po.p_id || "-",
+        po.po_number || "-",
+        po.date || "-",
+        po.partial_billing || "-",
+        po.item || "-",
+        po.vendor || "-",
+        po.po_value || "-",
+        po.amount_paid || "-",
+        po.paid_for || "-",
+        po.bill_status || "-",
+        po.bill_delay || "-",
+        po.total_billed || "-",
+        po.action || "-",
+      ]);
+
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row) => row.join(",")),
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "PurchaseOrder_Summary.csv";
+      link.click();
+    },
+  }));
 
   return (
     <>
@@ -265,11 +358,13 @@ function PurchaseOrderSummary() {
           <FormLabel>Search here</FormLabel>
           <Input
             size="sm"
-            placeholder="Search"
+            placeholder="Search Project Id, PO Number, Vendor"
             startDecorator={<SearchIcon />}
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {renderFilters()}
+        {/* {renderFilters()} */}
       </Box>
 
       {/* Table */}
@@ -444,7 +539,7 @@ function PurchaseOrderSummary() {
                       }}
                     >
                       {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 2,
+                        minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
                       }).format(po.po_value)}
                     </Box>
@@ -457,7 +552,7 @@ function PurchaseOrderSummary() {
                       }}
                     >
                       {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 2,
+                        minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
                       }).format(po.amount_paid)}
                     </Box>
@@ -542,7 +637,7 @@ function PurchaseOrderSummary() {
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: { xs: "none", md: "flex" },
           alignItems: "center",
-          marginLeft: {xl: "15%", md: "25%", lg: "18%" },
+          marginLeft: { xl: "15%", md: "25%", lg: "18%" },
         }}
       >
         <Button
@@ -605,5 +700,5 @@ function PurchaseOrderSummary() {
       </Box>
     </>
   );
-}
+});
 export default PurchaseOrderSummary;
