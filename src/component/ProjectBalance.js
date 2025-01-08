@@ -28,6 +28,9 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Axios from "../utils/Axios";
 
 const ProjectBalances = forwardRef((props, ref) => {
+  const { balanceSLnko, balancePayable, balanceRequired } = props;
+  console.log(balanceSLnko, balancePayable, balanceRequired);
+  
   const navigate = useNavigate();
   const [credits, setCredits] = useState([]);
   const [debits, setDebits] = useState([]);
@@ -132,7 +135,7 @@ const ProjectBalances = forwardRef((props, ref) => {
         return acc;
       }, {});
 
-      // Merging data with both credit and debit amounts
+     
       const merged = projects.map((project) => {
         const totalCredit = creditSumMap[project.p_id] || 0;
         const totalDebit = debitSumMap[project.p_id] || 0;
@@ -291,7 +294,7 @@ const ProjectBalances = forwardRef((props, ref) => {
         project.debitAmount || "-",
         project.oldAmount || "-",
         project.balanceSLnko || "-",
-        project.balancePayableToVendors || "-",
+        project.balancePayable || "-",
         project.balanceRequired || "-",
         project.viewMore || "-",
       ]);

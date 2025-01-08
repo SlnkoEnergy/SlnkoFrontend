@@ -23,7 +23,7 @@ const PaymentDetail = forwardRef((props, ref) => {
       try {
         const [paySummaryRes, projectRes] = await Promise.all([
           Axios.get("/get-pay-summary", {
-            params: { approved: "Approved", acc_match: "matched" },
+            params: { approved: "Approved", acc_match: "matched", utr :"" },
           }),
           Axios.get("/get-all-project"),
         ]);
@@ -82,7 +82,7 @@ const PaymentDetail = forwardRef((props, ref) => {
   useImperativeHandle(ref, () => ({
     downloadSelectedRows() {
       const selectedData = data.filter(
-        (row) => selectedRows.includes(row.id) && row.acc_match === "matched" && row.approved === "Approved"
+        (row) => selectedRows.includes(row.id) && row.acc_match === "matched" && row.approved === "Approved" && row.utr === ""
       );
   
       const headers = [

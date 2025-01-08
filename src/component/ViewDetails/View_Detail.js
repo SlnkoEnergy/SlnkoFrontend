@@ -12,11 +12,12 @@ import {
 import { jsPDF } from 'jspdf';
 import { saveAs } from 'file-saver';
 import Img12 from '../../assets/slnko_blue_logo.png';
-import Axios from '../../utils/Axios';
+import Axios from "../../utils/Axios"
 
 
 
 const Customer_Payment_Summary = () => {
+  
   const [error, setError] = useState("");
   const [projectData, setProjectData] = useState({
     p_id:"",
@@ -53,7 +54,7 @@ const Customer_Payment_Summary = () => {
   const currentDay = today.toLocaleDateString('en-US', dayOptions);
   const currentDate = today.toLocaleDateString('en-US', dateOptions);
 
-    const handleExportCSV = () => {
+    const handleExportCSV = ({crAmtNum,netBalance, balanceSlnko,balancePayable,netAdvance,balanceRequired,tcs}) => {
       const csvData = [
         ["S.No.", "Balance Summary", "Value"],
         ["1", "Total Received", crAmtNum],
@@ -150,7 +151,7 @@ const [selectedClients, setSelectedClients] = useState([]);
 
   const handleDelete = () => {
     // Logic to delete selected items
-    // console.log("Deleting selected adjustments", selectedAdjustments);
+    console.log("Deleting selected adjustments", selectedAdjustments);
   };
 
   const handleCheckboxChange = (id) => {
@@ -188,53 +189,51 @@ const [selectedClients, setSelectedClients] = useState([]);
   };
   const handleSelectAllClient = () => {
     if (selectedClients.length === filteredClients.length) {
-      setSelectedClients([]); // Deselect all
+      setSelectedClients([]);
     } else {
-      setSelectedClients(filteredClients.map((client) => client.po_number)); // Select all
+      setSelectedClients(filteredClients.map((client) => client.po_number)); 
     }
   };
 
   const handleDeleteSelectedClient = () => {
     // Your delete logic here. For now, we just log the selected clients.
-    // console.log('Deleting selected clients with PO numbers:', selectedClients);
-    // You can perform the deletion logic, such as making an API request to delete the selected clients.
-    setSelectedClients([]); // Reset after deletion
+    console.log('Deleting selected clients with PO numbers:', selectedClients);
+    setSelectedClients([]); 
   };
 
   const handleClientSearch = (event) => {
-    const searchValue = event.target.value.toLowerCase();  // Get the search query and convert it to lowercase
-    setClientSearch(searchValue);  // Update the search state
+    const searchValue = event.target.value.toLowerCase();  
+    setClientSearch(searchValue);  
   
-    // Filter the clientHistory array based on the search query
+   
     const filtered = clientHistory.filter((client) =>
-      client.po_number.toLowerCase().includes(searchValue) || // Match PO Number
-      client.vendor.toLowerCase().includes(searchValue) ||    // Match Vendor
-      client.item.toLowerCase().includes(searchValue)         // Match Item Name
+      client.po_number.toLowerCase().includes(searchValue) || 
+      client.vendor.toLowerCase().includes(searchValue) ||    
+      client.item.toLowerCase().includes(searchValue)         
     );
   
-    setFilteredClients(filtered);  // Update the filtered clients array
+    setFilteredClients(filtered);
   };
   
 
-  // Fetch Project Details API
+ 
   useEffect(() => {
       const fetchProjectData = async () => {
         try {
          
           const response = await Axios.get("/get-all-project");
+          // const data = response.data?.data?.[0];
           let project = localStorage.getItem("view_detail");
           project = Number.parseInt(project);
           console.log("View Details are: ", project);
-
-          // const data = response.data?.data?.[0];
-  
-          if (response && response.data && response.data.data) {
+         
+          if (response.data?.data) {
             const matchingItem = response.data.data.find(
               (item) => item.p_id === project
             );
   
             if (matchingItem) {
-              console.log("Matching Project are:", matchingItem);
+              // console.log("Matching Project are:", matchingItem);
             setProjectData((prev) => ({
               ...prev,
               p_id:matchingItem.p_id || "",
@@ -250,7 +249,7 @@ const [selectedClients, setSelectedClients] = useState([]);
           }} else {
             setError("No projects found. Please add projects before proceeding.");
           }
-          // console.log("Response from Server:", response.data);
+          console.log("Response from Server:", response.data);
         } catch (err) {
           console.error("Error fetching project data:", err);
           setError("Failed to fetch project data. Please try again later.");
@@ -265,7 +264,7 @@ const [selectedClients, setSelectedClients] = useState([]);
       if (projectData.p_id) {
         const fetchCreditHistory = async () => {
           try {
-            // console.log('Fetching credit history for p_id:', projectData.p_id);
+            console.log('Fetching credit history for p_id:', projectData.p_id);
   
             const response = await Axios.get(`/all-bill?p_id=${projectData.p_id}`);
             console.log('Credit History Response:', response);
@@ -292,7 +291,7 @@ const [selectedClients, setSelectedClients] = useState([]);
       if (projectData.p_id) {
         const fetchDebitHistory = async () => {
           try {
-            // console.log("Fetching debit history for p_id:", projectData.p_id);
+            console.log("Fetching debit history for p_id:", projectData.p_id);
     
             // Fetch debit history data from the API
             const response = await Axios.get(`/get-subtract-amount?p_id=${projectData.p_id}`);
@@ -329,23 +328,23 @@ const [selectedClients, setSelectedClients] = useState([]);
       if (projectData.code) {
         const fetchClientHistory = async () => {
           try {
-            // console.log("Fetching client history for projectData.code:", projectData.code);
+            console.log("Fetching client history for projectData.code:", projectData.code);
     
             // Step 1: Fetch all PO data
             const poResponse = await Axios.get("/get-all-po");
-            // console.log("PO Response:", poResponse.data);
+            console.log("PO Response:", poResponse.data);
     
             const poData = poResponse.data?.data || [];
     
             // Step 2: Filter POs where p_id matches projectData.code
             const filteredPOs = poData.filter(
-              (po) => String(po.p_id) === String(projectData.code)
+              (po) => po.p_id === projectData.code
             );
-            // console.log("Filtered POs based on projectData.code:", filteredPOs);
+            console.log("Filtered POs based on projectData.code:", filteredPOs);
     
             // Step 3: Fetch all bills
-            const billResponse = await Axios.get("/all-bill");
-            // console.log("Bill Response:", billResponse.data);
+            const billResponse = await Axios.get("/get-all-bill");
+            console.log("Bill Response:", billResponse.data);
     
             const billData = billResponse.data?.data || [];
     
@@ -356,11 +355,11 @@ const [selectedClients, setSelectedClients] = useState([]);
     
               return {
                 ...po,
-                billedValue: matchingBill?.billed_value || 0, // Default to 0 if no match found
+                billedValue: matchingBill?.bill_value || 0,
               };
             });
     
-            // console.log("Enriched POs with Billed Values:", enrichedPOs);
+            console.log("Enriched POs with Billed Values:", enrichedPOs);
     
             // Step 5: Update state
             setClientHistory(enrichedPOs);
@@ -385,7 +384,7 @@ const [selectedClients, setSelectedClients] = useState([]);
 
     const debitHistorySummary = {
       totalCustomerAdjustment: filteredClients.reduce((sum, client) => {
-        return sum + (client.customer_adjustment || 0); // Assuming 'customer_adjustment' holds the relevant amount
+        return sum + (client.customer_adjustment || 0);
       }, 0).toLocaleString('en-IN')
     };
 
@@ -405,21 +404,137 @@ const [selectedClients, setSelectedClients] = useState([]);
     const { crAmt, totalReturn, totalAdvanceValue, totalPoValue, totalBilled, dbAmt, adjTotal } = balanceSummary[0];
  
  
-   const netBalance = crAmt - totalReturn;
-   const balanceSlnko = netBalance - totalAdvanceValue;
-   const netAdvance = totalAdvanceValue - totalBilled;
-   const balancePayable = totalPoValue - totalBilled - netAdvance;
- 
-   // TCS Calculation (if applicable)
-   const tcs = netBalance > 5000000 ? (netBalance - 5000000) * 0.001 : 0;
-   const balanceRequired = balanceSlnko - balancePayable - tcs;
- 
-   // Final calculation of available balance
-   const crAmtNum = Number(crAmt);
- const dbAmtNum = Number(dbAmt);
- const adjTotalNum = Number(adjTotal);
-   const totalAmount = (crAmtNum - dbAmtNum) + adjTotalNum;
+    const Balance_Summary = ({crAmt,
+      dbAmt,
+      adjTotal,
+      totalReturn,
+      totalAdvanceValue,
+      totalPoValue,
+      totalBilled}) => {
+        console.log(crAmt, "Total return are ", totalReturn, totalAdvanceValue,totalPoValue,totalBilled);
+        
+      const crAmtNum = Number(crAmt);
+      const dbAmtNum = Number(dbAmt);
+      const adjTotalNum = Number(adjTotal);
     
+      const totalAmount = (crAmtNum - dbAmtNum) + adjTotalNum;
+    
+      const netBalance = crAmt - totalReturn;
+      const balanceSlnko = netBalance - totalAdvanceValue;
+      const netAdvance = totalAdvanceValue - totalBilled;
+      const balancePayable = totalPoValue - totalBilled - netAdvance;
+    
+      const tcs = netBalance > 5000000 ? (netBalance - 5000000) * 0.001 : 0;
+      const balanceRequired = balanceSlnko - balancePayable - tcs;
+    
+      return (
+        <Grid container spacing={2}>
+        {/* Balance Summary Section */}
+        <Grid item xs={12} sm={6}>
+          <Box sx={{ border: '1px solid #ddd', borderRadius: '8px', padding: '16px' }}>
+            <Typography level="h5" sx={{ fontWeight: 'bold', marginBottom: '12px' }}>Balance Summary</Typography>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={{ fontWeight: 'bold', padding: '8px', borderBottom: '1px solid #ddd' }}>S.No.</th>
+                  <th style={{ fontWeight: 'bold', padding: '8px', borderBottom: '1px solid #ddd' }}>Description</th>
+                  <th style={{ fontWeight: 'bold', padding: '8px', borderBottom: '1px solid #ddd' }}>Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style={{ padding: '8px' }}>1</td>
+                  <td style={{ padding: '8px' }}><strong>Total Received:</strong></td>
+                  <td style={{ padding: '8px' }}>{crAmtNum}</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: '8px' }}>2</td>
+                  <td style={{ padding: '8px' }}><strong>Total Return:</strong></td>
+                  <td style={{ padding: '8px' }}>{totalReturn}</td>
+                </tr>
+                <tr style={{ backgroundColor: '#C8C8C6' }}>
+                  <td style={{ padding: '8px' }}>3</td>
+                  <td style={{ padding: '8px' }}><strong>Net Balance[(1)-(2)]:</strong></td>
+                  <td style={{ padding: '8px' }}>{netBalance}</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: '8px' }}>4</td>
+                  <td style={{ padding: '8px' }}><strong>Total Advance Paid to vendors:</strong></td>
+                  <td style={{ padding: '8px' }}>{totalAdvanceValue}</td>
+                </tr>
+                <tr style={{ backgroundColor: '#B6F4C6', fontWeight: 'bold' }}>
+                  <td style={{ padding: '8px' }}>5</td>
+                  <td style={{ padding: '8px' }}><strong>Balance With Slnko [(3)-(4)]:</strong></td>
+                  <td style={{ padding: '8px' }}>{balanceSlnko}</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: '8px' }}>6</td>
+                  <td style={{ padding: '8px' }}><strong>Total PO Value:</strong></td>
+                  <td style={{ padding: '8px' }}>{totalPoValue}</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: '8px' }}>7</td>
+                  <td style={{ padding: '8px' }}><strong>Total Billed Value:</strong></td>
+                  <td style={{ padding: '8px' }}>{totalBilled}</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: '8px' }}>8</td>
+                  <td style={{ padding: '8px' }}><strong>Net Advance Paid [(4)-(7)]:</strong></td>
+                  <td style={{ padding: '8px' }}>{netAdvance}</td>
+                </tr>
+                <tr style={{ backgroundColor: '#B6F4C6', fontWeight: 'bold' }}>
+                  <td style={{ padding: '8px' }}>9</td>
+                  <td style={{ padding: '8px' }}><strong>Balance Payable to vendors [(6)-(7)-(8)]:</strong></td>
+                  <td style={{ padding: '8px' }}>{balancePayable}</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: '8px' }}>10</td>
+                  <td style={{ padding: '8px' }}><strong>TCS as applicable:</strong></td>
+                  <td style={{ padding: '8px' }}>{tcs}</td>
+                </tr>
+                <tr style={{ backgroundColor: '#B6F4C6', fontWeight: 'bold', color: balanceRequired >= 0 ? 'green' : 'red' }}>
+                  <td style={{ padding: '8px' }}>11</td>
+                  <td style={{ padding: '8px' }}><strong>Balance Required [(5)-(9)-(10)]:</strong></td>
+                  <td style={{ padding: '8px' }}>{balanceRequired}</td>
+                </tr>
+              </tbody>
+            </table>
+          </Box>
+        </Grid>
+
+        {/* Amount Available (Old) Section */}
+        <Grid item xs={12} sm={6}>
+          <Box sx={{ border: '1px solid #ddd', borderRadius: '8px', padding: '16px' }}>
+            <Typography level="h5" sx={{ fontWeight: 'bold', marginBottom: '12px' }}>Amount Available (Old)</Typography>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={{ fontWeight: 'bold', padding: '8px', borderBottom: '1px solid #ddd' }}>Description</th>
+                  <th style={{ fontWeight: 'bold', padding: '8px', borderBottom: '1px solid #ddd' }}>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style={{ padding: '8px' }}><strong>Credit - Debit + Adjust</strong></td>
+                  <td style={{ padding: '8px' }}>
+                    <strong className="text-success">{crAmt}</strong> - 
+                    <strong className="text-danger">{dbAmtNum}</strong> + 
+                    <strong className="text-primary">{adjTotalNum}</strong>
+                  </td>
+                </tr>
+                <tr style={{ backgroundColor: '#fff' }}>
+                  <td style={{ padding: '8px' }}><strong>Total</strong></td>
+                  <td style={{ padding: '8px' }}>
+                    <strong className={totalAmount >= 0 ? 'text-success' : 'text-danger'}>{totalAmount}</strong>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </Box>
+        </Grid>
+      </Grid>
+      );
+    };
   
   
 
@@ -656,12 +771,12 @@ const [selectedClients, setSelectedClients] = useState([]);
 
 
       {/*Adjustment History Section */}
-      <Typography variant="h5" fontFamily="Playfair Display" fontWeight={600} mt={4} mb={2}>
+      {/* <Typography variant="h5" fontFamily="Playfair Display" fontWeight={600} mt={4} mb={2}>
   Adjustment History
 </Typography>
-<Divider style={{ borderWidth: '2px', marginBottom: '20px' }} />
+<Divider style={{ borderWidth: '2px', marginBottom: '20px' }} /> */}
 
-<Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+{/* <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
   <Button
     variant="contained"
     color="error"
@@ -670,10 +785,10 @@ const [selectedClients, setSelectedClients] = useState([]);
   >
     Delete Selected
   </Button>
-</Box>
+</Box> */}
 
-<div style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden' }}>
-  {/* Table Header */}
+{/* <div style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden' }}>
+
   <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 2fr 1fr 1fr 1fr', backgroundColor: '#f5f5f5', padding: '10px' }}>
     <div>Adjustment Date</div>
     <div>Adjusted From</div>
@@ -683,7 +798,7 @@ const [selectedClients, setSelectedClients] = useState([]);
     <div>Select</div>
   </div>
 
-  {/* Table Body */}
+
   <div>
     {adjustmentHistory.map((row) => (
       <div
@@ -713,7 +828,6 @@ const [selectedClients, setSelectedClients] = useState([]);
     ))}
   </div>
 
-  {/* Total Adjustment Row */}
   <div
     style={{
       display: 'grid',
@@ -733,7 +847,7 @@ const [selectedClients, setSelectedClients] = useState([]);
       Total Adjustment: ₹ {totalAdjustment.toLocaleString('en-IN')}
     </div>
   </div>
-</div>
+</div> */}
 
 
 {/* Client History Section */}
@@ -747,7 +861,7 @@ const [selectedClients, setSelectedClients] = useState([]);
   <Input
     placeholder="Search Client"
     value={clientSearch}
-    onChange={handleClientSearch}  // Trigger search on input change
+    onChange={handleClientSearch}
     style={{ width: '250px' }}
   />
 </Box>
@@ -823,111 +937,15 @@ const [selectedClients, setSelectedClients] = useState([]);
       <hr />
         {/* Balance Summary and Amount Available Section */}
     <Box sx={{ marginBottom: '30px' }}>
-      <Grid container spacing={2}>
-        {/* Balance Summary Section */}
-        <Grid item xs={12} sm={6}>
-          <Box sx={{ border: '1px solid #ddd', borderRadius: '8px', padding: '16px' }}>
-            <Typography level="h5" sx={{ fontWeight: 'bold', marginBottom: '12px' }}>Balance Summary</Typography>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={{ fontWeight: 'bold', padding: '8px', borderBottom: '1px solid #ddd' }}>S.No.</th>
-                  <th style={{ fontWeight: 'bold', padding: '8px', borderBottom: '1px solid #ddd' }}>Description</th>
-                  <th style={{ fontWeight: 'bold', padding: '8px', borderBottom: '1px solid #ddd' }}>Value</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style={{ padding: '8px' }}>1</td>
-                  <td style={{ padding: '8px' }}><strong>Total Received:</strong></td>
-                  <td style={{ padding: '8px' }}>{crAmtNum}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '8px' }}>2</td>
-                  <td style={{ padding: '8px' }}><strong>Total Return:</strong></td>
-                  <td style={{ padding: '8px' }}>{totalReturn}</td>
-                </tr>
-                <tr style={{ backgroundColor: '#C8C8C6' }}>
-                  <td style={{ padding: '8px' }}>3</td>
-                  <td style={{ padding: '8px' }}><strong>Net Balance[(1)-(2)]:</strong></td>
-                  <td style={{ padding: '8px' }}>{netBalance}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '8px' }}>4</td>
-                  <td style={{ padding: '8px' }}><strong>Total Advance Paid to vendors:</strong></td>
-                  <td style={{ padding: '8px' }}>{totalAdvanceValue}</td>
-                </tr>
-                <tr style={{ backgroundColor: '#B6F4C6', fontWeight: 'bold' }}>
-                  <td style={{ padding: '8px' }}>5</td>
-                  <td style={{ padding: '8px' }}><strong>Balance With Slnko [(3)-(4)]:</strong></td>
-                  <td style={{ padding: '8px' }}>{balanceSlnko}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '8px' }}>6</td>
-                  <td style={{ padding: '8px' }}><strong>Total PO Value:</strong></td>
-                  <td style={{ padding: '8px' }}>{totalPoValue}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '8px' }}>7</td>
-                  <td style={{ padding: '8px' }}><strong>Total Billed Value:</strong></td>
-                  <td style={{ padding: '8px' }}>{totalBilled}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '8px' }}>8</td>
-                  <td style={{ padding: '8px' }}><strong>Net Advance Paid [(4)-(7)]:</strong></td>
-                  <td style={{ padding: '8px' }}>{netAdvance}</td>
-                </tr>
-                <tr style={{ backgroundColor: '#B6F4C6', fontWeight: 'bold' }}>
-                  <td style={{ padding: '8px' }}>9</td>
-                  <td style={{ padding: '8px' }}><strong>Balance Payable to vendors [(6)-(7)-(8)]:</strong></td>
-                  <td style={{ padding: '8px' }}>{balancePayable}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '8px' }}>10</td>
-                  <td style={{ padding: '8px' }}><strong>TCS as applicable:</strong></td>
-                  <td style={{ padding: '8px' }}>{tcs}</td>
-                </tr>
-                <tr style={{ backgroundColor: '#B6F4C6', fontWeight: 'bold', color: balanceRequired >= 0 ? 'green' : 'red' }}>
-                  <td style={{ padding: '8px' }}>11</td>
-                  <td style={{ padding: '8px' }}><strong>Balance Required [(5)-(9)-(10)]:</strong></td>
-                  <td style={{ padding: '8px' }}>{balanceRequired}</td>
-                </tr>
-              </tbody>
-            </table>
-          </Box>
-        </Grid>
-
-        {/* Amount Available (Old) Section */}
-        <Grid item xs={12} sm={6}>
-          <Box sx={{ border: '1px solid #ddd', borderRadius: '8px', padding: '16px' }}>
-            <Typography level="h5" sx={{ fontWeight: 'bold', marginBottom: '12px' }}>Amount Available (Old)</Typography>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={{ fontWeight: 'bold', padding: '8px', borderBottom: '1px solid #ddd' }}>Description</th>
-                  <th style={{ fontWeight: 'bold', padding: '8px', borderBottom: '1px solid #ddd' }}>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style={{ padding: '8px' }}><strong>Credit - Debit + Adjust</strong></td>
-                  <td style={{ padding: '8px' }}>
-                    <strong className="text-success">{crAmt}</strong> - 
-                    <strong className="text-danger">{dbAmtNum}</strong> + 
-                    <strong className="text-primary">{adjTotalNum}</strong>
-                  </td>
-                </tr>
-                <tr style={{ backgroundColor: '#fff' }}>
-                  <td style={{ padding: '8px' }}><strong>Total</strong></td>
-                  <td style={{ padding: '8px' }}>
-                    <strong className={totalAmount >= 0 ? 'text-success' : 'text-danger'}>{totalAmount}</strong>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </Box>
-        </Grid>
-      </Grid>
+    <Balance_Summary
+    crAmt={crAmt}
+    dbAmt={dbAmt}
+    adjTotal={adjTotal}
+    totalReturn={totalReturn}
+    totalAdvanceValue={totalAdvanceValue}
+    totalPoValue={totalPoValue}
+    totalBilled={totalBilled}
+  />
     </Box>
  
 
@@ -938,9 +956,9 @@ const [selectedClients, setSelectedClients] = useState([]);
         <Button variant="solid" color="primary" onClick={handlePrint}>
           Print
         </Button>
-        <Button variant="solid" color="primary" onClick={handleDownloadPDF}>
+        {/* <Button variant="solid" color="primary" onClick={handleDownloadPDF}>
           Download PDF
-        </Button>
+        </Button> */}
         <Button variant="solid" color="primary" onClick={handleExportCSV}>
           Export to CSV
         </Button>
