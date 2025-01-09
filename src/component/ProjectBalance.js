@@ -44,6 +44,9 @@ const ProjectBalances = forwardRef((props, ref) => {
   const [mergedData, setMergedData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
+  const [totalCredit, setTotalCredit] = useState(0);
+  const [totalMW, setTotalMW] = useState(0);
+  const [totalDebit, setTotalDebit] = useState(0);
 
   const renderFilters = () => (
     <>
@@ -92,13 +95,33 @@ const ProjectBalances = forwardRef((props, ref) => {
             Axios.get("/get-subtract-amount"),
             Axios.get("/get-all-project"),
           ]);
-        setCredits(CreditResponse.data.bill);
+          const creditData = CreditResponse.data.bill;
+          setCredits(creditData);
+          
+         
         // console.log("Credit Data are:", CreditResponse.data.bill);
-        setDebits(DebitResponse.data.data);
+        const totalMwData = DebitResponse.data.data;
+        setDebits(totalMwData);
 
         setProjects(ProjectResponse.data.data);
         // console.log("Project Data are:", ProjectResponse.data.data);
         // console.log("Debits Data are :", DebitResponse.data.data);
+        const totalCredit = creditData.reduce((sum, row) => {
+          const creditAmount = parseFloat(row.cr_amount) || 0;
+          return sum + creditAmount;
+        }, 0);
+        setTotalCredit(totalCredit);
+
+        console.log("all credit are :", totalCredit);
+
+        const projectMW = totalMwData.reduce((sum, row) => {
+          const totalMW = parseFloat(row.project_kwp) || 0;
+          return sum + totalMW;
+        }, 0);
+        setTotalMW(projectMW);
+
+        console.log("all project are :", projectMW);
+        
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -313,6 +336,29 @@ const ProjectBalances = forwardRef((props, ref) => {
     },
   }));
 
+  // const ProjectMW = {
+  //   totalMW: paginatedPayments.reduce((sum, row) => {
+  //     const projectKWP = parseFloat(row.project_kwp) || 0;
+  //     return sum + projectKWP;
+  //   }, 0),
+  // };
+  // const AggregateCredit = {
+  //   totalcredit: paginatedPayments.reduce((sum, row) => {
+  //     const Allcredits = parseFloat(row.cr_amount) || 0;
+  //     return sum + Allcredits;
+  //   }, 0),
+  // };
+  //  console.log("Total credit are:", AggregateCredit.totalcredit);
+  // const AggregateDebit = {
+  //   totalMW: paginatedPayments.reduce((sum, row) => {
+  //     const projectKWP = parseFloat(row.project_kwp) || 0;
+  //     return sum + projectKWP;
+  //   }, 0),
+  // };
+  
+  // console.log("Total Project KWP:", ProjectMW.totalMW);
+  
+
   return (
     <>
       {/* Mobile Filters */}
@@ -379,6 +425,175 @@ const ProjectBalances = forwardRef((props, ref) => {
         {/* {renderFilters()} */}
       </Box>
 
+
+  <div style={{ margin: '20px 0' }}>
+  <table
+    style={{
+      width: '100%',
+      borderCollapse: 'collapse',
+      border: '1px solid #ddd',
+      boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+    }}
+  >
+    <thead>
+      <tr style={{ backgroundColor: '#f5f5f5' }}>
+        <th
+          style={{
+            padding: '12px 15px',
+            textAlign: 'left',
+            fontWeight: 'bold',
+            backgroundColor: '#e2e2e2',
+            border: '1px solid #ddd',
+          }}
+        >
+          Total Plant Capacity (MW AC)
+        </th>
+        <th
+          style={{
+            padding: '12px 15px',
+            textAlign: 'left',
+            border: '1px solid #ddd',
+          }}
+        >
+          Total Credit
+        </th>
+        <th
+          style={{
+            padding: '12px 15px',
+            textAlign: 'left',
+            border: '1px solid #ddd',
+          }}
+        >
+          Total Debit
+        </th>
+        <th
+          style={{
+            padding: '12px 15px',
+            textAlign: 'left',
+            border: '1px solid #ddd',
+          }}
+        >
+          Available Amount (Old)
+        </th>
+        <th
+          style={{
+            padding: '12px 15px',
+            textAlign: 'left',
+            border: '1px solid #ddd',
+          }}
+        >
+          Balance with Slnko
+        </th>
+        <th
+          style={{
+            padding: '12px 15px',
+            textAlign: 'left',
+            border: '1px solid #ddd',
+          }}
+        >
+          Balance Payable to Vendors
+        </th>
+        <th
+          style={{
+            padding: '12px 15px',
+            textAlign: 'left',
+            border: '1px solid #ddd',
+          }}
+        >
+          Balance Required
+        </th>
+      </tr>
+    </thead>
+    {paginatedPayments.length > 0 ? (
+      <tbody>
+        {paginatedPayments.map((project, index) => (
+          <tr key={index} style={{ backgroundColor: '#fff' }}>
+            <td
+              style={{
+                padding: '12px 15px',
+                textAlign: 'left',
+                border: '1px solid #ddd',
+              }}
+            >
+              {projectMW}
+            </td>
+            <td
+              style={{
+                padding: '12px 15px',
+                textAlign: 'left',
+                border: '1px solid #ddd',
+              }}
+            >
+              {totalCredit}
+            </td>
+            <td
+              style={{
+                padding: '12px 15px',
+                textAlign: 'left',
+                border: '1px solid #ddd',
+              }}
+            >
+              XXXXXX
+            </td>
+            <td
+              style={{
+                padding: '12px 15px',
+                textAlign: 'left',
+                border: '1px solid #ddd',
+              }}
+            >
+              XXXXXX
+            </td>
+            <td
+              style={{
+                padding: '12px 15px',
+                textAlign: 'left',
+                border: '1px solid #ddd',
+              }}
+            >
+              XXXXXX
+            </td>
+            <td
+              style={{
+                padding: '12px 15px',
+                textAlign: 'left',
+                border: '1px solid #ddd',
+              }}
+            >
+              XXXXXX
+            </td>
+            <td
+              style={{
+                padding: '12px 15px',
+                textAlign: 'left',
+                border: '1px solid #ddd',
+              }}
+            >
+              XXXXXX
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    ) : (
+      <tbody>
+        <tr>
+          <td
+            colSpan={7}
+            style={{
+              padding: '15px',
+              textAlign: 'center',
+              fontStyle: 'italic',
+              backgroundColor: '#f9f9f9',
+              color: '#888',
+            }}
+          >
+            No Data Available
+          </td>
+        </tr>
+      </tbody>
+    )}
+  </table>
+</div>
       {/* Table */}
       <Sheet
         className="OrderTableContainer"
@@ -394,6 +609,8 @@ const ProjectBalances = forwardRef((props, ref) => {
           maxWidth: { lg: "85%", sm: "100%", md: "75%" },
         }}
       >
+      
+    
         {error ? (
           <Typography color="danger" textAlign="center">
             {error}

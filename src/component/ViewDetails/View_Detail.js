@@ -14,6 +14,56 @@ import React, { useEffect, useState } from "react";
 import Img12 from "../../assets/slnko_blue_logo.png";
 import Axios from "../../utils/Axios";
 
+
+const exportAllToCSV = (
+  creditHeader,
+  creditRows,
+  debitHeader,
+  debitRows,
+  clientHeader,
+  clientRows,
+  creditTotal,
+  creditTotalRows,
+  debitTotal,
+  debitTotalRows,
+  clientTotal,
+  clientTotalRows,
+  fileName
+) => {
+ 
+  const csvContent = [
+    // Credit Table
+    creditHeader.join(","), 
+    ...creditRows.map((row) => row.join(",")), 
+    '', 
+    creditTotal.join(","), 
+    ...creditTotalRows.map((row) => row.join(",")), 
+    '',
+    // Debit Table
+    debitHeader.join(","), 
+    ...debitRows.map((row) => row.join(",")), 
+    '', 
+    debitTotal.join(","), 
+    ...debitTotalRows.map((row) => row.join(",")), 
+    '',
+    // Client Table
+    clientHeader.join(","), 
+    ...clientRows.map((row) => row.join(",")), 
+    '', 
+    clientTotal.join(","), 
+    ...clientTotalRows.map((row) => row.join(",")) 
+  ]
+    .join("\n");
+
+  // Create a Blob from the CSV content
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+
+
+  // Trigger file download
+  saveAs(blob, fileName); 
+};
 const Customer_Payment_Summary = () => {
   const [error, setError] = useState("");
   const [projectData, setProjectData] = useState({
@@ -49,34 +99,126 @@ const Customer_Payment_Summary = () => {
   const currentDay = today.toLocaleDateString("en-US", dayOptions);
   const currentDate = today.toLocaleDateString("en-US", dateOptions);
 
-  const handleExportCSV = ({
-    crAmtNum,
-    netBalance,
-    balanceSlnko,
-    balancePayable,
-    netAdvance,
-    balanceRequired,
-    tcs,
-  }) => {
-    const csvData = [
-      ["S.No.", "Balance Summary", "Value"],
-      ["1", "Total Received", crAmtNum],
-      ["2", "Total Return", totalReturn],
-      ["3", "Net Balance [(1)-(2)]", netBalance],
-      ["4", "Total Advance Paid to vendors", totalAdvanceValue],
-      ["5", "Balance With Slnko [(3)-(4)]", balanceSlnko],
-      ["6", "Total PO Value", totalPoValue],
-      ["7", "Total Billed Value", totalBilled],
-      ["8", "Net Advance Paid [(4)-(7)]", netAdvance],
-      ["9", "Balance Payable to vendors [(6)-(7)-(8)]", balancePayable],
-      ["10", "TCS as applicable", tcs],
-      ["11", "Balance Required [(5)-(9)-(10)]", balanceRequired],
+  const handleExportAll = () => {
+    // Credit Table
+    const creditHeader = ["Credit Date", "Credit Mode", "Credited Amount (₹)"];
+    const creditRows = creditHistory.map((row) => [
+      new Date(row.cr_date).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }),
+      row.cr_mode,
+      row.cr_amount
+    ]);
+  
+    const totalCredited = creditHistory.reduce((acc, row) => acc + row.cr_amount, 0);
+    const creditTotal = ["Total Credited", totalCredited];
+  
+    // Debit Table
+    const debitHeader = [
+      "Debit Date",
+      "Debit Mode",
+      "Paid For",
+      "Paid To",
+      "Amount (₹)",
+      "UTR"
     ];
-
-    const csvContent = csvData.map((row) => row.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    saveAs(blob, "CustomerPaymentSummary.csv");
+    const debitRows = debitHistory.map((row) => [
+      new Date(row.dbt_date).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }),
+      row.pay_mode,
+      row.paid_for,
+      row.vendor,
+      row.amount_paid,
+      row.utr
+    ]);
+  
+    const totalDebited = debitHistory.reduce((acc, row) => acc + row.amount_paid, 0);
+    const debitTotal = ["Total Debited", totalDebited];
+  
+    // Client Table
+    const clientHeader = [
+      "PO Number",
+      "Vendor",
+      "Item Name",
+      "PO Value (₹)",
+      "Advance Paid (₹)",
+      "Remaining Amount (₹)",
+      "Total Billed Value (₹)",
+    ];
+    const clientRows = filteredClients.map((client) => [
+      client.po_number || "N/A",
+      client.vendor || "N/A",
+      client.item || "N/A",
+      client.po_value,
+      client.amount_paid,
+      (client.po_value - client.amount_paid),
+       client.billedValue,
+    ]);
+  
+    const totalPOValue = filteredClients.reduce((acc, client) => acc + client.po_value, 0);
+    const totalAmountPaid = filteredClients.reduce((acc, client) => acc + client.amount_paid, 0);
+    const totalBalance = filteredClients.reduce(
+      (acc, client) => acc + (client.po_value - client.amount_paid),
+      0
+    );
+    const totalBilledValue = filteredClients.reduce((acc, client) => acc + client.billedValue, 0);
+  
+    const clientTotal = [
+      "Total",
+     totalPOValue,
+      totalAmountPaid,
+      totalBalance,
+      totalBilledValue,
+    ];
+  
+    // Export all to CSV
+    exportAllToCSV(
+      creditHeader, creditRows,
+      debitHeader, debitRows,
+      clientHeader, clientRows,
+      creditTotal, [creditTotal], // Wrap total in an array
+      debitTotal, [debitTotal], // Wrap total in an array
+      clientTotal, [clientTotal], // Wrap total in an array
+      "all_data_export.csv"
+    );
   };
+  
+
+
+
+  // const handleExportCSV = ({
+  //   crAmtNum,
+  //   netBalance,
+  //   balanceSlnko,
+  //   balancePayable,
+  //   netAdvance,
+  //   balanceRequired,
+  //   tcs,
+  // }) => {
+  //   const csvData = [
+  //     ["S.No.", "Balance Summary", "Value"],
+  //     ["1", "Total Received", crAmtNum],
+  //     ["2", "Total Return", totalReturn],
+  //     ["3", "Net Balance [(1)-(2)]", netBalance],
+  //     ["4", "Total Advance Paid to vendors", totalAdvanceValue],
+  //     ["5", "Balance With Slnko [(3)-(4)]", balanceSlnko],
+  //     ["6", "Total PO Value", totalPoValue],
+  //     ["7", "Total Billed Value", totalBilled],
+  //     ["8", "Net Advance Paid [(4)-(7)]", netAdvance],
+  //     ["9", "Balance Payable to vendors [(6)-(7)-(8)]", balancePayable],
+  //     ["10", "TCS as applicable", tcs],
+  //     ["11", "Balance Required [(5)-(9)-(10)]", balanceRequired],
+  //   ];
+
+  //   const csvContent = csvData.map((row) => row.join(",")).join("\n");
+  //   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  //   saveAs(blob, "CustomerPaymentSummary.csv");
+  // };
 
   const [creditHistory, setCreditHistory] = useState([]);
 
@@ -138,7 +280,11 @@ const Customer_Payment_Summary = () => {
     );
 
     setFilteredDebits(filteredD);
+    // console.log("Search Data are:", filteredD);
   };
+
+  
+  
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -158,7 +304,7 @@ const Customer_Payment_Summary = () => {
 
   const handleDelete = () => {
     // Logic to delete selected items
-    console.log("Deleting selected adjustments", selectedAdjustments);
+    // console.log("Deleting selected adjustments", selectedAdjustments);
   };
 
   const handleCheckboxChange = (id) => {
@@ -206,7 +352,7 @@ const Customer_Payment_Summary = () => {
 
   const handleDeleteSelectedClient = () => {
     // Your delete logic here. For now, we just log the selected clients.
-    console.log("Deleting selected clients with PO numbers:", selectedClients);
+    // console.log("Deleting selected clients with PO numbers:", selectedClients);
     setSelectedClients([]);
   };
 
@@ -254,7 +400,7 @@ const Customer_Payment_Summary = () => {
         } else {
           setError("No projects found. Please add projects before proceeding.");
         }
-        console.log("Response from Server:", response.data);
+        // console.log("Response from Server:", response.data);
       } catch (err) {
         console.error("Error fetching project data:", err);
         setError("Failed to fetch project data. Please try again later.");
@@ -268,12 +414,12 @@ const Customer_Payment_Summary = () => {
     if (projectData.p_id) {
       const fetchCreditHistory = async () => {
         try {
-          console.log("Fetching credit history for p_id:", projectData.p_id);
+          // console.log("Fetching credit history for p_id:", projectData.p_id);
 
           const response = await Axios.get(
             `/all-bill?p_id=${projectData.p_id}`
           );
-          console.log("Credit History Response:", response);
+          // console.log("Credit History Response:", response);
 
           const data = response.data?.bill || [];
 
@@ -282,7 +428,7 @@ const Customer_Payment_Summary = () => {
             (item) => item.p_id === projectData.p_id
           );
 
-          console.log("Filtered Credit History:", filteredCreditHistory);
+          // console.log("Filtered Credit History:", filteredCreditHistory);
 
           setCreditHistory(filteredCreditHistory);
         } catch (err) {
@@ -319,20 +465,6 @@ const Customer_Payment_Summary = () => {
           // Log the filtered debit history
           console.log("Filtered Debit History:", filteredDebitHistory);
 
-          // // Calculate the total "Customer Adjustment"
-          // const totalCustomerAdjustment = filteredDebitHistory
-          //   .reduce((sum, item) => {
-          //     // Ensure "paid_for" is an array before attempting to reduce it
-          //     const paidFor = Array.isArray(item.paid_for) ? item.paid_for : [];
-
-          //     const paidForSum = paidFor.reduce((innerSum, paidItem) => {
-          //       return innerSum + (paidItem["Customer Adjustment"] || 0);
-          //     }, 0);
-          //     return sum + paidForSum;
-          //   }, 0)
-          //   .toLocaleString("en-IN");
-
-          // console.log("Total Customer Adjustment:", totalCustomerAdjustment);
 
           // Set the debit history state
           setDebitHistory(filteredDebitHistory);
@@ -345,7 +477,7 @@ const Customer_Payment_Summary = () => {
 
       fetchDebitHistory();
     } else {
-      console.log("No p_id found in projectData");
+      // console.log("No p_id found in projectData");
     }
   }, [projectData.p_id]); // Trigger when projectData.p_id changes
 
@@ -353,14 +485,14 @@ const Customer_Payment_Summary = () => {
     if (projectData.code) {
       const fetchClientHistory = async () => {
         try {
-          console.log(
-            "Fetching client history for projectData.code:",
-            projectData.code
-          );
+          // console.log(
+          //   "Fetching client history for projectData.code:",
+          //   projectData.code
+          // );
 
           // Step 1: Fetch all PO data
           const poResponse = await Axios.get("/get-all-po");
-          console.log("PO Response:", poResponse.data);
+          // console.log("PO Response:", poResponse.data);
 
           const poData = poResponse.data?.data || [];
 
@@ -368,11 +500,11 @@ const Customer_Payment_Summary = () => {
           const filteredPOs = poData.filter(
             (po) => po.p_id === projectData.code
           );
-          console.log("Filtered POs based on projectData.code:", filteredPOs);
+          // console.log("Filtered POs based on projectData.code:", filteredPOs);
 
           // Step 3: Fetch all bills
           const billResponse = await Axios.get("/get-all-bill");
-          console.log("Bill Response:", billResponse.data);
+          // console.log("Bill Response:", billResponse.data);
 
           const billData = billResponse.data?.data || [];
 
@@ -389,7 +521,7 @@ const Customer_Payment_Summary = () => {
             };
           });
 
-          console.log("Enriched POs with Billed Values:", enrichedPOs);
+          // console.log("Enriched POs with Billed Values:", enrichedPOs);
 
           // Step 5: Update state
           setClientHistory(enrichedPOs);
@@ -423,14 +555,22 @@ const Customer_Payment_Summary = () => {
       0
     ),
   };
+  
 
+  
   const debitHistorySummary = {
-    totalCustomerAdjustment: filteredClients
-      .reduce((sum, client) => {
-        return sum + (client.customer_adjustment || 0);
+    totalCustomerAdjustment: filteredDebits
+      .reduce((sum, row) => {
+        if (row.paid_for === "Customer Adjustment") {
+          return sum + (row.amount_paid || 0);
+        }
+        return sum;
       }, 0)
-      .toLocaleString("en-IN"),
+      ,
   };
+  console.log("Total Customer Adjustment:", debitHistorySummary);
+  
+ 
 
   // ***Balance Summary***
 
@@ -465,14 +605,14 @@ const Customer_Payment_Summary = () => {
     totalPoValue,
     totalBilled,
   }) => {
-    console.log(
-      crAmt,
-      "Total return are ",
-      totalReturn,
-      totalAdvanceValue,
-      totalPoValue,
-      totalBilled
-    );
+    // console.log(
+    //   crAmt,
+    //   "Total return are ",
+    //   totalReturn,
+    //   totalAdvanceValue,
+    //   totalPoValue,
+    //   totalBilled
+    // );
 
     const crAmtNum = Number(crAmt);
     const dbAmtNum = Number(dbAmt);
@@ -607,7 +747,7 @@ const Customer_Payment_Summary = () => {
                   <td style={{ padding: "8px" }}>
                     <strong>TCS as applicable:</strong>
                   </td>
-                  <td style={{ padding: "8px" }}>{tcs}</td>
+                  <td style={{ padding: "8px" }}>{Math.round(tcs)}</td>
                 </tr>
                 <tr
                   style={{
@@ -829,7 +969,7 @@ const Customer_Payment_Summary = () => {
             <Button
               variant="contained"
               color="danger"
-              onClick={() => console.log("Delete Selected")}
+              // onClick={() => console.log("Delete Selected")}
             >
               Delete Selected
             </Button>
@@ -1247,7 +1387,7 @@ const Customer_Payment_Summary = () => {
         {/* <Button variant="solid" color="primary" onClick={handleDownloadPDF}>
           Download PDF
         </Button> */}
-        <Button variant="solid" color="primary" onClick={handleExportCSV}>
+        <Button variant="solid" color="primary" onClick={handleExportAll}>
           Export to CSV
         </Button>
       </Box>
