@@ -1,16 +1,9 @@
-import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Grid,
-  Typography,
-  Input,
-  Button,
-  Autocomplete,
-} from "@mui/joy";
-import Axios from "../../utils/Axios";
-import Img10 from '../../assets/pay-request.png';
-import { toast } from "react-toastify";
+import { Autocomplete, Box, Button, Grid, Input, Typography } from "@mui/joy";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import Img10 from "../../assets/pay-request.png";
+import Axios from "../../utils/Axios";
 
 const AddBillForm = () => {
   const navigate = useNavigate();
@@ -25,7 +18,7 @@ const AddBillForm = () => {
     bill_date: "",
     bill_value: "",
     bill_type: "",
-    submitted_by:""
+    submitted_by: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -40,22 +33,20 @@ const AddBillForm = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-  
-        // Retrieve PO number from localStorage and parse it if needed
+
         const po = localStorage.getItem("po_no");
-        const po_Number = po ? String(po) : null; // Ensure it's a number
+        const po_Number = po ? String(po) : null;
         console.log("PO from localStorage:", po_Number);
-  
-        // Fetch data from the API
+
         const response = await Axios.get("/get-all-po");
         const pos = response.data?.data || [];
         console.log("Fetched PO data:", pos);
-  
-        // Find the matching PO
-        const matchingItem = pos.find((item) => Number(item.po_number) === po_Number);
+
+        const matchingItem = pos.find(
+          (item) => String(item.po_number) === po_Number
+        );
         console.log("Matching PO item:", matchingItem);
-  
-        // Set form values if a matching item is found
+
         if (matchingItem) {
           setFormValues((prev) => ({
             ...prev,
@@ -74,10 +65,9 @@ const AddBillForm = () => {
         setLoading(false);
       }
     };
-  
+
     fetchData();
   }, []);
-  
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -103,13 +93,10 @@ const AddBillForm = () => {
     };
 
     try {
-      const response = await Axios.post(
-        "/add-bill",
-        dataToPost
-      );
+      const response = await Axios.post("/add-bill", dataToPost);
       console.log("Data posted successfully:", response.data);
-      toast.success("Bill added Successfully !!")
-      navigate("/purchase-order")
+      toast.success("Bill added Successfully !!");
+      navigate("/purchase-order");
     } catch (error) {
       console.error("Error posting data:", error);
     }
@@ -146,7 +133,7 @@ const AddBillForm = () => {
             Add Bill
           </Typography>
         </Box>
-  
+
         {loading ? (
           <Typography textAlign="center">Loading...</Typography>
         ) : error ? (
@@ -192,7 +179,7 @@ const AddBillForm = () => {
                   required
                 />
               </Grid>
-  
+
               {/* Row 2 */}
               <Grid xs={12} md={4}>
                 <Typography level="body1" fontWeight="bold" mb={1}>
@@ -231,7 +218,7 @@ const AddBillForm = () => {
                   required
                 />
               </Grid>
-  
+
               {/* Row 3 */}
               <Grid xs={12} md={4}>
                 <Typography level="body1" fontWeight="bold" mb={1}>
@@ -270,7 +257,7 @@ const AddBillForm = () => {
                   required
                 />
               </Grid>
-  
+
               {/* Row 4 */}
               <Grid xs={12}>
                 <Typography level="body1" fontWeight="bold" mb={1}>
@@ -280,20 +267,25 @@ const AddBillForm = () => {
                   options={billTypes}
                   getOptionLabel={(option) => option.label}
                   value={
-                    billTypes.find((type) => type.value === formValues.bill_type) ||
-                    null
+                    billTypes.find(
+                      (type) => type.value === formValues.bill_type
+                    ) || null
                   }
                   onChange={handleAutocompleteChange}
                   placeholder="Select Type"
                 />
               </Grid>
-  
+
               {/* Submit Button */}
               <Grid xs={12} textAlign="center">
                 <Button type="submit" color="primary" sx={{ mx: 1 }}>
                   Submit
                 </Button>
-                <Button variant="soft" color="neutral" onClick={() => navigate("/purchase-order")}>
+                <Button
+                  variant="soft"
+                  color="neutral"
+                  onClick={() => navigate("/purchase-order")}
+                >
                   Back
                 </Button>
               </Grid>
@@ -303,8 +295,6 @@ const AddBillForm = () => {
       </Box>
     </Box>
   );
-  
-  
 };
 
 export default AddBillForm;
