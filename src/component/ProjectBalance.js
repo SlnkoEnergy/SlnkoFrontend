@@ -44,9 +44,10 @@ const ProjectBalances = forwardRef((props, ref) => {
   const [mergedData, setMergedData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
-  const [totalCredit, setTotalCredit] = useState(0);
-  const [totalMW, setTotalMW] = useState(0);
-  const [totalDebit, setTotalDebit] = useState(0);
+  const [total_Credit, setTotal_Credit] = useState(0);
+  const [aggregate_MW, setAggregate_MW] = useState(0);
+  const [total_Debit, setTotal_Debit] = useState(0);
+  const [available_Amount, setAvailable_Amount] = useState(0);
 
   const renderFilters = () => (
     <>
@@ -97,30 +98,52 @@ const ProjectBalances = forwardRef((props, ref) => {
           ]);
           const creditData = CreditResponse.data.bill;
           setCredits(creditData);
-          
-         
-        // console.log("Credit Data are:", CreditResponse.data.bill);
-        const totalMwData = DebitResponse.data.data;
-        setDebits(totalMwData);
 
-        setProjects(ProjectResponse.data.data);
-        // console.log("Project Data are:", ProjectResponse.data.data);
-        // console.log("Debits Data are :", DebitResponse.data.data);
-        const totalCredit = creditData.reduce((sum, row) => {
+          const debitData = DebitResponse.data.data;
+          setDebits(debitData);
+
+          const totalMwData = ProjectResponse.data.data;
+          setProjects(totalMwData);
+
+       
+         
+        // console.log("Credit Data are:", creditData);
+        // console.log("Project Data are:", totalMwData);
+        // console.log("Debits Data are :", debitData);
+        // setProjects(ProjectResponse.data.data);
+        
+        
+        const total_Credit = creditData.reduce((sum, row) => {
           const creditAmount = parseFloat(row.cr_amount) || 0;
           return sum + creditAmount;
         }, 0);
-        setTotalCredit(totalCredit);
+        setTotal_Credit(total_Credit.toLocaleString('en-IN'));
 
-        console.log("all credit are :", totalCredit);
+        // console.log("all credit are :", total_Credit);
 
-        const projectMW = totalMwData.reduce((sum, row) => {
+        const aggregate_MW = totalMwData.reduce((sum, row) => {
           const totalMW = parseFloat(row.project_kwp) || 0;
           return sum + totalMW;
         }, 0);
-        setTotalMW(projectMW);
 
-        console.log("all project are :", projectMW);
+        setAggregate_MW(aggregate_MW);
+
+        // console.log("all project are :", aggregate_MW);
+
+        const total_Debit = debitData.reduce((sum, row) => {
+          const debitAmount = parseFloat(row.amount_paid) || 0;
+          return sum + debitAmount;
+        }, 0);
+        setTotal_Debit(total_Debit.toLocaleString('en-IN'));
+
+        // console.log("all debit are :", total_Debit);
+
+        const available_Old = total_Credit - total_Debit
+        const available_Amount = available_Old.toLocaleString('en-IN');
+        setAvailable_Amount(available_Amount);
+
+        console.log("Available Amounts are: ", available_Amount);
+        
         
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -306,6 +329,13 @@ const ProjectBalances = forwardRef((props, ref) => {
         "Balance Payable to Vendors",
         "Balance Required",
         "View More",
+        "Aggregate Plant Capacity",
+        "Aggregate Credit",
+        "Aggregate Debit",
+        "Aggregate Available(Old)",
+        "Aggregate Balance Slnko",
+        "Aggregate Balance Payable to Vendors",
+        "Balance Required"
       ];
 
       const rows = mergedData.map((project) => [
@@ -321,6 +351,13 @@ const ProjectBalances = forwardRef((props, ref) => {
         project.balancePayable || "-",
         project.balanceRequired || "-",
         project.viewMore || "-",
+        project.aggregate_MW || "-",
+        project.total_Credit || "-",
+        project.total_Debit || "-",
+        project.available_Amount || "-",
+        project.balance_Slnko || "-",
+        project.balance_Payable || "-",
+        project.balance_Required || "-",
       ]);
 
       const csvContent = [
@@ -331,7 +368,7 @@ const ProjectBalances = forwardRef((props, ref) => {
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = "exported_data.csv";
+      link.download = "project_balance.csv";
       link.click();
     },
   }));
@@ -426,7 +463,7 @@ const ProjectBalances = forwardRef((props, ref) => {
       </Box>
 
 
-  <div style={{ margin: '20px 0' }}>
+  <Box sx={{marginLeft: { xl: "15%", lg: "18%", md: "25%" }, maxWidth:{xl:"85%"} }}>
   <table
     style={{
       width: '100%',
@@ -504,10 +541,8 @@ const ProjectBalances = forwardRef((props, ref) => {
         </th>
       </tr>
     </thead>
-    {paginatedPayments.length > 0 ? (
       <tbody>
-        {paginatedPayments.map((project, index) => (
-          <tr key={index} style={{ backgroundColor: '#fff' }}>
+          <tr  style={{ backgroundColor: '#fff' }}>
             <td
               style={{
                 padding: '12px 15px',
@@ -515,7 +550,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                 border: '1px solid #ddd',
               }}
             >
-              {projectMW}
+              {aggregate_MW} MW AC
             </td>
             <td
               style={{
@@ -524,7 +559,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                 border: '1px solid #ddd',
               }}
             >
-              {totalCredit}
+              {total_Credit}
             </td>
             <td
               style={{
@@ -533,7 +568,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                 border: '1px solid #ddd',
               }}
             >
-              XXXXXX
+              {total_Debit}
             </td>
             <td
               style={{
@@ -542,7 +577,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                 border: '1px solid #ddd',
               }}
             >
-              XXXXXX
+              {available_Amount}
             </td>
             <td
               style={{
@@ -572,28 +607,11 @@ const ProjectBalances = forwardRef((props, ref) => {
               XXXXXX
             </td>
           </tr>
-        ))}
       </tbody>
-    ) : (
-      <tbody>
-        <tr>
-          <td
-            colSpan={7}
-            style={{
-              padding: '15px',
-              textAlign: 'center',
-              fontStyle: 'italic',
-              backgroundColor: '#f9f9f9',
-              color: '#888',
-            }}
-          >
-            No Data Available
-          </td>
-        </tr>
-      </tbody>
-    )}
+  
+ 
   </table>
-</div>
+</Box>
       {/* Table */}
       <Sheet
         className="OrderTableContainer"

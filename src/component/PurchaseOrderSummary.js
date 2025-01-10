@@ -46,42 +46,7 @@ import Axios from "../utils/Axios";
 //     : (a, b) => -descendingComparator(a, b, orderBy);
 // }
 
-function RowMenu() {
-  return (
-    <Dropdown>
-      <MenuButton
-        slots={{ root: IconButton }}
-        slotProps={{ root: { variant: "plain", color: "neutral", size: "sm" } }}
-      >
-        <MoreHorizRoundedIcon />
-      </MenuButton>
-      <Menu size="sm" sx={{ minWidth: 140 }}>
-        <MenuItem>
-          {" "}
-          <AddCircleOutlineIcon />
-          <Typography>Add Bill</Typography>
-        </MenuItem>
-        <MenuItem>
-          <HistoryIcon />
-          <Typography>Bill History</Typography>
-        </MenuItem>
-        <Divider sx={{ backgroundColor: "lightblue" }} />
-        <MenuItem>
-          <EditNoteIcon />
-          <Typography>Edit PO</Typography>
-        </MenuItem>
-        <MenuItem>
-          <HistoryIcon />
-          <Typography>PO History</Typography>
-        </MenuItem>
-        {/* <Divider sx={{ backgroundColor: "lightblue" }} /> */}
-        {/* <MenuItem color="primary" style={{ fontWeight: "bold" }}>
-          Adjust Bill
-        </MenuItem> */}
-      </Menu>
-    </Dropdown>
-  );
-}
+
 
 const PurchaseOrderSummary = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -144,6 +109,51 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
     fetchTableData();
   }, []);
+
+  const RowMenu = ({ currentPage, po_number }) => {
+    console.log("currentPage is:", currentPage, "Po_number is:", po_number);
+    
+   
+    return (
+      <Dropdown>
+        <MenuButton
+          slots={{ root: IconButton }}
+          slotProps={{ root: { variant: "plain", color: "neutral", size: "sm" } }}
+        >
+          <MoreHorizRoundedIcon />
+        </MenuButton>
+        <Menu size="sm" sx={{ minWidth: 140 }} >
+          <MenuItem onClick={() => {
+             const page = currentPage;
+             const po = po_number;
+             localStorage.setItem("po_no", po)
+            navigate(`/add_bill?page=${page}&po_number=${po}`)
+            }}>
+            {" "}
+            <AddCircleOutlineIcon />
+            <Typography>Add Bill</Typography>
+          </MenuItem>
+          <MenuItem onClick={() => navigate("#")}>
+            <HistoryIcon />
+            <Typography>Bill History</Typography>
+          </MenuItem>
+          <Divider sx={{ backgroundColor: "lightblue" }} />
+          <MenuItem onClick={() => navigate("#")}>
+            <EditNoteIcon />
+            <Typography>Edit PO</Typography>
+          </MenuItem>
+          <MenuItem onClick={() => navigate("#")}>
+            <HistoryIcon />
+            <Typography>PO History</Typography>
+          </MenuItem>
+          {/* <Divider sx={{ backgroundColor: "lightblue" }} /> */}
+          {/* <MenuItem color="primary" style={{ fontWeight: "bold" }}>
+            Adjust Bill
+          </MenuItem> */}
+        </Menu>
+      </Dropdown>
+    );
+  }
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -267,7 +277,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         "PO Value with GST",
         "Advance Paid",
         "Bill Status",
-        "Bill Delay",
         "Total Billed",
         "Action",
       ];
@@ -283,7 +292,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         po.amount_paid || "-",
         po.paid_for || "-",
         po.bill_status || "-",
-        po.bill_delay || "-",
         po.total_billed || "-",
         po.action || "-",
       ]);
@@ -424,7 +432,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                   "PO Value with GST",
                   "Advance Paid",
                   "Bill Status",
-                  "Bill Delay",
                   "Total Billed",
                   "Action",
                   "",
@@ -566,7 +573,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                     >
                       {po.bill_status || "-"}
                     </Box>
-                    <Box
+                    {/* <Box
                       component="td"
                       sx={{
                         padding: 1,
@@ -575,7 +582,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       }}
                     >
                       {po.bill_delay || "-"}
-                    </Box>
+                    </Box> */}
                     <Box
                       component="td"
                       sx={{
@@ -604,7 +611,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         borderBottom: "1px solid",
                       }}
                     >
-                      {RowMenu()}
+                      <RowMenu currentPage={currentPage} po_number={po.po_number} />
                     </Box>
                   </Box>
                 ))

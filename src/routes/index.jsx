@@ -21,6 +21,10 @@ import StandByRecords from "../pages/Accounts/StandByRecords";
 import AddUser from "../pages/Users/AddUser";
 import EditUser from "../pages/Users/EditUser";
 import Payment_Detail from "../pages/Accounts/PaymentDetail";
+import Add_Purchase from "../pages/SCM/AddPO";
+import Add_Vendor from "../pages/SCM/AddVendor";
+import Add_Bill from "../pages/SCM/AddBill";
+import Edit_Po from "../pages/SCM/EditPO"
 
 function index() {
   return (
@@ -179,6 +183,38 @@ function index() {
       element={
         <PrivateRoute>
           <StandBy_ReqSummary />
+        </PrivateRoute>
+      }
+    />
+    <Route
+      path="/add_po"
+      element={
+        <PrivateRoute>
+          <Add_Purchase />
+        </PrivateRoute>
+      }
+    />
+    <Route
+      path="/add_vendor"
+      element={
+        <PrivateRoute>
+          <Add_Vendor />
+        </PrivateRoute>
+      }
+    />
+     <Route
+      path="/add_bill"
+      element={
+        <PrivateRoute>
+          <Add_Bill />
+        </PrivateRoute>
+      }
+    />
+    <Route
+      path="/edit_po"
+      element={
+        <PrivateRoute>
+          <Edit_Po />
         </PrivateRoute>
       }
     />

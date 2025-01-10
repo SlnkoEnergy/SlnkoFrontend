@@ -15,8 +15,11 @@ import Sidebar from "../../component/Partials/Sidebar";
 // import OrderList from '../../component/OrderList';
 import Header from "../../component/Partials/Header";
 import PurchaseOrder from "../../component/PurchaseOrderSummary";
+import { useNavigate } from "react-router-dom";
 
 function POSummary() {
+  const navigate = useNavigate();
+  
   const poSummaryRef = useRef();
 
   const handleExportToCSV = () => {
@@ -112,10 +115,10 @@ function POSummary() {
                 justifyContent: "center",
               }}
             >
-              <Button color="primary" size="sm">
+              <Button color="primary" size="sm" onClick={() => navigate("/add_po")}>
                 Add PO +
               </Button>
-              <Button color="primary" size="sm">
+              <Button color="primary" size="sm" onClick={() => navigate("/add_vendor")}>
                 Add Vendor +
               </Button>
               <Button
