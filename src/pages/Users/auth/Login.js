@@ -79,6 +79,7 @@ const Login = () => {
             name: item.name,
             email: item.email,
             phone: item.phone,
+            emp_id: item.emp_id,
             role: item.role,
             department: item.department || "",
             userID: item._id,

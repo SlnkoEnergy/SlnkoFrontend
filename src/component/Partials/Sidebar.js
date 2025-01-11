@@ -79,6 +79,10 @@ function Sidebar() {
     localStorage.clear();
     navigate("/login");
   };
+  
+  // if (user?.department !== "superadmin" || user?.role !== "superadmin") {
+  //   return null;
+  // }
 
   return (
     <Sheet
@@ -178,7 +182,7 @@ function Sidebar() {
             <ListItemButton>
               <HomeRoundedIcon />
               <ListItemContent>
-                <Typography level="title-sm">Dashboard</Typography>
+                <Typography level="title-sm" onClick={() => navigate("#")}>Dashboard</Typography>
               </ListItemContent>
             </ListItemButton>
           </ListItem>
@@ -317,7 +321,7 @@ function Sidebar() {
               </List>
             </Toggler>
           </ListItem>
-          {/* );
+           {/* );
             })()} */}
 
           {/*--------- SCM -------------*/}
@@ -402,73 +406,6 @@ function Sidebar() {
               </List>
             </Toggler>
           </ListItem>
-
-          {/* <ListItem>
-            <ListItemButton selected>
-              <ShoppingCartRoundedIcon />
-              <ListItemContent>
-                <Typography level="title-sm">BD</Typography>
-              </ListItemContent>
-            </ListItemButton>
-          </ListItem> */}
-
-          {/* <ListItem>
-            <ListItemButton
-              role="menuitem"
-              component="a"
-              href="/joy-ui/getting-started/templates/messages/"
-            >
-              <QuestionAnswerRoundedIcon />
-              <ListItemContent>
-                <Typography level="title-sm">Messages</Typography>
-              </ListItemContent>
-              <Chip size="sm" color="primary" variant="solid">
-                4
-              </Chip>
-            </ListItemButton>
-          </ListItem> */}
-
-          {/* <ListItem nested>
-            <Toggler
-              renderToggle={({ open, setOpen }) => (
-                <ListItemButton onClick={() => setOpen(!open)}>
-                  <GroupRoundedIcon />
-                  <ListItemContent>
-                    <Typography level="title-sm">Users</Typography>
-                  </ListItemContent>
-                  <KeyboardArrowDownIcon
-                    sx={[
-                      open
-                        ? {
-                            transform: 'rotate(180deg)',
-                          }
-                        : {
-                            transform: 'none',
-                          },
-                    ]}
-                  />
-                </ListItemButton>
-              )}
-            >
-              <List sx={{ gap: 0.5 }}>
-                <ListItem sx={{ mt: 0.5 }}>
-                  <ListItemButton
-                    role="menuitem"
-                    component="a"
-                    href="/joy-ui/getting-started/templates/profile-dashboard/"
-                  >
-                    My profile
-                  </ListItemButton>
-                </ListItem>
-                <ListItem>
-                  <ListItemButton>Create a new user</ListItemButton>
-                </ListItem>
-                <ListItem>
-                  <ListItemButton>Roles & permission</ListItemButton>
-                </ListItem>
-              </List>
-            </Toggler>
-          </ListItem> */}
         </List>
 
         <List
@@ -510,8 +447,8 @@ function Sidebar() {
         >
           <Avatar />
           <Stack>
-            <Typography fontWeight="lg">{"Slnko Energy"}</Typography>
-            <Typography level="body-sm">{"admin@slnko.co"}</Typography>
+            <Typography fontWeight="lg">{user?.name}</Typography>
+            <Typography level="body-sm">{user?.emp_id}</Typography>
           </Stack>
           <IconButton
             onClick={handleLogout}
