@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from "react";
 import {
+  Box,
+  Button,
   Container,
+  FormControl,
   Grid,
   Input,
-  Button,
-  FormControl,
-  Typography,
-  Box,
   MenuItem,
+  Typography,
 } from "@mui/joy";
-import Select from "react-select";
-import Axios from "../../utils/Axios";
-import Img7 from "../../assets/update-po.png";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Select from "react-select";
 import { toast } from "react-toastify";
+import Img7 from "../../assets/update-po.png";
+import Axios from "../../utils/Axios";
 
 const UpdatePurchaseOrder = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     p_id: "",
     code: "",
@@ -26,7 +26,7 @@ const UpdatePurchaseOrder = () => {
     item: "",
     po_value: "",
     other: "",
-    partial_billing: "",
+    partial_billing: "", // Initialize as an empty string
     comment: "",
   });
   const [projectIDs, setProjectIDs] = useState([]);
@@ -35,35 +35,31 @@ const UpdatePurchaseOrder = () => {
   const [showOtherItem, setShowOtherItem] = useState(false);
   const [allPo, setAllPo] = useState([]);
   const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const userData = getUserData();
         setUser(userData);
-        console.log("details are :", userData);
 
-        const poNumberFromStorage = localStorage.getItem("get-po");
-        console.log("Pos are: ", poNumberFromStorage);
-
+        const poNumberFromStorage = localStorage.getItem("edit-po");
         if (!poNumberFromStorage) {
           console.error("PO number not found in localStorage");
           return;
         }
 
-        const projectsRes = await Axios.get("get-all-project");
+        const [projectsRes, vendorsRes, itemsRes, poRes] = await Promise.all([
+          Axios.get("/get-all-project"),
+          Axios.get("/get-all-vendor"),
+          Axios.get("/get-item"),
+          Axios.get("/get-all-po"),
+        ]);
+
         setProjectIDs(projectsRes.data.data || []);
-        console.log("All projects are:", projectsRes.data);
-
-        const vendorsRes = await Axios.get("/get-all-vendor");
         setVendors(vendorsRes.data.data || []);
-
-        const itemsRes = await Axios.get("get-item");
         setItems([...itemsRes.data.Data, "Other"]);
-
-        const poRes = await Axios.get("/get-all-po");
         setAllPo(poRes.data.data || []);
 
         const poData = poRes.data.data.find(
@@ -71,24 +67,23 @@ const UpdatePurchaseOrder = () => {
         );
 
         if (poData) {
-          setFormData((prev) => ({
-            ...prev,
+          setFormData({
             p_id: poData.p_id || "-",
-            po_number: poData.po_number || "-",
-            vendor: poData.vendor || "-",
-            item: poData.item || "-",
-            date: poData.date || "-",
-            po_value: poData.po_value || "-",
-            partial_billing: poData.partial_billing || "-",
-            comment: poData.comment || "-",
-          }));
+            code: poData.code || "",
+            po_number: poData.po_number || "",
+            vendor: poData.vendor || "",
+            item: poData.item || "",
+            date: poData.date || "",
+            po_value: poData.po_value || "",
+            // partial_billing: poData.partial_billing || "",
+          });
+          setShowOtherItem(poData.item === "Other");
         } else {
-          console.log("PO not found for the stored PO number");
+          console.error("PO not found for the stored PO number");
         }
-
-        console.log("Fetched Purchase Orders:", poRes.data);
       } catch (err) {
         console.error("Error fetching data:", err);
+        setError("Failed to fetch data. Please try again.");
       }
     };
 
@@ -97,16 +92,13 @@ const UpdatePurchaseOrder = () => {
 
   const getUserData = () => {
     const userData = localStorage.getItem("userDetails");
-    console.log("Only this needed :", userData);
-    if (userData) {
-      return JSON.parse(userData);
-    }
-    return null;
+    return userData ? JSON.parse(userData) : null;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    console.log("Field:", name, "Value:", value);
+    setFormData((prev) => ({ ...prev, [name]: value || "" }));
   };
 
   const handleSelectChange = (field, newValue) => {
@@ -128,35 +120,23 @@ const UpdatePurchaseOrder = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submitting form with data:", formData);
+    if (!formData.p_id) {
+      setError("Project ID is missing. Cannot update PO.");
+      toast.error("Project ID is required.");
+      return;
+    }
 
     try {
       setLoading(true);
       setError("");
 
-      // Ensure we have the correct ID before sending the request
-      if (!formData._id) {
-        setError("Project ID is missing. Cannot update project.");
-        return;
-      }
-
-      // Send the PUT request to update the project
-      const response = await Axios.put(
-        `/edit-po/${formData._id}`,
-        formData
-      );
-      console.log("API Response:", response);
-
-      if (response && response.data) {
-        console.log("PO updated successfully:", response.data);
-        // alert("Project updated successfully.");
-        toast.success("PO updated successfully.");
-        navigate("/purchase-order")
-      }
+      const response = await Axios.put(`/edit-po/${formData.p_id}`, formData);
+      toast.success("PO updated successfully.");
+      navigate("/purchase-order");
     } catch (err) {
-      console.error("Error during po update:", err);
-      toast.error("oops!! something went wrong..")
-      setError("Failed to update po. Please try again later.");
+      console.error("Error updating PO:", err);
+      setError("Failed to update PO. Please try again.");
+      toast.error("Failed to update PO. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -246,7 +226,7 @@ const UpdatePurchaseOrder = () => {
               <Input
                 name="po_number"
                 placeholder="PO Number"
-                value={formData.po_number}
+                value={formData.po_number || ""}
                 onChange={handleChange}
                 required
               />
@@ -371,15 +351,20 @@ const UpdatePurchaseOrder = () => {
                 Partial Billing
               </Typography>
               <FormControl>
-              <Select
-    name="partial_billing"
-    value={formData.partial_billing}
-    onChange={handleChange}
-
-  >
-    <MenuItem value="Yes">Yes</MenuItem>
-    <MenuItem value="No">No</MenuItem>
-  </Select>
+                <Select
+                  name="partial_billing"
+                  value={formData.partial_billing || ""}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      partial_billing: e.target.value,
+                    }))
+                  }
+                >
+                  <MenuItem value="">Select</MenuItem>
+                  <MenuItem value="Yes">Yes</MenuItem>
+                  <MenuItem value="No">No</MenuItem>
+                </Select>
               </FormControl>
             </Grid>
 
@@ -393,11 +378,10 @@ const UpdatePurchaseOrder = () => {
                 Comments (Why Changes?)
               </Typography>
               <Input
-                name="comments"
+                name="comment"
                 placeholder="Comments (Why Changes?)"
                 value={formData.comment}
                 onChange={handleChange}
-              
               />
             </Grid>
           </Grid>

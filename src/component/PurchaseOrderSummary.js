@@ -6,6 +6,7 @@ import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import SearchIcon from "@mui/icons-material/Search";
+import { Chip } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
@@ -46,11 +47,10 @@ import Axios from "../utils/Axios";
 //     : (a, b) => -descendingComparator(a, b, orderBy);
 // }
 
-
-
 const PurchaseOrderSummary = forwardRef((props, ref) => {
   const navigate = useNavigate();
   const [pos, setPos] = useState([]);
+  const [bills, setBills] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stateFilter, setStateFilter] = useState("");
@@ -59,6 +59,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const [itemsPerPage, setItemsPerPage] = useState(15);
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [total_Billed, setTotal_Billed] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const renderFilters = () => (
@@ -96,9 +97,39 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   useEffect(() => {
     const fetchTableData = async () => {
       try {
-        const response = await Axios.get("/get-all-po");
-        setPos(Array.isArray(response.data.data) ? response.data.data : []);
-        console.log("PO Data:", response.data.data);
+        const [PoResponse, BillResponse] = await Promise.all([
+          Axios.get("/get-all-po"),
+          Axios.get("/get-all-bill"),
+        ]);
+
+        const PoData = PoResponse.data.data || [];
+        const BillData = BillResponse.data.data || [];
+
+        const updatedPoData = PoData.map((po) => {
+          const totalBill = BillData.filter(
+            (bill) => bill.po_number === po.po_number
+          ).reduce((sum, bill) => {
+            const billValue = parseFloat(bill.bill_value) || 0;
+            return sum + billValue;
+          }, 0);
+
+          const formattedTotal = totalBill.toLocaleString("en-IN");
+
+          // Determine billing status
+          const billStatus =
+            totalBill >= parseFloat(po.po_value)
+              ? "Fully Billed"
+              : "Bill Pending";
+
+          return {
+            ...po,
+            totalBill,
+            formattedTotal, // Add formattedTotal
+            bill_status: billStatus, // Add bill status
+          };
+        });
+
+        setPos(updatedPoData); // Update the state with formatted data
       } catch (err) {
         console.error("Error fetching table data:", err);
         setError("Failed to fetch table data.");
@@ -110,52 +141,63 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     fetchTableData();
   }, []);
 
-  const RowMenu = ({ currentPage, po_number, }) => {
-    console.log("currentPage is:", currentPage, "Po_number is:", po_number);
-  
-   
+  const RowMenu = ({ currentPage, po_number }) => {
+    // console.log("currentPage is:", currentPage, "Po_number is:", po_number);
+
     return (
       <Dropdown>
         <MenuButton
           slots={{ root: IconButton }}
-          slotProps={{ root: { variant: "plain", color: "neutral", size: "sm" } }}
+          slotProps={{
+            root: { variant: "plain", color: "neutral", size: "sm" },
+          }}
         >
           <MoreHorizRoundedIcon />
         </MenuButton>
-        <Menu size="sm" sx={{ minWidth: 140 }} >
-          <MenuItem onClick={() => {
-             const page = currentPage;
-             const po = po_number;
-             localStorage.setItem("po_no", po)
-            navigate(`/add_bill?page=${page}&po_number=${po}`)
-            }}>
+        <Menu size="sm" sx={{ minWidth: 140 }}>
+          <MenuItem
+            onClick={() => {
+              const page = currentPage;
+              const po = po_number;
+              localStorage.setItem("po_no", po);
+              navigate(`/add_bill?page=${page}&po_number=${po}`);
+            }}
+          >
             {" "}
             <AddCircleOutlineIcon />
             <Typography>Add Bill</Typography>
           </MenuItem>
-          <MenuItem onClick={() =>{
-             const page = currentPage;
-             const po = po_number;
-              localStorage.setItem("get-po", po)
-            navigate(`/bill_history?page=${page}&po_number=${po}`)}}>
+          <MenuItem
+            onClick={() => {
+              const page = currentPage;
+              const po = po_number;
+              localStorage.setItem("get-po", po);
+              navigate(`/bill_history?page=${page}&po_number=${po}`);
+            }}
+          >
             <HistoryIcon />
             <Typography>Bill History</Typography>
           </MenuItem>
           <Divider sx={{ backgroundColor: "lightblue" }} />
-          <MenuItem onClick={() => {
-            const page = currentPage;
-            const po = po_number;
-            localStorage.setItem("edit-po", po) 
-            navigate(`/edit_po?page=${page}&po_number=${po}`)}
-          } >
+          <MenuItem
+            onClick={() => {
+              const page = currentPage;
+              const po = po_number;
+              localStorage.setItem("edit-po", po);
+              navigate(`/edit_po?page=${page}&po_number=${po}`);
+            }}
+          >
             <EditNoteIcon />
             <Typography>Edit PO</Typography>
           </MenuItem>
-          <MenuItem onClick={() =>{
+          <MenuItem
+            onClick={() => {
               const page = currentPage;
               const po = po_number;
-              localStorage.setItem("get-po", po)
-            navigate(`/po_history?page=${page}&po_number=${po}`)}}>
+              localStorage.setItem("get-po", po);
+              navigate(`/po_history?page=${page}&po_number=${po}`);
+            }}
+          >
             <HistoryIcon />
             <Typography>PO History</Typography>
           </MenuItem>
@@ -166,7 +208,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         </Menu>
       </Dropdown>
     );
-  }
+  };
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -303,9 +345,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         po.vendor || "-",
         po.po_value || "-",
         po.amount_paid || "-",
-        po.paid_for || "-",
         po.bill_status || "-",
-        po.total_billed || "-",
+        po.totalBill || "-",
         po.action || "-",
       ]);
 
@@ -584,7 +625,29 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         borderBottom: "1px solid",
                       }}
                     >
-                      {po.bill_status || "-"}
+                      {po.bill_status === "Fully Billed" ? (
+                        <Chip
+                          label="Fully Billed"
+                          color="success"
+                          size="small"
+                          sx={{
+                            fontWeight: "bold",
+                            backgroundColor: "green",
+                            color: "white",
+                          }}
+                        />
+                      ) : (
+                        <Chip
+                          label="Bill Pending"
+                          color="warning"
+                          size="small"
+                          sx={{
+                            fontWeight: "bold",
+                            backgroundColor: "orange",
+                            color: "white",
+                          }}
+                        />
+                      )}
                     </Box>
                     {/* <Box
                       component="td"
@@ -604,7 +667,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         borderBottom: "1px solid",
                       }}
                     >
-                      {po.total_billed || "-"}
+                      {po.formattedTotal || "-"}
                     </Box>
                     <Box
                       component="td"
@@ -624,7 +687,10 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         borderBottom: "1px solid",
                       }}
                     >
-                      <RowMenu currentPage={currentPage} po_number={po.po_number} />
+                      <RowMenu
+                        currentPage={currentPage}
+                        po_number={po.po_number}
+                      />
                     </Box>
                   </Box>
                 ))
