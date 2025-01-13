@@ -110,9 +110,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     fetchTableData();
   }, []);
 
-  const RowMenu = ({ currentPage, po_number }) => {
+  const RowMenu = ({ currentPage, po_number, }) => {
     console.log("currentPage is:", currentPage, "Po_number is:", po_number);
-    
+  
    
     return (
       <Dropdown>
@@ -133,16 +133,29 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             <AddCircleOutlineIcon />
             <Typography>Add Bill</Typography>
           </MenuItem>
-          <MenuItem onClick={() => navigate("#")}>
+          <MenuItem onClick={() =>{
+             const page = currentPage;
+             const po = po_number;
+              localStorage.setItem("get-po", po)
+            navigate(`/bill_history?page=${page}&po_number=${po}`)}}>
             <HistoryIcon />
             <Typography>Bill History</Typography>
           </MenuItem>
           <Divider sx={{ backgroundColor: "lightblue" }} />
-          <MenuItem onClick={() => navigate("#")}>
+          <MenuItem onClick={() => {
+            const page = currentPage;
+            const po = po_number;
+            localStorage.setItem("edit-po", po) 
+            navigate(`/edit_po?page=${page}&po_number=${po}`)}
+          } >
             <EditNoteIcon />
             <Typography>Edit PO</Typography>
           </MenuItem>
-          <MenuItem onClick={() => navigate("#")}>
+          <MenuItem onClick={() =>{
+              const page = currentPage;
+              const po = po_number;
+              localStorage.setItem("get-po", po)
+            navigate(`/po_history?page=${page}&po_number=${po}`)}}>
             <HistoryIcon />
             <Typography>PO History</Typography>
           </MenuItem>

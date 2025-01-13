@@ -25,6 +25,8 @@ import Add_Purchase from "../pages/SCM/AddPO";
 import Add_Vendor from "../pages/SCM/AddVendor";
 import Add_Bill from "../pages/SCM/AddBill";
 import Edit_Po from "../pages/SCM/EditPO"
+import BillHistory from "../pages/Projects/BillHistory";
+import POHistory from "../pages/Projects/PoHistory";
 
 function index() {
   return (
@@ -123,6 +125,22 @@ function index() {
         </PrivateRoute>
       }
     />
+     <Route
+      path="/bill_history"
+      element={
+        <PrivateRoute>
+          <BillHistory />
+        </PrivateRoute>
+      }
+    />
+     <Route
+      path="/po_history"
+      element={
+        <PrivateRoute>
+          <POHistory />
+        </PrivateRoute>
+      }
+    />
 
     {/*-------Project------- */}
     <Route
@@ -135,7 +153,7 @@ function index() {
     />
 
     {/* If user goes to an undefined route, redirect to login */}
-    <Route path="*" element={<Navigate to="#" />} />
+    <Route path="*" element={<Navigate to="/login" />} />
 
     {/* -----------------All Forms -----------*/}
     <Route
