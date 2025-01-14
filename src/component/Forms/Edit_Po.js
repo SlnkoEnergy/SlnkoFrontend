@@ -14,6 +14,7 @@ import Select from "react-select";
 import { toast } from "react-toastify";
 import Img7 from "../../assets/update-po.png";
 import Axios from "../../utils/Axios";
+import axios from "axios";
 
 const UpdatePurchaseOrder = () => {
   const navigate = useNavigate();
@@ -24,7 +25,10 @@ const UpdatePurchaseOrder = () => {
     vendors: [],
     AllPo: [],
   });
-
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    return userData ? JSON.parse(userData) : null;
+  };
   const [formData, setFormData] = useState({
     // _id:"",
     p_id: "",
@@ -37,7 +41,6 @@ const UpdatePurchaseOrder = () => {
     other: "",
     partial_billing: "",
     comment: "",
-    submitted_by: "",
   });
   const [projectIDs, setProjectIDs] = useState([]);
   const [vendors, setVendors] = useState([]);
@@ -52,8 +55,11 @@ const UpdatePurchaseOrder = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const userData = getUserData();
-        setUser(userData);
+
+        
+
+        // const userData = getUserData();
+        // setUser(userData);
 
         const poNumberFromStorage = localStorage.getItem("edit-po");
         if (!poNumberFromStorage) {
@@ -89,7 +95,7 @@ const UpdatePurchaseOrder = () => {
             item: poData.item || "",
             date: poData.date || "",
             po_value: poData.po_value || "",
-            partial_billing: poData.partial_billing || "",
+            partial_billing: poData.partial_billing,
           });
           setShowOtherItem(poData.item === "Other");
         } else {
@@ -104,14 +110,20 @@ const UpdatePurchaseOrder = () => {
     fetchData();
   }, []);
 
-  const getUserData = () => {
-    const userData = localStorage.getItem("userDetails");
-    return userData ? JSON.parse(userData) : null;
-  };
-
+ 
+ 
+  const options = [
+    { value: "", label: "Select" },
+    { value: "Partial", label: "Partial" },
+    { value: "Final", label: "Final" },
+  ];
   const handleChange = (e) => {
     const { name, value } = e.target;
-    console.log("Field:", name, "Value:", value);
+    // console.log("Field:", name, "Value:", value);
+    if(name === "po_value" && value < 0){
+          toast.warning("PO Value can't be Negative !!")
+          return;
+        }
     setFormData((prev) => ({ ...prev, [name]: value || "" }));
   };
 
@@ -130,12 +142,22 @@ const UpdatePurchaseOrder = () => {
     } else if (field === "item") {
       setShowOtherItem(false);
     }
+    
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Check if _id is provided
+
+    const userData = getUserData();
+    if (userData && userData.name) {
+      setFormData((prev) => ({
+        ...prev,
+        submitted_By: userData.name,
+      }));
+    }
+    setUser(userData); 
+
     if (!formData._id) {
       setError("Document ID (_id) is missing. Cannot update PO.");
       toast.error("Document ID is required.");
@@ -143,26 +165,23 @@ const UpdatePurchaseOrder = () => {
     }
     console.log("Submitting with _id:", formData._id);
     try {
-      // Show loading state
+     
       setLoading(true);
       setError("");
-
-      // Construct the endpoint dynamically using _id
       const endpoint = `https://api.slnkoprotrac.com/v1/edit-po/${formData._id}`;
+      const response = await axios.put(endpoint, formData);
 
-      // Send PUT request
-      const response = await Axios.put(endpoint, formData);
-
-      // Handle success
+      
       if (response.status === 200) {
         setResponse(response.data);
         toast.success("PO updated successfully.");
         navigate("/purchase-order");
+        localStorage.removeItem("edit-po");
       } else {
         throw new Error("Unexpected response from the server.");
       }
     } catch (err) {
-      // Handle errors
+     
       console.error("Error updating PO:", err);
       setError(
         err.response?.data?.message || "Failed to update PO. Please try again."
@@ -171,10 +190,12 @@ const UpdatePurchaseOrder = () => {
         err.response?.data?.message || "Failed to update PO. Please try again."
       );
     } finally {
-      // Reset loading state
+    
       setLoading(false);
     }
   };
+
+  
 
   return (
     <Box
@@ -225,40 +246,41 @@ const UpdatePurchaseOrder = () => {
                 Project ID:
               </Typography>
               <FormControl>
-                {/* {user?.name === "IT Team" ? ( */}
-                <Select
-                  options={getFormData.projectIDs.map((project) => ({
-                    label: project.code,
-                    value: project.code,
-                  }))}
-                  value={
-                    formData.p_id
-                      ? {
-                          label: formData.p_id,
-                          value: formData.p_id,
-                        }
-                      : null
-                  }
-                  onChange={(selectedOption) =>
-                    handleChange({
-                      target: {
-                        name: "p_id",
-                        value: selectedOption?.value || "",
-                      },
-                    })
-                  }
-                  placeholder="Select Project"
-                  required
-                />
-
-                {/* ) : (
-                  <Input
-                    name="p_id"
-                    value={formData.p_id}
-                    onChange={handleChange}
-                    required
-                  />
-                )} */}
+                <FormControl>
+                  {user?.name === "IT Team" ? (
+                    <Select
+                      options={getFormData.projectIDs.map((project) => ({
+                        label: project.code,
+                        value: project.code,
+                      }))}
+                      value={
+                        formData.p_id
+                          ? {
+                              label: formData.p_id,
+                              value: formData.p_id,
+                            }
+                          : null
+                      }
+                      onChange={(selectedOption) =>
+                        handleChange({
+                          target: {
+                            name: "p_id",
+                            value: selectedOption?.value || "",
+                          },
+                        })
+                      }
+                      placeholder="Select Project"
+                      required
+                    />
+                  ) : (
+                    <Input
+                      name="p_id"
+                      value={formData.p_id}
+                      onChange={handleChange}
+                      readOnly
+                    />
+                  )}
+                </FormControl>
               </FormControl>
             </Grid>
 
@@ -276,7 +298,7 @@ const UpdatePurchaseOrder = () => {
                 placeholder="PO Number"
                 value={formData.po_number || ""}
                 onChange={handleChange}
-                required
+                readOnly
               />
             </Grid>
 
@@ -291,7 +313,7 @@ const UpdatePurchaseOrder = () => {
               </Typography>
               <FormControl>
                 <Select
-                  options={vendors.map((vendor, index) => ({
+                  options={getFormData.vendors.map((vendor, index) => ({
                     label: vendor.name,
                     value: vendor.name,
                     key: `${vendor.name}-${index}`,
@@ -301,7 +323,6 @@ const UpdatePurchaseOrder = () => {
                     handleSelectChange("vendor", selectedOption?.value || "")
                   }
                   placeholder="Select Vendor"
-                  required
                 />
               </FormControl>
             </Grid>
@@ -335,7 +356,7 @@ const UpdatePurchaseOrder = () => {
               </Typography>
               <FormControl>
                 <Select
-                  options={items.map((item, index) => ({
+                  options={getFormData.items.map((item, index) => ({
                     label: typeof item === "object" ? item.item : item,
                     value: typeof item === "object" ? item.item : item,
                     key: `${typeof item === "object" ? item.item : item}-${index}`,
@@ -399,20 +420,21 @@ const UpdatePurchaseOrder = () => {
                 Partial Billing
               </Typography>
               <FormControl>
-                <select
+                <Select
                   name="partial_billing"
-                  value={formData.partial_billing}
-                  onChange={(e) =>
+                  value={options.find(
+                    (option) => option.value === formData.partial_billing
+                  )}
+                  onChange={(selectedOption) =>
                     setFormData((prev) => ({
                       ...prev,
-                      partial_billing: e.target.value,
+                      partial_billing: selectedOption
+                        ? selectedOption.value
+                        : "",
                     }))
                   }
-                >
-                  <option value="">Select</option>
-                  <option value="Partial">Partial</option>
-                  <option value="Final">Final</option>
-                </select>
+                  options={options}
+                />
               </FormControl>
             </Grid>
 

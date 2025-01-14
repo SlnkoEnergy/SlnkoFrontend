@@ -334,7 +334,7 @@ const PaymentRequest = forwardRef((props, ref) => {
         payment.formattedDate || "-",
         payment.vendor || "-",
         payment.ProjectCustomer || "-",
-        payment.amt_for_customer || "-",
+        payment.amount_paid || "-",
         payment.approved || "-",
         payment.utr || "-",
       ]);
@@ -567,7 +567,7 @@ const PaymentRequest = forwardRef((props, ref) => {
                         textAlign: "center",
                       }}
                     >
-                      {payment.amt_for_customer}
+                      {payment.amount_paid}
                     </Box>
                     <Box
                       component="td"

@@ -53,7 +53,7 @@ function PoHistoryTable() {
                   item: history.item || "-", 
                   po_value: history.po_value ? history.po_value.toLocaleString("en-IN") : "-",
                   comment: history.comment || "-",
-                  submitted_by: history.submitted_by || "-",
+                  submitted_By: history.submitted_By || "-",
                 };
               });
       

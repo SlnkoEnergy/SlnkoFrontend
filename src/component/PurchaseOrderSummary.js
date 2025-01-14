@@ -115,6 +115,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
           const formattedTotal = totalBill.toLocaleString("en-IN");
 
+          const partial_Billing = (po.partial_billing === "Yes" ? "Partial" : "Final")
           // Determine billing status
           const billStatus =
             totalBill >= parseFloat(po.po_value)
@@ -124,8 +125,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           return {
             ...po,
             totalBill,
-            formattedTotal, // Add formattedTotal
-            bill_status: billStatus, // Add bill status
+            partial_Billing,
+            formattedTotal,
+            bill_status: billStatus,
           };
         });
 
@@ -360,7 +362,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         po.p_id || "-",
         po.po_number || "-",
         po.date || "-",
-        po.partial_billing || "-",
+        po.partial_Billing || "-",
         po.item || "-",
         po.vendor || "-",
         po.po_value || "-",
@@ -589,7 +591,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         borderBottom: "1px solid",
                       }}
                     >
-                      {po.partial_billing || "-"}
+                      {po.partial_Billing || "-"}
                     </Box>
                     <Box
                       component="td"

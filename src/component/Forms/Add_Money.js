@@ -127,6 +127,10 @@ const Add_Money = () => {
   // Handle form changes
   const handleChange = (e) => {
     const { name, value } = e.target;
+    if(name === "cr_amount" && value < 0){
+          toast.warning("Credit Amount can't be Negative !!")
+          return;
+        }
     setFormValues((prev) => ({ ...prev, [name]: value }));
   };
 

@@ -166,8 +166,10 @@ function PaymentRequest() {
         // Show a success toast if the status is "Approved"
         if (newStatus === "Approved") {
           toast.success('Payment Approved! Please Refresh it', {
-            autoClose: 3000, 
+            autoClose: 3000,
+            
           });
+      
         }
       }
     } catch (error) {

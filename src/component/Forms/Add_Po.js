@@ -82,6 +82,11 @@ const AddPurchaseOrder = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    if(name === "po_value" && value < 0){
+      toast.warning("PO Value can't be Negative !!")
+      return;
+    }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 

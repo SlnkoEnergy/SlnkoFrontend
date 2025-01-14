@@ -164,6 +164,7 @@ function PaymentRequest() {
 
         if (response.status === 200) {
           setIsMatched(true);
+          // localStorage.setItem("matched data:", true )
           enqueueSnackbar("Account matched successfully!", {
             variant: "success",
           });
@@ -183,41 +184,104 @@ function PaymentRequest() {
       console.log("isMatched changed:", isMatched);
     }, [isMatched]);
 
-    // useEffect(() => {
-    //   console.log("isMatched now:", isMatched); // Log when `isMatched` changes
+  //  const handleUtrSubmit = async () => {
+  //     if (!utr) {
+  //       enqueueSnackbar("Please enter a valid UTR.", { variant: "warning" });
+  //       return;
+  //     }
 
-    //   if (isMatched) {
-    //     // Call parent callback when account is successfully matched
-    //     if (onAccountMatchSuccess) {
-    //       onAccountMatchSuccess();
-    //     }
-    //   }
-    // }, [isMatched, onAccountMatchSuccess]); // Trigger this when `isMatched` changes
+  //     setIsSubmitting(true);
+  //     try {
+  //       const response = await Axios.put("/utr-update", {
+  //         pay_id: paymentId,
+  //         utr: utr,
+  //       });
 
-    // Handle UTR submission
+  //       if (response.status === 200) {
+  //         enqueueSnackbar("UTR submitted successfully!", {
+  //           variant: "success",
+  //         });
+  //         setIsUtrSubmitted(true);
+
+  //         setPayments((prevPayments) =>
+  //           prevPayments.filter((payment) => payment.pay_id !== paymentId)
+  //         );
+
+  //         if (onAccountMatchSuccess) {
+  //           onAccountMatchSuccess(utr);
+  //         }
+  //       } else {
+  //         enqueueSnackbar("Failed to submit UTR. Please try again.", {
+  //           variant: "error",
+  //         });
+  //       }
+  //     } catch (error) {
+  //       console.error("Error submitting UTR:", error);
+  //       enqueueSnackbar("Something went wrong. Please try again.", {
+  //         variant: "error",
+  //       });
+  //     } finally {
+  //       setIsSubmitting(false);
+  //     }
+  //   };
+
     const handleUtrSubmit = async () => {
       if (!utr) {
         enqueueSnackbar("Please enter a valid UTR.", { variant: "warning" });
         return;
       }
-
+    
       setIsSubmitting(true);
       try {
         const response = await Axios.put("/utr-update", {
           pay_id: paymentId,
           utr: utr,
         });
-
+    
         if (response.status === 200) {
-          enqueueSnackbar("UTR submitted successfully!", {
-            variant: "success",
-          });
+          enqueueSnackbar("UTR submitted successfully!", { variant: "success" });
           setIsUtrSubmitted(true);
-
+          console.log("UTR submission :", response);
+          
+          // Call the POST API to /debit-money
+          try {
+            const debitResponse = await Axios.post("/debit-money", {
+          p_id:Number(""),
+          p_group : "",
+          pay_type: "",
+          amount_paid:"",
+          amt_for_customer:"",
+          dbt_date:"",
+          paid_for:"",
+          vendor:"",
+          po_number:"",
+          utr:utr,
+          submitted_by:""
+            });
+    
+            if (debitResponse.status === 200) {
+              enqueueSnackbar("Money debited successfully!", {
+                variant: "success",
+              });
+              console.log("Money debited amount are: ", debitResponse);
+              
+              
+            } else {
+              enqueueSnackbar("Failed to debit money. Please try again.", {
+                variant: "error",
+              });
+            }
+          } catch (debitError) {
+            console.error("Error debiting money:", debitError);
+            enqueueSnackbar("Something went wrong while debiting money.", {
+              variant: "error",
+            });
+          }
+    
           setPayments((prevPayments) =>
             prevPayments.filter((payment) => payment.pay_id !== paymentId)
           );
-
+    
           if (onAccountMatchSuccess) {
             onAccountMatchSuccess(utr);
           }
@@ -235,6 +299,8 @@ function PaymentRequest() {
         setIsSubmitting(false);
       }
     };
+   
+    
 
     return (
       <div>
