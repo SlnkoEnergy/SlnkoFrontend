@@ -17,17 +17,27 @@ import Axios from "../../utils/Axios";
 
 const UpdatePurchaseOrder = () => {
   const navigate = useNavigate();
+
+  const [getFormData, setGetFormData] = useState({
+    projectIDs: [],
+    items: [],
+    vendors: [],
+    AllPo: [],
+  });
+
   const [formData, setFormData] = useState({
+    // _id:"",
     p_id: "",
-    code: "",
+    // code: "",
     po_number: "",
     vendor: "",
     date: "",
     item: "",
     po_value: "",
     other: "",
-    partial_billing: "", // Initialize as an empty string
+    partial_billing: "",
     comment: "",
+    submitted_by: "",
   });
   const [projectIDs, setProjectIDs] = useState([]);
   const [vendors, setVendors] = useState([]);
@@ -37,6 +47,7 @@ const UpdatePurchaseOrder = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [response, setResponse] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,10 +68,12 @@ const UpdatePurchaseOrder = () => {
           Axios.get("/get-all-po"),
         ]);
 
-        setProjectIDs(projectsRes.data.data || []);
-        setVendors(vendorsRes.data.data || []);
-        setItems([...itemsRes.data.Data, "Other"]);
-        setAllPo(poRes.data.data || []);
+        setGetFormData({
+          projectIDs: projectsRes.data.data || [],
+          vendors: vendorsRes.data.data || [],
+          items: [...itemsRes.data.Data, "Other"],
+          AllPo: poRes.data.data || [],
+        });
 
         const poData = poRes.data.data.find(
           (item) => item.po_number === poNumberFromStorage
@@ -68,6 +81,7 @@ const UpdatePurchaseOrder = () => {
 
         if (poData) {
           setFormData({
+            _id: poData._id,
             p_id: poData.p_id || "-",
             code: poData.code || "",
             po_number: poData.po_number || "",
@@ -75,7 +89,7 @@ const UpdatePurchaseOrder = () => {
             item: poData.item || "",
             date: poData.date || "",
             po_value: poData.po_value || "",
-            // partial_billing: poData.partial_billing || "",
+            partial_billing: poData.partial_billing || "",
           });
           setShowOtherItem(poData.item === "Other");
         } else {
@@ -105,9 +119,9 @@ const UpdatePurchaseOrder = () => {
     setFormData((prev) => ({
       ...prev,
       [field]: newValue || "",
-      ...(field === "code" && {
-        p_id:
-          projectIDs.find((project) => project.code === newValue)?.code || "",
+      ...(field === "p_id" && {
+        code:
+          projectIDs.find((project) => project.p_id === newValue)?.p_id || "",
       }),
     }));
 
@@ -120,24 +134,44 @@ const UpdatePurchaseOrder = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.p_id) {
-      setError("Project ID is missing. Cannot update PO.");
-      toast.error("Project ID is required.");
+
+    // Check if _id is provided
+    if (!formData._id) {
+      setError("Document ID (_id) is missing. Cannot update PO.");
+      toast.error("Document ID is required.");
       return;
     }
-
+    console.log("Submitting with _id:", formData._id);
     try {
+      // Show loading state
       setLoading(true);
       setError("");
 
-      const response = await Axios.put(`/edit-po/${formData.p_id}`, formData);
-      toast.success("PO updated successfully.");
-      navigate("/purchase-order");
+      // Construct the endpoint dynamically using _id
+      const endpoint = `https://api.slnkoprotrac.com/v1/edit-po/${formData._id}`;
+
+      // Send PUT request
+      const response = await Axios.put(endpoint, formData);
+
+      // Handle success
+      if (response.status === 200) {
+        setResponse(response.data);
+        toast.success("PO updated successfully.");
+        navigate("/purchase-order");
+      } else {
+        throw new Error("Unexpected response from the server.");
+      }
     } catch (err) {
+      // Handle errors
       console.error("Error updating PO:", err);
-      setError("Failed to update PO. Please try again.");
-      toast.error("Failed to update PO. Please try again.");
+      setError(
+        err.response?.data?.message || "Failed to update PO. Please try again."
+      );
+      toast.error(
+        err.response?.data?.message || "Failed to update PO. Please try again."
+      );
     } finally {
+      // Reset loading state
       setLoading(false);
     }
   };
@@ -151,6 +185,8 @@ const UpdatePurchaseOrder = () => {
         alignItems: "center",
         backgroundColor: "#f4f6f8",
         padding: 3,
+        // width:{ lg:"85%",md:"80%", sm:"100%"},
+        marginLeft: { xl: "15%", lg: "18%", md: "22%", sm: "7%" },
       }}
     >
       <Container
@@ -189,28 +225,40 @@ const UpdatePurchaseOrder = () => {
                 Project ID:
               </Typography>
               <FormControl>
-                {user?.name === "IT Team" ? (
-                  <Select
-                    options={projectIDs.map((project, index) => ({
-                      label: project.code,
-                      value: project.code,
-                      key: `${project.code}-${index}`,
-                    }))}
-                    value={formData.code ? { label: formData.code } : null}
-                    onChange={(selectedOption) =>
-                      handleSelectChange("code", selectedOption?.value || "")
-                    }
-                    placeholder="Select Project Id"
-                    required
-                  />
-                ) : (
+                {/* {user?.name === "IT Team" ? ( */}
+                <Select
+                  options={getFormData.projectIDs.map((project) => ({
+                    label: project.code,
+                    value: project.code,
+                  }))}
+                  value={
+                    formData.p_id
+                      ? {
+                          label: formData.p_id,
+                          value: formData.p_id,
+                        }
+                      : null
+                  }
+                  onChange={(selectedOption) =>
+                    handleChange({
+                      target: {
+                        name: "p_id",
+                        value: selectedOption?.value || "",
+                      },
+                    })
+                  }
+                  placeholder="Select Project"
+                  required
+                />
+
+                {/* ) : (
                   <Input
                     name="p_id"
                     value={formData.p_id}
                     onChange={handleChange}
                     required
                   />
-                )}
+                )} */}
               </FormControl>
             </Grid>
 
@@ -351,9 +399,9 @@ const UpdatePurchaseOrder = () => {
                 Partial Billing
               </Typography>
               <FormControl>
-                <Select
+                <select
                   name="partial_billing"
-                  value={formData.partial_billing || ""}
+                  value={formData.partial_billing}
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
@@ -361,10 +409,10 @@ const UpdatePurchaseOrder = () => {
                     }))
                   }
                 >
-                  <MenuItem value="">Select</MenuItem>
-                  <MenuItem value="Yes">Yes</MenuItem>
-                  <MenuItem value="No">No</MenuItem>
-                </Select>
+                  <option value="">Select</option>
+                  <option value="Partial">Partial</option>
+                  <option value="Final">Final</option>
+                </select>
               </FormControl>
             </Grid>
 

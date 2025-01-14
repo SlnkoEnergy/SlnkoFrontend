@@ -183,6 +183,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             onClick={() => {
               const page = currentPage;
               const po = po_number;
+              // const ID = _id
               localStorage.setItem("edit-po", po);
               navigate(`/edit_po?page=${page}&po_number=${po}`);
             }}
@@ -299,11 +300,30 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
   const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
 
+  const formatDate = (dateString) => {
+    if (!dateString) {
+      return "-";
+    }
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      console.warn(`Invalid date value: "${dateString}"`);
+      return "-";
+    }
+    const options = { day: "2-digit", month: "short", year: "numeric" };
+    return new Intl.DateTimeFormat("en-GB", options)
+      .format(date)
+      .replace(/ /g, "/");
+  };
+
   const paginatedPo = filteredAndSortedData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
+  const paymentsWithFormattedDate = paginatedPo.map((po) => ({
+    ...po,
+    formattedDate: formatDate(po.date),
+  }));
+  
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setSearchParams({ page });
@@ -333,7 +353,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         "Advance Paid",
         "Bill Status",
         "Total Billed",
-        "Action",
+        // "Action",
       ];
 
       const rows = pos.map((po) => [
@@ -347,7 +367,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         po.amount_paid || "-",
         po.bill_status || "-",
         po.totalBill || "-",
-        po.action || "-",
+        // po.action || "-",
       ]);
 
       const csvContent = [
@@ -469,9 +489,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                   <Checkbox
                     indeterminate={
                       selected.length > 0 &&
-                      selected.length !== paginatedPo.length
+                      selected.length !== paymentsWithFormattedDate.length
                     }
-                    checked={selected.length === paginatedPo.length}
+                    checked={selected.length === paymentsWithFormattedDate.length}
                     onChange={handleSelectAll}
                     color={selected.length > 0 ? "primary" : "neutral"}
                   />
@@ -487,7 +507,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                   "Advance Paid",
                   "Bill Status",
                   "Total Billed",
-                  "Action",
+                  // "Action",
                   "",
                 ].map((header) => (
                   <Box
@@ -506,8 +526,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
               </Box>
             </Box>
             <Box component="tbody">
-              {paginatedPo.length > 0 ? (
-                paginatedPo.map((po) => (
+              {paymentsWithFormattedDate.length > 0 ? (
+                paymentsWithFormattedDate.map((po) => (
                   <Box
                     component="tr"
                     key={po.id}
@@ -559,7 +579,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         borderBottom: "1px solid",
                       }}
                     >
-                      {po.date}
+                      {po.formattedDate}
                     </Box>
                     <Box
                       component="td"
@@ -569,7 +589,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         borderBottom: "1px solid",
                       }}
                     >
-                      {po.partial_billing}
+                      {po.partial_billing || "-"}
                     </Box>
                     <Box
                       component="td"
@@ -625,7 +645,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         borderBottom: "1px solid",
                       }}
                     >
-                      {po.bill_status === "Fully Billed" ? (
+                      {po.bill_status || "-"}
+                      {/* {po.bill_status === "Fully Billed" ? (
                         <Chip
                           label="Fully Billed"
                           color="success"
@@ -647,7 +668,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                             color: "white",
                           }}
                         />
-                      )}
+                      )} */}
                     </Box>
                     {/* <Box
                       component="td"
@@ -669,7 +690,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                     >
                       {po.formattedTotal || "-"}
                     </Box>
-                    <Box
+                    {/* <Box
                       component="td"
                       sx={{
                         padding: 1,
@@ -678,7 +699,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       }}
                     >
                       {po.action || "-"}
-                    </Box>
+                    </Box> */}
                     <Box
                       component="td"
                       sx={{
@@ -690,6 +711,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       <RowMenu
                         currentPage={currentPage}
                         po_number={po.po_number}
+                    
                       />
                     </Box>
                   </Box>
