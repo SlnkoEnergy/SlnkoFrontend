@@ -22,8 +22,6 @@ import MenuItem from "@mui/joy/MenuItem";
 import Modal from "@mui/joy/Modal";
 import ModalClose from "@mui/joy/ModalClose";
 import ModalDialog from "@mui/joy/ModalDialog";
-import Option from "@mui/joy/Option";
-import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
@@ -44,6 +42,7 @@ const PaymentRequest = forwardRef((props, ref) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
+  const [dateFilter, setDateFilter] = useState("");
   const [projects, setProjects] = useState([]);
   const [mergedData, setMergedData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -111,6 +110,16 @@ const PaymentRequest = forwardRef((props, ref) => {
   const renderFilters = () => (
     <>
       <FormControl size="sm">
+        <FormLabel>Date</FormLabel>
+        <input
+          size="sm"
+          type="date"
+          value={dateFilter}
+          onChange={handleDateChange}
+          placeholder="Select Date"
+        />
+      </FormControl>
+      {/* <FormControl size="sm">
         <FormLabel>Status</FormLabel>
         <Select
           size="sm"
@@ -129,8 +138,8 @@ const PaymentRequest = forwardRef((props, ref) => {
             </Option>
           ))}
         </Select>
-      </FormControl>
-      <FormControl size="sm">
+      </FormControl> */}
+      {/* <FormControl size="sm">
         <FormLabel>Vendor</FormLabel>
         <Select
           size="sm"
@@ -149,7 +158,7 @@ const PaymentRequest = forwardRef((props, ref) => {
             </Option>
           ))}
         </Select>
-      </FormControl>
+      </FormControl> */}
     </>
   );
   const handleSelectAll = (event) => {
@@ -160,7 +169,11 @@ const PaymentRequest = forwardRef((props, ref) => {
     }
   };
 
-  const RowMenu = ({currentPage, pay_id, p_id}) => {
+  const handleDateChange = (e) => {
+    setDateFilter(e.target.value);
+  };
+
+  const RowMenu = ({ currentPage, pay_id, p_id }) => {
     // console.log("currentPage:", currentPage, "pay_id:", pay_id, "p_id:", p_id);
     return (
       <>
@@ -174,15 +187,16 @@ const PaymentRequest = forwardRef((props, ref) => {
             <MoreHorizRoundedIcon />
           </MenuButton>
           <Menu size="sm" sx={{ minWidth: 100 }}>
-            <MenuItem color="primary" 
-            onClick={() => {
-              const page = currentPage;
-              const payId = String(pay_id);
-              const projectID = Number(p_id);
-              localStorage.setItem("pay_summary", payId);
-              localStorage.setItem("p_id", projectID);
-              navigate(`/pay_summary?page=${page}&pay_id=${payId}`);
-            }}
+            <MenuItem
+              color="primary"
+              onClick={() => {
+                const page = currentPage;
+                const payId = String(pay_id);
+                const projectID = Number(p_id);
+                localStorage.setItem("pay_summary", payId);
+                localStorage.setItem("p_id", projectID);
+                navigate(`/pay_summary?page=${page}&pay_id=${payId}`);
+              }}
             >
               Pay Summary
             </MenuItem>
@@ -219,15 +233,20 @@ const PaymentRequest = forwardRef((props, ref) => {
         "projectCustomer",
       ].some((key) => payment[key]?.toLowerCase().includes(searchQuery));
 
-      const matchesStatusFilter =
-        !statusFilter || payment.approved === statusFilter;
+      const matchesDateFilter =
+        !dateFilter ||
+        new Date(payment.date).toLocaleDateString() ===
+          new Date(dateFilter).toLocaleDateString();
+
+      // const matchesStatusFilter =
+      //   !statusFilter || payment.approved === statusFilter;
       // console.log("MatchVendors are: ", matchesStatusFilter);
 
-      const matchesVendorFilter =
-        !vendorFilter || payment.vendor === vendorFilter;
+      // const matchesVendorFilter =
+      //   !vendorFilter || payment.vendor === vendorFilter;
       // console.log("MatchVendors are: ", matchesVendorFilter);
 
-      return matchesSearchQuery && matchesVendorFilter && matchesStatusFilter;
+      return matchesSearchQuery && matchesDateFilter;
     })
     .sort((a, b) => {
       if (a.pay_id?.toLowerCase().includes(searchQuery)) return -1;
@@ -415,7 +434,7 @@ const PaymentRequest = forwardRef((props, ref) => {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {/* {renderFilters()} */}
+        {renderFilters()}
       </Box>
 
       {/* Table */}
@@ -616,7 +635,11 @@ const PaymentRequest = forwardRef((props, ref) => {
                         textAlign: "center",
                       }}
                     >
-                      <RowMenu currentPage={currentPage} pay_id={payment.pay_id} p_id={payment.p_id} />
+                      <RowMenu
+                        currentPage={currentPage}
+                        pay_id={payment.pay_id}
+                        p_id={payment.p_id}
+                      />
                     </Box>
                   </Box>
                 ))

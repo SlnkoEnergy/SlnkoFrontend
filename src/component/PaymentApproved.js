@@ -184,88 +184,95 @@ function PaymentRequest() {
       console.log("isMatched changed:", isMatched);
     }, [isMatched]);
 
-  //  const handleUtrSubmit = async () => {
-  //     if (!utr) {
-  //       enqueueSnackbar("Please enter a valid UTR.", { variant: "warning" });
-  //       return;
-  //     }
-
-  //     setIsSubmitting(true);
-  //     try {
-  //       const response = await Axios.put("/utr-update", {
-  //         pay_id: paymentId,
-  //         utr: utr,
-  //       });
-
-  //       if (response.status === 200) {
-  //         enqueueSnackbar("UTR submitted successfully!", {
-  //           variant: "success",
-  //         });
-  //         setIsUtrSubmitted(true);
-
-  //         setPayments((prevPayments) =>
-  //           prevPayments.filter((payment) => payment.pay_id !== paymentId)
-  //         );
-
-  //         if (onAccountMatchSuccess) {
-  //           onAccountMatchSuccess(utr);
-  //         }
-  //       } else {
-  //         enqueueSnackbar("Failed to submit UTR. Please try again.", {
-  //           variant: "error",
-  //         });
-  //       }
-  //     } catch (error) {
-  //       console.error("Error submitting UTR:", error);
-  //       enqueueSnackbar("Something went wrong. Please try again.", {
-  //         variant: "error",
-  //       });
-  //     } finally {
-  //       setIsSubmitting(false);
-  //     }
-  //   };
-
     const handleUtrSubmit = async () => {
       if (!utr) {
         enqueueSnackbar("Please enter a valid UTR.", { variant: "warning" });
         return;
       }
-    
+
       setIsSubmitting(true);
       try {
-        const response = await Axios.put("/utr-update", {
+        // Update UTR with the PUT API call
+        const utrResponse = await Axios.put("/utr-update", {
           pay_id: paymentId,
           utr: utr,
         });
-    
-        if (response.status === 200) {
-          enqueueSnackbar("UTR submitted successfully!", { variant: "success" });
+
+        // Log the entire response to inspect the structure
+        console.log("UTR Response: ", utrResponse);
+
+        // Check if response contains a data property
+        if (utrResponse.status === 200 && utrResponse.data) {
+          enqueueSnackbar("UTR submitted successfully!", {
+            variant: "success",
+          });
           setIsUtrSubmitted(true);
-          console.log("UTR submission :", response);
-          
-          // Call the POST API to /debit-money
+
+          // Log the data structure to see what fields are available
+          console.log("UTR Response Data: ", utrResponse.data);
+
+          // Destructure the fields and log to check their values
+          const {
+            p_id,
+            p_group,
+            pay_type,
+            amount_paid,
+            amt_for_customer,
+            dbt_date,
+            paid_for,
+            vendor,
+            po_number,
+          } = utrResponse.data || {}; // Fallback to empty object if data is undefined
+
+          console.log("Destructured Data for POST: ", {
+            p_id,
+            p_group,
+            pay_type,
+            amount_paid,
+            amt_for_customer,
+            dbt_date,
+            paid_for,
+            vendor,
+            po_number,
+          });
+
+          // If any required field is missing, log an error
+          if (!p_id) {
+            console.error("Error: Missing p_id in response data.");
+          }
+
+          // If we don't have necessary data, abort further processing
+          if (!p_id || !pay_type) {
+            enqueueSnackbar(
+              "Missing required data from the UTR update response.",
+              {
+                variant: "error",
+              }
+            );
+            return;
+          }
+
+          // Continue to POST the data to /debit-money
           try {
             const debitResponse = await Axios.post("/debit-money", {
-          p_id:Number(""),
-          p_group : "",
-          pay_type: "",
-          amount_paid:"",
-          amt_for_customer:"",
-          dbt_date:"",
-          paid_for:"",
-          vendor:"",
-          po_number:"",
-          utr:utr,
-          submitted_by:""
+              p_id: Number(p_id), // Use p_id from utrData or fallback to paymentId
+              p_group: p_group || "", // Fallback to empty string if p_group is not available
+              pay_type: pay_type || "", // Fallback if not available
+              amount_paid: amount_paid || "",
+              amt_for_customer: amt_for_customer || "",
+              dbt_date: dbt_date || new Date().toISOString(), // Use current date if missing
+              paid_for: paid_for || "",
+              vendor: vendor || "",
+              po_number: po_number || "",
+              utr: utr, // Use the submitted UTR
+              submitted_by: "user123", // Replace with appropriate user info
             });
-    
+
             if (debitResponse.status === 200) {
               enqueueSnackbar("Money debited successfully!", {
                 variant: "success",
               });
-              console.log("Money debited amount are: ", debitResponse);
-              
-              
+              console.log("Money debited:", debitResponse.data);
             } else {
               enqueueSnackbar("Failed to debit money. Please try again.", {
                 variant: "error",
@@ -277,11 +284,12 @@ function PaymentRequest() {
               variant: "error",
             });
           }
-    
+
+          // Remove the payment from the list and invoke the success callback
           setPayments((prevPayments) =>
             prevPayments.filter((payment) => payment.pay_id !== paymentId)
           );
-    
+
           if (onAccountMatchSuccess) {
             onAccountMatchSuccess(utr);
           }
@@ -299,8 +307,6 @@ function PaymentRequest() {
         setIsSubmitting(false);
       }
     };
-   
-    
 
     return (
       <div>
@@ -358,8 +364,7 @@ function PaymentRequest() {
               backgroundColor: isMatched ? "gray" : "#007bff",
               color: "white",
               border: "none",
-              cursor:
-                isMatched || !accountMatch ? "not-allowed" : "pointer",
+              cursor: isMatched || !accountMatch ? "not-allowed" : "pointer",
             }}
           >
             {isMatched ? "Matched" : "Match Account"}

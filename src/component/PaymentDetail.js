@@ -1,5 +1,5 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
-import { Box, Button, Typography, Checkbox } from "@mui/joy";
+import { Box, Button } from "@mui/joy";
+import React, { forwardRef, useEffect, useState } from "react";
 import Axios from "../utils/Axios";
 
 const PaymentDetail = forwardRef((props, ref) => {
@@ -22,13 +22,13 @@ const PaymentDetail = forwardRef((props, ref) => {
     const fetchData = async () => {
       try {
         const [paySummaryRes, projectRes] = await Promise.all([
-          Axios.get("/get-pay-summary", {
-            params: { approved: "Approved", acc_match: "matched", utr :"" },
+          Axios.get("/get-exceldata", {
+            params: {
+              status: "Not-paid",
+            },
           }),
           Axios.get("/get-all-project"),
         ]);
-        
-
 
         const paySummary = paySummaryRes.data?.data || [];
         const projects = projectRes.data?.data || [];
@@ -49,13 +49,14 @@ const PaymentDetail = forwardRef((props, ref) => {
               dbt_date: formatDate(item.dbt_date),
               ifsc: item.ifsc || "",
               comment: remarks,
+              status: item.status,
+              utr: item.utr || "",
               acc_match: item.acc_match || "",
             };
           });
 
           setData(structuredData);
           console.log("Structured data are:", structuredData);
-          
         } else {
           setError("Invalid data format. Unable to load payment details.");
         }
@@ -78,20 +79,45 @@ const PaymentDetail = forwardRef((props, ref) => {
   const escapeValue = (value) => {
     return `"${String(value).replace(/"/g, '""')}"`;
   };
-  
-  useImperativeHandle(ref, () => ({
-    downloadSelectedRows() {
-      const selectedData = data.filter(
-        (row) => selectedRows.includes(row.id) && row.acc_match === "matched" && row.approved === "Approved" && row.utr === ""
-      );
-  
+
+  const downloadSelectedRows = async () => {
+    const selectedData = data.filter(
+      (row) => selectedRows.includes(row.id) && row.status === "Not-paid"
+    );
+
+    if (selectedData.length === 0) {
+      setError("No rows available with status 'Not-paid' to download.");
+      return;
+    }
+
+    try {
+      await Axios.put("/update-excel-data", { data: selectedData });
+
+      // CSV headers
       const headers = [
-        "Debit Ac No", "Beneficiary Ac No", "Beneficiary Name", "Amt", "Pay Mod", "Date", "IFSC",
-        "Payable Location", "Print Location", "Bene Mobile No.", "Bene Email ID", "Bene add1", "Bene add2",
-        "Bene add3", "Bene add4", "Add Details 1", "Add Details 2", "Add Details 3", "Add Details 4",
-        "Add Details 5", "Remarks"
+        "Debit Ac No",
+        "Beneficiary Ac No",
+        "Beneficiary Name",
+        "Amt",
+        "Pay Mod",
+        "Date",
+        "IFSC",
+        "Payable Location",
+        "Print Location",
+        "Bene Mobile No.",
+        "Bene Email ID",
+        "Bene add1",
+        "Bene add2",
+        "Bene add3",
+        "Bene add4",
+        "Add Details 1",
+        "Add Details 2",
+        "Add Details 3",
+        "Add Details 4",
+        "Add Details 5",
+        "Remarks",
       ];
-  
+
       const csvContent =
         [headers.join(",")] +
         "\n" +
@@ -122,97 +148,460 @@ const PaymentDetail = forwardRef((props, ref) => {
             ].join(",")
           )
           .join("\n");
-  
+
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download = "Payment_Detail.csv";
       link.click();
-    },
-  }));
-  
+    } catch (err) {
+      setError("Failed to update data. Please try again later.");
+    }
+  };
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
 
   return (
-    <Box sx={{marginLeft: { xl: "15%", md: "25%", lg: "18%" },
-    maxWidth: { lg: "85%", sm: "100%", md: "75%" }}}> 
-      <Box display="flex" justifyContent="space-between" alignItems="center" p={2} bgcolor="neutral.soft" >
-        {/* <Typography level="h4">Payment Detail</Typography> */}
-        <Button
-          variant="solid"
-          color="success"
-          onClick={() => ref.current.downloadSelectedRows()}
-        >
+    <Box
+      sx={{
+        marginLeft: { xl: "15%", md: "25%", lg: "18%" },
+        maxWidth: { lg: "85%", sm: "100%", md: "75%" },
+      }}
+    >
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        p={2}
+        bgcolor="neutral.soft"
+      >
+        <Button variant="solid" color="success" onClick={downloadSelectedRows}>
           Download CSV File
         </Button>
       </Box>
 
-      <div style={{ overflowX: 'auto', margin: '20px 0' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr style={{ backgroundColor: '#f5f5f5' }}>
-            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd', fontWeight: 'bold', backgroundColor: '#e2e2e2' }}>Select</th>
-            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Debit Ac No</th>
-            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Beneficiary Ac No</th>
-            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Beneficiary Name</th>
-            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Amt</th>
-            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Pay Mod</th>
-            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Date</th>
-            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>IFSC</th>
-            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Payable Location</th>
-            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Print Location</th>
-            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Bene Mobile No.</th>
-            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Bene Email ID</th>
-            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Bene add1</th>
-            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Bene add2</th>
-            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Bene add3</th>
-            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Bene add4</th>
-            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Add Details 1</th>
-            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Add Details 2</th>
-            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Add Details 3</th>
-            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Add Details 4</th>
-            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Add Details 5</th>
-            <th style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>Remarks</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row) => (
-            <tr key={row.id} style={{ backgroundColor: row.id % 2 === 0 ? '#f9f9f9' : '#fff' }}>
-              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>
-                <input
-                  type="checkbox"
-                  checked={selectedRows.includes(row.id)}
-                  onChange={() => handleCheckboxChange(row.id)}
-                />
-              </td>
-              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.debitAccount}</td>
-              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.acc_number}</td>
-              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.benificiary}</td>
-              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.amount_paid}</td>
-              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.pay_mod}</td>
-              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.dbt_date}</td>
-              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.ifsc}</td>
-              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.payable_location}</td>
-              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.print_location}</td>
-              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.bene_mobile_no}</td>
-              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.bene_email_id}</td>
-              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.bene_add1}</td>
-              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.bene_add2}</td>
-              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.bene_add3}</td>
-              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.bene_add4}</td>
-              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.add_details_1}</td>
-              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.add_details_2}</td>
-              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.add_details_3}</td>
-              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.add_details_4}</td>
-              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.add_details_5}</td>
-              <td style={{ padding: '12px 15px', textAlign: 'left', border: '1px solid #ddd' }}>{row.comment}</td>
+      <div style={{ overflowX: "auto", margin: "20px 0" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ backgroundColor: "#f5f5f5" }}>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                  fontWeight: "bold",
+                  backgroundColor: "#e2e2e2",
+                }}
+              >
+                Select
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Debit Ac No
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Beneficiary Ac No
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Beneficiary Name
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Amt
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Pay Mod
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Date
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                IFSC
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Payable Location
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Print Location
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Bene Mobile No.
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Bene Email ID
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Bene add1
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Bene add2
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Bene add3
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Bene add4
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Add Details 1
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Add Details 2
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Add Details 3
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Add Details 4
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Add Details 5
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Remarks
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {data.map((row) => (
+              <tr
+                key={row.id}
+                style={{
+                  backgroundColor: row.id % 2 === 0 ? "#f9f9f9" : "#fff",
+                }}
+              >
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    textAlign: "left",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedRows.includes(row.id)}
+                    onChange={() => handleCheckboxChange(row.id)}
+                  />
+                </td>
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    textAlign: "left",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  {row.debitAccount}
+                </td>
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    textAlign: "left",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  {row.acc_number}
+                </td>
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    textAlign: "left",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  {row.benificiary}
+                </td>
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    textAlign: "left",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  {row.amount_paid}
+                </td>
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    textAlign: "left",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  {row.pay_mod}
+                </td>
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    textAlign: "left",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  {row.dbt_date}
+                </td>
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    textAlign: "left",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  {row.ifsc}
+                </td>
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    textAlign: "left",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  {row.payable_location}
+                </td>
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    textAlign: "left",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  {row.print_location}
+                </td>
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    textAlign: "left",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  {row.bene_mobile_no}
+                </td>
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    textAlign: "left",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  {row.bene_email_id}
+                </td>
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    textAlign: "left",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  {row.bene_add1}
+                </td>
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    textAlign: "left",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  {row.bene_add2}
+                </td>
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    textAlign: "left",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  {row.bene_add3}
+                </td>
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    textAlign: "left",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  {row.bene_add4}
+                </td>
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    textAlign: "left",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  {row.add_details_1}
+                </td>
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    textAlign: "left",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  {row.add_details_2}
+                </td>
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    textAlign: "left",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  {row.add_details_3}
+                </td>
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    textAlign: "left",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  {row.add_details_4}
+                </td>
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    textAlign: "left",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  {row.add_details_5}
+                </td>
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    textAlign: "left",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  {row.comment}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </Box>
   );
 });

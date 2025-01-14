@@ -357,9 +357,10 @@ function PaymentRequestForm() {
   value={formData.amount_paid}
   onChange={(e) => {
     const value = parseFloat(e.target.value) || "";
-    const po_balance = parseFloat(formData.po_balance) || 0;
+    const po_balance = formData.po_balance === "N/A" ? Infinity : parseFloat(formData.po_balance) || 0;
 
-    if (value > po_balance) {
+
+    if (po_balance !== Infinity && value > po_balance) {
       toast.warning("Amount Requested can't be greater than PO Balance!");
       setFormData((prev) => ({
         ...prev,
