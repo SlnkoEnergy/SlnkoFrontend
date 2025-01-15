@@ -148,6 +148,7 @@ function PaymentRequest() {
     const [error, setError] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isUtrSubmitted, setIsUtrSubmitted] = useState(false);
+    const [getAllPoResponse, setgGetAllPoResponse] = useState("")
 
     const handleAccountMatch = async () => {
       if (!accountMatch) {
@@ -189,29 +190,21 @@ function PaymentRequest() {
         enqueueSnackbar("Please enter a valid UTR.", { variant: "warning" });
         return;
       }
-
+    
       setIsSubmitting(true);
       try {
-        // Update UTR with the PUT API call
+        // Step 1: Update UTR with the PUT API call
         const utrResponse = await Axios.put("/utr-update", {
           pay_id: paymentId,
           utr: utr,
         });
-
-        // Log the entire response to inspect the structure
+    
         console.log("UTR Response: ", utrResponse);
-
-        // Check if response contains a data property
+    
         if (utrResponse.status === 200 && utrResponse.data) {
-          enqueueSnackbar("UTR submitted successfully!", {
-            variant: "success",
-          });
+          enqueueSnackbar("UTR submitted successfully!", { variant: "success" });
           setIsUtrSubmitted(true);
-
-          // Log the data structure to see what fields are available
-          console.log("UTR Response Data: ", utrResponse.data);
-
-          // Destructure the fields and log to check their values
+    
           const {
             p_id,
             p_group,
@@ -222,76 +215,73 @@ function PaymentRequest() {
             paid_for,
             vendor,
             po_number,
-          } = utrResponse.data || {}; // Fallback to empty object if data is undefined
-
-          console.log("Destructured Data for POST: ", {
-            p_id,
-            p_group,
-            pay_type,
-            amount_paid,
-            amt_for_customer,
-            dbt_date,
-            paid_for,
-            vendor,
-            po_number,
-          });
-
-          // If any required field is missing, log an error
-          if (!p_id) {
-            console.error("Error: Missing p_id in response data.");
-          }
-
-          // If we don't have necessary data, abort further processing
-          if (!p_id || !pay_type) {
-            enqueueSnackbar(
-              "Missing required data from the UTR update response.",
-              {
-                variant: "error",
-              }
-            );
-            return;
-          }
-
-          // Continue to POST the data to /debit-money
+          } = utrResponse.data || {};
+    
+          // Step 2: Fetch data from "get-all-po"
           try {
-            const debitResponse = await Axios.post("/debit-money", {
-              p_id: Number(p_id), // Use p_id from utrData or fallback to paymentId
-              p_group: p_group || "", // Fallback to empty string if p_group is not available
-              pay_type: pay_type || "", // Fallback if not available
-              amount_paid: amount_paid || "",
-              amt_for_customer: amt_for_customer || "",
-              dbt_date: dbt_date || new Date().toISOString(), // Use current date if missing
-              paid_for: paid_for || "",
-              vendor: vendor || "",
-              po_number: po_number || "",
-              utr: utr, // Use the submitted UTR
-              submitted_by: "user123", // Replace with appropriate user info
-            });
-
-            if (debitResponse.status === 200) {
-              enqueueSnackbar("Money debited successfully!", {
-                variant: "success",
+            const getAllPoResponse = await Axios.get("/get-pay-summary");
+            console.log("All Pay Data: ", getAllPoResponse.data.data);
+            
+            setgGetAllPoResponse(getAllPoResponse);
+           
+            const matchedPo = getAllPoResponse.data.data.find(
+              (po) => po.pay_id === paymentId
+            );
+    
+            if (!matchedPo) {
+              enqueueSnackbar("Matching PO not found.", { variant: "error" });
+              setIsSubmitting(false);
+              return;
+            }
+    
+            console.log("Matched PO Data: ", matchedPo);
+    
+          
+            try {
+              const debitResponse = await Axios.post("/debit-money", {
+                p_id: matchedPo.p_id,
+                p_group: matchedPo.p_group || "",
+                pay_type: matchedPo.pay_type || "",
+                amount_paid: matchedPo.amount_paid || "",
+                amt_for_customer: matchedPo.amt_for_customer|| "",
+                dbt_date: matchedPo.dbt_date || "",
+                paid_for: matchedPo.paid_for || "",
+                vendor:  matchedPo.vendor || "",
+                po_number:matchedPo.po_number | "",
+                utr: matchedPo.utr || "",
+                submitted_by: "user123",
               });
-              console.log("Money debited:", debitResponse.data);
-            } else {
-              enqueueSnackbar("Failed to debit money. Please try again.", {
+    
+              if (debitResponse.status === 200) {
+                enqueueSnackbar("Money debited successfully!", {
+                  variant: "success",
+                });
+                console.log("Money debited:", debitResponse.data);
+              } else {
+                enqueueSnackbar("Failed to debit money. Please try again.", {
+                  variant: "error",
+                });
+              }
+            } catch (debitError) {
+              console.error("Error debiting money:", debitError);
+              enqueueSnackbar("Something went wrong while debiting money.", {
                 variant: "error",
               });
             }
-          } catch (debitError) {
-            console.error("Error debiting money:", debitError);
-            enqueueSnackbar("Something went wrong while debiting money.", {
+    
+            // Remove the payment from the list and invoke the success callback
+            setPayments((prevPayments) =>
+              prevPayments.filter((payment) => payment.pay_id !== paymentId)
+            );
+    
+            if (onAccountMatchSuccess) {
+              onAccountMatchSuccess(utr);
+            }
+          } catch (getAllPoError) {
+            console.error("Error fetching PO data:", getAllPoError);
+            enqueueSnackbar("Failed to fetch PO data. Please try again.", {
               variant: "error",
             });
-          }
-
-          // Remove the payment from the list and invoke the success callback
-          setPayments((prevPayments) =>
-            prevPayments.filter((payment) => payment.pay_id !== paymentId)
-          );
-
-          if (onAccountMatchSuccess) {
-            onAccountMatchSuccess(utr);
           }
         } else {
           enqueueSnackbar("Failed to submit UTR. Please try again.", {
@@ -307,6 +297,7 @@ function PaymentRequest() {
         setIsSubmitting(false);
       }
     };
+    
 
     return (
       <div>

@@ -384,6 +384,8 @@ const Customer_Payment_Summary = () => {
             (item) => item.p_id === project
           );
 
+    
+
           if (matchingItem) {
             // console.log("Matching Project are:", matchingItem);
             setProjectData((prev) => ({
@@ -605,14 +607,7 @@ const Customer_Payment_Summary = () => {
     totalPoValue,
     totalBilled,
   }) => {
-    // console.log(
-    //   crAmt,
-    //   "Total return are ",
-    //   totalReturn,
-    //   totalAdvanceValue,
-    //   totalPoValue,
-    //   totalBilled
-    // );
+   
 
     const crAmtNum = Number(crAmt);
     const dbAmtNum = Number(dbAmt);
@@ -628,6 +623,9 @@ const Customer_Payment_Summary = () => {
     const tcs =
       netBalance > 5000000 ? Math.round(netBalance - 5000000) * 0.001 : 0;
     const balanceRequired = Math.round(balanceSlnko - balancePayable - tcs);
+
+  
+   
 
     return (
       <Grid container spacing={2}>

@@ -22,14 +22,14 @@ import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
+import ContentPasteGoIcon from '@mui/icons-material/ContentPasteGo';
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import * as React from "react";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Axios from "../utils/Axios";
 
 const ProjectBalances = forwardRef((props, ref) => {
-  const { balanceSLnko, balancePayable, balanceRequired } = props;
-  console.log(balanceSLnko, balancePayable, balanceRequired);
 
   const navigate = useNavigate();
   const [credits, setCredits] = useState([]);
@@ -222,9 +222,10 @@ const ProjectBalances = forwardRef((props, ref) => {
                 // console.log(`/add_money?page=${page}&p_id=${projectId}`);
                 navigate(`/add_money?page=${page}&p_id=${projectId}`);
               }}
-            >
-              Add Money
+            > <AddCircleOutlineIcon />
+              <Typography>Add Money</Typography>
             </MenuItem>
+            <Divider sx={{ backgroundColor: "lightblue" }} />
             <MenuItem
               onClick={() => {
                 const page = currentPage;
@@ -232,8 +233,8 @@ const ProjectBalances = forwardRef((props, ref) => {
                 localStorage.setItem("view_detail", projectId);
                 navigate(`/view_detail?page=${page}&p_id=${projectId}`);
               }}
-            >
-              View More
+            > <ContentPasteGoIcon />
+              <Typography>View More</Typography>
             </MenuItem>
           </Menu>
         </Dropdown>

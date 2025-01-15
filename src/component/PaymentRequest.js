@@ -24,6 +24,8 @@ import ModalClose from "@mui/joy/ModalClose";
 import ModalDialog from "@mui/joy/ModalDialog";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
+import DeleteIcon from '@mui/icons-material/Delete';
+import ContentPasteGoIcon from '@mui/icons-material/ContentPasteGo';
 import * as React from "react";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -198,15 +200,20 @@ const PaymentRequest = forwardRef((props, ref) => {
                 navigate(`/pay_summary?page=${page}&pay_id=${payId}`);
               }}
             >
-              Pay Summary
+              <ContentPasteGoIcon />
+              <Typography>Pay summary</Typography>
             </MenuItem>
+            <Divider sx={{ backgroundColor: "lightblue" }} />
             {/* <MenuItem
               color="primary"
               onClick={() => navigate("/standby_records")}
             >
               Pending payments
             </MenuItem> */}
-            <MenuItem color="danger">Delete</MenuItem>
+            <MenuItem color="danger">
+            <DeleteIcon />
+            <Typography>Delete</Typography>
+            </MenuItem>
           </Menu>
         </Dropdown>
       </>
@@ -231,6 +238,7 @@ const PaymentRequest = forwardRef((props, ref) => {
         "vendor",
         "approved",
         "projectCustomer",
+        "paid_for"
       ].some((key) => payment[key]?.toLowerCase().includes(searchQuery));
 
       const matchesDateFilter =
@@ -251,6 +259,8 @@ const PaymentRequest = forwardRef((props, ref) => {
     .sort((a, b) => {
       if (a.pay_id?.toLowerCase().includes(searchQuery)) return -1;
       if (b.pay_id?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.paid_for?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.paid_for?.toLowerCase().includes(searchQuery)) return 1;
       if (a.projectCustomer?.toLowerCase().includes(searchQuery)) return -1;
       if (b.projectCustomer?.toLowerCase().includes(searchQuery)) return 1;
       if (a.vendor?.toLowerCase().includes(searchQuery)) return -1;
@@ -342,6 +352,7 @@ const PaymentRequest = forwardRef((props, ref) => {
         "Payment Id",
         "Request Date",
         "Paid To",
+        "Paid_for",
         "Client Name",
         "Amount (₹)",
         "Payment Status",
@@ -352,6 +363,7 @@ const PaymentRequest = forwardRef((props, ref) => {
         payment.pay_id || "-",
         payment.formattedDate || "-",
         payment.vendor || "-",
+        payment.paid_for || "-",
         payment.ProjectCustomer || "-",
         payment.amount_paid || "-",
         payment.approved || "-",
@@ -491,6 +503,7 @@ const PaymentRequest = forwardRef((props, ref) => {
                   "Payment Id",
                   "Request Date",
                   "Paid To",
+                  "Paid_for",
                   "Client Name",
                   "Amount (₹)",
                   "Payment Status",
@@ -576,6 +589,16 @@ const PaymentRequest = forwardRef((props, ref) => {
                         textAlign: "center",
                       }}
                     >
+                      {payment.paid_for}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
                       {payment.projectCustomer || "-"}
                     </Box>
                     <Box
@@ -647,7 +670,7 @@ const PaymentRequest = forwardRef((props, ref) => {
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={9}
+                    colSpan={10}
                     sx={{
                       padding: "8px",
                       textAlign: "center",

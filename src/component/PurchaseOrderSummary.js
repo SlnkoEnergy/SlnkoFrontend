@@ -115,7 +115,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
           const formattedTotal = totalBill.toLocaleString("en-IN");
 
-          const partial_Billing = (po.partial_billing === "Yes" ? "Partial" : "Final")
+          const partial_Billing = (po.partial_billing)
           // Determine billing status
           const billStatus =
             totalBill >= parseFloat(po.po_value)

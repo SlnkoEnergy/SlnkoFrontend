@@ -452,6 +452,7 @@ const UpdatePurchaseOrder = () => {
                 placeholder="Comments (Why Changes?)"
                 value={formData.comment}
                 onChange={handleChange}
+                required
               />
             </Grid>
           </Grid>

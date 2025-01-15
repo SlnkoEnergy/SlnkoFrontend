@@ -39,8 +39,9 @@ const AddPurchaseOrder = () => {
     date: "",
     item: "",
     po_value: "",
+    partial_billing:"",
     other: "",
-    submitted_by:""
+    submitted_By:""
   });
   const [projectIDs, setProjectIDs] = useState([]);
   const [vendors, setVendors] = useState([]);
@@ -64,7 +65,7 @@ const AddPurchaseOrder = () => {
         const itemsRes = await Axios.get("/get-item");
         const itemsData = itemsRes.data.Data || [];
         const transformedItems = itemsData.map((item) => ({
-          value: item.item, // Adjust this based on your API structure
+          value: item.item,
           label: item.item,
         }));
         // Add "Other" as an additional option
@@ -116,6 +117,8 @@ const AddPurchaseOrder = () => {
       item: formData.item === "Other" ? "other" : formData.item,
       other: formData.item === "Other" ? formData.other : "",
       po_value: formData.po_value,
+      partial_billing: formData.partial_billing|| "",
+      submitted_By:"superadmin"
     };
 
     try {
@@ -132,8 +135,9 @@ const AddPurchaseOrder = () => {
         date: "",
         item: "",
         po_value: "",
+        partial_billing:"",
         other: "",
-        submitted_by:""
+        submitted_By:""
       });
       setShowOtherItem(false);
     } catch (error) {
