@@ -571,7 +571,7 @@ const Customer_Payment_Summary = () => {
   };
   console.log("Total Customer Adjustment:", debitHistorySummary);
   
- 
+
 
   // ***Balance Summary***
 
