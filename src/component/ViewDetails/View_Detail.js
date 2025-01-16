@@ -558,7 +558,6 @@ const Customer_Payment_Summary = () => {
     ),
   };
   
-
   
   const debitHistorySummary = {
     totalCustomerAdjustment: filteredDebits
@@ -959,11 +958,10 @@ const Customer_Payment_Summary = () => {
 
           <Box
             display="flex"
-            justifyContent="space-between"
+            justifyContent="flex-end"
             alignItems="center"
             mb={2}
           >
-            <Typography variant="h6">Credit History</Typography>
             <Button
               variant="contained"
               color="danger"
@@ -1063,6 +1061,7 @@ const Customer_Payment_Summary = () => {
           <Input
             label="Search Paid For"
             value={debitSearch}
+            placeholder="Search here"
             onChange={handleSearchDebit}
             style={{ width: "250px" }}
           />

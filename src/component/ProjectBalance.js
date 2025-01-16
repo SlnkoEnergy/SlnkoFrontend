@@ -22,15 +22,15 @@ import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import ContentPasteGoIcon from '@mui/icons-material/ContentPasteGo';
+import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import * as React from "react";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Axios from "../utils/Axios";
+// import { useBalance } from "../store/Context/Balance_Context";
 
 const ProjectBalances = forwardRef((props, ref) => {
-
   const navigate = useNavigate();
   const [credits, setCredits] = useState([]);
   const [debits, setDebits] = useState([]);
@@ -48,6 +48,35 @@ const ProjectBalances = forwardRef((props, ref) => {
   const [aggregate_MW, setAggregate_MW] = useState(0);
   const [total_Debit, setTotal_Debit] = useState(0);
   const [available_Amount, setAvailable_Amount] = useState(0);
+  // const { balanceData } = useBalance();
+
+  // const {
+  //   crAmt = 0,
+  //   totalReturn = 0,
+  //   totalAdvanceValue = 0,
+  //   totalPoValue = 0,
+  //   totalBilled = 0,
+  //   dbAmt = 0,
+  //   adjTotal = 0,
+  // } = balanceData || {};
+
+  // const totalAmount = Math.round(Number(crAmt) - Number(dbAmt)) + Number(adjTotal);
+  // const netBalance = Math.round(Number(crAmt) - Number(totalReturn));
+  // const balanceSlnko = Math.round(netBalance - Number(totalAdvanceValue));
+  // const netAdvance = Math.round(Number(totalAdvanceValue) - Number(totalBilled));
+  // const balancePayable = Math.round(Number(totalPoValue) - Number(totalBilled) - netAdvance);
+  // const tcs = netBalance > 5000000 ? Math.round(netBalance - 5000000) * 0.001 : 0;
+  // const balanceRequired = Math.round(balanceSlnko - balancePayable - tcs);
+
+//   console.log("Total Amount:", totalAmount);
+// console.log("Net Balance:", netBalance);
+// console.log("Balance Slnko:", balanceSlnko);
+// console.log("Net Advance:", netAdvance);
+// console.log("Balance Payable:", balancePayable);
+// console.log("TCS:", tcs);
+// console.log("Balance Required:", balanceRequired);
+
+
 
   const renderFilters = () => (
     <>
@@ -96,28 +125,25 @@ const ProjectBalances = forwardRef((props, ref) => {
             Axios.get("/get-subtract-amount"),
             Axios.get("/get-all-project"),
           ]);
-          const creditData = CreditResponse.data.bill;
-          setCredits(creditData);
+        const creditData = CreditResponse.data.bill;
+        setCredits(creditData);
 
-          const debitData = DebitResponse.data.data;
-          setDebits(debitData);
+        const debitData = DebitResponse.data.data;
+        setDebits(debitData);
 
-          const totalMwData = ProjectResponse.data.data;
-          setProjects(totalMwData);
+        const totalMwData = ProjectResponse.data.data;
+        setProjects(totalMwData);
 
-       
-         
         // console.log("Credit Data are:", creditData);
         // console.log("Project Data are:", totalMwData);
         // console.log("Debits Data are :", debitData);
         // setProjects(ProjectResponse.data.data);
-        
-        
+
         const total_Credit = creditData.reduce((sum, row) => {
           const creditAmount = parseFloat(row.cr_amount) || 0;
           return sum + creditAmount;
         }, 0);
-        setTotal_Credit(total_Credit.toLocaleString('en-IN'));
+        setTotal_Credit(total_Credit.toLocaleString("en-IN"));
 
         // console.log("all credit are :", total_Credit);
 
@@ -134,17 +160,15 @@ const ProjectBalances = forwardRef((props, ref) => {
           const debitAmount = parseFloat(row.amount_paid) || 0;
           return sum + debitAmount;
         }, 0);
-        setTotal_Debit(total_Debit.toLocaleString('en-IN'));
+        setTotal_Debit(total_Debit.toLocaleString("en-IN"));
 
         // console.log("all debit are :", total_Debit);
 
-        const available_Old = total_Credit - total_Debit
-        const available_Amount = available_Old.toLocaleString('en-IN');
+        const available_Old = total_Credit - total_Debit;
+        const available_Amount = available_Old.toLocaleString("en-IN");
         setAvailable_Amount(available_Amount);
 
         console.log("Available Amounts are: ", available_Amount);
-        
-        
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -222,7 +246,9 @@ const ProjectBalances = forwardRef((props, ref) => {
                 // console.log(`/add_money?page=${page}&p_id=${projectId}`);
                 navigate(`/add_money?page=${page}&p_id=${projectId}`);
               }}
-            > <AddCircleOutlineIcon />
+            >
+              {" "}
+              <AddCircleOutlineIcon />
               <Typography>Add Money</Typography>
             </MenuItem>
             <Divider sx={{ backgroundColor: "lightblue" }} />
@@ -233,7 +259,9 @@ const ProjectBalances = forwardRef((props, ref) => {
                 localStorage.setItem("view_detail", projectId);
                 navigate(`/view_detail?page=${page}&p_id=${projectId}`);
               }}
-            > <ContentPasteGoIcon />
+            >
+              {" "}
+              <ContentPasteGoIcon />
               <Typography>View More</Typography>
             </MenuItem>
           </Menu>
@@ -241,6 +269,8 @@ const ProjectBalances = forwardRef((props, ref) => {
       </>
     );
   };
+
+
 
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
@@ -336,7 +366,7 @@ const ProjectBalances = forwardRef((props, ref) => {
         "Aggregate Available(Old)",
         "Aggregate Balance Slnko",
         "Aggregate Balance Payable to Vendors",
-        "Balance Required"
+        "Balance Required",
       ];
 
       const rows = mergedData.map((project) => [
@@ -374,28 +404,7 @@ const ProjectBalances = forwardRef((props, ref) => {
     },
   }));
 
-  // const ProjectMW = {
-  //   totalMW: paginatedPayments.reduce((sum, row) => {
-  //     const projectKWP = parseFloat(row.project_kwp) || 0;
-  //     return sum + projectKWP;
-  //   }, 0),
-  // };
-  // const AggregateCredit = {
-  //   totalcredit: paginatedPayments.reduce((sum, row) => {
-  //     const Allcredits = parseFloat(row.cr_amount) || 0;
-  //     return sum + Allcredits;
-  //   }, 0),
-  // };
-  //  console.log("Total credit are:", AggregateCredit.totalcredit);
-  // const AggregateDebit = {
-  //   totalMW: paginatedPayments.reduce((sum, row) => {
-  //     const projectKWP = parseFloat(row.project_kwp) || 0;
-  //     return sum + projectKWP;
-  //   }, 0),
-  // };
-  
-  // console.log("Total Project KWP:", ProjectMW.totalMW);
-  
+
 
   return (
     <>
@@ -463,156 +472,158 @@ const ProjectBalances = forwardRef((props, ref) => {
         {/* {renderFilters()} */}
       </Box>
 
-
-  <Box sx={{marginLeft: { xl: "15%", lg: "18%", md: "25%" }, maxWidth:{xl:"85%"} }}>
-  <table
-    style={{
-      width: '100%',
-      borderCollapse: 'collapse',
-      border: '1px solid #ddd',
-      boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
-    }}
-  >
-    <thead>
-      <tr style={{ backgroundColor: '#f5f5f5' }}>
-        <th
+      <Box
+        sx={{
+          marginLeft: { xl: "15%", lg: "18%", md: "25%" },
+          maxWidth: { xl: "85%" },
+        }}
+      >
+        <table
           style={{
-            padding: '12px 15px',
-            textAlign: 'left',
-            fontWeight: 'bold',
-            backgroundColor: '#e2e2e2',
-            border: '1px solid #ddd',
+            width: "100%",
+            borderCollapse: "collapse",
+            border: "1px solid #ddd",
+            boxShadow: "0 2px 5px rgba(0, 0, 0, 0.1)",
           }}
         >
-          Total Plant Capacity (MW AC)
-        </th>
-        <th
-          style={{
-            padding: '12px 15px',
-            textAlign: 'left',
-            border: '1px solid #ddd',
-          }}
-        >
-          Total Credit
-        </th>
-        <th
-          style={{
-            padding: '12px 15px',
-            textAlign: 'left',
-            border: '1px solid #ddd',
-          }}
-        >
-          Total Debit
-        </th>
-        <th
-          style={{
-            padding: '12px 15px',
-            textAlign: 'left',
-            border: '1px solid #ddd',
-          }}
-        >
-          Available Amount (Old)
-        </th>
-        <th
-          style={{
-            padding: '12px 15px',
-            textAlign: 'left',
-            border: '1px solid #ddd',
-          }}
-        >
-          Balance with Slnko
-        </th>
-        <th
-          style={{
-            padding: '12px 15px',
-            textAlign: 'left',
-            border: '1px solid #ddd',
-          }}
-        >
-          Balance Payable to Vendors
-        </th>
-        <th
-          style={{
-            padding: '12px 15px',
-            textAlign: 'left',
-            border: '1px solid #ddd',
-          }}
-        >
-          Balance Required
-        </th>
-      </tr>
-    </thead>
-      <tbody>
-          <tr  style={{ backgroundColor: '#fff' }}>
-            <td
-              style={{
-                padding: '12px 15px',
-                textAlign: 'left',
-                border: '1px solid #ddd',
-              }}
-            >
-              {aggregate_MW} MW AC
-            </td>
-            <td
-              style={{
-                padding: '12px 15px',
-                textAlign: 'left',
-                border: '1px solid #ddd',
-              }}
-            >
-              {total_Credit}
-            </td>
-            <td
-              style={{
-                padding: '12px 15px',
-                textAlign: 'left',
-                border: '1px solid #ddd',
-              }}
-            >
-              {total_Debit}
-            </td>
-            <td
-              style={{
-                padding: '12px 15px',
-                textAlign: 'left',
-                border: '1px solid #ddd',
-              }}
-            >
-              {available_Amount}
-            </td>
-            <td
-              style={{
-                padding: '12px 15px',
-                textAlign: 'left',
-                border: '1px solid #ddd',
-              }}
-            >
-              XXXXXX
-            </td>
-            <td
-              style={{
-                padding: '12px 15px',
-                textAlign: 'left',
-                border: '1px solid #ddd',
-              }}
-            >
-              XXXXXX
-            </td>
-            <td
-              style={{
-                padding: '12px 15px',
-                textAlign: 'left',
-                border: '1px solid #ddd',
-              }}
-            >
-              XXXXXX
-            </td>
-          </tr>
-      </tbody>
-  
- 
-  </table>
-</Box>
+          <thead>
+            <tr style={{ backgroundColor: "#f5f5f5" }}>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  fontWeight: "bold",
+                  backgroundColor: "#e2e2e2",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Total Plant Capacity (MW AC)
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Total Credit
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Total Debit
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Available Amount (Old)
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Balance with Slnko
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Balance Payable to Vendors
+              </th>
+              <th
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                Balance Required
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style={{ backgroundColor: "#fff" }}>
+              <td
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                {aggregate_MW} MW AC
+              </td>
+              <td
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                {total_Credit}
+              </td>
+              <td
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                {total_Debit}
+              </td>
+              <td
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                {available_Amount}
+              </td>
+              <td
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                0
+              </td>
+              <td
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                0
+              </td>
+              <td
+                style={{
+                  padding: "12px 15px",
+                  textAlign: "left",
+                  border: "1px solid #ddd",
+                }}
+              >
+                0
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </Box>
       {/* Table */}
       <Sheet
         className="OrderTableContainer"
@@ -628,8 +639,6 @@ const ProjectBalances = forwardRef((props, ref) => {
           maxWidth: { lg: "85%", sm: "100%", md: "75%" },
         }}
       >
-      
-    
         {error ? (
           <Typography color="danger" textAlign="center">
             {error}
@@ -812,7 +821,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                       {new Intl.NumberFormat("en-IN", {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
-                      }).format(project.creditAmount || "-")}
+                      }).format(project.balanceSLnko || "0")}
                     </Box>
                     <Box
                       component="td"
@@ -825,7 +834,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                       {new Intl.NumberFormat("en-IN", {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
-                      }).format(project.creditAmount || "-")}
+                      }).format(project.balancePayable || "0")}
                     </Box>
                     <Box
                       component="td"
@@ -838,7 +847,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                       {new Intl.NumberFormat("en-IN", {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
-                      }).format(project.creditAmount || "-")}
+                      }).format(project.balanceRequired || "0")}
                     </Box>
                     <Box
                       component="td"
