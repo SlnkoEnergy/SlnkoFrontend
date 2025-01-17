@@ -49,10 +49,18 @@ const ProjectBalances = forwardRef((props, ref) => {
   const [aggregate_MW, setAggregate_MW] = useState(0);
   const [total_Debit, setTotal_Debit] = useState(0);
   const [available_Amount, setAvailable_Amount] = useState(0);
+  const [balanceSlnko, setTotalBalanceSlnko] = useState(0);
+  const [balancePayable, setTotalBalancePayable] = useState(0);
+  const [balanceRequired, setTotalBalanceRequired] = useState(0);
   const [customerAdjustmentSum, setCustomerAdjustmentSum] = useState(0);
   const [totalAmountPaid, setTotalAmountPaid] = useState(0);
   const [totalPoValue, setTotalPoValue] = useState(0);
   const [totalBillValue, setTotalBillValue] = useState(0);
+  const [totals, setTotals] = useState({
+    totalBalanceSlnko: 0,
+    totalBalancePayable: 0,
+    totalBalanceRequired: 0,
+  });
 
   const renderFilters = () => (
     <>
@@ -117,12 +125,20 @@ const ProjectBalances = forwardRef((props, ref) => {
         const poData = poResponse.data.data;
         const billData = billResponse.data.data;
 
+
+            // console.log("Po data are:", poData);
+            // console.log("All bills are :", billData);
+            
+
         // Update state with raw data
         setProjects(projectsData);
         setCredits(creditData);
         setDebits(debitData);
         setPoData(poData);
         setBillData(billData);
+
+       
+        
 
         // Calculate aggregated values
         const totalCredit = creditData.reduce(
@@ -146,37 +162,59 @@ const ProjectBalances = forwardRef((props, ref) => {
         const availableAmount = totalCredit - totalDebit;
         setAvailable_Amount(availableAmount.toLocaleString("en-IN"));
 
-        // Enrich PO data with bill values
-        const enrichedPOs = poData.map((po) => {
-          const matchingBill = billData.find(
-            (bill) => bill.po_number === po.po_number
-          );
-          return {
-            ...po,
-            billedValue: parseFloat(matchingBill?.bill_value) || 0,
-            amountPaid: parseFloat(po.amount_paid) || 0,
-            poValue: parseFloat(po.po_value) || 0,
-          };
-        });
+      //  const ProjectData =  projectsResponse?.data?.data.map((item) => {
+      //     return{
+      //       p_id : item.p_id,
+      //       code: item.code
+      //     }
 
-        // Calculate total values for POs
-        const totalAmountPaid = enrichedPOs.reduce(
-          (sum, po) => sum + po.amountPaid,
-          0
-        );
-        const totalPoValue = enrichedPOs.reduce(
-          (sum, po) => sum + po.poValue,
-          0
-        );
-        const totalBillValue = enrichedPOs.reduce(
-          (sum, po) => sum + po.billedValue,
-          0
-        );
+      //   })
+      //   console.log(ProjectData);
 
-        // Update state with formatted totals
-        setTotalAmountPaid(totalAmountPaid.toLocaleString("en-IN"));
-        setTotalPoValue(totalPoValue.toLocaleString("en-IN"));
-        setTotalBillValue(totalBillValue.toLocaleString("en-IN"));
+        
+      //   const Purchase = poData.map((po) => {
+      //     if(po.pid === projectsData.code ){
+      //       return{
+      //         po_number : po.po_number,
+      //         advancePaid: parseFloat(po.amount_paid) || 0,
+      //         poValue: parseFloat(po.po_value) || 0,
+      //     }
+      // }})
+      //   console.log(Purchase);
+        
+
+
+       
+        // const matchingBill = billData.map((bill) => {
+        //   const matchingPo = poData.find((po) => po.po_number === bill.po_number);
+        //   if (matchingPo) {
+        //     return {
+        //       billedValue: parseFloat(bill.bill_value) || 0,
+        //     };
+        //   }
+        //   return bill;
+        // });
+        
+        // console.log("Enriched Bill Values: ", matchingBill);
+        
+
+        // const totalAmountPaid = Purchase.reduce(
+        //   (sum, po) => sum + po.amountPaid,
+        //   0
+        // );
+        // const totalPoValue = Purchase.reduce(
+        //   (sum, po) => sum + po.poValue,
+        //   0
+        // );
+        // const totalBillValue = matchingBill.reduce(
+        //   (sum, po) => sum + po.billedValue,
+        //   0
+        // );
+
+      
+        // setTotalAmountPaid(totalAmountPaid.toLocaleString("en-IN"));
+        // setTotalPoValue(totalPoValue.toLocaleString("en-IN"));
+        // setTotalBillValue(totalBillValue.toLocaleString("en-IN"));
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -201,7 +239,7 @@ const ProjectBalances = forwardRef((props, ref) => {
         acc[projectId] = (acc[projectId] || 0) + Number(credit.cr_amount);
         return acc;
       }, {});
-
+  
       const debitSumMap = debits.reduce((acc, debit) => {
         const projectId = debit.p_id;
         const amountPaid = Number(debit.amount_paid);
@@ -209,7 +247,7 @@ const ProjectBalances = forwardRef((props, ref) => {
           (acc[projectId] || 0) + (isNaN(amountPaid) ? 0 : amountPaid);
         return acc;
       }, {});
-
+  
       const customerAdjustmentSumMap = debits.reduce((acc, debit) => {
         const projectId = debit.p_id;
         const amountPaid = Number(debit.amount_paid);
@@ -219,47 +257,65 @@ const ProjectBalances = forwardRef((props, ref) => {
         }
         return acc;
       }, {});
-
+  
+      // Map project codes to project IDs
+      const projectCodeMap = projects.reduce((acc, project) => {
+        acc[project.code] = project.p_id;
+        return acc;
+      }, {});
+  
+      // Aggregate PO data
       const poSumMap = posData.reduce((acc, po) => {
-        const projectId = po.p_id;
-        acc[projectId] = (acc[projectId] || 0) + (Number(po.po_value) || 0);
+        const projectId = projectCodeMap[po.p_id]; 
+        if (projectId) {
+          acc[projectId] = (acc[projectId] || 0) + (Number(po.po_value) || 0);
+        }
         return acc;
       }, {});
-
+  
       const amountPaidSumMap = posData.reduce((acc, po) => {
-        const projectId = po.po_number;
+        const projectId = projectCodeMap[po.p_id]; 
         const amountPaid = Number(po.amount_paid);
-        if (!acc[projectId]) acc[projectId] = 0;
-        if (!isNaN(amountPaid)) acc[projectId] += amountPaid;
+        if (projectId) {
+          acc[projectId] = (acc[projectId] || 0) + (isNaN(amountPaid) ? 0 : amountPaid);
+        }
         return acc;
       }, {});
-
-      const billSumMap = billsData.reduce((acc, bill) => {
-        const projectId = bill.p_id;
-        acc[projectId] = (acc[projectId] || 0) + (Number(bill.bill_value) || 0);
+  
+      
+      const billSumMap = posData.reduce((acc, po) => {
+        const poNumber = po.po_number;
+        const matchingBills = billsData.filter((bill) => bill.po_number === poNumber);
+        const totalBillValue = matchingBills.reduce(
+          (sum, bill) => sum + (Number(bill.bill_value) || 0),
+          0
+        );
+        const projectId = projectCodeMap[po.p_id];
+        if (projectId) {
+          acc[projectId] = (acc[projectId] || 0) + totalBillValue;
+        }
         return acc;
       }, {});
-
-      // Merge and calculate project-level data
+  
       const merged = projects.map((project) => {
         const projectId = project.p_id;
         const totalCredit = creditSumMap[projectId] || 0;
         const totalDebit = debitSumMap[projectId] || 0;
-        const oldAmount = creditSumMap[projectId] - debitSumMap[projectId];
+        const oldAmount = totalCredit - totalDebit || 0;
         const customerAdjustment = customerAdjustmentSumMap[projectId] || 0;
         const totalPoValue = poSumMap[projectId] || 0;
         const totalBillValue = billSumMap[projectId] || 0;
         const advancePaid = amountPaidSumMap[projectId] || 0;
-
+  
         const netBalance = totalCredit - customerAdjustment;
         const balanceSlnko = netBalance - advancePaid;
         const netAdvance = advancePaid - totalBillValue;
         const balancePayable = totalPoValue - totalBillValue - netAdvance;
-
+  
         const tcs =
           netBalance > 5000000 ? Math.round((netBalance - 5000000) * 0.001) : 0;
         const balanceRequired = balanceSlnko - balancePayable - tcs;
-
+  
         return {
           ...project,
           creditAmount: totalCredit,
@@ -270,21 +326,35 @@ const ProjectBalances = forwardRef((props, ref) => {
           balanceRequired: Math.round(balanceRequired),
         };
       });
-
+  
       setMergedData(merged);
+  
+      // Calculate total aggregates
+      const total = merged.reduce(
+        (acc, project) => {
+          acc.totalBalanceSlnko += project.balanceSlnko || 0;
+          acc.totalBalancePayable += project.balancePayable || 0;
+          acc.totalBalanceRequired += project.balanceRequired || 0;
+          return acc;
+        },
+        { totalBalanceSlnko: 0, totalBalancePayable: 0, totalBalanceRequired: 0 }
+      );
 
-      // Calculate total customer adjustment sum
-      const totalCustomerAdjustment = Object.values(
-        customerAdjustmentSumMap
-      ).reduce((sum, value) => sum + value, 0);
-      setCustomerAdjustmentSum(totalCustomerAdjustment);
+      setTotals(total);
+  
+      // Log or set state for totals
+      // console.log("Total Balance Slnko:", totals.totalBalanceSlnko);
+      // console.log("Total Balance Payable:", totals.totalBalancePayable);
+      // console.log("Total Balance Required:", totals.totalBalanceRequired);
+  
+      // Optional: Update state if you need these totals elsewhere
+      // setTotalBalanceSlnko(totals.totalBalanceSlnko);
+      // setTotalBalancePayable(totals.totalBalancePayable);
+      // setTotalBalanceRequired(totals.totalBalanceRequired);
     }
   }, [credits, projects, debits, posData, billsData]);
+  
 
-  // console.log(
-  //   "Total Amount Paid for Customer Adjustment:",
-  //   customerAdjustmentSum
-  // );
 
   const RowMenu = ({ currentPage, p_id }) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
@@ -660,7 +730,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                   border: "1px solid #ddd",
                 }}
               >
-                0
+                {totals.totalBalanceSlnko}
               </td>
               <td
                 style={{
@@ -669,7 +739,8 @@ const ProjectBalances = forwardRef((props, ref) => {
                   border: "1px solid #ddd",
                 }}
               >
-                0
+                {totals.totalBalancePayable}
+              
               </td>
               <td
                 style={{
@@ -678,7 +749,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                   border: "1px solid #ddd",
                 }}
               >
-                0
+                {totals.totalBalanceRequired}
               </td>
             </tr>
           </tbody>

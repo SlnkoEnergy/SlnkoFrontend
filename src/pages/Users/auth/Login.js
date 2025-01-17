@@ -85,7 +85,7 @@ const Login = () => {
             userID: item._id,
           };
 
-          console.log(userdata);
+          // console.log(userdata);
           localStorage.setItem("userDetails", JSON.stringify(userdata));
         }
       });

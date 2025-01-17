@@ -975,11 +975,12 @@ const Customer_Payment_Summary = () => {
           <Box
             display="grid"
             gridTemplateColumns="2fr 2fr 2fr auto"
-            fontWeight={600}
+            fontWeight="bold"
             backgroundColor="#f5f5f5"
             padding="12px"
             borderRadius="8px 8px 0 0"
             border="1px solid #ddd"
+            
           >
             <Box>Credit Date</Box>
             <Box>Credit Mode</Box>
@@ -1089,10 +1090,11 @@ const Customer_Payment_Summary = () => {
               gridTemplateColumns: "1fr 1fr 2fr 2fr 1fr 1fr 1fr",
               backgroundColor: "#f5f5f5",
               padding: "10px",
+              fontWeight: "bold",
             }}
           >
             <div>Debit Date</div>
-            <div>Debit Mode</div>
+            <div>Po Number</div>
             <div>Paid For</div>
             <div>Paid To</div>
             <div>Amount (₹)</div>
@@ -1133,7 +1135,7 @@ const Customer_Payment_Summary = () => {
                       year: "numeric",
                     })}
                   </div>
-                  <div>{row.pay_mode}</div>
+                  <div>{row.po_number || "-"}</div>
                   <div>{row.paid_for}</div>
                   <div>{row.vendor}</div>
                   <div>₹ {row.amount_paid.toLocaleString("en-IN")}</div>

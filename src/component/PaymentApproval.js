@@ -95,30 +95,30 @@ function PaymentRequest() {
           }),
           Axios.get("/get-all-project"),
         ]);
-        const pendingPayments = paymentResponse.data.data.filter(
+        const pendingPayments = paymentResponse.data?.data.filter(
           (payment) => payment.approved === "Pending"
-        );
+        ) || [];
 
         setPayments(pendingPayments);
         // console.log("Payment Data (Pending) are:", pendingPayments);
 
-        setProjects(projectResponse.data.data);
+        setProjects(projectResponse.data?.data || []);
         // console.log("Project Data are:", projectResponse.data.data);
 
-        const uniqueCustomers = [
-          ...new Set(
-            projectResponse.data.data.map((project) => project.customer)
-          ),
-        ].filter(Boolean);
+        // const uniqueCustomers = [
+        //   ...new Set(
+        //     projectResponse.data.data.map((project) => project.customer)
+        //   ),
+        // ].filter(Boolean);
 
-        const uniqueGroups = [
-          ...new Set(
-            projectResponse.data.data.map((project) => project.p_group)
-          ),
-        ].filter(Boolean);
+        // const uniqueGroups = [
+        //   ...new Set(
+        //     projectResponse.data.data.map((project) => project.p_group)
+        //   ),
+        // ].filter(Boolean);
 
-        setCustomers(uniqueCustomers);
-        setGroups(uniqueGroups);
+        // setCustomers(uniqueCustomers);
+        // setGroups(uniqueGroups);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -147,72 +147,65 @@ function PaymentRequest() {
     }
   }, [payments, projects]);
 
-  const handleApprovalUpdate = async (paymentId, newStatus) => {
-    try {
-      const response = await Axios.put("/approval", {
-        pay_id: paymentId,
-        status: newStatus,
-      });
-  
-      if (response.status === 200) {
-        setPayments((prevPayments) =>
-          prevPayments.map((payment) =>
-            payment.pay_id === paymentId
-              ? { ...payment, status: newStatus }
-              : payment
-          )
-        );
-  
-        // Show a success toast if the status is "Approved"
-        if (newStatus === "Approved") {
-          toast.success('Payment Approved! Please Refresh it', {
-            autoClose: 3000,
-            
-          });
-      
-        }
+ const handleApprovalUpdate = async (paymentId, newStatus) => {
+  try {
+    const response = await Axios.put("/account-approve", {
+      pay_id: paymentId,
+      status: newStatus,
+    });
+
+    if (response.status === 200) {
+      // Remove the payment from the table after approval or rejection
+      setPayments((prevPayments) =>
+        prevPayments.filter((payment) => payment.pay_id !== paymentId)
+      );
+
+      if (newStatus === "Approved") {
+        toast.success('Payment Approved !!', {
+          autoClose: 3000,
+        });
+      } else if (newStatus === "Rejected") {
+        toast.error('Oops!! Rejected...', {
+          autoClose: 2000,
+        });
       }
-    } catch (error) {
-      console.error("Error updating approval status:", error);
     }
-  };
+  } catch (error) {
+    console.error("Error updating approval status:", error);
+  }
+};
+
 
   const RowMenu = ({ paymentId }) => {
     return (
-      <Dropdown>
-        <MenuButton
-          slots={{ root: IconButton }}
-          slotProps={{
-            root: { variant: "plain", color: "neutral", size: "sm" },
-          }}
+      <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+        {/* Approve Button */}
+        <Button
+          variant="contained"
+          size="small"
+          color="success"
+          // startIcon={<CheckRoundedIcon />}
+          onClick={() => handleApprovalUpdate(paymentId, "Approved")}
+          sx={{ textTransform: "none" }}
         >
-          <MoreHorizRoundedIcon />
-        </MenuButton>
-        <Menu size="sm" sx={{ minWidth: 100 }}>
-          <MenuItem onClick={() => handleApprovalUpdate(paymentId, "Approved")}>
-            <Chip
-              variant="soft"
-              size="sm"
-              startDecorator={<CheckRoundedIcon />}
-              color="success"
-            >
-              Approved
-            </Chip>
-          </MenuItem>
-          <MenuItem onClick={() => handleApprovalUpdate(paymentId, "Rejected")}>
-            <Chip
-              variant="soft"
-              size="sm"
-              startDecorator={<BlockIcon />}
-              color="danger"
-            >
-              Rejected
-            </Chip>
-          </MenuItem>
-        </Menu>
-      </Dropdown>
+          Approve
+        </Button>
+  
+        {/* Reject Button */}
+        <Button
+          variant="outlined"
+          size="small"
+          color="error"
+          // startIcon={<BlockIcon />}
+          onClick={() => handleApprovalUpdate(paymentId, "Rejected")}
+          sx={{ textTransform: "none" }}
+        >
+          Reject
+        </Button>
+      </Box>
     );
   };
+  
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {

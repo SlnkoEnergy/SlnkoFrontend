@@ -25,7 +25,7 @@ import AddUser from "../pages/Users/AddUser";
 import ForgotPassword from "../pages/Users/auth/ForgotPassword";
 import Login from "../pages/Users/auth/Login";
 import EditUser from "../pages/Users/EditUser";
-import { BalanceProvider } from "../store/Context/Balance_Context";
+// import { BalanceProvider } from "../store/Context/Balance_Context";
 import PrivateRoute from "./PrivateRoute";
 
 function index() {
@@ -62,9 +62,9 @@ function index() {
         path="/project-balance"
         element={
           <PrivateRoute>
-            <BalanceProvider>
+            {/* <BalanceProvider> */}
               <ProjectBalance />
-            </BalanceProvider>
+            {/* </BalanceProvider> */}
           </PrivateRoute>
         }
       />

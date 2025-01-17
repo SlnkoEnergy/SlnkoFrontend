@@ -63,12 +63,12 @@ function Sidebar() {
   useEffect(() => {
     const userData = getUserData();
     setUser(userData);
-    console.log("details are :", userData);
+    // console.log("details are :", userData);
   }, []);
 
   const getUserData = () => {
     const userData = localStorage.getItem("userDetails");
-    console.log("Only this needed :", userData);
+    // console.log("Only this needed :", userData);
     if (userData) {
       return JSON.parse(userData);
     }
