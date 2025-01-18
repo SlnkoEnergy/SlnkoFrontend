@@ -347,7 +347,7 @@ function Sidebar() {
                     </ListItemButton>
                   </ListItem>
                   <ListItem>
-                    <ListItemButton onClick={() => navigate("#")}>
+                    <ListItemButton onClick={() => navigate("/vendor_bill")}>
                       Vendor Bill
                     </ListItemButton>
                   </ListItem>
@@ -548,7 +548,7 @@ function Sidebar() {
                     </ListItemButton>
                   </ListItem>
                   <ListItem>
-                    <ListItemButton onClick={() => navigate("#")}>
+                    <ListItemButton onClick={() => navigate("vendor_bill")}>
                       Vendor Bill
                     </ListItemButton>
                   </ListItem>
@@ -649,7 +649,7 @@ function Sidebar() {
                     </ListItemButton>
                   </ListItem>
                   <ListItem>
-                    <ListItemButton onClick={() => navigate("#")}>
+                    <ListItemButton onClick={() => navigate("vendor_bill")}>
                       Vendor Bill
                     </ListItemButton>
                   </ListItem>

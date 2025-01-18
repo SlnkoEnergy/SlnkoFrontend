@@ -25,6 +25,7 @@ import AddUser from "../pages/Users/AddUser";
 import ForgotPassword from "../pages/Users/auth/ForgotPassword";
 import Login from "../pages/Users/auth/Login";
 import EditUser from "../pages/Users/EditUser";
+import VendorBill from "../pages/SCM/VendorBill";
 // import { BalanceProvider } from "../store/Context/Balance_Context";
 import PrivateRoute from "./PrivateRoute";
 
@@ -139,6 +140,14 @@ function index() {
         element={
           <PrivateRoute>
             <POHistory />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/vendor_bill"
+        element={
+          <PrivateRoute>
+            <VendorBill />
           </PrivateRoute>
         }
       />

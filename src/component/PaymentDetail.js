@@ -18,6 +18,8 @@ const PaymentDetail = forwardRef((props, ref) => {
     return `${day}-${month}-${year}`;
   };
 
+
+
   useEffect(() => {
     const fetchData = async () => {
       try {

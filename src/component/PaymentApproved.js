@@ -20,6 +20,7 @@ import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Tooltip from "@mui/joy/Tooltip";
+import { toast } from "react-toastify";
 import Typography from "@mui/joy/Typography";
 import { useSnackbar } from "notistack";
 import * as React from "react";
@@ -137,145 +138,135 @@ function PaymentRequest() {
     isMatched: matchedFromParent,
     onAccountMatchSuccess,
   }) => {
+    const { enqueueSnackbar } = useSnackbar();
+  
+    // State initialization
     const [isMatched, setIsMatched] = useState(() => {
-      // Retrieve the matched state from localStorage if it exists
       const savedMatchedStatus = localStorage.getItem(`matched-${paymentId}`);
       return savedMatchedStatus === "true" ? true : matchedFromParent || false;
     });
-    
-    useEffect(() => {
-      // When the component mounts, check if there's a stored matched status
-      const savedMatchedStatus = localStorage.getItem(`matched-${paymentId}`);
-      if (savedMatchedStatus === "true") {
-        setIsMatched(true);
-      }
-    }, [paymentId]);
   
-    const { enqueueSnackbar } = useSnackbar();
-    const [accountMatch, setAccountMatch] = useState("");
-    const [ifsc, setIfsc] = useState("");
+    const [accountMatch, setAccountMatch] = useState(initialAccountMatch);
+    const [ifsc, setIfsc] = useState(initialIfsc);
     const [utr, setUtr] = useState("");
     const [error, setError] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isUtrSubmitted, setIsUtrSubmitted] = useState(false);
-    const [getAllPoResponse, setgGetAllPoResponse] = useState("");
+    const [getAllPoResponse, setGetAllPoResponse] = useState(null);
   
+    // Ensure state is updated from localStorage if needed
+    useEffect(() => {
+      const savedMatchedStatus = localStorage.getItem(`matched-${paymentId}`);
+      if (savedMatchedStatus === "true" && !isMatched) {
+        setIsMatched(true);
+      }
+    }, [paymentId, isMatched]);
+  
+    // Function to handle account matching
     const handleAccountMatch = async () => {
       if (!accountMatch) {
         setError("Account Number required!!");
         return;
       }
-      setError(null);
+  
+      setError(null); // Clear any previous errors
+  
       try {
+        console.log("Sending account match request...");
         const response = await Axios.put("/acc-matched", {
           pay_id: paymentId,
           acc_number: accountMatch,
           ifsc: ifsc,
         });
   
+        console.log("Account match response:", response);
+  
         if (response.status === 200) {
-          // Save the matched status in localStorage
           localStorage.setItem(`matched-${paymentId}`, "true");
           setIsMatched(true);
-          enqueueSnackbar("Account matched successfully!", {
-            variant: "success",
-          });
+          enqueueSnackbar("Account matched successfully!", { variant: "success" });
         } else {
           enqueueSnackbar("Failed to match account. Please try again.", {
             variant: "error",
           });
         }
       } catch (error) {
-        console.error("Error matching account:", error);
+        console.error("Error during account match:", error);
         enqueueSnackbar("Something went wrong. Please try again.", {
           variant: "error",
         });
       }
     };
   
+    // Function to handle UTR submission
     const handleUtrSubmit = async () => {
       if (!utr) {
         enqueueSnackbar("Please enter a valid UTR.", { variant: "warning" });
         return;
       }
-    
-      setIsSubmitting(true);
+  
+      setIsSubmitting(true); // Set loading state
+  
       try {
+        console.log("Submitting UTR...");
         const utrResponse = await Axios.put("/utr-update", {
           pay_id: paymentId,
           utr: utr,
         });
   
-        console.log("UTR Response: ", utrResponse);
+        console.log("UTR Response:", utrResponse);
   
         if (utrResponse.status === 200 && utrResponse.data) {
           enqueueSnackbar("UTR submitted successfully!", { variant: "success" });
           setIsUtrSubmitted(true);
+
+        
   
-          const { p_id, p_group, pay_type, amount_paid, amt_for_customer, dbt_date, paid_for, vendor, po_number } = utrResponse.data || {};
+          // Fetch PO details
+          console.log("Fetching PO details...");
+          
+          const poResponse = await Axios.get("/get-pay-summary");
+          console.log("PO Summary Response:", poResponse.data);
   
-          try {
-            const getAllPoResponse = await Axios.get("/get-pay-summary");
-            console.log("All Pay Data: ", getAllPoResponse.data.data);
-            
-            setgGetAllPoResponse(getAllPoResponse);
-           
-            const matchedPo = getAllPoResponse.data.data.find(
-              (po) => po.pay_id === paymentId
-            );
+          setGetAllPoResponse(poResponse);
   
-            if (!matchedPo) {
-              enqueueSnackbar("Matching PO not found.", { variant: "error" });
-              setIsSubmitting(false);
-              return;
-            }
+          // Match PO and perform debit operation
+          const matchedPo = poResponse.data.data.find((po) => po.pay_id === paymentId);
+          if (matchedPo) {
+            console.log("Matched PO data:", matchedPo);
   
-            console.log("Matched PO Data: ", matchedPo);
+            const debitResponse = await Axios.post("/debit-money", {
+              p_id: matchedPo.p_id,
+              p_group: matchedPo.p_group || "",
+              pay_type: matchedPo.pay_type || "",
+              amount_paid: matchedPo.amount_paid || "",
+              amt_for_customer: matchedPo.amt_for_customer || "",
+              dbt_date: matchedPo.dbt_date || "",
+              paid_for: matchedPo.paid_for || "",
+              vendor: matchedPo.vendor || "",
+              po_number: matchedPo.po_number || "",
+              utr: matchedPo.utr || "",
+              submitted_by: "user123",
+
+            });
   
-            try {
-              const debitResponse = await Axios.post("/debit-money", {
-                p_id: matchedPo.p_id,
-                p_group: matchedPo.p_group || "",
-                pay_type: matchedPo.pay_type || "",
-                amount_paid: matchedPo.amount_paid || "",
-                amt_for_customer: matchedPo.amt_for_customer || "",
-                dbt_date: matchedPo.dbt_date || "",
-                paid_for: matchedPo.paid_for || "",
-                vendor: matchedPo.vendor || "",
-                po_number: matchedPo.po_number || "",
-                utr: matchedPo.utr || "",
-                submitted_by: "user123",
+            if (debitResponse.status === 200) {
+              enqueueSnackbar("Money debited successfully!", {
+                variant: "success",
               });
+              console.log("Money debited successfully:", debitResponse.data);
   
-              if (debitResponse.status === 200) {
-                enqueueSnackbar("Money debited successfully!", {
-                  variant: "success",
-                });
-                console.log("Money debited:", debitResponse.data);
-              } else {
-                enqueueSnackbar("Failed to debit money. Please try again.", {
-                  variant: "error",
-                });
+              // Call the parent callback
+              if (onAccountMatchSuccess) {
+                onAccountMatchSuccess(utr);
               }
-            } catch (debitError) {
-              console.error("Error debiting money:", debitError);
-              enqueueSnackbar("Something went wrong while debiting money.", {
+            } else {
+              enqueueSnackbar("Failed to debit money. Please try again.", {
                 variant: "error",
               });
             }
-  
-            setPayments((prevPayments) =>
-              prevPayments.filter((payment) => payment.pay_id !== paymentId)
-            );
-  
-            if (onAccountMatchSuccess) {
-              onAccountMatchSuccess(utr);
-            }
-          } catch (getAllPoError) {
-            console.error("Error fetching PO data:", getAllPoError);
-            enqueueSnackbar("Failed to fetch PO data. Please try again.", {
-              variant: "error",
-            });
+          } else {
+            enqueueSnackbar("Matching PO not found.", { variant: "error" });
           }
         } else {
           enqueueSnackbar("Failed to submit UTR. Please try again.", {
@@ -283,7 +274,7 @@ function PaymentRequest() {
           });
         }
       } catch (error) {
-        console.error("Error submitting UTR:", error);
+        console.error("Error during UTR submission:", error);
         enqueueSnackbar("Something went wrong. Please try again.", {
           variant: "error",
         });
@@ -294,6 +285,7 @@ function PaymentRequest() {
   
     return (
       <div>
+        {/* Account Match Form */}
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -335,9 +327,7 @@ function PaymentRequest() {
             </Tooltip>
           </div>
   
-          {error && (
-            <div style={{ color: "red", marginBottom: "0.5rem" }}>{error}</div>
-          )}
+          {error && <div style={{ color: "red" }}>{error}</div>}
   
           <Button
             type="submit"
@@ -347,17 +337,16 @@ function PaymentRequest() {
               padding: "0.5rem",
               backgroundColor: isMatched ? "gray" : "#007bff",
               color: "white",
-              border: "none",
-              cursor: isMatched || !accountMatch ? "not-allowed" : "pointer",
+              cursor: isMatched ? "not-allowed" : "pointer",
             }}
           >
             {isMatched ? "Matched" : "Match Account"}
           </Button>
         </form>
   
-        {/* UTR Submission Section */}
+        {/* UTR Submission */}
         {isMatched && !isUtrSubmitted && (
-          <div style={{ marginTop: "0.5rem" }}>
+          <div style={{ marginTop: "1rem" }}>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -372,8 +361,8 @@ function PaymentRequest() {
                 disabled={isSubmitting}
                 style={{
                   width: "100%",
-                  marginBottom: "0.5rem",
                   padding: "0.5rem",
+                  marginBottom: "0.5rem",
                   border: "1px solid #ccc",
                 }}
               />
@@ -385,8 +374,7 @@ function PaymentRequest() {
                   padding: "0.5rem",
                   backgroundColor: "#28a745",
                   color: "white",
-                  border: "none",
-                  cursor: isSubmitting || !utr ? "not-allowed" : "pointer",
+                  cursor: isSubmitting ? "not-allowed" : "pointer",
                 }}
               >
                 {isSubmitting ? "Submitting..." : "Submit UTR"}
@@ -395,7 +383,7 @@ function PaymentRequest() {
           </div>
         )}
   
-        {/* UTR Submitted Message */}
+        {/* UTR Submitted */}
         {isUtrSubmitted && (
           <div style={{ marginTop: "1rem" }}>
             <p>UTR: {utr}</p>
@@ -405,8 +393,6 @@ function PaymentRequest() {
                 padding: "0.5rem",
                 backgroundColor: "gray",
                 color: "white",
-                border: "none",
-                cursor: "not-allowed",
               }}
               disabled
             >
@@ -418,14 +404,18 @@ function PaymentRequest() {
     );
   };
   
+  
 
-  const handleAccountMatchUpdate = (paymentId) => {
+  const handleAccountMatchUpdate = (paymentId, utrValue = "") => {
     setPayments((prevPayments) =>
       prevPayments.map((payment) =>
-        payment.pay_id === paymentId ? { ...payment, isMatched: true } : payment
+        payment.pay_id === paymentId
+          ? { ...payment, isMatched: true, utr: utrValue }
+          : payment
       )
     );
   };
+  
 
   /** Match Logic ***/
   const MatchRow = ({ payment }) => (
@@ -780,14 +770,11 @@ function PaymentRequest() {
                       }}
                     >
                       <AccountMatchAndUTR
-                        paymentId={payment.pay_id}
-                        initialAccountMatch={payment.acc_number}
-                        initialIfsc={payment.ifsc}
-                        isMatched={payment.isMatched || false}
-                        onAccountMatchSuccess={() =>
-                          handleAccountMatchUpdate(payment.pay_id)
-                        }
-                      />
+  paymentId={payment.pay_id}
+  isMatched={payment.isMatched}
+  onAccountMatchSuccess={(utr) => handleAccountMatchUpdate(payment.pay_id, utr)}
+/>
+
                     </Box>
                     {/* <Box
                       component="td"
