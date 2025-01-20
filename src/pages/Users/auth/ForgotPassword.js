@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import { Button, Box, Container, Grid, Paper, TextField, Typography } from "@mui/material";
 import { ArrowBackIos, ArrowForwardIos, TimerOutlined } from "@mui/icons-material";
 import Colors from "../../../utils/colors";
-import axios from "axios";
+import Axios from "../../../utils/Axios";
 import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -46,7 +46,7 @@ const PasswordReset = () => {
 
     if (otpSent) {
       try {
-        const response = await axios.post("https://backendslnko.onrender.com/v1/received-email", {
+        const response = await Axios.post("/received-email", {
           email: email,
           otp: enteredOtp,
         });
@@ -59,7 +59,7 @@ const PasswordReset = () => {
       }
     } else {
       try {
-        const response = await axios.post("https://backendslnko.onrender.com/v1/forget-password-send-otp", { email: email });
+        const response = await Axios.post("/forget-password-send-otp", { email: email });
         setOtpSent(true);
         console.log("OTP has been Sent: ", response);
         toast.success("OTP sent to your email");

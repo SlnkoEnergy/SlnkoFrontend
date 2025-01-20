@@ -31,6 +31,24 @@ const AddPurchaseOrder = () => {
       padding: "0 6px",
     }),
   };
+  
+  const [user, setUser] = useState(null);
+  
+    
+   useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+  
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+
+
   const [formData, setFormData] = useState({
     p_id: "",
     code: "",
@@ -118,7 +136,7 @@ const AddPurchaseOrder = () => {
       other: formData.item === "Other" ? formData.other : "",
       po_value: formData.po_value,
       partial_billing: formData.partial_billing|| "",
-      submitted_By:"superadmin"
+      submitted_By:user?.name,
     };
 
     try {

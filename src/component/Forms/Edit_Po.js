@@ -16,8 +16,11 @@ import Img7 from "../../assets/update-po.png";
 import Axios from "../../utils/Axios";
 import axios from "axios";
 
+
 const UpdatePurchaseOrder = () => {
   const navigate = useNavigate();
+
+  
 
   const [getFormData, setGetFormData] = useState({
     projectIDs: [],
@@ -25,10 +28,7 @@ const UpdatePurchaseOrder = () => {
     vendors: [],
     AllPo: [],
   });
-  const getUserData = () => {
-    const userData = localStorage.getItem("userDetails");
-    return userData ? JSON.parse(userData) : null;
-  };
+  
   const [formData, setFormData] = useState({
     // _id:"",
     p_id: "",
@@ -41,6 +41,7 @@ const UpdatePurchaseOrder = () => {
     other: "",
     partial_billing: "",
     comment: "",
+    submitted_By:""
   });
   const [projectIDs, setProjectIDs] = useState([]);
   const [vendors, setVendors] = useState([]);
@@ -51,6 +52,21 @@ const UpdatePurchaseOrder = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [response, setResponse] = useState([]);
+
+
+  
+ useEffect(() => {
+  const userData = getUserData();
+  setUser(userData);
+}, []);
+
+const getUserData = () => {
+  const userData = localStorage.getItem("userDetails");
+  if (userData) {
+    return JSON.parse(userData);
+  }
+  return null;
+};
 
   useEffect(() => {
     const fetchData = async () => {
@@ -96,6 +112,7 @@ const UpdatePurchaseOrder = () => {
             date: poData.date || "",
             po_value: poData.po_value || "",
             partial_billing: poData.partial_billing,
+            submitted_By:poData.submitted_By
           });
           setShowOtherItem(poData.item === "Other");
         } else {
@@ -149,14 +166,14 @@ const UpdatePurchaseOrder = () => {
     e.preventDefault();
 
 
-    const userData = getUserData();
-    if (userData && userData.name) {
-      setFormData((prev) => ({
-        ...prev,
-        submitted_By: userData.name,
-      }));
-    }
-    setUser(userData); 
+    // const userData = getUserData();
+    // if (userData && userData.name) {
+    //   setFormData((prev) => ({
+    //     ...prev,
+    //     submitted_By: userData.name,
+    //   }));
+    // }
+    // setUser(userData); 
 
     if (!formData._id) {
       setError("Document ID (_id) is missing. Cannot update PO.");

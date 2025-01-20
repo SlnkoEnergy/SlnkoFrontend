@@ -26,7 +26,7 @@ import { useNavigate } from "react-router-dom";
 import Main_Logo from "../../assets/protrac_logo.png";
 import Main_Logo2 from "../../assets/white_logo.png";
 import { closeSidebar } from "../../utils/utils";
-import ColorSchemeToggle from "./ColorSchemeToggle";
+// import ColorSchemeToggle from "./ColorSchemeToggle";
 
 function Toggler({ defaultExpanded = false, renderToggle, children }) {
   const [open, setOpen] = useState(defaultExpanded);
@@ -140,7 +140,7 @@ function Sidebar() {
             style={{ width: "70px", height: "60px" }}
           />
         </IconButton>
-        <ColorSchemeToggle sx={{ ml: "auto" }} />
+        {/* <ColorSchemeToggle sx={{ ml: "auto" }} /> */}
 
         {/* <IconButton variant="soft" color="primary" size="sm">
       <img src={Main_Logo} alt="Protrac" style={{ width: '70px', height: '60px' }} />
@@ -166,7 +166,7 @@ function Sidebar() {
           },
         }}
       >
-        {user?.name === "IT Team" ? (
+        {user?.name === "IT Team" || user?.name === "admin" ? (
           <List>
             {/* Dashboard */}
             <ListItem>
@@ -209,7 +209,7 @@ function Sidebar() {
                       Add User
                     </ListItemButton>
                   </ListItem>
-                  <ListItem sx={{ mt: 0.5 }}>
+                  <ListItem>
                     <ListItemButton onClick={() => navigate("/edit_user")}>
                       Edit User
                     </ListItemButton>
@@ -808,7 +808,8 @@ function Sidebar() {
           (user?.name === "Aryan Maheshwari" ||
             user?.name === "Sarthak Sharma" ||
             user?.name === "Ajay Singh" ||
-            user?.name === "Shubham Gupta") ? (
+            user?.name === "Shubham Gupta" ||
+            user?.name === "Saurabh Suman") ? (
           <List
             size="sm"
             sx={{
@@ -936,6 +937,48 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
+
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <MiscellaneousServicesIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">SCM</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/purchase-order")}>
+                      Purchase Order
+                    </ListItemButton>
+                  </ListItem>
+                  {/* <ListItem>
+                <ListItemButton onClick={() => navigate("#")}>
+                  Material Status
+                </ListItemButton>
+              </ListItem>
+              <ListItem>
+                <ListItemButton onClick={() => navigate("#")}>
+                  Vendor Bill
+                </ListItemButton>
+              </ListItem> */}
+                </List>
+              </Toggler>
+            </ListItem>
           </List>
         ) : user?.role === "visitor" &&
           (user?.name === "Sanjiv Kumar" ||
@@ -948,6 +991,7 @@ function Sidebar() {
               "--ListItem-radius": (theme) => theme.vars.radius.sm,
             }}
           >
+            
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -971,7 +1015,14 @@ function Sidebar() {
                 )}
               >
                 <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ gap: 0.5 }}>
+                <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton
+                      onClick={() => navigate("/project-balance")}
+                    >
+                      Project Balances
+                    </ListItemButton>
+                  </ListItem>
+                  <ListItem>
                     <ListItemButton
                       onClick={() => navigate("/daily-payment-request")}
                     >
@@ -981,6 +1032,50 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
+
+             {/* SCM Section */}
+             <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <MiscellaneousServicesIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">SCM</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/purchase-order")}>
+                      Purchase Order
+                    </ListItemButton>
+                  </ListItem>
+                  {/* <ListItem>
+                <ListItemButton onClick={() => navigate("#")}>
+                  Material Status
+                </ListItemButton>
+              </ListItem>
+              <ListItem>
+                <ListItemButton onClick={() => navigate("#")}>
+                  Vendor Bill
+                </ListItemButton>
+              </ListItem> */}
+                </List>
+              </Toggler>
+            </ListItem>
+
           </List>
         ) : null}
 

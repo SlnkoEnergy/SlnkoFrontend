@@ -101,37 +101,36 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           Axios.get("/get-all-po"),
           Axios.get("/get-all-bill"),
         ]);
-
+    
         const PoData = PoResponse.data.data || [];
         const BillData = BillResponse.data.data || [];
-
+    
         const updatedPoData = PoData.map((po) => {
-          const totalBill = BillData.filter(
-            (bill) => bill.po_number === po.po_number
-          ).reduce((sum, bill) => {
+          const poBills = BillData.filter((bill) => bill.po_number === po.po_number);
+    
+          const totalBill = poBills.reduce((sum, bill) => {
             const billValue = parseFloat(bill.bill_value) || 0;
             return sum + billValue;
           }, 0);
-
+    
+      
+          const billingTypes = [...new Set(poBills.map((bill) => bill.type))];
+    
           const formattedTotal = totalBill.toLocaleString("en-IN");
-
-          const partial_Billing = (po.partial_billing)
-          // Determine billing status
+    
           const billStatus =
-            totalBill >= parseFloat(po.po_value)
-              ? "Fully Billed"
-              : "Bill Pending";
-
+            totalBill >= parseFloat(po.po_value) ? "Fully Billed" : "Bill Pending";
+    
           return {
             ...po,
             totalBill,
-            partial_Billing,
             formattedTotal,
+            billingTypes,
             bill_status: billStatus,
           };
         });
-
-        setPos(updatedPoData); // Update the state with formatted data
+    
+        setPos(updatedPoData);
       } catch (err) {
         console.error("Error fetching table data:", err);
         setError("Failed to fetch table data.");
@@ -139,6 +138,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         setLoading(false);
       }
     };
+    
 
     fetchTableData();
   }, []);
@@ -362,13 +362,13 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         po.p_id || "-",
         po.po_number || "-",
         po.date || "-",
-        po.partial_Billing || "-",
+        po.billingTypes || "-",
         po.item || "-",
         po.vendor || "-",
         po.po_value || "-",
-        po.amount_paid || "-",
+        po.amount_paid || "0",
         po.bill_status || "-",
-        po.totalBill || "-",
+        po.totalBill || "0",
         // po.action || "-",
       ]);
 
@@ -591,7 +591,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         borderBottom: "1px solid",
                       }}
                     >
-                      {po.partial_Billing || "-"}
+                      {po.billingTypes || "-"}
                     </Box>
                     <Box
                       component="td"
@@ -637,7 +637,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       {new Intl.NumberFormat("en-IN", {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
-                      }).format(po.amount_paid)}
+                      }).format(po.amount_paid || 0)}
                     </Box>
                     <Box
                       component="td"

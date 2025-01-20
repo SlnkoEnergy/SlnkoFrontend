@@ -20,7 +20,21 @@ function VendorBillSummary() {
     const [itemsPerPage, setItemsPerPage] = useState(15);
     const [searchQuery, setSearchQuery] = useState("");
     const [searchParams, setSearchParams] = useSearchParams();
+  const [user, setUser] = useState(null);
 
+  
+ useEffect(() => {
+  const userData = getUserData();
+  setUser(userData);
+}, []);
+
+const getUserData = () => {
+  const userData = localStorage.getItem("userDetails");
+  if (userData) {
+    return JSON.parse(userData);
+  }
+  return null;
+};
 
   // Fetch Purchase Order data (get-all-po)
   useEffect(() => {
@@ -73,6 +87,7 @@ function VendorBillSummary() {
             received: "Pending", // Default status for received
             approved_by: bill.approved_by,
             created_on: bill.created_on,
+            updatedAt : bill.updatedAt
           }));
         }
         return [];
@@ -216,7 +231,7 @@ function VendorBillSummary() {
         {/* {renderFilters()} */}
       </Box>
 
-    <Box sx={{ padding: 3, maxWidth: "1200px", margin: "auto" }}>
+    <Box sx={{ padding: 3, maxWidth: "100%", overflow:"auto", marginLeft: { xl: "15%", lg: "18%", md: "25%", sm:"0%" }, minHeight:{xs:"100%", md:"0%"}, }}>
       {/* <Typography
         level="h4"
         component="h1"
@@ -239,6 +254,7 @@ function VendorBillSummary() {
           borderRadius: "md",
           overflow: "hidden",
           boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
+          
         }}
       >
         <Box
@@ -322,7 +338,7 @@ function VendorBillSummary() {
                   )}
                 </Box>
                 <Box component="td" sx={{ padding: 2 }}>{row.approved_by}</Box>
-                <Box component="td" sx={{ padding: 2 }}>{row.created_on}</Box>
+                <Box component="td" sx={{ padding: 2 }}>{row.updatedAt || row.created_on}</Box>
               </Box>
             ))
           ) : (
@@ -343,7 +359,8 @@ function VendorBillSummary() {
           pt: 2,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
-          display: { xs: "none", md: "flex" },
+          display: "flex",
+          flexDirection: {xs:"column", md:"row"},
           alignItems: "center",
           marginLeft: { xl: "15%", md: "25%", lg: "18%" },
         }}

@@ -142,15 +142,15 @@ const ProjectBalances = forwardRef((props, ref) => {
 
         // Calculate aggregated values
         const totalCredit = creditData.reduce(
-          (sum, row) => sum + (parseFloat(row.cr_amount) || 0),
+          (sum, row) => sum + (parseFloat(row.cr_amount) || "0"),
           0
         );
         const totalDebit = debitData.reduce(
-          (sum, row) => sum + (parseFloat(row.amount_paid) || 0),
+          (sum, row) => sum + (parseFloat(row.amount_paid) || "0"),
           0
         );
         const totalMW = projectsData.reduce(
-          (sum, row) => sum + (parseFloat(row.project_kwp) || 0),
+          (sum, row) => sum + (Math.round(row.project_kwp) || 0),
           0
         );
 
@@ -299,13 +299,13 @@ const ProjectBalances = forwardRef((props, ref) => {
   
       const merged = projects.map((project) => {
         const projectId = project.p_id;
-        const totalCredit = creditSumMap[projectId] || 0;
-        const totalDebit = debitSumMap[projectId] || 0;
-        const oldAmount = totalCredit - totalDebit || 0;
-        const customerAdjustment = customerAdjustmentSumMap[projectId] || 0;
-        const totalPoValue = poSumMap[projectId] || 0;
-        const totalBillValue = billSumMap[projectId] || 0;
-        const advancePaid = amountPaidSumMap[projectId] || 0;
+        const totalCredit = creditSumMap[projectId] || "0";
+        const totalDebit = debitSumMap[projectId] || "0";
+        const oldAmount = totalCredit - totalDebit || "0";
+        const customerAdjustment = customerAdjustmentSumMap[projectId] || "0";
+        const totalPoValue = poSumMap[projectId] || "0";
+        const totalBillValue = billSumMap[projectId] || "0";
+        const advancePaid = amountPaidSumMap[projectId] || "0";
   
         const netBalance = totalCredit - customerAdjustment;
         const balanceSlnko = netBalance - advancePaid;
@@ -313,7 +313,7 @@ const ProjectBalances = forwardRef((props, ref) => {
         const balancePayable = totalPoValue - totalBillValue - netAdvance;
   
         const tcs =
-          netBalance > 5000000 ? Math.round((netBalance - 5000000) * 0.001) : 0;
+          netBalance > 5000000 ? Math.round((netBalance - 5000000) * 0.001) : "0";
         const balanceRequired = balanceSlnko - balancePayable - tcs;
   
         return {
@@ -730,7 +730,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                   border: "1px solid #ddd",
                 }}
               >
-                {totals.totalBalanceSlnko}
+                {totals.totalBalanceSlnko.toLocaleString("en-IN")}
               </td>
               <td
                 style={{
@@ -739,7 +739,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                   border: "1px solid #ddd",
                 }}
               >
-                {totals.totalBalancePayable}
+                {totals.totalBalancePayable.toLocaleString("en-IN")}
               
               </td>
               <td
@@ -749,7 +749,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                   border: "1px solid #ddd",
                 }}
               >
-                {totals.totalBalanceRequired}
+                {totals.totalBalanceRequired.toLocaleString("en-IN")}
               </td>
             </tr>
           </tbody>
