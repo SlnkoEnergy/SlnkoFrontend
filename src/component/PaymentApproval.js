@@ -42,7 +42,12 @@ function PaymentRequest() {
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [credits, setCredits] = useState([]);
+    const [debits, setDebits] = useState([]);
   const [selected, setSelected] = useState([]);
+    const [total_Credit, setTotal_Credit] = useState(0);
+    const [total_Debit, setTotal_Debit] = useState(0);
+     const [available_Amount, setAvailable_Amount] = useState(0);
   const [projects, setProjects] = useState([]);
   const [mergedData, setMergedData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -89,45 +94,90 @@ function PaymentRequest() {
     const fetchPaymentsAndProjects = async () => {
       setLoading(true);
       try {
-        const [paymentResponse, projectResponse] = await Promise.all([
-          Axios.get("/get-pay-summary", {
-            params: { approved: "Pending" },
-          }),
+        // Fetch all required data in parallel
+        const [paymentResponse, projectResponse, creditResponse, debitResponse] = await Promise.all([
+          Axios.get("/get-pay-summary", { params: { approved: "Pending" } }),
           Axios.get("/get-all-project"),
+          Axios.get("/all-bill"),
+          Axios.get("/get-subtract-amount"),
         ]);
-        const pendingPayments = paymentResponse.data?.data.filter(
+  
+        // Handle payments data
+        const pendingPayments = paymentResponse.data?.data?.filter(
           (payment) => payment.approved === "Pending"
         ) || [];
-
         setPayments(pendingPayments);
-        // console.log("Payment Data (Pending) are:", pendingPayments);
-
-        setProjects(projectResponse.data?.data || []);
-        // console.log("Project Data are:", projectResponse.data.data);
-
-        // const uniqueCustomers = [
-        //   ...new Set(
-        //     projectResponse.data.data.map((project) => project.customer)
-        //   ),
-        // ].filter(Boolean);
-
-        // const uniqueGroups = [
-        //   ...new Set(
-        //     projectResponse.data.data.map((project) => project.p_group)
-        //   ),
-        // ].filter(Boolean);
-
-        // setCustomers(uniqueCustomers);
-        // setGroups(uniqueGroups);
+  
+        // Handle projects data
+        const projectData = projectResponse.data?.data || [];
+        setProjects(projectData);
+  
+        // Handle credits and debits data
+        const creditData = creditResponse.data?.bill || [];
+        const debitData = debitResponse.data?.data || [];
+  
+        setCredits(creditData);
+        setDebits(debitData);
+  
+        // Calculate total credits and debits
+        const totalCredit = creditData.reduce(
+          (sum, row) => sum + (parseFloat(row.cr_amount) || 0),
+          0
+        );
+        const totalDebit = debitData.reduce(
+          (sum, row) => sum + (parseFloat(row.amount_paid) || 0),
+          0
+        );
+  
+        setTotal_Credit(totalCredit.toLocaleString("en-IN"));
+        setTotal_Debit(totalDebit.toLocaleString("en-IN"));
+  
+        // Calculate total credit, total debit, and available amount for each project
+        const projectDetails = projectData.map((project) => {
+          // Calculate total credit for this project
+          const projectCreditTotal = creditData
+            .filter((credit) => credit.p_id === project.p_id)
+            .reduce((sum, credit) => sum + (parseFloat(credit.cr_amount) || 0), 0);
+  
+          // Calculate total debit for this project
+          const projectDebitTotal = debitData
+            .filter((debit) => debit.p_id === project.p_id)
+            .reduce((sum, debit) => sum + (parseFloat(debit.amount_paid) || 0), 0);
+  
+          // Calculate available amount for this project
+          const projectAvailableAmount = projectCreditTotal - projectDebitTotal;
+  
+          return {
+            ...project,
+            totalCredit: projectCreditTotal,
+            totalDebit: projectDebitTotal,
+            availableAmount: projectAvailableAmount,
+          };
+        });
+  
+        console.log("Project Details with Credit, Debit, and Available Amount:", projectDetails);
+  
+        // Optional: Set project details to state if needed
+        setProjects(projectDetails);
+  
+        // Calculate overall available amount
+        const availableAmount = totalCredit - totalDebit;
+        setAvailable_Amount(Math.round(availableAmount).toLocaleString("en-IN"));
+  
+        // Logging for debugging
+        console.log("Total Credit:", totalCredit);
+        console.log("Total Debit:", totalDebit);
+        console.log("Available Amount (Overall):", availableAmount);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
     };
-
+  
     fetchPaymentsAndProjects();
   }, []);
+  
 
   useEffect(() => {
     if (payments.length > 0 && projects.length > 0) {
@@ -582,7 +632,7 @@ function PaymentRequest() {
                         textAlign: "center",
                       }}
                     >
-                      {payment.clientname || "-"}
+                      {available_Amount}
                     </Box>
                     <Box
                       component="td"

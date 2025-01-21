@@ -164,7 +164,7 @@ function PaymentRequestForm() {
     const selectedPo = getFormData.poNumbers.find((po) => po.po_number === selectedOption?.value);
     if (selectedPo) {
       const poValue = parseFloat(selectedPo.po_value || "0");
-      const totalAdvancePaid = parseFloat(selectedPo.total_advance_paid || "0");
+      const totalAdvancePaid = parseFloat(selectedPo.amount_paid || "0");
       const po_balance = poValue - totalAdvancePaid;
       setFormData((prev) => ({
         ...prev,
@@ -259,6 +259,9 @@ function PaymentRequestForm() {
           <Box component="form" onSubmit={handleSubmit}>
             <Grid container spacing={2}>
               <Grid xs={12} sm={6}>
+              <Typography level="body2" fontWeight="bold">
+     Select Project
+    </Typography>
               <Select
           name="p_id"
           value={formData.p_id? {label: getFormData.projectIDs.find((project) => project.p_id === formData.p_id)?.code,
@@ -279,6 +282,9 @@ function PaymentRequestForm() {
               </Grid>
 
               <Grid xs={12} sm={6}>
+              <Typography level="body2" fontWeight="bold">
+      Project Name
+    </Typography>
                 <Input
                   name="name"
                   value={formData.name || ""}
@@ -289,6 +295,9 @@ function PaymentRequestForm() {
               </Grid>
 
               <Grid xs={12} sm={6}>
+              <Typography level="body2" fontWeight="bold">
+      Client Name
+    </Typography>
                 <Input
                   name="customer"
                   value={formData.customer || ""}
@@ -299,6 +308,9 @@ function PaymentRequestForm() {
               </Grid>
 
               <Grid xs={12} sm={6}>
+              <Typography level="body2" fontWeight="bold">
+      Group Name
+    </Typography>
                 <Input
                   name="p_group"
                   value={formData.p_group || ""}
@@ -319,6 +331,9 @@ function PaymentRequestForm() {
               </Grid> */}
 
               <Grid xs={12} sm={4}>
+              <Typography level="body2" fontWeight="bold">
+      Payment Type
+    </Typography>
              <Select
   name="pay_type"
   value={formData.pay_type ? { label: formData.pay_type, value: formData.pay_type } : null}
@@ -337,6 +352,9 @@ function PaymentRequestForm() {
               </Grid>
 
               <Grid xs={12} sm={4}>
+              <Typography level="body2" fontWeight="bold">
+      PO Number
+    </Typography>
               <Select
                   name="po_number"
                   value={formData.po_number ? { label: formData.po_number, value: formData.po_number } : null}
@@ -352,6 +370,9 @@ function PaymentRequestForm() {
 
 
               <Grid xs={12} sm={4}>
+              <Typography level="body2" fontWeight="bold">
+      Amount Requested (INR)
+    </Typography>
               <Input
   type="number"
   value={formData.amount_paid}
@@ -380,6 +401,9 @@ function PaymentRequestForm() {
               </Grid>
 
               <Grid xs={12} sm={4}>
+              <Typography level="body2" fontWeight="bold">
+            Amount for Customers 
+    </Typography>
                 <Input
                   type="number"
                   name="amt_for_customer"
@@ -391,6 +415,9 @@ function PaymentRequestForm() {
               </Grid>
 
               <Grid xs={12} sm={4}>
+              <Typography level="body2" fontWeight="bold">
+              Requested Date
+    </Typography>
                 <Input
                   type="date"
                   name="dbt_date"
@@ -402,6 +429,9 @@ function PaymentRequestForm() {
               </Grid>
 
               <Grid xs={12} sm={4}>
+              <Typography level="body2" fontWeight="bold">
+              Requested For
+    </Typography>
               <Input
     name="paid_for"
     value={formData.item ||formData.paid_for }
@@ -417,6 +447,9 @@ function PaymentRequestForm() {
               </Grid>
 
               <Grid xs={12} sm={4}>
+              <Typography level="body2" fontWeight="bold">
+              Vendor
+    </Typography>
                 <Input
                   name="vendor"
                   value={formData.vendor || ""}
@@ -427,6 +460,9 @@ function PaymentRequestForm() {
               </Grid>
 
               <Grid xs={12} sm={4}>
+              <Typography level="body2" fontWeight="bold">
+              Payment Description
+    </Typography>
                 <Input
                   name="comment"
                   value={formData.comment}
@@ -437,6 +473,9 @@ function PaymentRequestForm() {
               </Grid>
 
               <Grid xs={12} sm={4}>
+              <Typography level="body2" fontWeight="bold">
+              PO Value (with GST)
+    </Typography>
                 <Input
                   name="po_value"
                   value={formData.po_value || ""}
@@ -447,6 +486,9 @@ function PaymentRequestForm() {
               </Grid>
 
               <Grid xs={12} sm={4}>
+              <Typography level="body2" fontWeight="bold">
+              Total Advance Paid
+    </Typography>
                 <Input
                   name="total_advance_paid"
                   value={formData.total_advance_paid}
@@ -462,6 +504,9 @@ function PaymentRequestForm() {
               </Grid>
 
               <Grid xs={12} sm={4}>
+              <Typography level="body2" fontWeight="bold">
+              Current PO Balance
+    </Typography>
                 <Input
                   name="po_balance"
                   value={formData.po_balance || ""}
@@ -472,7 +517,7 @@ function PaymentRequestForm() {
               </Grid>
 
               <Grid xs={12}>
-                <Typography level="h6" sx={{ mt: 2, mb: 1 }}>
+                <Typography level="h6" fontWeight="bold" sx={{ mt: 1 }}>
                   Beneficiary Details
                 </Typography>
               </Grid>
@@ -486,6 +531,9 @@ function PaymentRequestForm() {
               </Grid>
 
               <Grid xs={12} sm={6}>
+              <Typography level="body2" fontWeight="bold">
+              Beneficiary Name
+    </Typography>
                 <Input
                   name="benificiary"
                   value={formData.benificiary || ""}
@@ -496,6 +544,9 @@ function PaymentRequestForm() {
               </Grid>
 
               <Grid xs={12} sm={6}>
+              <Typography level="body2" fontWeight="bold">
+              Beneficiary Account Number
+    </Typography>
                 <Input
                   name="acc_number"
                   value={formData.acc_number || ""}
@@ -506,6 +557,9 @@ function PaymentRequestForm() {
               </Grid>
 
               <Grid xs={12} sm={6}>
+              <Typography level="body2" fontWeight="bold">
+              Beneficiary IFSC Code
+    </Typography>
                 <Input
                   name="ifsc"
                   value={formData.ifsc || ""}
@@ -515,6 +569,9 @@ function PaymentRequestForm() {
               </Grid>
 
               <Grid xs={12} sm={6}>
+              <Typography level="body2" fontWeight="bold">
+              Bank Name
+    </Typography>
                 <Input
                   name="branch"
                   value={formData.branch || ""}
