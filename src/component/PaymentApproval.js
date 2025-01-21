@@ -1,23 +1,15 @@
-import BlockIcon from "@mui/icons-material/Block";
-import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
-import Chip from "@mui/joy/Chip";
 import Divider from "@mui/joy/Divider";
-import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
-import Menu from "@mui/joy/Menu";
-import MenuButton from "@mui/joy/MenuButton";
-import MenuItem from "@mui/joy/MenuItem";
 import Modal from "@mui/joy/Modal";
 import ModalClose from "@mui/joy/ModalClose";
 import ModalDialog from "@mui/joy/ModalDialog";
@@ -28,8 +20,8 @@ import Typography from "@mui/joy/Typography";
 import * as React from "react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import Axios from "../utils/Axios";
 import { toast } from "react-toastify";
+import Axios from "../utils/Axios";
 
 function PaymentRequest() {
   const [payments, setPayments] = useState([]);
@@ -42,16 +34,18 @@ function PaymentRequest() {
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-    const [credits, setCredits] = useState([]);
-    const [debits, setDebits] = useState([]);
+  const [credits, setCredits] = useState([]);
+  const [debits, setDebits] = useState([]);
   const [selected, setSelected] = useState([]);
-    const [total_Credit, setTotal_Credit] = useState(0);
-    const [total_Debit, setTotal_Debit] = useState(0);
-     const [available_Amount, setAvailable_Amount] = useState(0);
+  const [total_Credit, setTotal_Credit] = useState(0);
+  const [total_Debit, setTotal_Debit] = useState(0);
+  const [available_Amount, setAvailable_Amount] = useState(0);
   const [projects, setProjects] = useState([]);
   const [mergedData, setMergedData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
+  const [CreditSumup, setCreditSumUp] = useState([]);
+  const [DebitSumup, setDebitSumUp] = useState([]);
 
   const renderFilters = () => (
     <>
@@ -95,30 +89,36 @@ function PaymentRequest() {
       setLoading(true);
       try {
         // Fetch all required data in parallel
-        const [paymentResponse, projectResponse, creditResponse, debitResponse] = await Promise.all([
+        const [
+          paymentResponse,
+          projectResponse,
+          creditResponse,
+          debitResponse,
+        ] = await Promise.all([
           Axios.get("/get-pay-summary", { params: { approved: "Pending" } }),
           Axios.get("/get-all-project"),
           Axios.get("/all-bill"),
           Axios.get("/get-subtract-amount"),
         ]);
-  
+
         // Handle payments data
-        const pendingPayments = paymentResponse.data?.data?.filter(
-          (payment) => payment.approved === "Pending"
-        ) || [];
+        const pendingPayments =
+          paymentResponse.data?.data?.filter(
+            (payment) => payment.approved === "Pending"
+          ) || [];
         setPayments(pendingPayments);
-  
+
         // Handle projects data
         const projectData = projectResponse.data?.data || [];
         setProjects(projectData);
-  
+
         // Handle credits and debits data
         const creditData = creditResponse.data?.bill || [];
         const debitData = debitResponse.data?.data || [];
-  
+
         setCredits(creditData);
         setDebits(debitData);
-  
+
         // Calculate total credits and debits
         const totalCredit = creditData.reduce(
           (sum, row) => sum + (parseFloat(row.cr_amount) || 0),
@@ -128,103 +128,130 @@ function PaymentRequest() {
           (sum, row) => sum + (parseFloat(row.amount_paid) || 0),
           0
         );
-  
+
         setTotal_Credit(totalCredit.toLocaleString("en-IN"));
         setTotal_Debit(totalDebit.toLocaleString("en-IN"));
-  
-        // Calculate total credit, total debit, and available amount for each project
-        const projectDetails = projectData.map((project) => {
-          // Calculate total credit for this project
-          const projectCreditTotal = creditData
-            .filter((credit) => credit.p_id === project.p_id)
-            .reduce((sum, credit) => sum + (parseFloat(credit.cr_amount) || 0), 0);
-  
-          // Calculate total debit for this project
-          const projectDebitTotal = debitData
-            .filter((debit) => debit.p_id === project.p_id)
-            .reduce((sum, debit) => sum + (parseFloat(debit.amount_paid) || 0), 0);
-  
-          // Calculate available amount for this project
-          const projectAvailableAmount = projectCreditTotal - projectDebitTotal;
-  
-          return {
-            ...project,
-            totalCredit: projectCreditTotal,
-            totalDebit: projectDebitTotal,
-            availableAmount: projectAvailableAmount,
-          };
-        });
-  
-        console.log("Project Details with Credit, Debit, and Available Amount:", projectDetails);
-  
-        // Optional: Set project details to state if needed
-        setProjects(projectDetails);
-  
+
+        // Calculate total credit, total debit, and available amount for each projec
+
         // Calculate overall available amount
-        const availableAmount = totalCredit - totalDebit;
-        setAvailable_Amount(Math.round(availableAmount).toLocaleString("en-IN"));
-  
+        // const availableAmount = totalCredit - totalDebit;
+        // setAvailable_Amount(
+        //   Math.round(availableAmount).toLocaleString("en-IN")
+        // );
+
         // Logging for debugging
-        console.log("Total Credit:", totalCredit);
-        console.log("Total Debit:", totalDebit);
-        console.log("Available Amount (Overall):", availableAmount);
+        // console.log("Total Credit:", totalCredit);
+        // console.log("Total Debit:", totalDebit);
+        // console.log("Available Amount (Overall):", availableAmount);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
     };
-  
+
     fetchPaymentsAndProjects();
   }, []);
-  
 
   useEffect(() => {
-    if (payments.length > 0 && projects.length > 0) {
+    if (
+      payments.length > 0 &&
+      projects.length > 0 &&
+      credits.length > 0 &&
+      debits.length > 0
+    ) {
+      // Merging everything into the payments map
       const merged = payments.map((payment) => {
+        // Find the corresponding project for the current payment using p_id
         const matchingProject = projects.find(
           (project) => Number(project.p_id) === Number(payment.p_id)
         );
+
+        // Calculate aggregateCredit for the payment's p_id
+        const aggregateCredit = (() => {
+          if (matchingProject?.p_group) {
+            // Total credits for all projects in the same group
+            return credits
+              .filter((credit) =>
+                projects.some(
+                  (proj) =>
+                    proj.p_group === matchingProject.p_group &&
+                    proj.p_id === credit.p_id
+                )
+              )
+              .reduce((sum, credit) => sum + parseFloat(credit.cr_amount), 0);
+          } else {
+            // Credit for the current project only
+            const credit = credits.find((c) => c.p_id === payment.p_id);
+            return credit ? parseFloat(credit.cr_amount) : 0;
+          }
+        })();
+
+        // Calculate aggregateDebit for the payment's p_id
+        const aggregateDebit = (() => {
+          if (matchingProject?.p_group) {
+            // Total debits for all projects in the same group
+            return debits
+              .filter((debit) =>
+                projects.some(
+                  (proj) =>
+                    proj.p_group === matchingProject.p_group &&
+                    proj.p_id === debit.p_id
+                )
+              )
+              .reduce((sum, debit) => sum + parseFloat(debit.amount_paid), 0);
+          } else {
+            // Debit for the current project only
+            const debit = debits.find((d) => d.p_id === payment.p_id);
+            return debit ? parseFloat(debit.amount_paid) : 0;
+          }
+        })();
+
+        // Merge everything into one object
         return {
           ...payment,
           projectCode: matchingProject?.code || "-",
           projectName: matchingProject?.name || "-",
           projectCustomer: matchingProject?.customer || "-",
           projectGroup: matchingProject?.p_group || "-",
+          aggregateCredit,
+          aggregateDebit,
+          Available_Amount: aggregateCredit - aggregateDebit,
         };
       });
+      console.log("Merged Data:", merged);
       setMergedData(merged);
     }
-  }, [payments, projects]);
+  }, [payments, projects, credits, debits]);
 
- const handleApprovalUpdate = async (paymentId, newStatus) => {
-  try {
-    const response = await Axios.put("/account-approve", {
-      pay_id: paymentId,
-      status: newStatus,
-    });
+  const handleApprovalUpdate = async (paymentId, newStatus) => {
+    try {
+      const response = await Axios.put("/account-approve", {
+        pay_id: paymentId,
+        status: newStatus,
+      });
 
-    if (response.status === 200) {
-      // Remove the payment from the table after approval or rejection
-      setPayments((prevPayments) =>
-        prevPayments.filter((payment) => payment.pay_id !== paymentId)
-      );
+      if (response.status === 200) {
+        // Remove the payment from the table after approval or rejection
+        setPayments((prevPayments) =>
+          prevPayments.filter((payment) => payment.pay_id !== paymentId)
+        );
 
-      if (newStatus === "Approved") {
-        toast.success('Payment Approved !!', {
-          autoClose: 3000,
-        });
-      } else if (newStatus === "Rejected") {
-        toast.error('Oops!! Rejected...', {
-          autoClose: 2000,
-        });
+        if (newStatus === "Approved") {
+          toast.success("Payment Approved !!", {
+            autoClose: 3000,
+          });
+        } else if (newStatus === "Rejected") {
+          toast.error("Oops!! Rejected...", {
+            autoClose: 2000,
+          });
+        }
       }
+    } catch (error) {
+      console.error("Error updating approval status:", error);
     }
-  } catch (error) {
-    console.error("Error updating approval status:", error);
-  }
-};
-
+  };
 
   const RowMenu = ({ paymentId }) => {
     return (
@@ -240,7 +267,7 @@ function PaymentRequest() {
         >
           Approve
         </Button>
-  
+
         {/* Reject Button */}
         <Button
           variant="outlined"
@@ -255,7 +282,6 @@ function PaymentRequest() {
       </Box>
     );
   };
-  
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -632,7 +658,7 @@ function PaymentRequest() {
                         textAlign: "center",
                       }}
                     >
-                      {available_Amount}
+                      {payment.Available_Amount}
                     </Box>
                     <Box
                       component="td"
