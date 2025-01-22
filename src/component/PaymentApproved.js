@@ -1,36 +1,24 @@
-import BlockIcon from "@mui/icons-material/Block";
-import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
-import Chip from "@mui/joy/Chip";
-import Divider from "@mui/joy/Divider";
+import DialogActions from "@mui/joy/DialogActions";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Modal from "@mui/joy/Modal";
-import ModalClose from "@mui/joy/ModalClose";
-import ModalDialog from "@mui/joy/ModalDialog";
 import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
-import Tooltip from "@mui/joy/Tooltip";
-import { toast } from "react-toastify";
 import Typography from "@mui/joy/Typography";
 import { useSnackbar } from "notistack";
 import * as React from "react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import DialogContent from "@mui/joy/DialogContent";
-import DialogActions from "@mui/joy/DialogActions";
-import DialogTitle from "@mui/joy/DialogTitle";
 import Axios from "../utils/Axios";
-import { formControlClasses } from "@mui/material";
 
 function PaymentRequest() {
   const [payments, setPayments] = useState([]);
@@ -49,11 +37,12 @@ function PaymentRequest() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isUtrSubmitted, setIsUtrSubmitted] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [paymentId, setPaymentId] = useState('');
-    const [accountMatch, setAccountMatch] = useState('');
-    const [ifsc, setIfsc] = useState('');
+  const [paymentId, setPaymentId] = useState("");
+  const [accountMatch, setAccountMatch] = useState("");
+  const [ifsc, setIfsc] = useState("");
 
-  
+  const { enqueueSnackbar } = useSnackbar();
+
   const renderFilters = () => (
     <>
       <FormControl size="sm">
@@ -144,38 +133,15 @@ function PaymentRequest() {
     }
   }, [payments, projects]);
 
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
-
-  const handleSubmit = async () => {
-    try {
-      await Axios.put('/acc-matched', {
-        pay_id: paymentId,
-        acc_number: accountMatch,
-        ifsc: ifsc,
-      });
-
-      alert('Successfully submitted');
-      handleClose();
-    } catch (error) {
-      console.error('Error submitting data', error);
-      alert('Failed to submit data');
-    }
-  };
-
-
-  
-   
-
   /**Account Match Logic ***/
   // const AccountMatch = ({ paymentId, onAccountMatchSuccess }) => {
   //   const { enqueueSnackbar } = useSnackbar();
-  
+
   //   const [isMatched, setIsMatched] = useState(false);
   //   const [accountMatch, setAccountMatch] = useState('');
   //   const [ifsc, setIfsc] = useState('');
   //   const [error, setError] = useState(null);
-  
+
   //   // Load saved account match details on mount
   //   useEffect(() => {
   //     const savedPaymentId = localStorage.getItem('payId');
@@ -186,7 +152,7 @@ function PaymentRequest() {
   //           const response = await Axios.get('/getapi(get-pay-summary)', {
   //             params: { pay_id: savedPaymentId },
   //           });
-            
+
   //           if (response.status === 200) {
   //             const { accountNo, ifsc } = response.data;
   //             // Update state if needed
@@ -198,20 +164,19 @@ function PaymentRequest() {
   //           console.error('Error fetching pay summary:', error);
   //         }
   //       };
-        
+
   //       fetchSummary();
   //     }
   //   }, [paymentId]);
-    
-  
+
   //   const handleAccountMatch = async () => {
   //     if (!accountMatch) {
   //       setError('Both Account Number and IFSC Code are required!');
   //       return;
   //     }
-  
+
   //     setError(null);
-  
+
   //     try {
   //       console.log('Sending account match request...');
   //       const response = await Axios.put('/acc-matched', {
@@ -219,9 +184,9 @@ function PaymentRequest() {
   //         acc_number: accountMatch,
   //         ifsc: ifsc,
   //       });
-  
+
   //       console.log('Account match response:', response);
-  
+
   //       if (response.status === 200) {
   //         localStorage.setItem('payId', paymentId);
   //         localStorage.setItem('isMatched', 'true');
@@ -229,7 +194,7 @@ function PaymentRequest() {
   //         localStorage.setItem('savedIfsc', ifsc);
   //         setIsMatched(true);
   //         enqueueSnackbar('Account matched successfully!', { variant: 'success' });
-  
+
   //         if (onAccountMatchSuccess) {
   //           onAccountMatchSuccess(accountMatch, ifsc);
   //         }
@@ -245,7 +210,7 @@ function PaymentRequest() {
   //       });
   //     }
   //   };
-  
+
   //   return (
   //     <div>
   //       {/* Account Match Form */}
@@ -288,9 +253,9 @@ function PaymentRequest() {
   //               />
   //             </Tooltip>
   //           </div>
-  
+
   //           {error && <div style={{ color: 'red' }}>{error}</div>}
-  
+
   //           <Button
   //             type="submit"
   //             disabled={!accountMatch}
@@ -306,7 +271,7 @@ function PaymentRequest() {
   //           </Button>
   //         </form>
   //       ) : null}
-  
+
   //       {/* Display Chip with Match Status */}
   //       {isMatched && (
   //         <Chip
@@ -320,9 +285,7 @@ function PaymentRequest() {
   //     </div>
   //   );
   // };
-  
 
-  
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
@@ -414,10 +377,111 @@ function PaymentRequest() {
     }
   };
 
+  const [utr, setUtr] = useState(""); // UTR state
+
+  const [accountMatched, setAccountMatched] = useState({}); // Track matched accounts
+  const [matchedAccounts, setMatchedAccounts] = useState({});
+
+  // Function to fetch matched data from localStorage
+  const getMatchedAccountsFromLocalStorage = () => {
+    const storedMatchedAccounts = localStorage.getItem("matchedAccounts");
+    return storedMatchedAccounts ? JSON.parse(storedMatchedAccounts) : {};
+  };
+
+  // Function to store matched data in localStorage
+  const storeMatchedAccountsToLocalStorage = (matchedAccounts) => {
+    localStorage.setItem("matchedAccounts", JSON.stringify(matchedAccounts));
+  };
+
+  // Fetch matched accounts from localStorage on page load
+  useEffect(() => {
+    const storedMatchedAccounts = getMatchedAccountsFromLocalStorage();
+    setMatchedAccounts(storedMatchedAccounts);
+  }, []);
+
+  // Handle Account Match Submit
+  const handleAccountMatchSubmit = async () => {
+    if (!accountMatch || !ifsc) {
+      setError("Both Account Number and IFSC Code are required!");
+      return;
+    }
+
+    try {
+      const response = await Axios.put("/acc-matched", {
+        pay_id: paymentId,
+        acc_number: accountMatch,
+        ifsc: ifsc,
+      });
+
+      if (response.status === 200) {
+        enqueueSnackbar("Account matched successfully!", {
+          variant: "success",
+        });
+
+        // Update localStorage with matched account data
+        const updatedMatchedAccounts = {
+          ...matchedAccounts,
+          [paymentId]: true,
+        };
+        setMatchedAccounts(updatedMatchedAccounts);
+        storeMatchedAccountsToLocalStorage(updatedMatchedAccounts);
+
+        setAccountMatch(""); // Reset the account match input
+        setIfsc(""); // Reset IFSC input
+        setOpen(false); // Close the modal
+      } else {
+        enqueueSnackbar("Failed to match account. Please try again.", {
+          variant: "error",
+        });
+      }
+    } catch (error) {
+      console.error("Error during account match:", error);
+      enqueueSnackbar("Something went wrong. Please try again.", {
+        variant: "error",
+      });
+    }
+  };
+
+  // Handle UTR Submit
+  const handleUtrSubmit = async () => {
+    if (!utr) {
+      setError("UTR is required!");
+      return;
+    }
+
+    try {
+      const utrResponse = await Axios.put("/utr-update", {
+        pay_id: paymentId,
+        utr: utr,
+      });
+
+      if (utrResponse.status === 200) {
+        enqueueSnackbar("UTR submitted successfully!", {
+          variant: "success",
+        });
+        setUtr(""); // Reset UTR input
+      }
+    } catch (error) {
+      console.error("Error during UTR submission:", error);
+      enqueueSnackbar("Something went wrong. Please try again.", {
+        variant: "error",
+      });
+    }
+  };
+
+  // Open Modal for Account Matching
+  const handleOpen = (paymentId) => {
+    setPaymentId(paymentId);
+    setOpen(true);
+  };
+
+  // Close Modal for Account Matching
+  const handleClose = () => setOpen(false);
+
   return (
     <>
       {/* Mobile Filters */}
-      <Sheet
+      {/* <Sheet
         className="SearchAndFilters-mobile"
         sx={{ display: { xs: "flex", sm: "none" }, my: 1, gap: 1 }}
       >
@@ -450,7 +514,7 @@ function PaymentRequest() {
             </Sheet>
           </ModalDialog>
         </Modal>
-      </Sheet>
+      </Sheet> */}
 
       {/* Tablet and Up Filters */}
       <Box
@@ -495,58 +559,64 @@ function PaymentRequest() {
           maxWidth: { lg: "85%", sm: "100%", md: "75%" },
         }}
       >
-        <Modal
-        open={open}
-        onClose={handleClose}
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Box
-          sx={{
-            backgroundColor: "white",
-            padding: "20px",
-            borderRadius: "8px",
-            width: "300px",
-          }}
-        >
-          <Typography level="h6" mb={2}>Match Account Details</Typography>
+        <Modal open={open} onClose={handleClose}>
           <Box
-            component="form"
             sx={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
+              backgroundColor: "white",
+              padding: "20px",
+              borderRadius: "8px",
+              width: "300px",
             }}
           >
-            <Input
-              label="Payment ID"
-              variant="outlined"
-              value={paymentId}
-              onChange={(e) => setPaymentId(e.target.value)}
-            />
-            <Input
-              label="Account Number"
-              variant="outlined"
-              value={accountMatch}
-              onChange={(e) => setAccountMatch(e.target.value)}
-            />
-            <Input
-              label="IFSC"
-              variant="outlined"
-              value={ifsc}
-              onChange={(e) => setIfsc(e.target.value)}
-            />
+            <Typography level="h6" mb={2}>
+              Match Account Details
+            </Typography>
+            <Box
+              component="form"
+              sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+            >
+              <Input
+                label="Account Number"
+                variant="outlined"
+                value={accountMatch}
+                onChange={(e) => setAccountMatch(e.target.value)}
+              />
+              <Input
+                label="IFSC"
+                variant="outlined"
+                value={ifsc}
+                onChange={(e) => setIfsc(e.target.value)}
+              />
+            </Box>
+            <DialogActions>
+              <Button onClick={handleClose}>Cancel</Button>
+              <Button onClick={handleAccountMatchSubmit}>Submit</Button>
+            </DialogActions>
           </Box>
-          <DialogActions>
-            <Button onClick={handleClose}>Cancel</Button>
-            <Button onClick={handleSubmit}>Submit</Button>
-          </DialogActions>
-        </Box>
-      </Modal>
+        </Modal>
 
+        {/* Display UTR Input after Account Match */}
+        {/* {accountMatched && (
+          <Box sx={{ marginTop: "20px" }}>
+            <Input
+              label="Enter UTR"
+              variant="outlined"
+              value={utr}
+              onChange={(e) => setUtr(e.target.value)}
+              fullWidth
+            />
+            <Button onClick={handleUtrSubmit} sx={{ marginTop: "10px" }}>
+              Submit UTR
+            </Button>
+          </Box>
+        )} */}
+
+        {/* Display Error or Loading */}
+        {error && (
+          <Typography color="error" textAlign="center">
+            {error}
+          </Typography>
+        )}
 
         {error ? (
           <Typography color="danger" textAlign="center">
@@ -590,7 +660,7 @@ function PaymentRequest() {
                   "Payment Description",
                   "Requested Amount",
                   "Bank Detail",
-                  // "Validation",
+                  "utr",
                 ].map((header, index) => (
                   <Box
                     component="th"
@@ -609,126 +679,142 @@ function PaymentRequest() {
             </Box>
             <Box component="tbody">
               {paginatedPayments.length > 0 ? (
-                paginatedPayments.map((payment, index) => (
-                  <Box
-                    component="tr"
-                    key={index}
-                    sx={{
-                      "&:hover": { backgroundColor: "neutral.plainHoverBg" },
-                    }}
-                  >
+                paginatedPayments.map((payment, index) => {
+                  const isMatched = matchedAccounts[payment.pay_id] || false;
+                  return (
                     <Box
-                      component="td"
+                      component="tr"
+                      key={index}
                       sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
+                        "&:hover": { backgroundColor: "neutral.plainHoverBg" },
                       }}
                     >
-                      <Checkbox
-                        size="sm"
-                        checked={selected.includes(payment.pay_id)}
-                        onChange={(event) =>
-                          handleRowSelect(payment.pay_id, event.target.checked)
-                        }
-                      />
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        <Checkbox
+                          size="sm"
+                          checked={selected.includes(payment.pay_id)}
+                          onChange={(event) =>
+                            handleRowSelect(
+                              payment.pay_id,
+                              event.target.checked
+                            )
+                          }
+                        />
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {payment.pay_id}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {payment.projectCode}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {payment.projectName || "-"}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {payment.paid_for || "-"}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {payment.vendor || "-"}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {payment.comment || "-"}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {new Intl.NumberFormat("en-IN", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        }).format(payment.amt_for_customer)}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {/* Show UTR input if account matched */}
+                        {isMatched ? (
+                          <>
+                            <Input
+                              label="Enter UTR"
+                              variant="outlined"
+                              value={utr}
+                              onChange={(e) => setUtr(e.target.value)}
+                            />
+                            <Button onClick={handleUtrSubmit}>
+                              Submit UTR
+                            </Button>
+                          </>
+                        ) : (
+                          // Account match button if not matched
+                          <Button
+                            onClick={() => handleOpen(payment.pay_id)}
+                            disabled={isMatched}
+                          >
+                            Match Account
+                          </Button>
+                        )}
+                      </Box>
                     </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.pay_id}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.projectCode}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.projectName || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.paid_for || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.vendor || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.comment || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      }).format(payment.amt_for_customer)}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <Button onClick={handleOpen}>Click</Button>
-
-                    </Box>
-                    {/* <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <MatchRow payment={payment} />
-                    </Box> */}
-                  </Box>
-                ))
+                  );
+                })
               ) : (
                 <Box component="tr">
                   <Box
