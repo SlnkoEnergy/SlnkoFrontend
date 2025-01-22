@@ -26,7 +26,11 @@ import { useSnackbar } from "notistack";
 import * as React from "react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import DialogContent from "@mui/joy/DialogContent";
+import DialogActions from "@mui/joy/DialogActions";
+import DialogTitle from "@mui/joy/DialogTitle";
 import Axios from "../utils/Axios";
+import { formControlClasses } from "@mui/material";
 
 function PaymentRequest() {
   const [payments, setPayments] = useState([]);
@@ -45,7 +49,11 @@ function PaymentRequest() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isUtrSubmitted, setIsUtrSubmitted] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [paymentId, setPaymentId] = useState('');
+    const [accountMatch, setAccountMatch] = useState('');
+    const [ifsc, setIfsc] = useState('');
 
+  
   const renderFilters = () => (
     <>
       <FormControl size="sm">
@@ -118,319 +126,203 @@ function PaymentRequest() {
         const matchingProject = projects.find(
           (project) => Number(project.p_id) === Number(payment.p_id)
         );
+
+        // const savedAccountMatch = localStorage.getItem("savedAccountNo");
+        // const savedIfsc = localStorage.getItem("savedIfsc");
+
         return {
           ...payment,
           projectCode: matchingProject?.code || "-",
           projectName: matchingProject?.name || "-",
           // projectCustomer: matchingProject?.customer || "-",
           // projectGroup: matchingProject?.p_group || "-",
+          // accountMatch: savedAccountMatch || "-",
+          // ifsc: savedIfsc || "-",
         };
       });
       setMergedData(merged);
     }
   }, [payments, projects]);
 
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+
+  const handleSubmit = async () => {
+    try {
+      await Axios.put('/acc-matched', {
+        pay_id: paymentId,
+        acc_number: accountMatch,
+        ifsc: ifsc,
+      });
+
+      alert('Successfully submitted');
+      handleClose();
+    } catch (error) {
+      console.error('Error submitting data', error);
+      alert('Failed to submit data');
+    }
+  };
+
+
+  
+   
+
   /**Account Match Logic ***/
-  const AccountMatchAndUTR = ({
-    paymentId,
-    initialAccountMatch = "",
-    initialIfsc = "",
-    isMatched: matchedFromParent,
-    onAccountMatchSuccess,
-  }) => {
-    const { enqueueSnackbar } = useSnackbar();
+  // const AccountMatch = ({ paymentId, onAccountMatchSuccess }) => {
+  //   const { enqueueSnackbar } = useSnackbar();
   
-    // State initialization
-    const [isMatched, setIsMatched] = useState(() => {
-      const savedMatchedStatus = localStorage.getItem(`matched-${paymentId}`);
-      return savedMatchedStatus === "true" ? true : matchedFromParent || false;
-    });
+  //   const [isMatched, setIsMatched] = useState(false);
+  //   const [accountMatch, setAccountMatch] = useState('');
+  //   const [ifsc, setIfsc] = useState('');
+  //   const [error, setError] = useState(null);
   
-    const [accountMatch, setAccountMatch] = useState(initialAccountMatch);
-    const [ifsc, setIfsc] = useState(initialIfsc);
-    const [utr, setUtr] = useState("");
-    const [error, setError] = useState(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isUtrSubmitted, setIsUtrSubmitted] = useState(false);
-    const [getAllPoResponse, setGetAllPoResponse] = useState(null);
-  
-    // Ensure state is updated from localStorage if needed
-    useEffect(() => {
-      const savedMatchedStatus = localStorage.getItem(`matched-${paymentId}`);
-      if (savedMatchedStatus === "true" && !isMatched) {
-        setIsMatched(true);
-      }
-    }, [paymentId, isMatched]);
-  
-    // Function to handle account matching
-    const handleAccountMatch = async () => {
-      if (!accountMatch) {
-        setError("Account Number required!!");
-        return;
-      }
-  
-      setError(null); // Clear any previous errors
-  
-      try {
-        console.log("Sending account match request...");
-        const response = await Axios.put("/acc-matched", {
-          pay_id: paymentId,
-          acc_number: accountMatch,
-          ifsc: ifsc,
-        });
-  
-        console.log("Account match response:", response);
-  
-        if (response.status === 200) {
-          localStorage.setItem(`matched-${paymentId}`, "true");
-          setIsMatched(true);
-          enqueueSnackbar("Account matched successfully!", { variant: "success" });
-        } else {
-          enqueueSnackbar("Failed to match account. Please try again.", {
-            variant: "error",
-          });
-        }
-      } catch (error) {
-        console.error("Error during account match:", error);
-        enqueueSnackbar("Something went wrong. Please try again.", {
-          variant: "error",
-        });
-      }
-    };
-  
-    // Function to handle UTR submission
-    const handleUtrSubmit = async () => {
-      if (!utr) {
-        enqueueSnackbar("Please enter a valid UTR.", { variant: "warning" });
-        return;
-      }
-  
-      setIsSubmitting(true); // Set loading state
-  
-      try {
-        console.log("Submitting UTR...");
-        const utrResponse = await Axios.put("/utr-update", {
-          pay_id: paymentId,
-          utr: utr,
-        });
-  
-        console.log("UTR Response:", utrResponse);
-  
-        if (utrResponse.status === 200 && utrResponse.data) {
-          enqueueSnackbar("UTR submitted successfully!", { variant: "success" });
-          setIsUtrSubmitted(true);
-
+  //   // Load saved account match details on mount
+  //   useEffect(() => {
+  //     const savedPaymentId = localStorage.getItem('payId');
+  //     if (savedPaymentId === paymentId) {
+  //       // If the paymentId matches, try to fetch the summary
+  //       const fetchSummary = async () => {
+  //         try {
+  //           const response = await Axios.get('/getapi(get-pay-summary)', {
+  //             params: { pay_id: savedPaymentId },
+  //           });
+            
+  //           if (response.status === 200) {
+  //             const { accountNo, ifsc } = response.data;
+  //             // Update state if needed
+  //             if (accountNo) setAccountMatch(accountNo);
+  //             if (ifsc) setIfsc(ifsc);
+  //             setIsMatched(true);
+  //           }
+  //         } catch (error) {
+  //           console.error('Error fetching pay summary:', error);
+  //         }
+  //       };
         
+  //       fetchSummary();
+  //     }
+  //   }, [paymentId]);
+    
   
-          // Fetch PO details
-          console.log("Fetching PO details...");
-          
-          const poResponse = await Axios.get("/get-pay-summary");
-          console.log("PO Summary Response:", poResponse.data);
+  //   const handleAccountMatch = async () => {
+  //     if (!accountMatch) {
+  //       setError('Both Account Number and IFSC Code are required!');
+  //       return;
+  //     }
   
-          setGetAllPoResponse(poResponse);
+  //     setError(null);
   
-          // Match PO and perform debit operation
-          const matchedPo = poResponse.data.data.find((po) => po.pay_id === paymentId);
-          if (matchedPo) {
-            console.log("Matched PO data:", matchedPo);
+  //     try {
+  //       console.log('Sending account match request...');
+  //       const response = await Axios.put('/acc-matched', {
+  //         pay_id: paymentId,
+  //         acc_number: accountMatch,
+  //         ifsc: ifsc,
+  //       });
   
-            const debitResponse = await Axios.post("/debit-money", {
-              p_id: matchedPo.p_id,
-              p_group: matchedPo.p_group || "",
-              pay_type: matchedPo.pay_type || "",
-              amount_paid: matchedPo.amount_paid || "",
-              amt_for_customer: matchedPo.amt_for_customer || "",
-              dbt_date: matchedPo.dbt_date || "",
-              paid_for: matchedPo.paid_for || "",
-              vendor: matchedPo.vendor || "",
-              po_number: matchedPo.po_number || "",
-              utr: matchedPo.utr || "",
-              submitted_by: "user123",
-
-            });
+  //       console.log('Account match response:', response);
   
-            if (debitResponse.status === 200) {
-              enqueueSnackbar("Money debited successfully!", {
-                variant: "success",
-              });
-              console.log("Money debited successfully:", debitResponse.data);
+  //       if (response.status === 200) {
+  //         localStorage.setItem('payId', paymentId);
+  //         localStorage.setItem('isMatched', 'true');
+  //         localStorage.setItem('savedAccountNo', accountMatch);
+  //         localStorage.setItem('savedIfsc', ifsc);
+  //         setIsMatched(true);
+  //         enqueueSnackbar('Account matched successfully!', { variant: 'success' });
   
-              // Call the parent callback
-              if (onAccountMatchSuccess) {
-                onAccountMatchSuccess(utr);
-              }
-            } else {
-              enqueueSnackbar("Failed to debit money. Please try again.", {
-                variant: "error",
-              });
-            }
-          } else {
-            enqueueSnackbar("Matching PO not found.", { variant: "error" });
-          }
-        } else {
-          enqueueSnackbar("Failed to submit UTR. Please try again.", {
-            variant: "error",
-          });
-        }
-      } catch (error) {
-        console.error("Error during UTR submission:", error);
-        enqueueSnackbar("Something went wrong. Please try again.", {
-          variant: "error",
-        });
-      } finally {
-        setIsSubmitting(false);
-      }
-    };
+  //         if (onAccountMatchSuccess) {
+  //           onAccountMatchSuccess(accountMatch, ifsc);
+  //         }
+  //       } else {
+  //         enqueueSnackbar('Failed to match account. Please try again.', {
+  //           variant: 'error',
+  //         });
+  //       }
+  //     } catch (error) {
+  //       console.error('Error during account match:', error);
+  //       enqueueSnackbar('Something went wrong. Please try again.', {
+  //         variant: 'error',
+  //       });
+  //     }
+  //   };
   
-    return (
-      <div>
-        {/* Account Match Form */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleAccountMatch();
-          }}
-        >
-          <div style={{ marginBottom: "0.5rem" }}>
-            <Tooltip title="Enter the Account Number">
-              <input
-                type="text"
-                placeholder="Account Number"
-                value={accountMatch}
-                disabled={isMatched}
-                onChange={(e) => setAccountMatch(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "0.5rem",
-                  border: "1px solid #ccc",
-                  marginBottom: "0.5rem",
-                }}
-              />
-            </Tooltip>
-          </div>
-          <div style={{ marginBottom: "0.5rem" }}>
-            <Tooltip title="Enter the IFSC Code">
-              <input
-                type="text"
-                placeholder="IFSC Code"
-                value={ifsc}
-                disabled={isMatched}
-                onChange={(e) => setIfsc(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "0.5rem",
-                  border: "1px solid #ccc",
-                  marginBottom: "0.5rem",
-                }}
-              />
-            </Tooltip>
-          </div>
+  //   return (
+  //     <div>
+  //       {/* Account Match Form */}
+  //       {!isMatched ? (
+  //         <form
+  //           onSubmit={(e) => {
+  //             e.preventDefault();
+  //             handleAccountMatch();
+  //           }}
+  //         >
+  //           <div style={{ marginBottom: '0.5rem' }}>
+  //             <Tooltip title="Enter the Account Number">
+  //               <input
+  //                 type="text"
+  //                 placeholder="Account Number"
+  //                 value={accountMatch}
+  //                 onChange={(e) => setAccountMatch(e.target.value)}
+  //                 style={{
+  //                   width: '100%',
+  //                   padding: '0.5rem',
+  //                   border: '1px solid #ccc',
+  //                   marginBottom: '0.5rem',
+  //                 }}
+  //               />
+  //             </Tooltip>
+  //           </div>
+  //           <div style={{ marginBottom: '0.5rem' }}>
+  //             <Tooltip title="Enter the IFSC Code">
+  //               <input
+  //                 type="text"
+  //                 placeholder="IFSC Code"
+  //                 value={ifsc}
+  //                 onChange={(e) => setIfsc(e.target.value)}
+  //                 style={{
+  //                   width: '100%',
+  //                   padding: '0.5rem',
+  //                   border: '1px solid #ccc',
+  //                   marginBottom: '0.5rem',
+  //                 }}
+  //               />
+  //             </Tooltip>
+  //           </div>
   
-          {error && <div style={{ color: "red" }}>{error}</div>}
+  //           {error && <div style={{ color: 'red' }}>{error}</div>}
   
-          <Button
-            type="submit"
-            disabled={isMatched || !accountMatch}
-            sx={{
-              width: "100%",
-              padding: "0.5rem",
-              backgroundColor: isMatched ? "gray" : "#007bff",
-              color: "white",
-              cursor: isMatched ? "not-allowed" : "pointer",
-            }}
-          >
-            {isMatched ? "Matched" : "Match Account"}
-          </Button>
-        </form>
+  //           <Button
+  //             type="submit"
+  //             disabled={!accountMatch}
+  //             sx={{
+  //               width: '100%',
+  //               padding: '0.5rem',
+  //               backgroundColor: !accountMatch ? 'gray' : '#007bff',
+  //               color: 'white',
+  //               cursor: !accountMatch ? 'not-allowed' : 'pointer',
+  //             }}
+  //           >
+  //             Match Account
+  //           </Button>
+  //         </form>
+  //       ) : null}
   
-        {/* UTR Submission */}
-        {isMatched && !isUtrSubmitted && (
-          <div style={{ marginTop: "1rem" }}>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleUtrSubmit();
-              }}
-            >
-              <input
-                type="text"
-                placeholder="Enter UTR"
-                value={utr}
-                onChange={(e) => setUtr(e.target.value)}
-                disabled={isSubmitting}
-                style={{
-                  width: "100%",
-                  padding: "0.5rem",
-                  marginBottom: "0.5rem",
-                  border: "1px solid #ccc",
-                }}
-              />
-              <Button
-                type="submit"
-                disabled={isSubmitting || !utr}
-                sx={{
-                  width: "100%",
-                  padding: "0.5rem",
-                  backgroundColor: "#28a745",
-                  color: "white",
-                  cursor: isSubmitting ? "not-allowed" : "pointer",
-                }}
-              >
-                {isSubmitting ? "Submitting..." : "Submit UTR"}
-              </Button>
-            </form>
-          </div>
-        )}
-  
-        {/* UTR Submitted */}
-        {isUtrSubmitted && (
-          <div style={{ marginTop: "1rem" }}>
-            <p>UTR: {utr}</p>
-            <Button
-              sx={{
-                width: "100%",
-                padding: "0.5rem",
-                backgroundColor: "gray",
-                color: "white",
-              }}
-              disabled
-            >
-              Submitted
-            </Button>
-          </div>
-        )}
-      </div>
-    );
-  };
-  
+  //       {/* Display Chip with Match Status */}
+  //       {isMatched && (
+  //         <Chip
+  //           variant="soft"
+  //           size="sm"
+  //           startDecorator={<CheckRoundedIcon />}
+  //           color="success"
+  //           label="Matched"
+  //         />
+  //       )}
+  //     </div>
+  //   );
+  // };
   
 
-  const handleAccountMatchUpdate = (paymentId, utrValue = "") => {
-    setPayments((prevPayments) =>
-      prevPayments.map((payment) =>
-        payment.pay_id === paymentId
-          ? { ...payment, isMatched: true, utr: utrValue }
-          : payment
-      )
-    );
-  };
   
-
-  /** Match Logic ***/
-  const MatchRow = ({ payment }) => (
-    <Chip
-      variant="soft"
-      size="sm"
-      startDecorator={
-        payment.acc_match === "matched" ? <CheckRoundedIcon /> : <BlockIcon />
-      }
-      color={payment.acc_match === "matched" ? "success" : "danger"}
-    >
-      {payment.acc_match === "matched" ? payment.acc_match : "match"}
-    </Chip>
-  );
-
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
@@ -603,6 +495,59 @@ function PaymentRequest() {
           maxWidth: { lg: "85%", sm: "100%", md: "75%" },
         }}
       >
+        <Modal
+        open={open}
+        onClose={handleClose}
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Box
+          sx={{
+            backgroundColor: "white",
+            padding: "20px",
+            borderRadius: "8px",
+            width: "300px",
+          }}
+        >
+          <Typography level="h6" mb={2}>Match Account Details</Typography>
+          <Box
+            component="form"
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+            }}
+          >
+            <Input
+              label="Payment ID"
+              variant="outlined"
+              value={paymentId}
+              onChange={(e) => setPaymentId(e.target.value)}
+            />
+            <Input
+              label="Account Number"
+              variant="outlined"
+              value={accountMatch}
+              onChange={(e) => setAccountMatch(e.target.value)}
+            />
+            <Input
+              label="IFSC"
+              variant="outlined"
+              value={ifsc}
+              onChange={(e) => setIfsc(e.target.value)}
+            />
+          </Box>
+          <DialogActions>
+            <Button onClick={handleClose}>Cancel</Button>
+            <Button onClick={handleSubmit}>Submit</Button>
+          </DialogActions>
+        </Box>
+      </Modal>
+
+
         {error ? (
           <Typography color="danger" textAlign="center">
             {error}
@@ -769,11 +714,7 @@ function PaymentRequest() {
                         textAlign: "center",
                       }}
                     >
-                      <AccountMatchAndUTR
-  paymentId={payment.pay_id}
-  isMatched={payment.isMatched}
-  onAccountMatchSuccess={(utr) => handleAccountMatchUpdate(payment.pay_id, utr)}
-/>
+                      <Button onClick={handleOpen}>Click</Button>
 
                     </Box>
                     {/* <Box

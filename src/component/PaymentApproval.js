@@ -161,65 +161,107 @@ function PaymentRequest() {
       credits.length > 0 &&
       debits.length > 0
     ) {
+
+
+      const creditSumMap = credits.reduce((acc, credit) => {
+        const projectId = credit.p_id;
+        acc[projectId] = (acc[projectId] || 0) + Number(credit.cr_amount);
+        return acc;
+      }, {});
+  
+      const debitSumMap = debits.reduce((acc, debit) => {
+        const projectId = debit.p_id;
+        const amountPaid = Number(debit.amount_paid);
+        acc[projectId] =
+          (acc[projectId] || 0) + (isNaN(amountPaid) ? 0 : amountPaid);
+        return acc;
+      }, {});
+
+
+      const groupCreditMap = {};
+      const groupDebitMap = {};
+  
+      projects.forEach((project) => {
+        const group = project.p_group;
+  
+        if (!groupCreditMap[group]) groupCreditMap[group] = 0;
+        if (!groupDebitMap[group]) groupDebitMap[group] = 0;
+  
+        groupCreditMap[group] += creditSumMap[project.p_id] || 0;
+        groupDebitMap[group] += debitSumMap[project.p_id] || 0;
+      });
+
+
       // Merging everything into the payments map
       const merged = payments.map((payment) => {
         // Find the corresponding project for the current payment using p_id
         const matchingProject = projects.find(
           (project) => Number(project.p_id) === Number(payment.p_id)
         );
+        const aggregateCredit = creditSumMap[payment.p_id] || 0;
+        const aggregateDebit = debitSumMap[payment.p_id] || 0;
+
+        const groupCredit = matchingProject
+        ? groupCreditMap[matchingProject.p_group] || 0
+        : 0;
+      const groupDebit = matchingProject
+        ? groupDebitMap[matchingProject.p_group] || 0
+        : 0;
+
+      const groupBalance = groupCredit - groupDebit;
 
         // Calculate aggregateCredit for the payment's p_id
-        const aggregateCredit = (() => {
-          // Credit for the current project only
-          const credit = credits.find((c) => c.p_id === payment.p_id);
-          return credit ? parseFloat(credit.cr_amount || 0) : 0;
-        })();
+        // const aggregateCredit = (() => {
+        //   // Credit for the current project only
+        //   const credit = credits.find((c) => c.p_id === payment.p_id);
+        //   return credit ? parseFloat(credit.cr_amount || 0) : 0;
+        // })();
 
-        // Calculate aggregateDebit for the payment's p_id
-        const aggregateDebit = (() => {
-          // Debit for the current project only
-          const debit = debits.find((d) => d.p_id === payment.p_id);
-          return debit ? parseFloat(debit.amount_paid || 0) : 0;
-        })();
+      
+        // const aggregateDebit = (() => {
+      
+        //   const debit = debits.find((d) => d.p_id === payment.p_id);
+        //   return debit ? parseFloat(debit.amount_paid || 0) : 0;
+        // })();
 
-        // Calculate group-level credit and balance
-        const groupCredit = (() => {
-          if (matchingProject?.p_group) {
-            return credits
-              .filter((credit) =>
-                projects.some(
-                  (proj) =>
-                    proj.p_group === matchingProject.p_group &&
-                    proj.p_id === credit.p_id
-                )
-              )
-              .reduce(
-                (sum, credit) => sum + parseFloat(credit.cr_amount || 0),
-                0
-              );
-          }
-          return 0;
-        })();
+       
+        // const groupCredit = (() => {
+        //   if (matchingProject?.p_group) {
+        //     return credits
+        //       .filter((credit) =>
+        //         projects.some(
+        //           (proj) =>
+        //             proj.p_group === matchingProject.p_group &&
+        //             proj.p_id === credit.p_id
+        //         )
+        //       )
+        //       .reduce(
+        //         (sum, credit) => sum + parseFloat(credit.cr_amount || 0),
+        //         0
+        //       );
+        //   }
+        //   return 0;
+        // })();
 
-        const groupDebit = (() => {
-          if (matchingProject?.p_group) {
-            return debits
-              .filter((debit) =>
-                projects.some(
-                  (proj) =>
-                    proj.p_group === matchingProject.p_group &&
-                    proj.p_id === debit.p_id
-                )
-              )
-              .reduce(
-                (sum, debit) => sum + parseFloat(debit.amount_paid || 0),
-                0
-              );
-          }
-          return 0;
-        })();
+        // const groupDebit = (() => {
+        //   if (matchingProject?.p_group) {
+        //     return debits
+        //       .filter((debit) =>
+        //         projects.some(
+        //           (proj) =>
+        //             proj.p_group === matchingProject.p_group &&
+        //             proj.p_id === debit.p_id
+        //         )
+        //       )
+        //       .reduce(
+        //         (sum, debit) => sum + parseFloat(debit.amount_paid || 0),
+        //         0
+        //       );
+        //   }
+        //   return 0;
+        // })();
 
-        const groupBalance = (groupCredit - groupDebit).toLocaleString("en-IN");
+        // const groupBalance = (groupCredit - groupDebit).toLocaleString("en-IN");
 
         return {
           ...payment,
@@ -232,8 +274,8 @@ function PaymentRequest() {
           Available_Amount: (aggregateCredit - aggregateDebit).toLocaleString(
             "en-IN"
           ),
-          groupCredit,
-          groupBalance,
+          // groupCredit,
+          groupBalance: Math.round(groupBalance).toLocaleString("en-IN"),
         };
       });
 

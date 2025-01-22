@@ -1113,44 +1113,44 @@ const Customer_Payment_Summary = () => {
 
           {/* Table Body */}
           <div>
-            {filteredDebits.length === 0 ? (
-              <div style={{ padding: "10px", textAlign: "center" }}>
-                No debit history available
-              </div>
-            ) : (
-              filteredDebits.map((row) => (
-                <div
-                  key={row.id}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr 2fr 2fr 1fr 1fr 1fr",
-                    padding: "10px",
-                    borderBottom: "1px solid #ddd",
-                  }}
-                >
-                  <div>
-                    {new Date(row.dbt_date).toLocaleDateString("en-IN", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </div>
-                  <div>{row.po_number || "-"}</div>
-                  <div>{row.paid_for}</div>
-                  <div>{row.vendor}</div>
-                  <div>₹ {row.amount_paid.toLocaleString("en-IN")}</div>
-                  <div>{row.utr}</div>
-                  <div>
-                    <Checkbox
-                      color="primary"
-                      checked={selectedDebits.includes(row.id)}
-                      onChange={() => handleDebitCheckboxChange(row.id)}
-                    />
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+  {filteredDebits
+    .slice() // To avoid mutating the original array
+    .sort((a, b) => new Date(a.dbt_date) - new Date(b.dbt_date)) // Sort by date in ascending order
+    .map((row) => (
+      <div
+        key={row.id}
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr 2fr 2fr 1fr 1fr 1fr',
+          padding: '10px',
+          borderBottom: '1px solid #ddd',
+        }}
+      >
+        <div>
+          {new Date(row.dbt_date).toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          })}
+        </div>
+        <div>{row.pay_mode}</div>
+        <div>{row.paid_for}</div>
+        <div>{row.vendor}</div>
+        <div>₹ {row.amount_paid.toLocaleString('en-IN')}</div>
+        <div>{row.utr}</div>
+        <div>
+          <Checkbox
+            color="primary"
+            checked={selectedDebits.includes(row.id)}
+            onChange={() => handleDebitCheckboxChange(row.id)}
+          />
+        </div>
+      </div>
+    ))}
+  {filteredDebits.length === 0 && (
+    <div style={{ padding: '10px', textAlign: 'center' }}>No debit history available</div>
+  )}
+</div>
 
           {/* Total Amount Row */}
           <div

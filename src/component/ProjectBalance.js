@@ -162,6 +162,9 @@ const ProjectBalances = forwardRef((props, ref) => {
         const availableAmount = totalCredit - totalDebit;
         setAvailable_Amount(availableAmount.toLocaleString("en-IN"));
 
+        // console.log(totalDebit);
+        
+
       //  const ProjectData =  projectsResponse?.data?.data.map((item) => {
       //     return{
       //       p_id : item.p_id,
@@ -300,8 +303,8 @@ const ProjectBalances = forwardRef((props, ref) => {
       const merged = projects.map((project) => {
         const projectId = project.p_id;
         const totalCredit = creditSumMap[projectId] || "0";
-        const totalDebit = debitSumMap[projectId] || "0";
-        const oldAmount = totalCredit - totalDebit || "0";
+        const totalDebits = debitSumMap[projectId] || "0";
+        const oldAmount = totalCredit - totalDebits || "0";
         const customerAdjustment = customerAdjustmentSumMap[projectId] || "0";
         const totalPoValue = poSumMap[projectId] || "0";
         const totalBillValue = billSumMap[projectId] || "0";
@@ -319,7 +322,7 @@ const ProjectBalances = forwardRef((props, ref) => {
         return {
           ...project,
           creditAmount: totalCredit,
-          debitAmount: totalDebit,
+          debitAmount: totalDebits,
           oldAmount: oldAmount,
           balanceSlnko: Math.round(balanceSlnko),
           balancePayable: Math.round(balancePayable),
