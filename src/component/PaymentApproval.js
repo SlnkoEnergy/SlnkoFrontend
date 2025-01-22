@@ -170,8 +170,21 @@ function PaymentRequest() {
 
         // Calculate aggregateCredit for the payment's p_id
         const aggregateCredit = (() => {
+          // Credit for the current project only
+          const credit = credits.find((c) => c.p_id === payment.p_id);
+          return credit ? parseFloat(credit.cr_amount || 0) : 0;
+        })();
+
+        // Calculate aggregateDebit for the payment's p_id
+        const aggregateDebit = (() => {
+          // Debit for the current project only
+          const debit = debits.find((d) => d.p_id === payment.p_id);
+          return debit ? parseFloat(debit.amount_paid || 0) : 0;
+        })();
+
+        // Calculate group-level credit and balance
+        const groupCredit = (() => {
           if (matchingProject?.p_group) {
-            // Total credits for all projects in the same group
             return credits
               .filter((credit) =>
                 projects.some(
@@ -180,18 +193,16 @@ function PaymentRequest() {
                     proj.p_id === credit.p_id
                 )
               )
-              .reduce((sum, credit) => sum + parseFloat(credit.cr_amount), 0);
-          } else {
-            // Credit for the current project only
-            const credit = credits.find((c) => c.p_id === payment.p_id);
-            return credit ? parseFloat(credit.cr_amount) : 0;
+              .reduce(
+                (sum, credit) => sum + parseFloat(credit.cr_amount || 0),
+                0
+              );
           }
+          return 0;
         })();
 
-        // Calculate aggregateDebit for the payment's p_id
-        const aggregateDebit = (() => {
+        const groupDebit = (() => {
           if (matchingProject?.p_group) {
-            // Total debits for all projects in the same group
             return debits
               .filter((debit) =>
                 projects.some(
@@ -200,15 +211,16 @@ function PaymentRequest() {
                     proj.p_id === debit.p_id
                 )
               )
-              .reduce((sum, debit) => sum + parseFloat(debit.amount_paid), 0);
-          } else {
-            // Debit for the current project only
-            const debit = debits.find((d) => d.p_id === payment.p_id);
-            return debit ? parseFloat(debit.amount_paid) : 0;
+              .reduce(
+                (sum, debit) => sum + parseFloat(debit.amount_paid || 0),
+                0
+              );
           }
+          return 0;
         })();
 
-        // Merge everything into one object
+        const groupBalance = (groupCredit - groupDebit).toLocaleString("en-IN");
+
         return {
           ...payment,
           projectCode: matchingProject?.code || "-",
@@ -217,9 +229,14 @@ function PaymentRequest() {
           projectGroup: matchingProject?.p_group || "-",
           aggregateCredit,
           aggregateDebit,
-          Available_Amount: aggregateCredit - aggregateDebit,
+          Available_Amount: (aggregateCredit - aggregateDebit).toLocaleString(
+            "en-IN"
+          ),
+          groupCredit,
+          groupBalance,
         };
       });
+
       console.log("Merged Data:", merged);
       setMergedData(merged);
     }
@@ -668,7 +685,7 @@ function PaymentRequest() {
                         textAlign: "center",
                       }}
                     >
-                      {payment.groupname || "-"}
+                      {payment.groupBalance || "-"}
                     </Box>
 
                     <Box
