@@ -26,8 +26,10 @@ import ForgotPassword from "../pages/Users/auth/ForgotPassword";
 import Login from "../pages/Users/auth/Login";
 import EditUser from "../pages/Users/EditUser";
 import VendorBill from "../pages/SCM/VendorBill";
+import PaymentUTR from "../pages/Accounts/Payment_UTR";
 // import { BalanceProvider } from "../store/Context/Balance_Context";
 import PrivateRoute from "./PrivateRoute";
+import Testing from "../component/testing";
 
 function index() {
   return (
@@ -64,7 +66,7 @@ function index() {
         element={
           <PrivateRoute>
             {/* <BalanceProvider> */}
-              <ProjectBalance />
+            <ProjectBalance />
             {/* </BalanceProvider> */}
           </PrivateRoute>
         }
@@ -114,6 +116,14 @@ function index() {
         element={
           <PrivateRoute>
             <Payment_Detail />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/utr_submission"
+        element={
+          <PrivateRoute>
+            <PaymentUTR />
           </PrivateRoute>
         }
       />

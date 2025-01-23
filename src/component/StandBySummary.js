@@ -29,28 +29,14 @@ import Typography from "@mui/joy/Typography";
 import * as React from "react";
 import { useEffect, useState } from "react";
 import Axios from "../utils/Axios";
+import DeleteIcon from '@mui/icons-material/Delete';
+import ContentPasteGoIcon from '@mui/icons-material/ContentPasteGo';
+import { useNavigate, useSearchParams } from "react-router-dom";
 
-function RowMenu() {
-  return (
-    <Dropdown>
-      <MenuButton
-        slots={{ root: IconButton }}
-        slotProps={{ root: { variant: "plain", color: "neutral", size: "sm" } }}
-      >
-        <MoreHorizRoundedIcon />
-      </MenuButton>
-      <Menu size="sm" sx={{ minWidth: 140 }}>
-        <MenuItem>StandBy Summary</MenuItem>
-        {/* <MenuItem>Rename</MenuItem>
-        <MenuItem>Move</MenuItem> */}
-        {/* <Divider /> */}
-        <MenuItem color="danger">Delete</MenuItem>
-      </Menu>
-    </Dropdown>
-  );
-}
 
-function StandByRequest() {
+
+const StandByRequest = () => {
+  const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -62,11 +48,15 @@ function StandByRequest() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
+    const [projects, setProjects] = useState([]);
+    const [mergedData, setMergedData] = useState([]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     const fetchTableData = async () => {
       try {
-        const response = await Axios.get("/get-pay-summary");
+        const response = await Axios.get("/hold-pay-summary");
 
         const paymentsData = Array.isArray(response.data.data)
           ? response.data.data
@@ -95,42 +85,60 @@ function StandByRequest() {
     fetchTableData();
   }, []);
 
-  const renderFilters = () => (
-    <>
-      <FormControl size="sm">
-        <FormLabel>State</FormLabel>
-        <Select
-          size="sm"
-          placeholder="Filter by state"
-          // value={stateFilter}
-          // onChange={(e) => setStateFilter(e.target.value)}
-        >
-          <Option value="">All</Option>
-          {/* {states.map((state, index) => (
-            <Option key={index} value={state}>
-              {state}
-            </Option>
-          ))} */}
-        </Select>
-      </FormControl>
-      <FormControl size="sm">
-        <FormLabel>Customer</FormLabel>
-        <Select
-          size="sm"
-          placeholder="Filter by customer"
-          // value={customerFilter}
-          // onChange={(e) => setCustomerFilter(e.target.value)}
-        >
-          <Option value="">All</Option>
-          {/* {customers.map((customer, index) => (
-            <Option key={index} value={customer}>
-              {customer}
-            </Option>
-          ))} */}
-        </Select>
-      </FormControl>
-    </>
-  );
+    // useEffect(() => {
+    //   if (payments.length > 0 && projects.length > 0) {
+    //     const merged = payments.map((payment) => {
+    //       const matchingProject = projects.find(
+    //         (project) => Number(project.p_id) === Number(payment.p_id)
+    //       );
+    //       return {
+    //         ...payment,
+    //         // projectCode: matchingProject?.code || "-",
+    //         // projectName: matchingProject?.name || "-",
+    //         projectCustomer: matchingProject?.customer || "-",
+    //         // projectGroup: matchingProject?.p_group || "-",
+    //       };
+    //     });
+    //     setMergedData(merged);
+    //   }
+    // }, [payments, projects]);
+
+  // const renderFilters = () => (
+  //   <>
+  //     <FormControl size="sm">
+  //       <FormLabel>State</FormLabel>
+  //       <Select
+  //         size="sm"
+  //         placeholder="Filter by state"
+  //         // value={stateFilter}
+  //         // onChange={(e) => setStateFilter(e.target.value)}
+  //       >
+  //         <Option value="">All</Option>
+  //         {/* {states.map((state, index) => (
+  //           <Option key={index} value={state}>
+  //             {state}
+  //           </Option>
+  //         ))} */}
+  //       </Select>
+  //     </FormControl>
+  //     <FormControl size="sm">
+  //       <FormLabel>Customer</FormLabel>
+  //       <Select
+  //         size="sm"
+  //         placeholder="Filter by customer"
+  //         // value={customerFilter}
+  //         // onChange={(e) => setCustomerFilter(e.target.value)}
+  //       >
+  //         <Option value="">All</Option>
+  //         {/* {customers.map((customer, index) => (
+  //           <Option key={index} value={customer}>
+  //             {customer}
+  //           </Option>
+  //         ))} */}
+  //       </Select>
+  //     </FormControl>
+  //   </>
+  // );
   const handleSelectAll = (event) => {
     if (event.target.checked) {
       setSelected(paginatedPayments.map((row) => row.id));
@@ -140,12 +148,91 @@ function StandByRequest() {
   };
 
   const handleRowSelect = (id, isSelected) => {
+    // console.log("currentPage:", currentPage, "pay_id:", pay_id, "p_id:", p_id);
     setSelected((prevSelected) =>
       isSelected
         ? [...prevSelected, id]
         : prevSelected.filter((item) => item !== id)
     );
   };
+
+  const RowMenu = ({currentPage, pay_id, p_id }) => {
+    return (
+      <Dropdown>
+        <MenuButton
+          slots={{ root: IconButton }}
+          slotProps={{ root: { variant: "plain", color: "neutral", size: "sm" } }}
+        >
+          <MoreHorizRoundedIcon />
+        </MenuButton>
+        <Menu size="sm" sx={{ minWidth: 140 }}>
+        <MenuItem
+              color="primary"
+              onClick={() => {
+                const page = currentPage;
+                const payId = String(pay_id);
+                const projectID = Number(p_id);
+                localStorage.setItem("standby_summary", payId);
+                localStorage.setItem("p_id", projectID);
+                navigate(`/standby_Request?page=${page}&pay_id=${payId}`);
+              }}
+            >
+              <ContentPasteGoIcon />
+              <Typography>StandBy summary</Typography>
+            </MenuItem>
+          <Divider sx={{ backgroundColor: "lightblue" }} />
+            <MenuItem color="danger">
+            <DeleteIcon />
+            <Typography>Delete</Typography>
+            </MenuItem>
+        </Menu>
+      </Dropdown>
+    );
+  }
+
+  const handleSearch = (query) => {
+    setSearchQuery(query.toLowerCase());
+  };
+  const filteredAndSortedData = payments
+  .filter((payment) => {
+    const matchesSearchQuery = [
+      "pay_id",
+      "vendor",
+      "approved",
+      "projectCustomer",
+      "paid_for"
+    ].some((key) => payment[key]?.toLowerCase().includes(searchQuery));
+
+    // const matchesDateFilter =
+    //   !dateFilter ||
+    //   new Date(payment.date).toLocaleDateString() ===
+    //     new Date(dateFilter).toLocaleDateString();
+
+    // const matchesStatusFilter =
+    //   !statusFilter || payment.approved === statusFilter;
+    // console.log("MatchVendors are: ", matchesStatusFilter);
+
+    // const matchesVendorFilter =
+    //   !vendorFilter || payment.vendor === vendorFilter;
+    // console.log("MatchVendors are: ", matchesVendorFilter);
+
+    return matchesSearchQuery;
+  })
+  .sort((a, b) => {
+    if (a.pay_id?.toLowerCase().includes(searchQuery)) return -1;
+    if (b.pay_id?.toLowerCase().includes(searchQuery)) return 1;
+    if (a.paid_for?.toLowerCase().includes(searchQuery)) return -1;
+    if (b.paid_for?.toLowerCase().includes(searchQuery)) return 1;
+    if (a.projectCustomer?.toLowerCase().includes(searchQuery)) return -1;
+    if (b.projectCustomer?.toLowerCase().includes(searchQuery)) return 1;
+    if (a.vendor?.toLowerCase().includes(searchQuery)) return -1;
+    if (b.vendor?.toLowerCase().includes(searchQuery)) return 1;
+    if (a.approved?.toLowerCase().includes(searchQuery)) return -1;
+    if (b.approved?.toLowerCase().includes(searchQuery)) return 1;
+    return 0;
+  });
+
+
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
 
@@ -175,14 +262,32 @@ function StandByRequest() {
 
     return pages;
   };
-  const totalPages = Math.ceil(payments.length / itemsPerPage);
+
+    useEffect(() => {
+      const page = parseInt(searchParams.get("page")) || 1;
+      setCurrentPage(page);
+    }, [searchParams]);
+
+
+  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
 
   const formatDate = (dateString) => {
+    if (!dateString) {
+      return "-";
+    }
     const date = new Date(dateString);
-    return date.toISOString().split("T")[0];
+    if (isNaN(date.getTime())) {
+      console.warn(`Invalid date value: "${dateString}"`);
+      return "-";
+    }
+    const options = { day: "2-digit", month: "short", year: "numeric" };
+    return new Intl.DateTimeFormat("en-GB", options)
+      .format(date)
+      .replace(/ /g, "/");
   };
 
-  const paginatedPayments = payments.slice(
+
+  const paginatedPayments = filteredAndSortedData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -208,7 +313,7 @@ function StandByRequest() {
   return (
     <>
       {/* Mobile Filters */}
-      <Sheet
+      {/* <Sheet
         className="SearchAndFilters-mobile"
         sx={{ display: { xs: "flex", sm: "none" }, my: 1, gap: 1 }}
       >
@@ -241,7 +346,7 @@ function StandByRequest() {
             </Sheet>
           </ModalDialog>
         </Modal>
-      </Sheet>
+      </Sheet> */}
 
       {/* Tablet and Up Filters */}
       <Box
@@ -262,11 +367,13 @@ function StandByRequest() {
           <FormLabel>Search here</FormLabel>
           <Input
             size="sm"
-            placeholder="Search"
             startDecorator={<SearchIcon />}
+            placeholder="Search by Project ID, Customer, or Name"
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {renderFilters()}
+        {/* {renderFilters()} */}
       </Box>
 
       {/* Table */}
@@ -307,13 +414,13 @@ function StandByRequest() {
                 >
                   <Checkbox
                     size="sm"
-                    checked={selected.length === paginatedPayments.length}
+                    checked={selected.length === paymentsWithFormattedDate.length}
                     onChange={(event) =>
                       handleRowSelect("all", event.target.checked)
                     }
                     indeterminate={
                       selected.length > 0 &&
-                      selected.length < paginatedPayments.length
+                      selected.length < paymentsWithFormattedDate.length
                     }
                   />
                 </Box>
@@ -323,7 +430,7 @@ function StandByRequest() {
                   "Paid To",
                   "Client Name",
                   "Amount (₹)",
-                  "Payment Status",
+                  // "Payment Status",
                   "UTR",
                   "",
                 ].map((header, index) => (
@@ -362,9 +469,9 @@ function StandByRequest() {
                     >
                       <Checkbox
                         size="sm"
-                        checked={selected.includes(payment.code)}
+                        checked={selected.includes(payment.pay_id)}
                         onChange={(event) =>
-                          handleRowSelect(payment.code, event.target.checked)
+                          handleRowSelect(payment.pay_id, event.target.checked)
                         }
                       />
                     </Box>
@@ -418,7 +525,7 @@ function StandByRequest() {
                     >
                       {payment.amt_for_customer}
                     </Box>
-                    <Box
+                    {/* <Box
                       component="td"
                       sx={{
                         borderBottom: "1px solid #ddd",
@@ -446,7 +553,7 @@ function StandByRequest() {
                       >
                         {payment.approved}
                       </Chip>
-                    </Box>
+                    </Box> */}
                     <Box
                       component="td"
                       sx={{
@@ -465,7 +572,11 @@ function StandByRequest() {
                         textAlign: "center",
                       }}
                     >
-                      {RowMenu()}
+                      <RowMenu
+                        currentPage={currentPage}
+                        pay_id={payment.pay_id}
+                        p_id={payment.p_id}
+                      />
                     </Box>
                   </Box>
                 ))

@@ -11,13 +11,13 @@ import Typography from "@mui/joy/Typography";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
 import Sidebar from "../../component/Partials/Sidebar";
-import PaymentApproved from "../../component/PaymentApproved";
+import Payment_UTR from "../../component/PaymentUTR";
 
 import Header from "../../component/Partials/Header";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 
-function ProjectBalance() {
-  const navigate = useNavigate();
+function PaymentUTR() {
+//   const navigate = useNavigate();
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -69,13 +69,13 @@ function ProjectBalance() {
                 color="neutral"
                 sx={{ fontSize: 12, fontWeight: 500 }}
               >
-                Accounting
+                Payment Approved
               </Link>
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Payment Approved
+                UTR Submission
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -92,7 +92,7 @@ function ProjectBalance() {
             }}
           >
             <Typography level="h2" component="h1">
-              Payment Approved
+            UTR Submission
             </Typography>
             <Box
               sx={{
@@ -105,24 +105,24 @@ function ProjectBalance() {
                 justifyContent: "center",
               }}
             >
-              <Button
+              {/* <Button
               color="primary"
-              onClick={() => navigate("/utr_submission")}
+              
               size="sm"
             >
-              UTR Submission
-            </Button>
-            <Button
+              Add New Project +
+            </Button> */}
+            {/* <Button
               color="primary"
               startDecorator={<DownloadRoundedIcon />}
               size="sm"
               onClick={() => navigate("/payment_detail")}
             >
               Payment Detail
-            </Button>
+            </Button> */}
             </Box>
           </Box>
-          <PaymentApproved />
+          <Payment_UTR />
           {/* <OrderTable />
           <OrderList /> */}
         </Box>
@@ -130,4 +130,4 @@ function ProjectBalance() {
     </CssVarsProvider>
   );
 }
-export default ProjectBalance;
+export default PaymentUTR;

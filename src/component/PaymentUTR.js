@@ -28,7 +28,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Axios from "../utils/Axios";
 
-function PaymentRequest() {
+function UTRPayment() {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -76,22 +76,20 @@ function PaymentRequest() {
       setLoading(true);
       try {
         const [paymentResponse, projectResponse] = await Promise.all([
-          Axios.get("/get-pay-summary", {
-            params: { approved: "Approved", acc_match: "" },
-          }),
+          Axios.get("/get-pay-summary"),
           Axios.get("/get-all-project"),
         ]);
 
         const approvedPayments = paymentResponse.data.data.filter(
           (payment) =>
-            payment.approved === "Approved" && payment.acc_match === ""
+            payment.acc_match === "matched" && payment.utr === ""
         );
 
         setPayments(approvedPayments);
-        // console.log("Payment Data (approved) are:", approvedPayments);
+        console.log("Payment Data (approved) are:", approvedPayments);
 
         setProjects(projectResponse.data.data);
-        // console.log("Project Data are:", projectResponse.data.data);
+        console.log("Project Data are:", projectResponse.data.data);
 
         // const uniqueVendors = [
         //   ...new Set(
@@ -126,157 +124,150 @@ function PaymentRequest() {
           // projectGroup: matchingProject?.p_group || "-",
         };
       });
-      // localStorage.setItem("mergedData", JSON.stringify(merged));
 
-      // Set the merged data in the component state
       setMergedData(merged);
     }
   }, [payments, projects]);
 
-  // useEffect(() => {
-  //   // Retrieve the merged data from localStorage on initial load
-  //   const storedMergedData = localStorage.getItem("mergedData");
-  //   if (storedMergedData) {
-  //     setMergedData(JSON.parse(storedMergedData));
-  //   }
-  // }, []);
+ 
 
-  /**Account Match Logic ***/
-  const AccountMatchAndUTR = ({
-    paymentId,
-    onAccountMatchSuccess,
-  }) => {
+  const UTRRow = ({ paymentId, onAccountMatchSuccess }) => {
+    const [utr, setUtr] = useState("");
+    const [error, setError] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isUtrSubmitted, setIsUtrSubmitted] = useState(false);
     const { enqueueSnackbar } = useSnackbar();
   
-    // State initialization
-    const [isMatched, setIsMatched] = useState(false);
-    const [accountMatch, setAccountMatch] = useState("");
-    const [ifsc, setIfsc] = useState("");
-    const [error, setError] = useState(null);
-  
-    // Function to handle account matching
-    const handleAccountMatch = async () => {
-      if (!accountMatch) {
-        setError("Account Number required!!");
+    const handleUtrSubmit = async () => {
+      if (!utr) {
+        enqueueSnackbar("Please enter a valid UTR.", { variant: "warning" });
         return;
       }
   
-      setError(null);
+      setIsSubmitting(true); // Set loading state
   
       try {
-        console.log("Sending account match request...");
-        const response = await Axios.put("/acc-matched", {
+        console.log("Submitting UTR...");
+        const utrResponse = await Axios.put("/utr-update", {
           pay_id: paymentId,
-          acc_number: accountMatch,
-          ifsc: ifsc,
+          utr: utr,
         });
   
-        console.log("Account match response:", response);
+        console.log("UTR Response:", utrResponse);
   
-        if (response.status === 200) {
-          setIsMatched(true);
-          enqueueSnackbar("Account matched successfully!", {
-            variant: "success",
-          });
+        if (utrResponse.status === 200 && utrResponse.data) {
+          enqueueSnackbar("UTR submitted successfully!", { variant: "success" });
+          setIsUtrSubmitted(true);
   
-          // Notify parent about success (if needed)
-          if (onAccountMatchSuccess){
-            onAccountMatchSuccess();
+          // Fetch PO details
+          console.log("Fetching PO details...");
+          const poResponse = await Axios.get("/get-pay-summary");
+          console.log("PO Summary Response:", poResponse.data);
+  
+          // Match PO and perform debit operation
+          const matchedPo = poResponse.data.data.find((po) => po.pay_id === paymentId);
+          if (matchedPo) {
+            console.log("Matched PO data:", matchedPo);
+  
+            const debitResponse = await Axios.post("/debit-money", {
+              p_id: matchedPo.p_id,
+              p_group: matchedPo.p_group || "",
+              pay_type: matchedPo.pay_type || "",
+              amount_paid: matchedPo.amount_paid || "",
+              amt_for_customer: matchedPo.amt_for_customer || "",
+              dbt_date: matchedPo.dbt_date || "",
+              paid_for: matchedPo.paid_for || "",
+              vendor: matchedPo.vendor || "",
+              po_number: matchedPo.po_number || "",
+              utr: matchedPo.utr || "",
+              submitted_by: "user123",
+            });
+  
+            if (debitResponse.status === 200) {
+              enqueueSnackbar("Money debited successfully!", { variant: "success" });
+              console.log("Money debited successfully:", debitResponse.data);
+  
+              // Call the parent callback if provided
+              if (onAccountMatchSuccess) {
+                onAccountMatchSuccess(utr);
+              }
+            } else {
+              enqueueSnackbar("Failed to debit money. Please try again.", { variant: "error" });
+            }
+          } else {
+            enqueueSnackbar("Matching PO not found.", { variant: "error" });
           }
-            
         } else {
-          enqueueSnackbar("Failed to match account. Please try again.", {
-            variant: "error",
-          });
+          enqueueSnackbar("Failed to submit UTR. Please try again.", { variant: "error" });
         }
       } catch (error) {
-        console.error("Error during account match:", error);
-        enqueueSnackbar("Something went wrong. Please try again.", {
-          variant: "error",
-        });
+        console.error("Error during UTR submission:", error);
+        enqueueSnackbar("Something went wrong. Please try again.", { variant: "error" });
+      } finally {
+        setIsSubmitting(false);
       }
     };
   
     return (
-      <div>
-        {/* Account Match Form */}
-        {!isMatched && (
+      <div style={{ marginTop: "1rem" }}>
+        {!isUtrSubmitted ? (
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              handleAccountMatch();
+              handleUtrSubmit();
             }}
           >
-            <div style={{ marginBottom: "0.5rem" }}>
-              <Tooltip title="Enter the Account Number">
-                <input
-                  type="text"
-                  placeholder="Account Number"
-                  value={accountMatch}
-                  onChange={(e) => setAccountMatch(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "0.5rem",
-                    border: "1px solid #ccc",
-                    marginBottom: "0.5rem",
-                  }}
-                  disabled={isMatched}
-                />
-              </Tooltip>
-            </div>
-            <div style={{ marginBottom: "0.5rem" }}>
-              <Tooltip title="Enter the IFSC Code">
-                <input
-                  type="text"
-                  placeholder="IFSC Code"
-                  value={ifsc}
-                  onChange={(e) => setIfsc(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "0.5rem",
-                    border: "1px solid #ccc",
-                    marginBottom: "0.5rem",
-                  }}
-                  disabled={isMatched}
-                />
-              </Tooltip>
-            </div>
-  
-            {error && <div style={{ color: "red" }}>{error}</div>}
-  
+            <input
+              type="text"
+              placeholder="Enter UTR"
+              value={utr}
+              onChange={(e) => setUtr(e.target.value)}
+              disabled={isSubmitting}
+              style={{
+                width: "100%",
+                padding: "0.5rem",
+                marginBottom: "0.5rem",
+                border: "1px solid #ccc",
+              }}
+              required
+            />
             <Button
               type="submit"
-              disabled={isMatched || !accountMatch}
+              disabled={isSubmitting || !utr}
               sx={{
                 width: "100%",
                 padding: "0.5rem",
-                backgroundColor: isMatched ? "gray" : "#007bff",
+                backgroundColor: "#28a745",
                 color: "white",
-                cursor: isMatched ? "not-allowed" : "pointer",
+                cursor: isSubmitting ? "not-allowed" : "pointer",
               }}
             >
-              {isMatched ? "Matched" : "Match Account"}
+              {isSubmitting ? "Submitting..." : "Submit UTR"}
             </Button>
           </form>
+        ) : (
+          <div style={{ marginTop: "1rem" }}>
+            <p>UTR: {utr}</p>
+            <Button
+              sx={{
+                width: "100%",
+                padding: "0.5rem",
+                backgroundColor: "gray",
+                color: "white",
+              }}
+              disabled
+            >
+              Submitted
+            </Button>
+          </div>
         )}
-  
-        {isMatched && (
-        <div style={{ marginTop: "1rem" }}>
-          <Chip
-            label="Account Matched Successfully"
-            color="success"
-            icon={<i className="material-icons">check</i>}
-          />
-        </div>
-      )}
       </div>
     );
   };
-  
-  const handleAccountMatchSuccess = (paymentId) => {
-    console.log("Account No and Ifsc submission was successful:", paymentId);
+
+  const handleAccountMatchSuccess = (utr) => {
+    console.log("UTR submission was successful:", utr);
   };
-  
 
   /** Match Logic ***/
   const MatchRow = ({ payment }) => (
@@ -505,8 +496,9 @@ function PaymentRequest() {
                   "Vendor",
                   "Payment Description",
                   "Requested Amount",
-                  "Bank Detail",
-                 
+                  "Account Status",
+                  "UTR Submit",
+                  // "Validation",
                 ].map((header, index) => (
                   <Box
                     component="th"
@@ -524,134 +516,142 @@ function PaymentRequest() {
               </Box>
             </Box>
             <Box component="tbody">
-              {paginatedPayments.length > 0 ? (
-                paginatedPayments.map((payment, index) => (
-                  <Box
-                    component="tr"
-                    key={index}
-                    sx={{
-                      "&:hover": { backgroundColor: "neutral.plainHoverBg" },
-                    }}
-                  >
+              {paginatedPayments.filter(
+                (payment) =>
+                  payment.acc_match === "matched"
+              ).length > 0 ? (
+                paginatedPayments
+                  .filter(
+                    (payment) =>
+                      payment.acc_match === "matched"
+                  )
+                  .map((payment, index) => (
                     <Box
-                      component="td"
+                      component="tr"
+                      key={index}
                       sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
+                        "&:hover": { backgroundColor: "neutral.plainHoverBg" },
                       }}
                     >
-                      <Checkbox
-                        size="sm"
-                        checked={selected.includes(payment.pay_id)}
-                        onChange={(event) =>
-                          handleRowSelect(payment.pay_id, event.target.checked)
-                        }
-                      />
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        <Checkbox
+                          size="sm"
+                          checked={selected.includes(payment.pay_id)}
+                          onChange={(event) =>
+                            handleRowSelect(
+                              payment.pay_id,
+                              event.target.checked
+                            )
+                          }
+                        />
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {payment.pay_id}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {payment.projectCode}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {payment.projectName || "-"}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {payment.paid_for || "-"}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {payment.vendor || "-"}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {payment.comment || "-"}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {new Intl.NumberFormat("en-IN", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        }).format(payment.amt_for_customer)}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        <MatchRow payment={payment} />
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                         <UTRRow paymentId={payment.pay_id} onAccountMatchSuccess={handleAccountMatchSuccess} />
+                      </Box>
                     </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.pay_id}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.projectCode}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.projectName || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.paid_for || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.vendor || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.comment || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      }).format(payment.amt_for_customer)}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <AccountMatchAndUTR
-           paymentId={payment.pay_id} onAccountMatchSuccess={handleAccountMatchSuccess}
-            
-          />
-                    </Box>
-                    {/* <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <MatchRow payment={payment} />
-                    </Box> */}
-                  </Box>
-                ))
+                  ))
               ) : (
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={7}
+                    colSpan={9}
                     sx={{
                       padding: "8px",
                       textAlign: "center",
@@ -742,4 +742,4 @@ function PaymentRequest() {
     </>
   );
 }
-export default PaymentRequest;
+export default UTRPayment;

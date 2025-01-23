@@ -203,13 +203,15 @@ const PaymentRequest = forwardRef((props, ref) => {
               <ContentPasteGoIcon />
               <Typography>Pay summary</Typography>
             </MenuItem>
-            <Divider sx={{ backgroundColor: "lightblue" }} />
-            {/* <MenuItem
+            
+            <MenuItem
               color="primary"
               onClick={() => navigate("/standby_records")}
             >
-              Pending payments
-            </MenuItem> */}
+              <ContentPasteGoIcon />
+              <Typography>Pending payments</Typography>
+            </MenuItem>
+            <Divider sx={{ backgroundColor: "lightblue" }} />
             <MenuItem color="danger">
             <DeleteIcon />
             <Typography>Delete</Typography>
@@ -386,7 +388,7 @@ const PaymentRequest = forwardRef((props, ref) => {
   return (
     <>
       {/* Mobile Filters */}
-      <Sheet
+      {/* <Sheet
         className="SearchAndFilters-mobile"
         sx={{ display: { xs: "flex", sm: "none" }, my: 1, gap: 1 }}
       >
@@ -419,7 +421,7 @@ const PaymentRequest = forwardRef((props, ref) => {
             </Sheet>
           </ModalDialog>
         </Modal>
-      </Sheet>
+      </Sheet> */}
 
       {/* Tablet and Up Filters */}
       <Box

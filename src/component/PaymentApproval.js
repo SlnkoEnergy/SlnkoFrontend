@@ -194,7 +194,6 @@ function PaymentRequest() {
 
       // Merging everything into the payments map
       const merged = payments.map((payment) => {
-        // Find the corresponding project for the current payment using p_id
         const matchingProject = projects.find(
           (project) => Number(project.p_id) === Number(payment.p_id)
         );
@@ -210,58 +209,6 @@ function PaymentRequest() {
 
       const groupBalance = groupCredit - groupDebit;
 
-        // Calculate aggregateCredit for the payment's p_id
-        // const aggregateCredit = (() => {
-        //   // Credit for the current project only
-        //   const credit = credits.find((c) => c.p_id === payment.p_id);
-        //   return credit ? parseFloat(credit.cr_amount || 0) : 0;
-        // })();
-
-      
-        // const aggregateDebit = (() => {
-      
-        //   const debit = debits.find((d) => d.p_id === payment.p_id);
-        //   return debit ? parseFloat(debit.amount_paid || 0) : 0;
-        // })();
-
-       
-        // const groupCredit = (() => {
-        //   if (matchingProject?.p_group) {
-        //     return credits
-        //       .filter((credit) =>
-        //         projects.some(
-        //           (proj) =>
-        //             proj.p_group === matchingProject.p_group &&
-        //             proj.p_id === credit.p_id
-        //         )
-        //       )
-        //       .reduce(
-        //         (sum, credit) => sum + parseFloat(credit.cr_amount || 0),
-        //         0
-        //       );
-        //   }
-        //   return 0;
-        // })();
-
-        // const groupDebit = (() => {
-        //   if (matchingProject?.p_group) {
-        //     return debits
-        //       .filter((debit) =>
-        //         projects.some(
-        //           (proj) =>
-        //             proj.p_group === matchingProject.p_group &&
-        //             proj.p_id === debit.p_id
-        //         )
-        //       )
-        //       .reduce(
-        //         (sum, debit) => sum + parseFloat(debit.amount_paid || 0),
-        //         0
-        //       );
-        //   }
-        //   return 0;
-        // })();
-
-        // const groupBalance = (groupCredit - groupDebit).toLocaleString("en-IN");
 
         return {
           ...payment,
@@ -292,7 +239,7 @@ function PaymentRequest() {
       });
 
       if (response.status === 200) {
-        // Remove the payment from the table after approval or rejection
+        
         setPayments((prevPayments) =>
           prevPayments.filter((payment) => payment.pay_id !== paymentId)
         );
