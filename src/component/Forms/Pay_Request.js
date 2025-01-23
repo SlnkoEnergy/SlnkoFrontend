@@ -225,6 +225,21 @@ function PaymentRequestForm() {
           setIsLoading(false);
         }
   };
+
+  const handleHoldPayment = async () => {
+    try {
+      const response = await Axios.post("/hold-payment", { paymentId: formData.p_id });
+      const { message } = response.data;
+
+      setResponseMessage(message);
+      toast.success("Payment has been put on hold successfully.");
+      navigate("/standby_records")
+    } catch (error) {
+      console.error("Error holding payment:", error.response?.data || error.message);
+      setResponseMessage("Failed to hold payment. Please try again!!");
+      toast.error("Unable to hold payment.");
+    }
+  };
   
 
 
@@ -590,9 +605,21 @@ function PaymentRequestForm() {
               </Grid>
 
               <Grid>
-                <Button variant="outlined" color="neutral" onClick={() => navigate("/standby-request")}>
-                  StandBy
-                </Button>
+                <Button
+  variant="outlined"
+  color="neutral"
+  onClick={handleHoldPayment}
+  sx={{
+    '&:hover': {
+      backgroundColor: 'red',
+      borderColor: 'red',      
+      color: 'white'           
+    }
+  }}
+>
+  StandBy
+</Button>
+
               </Grid>
 
               <Grid>

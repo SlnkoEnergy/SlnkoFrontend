@@ -5,7 +5,7 @@ import CssBaseline from "@mui/joy/CssBaseline";
 import Link from "@mui/joy/Link";
 import { CssVarsProvider } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
-import React,{ useRef } from "react";
+import React, { useRef } from "react";
 
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
@@ -17,15 +17,14 @@ import PaymentRequest from "../../component/PaymentRequest";
 
 function ProjectBalance() {
   const navigate = useNavigate();
-    
-    const paymentRequestRef = useRef();
-  
 
-    const handleExportToCSV = () => {
-      if (paymentRequestRef.current) {
-        paymentRequestRef.current.exportToCSV();
-      }
-    };
+  const paymentRequestRef = useRef();
+
+  const handleExportToCSV = () => {
+    if (paymentRequestRef.current) {
+      paymentRequestRef.current.exportToCSV();
+    }
+  };
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -116,6 +115,13 @@ function ProjectBalance() {
               <Button
                 color="primary"
                 size="sm"
+                onClick={() => navigate("/standby_records")}
+              >
+                Pending Payment
+              </Button>
+              <Button
+                color="primary"
+                size="sm"
                 onClick={() => navigate("/pay_Request")}
               >
                 Add New Payment +
@@ -124,7 +130,7 @@ function ProjectBalance() {
                 color="primary"
                 startDecorator={<DownloadRoundedIcon />}
                 size="sm"
-                onClick={handleExportToCSV} 
+                onClick={handleExportToCSV}
               >
                 Export to CSV
               </Button>

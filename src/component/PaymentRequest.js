@@ -204,13 +204,13 @@ const PaymentRequest = forwardRef((props, ref) => {
               <Typography>Pay summary</Typography>
             </MenuItem>
             
-            <MenuItem
+            {/* <MenuItem
               color="primary"
               onClick={() => navigate("/standby_records")}
             >
               <ContentPasteGoIcon />
               <Typography>Pending payments</Typography>
-            </MenuItem>
+            </MenuItem> */}
             <Divider sx={{ backgroundColor: "lightblue" }} />
             <MenuItem color="danger">
             <DeleteIcon />

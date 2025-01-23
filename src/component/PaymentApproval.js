@@ -1,3 +1,5 @@
+import BlockIcon from "@mui/icons-material/Block";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
@@ -5,6 +7,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
+import Chip from "@mui/joy/Chip";
 import Divider from "@mui/joy/Divider";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
@@ -161,14 +164,12 @@ function PaymentRequest() {
       credits.length > 0 &&
       debits.length > 0
     ) {
-
-
       const creditSumMap = credits.reduce((acc, credit) => {
         const projectId = credit.p_id;
         acc[projectId] = (acc[projectId] || 0) + Number(credit.cr_amount);
         return acc;
       }, {});
-  
+
       const debitSumMap = debits.reduce((acc, debit) => {
         const projectId = debit.p_id;
         const amountPaid = Number(debit.amount_paid);
@@ -177,22 +178,24 @@ function PaymentRequest() {
         return acc;
       }, {});
 
-
       const groupCreditMap = {};
       const groupDebitMap = {};
-  
+      const groupBalanceMap = {};
+
       projects.forEach((project) => {
         const group = project.p_group;
-  
+
         if (!groupCreditMap[group]) groupCreditMap[group] = 0;
         if (!groupDebitMap[group]) groupDebitMap[group] = 0;
-  
+
         groupCreditMap[group] += creditSumMap[project.p_id] || 0;
         groupDebitMap[group] += debitSumMap[project.p_id] || 0;
+
+        groupBalanceMap[group] = groupCreditMap[group] - groupDebitMap[group];
       });
 
+      // console.log("Group Balance Map:", groupBalanceMap);
 
-      // Merging everything into the payments map
       const merged = payments.map((payment) => {
         const matchingProject = projects.find(
           (project) => Number(project.p_id) === Number(payment.p_id)
@@ -200,36 +203,110 @@ function PaymentRequest() {
         const aggregateCredit = creditSumMap[payment.p_id] || 0;
         const aggregateDebit = debitSumMap[payment.p_id] || 0;
 
-        const groupCredit = matchingProject
-        ? groupCreditMap[matchingProject.p_group] || 0
-        : 0;
-      const groupDebit = matchingProject
-        ? groupDebitMap[matchingProject.p_group] || 0
-        : 0;
-
-      const groupBalance = groupCredit - groupDebit;
-
+        const projectGroup = matchingProject?.p_group || "-";
+        const groupBalance =
+          projectGroup !== "-" ? groupBalanceMap[projectGroup] || "-" : 0;
 
         return {
           ...payment,
           projectCode: matchingProject?.code || "-",
           projectName: matchingProject?.name || "-",
           projectCustomer: matchingProject?.customer || "-",
-          projectGroup: matchingProject?.p_group || "-",
+          projectGroup,
           aggregateCredit,
           aggregateDebit,
           Available_Amount: (aggregateCredit - aggregateDebit).toLocaleString(
             "en-IN"
           ),
-          // groupCredit,
           groupBalance: Math.round(groupBalance).toLocaleString("en-IN"),
         };
       });
 
       console.log("Merged Data:", merged);
+
       setMergedData(merged);
     }
   }, [payments, projects, credits, debits]);
+
+  // const handleApprovalUpdate = async (paymentId, newStatus) => {
+  //   try {
+  //     const response = await Axios.put("/account-approve", {
+  //       pay_id: paymentId,
+  //       status: newStatus,
+  //     });
+
+  //     if (response.status === 200) {
+  //       setPayments((prevPayments) =>
+  //         prevPayments.filter((payment) => payment.pay_id !== paymentId)
+  //       );
+
+  //       if (newStatus === "Approved") {
+  //         toast.success("Payment Approved !!", {
+  //           autoClose: 3000,
+  //         });
+  //       } else if (newStatus === "Rejected") {
+  //         toast.error("Oops!! Rejected...", {
+  //           autoClose: 2000,
+  //         });
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error("Error updating approval status:", error);
+  //   }
+  // };
+
+  // const RowMenu = ({ paymentId }) => {
+  //   const [status, setStatus] = useState(null); // Tracks the current status
+
+  //   const handleApprovalUpdate = (paymentId, newStatus) => {
+  //     setStatus(newStatus); // Update the chip label based on the new status
+  //     console.log(`Payment ID: ${paymentId}, Status: ${newStatus}`);
+  //   };
+
+  //   return (
+  //     <Box
+  //       sx={{
+  //         display: "flex",
+  //         justifyContent: "center",
+  //         gap: 1,
+  //       }}
+  //     >
+  //       {/* Approve Chip */}
+  //       <Chip
+  //         variant="solid"
+  //         color={status === "Approved" ? "success" : "neutral"}
+  //         onClick={() => handleApprovalUpdate(paymentId, "Approved")}
+  //         sx={{
+  //           textTransform: "none",
+  //           fontSize: "0.875rem",
+  //           fontWeight: 500,
+  //           borderRadius: "sm", // Small border radius for a rectangular look
+  //           cursor: "pointer",
+  //         }}
+  //         startDecorator={<CheckRoundedIcon />}
+  //       >
+  //         {status === "Approved" ? "Approved" : "Approve"}
+  //       </Chip>
+
+  //       {/* Reject Chip */}
+  //       <Chip
+  //         variant="outlined"
+  //         color={status === "Rejected" ? "danger" : "neutral"}
+  //         onClick={() => handleApprovalUpdate(paymentId, "Rejected")}
+  //         sx={{
+  //           textTransform: "none",
+  //           fontSize: "0.875rem",
+  //           fontWeight: 500,
+  //           borderRadius: "sm", // Small border radius for a rectangular look
+  //           cursor: "pointer",
+  //         }}
+  //         startDecorator={<BlockIcon />}
+  //       >
+  //         {status === "Rejected" ? "Rejected" : "Reject"}
+  //       </Chip>
+  //     </Box>
+  //   );
+  // };
 
   const handleApprovalUpdate = async (paymentId, newStatus) => {
     try {
@@ -239,53 +316,78 @@ function PaymentRequest() {
       });
 
       if (response.status === 200) {
-        
+        // Update the payments state to remove the row
         setPayments((prevPayments) =>
           prevPayments.filter((payment) => payment.pay_id !== paymentId)
         );
 
+        // Show a toast message
         if (newStatus === "Approved") {
-          toast.success("Payment Approved !!", {
-            autoClose: 3000,
-          });
+          toast.success("Payment Approved !!", { autoClose: 3000 });
         } else if (newStatus === "Rejected") {
-          toast.error("Oops!! Rejected...", {
-            autoClose: 2000,
-          });
+          toast.error("Oops!! Rejected...", { autoClose: 2000 });
         }
       }
     } catch (error) {
       console.error("Error updating approval status:", error);
+      toast.error("Already Approved.. Please refresh it.");
     }
   };
 
-  const RowMenu = ({ paymentId }) => {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
-        {/* Approve Button */}
-        <Button
-          variant="contained"
-          size="small"
-          color="success"
-          // startIcon={<CheckRoundedIcon />}
-          onClick={() => handleApprovalUpdate(paymentId, "Approved")}
-          sx={{ textTransform: "none" }}
-        >
-          Approve
-        </Button>
+  const RowMenu = ({ paymentId, onStatusChange }) => {
+    const [status, setStatus] = useState(null);
 
-        {/* Reject Button */}
-        <Button
+    const handleChipClick = (newStatus) => {
+      setStatus(newStatus);
+      onStatusChange(paymentId, newStatus);
+    };
+
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          gap: 1,
+        }}
+      >
+        {/* Approve Chip */}
+        <Chip
+          variant="solid"
+          color="success"
+          label="Approved"
+          onClick={() => handleChipClick("Approved")} // Pass a function reference, not invoke it directly
+          sx={{
+            textTransform: "none",
+            fontSize: "0.875rem",
+            fontWeight: 500,
+            borderRadius: "sm",
+          }}
+          startDecorator={<CheckRoundedIcon />}
+        />
+
+        {/* Reject Chip */}
+        <Chip
           variant="outlined"
-          size="small"
-          color="error"
-          // startIcon={<BlockIcon />}
-          onClick={() => handleApprovalUpdate(paymentId, "Rejected")}
-          sx={{ textTransform: "none" }}
-        >
-          Reject
-        </Button>
+          color="danger"
+          label="Rejected"
+          onClick={() => handleChipClick("Rejected")} // Pass a function reference to onClick
+          sx={{
+            textTransform: "none",
+            fontSize: "0.875rem",
+            fontWeight: 500,
+            borderRadius: "sm",
+          }}
+          startDecorator={<BlockIcon />}
+        />
       </Box>
+    );
+  };
+
+  const handleStatusChange = async (paymentId, newStatus) => {
+    await handleApprovalUpdate(paymentId, newStatus);
+
+    setPayments((prevPayments) =>
+      prevPayments.filter((payment) => payment.pay_id !== paymentId)
     );
   };
 
@@ -685,7 +787,10 @@ function PaymentRequest() {
                         textAlign: "center",
                       }}
                     >
-                      <RowMenu paymentId={payment.pay_id} />
+                      <RowMenu
+                        paymentId={payment.pay_id}
+                        onStatusChange={handleStatusChange}
+                      />
                     </Box>
                   </Box>
                 ))

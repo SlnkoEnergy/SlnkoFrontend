@@ -1,4 +1,5 @@
 import BlockIcon from "@mui/icons-material/Block";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
@@ -20,7 +21,6 @@ import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Tooltip from "@mui/joy/Tooltip";
-import { toast } from "react-toastify";
 import Typography from "@mui/joy/Typography";
 import { useSnackbar } from "notistack";
 import * as React from "react";
@@ -142,27 +142,24 @@ function PaymentRequest() {
   // }, []);
 
   /**Account Match Logic ***/
-  const AccountMatchAndUTR = ({
-    paymentId,
-    onAccountMatchSuccess,
-  }) => {
+  const AccountMatchAndUTR = ({ paymentId, onAccountMatchSuccess }) => {
     const { enqueueSnackbar } = useSnackbar();
-  
+
     // State initialization
     const [isMatched, setIsMatched] = useState(false);
     const [accountMatch, setAccountMatch] = useState("");
     const [ifsc, setIfsc] = useState("");
     const [error, setError] = useState(null);
-  
+
     // Function to handle account matching
     const handleAccountMatch = async () => {
       if (!accountMatch) {
         setError("Account Number required!!");
         return;
       }
-  
+
       setError(null);
-  
+
       try {
         console.log("Sending account match request...");
         const response = await Axios.put("/acc-matched", {
@@ -170,20 +167,19 @@ function PaymentRequest() {
           acc_number: accountMatch,
           ifsc: ifsc,
         });
-  
+
         console.log("Account match response:", response);
-  
+
         if (response.status === 200) {
           setIsMatched(true);
           enqueueSnackbar("Account matched successfully!", {
             variant: "success",
           });
-  
+
           // Notify parent about success (if needed)
-          if (onAccountMatchSuccess){
+          if (onAccountMatchSuccess) {
             onAccountMatchSuccess();
           }
-            
         } else {
           enqueueSnackbar("Failed to match account. Please try again.", {
             variant: "error",
@@ -196,7 +192,7 @@ function PaymentRequest() {
         });
       }
     };
-  
+
     return (
       <div>
         {/* Account Match Form */}
@@ -241,9 +237,9 @@ function PaymentRequest() {
                 />
               </Tooltip>
             </div>
-  
+
             {error && <div style={{ color: "red" }}>{error}</div>}
-  
+
             <Button
               type="submit"
               disabled={isMatched || !accountMatch}
@@ -259,24 +255,23 @@ function PaymentRequest() {
             </Button>
           </form>
         )}
-  
+
         {isMatched && (
-        <div style={{ marginTop: "1rem" }}>
-          <Chip
-            label="Account Matched Successfully"
-            color="success"
-            icon={<i className="material-icons">check</i>}
-          />
-        </div>
-      )}
+          <div style={{ marginTop: "1rem" }}>
+            <Chip
+              label="Account Matched Successfully"
+              color="success"
+              icon={<CheckCircleIcon />}
+            />
+          </div>
+        )}
       </div>
     );
   };
-  
+
   const handleAccountMatchSuccess = (paymentId) => {
     console.log("Account No and Ifsc submission was successful:", paymentId);
   };
-  
 
   /** Match Logic ***/
   const MatchRow = ({ payment }) => (
@@ -506,7 +501,6 @@ function PaymentRequest() {
                   "Payment Description",
                   "Requested Amount",
                   "Bank Detail",
-                 
                 ].map((header, index) => (
                   <Box
                     component="th"
@@ -631,9 +625,9 @@ function PaymentRequest() {
                       }}
                     >
                       <AccountMatchAndUTR
-           paymentId={payment.pay_id} onAccountMatchSuccess={handleAccountMatchSuccess}
-            
-          />
+                        paymentId={payment.pay_id}
+                        onAccountMatchSuccess={handleAccountMatchSuccess}
+                      />
                     </Box>
                     {/* <Box
                       component="td"
