@@ -24,6 +24,22 @@ function PaymentRequestForm() {
     vendors: [],
   });
 
+  const [user, setUser] = useState(null);
+    
+      
+     useEffect(() => {
+      const userData = getUserData();
+      setUser(userData);
+    }, []);
+    
+    const getUserData = () => {
+      const userData = localStorage.getItem("userDetails");
+      if (userData) {
+        return JSON.parse(userData);
+      }
+      return null;
+    };
+
 
   const [formData, setFormData] = useState({
     p_id: "",
@@ -46,7 +62,8 @@ function PaymentRequestForm() {
     branch: "",
     acc_match:"",
     utr:"",
-    total_advance_paid:""
+    total_advance_paid:"",
+    submitted_by:user?.name
   });
 
   useEffect(() => {
@@ -228,7 +245,7 @@ function PaymentRequestForm() {
 
   const handleHoldPayment = async () => {
     try {
-      const response = await Axios.post("/hold-payment", { paymentId: formData.p_id });
+      const response = await Axios.post("/hold-Payment", formData );
       const { message } = response.data;
 
       setResponseMessage(message);

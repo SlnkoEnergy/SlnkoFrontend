@@ -56,13 +56,15 @@ const StandByRequest = () => {
   useEffect(() => {
     const fetchTableData = async () => {
       try {
-        const response = await Axios.get("/hold-pay-summary");
+     const [paymentResponse, projectResponse] = await Promise.all([
+          Axios.get("/hold-pay-summary"),
+          Axios.get("/get-all-project"),
+        ]);
+        setPayments(paymentResponse.data.data);
+        console.log("Payment Data are:", paymentResponse.data.data);
 
-        const paymentsData = Array.isArray(response.data.data)
-          ? response.data.data
-          : [];
-        setPayments(paymentsData);
-        console.log("Payments Data are :", paymentsData);
+        setProjects(projectResponse.data.data);
+        console.log("Project Data are:", projectResponse.data.data);
 
         // const uniqueStates = [
         //   ...new Set(paymentsData.map((payment) => payment.state)),
@@ -85,23 +87,23 @@ const StandByRequest = () => {
     fetchTableData();
   }, []);
 
-    // useEffect(() => {
-    //   if (payments.length > 0 && projects.length > 0) {
-    //     const merged = payments.map((payment) => {
-    //       const matchingProject = projects.find(
-    //         (project) => Number(project.p_id) === Number(payment.p_id)
-    //       );
-    //       return {
-    //         ...payment,
-    //         // projectCode: matchingProject?.code || "-",
-    //         // projectName: matchingProject?.name || "-",
-    //         projectCustomer: matchingProject?.customer || "-",
-    //         // projectGroup: matchingProject?.p_group || "-",
-    //       };
-    //     });
-    //     setMergedData(merged);
-    //   }
-    // }, [payments, projects]);
+    useEffect(() => {
+      if (payments.length > 0 && projects.length > 0) {
+        const merged = payments.map((payment) => {
+          const matchingProject = projects.find(
+            (project) => Number(project.p_id) === Number(payment.p_id)
+          );
+          return {
+            ...payment,
+            // projectCode: matchingProject?.code || "-",
+            // projectName: matchingProject?.name || "-",
+            projectCustomer: matchingProject?.customer || "-",
+            // projectGroup: matchingProject?.p_group || "-",
+          };
+        });
+        setMergedData(merged);
+      }
+    }, [payments, projects]);
 
   // const renderFilters = () => (
   //   <>
@@ -193,7 +195,7 @@ const StandByRequest = () => {
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
-  const filteredAndSortedData = payments
+  const filteredAndSortedData = mergedData
   .filter((payment) => {
     const matchesSearchQuery = [
       "pay_id",
@@ -513,7 +515,7 @@ const StandByRequest = () => {
                         textAlign: "center",
                       }}
                     >
-                      {payment.customer || "-"}
+                      {payment.projectCustomer || "-"}
                     </Box>
                     <Box
                       component="td"

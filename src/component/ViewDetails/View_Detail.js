@@ -247,7 +247,7 @@ const Customer_Payment_Summary = () => {
   ];
 
   const [selectedCredits, setSelectedCredits] = useState([]);
-
+  const [selectedDate, setSelectedDate] = useState('');
   const [debitSearch, setDebitSearch] = useState("");
   const [selectedDebits, setSelectedDebits] = useState([]);
   const [filteredDebits, setFilteredDebits] = useState([]);
@@ -482,6 +482,32 @@ const Customer_Payment_Summary = () => {
       // console.log("No p_id found in projectData");
     }
   }, [projectData.p_id]); // Trigger when projectData.p_id changes
+
+
+ // Handle Date Filter
+ const handleDateFilter = (event) => {
+  const dateValue = event.target.value; // Format: YYYY-MM-DD
+  setSelectedDate(dateValue);
+
+  applyFilters(debitSearch, dateValue);
+};
+
+// Apply Combined Filters
+const applyFilters = (searchValue, dateValue) => {
+  const filteredData = debitHistory.filter((item) => {
+    const matchesSearch =
+      (item.paid_for && item.paid_for.toLowerCase().includes(searchValue)) ||
+      (item.vendor && item.vendor.toLowerCase().includes(searchValue));
+    const matchesDate = dateValue
+      ? new Date(item.dbt_date).toISOString().split('T')[0] === dateValue
+      : true;
+    return matchesSearch && matchesDate;
+  });
+
+  setFilteredDebits(filteredData);
+};
+  
+
 
   useEffect(() => {
     if (projectData.code) {
@@ -1054,18 +1080,34 @@ const Customer_Payment_Summary = () => {
         <Divider style={{ borderWidth: "2px", marginBottom: "20px" }} />
 
         <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
+        sx={{
+           display:"flex",
+          justifyContent:"space-between",
+          alignItems:"center",
+          flexDirection:{md:"row", xs:"column"}
+        }}
+         
           mb={2}
         >
-          <Input
+        <Box sx={{display:"flex",
+          alignItems:"center",
+          flexDirection:{md:"row", xs:"column"}}}>
+           <Input
             label="Search Paid For"
             value={debitSearch}
             placeholder="Search here"
             onChange={handleSearchDebit}
             style={{ width: "250px" }}
           />
+          <Input
+          type="date"
+          value={selectedDate}
+          onChange={handleDateFilter}
+          style={{ width: '200px', marginLeft:"5px" }}
+        />
+        </Box>
+         
+         <Box>
           <Button
             variant="contained"
             color="error"
@@ -1074,6 +1116,8 @@ const Customer_Payment_Summary = () => {
           >
             Delete Selected
           </Button>
+         </Box>
+          
         </Box>
 
         <div

@@ -113,12 +113,11 @@ const PaymentRequest = forwardRef((props, ref) => {
     <>
       <FormControl size="sm">
         <FormLabel>Date</FormLabel>
-        <input
-          size="sm"
+        <Input
           type="date"
-          value={dateFilter}
-          onChange={handleDateChange}
-          placeholder="Select Date"
+          // value={selectedDate}
+          // onChange={handleDateFilter}
+          style={{ width: '200px' }}
         />
       </FormControl>
       {/* <FormControl size="sm">
@@ -710,7 +709,10 @@ const PaymentRequest = forwardRef((props, ref) => {
         >
           Previous
         </Button>
-
+        <Box>
+          Showing {paymentsWithFormattedDate.length} of {filteredAndSortedData.length}{" "}
+          results
+        </Box>
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >

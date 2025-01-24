@@ -325,12 +325,12 @@ function PaymentRequest() {
         if (newStatus === "Approved") {
           toast.success("Payment Approved !!", { autoClose: 3000 });
         } else if (newStatus === "Rejected") {
-          toast.error("Oops!! Rejected...", { autoClose: 2000 });
+          toast.error("Payment Rejected...", { autoClose: 2000 });
         }
       }
     } catch (error) {
       console.error("Error updating approval status:", error);
-      toast.error("Already Approved.. Please refresh it.");
+      toast.error(`Already Done.. Please refresh it.`);
     }
   };
 
