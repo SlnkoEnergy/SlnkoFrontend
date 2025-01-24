@@ -47,8 +47,10 @@ const PaymentRequest = forwardRef((props, ref) => {
   const [dateFilter, setDateFilter] = useState("");
   const [projects, setProjects] = useState([]);
   const [mergedData, setMergedData] = useState([]);
+  const [selectedDate, setSelectedDate] = useState('');
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
+  
 
   useEffect(() => {
     const fetchTableData = async () => {
@@ -115,8 +117,8 @@ const PaymentRequest = forwardRef((props, ref) => {
         <FormLabel>Date</FormLabel>
         <Input
           type="date"
-          // value={selectedDate}
-          // onChange={handleDateFilter}
+          value={selectedDate}
+          onChange={handleDateFilter}
           style={{ width: '200px' }}
         />
       </FormControl>
@@ -228,60 +230,81 @@ const PaymentRequest = forwardRef((props, ref) => {
     );
   };
 
+  
+  const [FilteredData, setFilteredData] = useState([]);
+
+
   const handleSearch = (query) => {
-    setSearchQuery(query.toLowerCase());
+    const lowerCaseQuery = query.toLowerCase();
+    setSearchQuery(lowerCaseQuery);
+    applyFilters(lowerCaseQuery, selectedDate); // Pass the updated search query
   };
-
-  const filteredAndSortedData = mergedData
-    .filter((payment) => {
-      const matchesSearchQuery = [
-        "pay_id",
-        "vendor",
-        "approved",
-        "projectCustomer",
-        "paid_for"
-      ].some((key) => payment[key]?.toLowerCase().includes(searchQuery));
-
-      const matchesDateFilter =
-        !dateFilter ||
-        new Date(payment.date).toLocaleDateString() ===
-          new Date(dateFilter).toLocaleDateString();
-
-      // const matchesStatusFilter =
-      //   !statusFilter || payment.approved === statusFilter;
-      // console.log("MatchVendors are: ", matchesStatusFilter);
-
-      // const matchesVendorFilter =
-      //   !vendorFilter || payment.vendor === vendorFilter;
-      // console.log("MatchVendors are: ", matchesVendorFilter);
-
-      return matchesSearchQuery && matchesDateFilter;
-    })
-    .sort((a, b) => {
-      if (a.pay_id?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.pay_id?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.paid_for?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.paid_for?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.projectCustomer?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.projectCustomer?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.vendor?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.vendor?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.approved?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.approved?.toLowerCase().includes(searchQuery)) return 1;
-      return 0;
-    });
-
+  
+  // Apply filters based on search query and date
+  const applyFilters = (query = searchQuery, dateValue = selectedDate) => {
+    const filteredAndSortedData = mergedData
+      .filter((payment) => {
+        const matchesSearchQuery = [
+          "pay_id",
+          "vendor",
+          "approved",
+          "projectCustomer",
+          "paid_for",
+        ].some((key) => payment[key]?.toLowerCase().includes(query));
+  
+        return matchesSearchQuery;
+      })
+      .sort((a, b) => {
+        const priorityKeys = ["pay_id", "paid_for", "projectCustomer", "vendor", "approved"];
+  
+        for (const key of priorityKeys) {
+          const aIncludes = a[key]?.toLowerCase().includes(query);
+          const bIncludes = b[key]?.toLowerCase().includes(query);
+  
+          if (aIncludes && !bIncludes) return -1;
+          if (!aIncludes && bIncludes) return 1;
+        }
+  
+        return 0;
+      })
+      .filter((item) => {
+        const matchesDate = dateValue
+          ? new Date(item.dbt_date).toISOString().split("T")[0] === dateValue
+          : true;
+  
+        return matchesDate;
+      });
+  
+    setFilteredData(filteredAndSortedData);
+  };
+  
+  // Handle date filter input and apply combined filters
+  const handleDateFilter = (event) => {
+    const dateValue = event.target.value;
+    setSelectedDate(dateValue);
+    applyFilters(searchQuery, dateValue); // Pass the updated date filter
+  };
+  
+  // Apply filters based on search query and date
+  // const applyFilters = ( dateValue) => {
+  //   const filteredData = filteredAndSortedData.filter((item) => {
+  //     const matchesDate = dateValue
+  //       ? new Date(item.dbt_date).toISOString().split("T")[0] === dateValue
+  //       : true;
+  
+  //     return matchesDate;
+  //   });
+  
+  //   setFilteredData(filteredData);
+  // };
+  
+  // Generate page numbers for pagination
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
-
-    if (currentPage > 2) {
-      pages.push(1);
-    }
-
-    if (currentPage > 3) {
-      pages.push("...");
-    }
-
+  
+    if (currentPage > 2) pages.push(1);
+    if (currentPage > 3) pages.push("...");
+  
     for (
       let i = Math.max(1, currentPage - 1);
       i <= Math.min(totalPages, currentPage + 1);
@@ -289,55 +312,63 @@ const PaymentRequest = forwardRef((props, ref) => {
     ) {
       pages.push(i);
     }
-
-    if (currentPage < totalPages - 2) {
-      pages.push("...");
-    }
-
-    if (currentPage < totalPages - 1) {
-      pages.push(totalPages);
-    }
-
+  
+    if (currentPage < totalPages - 2) pages.push("...");
+    if (currentPage < totalPages - 1) pages.push(totalPages);
+  
     return pages;
   };
-
+  
+  // Set current page on component mount or when searchParams change
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
-  }, [searchParams]);
-
-  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
-
+  
+    // Apply initial filters
+    applyFilters();
+  }, [searchParams, mergedData]);
+  
+  // Calculate total pages based on filtered data
+  const totalPages = Math.ceil(FilteredData.length / itemsPerPage);
+  
+  // Format date safely
   const formatDate = (dateString) => {
-    if (!dateString) {
-      return "-";
-    }
+    if (!dateString) return "-";
+  
     const date = new Date(dateString);
     if (isNaN(date.getTime())) {
       console.warn(`Invalid date value: "${dateString}"`);
       return "-";
     }
+  
     const options = { day: "2-digit", month: "short", year: "numeric" };
     return new Intl.DateTimeFormat("en-GB", options)
       .format(date)
       .replace(/ /g, "/");
   };
-
-  const paginatedPayments = filteredAndSortedData.slice(
+  
+  // Paginate filtered data
+  const paginatedPayments = FilteredData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
+  
+  // Add formatted date to each payment object
   const paymentsWithFormattedDate = paginatedPayments.map((payment) => ({
     ...payment,
-    formattedDate: formatDate(payment.dbt_date),
+    formattedDate: formatDate(payment.dbt_date)
   }));
+  
+  // Handle page changes in pagination
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setSearchParams({ page });
       setCurrentPage(page);
     }
   };
+  
+
+ 
 
   // if (loading) {
   //   return <Typography>Loading...</Typography>;
@@ -383,6 +414,10 @@ const PaymentRequest = forwardRef((props, ref) => {
       link.click();
     },
   }));
+
+  const sortedPayments = [...paymentsWithFormattedDate].sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
 
   return (
     <>
@@ -489,14 +524,14 @@ const PaymentRequest = forwardRef((props, ref) => {
                   <Checkbox
                     size="sm"
                     checked={
-                      selected.length === paymentsWithFormattedDate.length
+                      selected.length === sortedPayments.length
                     }
                     onChange={(event) =>
                       handleRowSelect("all", event.target.checked)
                     }
                     indeterminate={
                       selected.length > 0 &&
-                      selected.length < paymentsWithFormattedDate.length
+                      selected.length < sortedPayments.length
                     }
                   />
                 </Box>
@@ -527,8 +562,8 @@ const PaymentRequest = forwardRef((props, ref) => {
               </Box>
             </Box>
             <Box component="tbody">
-              {paymentsWithFormattedDate.length > 0 ? (
-                paymentsWithFormattedDate.map((payment, index) => (
+              {sortedPayments.length > 0 ? (
+                sortedPayments.map((payment, index) => (
                   <Box
                     component="tr"
                     key={index}
@@ -710,7 +745,7 @@ const PaymentRequest = forwardRef((props, ref) => {
           Previous
         </Button>
         <Box>
-          Showing {paymentsWithFormattedDate.length} of {filteredAndSortedData.length}{" "}
+          Showing {paginatedPayments.length} of {FilteredData.length}{" "}
           results
         </Box>
         <Box

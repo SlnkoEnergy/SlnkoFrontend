@@ -199,9 +199,16 @@ const PaymentRequestSummary = () => {
           <Box textAlign="center" mt={3}>
             <Button
               variant="solid"
-              color="primary"
-              sx={{ mr: 2 }}
+              color="neutral"
               onClick={handleStandby}
+              sx={{
+                '&:hover': {
+                  backgroundColor: 'red',
+                  borderColor: 'red',      
+                  color: 'white',
+                  mr: 2          
+                }
+              }}
             >
               Standby
             </Button>
