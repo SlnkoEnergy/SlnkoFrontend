@@ -1,18 +1,17 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
 import {
   Box,
-  Typography,
-  Input,
-  Grid,
-  Divider,
   Button,
   Card,
   CardContent,
+  Divider,
+  Grid,
+  Input,
+  Typography,
 } from "@mui/joy";
-import Axios from "../../utils/Axios";
-import Img10 from "../../assets/pr-summary.png";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Img10 from "../../assets/pr-summary.png";
+import Axios from "../../utils/Axios";
 
 const PaymentRequestSummary = () => {
   const navigate = useNavigate();
@@ -48,7 +47,10 @@ const PaymentRequestSummary = () => {
           console.log("Matching Project Found:", matchingProject);
           setProjectData(matchingProject); // Set the matching project data to state
         } else {
-          console.error("No matching project found with the ID:", projectIdFromStorage);
+          console.error(
+            "No matching project found with the ID:",
+            projectIdFromStorage
+          );
           setError((prev) => ({
             ...prev,
             project: "No matching project found for the given ID",
@@ -56,7 +58,10 @@ const PaymentRequestSummary = () => {
         }
       } catch (err) {
         console.error("Error fetching project data:", err);
-        setError((prev) => ({ ...prev, project: "Failed to fetch project data" }));
+        setError((prev) => ({
+          ...prev,
+          project: "Failed to fetch project data",
+        }));
       } finally {
         setLoading((prev) => ({ ...prev, project: false }));
       }
@@ -64,7 +69,6 @@ const PaymentRequestSummary = () => {
 
     fetchProjectData();
   }, []);
-  
 
   useEffect(() => {
     const fetchPayRequestData = async () => {
@@ -95,7 +99,7 @@ const PaymentRequestSummary = () => {
   };
 
   const handleBack = () => {
-    navigate("/daily-payment-request")
+    navigate("/daily-payment-request");
   };
 
   if (Object.values(loading).some((isLoading) => isLoading)) {
@@ -132,7 +136,7 @@ const PaymentRequestSummary = () => {
         justifyContent: "center",
         alignItems: "center",
         minHeight: "100vh",
-        width:'100%',
+        width: "100%",
         bgcolor: "background.level1",
         padding: "20px",
       }}
@@ -169,7 +173,7 @@ const PaymentRequestSummary = () => {
 
           <Grid container spacing={2}>
             {[
-              { label: "Payment ID", name: "pay_id", },
+              { label: "Payment ID", name: "pay_id" },
               { label: "Project ID", name: "code" },
               { label: "Request Date", name: "dbt_date", type: "date" },
               { label: "Client Name", name: "customer" },
@@ -190,7 +194,9 @@ const PaymentRequestSummary = () => {
                   value={formData[field.name]}
                   variant="outlined"
                   disabled
-                  InputLabelProps={field.type === "date" ? { shrink: true } : undefined}
+                  InputLabelProps={
+                    field.type === "date" ? { shrink: true } : undefined
+                  }
                 />
               </Grid>
             ))}
@@ -202,12 +208,12 @@ const PaymentRequestSummary = () => {
               color="neutral"
               onClick={handleStandby}
               sx={{
-                '&:hover': {
-                  backgroundColor: 'red',
-                  borderColor: 'red',      
-                  color: 'white',
-                  mr: 2          
-                }
+                "&:hover": {
+                  backgroundColor: "red",
+                  borderColor: "red",
+                  color: "white",
+                  mr: 2,
+                },
               }}
             >
               Standby

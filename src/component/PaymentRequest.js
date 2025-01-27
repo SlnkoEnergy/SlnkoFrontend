@@ -1,7 +1,8 @@
 import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
 import BlockIcon from "@mui/icons-material/Block";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import FilterAltIcon from "@mui/icons-material/FilterAlt";
+import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
+import DeleteIcon from "@mui/icons-material/Delete";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
@@ -19,13 +20,8 @@ import Input from "@mui/joy/Input";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
-import Modal from "@mui/joy/Modal";
-import ModalClose from "@mui/joy/ModalClose";
-import ModalDialog from "@mui/joy/ModalDialog";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import DeleteIcon from '@mui/icons-material/Delete';
-import ContentPasteGoIcon from '@mui/icons-material/ContentPasteGo';
 import * as React from "react";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -47,10 +43,9 @@ const PaymentRequest = forwardRef((props, ref) => {
   const [dateFilter, setDateFilter] = useState("");
   const [projects, setProjects] = useState([]);
   const [mergedData, setMergedData] = useState([]);
-  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedDate, setSelectedDate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
-  
 
   useEffect(() => {
     const fetchTableData = async () => {
@@ -119,7 +114,7 @@ const PaymentRequest = forwardRef((props, ref) => {
           type="date"
           value={selectedDate}
           onChange={handleDateFilter}
-          style={{ width: '200px' }}
+          style={{ width: "200px" }}
         />
       </FormControl>
       {/* <FormControl size="sm">
@@ -172,9 +167,9 @@ const PaymentRequest = forwardRef((props, ref) => {
     }
   };
 
-  const handleDateChange = (e) => {
-    setDateFilter(e.target.value);
-  };
+  // const handleDateChange = (e) => {
+  //   setDateFilter(e.target.value);
+  // };
 
   const RowMenu = ({ currentPage, pay_id, p_id }) => {
     // console.log("currentPage:", currentPage, "pay_id:", pay_id, "p_id:", p_id);
@@ -204,7 +199,7 @@ const PaymentRequest = forwardRef((props, ref) => {
               <ContentPasteGoIcon />
               <Typography>Pay summary</Typography>
             </MenuItem>
-            
+
             {/* <MenuItem
               color="primary"
               onClick={() => navigate("/standby_records")}
@@ -214,8 +209,8 @@ const PaymentRequest = forwardRef((props, ref) => {
             </MenuItem> */}
             <Divider sx={{ backgroundColor: "lightblue" }} />
             <MenuItem color="danger">
-            <DeleteIcon />
-            <Typography>Delete</Typography>
+              <DeleteIcon />
+              <Typography>Delete</Typography>
             </MenuItem>
           </Menu>
         </Dropdown>
@@ -230,16 +225,14 @@ const PaymentRequest = forwardRef((props, ref) => {
     );
   };
 
-  
   const [FilteredData, setFilteredData] = useState([]);
-
 
   const handleSearch = (query) => {
     const lowerCaseQuery = query.toLowerCase();
     setSearchQuery(lowerCaseQuery);
     applyFilters(lowerCaseQuery, selectedDate); // Pass the updated search query
   };
-  
+
   // Apply filters based on search query and date
   const applyFilters = (query = searchQuery, dateValue = selectedDate) => {
     const filteredAndSortedData = mergedData
@@ -251,60 +244,48 @@ const PaymentRequest = forwardRef((props, ref) => {
           "projectCustomer",
           "paid_for",
         ].some((key) => payment[key]?.toLowerCase().includes(query));
-  
+
         return matchesSearchQuery;
-      })
-      .sort((a, b) => {
-        const priorityKeys = ["pay_id", "paid_for", "projectCustomer", "vendor", "approved"];
-  
-        for (const key of priorityKeys) {
-          const aIncludes = a[key]?.toLowerCase().includes(query);
-          const bIncludes = b[key]?.toLowerCase().includes(query);
-  
-          if (aIncludes && !bIncludes) return -1;
-          if (!aIncludes && bIncludes) return 1;
-        }
-  
-        return 0;
       })
       .filter((item) => {
         const matchesDate = dateValue
           ? new Date(item.dbt_date).toISOString().split("T")[0] === dateValue
           : true;
-  
+
         return matchesDate;
-      });
-  
+      })
+      .sort((a, b) => new Date(b.dbt_date) - new Date(a.dbt_date));
+
     setFilteredData(filteredAndSortedData);
   };
-  
+
   // Handle date filter input and apply combined filters
   const handleDateFilter = (event) => {
     const dateValue = event.target.value;
     setSelectedDate(dateValue);
     applyFilters(searchQuery, dateValue);
   };
-  
+
   // Apply filters based on search query and date
   // const applyFilters = ( dateValue) => {
   //   const filteredData = filteredAndSortedData.filter((item) => {
   //     const matchesDate = dateValue
   //       ? new Date(item.dbt_date).toISOString().split("T")[0] === dateValue
   //       : true;
-  
+
   //     return matchesDate;
   //   });
-  
+
   //   setFilteredData(filteredData);
   // };
-  
+
   // Generate page numbers for pagination
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
-  
+
     if (currentPage > 2) pages.push(1);
     if (currentPage > 3) pages.push("...");
-  
+
     for (
       let i = Math.max(1, currentPage - 1);
       i <= Math.min(totalPages, currentPage + 1);
@@ -312,53 +293,53 @@ const PaymentRequest = forwardRef((props, ref) => {
     ) {
       pages.push(i);
     }
-  
+
     if (currentPage < totalPages - 2) pages.push("...");
     if (currentPage < totalPages - 1) pages.push(totalPages);
-  
+
     return pages;
   };
-  
+
   // Set current page on component mount or when searchParams change
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
-  
+
     // Apply initial filters
     applyFilters();
   }, [searchParams, mergedData]);
-  
+
   // Calculate total pages based on filtered data
   const totalPages = Math.ceil(FilteredData.length / itemsPerPage);
-  
+
   // Format date safely
   const formatDate = (dateString) => {
     if (!dateString) return "-";
-  
+
     const date = new Date(dateString);
     if (isNaN(date.getTime())) {
       console.warn(`Invalid date value: "${dateString}"`);
       return "-";
     }
-  
+
     const options = { day: "2-digit", month: "short", year: "numeric" };
     return new Intl.DateTimeFormat("en-GB", options)
       .format(date)
       .replace(/ /g, "/");
   };
-  
+
   // Paginate filtered data
   const paginatedPayments = FilteredData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-  
+
   // Add formatted date to each payment object
   const paymentsWithFormattedDate = paginatedPayments.map((payment) => ({
     ...payment,
-    formattedDate: formatDate(payment.dbt_date)
+    formattedDate: formatDate(payment.dbt_date),
   }));
-  
+
   // Handle page changes in pagination
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -366,9 +347,6 @@ const PaymentRequest = forwardRef((props, ref) => {
       setCurrentPage(page);
     }
   };
-  
-
- 
 
   // if (loading) {
   //   return <Typography>Loading...</Typography>;
@@ -562,148 +540,152 @@ const PaymentRequest = forwardRef((props, ref) => {
               </Box>
             </Box>
             <Box component="tbody">
-            {paymentsWithFormattedDate.length > 0 ? (
-    paymentsWithFormattedDate.slice()
-      .sort((a, b) => new Date(a.formattedDate) - new Date(b.formattedDate))
-      .map((payment, index) => (
-                  <Box
-                    component="tr"
-                    key={index}
-                    sx={{
-                      "&:hover": { backgroundColor: "neutral.plainHoverBg" },
-                    }}
-                  >
+              {paymentsWithFormattedDate.length > 0 ? (
+                paymentsWithFormattedDate
+                  .slice()
+                  .sort((a, b) => new Date(b.dbt_date) - new Date(a.dbt_date))
+                  .map((payment, index) => (
                     <Box
-                      component="td"
+                      component="tr"
+                      key={index}
                       sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
+                        "&:hover": { backgroundColor: "neutral.plainHoverBg" },
                       }}
                     >
-                      <Checkbox
-                        size="sm"
-                        checked={selected.includes(payment.pay_id)}
-                        onChange={(event) =>
-                          handleRowSelect(payment.pay_id, event.target.checked)
-                        }
-                      />
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.pay_id}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.formattedDate}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.vendor}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.paid_for}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.projectCustomer || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.amount_paid}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <Chip
-                        variant="soft"
-                        size="sm"
-                        startDecorator={
-                          {
-                            Approved: <CheckRoundedIcon />,
-                            Pending: <AutorenewRoundedIcon />,
-                            Rejected: <BlockIcon />,
-                          }[payment.approved]
-                        }
-                        color={
-                          {
-                            Approved: "success",
-                            Pending: "neutral",
-                            Rejected: "danger",
-                          }[payment.approved]
-                        }
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
                       >
-                        {payment.approved}
-                      </Chip>
+                        <Checkbox
+                          size="sm"
+                          checked={selected.includes(payment.pay_id)}
+                          onChange={(event) =>
+                            handleRowSelect(
+                              payment.pay_id,
+                              event.target.checked
+                            )
+                          }
+                        />
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {payment.pay_id}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {payment.formattedDate}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {payment.vendor}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {payment.paid_for}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {payment.projectCustomer || "-"}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {payment.amount_paid}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        <Chip
+                          variant="soft"
+                          size="sm"
+                          startDecorator={
+                            {
+                              Approved: <CheckRoundedIcon />,
+                              Pending: <AutorenewRoundedIcon />,
+                              Rejected: <BlockIcon />,
+                            }[payment.approved]
+                          }
+                          color={
+                            {
+                              Approved: "success",
+                              Pending: "neutral",
+                              Rejected: "danger",
+                            }[payment.approved]
+                          }
+                        >
+                          {payment.approved}
+                        </Chip>
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {payment.utr || "-"}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        <RowMenu
+                          currentPage={currentPage}
+                          pay_id={payment.pay_id}
+                          p_id={payment.p_id}
+                        />
+                      </Box>
                     </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.utr || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <RowMenu
-                        currentPage={currentPage}
-                        pay_id={payment.pay_id}
-                        p_id={payment.p_id}
-                      />
-                    </Box>
-                  </Box>
-                ))
+                  ))
               ) : (
                 <Box component="tr">
                   <Box
@@ -747,8 +729,7 @@ const PaymentRequest = forwardRef((props, ref) => {
           Previous
         </Button>
         <Box>
-          Showing {paginatedPayments.length} of {FilteredData.length}{" "}
-          results
+          Showing {paginatedPayments.length} of {FilteredData.length} results
         </Box>
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
