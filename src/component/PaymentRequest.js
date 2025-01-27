@@ -282,7 +282,7 @@ const PaymentRequest = forwardRef((props, ref) => {
   const handleDateFilter = (event) => {
     const dateValue = event.target.value;
     setSelectedDate(dateValue);
-    applyFilters(searchQuery, dateValue); // Pass the updated date filter
+    applyFilters(searchQuery, dateValue);
   };
   
   // Apply filters based on search query and date
@@ -415,9 +415,9 @@ const PaymentRequest = forwardRef((props, ref) => {
     },
   }));
 
-  const sortedPayments = [...paymentsWithFormattedDate].sort(
-    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-  );
+  // const sortedPayments = [...paymentsWithFormattedDate].sort(
+  //   (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  // );
 
   return (
     <>
@@ -524,14 +524,14 @@ const PaymentRequest = forwardRef((props, ref) => {
                   <Checkbox
                     size="sm"
                     checked={
-                      selected.length === sortedPayments.length
+                      selected.length === paymentsWithFormattedDate.length
                     }
                     onChange={(event) =>
                       handleRowSelect("all", event.target.checked)
                     }
                     indeterminate={
                       selected.length > 0 &&
-                      selected.length < sortedPayments.length
+                      selected.length < paymentsWithFormattedDate.length
                     }
                   />
                 </Box>
@@ -562,8 +562,10 @@ const PaymentRequest = forwardRef((props, ref) => {
               </Box>
             </Box>
             <Box component="tbody">
-              {sortedPayments.length > 0 ? (
-                sortedPayments.map((payment, index) => (
+            {paymentsWithFormattedDate.length > 0 ? (
+    paymentsWithFormattedDate.slice()
+      .sort((a, b) => new Date(a.formattedDate) - new Date(b.formattedDate))
+      .map((payment, index) => (
                   <Box
                     component="tr"
                     key={index}

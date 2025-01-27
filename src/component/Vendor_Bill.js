@@ -3,6 +3,7 @@ import Box from "@mui/joy/Box";
 import Typography from "@mui/joy/Typography";
 import Button from "@mui/joy/Button";
 import Axios from "../utils/Axios";
+import  Chip from "@mui/joy/Chip";
 import { useSearchParams } from "react-router-dom";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
@@ -10,6 +11,8 @@ import SearchIcon from "@mui/icons-material/Search";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
+import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
 import { useSnackbar } from "notistack";
 import Input from "@mui/joy/Input";
 
@@ -89,8 +92,8 @@ function VendorBillSummary() {
             total_billed: totalBilled,
             po_status:
               totalBilled === po.po_value ? "Fully Billed" : "Bill Pending",
-            po_balance: po.po_value - totalBilled, // Calculate PO balance dynamically
-            received: "Pending", // Default status for received
+            po_balance: po.po_value - totalBilled,
+            received: "Pending",
             approved_by: bill.approved_by,
             created_on: bill.created_on,
             updatedAt: bill.updatedAt,
@@ -99,7 +102,7 @@ function VendorBillSummary() {
         return [];
       });
 
-      console.log("Matched Data:", matchedData); // Log matched data
+      console.log("Matched Data:", matchedData);
       setMatchingData(matchedData);
     }
   }, [poData, billData]);
@@ -114,6 +117,7 @@ function VendorBillSummary() {
     const { enqueueSnackbar } = useSnackbar();
   
     useEffect(() => {
+      
       const userData = getUserData();
       setUser(userData);
     }, []);
@@ -125,21 +129,20 @@ function VendorBillSummary() {
   
     const handleAcceptance = async () => {
       try {
-        const fetchData = await Axios.put("/accepted-by", {
+        const response = await Axios.put("/accepted-by", {
           bill_number: billNumber,
           approved_by: user?.name,
         });
   
-        if (fetchData.status === 200) {
+        if (response.status === 200) {
           setIsAccepted(true);
-          enqueueSnackbar(`Bill Accepted successfully by ${user?.name}`, { variant: "success" });
+          enqueueSnackbar(`Bill accepted successfully by ${user?.name}`, { variant: "success" });
         } else {
-          enqueueSnackbar("Failed to match account. Please try again.", { variant: "error" });
+          enqueueSnackbar("Failed to accept the bill. Please try again.", { variant: "error" });
         }
-        console.log("Acceptance Response:", fetchData);
       } catch (error) {
-        console.error("Failed to Accept:", error);
-        enqueueSnackbar("Already Accepted...", { variant: "error" });
+        console.error("Failed to accept the bill:", error);
+        enqueueSnackbar("This bill has already been accepted.", { variant: "error" });
       }
     };
   
@@ -163,13 +166,39 @@ function VendorBillSummary() {
                 backgroundColor: isAccepted ? "gray" : "#28a745",
                 color: "white",
                 cursor: isAccepted ? "not-allowed" : "pointer",
+                "&:hover": {
+                  backgroundColor: isAccepted ? "gray" : "#218838",
+                },
               }}
             >
-              {isAccepted ? "Acceptance..." : "Accepted"}
+              {isAccepted ? "Accepted" : "Accept"}
             </Button>
           </Box>
         </form>
       </Box>
+    );
+  };
+
+  const BillingStatusChip = ({ status }) => {
+    return (
+      <Chip
+        variant="soft"
+        size="sm"
+        startDecorator={
+          {
+            "Fully Billed": <CheckRoundedIcon />,
+            "Bill Pending": <AutorenewRoundedIcon />,
+          }[status]
+        }
+        color={
+          {
+            "Fully Billed": "success",
+            "Bill Pending": "warning",
+          }[status]
+        }
+      >
+        {status}
+      </Chip>
     );
   };
 
@@ -418,7 +447,7 @@ function VendorBillSummary() {
                     {row.total_billed}
                   </Box>
                   <Box component="td" sx={{ padding: 2 }}>
-                    {row.po_status}
+                  <BillingStatusChip status={row.po_status} />
                   </Box>
                   <Box component="td" sx={{ padding: 2 }}>
                     {row.po_balance}
