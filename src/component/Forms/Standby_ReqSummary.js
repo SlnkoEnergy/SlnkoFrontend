@@ -13,12 +13,13 @@ import {
 import Axios from "../../utils/Axios";
 import Img10 from "../../assets/pr-summary.png";
 import { useNavigate } from "react-router-dom";
+import {toast} from "react-toastify";
 
 const PaymentRequestSummary = () => {
   const navigate = useNavigate();
   const [projectData, setProjectData] = useState(null);
   const [payRequestData, setPayRequestData] = useState(null);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState({ project: null, payRequest: null });
   const [loading, setLoading] = useState({ project: true, payRequest: true });
 
   // Fetch Project Data
@@ -29,34 +30,23 @@ const PaymentRequestSummary = () => {
         const projectIdFromStorage = Number(localStorage.getItem("p_id"));
 
         if (!projectIdFromStorage) {
-          console.error("No valid project ID found in localStorage");
-          setError((prev) => ({
-            ...prev,
-            project: "No valid project ID found in localStorage",
-          }));
-          return;
+          throw new Error("No valid project ID found in localStorage");
         }
 
-        console.log("Project ID from localStorage:", projectIdFromStorage);
-
-        // Find the matching project based on project ID
         const matchingProject = projectResponse.data?.data?.find(
           (item) => item.p_id === projectIdFromStorage
         );
 
-        if (matchingProject) {
-          console.log("Matching Project Found:", matchingProject);
-          setProjectData(matchingProject); // Set the matching project data to state
-        } else {
-          console.error("No matching project found with the ID:", projectIdFromStorage);
-          setError((prev) => ({
-            ...prev,
-            project: "No matching project found for the given ID",
-          }));
+        if (!matchingProject) {
+          throw new Error("No matching project found for the given ID");
         }
+
+        setProjectData(matchingProject);
       } catch (err) {
-        console.error("Error fetching project data:", err);
-        setError((prev) => ({ ...prev, project: "Failed to fetch project data" }));
+        setError((prev) => ({
+          ...prev,
+          project: err.message,
+        }));
       } finally {
         setLoading((prev) => ({ ...prev, project: false }));
       }
@@ -64,23 +54,34 @@ const PaymentRequestSummary = () => {
 
     fetchProjectData();
   }, []);
-  
 
+  // Fetch Payment Request Data
   useEffect(() => {
     const fetchPayRequestData = async () => {
       try {
         const payRequestResponse = await Axios.get("/hold-pay-summary");
-        console.log("Full Pay Request Data:", payRequestResponse.data);
+        const payIdFromStorage = localStorage.getItem("standby_summary");
 
-        const projectFromStorage = payRequestResponse.data?.data.find(
-          (item) => item.pay_id === localStorage.getItem("standby_summary")
+        if (!payIdFromStorage) {
+          throw new Error("No valid payment ID found in localStorage");
+        }
+
+        const matchingPayRequest = payRequestResponse.data?.data?.find(
+          (item) =>
+            item.pay_id === payIdFromStorage
         );
-        setPayRequestData(projectFromStorage || {});
+
+        if (!matchingPayRequest) {
+          throw new Error(
+            "No matching payment request found with 'Pending' status"
+          );
+        }
+
+        setPayRequestData(matchingPayRequest);
       } catch (err) {
-        console.error("Error fetching pay request data:", err);
         setError((prev) => ({
           ...prev,
-          payRequest: "Failed to fetch pay request data",
+          payRequest: err.message,
         }));
       } finally {
         setLoading((prev) => ({ ...prev, payRequest: false }));
@@ -90,21 +91,41 @@ const PaymentRequestSummary = () => {
     fetchPayRequestData();
   }, []);
 
-  // const handleStandby = () => {
-  //   console.log("Standby button clicked.");
-  // };
+  const handleSubmit = async () => {
+    try {
+      const payload = {
+        pay_id: payRequestData?.pay_id || "",
+        approved: payRequestData?.approved || "",
+      };
+
+      const response = await Axios.post("/hold-payto-payrequest", payload);
+
+      if (response.status === 200 || response.status === 201) {
+        // console.log("Data successfully submitted:", response.data);
+        toast.success("Data sent to Payment Request Records");
+        navigate("/daily-payment-request");
+      } else {
+        console.error("Unexpected response:", response);
+        toast.error("Check your details again !!");
+      }
+    } catch (err) {
+      console.error("Error while submitting data:", err);
+      // alert("An error occurred while submitting the payment request.");
+      toast.error("Contact Technical Team.. !!");
+    }
+  };
 
   const handleBack = () => {
-    navigate("/standby_records")
+    navigate("/standby_records");
   };
 
   if (Object.values(loading).some((isLoading) => isLoading)) {
-    return <Typography level="h5">Loading...</Typography>;
+    return <Typography variant="h5">Loading...</Typography>;
   }
 
-  if (error) {
+  if (Object.values(error).some(Boolean)) {
     return (
-      <Typography level="h5" color="danger">
+      <Typography variant="h5" color="error">
         {Object.values(error).filter(Boolean).join(", ")}
       </Typography>
     );
@@ -132,7 +153,7 @@ const PaymentRequestSummary = () => {
         justifyContent: "center",
         alignItems: "center",
         minHeight: "100vh",
-        width:'100%',
+        width: "100%",
         bgcolor: "background.level1",
         padding: "20px",
       }}
@@ -154,10 +175,10 @@ const PaymentRequestSummary = () => {
               style={{ height: "50px", marginBottom: "10px" }}
             />
             <Typography
-              level="h3"
-              fontWeight="lg"
+              variant="h4"
+              fontWeight="bold"
               sx={{
-                fontFamily: "Bona Nova SC, serif",
+                fontFamily: "Bona Nova, serif",
                 textTransform: "uppercase",
                 color: "text.primary",
               }}
@@ -169,7 +190,7 @@ const PaymentRequestSummary = () => {
 
           <Grid container spacing={2}>
             {[
-              { label: "Payment ID", name: "pay_id", },
+              { label: "Payment ID", name: "pay_id" },
               { label: "Project ID", name: "code" },
               { label: "Request Date", name: "dbt_date", type: "date" },
               { label: "Client Name", name: "customer" },
@@ -182,33 +203,71 @@ const PaymentRequestSummary = () => {
               { label: "Payment Status", name: "approved" },
               { label: "Payment Description", name: "comment" },
             ].map((field, index) => (
-              <Grid item xs={12} key={index}>
+              <Grid item xs={12} sm={6} key={index}>
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                                  {field.label}
+                                </Typography>
                 <Input
                   fullWidth
-                  label={field.label}
-                  name={field.name}
+                  // label={field.label}
+                  // name={field.name}
                   value={formData[field.name]}
                   variant="outlined"
                   disabled
-                  InputLabelProps={field.type === "date" ? { shrink: true } : undefined}
+                  sx={{ mb: 2 }}
+                  // InputLabelProps={field.type === "date" ? { shrink: true } : undefined}
                 />
               </Grid>
             ))}
           </Grid>
 
           <Box textAlign="center" mt={3}>
-            {/* <Button
-              variant="solid"
-              color="primary"
-              sx={{ mr: 2 }}
-              onClick={handleStandby}
-            >
-              Standby
-            </Button> */}
-            <Button variant="outlined" color="neutral" onClick={handleBack}>
-              Back
-            </Button>
-          </Box>
+  <Button
+    variant="contained"
+    color="primary"
+    onClick={handleSubmit}
+    sx={{
+      backgroundColor: '#007BFF',
+      color: '#fff',
+      fontWeight: 'bold',
+      padding: '8px 16px',
+      borderRadius: '8px',
+      textTransform: 'none',
+      boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
+      transition: 'transform 0.2s ease, background-color 0.3s ease',
+      '&:hover': {
+        backgroundColor: '#0056b3',
+        transform: 'scale(1.05)',
+      },
+    }}
+  >
+    Submit Payment
+  </Button> &nbsp; &nbsp;
+  <Button
+    variant="outlined"
+    color="neutral"
+    onClick={handleBack}
+    sx={{
+      borderColor: '#6c757d',
+      color: '#6c757d',
+      fontWeight: 'bold',
+      padding: '8px 16px',
+      borderRadius: '8px',
+      textTransform: 'none',
+      boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
+      transition: 'transform 0.2s ease, color 0.3s ease, border-color 0.3s ease',
+      '&:hover': {
+        color: '#fff',
+        borderColor: '#007BFF',
+        backgroundColor: 'gray',
+        transform: 'scale(1.05)',
+      },
+    }}
+  >
+    Back
+  </Button>
+</Box>
+
         </CardContent>
       </Card>
     </Box>
