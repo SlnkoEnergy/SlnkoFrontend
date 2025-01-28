@@ -100,9 +100,26 @@ const Customer_Payment_Summary = () => {
   const currentDate = today.toLocaleDateString("en-US", dateOptions);
 
   const handleExportAll = () => {
+
+    const summaryData = [
+      ["S.No.", "Balance Summary", "Value"],
+      ["1", "Total Received", totalCredited],
+      ["2", "Total Return", totalReturn],
+      ["3", "Net Balance [(1)-(2)]", netBalance],
+      ["4", "Total Advance Paid to Vendors", totalAmountPaid],
+      ["5", "Balance with Slnko [(3)-(4)]", balanceSlnko],
+      ["6", "Total PO Value", totalPOValue],
+      ["7", "Total Billed Value", totalBilledValue],
+      ["8", "Net Advance Paid [(4)-(7)]", netAdvance],
+      ["9", "Balance Payable to Vendors [(6)-(7)-(8)]", balancePayable],
+      ["10", "TCS as Applicable", tcs],
+      ["11", "Balance Required [(5)-(9)-(10)]", balanceRequired],
+    ];
+
     // Credit Table
-    const creditHeader = ["Credit Date", "Credit Mode", "Credited Amount (₹)"];
-    const creditRows = creditHistory.map((row) => [
+    const creditHeader = ["S.No.","Credit Date", "Credit Mode", "Credited Amount (₹)"];
+    const creditRows = creditHistory.map((row,index) => [
+      index + 1,
       new Date(row.cr_date).toLocaleDateString("en-IN", {
         day: "2-digit",
         month: "short",
@@ -113,10 +130,10 @@ const Customer_Payment_Summary = () => {
     ]);
   
     const totalCredited = creditHistory.reduce((acc, row) => acc + row.cr_amount, 0);
-    const creditTotal = ["Total Credited", totalCredited];
   
     // Debit Table
     const debitHeader = [
+      "S.No.",
       "Debit Date",
       "Debit Mode",
       "Paid For",
@@ -124,7 +141,8 @@ const Customer_Payment_Summary = () => {
       "Amount (₹)",
       "UTR"
     ];
-    const debitRows = debitHistory.map((row) => [
+    const debitRows = debitHistory.map((row,index) => [
+      index + 1,
       new Date(row.dbt_date).toLocaleDateString("en-IN", {
         day: "2-digit",
         month: "short",
@@ -138,7 +156,7 @@ const Customer_Payment_Summary = () => {
     ]);
   
     const totalDebited = debitHistory.reduce((acc, row) => acc + row.amount_paid, 0);
-    const debitTotal = ["Total Debited", totalDebited];
+    // const debitTotal = ["Total Debited", totalDebited];
   
     // Client Table
     const clientHeader = [
@@ -150,14 +168,15 @@ const Customer_Payment_Summary = () => {
       "Remaining Amount (₹)",
       "Total Billed Value (₹)",
     ];
-    const clientRows = filteredClients.map((client) => [
+    const clientRows = filteredClients.map((client,index) => [
+      index + 1,
       client.po_number || "N/A",
       client.vendor || "N/A",
       client.item || "N/A",
-      client.po_value,
-      client.amount_paid,
+      client.po_value || "0",
+      client.amount_paid || "0",
       (client.po_value - client.amount_paid),
-       client.billedValue,
+       client.billedValue || "0",
     ]);
   
     const totalPOValue = filteredClients.reduce((acc, client) => acc + client.po_value, 0);
@@ -168,13 +187,13 @@ const Customer_Payment_Summary = () => {
     );
     const totalBilledValue = filteredClients.reduce((acc, client) => acc + client.billedValue, 0);
   
-    const clientTotal = [
-      "Total",
-     totalPOValue,
-      totalAmountPaid,
-      totalBalance,
-      totalBilledValue,
-    ];
+    // const clientTotal = [
+    //   "Total",
+    //  totalPOValue,
+    //   totalAmountPaid,
+    //   totalBalance,
+    //   totalBilledValue,
+    // ];
   
     // Export all to CSV
     exportAllToCSV(
