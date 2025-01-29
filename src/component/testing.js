@@ -11,59 +11,59 @@ import {
 import { saveAs } from "file-saver";
 import { jsPDF } from "jspdf";
 import React, { useEffect, useState } from "react";
-import Img12 from "../../assets/slnko_blue_logo.png";
-import Axios from "../../utils/Axios";
+import Img12 from "../assets/slnko_blue_logo.png";
+import Axios from "../utils/Axios";
 
 
-// const exportAllToCSV = (
-//   creditHeader,
-//   creditRows,
-//   debitHeader,
-//   debitRows,
-//   clientHeader,
-//   clientRows,
-//   creditTotal,
-//   creditTotalRows,
-//   debitTotal,
-//   debitTotalRows,
-//   clientTotal,
-//   clientTotalRows,
-//   fileName
-// ) => {
+const exportAllToCSV = (
+  creditHeader,
+  creditRows,
+  debitHeader,
+  debitRows,
+  clientHeader,
+  clientRows,
+  creditTotal,
+  creditTotalRows,
+  debitTotal,
+  debitTotalRows,
+  clientTotal,
+  clientTotalRows,
+  fileName
+) => {
  
-//   const csvContent = [
-//     // Credit Table
-//     creditHeader.join(","), 
-//     ...creditRows.map((row) => row.join(",")), 
-//     '', 
-//     creditTotal.join(","), 
-//     ...creditTotalRows.map((row) => row.join(",")), 
-//     '',
-//     // Debit Table
-//     debitHeader.join(","), 
-//     ...debitRows.map((row) => row.join(",")), 
-//     '', 
-//     debitTotal.join(","), 
-//     ...debitTotalRows.map((row) => row.join(",")), 
-//     '',
-//     // Client Table
-//     clientHeader.join(","), 
-//     ...clientRows.map((row) => row.join(",")), 
-//     '', 
-//     clientTotal.join(","), 
-//     ...clientTotalRows.map((row) => row.join(",")) 
-//   ]
-//     .join("\n");
+  const csvContent = [
+    // Credit Table
+    creditHeader.join(","), 
+    ...creditRows.map((row) => row.join(",")), 
+    '', 
+    creditTotal.join(","), 
+    ...creditTotalRows.map((row) => row.join(",")), 
+    '',
+    // Debit Table
+    debitHeader.join(","), 
+    ...debitRows.map((row) => row.join(",")), 
+    '', 
+    debitTotal.join(","), 
+    ...debitTotalRows.map((row) => row.join(",")), 
+    '',
+    // Client Table
+    clientHeader.join(","), 
+    ...clientRows.map((row) => row.join(",")), 
+    '', 
+    clientTotal.join(","), 
+    ...clientTotalRows.map((row) => row.join(",")) 
+  ]
+    .join("\n");
 
-//   // Create a Blob from the CSV content
-//   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
-//   const link = document.createElement("a");
-//   link.href = URL.createObjectURL(blob);
+  // Create a Blob from the CSV content
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
 
 
-//   // Trigger file download
-//   saveAs(blob, fileName); 
-// };
+  // Trigger file download
+  saveAs(blob, fileName); 
+};
 const Customer_Payment_Summary = () => {
   const [error, setError] = useState("");
   const [projectData, setProjectData] = useState({
@@ -220,7 +220,7 @@ const Customer_Payment_Summary = () => {
   //   saveAs(blob, "CustomerPaymentSummary.csv");
   // };
 
-  const handleExportCSV = ({crAmtNum, netBalance, netAdvance, balancePayable, tcs, balanceRequired, balanceSlnko}) => {
+  const handleExportCSV = () => {
     // Summary section
     const summaryData = [
       ["S.No.", "Balance Summary", "Value"],
@@ -1511,7 +1511,7 @@ const applyFilters = (searchValue, dateValue) => {
         {/* <Button variant="solid" color="primary" onClick={handleDownloadPDF}>
           Download PDF
         </Button> */}
-         <Button variant="solid" color="primary" onClick={handleExportCSV}>
+         <Button variant="solid" color="primary" onClick={handleExportAll}>
           Export to CSV
         </Button>
       </Box>
