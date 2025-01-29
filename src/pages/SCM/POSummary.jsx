@@ -13,29 +13,28 @@ import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import Sidebar from "../../component/Partials/Sidebar";
 // import OrderTable from '../../component/OrderTable';
 // import OrderList from '../../component/OrderList';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "../../component/Partials/Header";
 import PurchaseOrder from "../../component/PurchaseOrderSummary";
-import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
 
 function POSummary() {
   const navigate = useNavigate();
-    const [user, setUser] = useState(null);
-  
-    useEffect(() => {
-      const userData = getUserData();
-      setUser(userData);
-    }, []);
-  
-    const getUserData = () => {
-      const userData = localStorage.getItem("userDetails");
-      if (userData) {
-        return JSON.parse(userData);
-      }
-      return null;
-    };
-  
-  
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+
   const poSummaryRef = useRef();
 
   const handleExportToCSV = () => {
@@ -105,7 +104,7 @@ function POSummary() {
               </Typography>
             </Breadcrumbs>
           </Box>
-         
+
           <Box
             sx={{
               display: "flex",
@@ -124,34 +123,45 @@ function POSummary() {
             {(user?.name === "IT Team" ||
               user?.name === "Guddu Rani Dubey" ||
               user?.name === "Prachi Singh" ||
-              user?.name === "admin") && (
-            <Box
-              sx={{
-                display: "flex",
-                mb: 1,
-                gap: 1,
-                flexDirection: { xs: "column", sm: "row" },
-                alignItems: { xs: "start", sm: "center" },
-                flexWrap: "wrap",
-                justifyContent: "center",
-              }}
-            >
-              <Button color="primary" size="sm" onClick={() => navigate("/add_po")}>
-                Add PO +
-              </Button>
-              <Button color="primary" size="sm" onClick={() => navigate("/add_vendor")}>
-                Add Vendor +
-              </Button>
-              <Button
-                color="primary"
-                startDecorator={<DownloadRoundedIcon />}
-                size="sm"
-                onClick={handleExportToCSV}
+              user?.name === "admin" ||
+              user?.name === "Ajay Singh" ||
+              user?.name === "Aryan Maheshwari" ||
+              user?.name === "Sarthak Sharma") && (
+              <Box
+                sx={{
+                  display: "flex",
+                  mb: 1,
+                  gap: 1,
+                  flexDirection: { xs: "column", sm: "row" },
+                  alignItems: { xs: "start", sm: "center" },
+                  flexWrap: "wrap",
+                  justifyContent: "center",
+                }}
               >
-                Export to CSV
-              </Button>
-            </Box>
-          )}
+                <Button
+                  color="primary"
+                  size="sm"
+                  onClick={() => navigate("/add_po")}
+                >
+                  Add PO +
+                </Button>
+                <Button
+                  color="primary"
+                  size="sm"
+                  onClick={() => navigate("/add_vendor")}
+                >
+                  Add Vendor +
+                </Button>
+                <Button
+                  color="primary"
+                  startDecorator={<DownloadRoundedIcon />}
+                  size="sm"
+                  onClick={handleExportToCSV}
+                >
+                  Export to CSV
+                </Button>
+              </Box>
+            )}
           </Box>
           <PurchaseOrder ref={poSummaryRef} />
           {/* <OrderTable /> */}

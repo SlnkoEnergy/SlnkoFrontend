@@ -36,12 +36,14 @@ const PaymentDetail = forwardRef((props, ref) => {
         const projects = projectRes.data?.data || [];
 
         console.log(projects);
-        
 
         if (Array.isArray(paySummary) && Array.isArray(projects)) {
           const structuredData = paySummary.map((item) => {
-            const project = projects.find((proj) => proj.p_id === item.p_id);
-            const remarks = `${item.paid_for || ""} / ${item.vendor || ""} / ${project?.code || ""}`;
+            // Find the matching project by p_id
+            const project = projects.find(
+              (proj) => String(proj.p_id) === String(item.p_id)
+            );
+            const remarks = `${item.paid_for || ""} / ${item.vendor || ""} / ${project?.code || "-"}`;
 
             return {
               id: item.id || Math.random(),
@@ -85,13 +87,13 @@ const PaymentDetail = forwardRef((props, ref) => {
     if (value === null || value === undefined || value === "") {
       return `"-"`;
     }
-    
+
     let stringValue = String(value).replace(/"/g, '""');
 
     if (isAccountNumber) {
       return `"'${stringValue}"`;
     }
-  
+
     return `"${stringValue}"`;
   };
 
@@ -111,7 +113,6 @@ const PaymentDetail = forwardRef((props, ref) => {
     try {
       setDownloading(true);
 
-      
       await Axios.put("/update-excel-data", { data: selectedData });
 
       // CSV headers

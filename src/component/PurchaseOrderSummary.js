@@ -6,7 +6,6 @@ import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import SearchIcon from "@mui/icons-material/Search";
-import { Chip } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
@@ -101,26 +100,29 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           Axios.get("/get-all-po"),
           Axios.get("/get-all-bill"),
         ]);
-    
+
         const PoData = PoResponse.data.data || [];
         const BillData = BillResponse.data.data || [];
-    
+
         const updatedPoData = PoData.map((po) => {
-          const poBills = BillData.filter((bill) => bill.po_number === po.po_number);
-    
+          const poBills = BillData.filter(
+            (bill) => bill.po_number === po.po_number
+          );
+
           const totalBill = poBills.reduce((sum, bill) => {
             const billValue = parseFloat(bill.bill_value) || 0;
             return sum + billValue;
           }, 0);
-    
-      
+
           const billingTypes = [...new Set(poBills.map((bill) => bill.type))];
-    
+
           const formattedTotal = totalBill.toLocaleString("en-IN");
-    
+
           const billStatus =
-            totalBill >= parseFloat(po.po_value) ? "Fully Billed" : "Bill Pending";
-    
+            totalBill >= parseFloat(po.po_value)
+              ? "Fully Billed"
+              : "Bill Pending";
+
           return {
             ...po,
             totalBill,
@@ -129,7 +131,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             bill_status: billStatus,
           };
         });
-    
+
         setPos(updatedPoData);
       } catch (err) {
         console.error("Error fetching table data:", err);
@@ -138,7 +140,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         setLoading(false);
       }
     };
-    
 
     fetchTableData();
   }, []);
@@ -147,20 +148,19 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     // console.log("currentPage is:", currentPage, "Po_number is:", po_number);
 
     const [user, setUser] = useState(null);
-      
-        
-        useEffect(() => {
-         const userData = getUserData();
-         setUser(userData);
-       }, []);
-       
-       const getUserData = () => {
-         const userData = localStorage.getItem("userDetails");
-         if (userData) {
-           return JSON.parse(userData);
-         }
-         return null;
-       };
+
+    useEffect(() => {
+      const userData = getUserData();
+      setUser(userData);
+    }, []);
+
+    const getUserData = () => {
+      const userData = localStorage.getItem("userDetails");
+      if (userData) {
+        return JSON.parse(userData);
+      }
+      return null;
+    };
 
     return (
       <Dropdown>
@@ -173,20 +173,26 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           <MoreHorizRoundedIcon />
         </MenuButton>
         <Menu size="sm" sx={{ minWidth: 140 }}>
-        {(user?.name === "IT Team" || user?.name === "Guddu Rani Dubey" || user?.name === "Prachi Singh" || user?.name === "admin") && (
-          <MenuItem
-            onClick={() => {
-              const page = currentPage;
-              const po = po_number;
-              localStorage.setItem("po_no", po);
-              navigate(`/add_bill?page=${page}&po_number=${po}`);
-            }}
-          >
-            {" "}
-            <AddCircleOutlineIcon />
-            <Typography>Add Bill</Typography>
-          </MenuItem>
-        )}
+          {(user?.name === "IT Team" ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Prachi Singh" ||
+            user?.name === "admin" ||
+            user?.name === "Ajay Singh" ||
+            user?.name === "Aryan Maheshwari" ||
+            user?.name === "Sarthak Sharma") && (
+            <MenuItem
+              onClick={() => {
+                const page = currentPage;
+                const po = po_number;
+                localStorage.setItem("po_no", po);
+                navigate(`/add_bill?page=${page}&po_number=${po}`);
+              }}
+            >
+              {" "}
+              <AddCircleOutlineIcon />
+              <Typography>Add Bill</Typography>
+            </MenuItem>
+          )}
           <MenuItem
             onClick={() => {
               const page = currentPage;
@@ -199,19 +205,25 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             <Typography>Bill History</Typography>
           </MenuItem>
           <Divider sx={{ backgroundColor: "lightblue" }} />
-          {(user?.name === "IT Team" || user?.name === "Guddu Rani Dubey" || user?.name === "Prachi Singh" || user?.name === "admin") && (
-          <MenuItem
-            onClick={() => {
-              const page = currentPage;
-              const po = po_number;
-              // const ID = _id
-              localStorage.setItem("edit-po", po);
-              navigate(`/edit_po?page=${page}&po_number=${po}`);
-            }}
-          >
-            <EditNoteIcon />
-            <Typography>Edit PO</Typography>
-          </MenuItem>
+          {(user?.name === "IT Team" ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Prachi Singh" ||
+            user?.name === "admin" ||
+            user?.name === "Ajay Singh" ||
+            user?.name === "Aryan Maheshwari" ||
+            user?.name === "Sarthak Sharma") && (
+            <MenuItem
+              onClick={() => {
+                const page = currentPage;
+                const po = po_number;
+                // const ID = _id
+                localStorage.setItem("edit-po", po);
+                navigate(`/edit_po?page=${page}&po_number=${po}`);
+              }}
+            >
+              <EditNoteIcon />
+              <Typography>Edit PO</Typography>
+            </MenuItem>
           )}
           <MenuItem
             onClick={() => {
@@ -345,7 +357,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     ...po,
     formattedDate: formatDate(po.date),
   }));
-  
+
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setSearchParams({ page });
@@ -513,7 +525,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       selected.length > 0 &&
                       selected.length !== paymentsWithFormattedDate.length
                     }
-                    checked={selected.length === paymentsWithFormattedDate.length}
+                    checked={
+                      selected.length === paymentsWithFormattedDate.length
+                    }
                     onChange={handleSelectAll}
                     color={selected.length > 0 ? "primary" : "neutral"}
                   />
@@ -733,7 +747,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       <RowMenu
                         currentPage={currentPage}
                         po_number={po.po_number}
-                    
                       />
                     </Box>
                   </Box>
@@ -782,8 +795,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         </Button>
 
         <Box>
-          Showing {paymentsWithFormattedDate.length} of {filteredAndSortedData.length}{" "}
-          results
+          Showing {paymentsWithFormattedDate.length} of{" "}
+          {filteredAndSortedData.length} results
         </Box>
 
         <Box

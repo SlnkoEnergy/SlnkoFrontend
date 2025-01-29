@@ -14,8 +14,6 @@ import React, { useEffect, useState } from "react";
 import Img12 from "../../assets/slnko_blue_logo.png";
 import Axios from "../../utils/Axios";
 
-
-
 const Customer_Payment_Summary = () => {
   const [error, setError] = useState("");
   const [projectData, setProjectData] = useState({
@@ -52,12 +50,14 @@ const Customer_Payment_Summary = () => {
   const currentDate = today.toLocaleDateString("en-US", dateOptions);
 
   const handleExportAll = () => {
-
-   
-
     // Credit Table
-    const creditHeader = ["S.No.","Credit Date", "Credit Mode", "Credited Amount"];
-    const creditRows = creditHistory.map((row,index) => [
+    const creditHeader = [
+      "S.No.",
+      "Credit Date",
+      "Credit Mode",
+      "Credited Amount",
+    ];
+    const creditRows = creditHistory.map((row, index) => [
       index + 1,
       new Date(row.cr_date).toLocaleDateString("en-IN", {
         day: "2-digit",
@@ -65,12 +65,14 @@ const Customer_Payment_Summary = () => {
         year: "numeric",
       }),
       row.cr_mode,
-      row.cr_amount
+      row.cr_amount,
     ]);
-  
-    const totalCredited = creditHistory.reduce((acc, row) => acc + row.cr_amount, 0);
-    
-  
+
+    const totalCredited = creditHistory.reduce(
+      (acc, row) => acc + row.cr_amount,
+      0
+    );
+
     // Debit Table
     const debitHeader = [
       "S.No.",
@@ -79,9 +81,9 @@ const Customer_Payment_Summary = () => {
       "Paid For",
       "Paid To",
       "Amount",
-      "UTR"
+      "UTR",
     ];
-    const debitRows = debitHistory.map((row,index) => [
+    const debitRows = debitHistory.map((row, index) => [
       index + 1,
       new Date(row.dbt_date).toLocaleDateString("en-IN", {
         day: "2-digit",
@@ -92,13 +94,16 @@ const Customer_Payment_Summary = () => {
       row.paid_for,
       row.vendor,
       row.amount_paid,
-      row.utr
+      row.utr,
     ]);
-  
-    const totalDebited = debitHistory.reduce((acc, row) => acc + row.amount_paid, 0);
+
+    const totalDebited = debitHistory.reduce(
+      (acc, row) => acc + row.amount_paid,
+      0
+    );
 
     const netBalance = totalCredited - totalReturn;
-  const tcs =
+    const tcs =
       netBalance > 5000000 ? Math.round(netBalance - 5000000) * 0.001 : 0;
     // Client Table
     const clientHeader = [
@@ -111,31 +116,38 @@ const Customer_Payment_Summary = () => {
       "Remaining Amount",
       "Total Billed Value",
     ];
-    const clientRows = filteredClients.map((client,index) => [
+    const clientRows = filteredClients.map((client, index) => [
       index + 1,
       client.po_number || "-",
       client.vendor || "-",
       client.item || "-",
       client.po_value || "0",
       client.amount_paid || "0",
-      (client.po_value - client.amount_paid),
-       client.billedValue || "0",
+      client.po_value - client.amount_paid,
+      client.billedValue || "0",
     ]);
-  
-    const totalPOValue = filteredClients.reduce((acc, client) => acc + client.po_value, 0);
-    const totalAmountPaid = filteredClients.reduce((acc, client) => acc + client.amount_paid, 0);
+
+    const totalPOValue = filteredClients.reduce(
+      (acc, client) => acc + client.po_value,
+      0
+    );
+    const totalAmountPaid = filteredClients.reduce(
+      (acc, client) => acc + client.amount_paid,
+      0
+    );
     // const totalBalance = filteredClients.reduce(
     //   (acc, client) => acc + (client.po_value - client.amount_paid),
     //   0
     // );
-    const totalBilledValue = filteredClients.reduce((acc, client) => acc + client.billedValue, 0);
+    const totalBilledValue = filteredClients.reduce(
+      (acc, client) => acc + client.billedValue,
+      0
+    );
     const balanceSlnko = netBalance - totalAmountPaid;
     const netAdvance = totalAmountPaid - totalBilledValue;
     const balancePayable = totalPOValue - totalBilledValue - netAdvance;
     const balanceRequired = balanceSlnko - balancePayable - tcs;
     const totalAvailable = totalCredited - totalDebited;
-  
-    
 
     const summaryData = [
       ["S.No.", "Balance Summary", "Value"],
@@ -157,46 +169,41 @@ const Customer_Payment_Summary = () => {
       ["1", "Total Credit", totalCredited],
       ["2", "Total Debit", totalDebited],
       ["3", "Credit - Debit [(1)-(2)]", totalAvailable],
-      
     ];
 
     const csvContent = [
       // Credit Table
-      creditHeader.join(","), 
-      ...creditRows.map((row) => row.join(",")), 
-      '', 
-      // creditTotal.join(","), 
-      // ...creditTotalRows.map((row) => row.join(",")), 
+      creditHeader.join(","),
+      ...creditRows.map((row) => row.join(",")),
+      "",
+      // creditTotal.join(","),
+      // ...creditTotalRows.map((row) => row.join(",")),
       // '',
       // Debit Table
-      debitHeader.join(","), 
-      ...debitRows.map((row) => row.join(",")), 
-      '', 
-      // debitTotal.join(","), 
-      // ...debitTotalRows.map((row) => row.join(",")), 
+      debitHeader.join(","),
+      ...debitRows.map((row) => row.join(",")),
+      "",
+      // debitTotal.join(","),
+      // ...debitTotalRows.map((row) => row.join(",")),
       // '',
       // Client Table
-      clientHeader.join(","), 
-      ...clientRows.map((row) => row.join(",")), 
-      '', 
+      clientHeader.join(","),
+      ...clientRows.map((row) => row.join(",")),
+      "",
       ...summaryData.map((row) => row.join(",")),
       "",
       ...summaryData2.map((row) => row.join(",")),
       "",
-      // clientTotal.join(","), 
-      // ...clientTotalRows.map((row) => row.join(",")) 
-    ]
-      .join("\n");
-  
+      // clientTotal.join(","),
+      // ...clientTotalRows.map((row) => row.join(","))
+    ].join("\n");
+
     // Create a Blob from the CSV content
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
     // const link = document.createElement("a");
     // link.href = URL.createObjectURL(blob);
-  saveAs(blob, "CustomerPaymentSummary.csv");
-  
-   
+    saveAs(blob, "CustomerPaymentSummary.csv");
   };
-  
 
   const [creditHistory, setCreditHistory] = useState([]);
 
@@ -225,7 +232,7 @@ const Customer_Payment_Summary = () => {
   ];
 
   const [selectedCredits, setSelectedCredits] = useState([]);
-  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedDate, setSelectedDate] = useState("");
   const [debitSearch, setDebitSearch] = useState("");
   const [selectedDebits, setSelectedDebits] = useState([]);
   const [filteredDebits, setFilteredDebits] = useState([]);
@@ -260,9 +267,6 @@ const Customer_Payment_Summary = () => {
     setFilteredDebits(filteredD);
     // console.log("Search Data are:", filteredD);
   };
-
-  
-  
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -362,8 +366,6 @@ const Customer_Payment_Summary = () => {
             (item) => item.p_id === project
           );
 
-    
-
           if (matchingItem) {
             // console.log("Matching Project are:", matchingItem);
             setProjectData((prev) => ({
@@ -431,24 +433,34 @@ const Customer_Payment_Summary = () => {
           const response = await Axios.get(
             `/get-subtract-amount?p_id=${projectData.p_id}`
           );
-
-          // Log the API response to check the returned data
           console.log("Debit History Response:", response.data);
 
           const data = response.data?.data ?? [];
+
+          // Fetch purchase orders (PO) data
+          const poResponse = await Axios.get("/get-all-po");
+          console.log("PO Response:", poResponse.data);
+
+          const poData = poResponse.data?.data || [];
 
           // Filter debit history based on p_id match
           const filteredDebitHistory = data.filter(
             (item) => String(item.p_id) === String(projectData.p_id)
           );
 
-          // Log the filtered debit history
-          console.log("Filtered Debit History:", filteredDebitHistory);
+          const matchingPO = poData.find(
+            (po) => String(po.p_id) === String(projectData.p_id)
+          );
 
+          const updatedDebits = filteredDebitHistory.map((item) => ({
+            ...item,
+            po_number: matchingPO ? matchingPO.po_number : "-",
+          }));
 
-          // Set the debit history state
+          console.log("Updated Debit History with PO Number:", updatedDebits);
+
           setDebitHistory(filteredDebitHistory);
-          setFilteredDebits(filteredDebitHistory);
+          setFilteredDebits(updatedDebits);
         } catch (err) {
           console.error("Error fetching debit history data:", err);
           setError("Failed to fetch debit history. Please try again later.");
@@ -456,36 +468,31 @@ const Customer_Payment_Summary = () => {
       };
 
       fetchDebitHistory();
-    } else {
-      // console.log("No p_id found in projectData");
     }
-  }, [projectData.p_id]); // Trigger when projectData.p_id changes
+  }, [projectData.p_id]);
 
+  // Handle Date Filter
+  const handleDateFilter = (event) => {
+    const dateValue = event.target.value; // Format: YYYY-MM-DD
+    setSelectedDate(dateValue);
 
- // Handle Date Filter
- const handleDateFilter = (event) => {
-  const dateValue = event.target.value; // Format: YYYY-MM-DD
-  setSelectedDate(dateValue);
+    applyFilters(debitSearch, dateValue);
+  };
 
-  applyFilters(debitSearch, dateValue);
-};
+  // Apply Combined Filters
+  const applyFilters = (searchValue, dateValue) => {
+    const filteredData = debitHistory.filter((item) => {
+      const matchesSearch =
+        (item.paid_for && item.paid_for.toLowerCase().includes(searchValue)) ||
+        (item.vendor && item.vendor.toLowerCase().includes(searchValue));
+      const matchesDate = dateValue
+        ? new Date(item.dbt_date).toISOString().split("T")[0] === dateValue
+        : true;
+      return matchesSearch && matchesDate;
+    });
 
-// Apply Combined Filters
-const applyFilters = (searchValue, dateValue) => {
-  const filteredData = debitHistory.filter((item) => {
-    const matchesSearch =
-      (item.paid_for && item.paid_for.toLowerCase().includes(searchValue)) ||
-      (item.vendor && item.vendor.toLowerCase().includes(searchValue));
-    const matchesDate = dateValue
-      ? new Date(item.dbt_date).toISOString().split('T')[0] === dateValue
-      : true;
-    return matchesSearch && matchesDate;
-  });
-
-  setFilteredDebits(filteredData);
-};
-  
-
+    setFilteredDebits(filteredData);
+  };
 
   useEffect(() => {
     if (projectData.code) {
@@ -561,21 +568,16 @@ const applyFilters = (searchValue, dateValue) => {
       0
     ),
   };
-  
-  
+
   const debitHistorySummary = {
-    totalCustomerAdjustment: filteredDebits
-      .reduce((sum, row) => {
-        if (row.paid_for === "Customer Adjustment") {
-          return sum + (row.amount_paid || 0);
-        }
-        return sum;
-      }, 0)
-      ,
+    totalCustomerAdjustment: filteredDebits.reduce((sum, row) => {
+      if (row.paid_for === "Customer Adjustment") {
+        return sum + (row.amount_paid || 0);
+      }
+      return sum;
+    }, 0),
   };
   console.log("Total Customer Adjustment:", debitHistorySummary);
-  
-
 
   // ***Balance Summary***
 
@@ -610,8 +612,6 @@ const applyFilters = (searchValue, dateValue) => {
     totalPoValue,
     totalBilled,
   }) => {
-   
-
     const crAmtNum = Number(crAmt);
     const dbAmtNum = Number(dbAmt);
     const adjTotalNum = Number(adjTotal);
@@ -626,9 +626,6 @@ const applyFilters = (searchValue, dateValue) => {
     const tcs =
       netBalance > 5000000 ? Math.round(netBalance - 5000000) * 0.001 : 0;
     const balanceRequired = Math.round(balanceSlnko - balancePayable - tcs);
-
-  
-   
 
     return (
       <Grid container spacing={2}>
@@ -984,7 +981,6 @@ const applyFilters = (searchValue, dateValue) => {
             padding="12px"
             borderRadius="8px 8px 0 0"
             border="1px solid #ddd"
-            
           >
             <Box>Credit Date</Box>
             <Box>Credit Mode</Box>
@@ -1058,44 +1054,46 @@ const applyFilters = (searchValue, dateValue) => {
         <Divider style={{ borderWidth: "2px", marginBottom: "20px" }} />
 
         <Box
-        sx={{
-           display:"flex",
-          justifyContent:"space-between",
-          alignItems:"center",
-          flexDirection:{md:"row", xs:"column"}
-        }}
-         
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexDirection: { md: "row", xs: "column" },
+          }}
           mb={2}
         >
-        <Box sx={{display:"flex",
-          alignItems:"center",
-          flexDirection:{md:"row", xs:"column"}}}>
-           <Input
-            label="Search Paid For"
-            value={debitSearch}
-            placeholder="Search here"
-            onChange={handleSearchDebit}
-            style={{ width: "250px" }}
-          />
-          <Input
-          type="date"
-          value={selectedDate}
-          onChange={handleDateFilter}
-          style={{ width: '200px', marginLeft:"5px" }}
-        />
-        </Box>
-         
-         <Box>
-          <Button
-            variant="contained"
-            color="error"
-            disabled={selectedDebits.length === 0}
-            onClick={handleDelete}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              flexDirection: { md: "row", xs: "column" },
+            }}
           >
-            Delete Selected
-          </Button>
-         </Box>
-          
+            <Input
+              label="Search Paid For"
+              value={debitSearch}
+              placeholder="Search here"
+              onChange={handleSearchDebit}
+              style={{ width: "250px" }}
+            />
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={handleDateFilter}
+              style={{ width: "200px", marginLeft: "5px" }}
+            />
+          </Box>
+
+          <Box>
+            <Button
+              variant="contained"
+              color="error"
+              disabled={selectedDebits.length === 0}
+              onClick={handleDelete}
+            >
+              Delete Selected
+            </Button>
+          </Box>
         </Box>
 
         <div
@@ -1135,44 +1133,46 @@ const applyFilters = (searchValue, dateValue) => {
 
           {/* Table Body */}
           <div>
-  {filteredDebits
-    .slice() // To avoid mutating the original array
-    .sort((a, b) => new Date(a.dbt_date) - new Date(b.dbt_date)) // Sort by date in ascending order
-    .map((row) => (
-      <div
-        key={row.id}
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr 2fr 2fr 1fr 1fr 1fr',
-          padding: '10px',
-          borderBottom: '1px solid #ddd',
-        }}
-      >
-        <div>
-          {new Date(row.dbt_date).toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-          })}
-        </div>
-        <div>{row.pay_mode}</div>
-        <div>{row.paid_for}</div>
-        <div>{row.vendor}</div>
-        <div>₹ {row.amount_paid.toLocaleString('en-IN')}</div>
-        <div>{row.utr}</div>
-        <div>
-          <Checkbox
-            color="primary"
-            checked={selectedDebits.includes(row.id)}
-            onChange={() => handleDebitCheckboxChange(row.id)}
-          />
-        </div>
-      </div>
-    ))}
-  {filteredDebits.length === 0 && (
-    <div style={{ padding: '10px', textAlign: 'center' }}>No debit history available</div>
-  )}
-</div>
+            {filteredDebits
+              .slice() // To avoid mutating the original array
+              .sort((a, b) => new Date(a.dbt_date) - new Date(b.dbt_date)) // Sort by date in ascending order
+              .map((row) => (
+                <div
+                  key={row.id}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 2fr 2fr 1fr 1fr 1fr",
+                    padding: "10px",
+                    borderBottom: "1px solid #ddd",
+                  }}
+                >
+                  <div>
+                    {new Date(row.dbt_date).toLocaleDateString("en-IN", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </div>
+                  <div>{row.po_number}</div>
+                  <div>{row.paid_for}</div>
+                  <div>{row.vendor}</div>
+                  <div>₹ {row.amount_paid.toLocaleString("en-IN")}</div>
+                  <div>{row.utr}</div>
+                  <div>
+                    <Checkbox
+                      color="primary"
+                      checked={selectedDebits.includes(row.id)}
+                      onChange={() => handleDebitCheckboxChange(row.id)}
+                    />
+                  </div>
+                </div>
+              ))}
+            {filteredDebits.length === 0 && (
+              <div style={{ padding: "10px", textAlign: "center" }}>
+                No debit history available
+              </div>
+            )}
+          </div>
 
           {/* Total Amount Row */}
           <div
