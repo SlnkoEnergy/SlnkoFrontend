@@ -16,9 +16,25 @@ import Sidebar from "../../component/Partials/Sidebar";
 import Header from "../../component/Partials/Header";
 import PurchaseOrder from "../../component/PurchaseOrderSummary";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 function POSummary() {
   const navigate = useNavigate();
+    const [user, setUser] = useState(null);
+  
+    useEffect(() => {
+      const userData = getUserData();
+      setUser(userData);
+    }, []);
+  
+    const getUserData = () => {
+      const userData = localStorage.getItem("userDetails");
+      if (userData) {
+        return JSON.parse(userData);
+      }
+      return null;
+    };
+  
   
   const poSummaryRef = useRef();
 
@@ -89,6 +105,7 @@ function POSummary() {
               </Typography>
             </Breadcrumbs>
           </Box>
+         
           <Box
             sx={{
               display: "flex",
@@ -104,6 +121,10 @@ function POSummary() {
             <Typography level="h2" component="h1">
               Purchase Order Summary
             </Typography>
+            {(user?.name === "IT Team" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Prachi Singh" ||
+              user?.name === "admin") && (
             <Box
               sx={{
                 display: "flex",
@@ -130,6 +151,7 @@ function POSummary() {
                 Export to CSV
               </Button>
             </Box>
+          )}
           </Box>
           <PurchaseOrder ref={poSummaryRef} />
           {/* <OrderTable /> */}

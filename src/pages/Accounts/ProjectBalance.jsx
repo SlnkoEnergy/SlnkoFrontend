@@ -13,10 +13,25 @@ import { useNavigate } from "react-router-dom";
 import Header from "../../component/Partials/Header";
 import Sidebar from "../../component/Partials/Sidebar";
 import ProjectBalances from "../../component/ProjectBalance";
+import { useEffect, useState } from "react";
 
 function ProjectBalance() {
   const navigate = useNavigate();
-  
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+
   // Create a ref for ProjectBalances component
   const projectBalancesRef = useRef();
 
@@ -96,33 +111,39 @@ function ProjectBalance() {
             <Typography level="h2" component="h1">
               Project Balances
             </Typography>
-            <Box
-              sx={{
-                display: "flex",
-                mb: 1,
-                gap: 1,
-                flexDirection: { xs: "column", sm: "row" },
-                alignItems: { xs: "start", sm: "center" },
-                flexWrap: "wrap",
-                justifyContent: "center",
-              }}
-            >
-              <Button
-                color="primary"
-                onClick={() => navigate("/add_project")}
-                size="sm"
+            {(user?.name === "IT Team" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Prachi Singh" ||
+              user?.name === "admin") && (
+              <Box
+                sx={{
+                  display: "flex",
+                  mb: 1,
+                  gap: 1,
+                  flexDirection: { xs: "column", sm: "row" },
+                  alignItems: { xs: "start", sm: "center" },
+                  flexWrap: "wrap",
+                  justifyContent: "center",
+                }}
               >
-                Add New Project +
-              </Button>
-              <Button
-                color="primary"
-                startDecorator={<DownloadRoundedIcon />}
-                size="sm"
-                onClick={handleExportToCSV} 
-              >
-                Export to CSV
-              </Button>
-            </Box>
+                <Button
+                  color="primary"
+                  onClick={() => navigate("/add_project")}
+                  size="sm"
+                >
+                  Add New Project +
+                </Button>
+
+                <Button
+                  color="primary"
+                  startDecorator={<DownloadRoundedIcon />}
+                  size="sm"
+                  onClick={handleExportToCSV}
+                >
+                  Export to CSV
+                </Button>
+              </Box>
+            )}
           </Box>
           <ProjectBalances ref={projectBalancesRef} />
         </Box>

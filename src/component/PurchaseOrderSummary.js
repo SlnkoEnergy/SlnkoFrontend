@@ -146,6 +146,22 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const RowMenu = ({ currentPage, po_number }) => {
     // console.log("currentPage is:", currentPage, "Po_number is:", po_number);
 
+    const [user, setUser] = useState(null);
+      
+        
+        useEffect(() => {
+         const userData = getUserData();
+         setUser(userData);
+       }, []);
+       
+       const getUserData = () => {
+         const userData = localStorage.getItem("userDetails");
+         if (userData) {
+           return JSON.parse(userData);
+         }
+         return null;
+       };
+
     return (
       <Dropdown>
         <MenuButton
@@ -157,6 +173,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           <MoreHorizRoundedIcon />
         </MenuButton>
         <Menu size="sm" sx={{ minWidth: 140 }}>
+        {(user?.name === "IT Team" || user?.name === "Guddu Rani Dubey" || user?.name === "Prachi Singh" || user?.name === "admin") && (
           <MenuItem
             onClick={() => {
               const page = currentPage;
@@ -169,6 +186,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             <AddCircleOutlineIcon />
             <Typography>Add Bill</Typography>
           </MenuItem>
+        )}
           <MenuItem
             onClick={() => {
               const page = currentPage;
@@ -181,6 +199,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             <Typography>Bill History</Typography>
           </MenuItem>
           <Divider sx={{ backgroundColor: "lightblue" }} />
+          {(user?.name === "IT Team" || user?.name === "Guddu Rani Dubey" || user?.name === "Prachi Singh" || user?.name === "admin") && (
           <MenuItem
             onClick={() => {
               const page = currentPage;
@@ -193,6 +212,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             <EditNoteIcon />
             <Typography>Edit PO</Typography>
           </MenuItem>
+          )}
           <MenuItem
             onClick={() => {
               const page = currentPage;

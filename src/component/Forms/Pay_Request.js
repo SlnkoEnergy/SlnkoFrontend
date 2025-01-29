@@ -202,7 +202,7 @@ function PaymentRequestForm() {
         if (matchedVendor) {
           setFormData((prev) => ({
             ...prev,
-            benificiary: matchedVendor.Beneficiary_Name || "",
+            benificiary: matchedVendor.name || "",
             acc_number: matchedVendor.Account_No || "",
             ifsc: matchedVendor.IFSC_Code || "",
             branch: matchedVendor.Bank_Name || "",

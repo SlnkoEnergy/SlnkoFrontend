@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { CssVarsProvider } from '@mui/joy/styles';
 import CssBaseline from '@mui/joy/CssBaseline';
 import Box from '@mui/joy/Box';
@@ -26,6 +26,22 @@ function ProjectBalance() {
           allProjectRef.current.exportToCSV();
         }
       };
+      const [user, setUser] = useState(null);
+            
+              
+              useEffect(() => {
+               const userData = getUserData();
+               setUser(userData);
+             }, []);
+             
+             const getUserData = () => {
+               const userData = localStorage.getItem("userDetails");
+               if (userData) {
+                 return JSON.parse(userData);
+               }
+               return null;
+             };
+      
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -103,6 +119,10 @@ function ProjectBalance() {
             <Typography level="h2" component="h1">
               All Project
             </Typography>
+            {(user?.name === "IT Team" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Prachi Singh" ||
+              user?.name === "admin") && (
             <Box
               sx={{
                 display: "flex",
@@ -130,6 +150,7 @@ function ProjectBalance() {
                 Export to CSV
               </Button>
             </Box>
+              )}
           </Box>
           <AllProject ref={allProjectRef} />
           {/* <OrderTable /> */}

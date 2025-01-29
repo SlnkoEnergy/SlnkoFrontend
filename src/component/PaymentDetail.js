@@ -35,6 +35,9 @@ const PaymentDetail = forwardRef((props, ref) => {
         const paySummary = paySummaryRes.data?.data || [];
         const projects = projectRes.data?.data || [];
 
+        console.log(projects);
+        
+
         if (Array.isArray(paySummary) && Array.isArray(projects)) {
           const structuredData = paySummary.map((item) => {
             const project = projects.find((proj) => proj.p_id === item.p_id);
@@ -78,11 +81,18 @@ const PaymentDetail = forwardRef((props, ref) => {
     );
   };
 
-  const escapeValue = (value) => {
+  const escapeValue = (value, isAccountNumber = false) => {
     if (value === null || value === undefined || value === "") {
       return `"-"`;
     }
-    return `"${String(value).replace(/"/g, '""')}"`;
+    
+    let stringValue = String(value).replace(/"/g, '""');
+
+    if (isAccountNumber) {
+      return `"'${stringValue}"`;
+    }
+  
+    return `"${stringValue}"`;
   };
 
   const downloadSelectedRows = async () => {
@@ -101,7 +111,7 @@ const PaymentDetail = forwardRef((props, ref) => {
     try {
       setDownloading(true);
 
-      // Send selected data to the backend
+      
       await Axios.put("/update-excel-data", { data: selectedData });
 
       // CSV headers
@@ -137,7 +147,7 @@ const PaymentDetail = forwardRef((props, ref) => {
           .map((row) =>
             [
               escapeValue(row.debitAccount),
-              escapeValue(row.acc_number),
+              escapeValue(row.acc_number, true),
               escapeValue(row.benificiary),
               escapeValue(row.amount_paid),
               escapeValue(row.pay_mod),

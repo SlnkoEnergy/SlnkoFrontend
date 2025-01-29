@@ -62,6 +62,7 @@ const ProjectBalances = forwardRef((props, ref) => {
     totalBalanceRequired: 0,
   });
 
+ 
   const renderFilters = () => (
     <>
       <FormControl size="sm">
@@ -361,6 +362,21 @@ const ProjectBalances = forwardRef((props, ref) => {
 
   const RowMenu = ({ currentPage, p_id }) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
+    const [user, setUser] = useState(null);
+  
+    
+    useEffect(() => {
+     const userData = getUserData();
+     setUser(userData);
+   }, []);
+   
+   const getUserData = () => {
+     const userData = localStorage.getItem("userDetails");
+     if (userData) {
+       return JSON.parse(userData);
+     }
+     return null;
+   };
 
     return (
       <>
@@ -373,21 +389,23 @@ const ProjectBalances = forwardRef((props, ref) => {
           >
             <MoreHorizRoundedIcon />
           </MenuButton>
+
           <Menu size="sm" sx={{ minWidth: 100 }}>
-            <MenuItem
-              color="primary"
-              onClick={() => {
-                const page = currentPage;
-                const projectId = p_id;
-                localStorage.setItem("add_money", projectId);
-                // console.log(`/add_money?page=${page}&p_id=${projectId}`);
-                navigate(`/add_money?page=${page}&p_id=${projectId}`);
-              }}
-            >
-              {" "}
-              <AddCircleOutlineIcon />
-              <Typography>Add Money</Typography>
-            </MenuItem>
+         {(user?.name === "IT Team" || user?.name === "Guddu Rani Dubey" || user?.name === "Prachi Singh" || user?.name === "admin") && (
+  <MenuItem
+    color="primary"
+    onClick={() => {
+      const page = currentPage;
+      const projectId = p_id;
+      localStorage.setItem("add_money", projectId);
+      navigate(`/add_money?page=${page}&p_id=${projectId}`);
+    }}
+  >
+    <AddCircleOutlineIcon />
+    <Typography>Add Money</Typography>
+  </MenuItem>
+)}
+
             <Divider sx={{ backgroundColor: "lightblue" }} />
             <MenuItem
               onClick={() => {

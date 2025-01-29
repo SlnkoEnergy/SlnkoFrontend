@@ -6,6 +6,7 @@ import Link from "@mui/joy/Link";
 import { CssVarsProvider } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
 import React, { useRef } from "react";
+import { useEffect, useState } from "react";
 
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
@@ -17,6 +18,21 @@ import PaymentRequest from "../../component/PaymentRequest";
 
 function ProjectBalance() {
   const navigate = useNavigate();
+   const [user, setUser] = useState(null);
+      
+        
+        useEffect(() => {
+         const userData = getUserData();
+         setUser(userData);
+       }, []);
+       
+       const getUserData = () => {
+         const userData = localStorage.getItem("userDetails");
+         if (userData) {
+           return JSON.parse(userData);
+         }
+         return null;
+       };
 
   const paymentRequestRef = useRef();
 
@@ -119,6 +135,10 @@ function ProjectBalance() {
               >
                 Pending Payment
               </Button>
+              {(user?.name === "IT Team" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Prachi Singh" ||
+              user?.name === "admin") && (
               <Button
                 color="primary"
                 size="sm"
@@ -126,6 +146,11 @@ function ProjectBalance() {
               >
                 Add New Payment +
               </Button>
+              )}
+              {(user?.name === "IT Team" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Prachi Singh" ||
+              user?.name === "admin") && (
               <Button
                 color="primary"
                 startDecorator={<DownloadRoundedIcon />}
@@ -134,6 +159,7 @@ function ProjectBalance() {
               >
                 Export to CSV
               </Button>
+)}
             </Box>
           </Box>
           <PaymentRequest ref={paymentRequestRef} />

@@ -99,206 +99,128 @@ const Customer_Payment_Summary = () => {
   const currentDay = today.toLocaleDateString("en-US", dayOptions);
   const currentDate = today.toLocaleDateString("en-US", dateOptions);
 
-  // const handleExportAll = () => {
-  //   // Credit Table
-  //   const creditHeader = ["Credit Date", "Credit Mode", "Credited Amount (₹)"];
-  //   const creditRows = creditHistory.map((row) => [
-  //     new Date(row.cr_date).toLocaleDateString("en-IN", {
-  //       day: "2-digit",
-  //       month: "short",
-  //       year: "numeric",
-  //     }),
-  //     row.cr_mode,
-  //     row.cr_amount
-  //   ]);
+  const handleExportAll = () => {
+    // Credit Table
+    const creditHeader = ["Credit Date", "Credit Mode", "Credited Amount (₹)"];
+    const creditRows = creditHistory.map((row) => [
+      new Date(row.cr_date).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }),
+      row.cr_mode,
+      row.cr_amount
+    ]);
   
-  //   const totalCredited = creditHistory.reduce((acc, row) => acc + row.cr_amount, 0);
-  //   const creditTotal = ["Total Credited", totalCredited];
+    const totalCredited = creditHistory.reduce((acc, row) => acc + row.cr_amount, 0);
+    const creditTotal = ["Total Credited", totalCredited];
   
-  //   // Debit Table
-  //   const debitHeader = [
-  //     "Debit Date",
-  //     "Debit Mode",
-  //     "Paid For",
-  //     "Paid To",
-  //     "Amount (₹)",
-  //     "UTR"
-  //   ];
-  //   const debitRows = debitHistory.map((row) => [
-  //     new Date(row.dbt_date).toLocaleDateString("en-IN", {
-  //       day: "2-digit",
-  //       month: "short",
-  //       year: "numeric",
-  //     }),
-  //     row.pay_mode,
-  //     row.paid_for,
-  //     row.vendor,
-  //     row.amount_paid,
-  //     row.utr
-  //   ]);
+    // Debit Table
+    const debitHeader = [
+      "Debit Date",
+      "Debit Mode",
+      "Paid For",
+      "Paid To",
+      "Amount (₹)",
+      "UTR"
+    ];
+    const debitRows = debitHistory.map((row) => [
+      new Date(row.dbt_date).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }),
+      row.pay_mode,
+      row.paid_for,
+      row.vendor,
+      row.amount_paid,
+      row.utr
+    ]);
   
-  //   const totalDebited = debitHistory.reduce((acc, row) => acc + row.amount_paid, 0);
-  //   const debitTotal = ["Total Debited", totalDebited];
+    const totalDebited = debitHistory.reduce((acc, row) => acc + row.amount_paid, 0);
+    const debitTotal = ["Total Debited", totalDebited];
   
-  //   // Client Table
-  //   const clientHeader = [
-  //     "PO Number",
-  //     "Vendor",
-  //     "Item Name",
-  //     "PO Value (₹)",
-  //     "Advance Paid (₹)",
-  //     "Remaining Amount (₹)",
-  //     "Total Billed Value (₹)",
-  //   ];
-  //   const clientRows = filteredClients.map((client) => [
-  //     client.po_number || "N/A",
-  //     client.vendor || "N/A",
-  //     client.item || "N/A",
-  //     client.po_value,
-  //     client.amount_paid,
-  //     (client.po_value - client.amount_paid),
-  //      client.billedValue,
-  //   ]);
+    // Client Table
+    const clientHeader = [
+      "PO Number",
+      "Vendor",
+      "Item Name",
+      "PO Value (₹)",
+      "Advance Paid (₹)",
+      "Remaining Amount (₹)",
+      "Total Billed Value (₹)",
+    ];
+    const clientRows = filteredClients.map((client) => [
+      client.po_number || "N/A",
+      client.vendor || "N/A",
+      client.item || "N/A",
+      client.po_value,
+      client.amount_paid,
+      (client.po_value - client.amount_paid),
+       client.billedValue,
+    ]);
   
-  //   const totalPOValue = filteredClients.reduce((acc, client) => acc + client.po_value, 0);
-  //   const totalAmountPaid = filteredClients.reduce((acc, client) => acc + client.amount_paid, 0);
-  //   const totalBalance = filteredClients.reduce(
-  //     (acc, client) => acc + (client.po_value - client.amount_paid),
-  //     0
-  //   );
-  //   const totalBilledValue = filteredClients.reduce((acc, client) => acc + client.billedValue, 0);
+    const totalPOValue = filteredClients.reduce((acc, client) => acc + client.po_value, 0);
+    const totalAmountPaid = filteredClients.reduce((acc, client) => acc + client.amount_paid, 0);
+    const totalBalance = filteredClients.reduce(
+      (acc, client) => acc + (client.po_value - client.amount_paid),
+      0
+    );
+    const totalBilledValue = filteredClients.reduce((acc, client) => acc + client.billedValue, 0);
   
-  //   const clientTotal = [
-  //     "Total",
-  //    totalPOValue,
-  //     totalAmountPaid,
-  //     totalBalance,
-  //     totalBilledValue,
-  //   ];
+    const clientTotal = [
+      "Total",
+     totalPOValue,
+      totalAmountPaid,
+      totalBalance,
+      totalBilledValue,
+    ];
   
-  //   // Export all to CSV
-  //   exportAllToCSV(
-  //     creditHeader, creditRows,
-  //     debitHeader, debitRows,
-  //     clientHeader, clientRows,
-  //     creditTotal, [creditTotal], // Wrap total in an array
-  //     debitTotal, [debitTotal], // Wrap total in an array
-  //     clientTotal, [clientTotal], // Wrap total in an array
-  //     "all_data_export.csv"
-  //   );
-  // };
+    // Export all to CSV
+    exportAllToCSV(
+      creditHeader, creditRows,
+      debitHeader, debitRows,
+      clientHeader, clientRows,
+      creditTotal, [creditTotal], // Wrap total in an array
+      debitTotal, [debitTotal], // Wrap total in an array
+      clientTotal, [clientTotal], // Wrap total in an array
+      "all_data_export.csv"
+    );
+  };
   
 
 
 
-  // const handleExportCSV = ({
-  //   crAmtNum,
-  //   netBalance,
-  //   balanceSlnko,
-  //   balancePayable,
-  //   netAdvance,
-  //   balanceRequired,
-  //   tcs,
-  // }) => {
-  //   const csvData = [
-  //     ["S.No.", "Balance Summary", "Value"],
-  //     ["1", "Total Received", crAmtNum],
-  //     ["2", "Total Return", totalReturn],
-  //     ["3", "Net Balance [(1)-(2)]", netBalance],
-  //     ["4", "Total Advance Paid to vendors", totalAdvanceValue],
-  //     ["5", "Balance With Slnko [(3)-(4)]", balanceSlnko],
-  //     ["6", "Total PO Value", totalPoValue],
-  //     ["7", "Total Billed Value", totalBilled],
-  //     ["8", "Net Advance Paid [(4)-(7)]", netAdvance],
-  //     ["9", "Balance Payable to vendors [(6)-(7)-(8)]", balancePayable],
-  //     ["10", "TCS as applicable", tcs],
-  //     ["11", "Balance Required [(5)-(9)-(10)]", balanceRequired],
-  //   ];
-
-  //   const csvContent = csvData.map((row) => row.join(",")).join("\n");
-  //   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  //   saveAs(blob, "CustomerPaymentSummary.csv");
-  // };
-
-  const handleExportCSV = () => {
-    // Summary section
-    const summaryData = [
+  const handleExportCSV = ({
+    crAmtNum,
+    netBalance,
+    balanceSlnko,
+    balancePayable,
+    netAdvance,
+    balanceRequired,
+    tcs,
+  }) => {
+    const csvData = [
       ["S.No.", "Balance Summary", "Value"],
       ["1", "Total Received", crAmtNum],
       ["2", "Total Return", totalReturn],
       ["3", "Net Balance [(1)-(2)]", netBalance],
-      ["4", "Total Advance Paid to Vendors", totalAdvanceValue],
-      ["5", "Balance with Slnko [(3)-(4)]", balanceSlnko],
+      ["4", "Total Advance Paid to vendors", totalAdvanceValue],
+      ["5", "Balance With Slnko [(3)-(4)]", balanceSlnko],
       ["6", "Total PO Value", totalPoValue],
       ["7", "Total Billed Value", totalBilled],
       ["8", "Net Advance Paid [(4)-(7)]", netAdvance],
-      ["9", "Balance Payable to Vendors [(6)-(7)-(8)]", balancePayable],
-      ["10", "TCS as Applicable", tcs],
+      ["9", "Balance Payable to vendors [(6)-(7)-(8)]", balancePayable],
+      ["10", "TCS as applicable", tcs],
       ["11", "Balance Required [(5)-(9)-(10)]", balanceRequired],
     ];
-  
-    // Credit history section
-    const creditHistoryData = creditHistory.map((item, index) => [
-      index + 1,
-      item.cr_date,
-      item.cr_mode,
-      item.cr_amount,
-    ]);
-    const creditHistoryHeaders = ["S.No.","Credit Date", "Credit Mode", "Credited Amount (₹)"];
-  
-    // Debit history section
-    const debitHistoryData = debitHistory.map((item, index) => [
-      index + 1,
-      item.dbt_date,
-      item.paid_for,
-      item.vendor,
-      item.amount_paid,
-      item.utr,
-    ]);
-    const debitHistoryHeaders = ["S.No.", "Date", "Paid For", "Paid To", "Amount (₹)", "UTR"];
-  
-    // Client history section
-    const clientHistoryData = clientHistory.map((item, index) => [
-      index + 1,
-      item.po_number,
-      item.vendor,
-      item.item,
-      item.po_value,
-      item.amountPaid,
-      item.item,
-      item.billedValue,
-    ]);
-    const clientHistoryHeaders = ["PO Number", "Vendor", "Item Name", "PO Value (₹)", "Advance Paid (₹)", "Remaining Amount (₹)", "Total Billed Value (₹)"];
-  
-    // Combine all sections into one CSV
-    const csvData = [
-      // Summary section
-      ...summaryData.map((row) => row.join(",")),
-      "", // Empty row for spacing
-  
-      // Credit history section
-      "Credit History",
-      creditHistoryHeaders.join(","),
-      ...creditHistoryData.map((row) => row.join(",")),
-      "", // Empty row for spacing
-  
-      // Debit history section
-      "Debit History",
-      debitHistoryHeaders.join(","),
-      ...debitHistoryData.map((row) => row.join(",")),
-      "", // Empty row for spacing
-  
-      // Client history section
-      "Client History",
-      clientHistoryHeaders.join(","),
-      ...clientHistoryData.map((row) => row.join(",")),
-    ].join("\n");
-  
-    // Create and save the CSV file
-    const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+
+    const csvContent = csvData.map((row) => row.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     saveAs(blob, "CustomerPaymentSummary.csv");
   };
 
+  
 
   
   const [creditHistory, setCreditHistory] = useState([]);

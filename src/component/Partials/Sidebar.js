@@ -982,7 +982,7 @@ function Sidebar() {
           </List>
         ) : user?.role === "visitor" &&
           (user?.name === "Sanjiv Kumar" ||
-            user?.name === "Sushant Ranjan Dubey") ? (
+            user?.name === "Sushant Ranjan Dubey" || user?.name === "CAM Team") ? (
           <List
             size="sm"
             sx={{
