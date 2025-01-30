@@ -926,8 +926,15 @@ function Sidebar() {
                   </ListItemButton>
                 )}
               >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
+                <List >
+                <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/daily-payment-request")}
+                    >
+                      Daily Payment Request
+                    </ListItemButton>
+                  </ListItem>
+                  <ListItem>
                     <ListItemButton
                       onClick={() => navigate("/project-balance")}
                     >

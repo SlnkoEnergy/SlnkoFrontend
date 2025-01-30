@@ -753,10 +753,7 @@ function PaymentRequest() {
                         textAlign: "center",
                       }}
                     >
-                      {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      }).format(payment.amt_for_customer)}
+                     {Number(payment.amt_for_customer).toLocaleString("en-IN")}
                     </Box>
                     <Box
                       component="td"

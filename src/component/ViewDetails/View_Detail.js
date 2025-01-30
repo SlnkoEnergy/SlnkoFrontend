@@ -67,12 +67,12 @@ const Customer_Payment_Summary = () => {
       row.cr_mode,
       row.cr_amount,
     ]);
-
+  
     const totalCredited = creditHistory.reduce(
       (acc, row) => acc + row.cr_amount,
       0
-    );
-
+    ) || "0";
+  
     // Debit Table
     const debitHeader = [
       "S.No.",
@@ -96,15 +96,15 @@ const Customer_Payment_Summary = () => {
       row.amount_paid,
       row.utr,
     ]);
-
+  
     const totalDebited = debitHistory.reduce(
       (acc, row) => acc + row.amount_paid,
       0
-    );
-
+    ) || "0";
+  
     const netBalance = totalCredited - totalReturn;
-    const tcs =
-      netBalance > 5000000 ? Math.round(netBalance - 5000000) * 0.001 : 0;
+    const tcs = netBalance > 5000000 ? Math.round(netBalance - 5000000) * 0.001 : 0;
+  
     // Client Table
     const clientHeader = [
       "S.No.",
@@ -123,22 +123,24 @@ const Customer_Payment_Summary = () => {
       client.item || "-",
       client.po_value || "0",
       client.amount_paid || "0",
-      client.po_value - client.amount_paid,
+      (client.po_value || "0") - (client.amount_paid || "0"),
       client.billedValue || "0",
     ]);
-
+  
     const totalPOValue = filteredClients.reduce(
       (acc, client) => acc + client.po_value,
       0
-    );
+    ) || "0";
     const totalAmountPaid = filteredClients.reduce(
-      (acc, client) => acc + client.amount_paid,
+      (acc, client) => acc + (client.amount_paid || 0),
       0
-    );
-    // const totalBalance = filteredClients.reduce(
-    //   (acc, client) => acc + (client.po_value - client.amount_paid),
-    //   0
-    // );
+    ) || "0";
+    
+    // Debugging logs
+    console.log('filteredClients:', filteredClients);
+    console.log('totalAmountPaid:', totalAmountPaid);
+    console.log('totalPOValue:', totalPOValue);
+  
     const totalBilledValue = filteredClients.reduce(
       (acc, client) => acc + client.billedValue,
       0
@@ -148,7 +150,7 @@ const Customer_Payment_Summary = () => {
     const balancePayable = totalPOValue - totalBilledValue - netAdvance;
     const balanceRequired = balanceSlnko - balancePayable - tcs;
     const totalAvailable = totalCredited - totalDebited;
-
+  
     const summaryData = [
       ["S.No.", "Balance Summary", "Value"],
       ["1", "Total Received", totalCredited],
@@ -163,29 +165,23 @@ const Customer_Payment_Summary = () => {
       ["10", "TCS as Applicable", tcs],
       ["11", "Balance Required [(5)-(9)-(10)]", balanceRequired],
     ];
-
+  
     const summaryData2 = [
       ["S.No.", "Available Amount (Old)", "Value"],
       ["1", "Total Credit", totalCredited],
       ["2", "Total Debit", totalDebited],
       ["3", "Credit - Debit [(1)-(2)]", totalAvailable],
     ];
-
+  
     const csvContent = [
       // Credit Table
       creditHeader.join(","),
       ...creditRows.map((row) => row.join(",")),
       "",
-      // creditTotal.join(","),
-      // ...creditTotalRows.map((row) => row.join(",")),
-      // '',
       // Debit Table
       debitHeader.join(","),
       ...debitRows.map((row) => row.join(",")),
       "",
-      // debitTotal.join(","),
-      // ...debitTotalRows.map((row) => row.join(",")),
-      // '',
       // Client Table
       clientHeader.join(","),
       ...clientRows.map((row) => row.join(",")),
@@ -194,16 +190,13 @@ const Customer_Payment_Summary = () => {
       "",
       ...summaryData2.map((row) => row.join(",")),
       "",
-      // clientTotal.join(","),
-      // ...clientTotalRows.map((row) => row.join(","))
     ].join("\n");
-
+  
     // Create a Blob from the CSV content
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
-    // const link = document.createElement("a");
-    // link.href = URL.createObjectURL(blob);
     saveAs(blob, "CustomerPaymentSummary.csv");
   };
+  
 
   const [creditHistory, setCreditHistory] = useState([]);
 

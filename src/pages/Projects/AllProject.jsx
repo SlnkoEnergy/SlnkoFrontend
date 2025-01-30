@@ -122,7 +122,8 @@ function ProjectBalance() {
             {(user?.name === "IT Team" ||
               user?.name === "Guddu Rani Dubey" ||
               user?.name === "Prachi Singh" ||
-              user?.name === "admin") && (
+              user?.name === "admin" ||
+              user?.name === "Naresh Kumar") && (
             <Box
               sx={{
                 display: "flex",

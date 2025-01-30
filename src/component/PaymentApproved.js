@@ -1,5 +1,5 @@
 import BlockIcon from "@mui/icons-material/Block";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CheckIcon from "@mui/icons-material/Check";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
@@ -261,7 +261,7 @@ function PaymentRequest() {
             <Chip
               label="Account Matched Successfully"
               color="success"
-              icon={<CheckCircleIcon />}
+              icon={<CheckIcon />}
             />
           </div>
         )}
@@ -611,10 +611,7 @@ function PaymentRequest() {
                         textAlign: "center",
                       }}
                     >
-                      {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      }).format(payment.amt_for_customer)}
+                  {Number(payment.amt_for_customer).toLocaleString("en-IN")}
                     </Box>
                     <Box
                       component="td"

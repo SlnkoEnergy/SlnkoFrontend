@@ -111,10 +111,7 @@ function ProjectBalance() {
             <Typography level="h2" component="h1">
               Project Balances
             </Typography>
-            {(user?.name === "IT Team" ||
-              user?.name === "Guddu Rani Dubey" ||
-              user?.name === "Prachi Singh" ||
-              user?.name === "admin") && (
+           
               <Box
                 sx={{
                   display: "flex",
@@ -125,7 +122,11 @@ function ProjectBalance() {
                   flexWrap: "wrap",
                   justifyContent: "center",
                 }}
-              >
+              > 
+              {(user?.name === "IT Team" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Prachi Singh" ||
+              user?.name === "admin") && (
                 <Button
                   color="primary"
                   onClick={() => navigate("/add_project")}
@@ -133,7 +134,11 @@ function ProjectBalance() {
                 >
                   Add New Project +
                 </Button>
-
+ )}
+  {(user?.name === "IT Team" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Prachi Singh" ||
+              user?.name === "admin" || user?.name === "Naresh Kumar") && (
                 <Button
                   color="primary"
                   startDecorator={<DownloadRoundedIcon />}
@@ -142,8 +147,9 @@ function ProjectBalance() {
                 >
                   Export to CSV
                 </Button>
+              )}
               </Box>
-            )}
+           
           </Box>
           <ProjectBalances ref={projectBalancesRef} />
         </Box>
