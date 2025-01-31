@@ -62,7 +62,6 @@ const ProjectBalances = forwardRef((props, ref) => {
     totalBalanceRequired: 0,
   });
 
- 
   const renderFilters = () => (
     <>
       <FormControl size="sm">
@@ -126,10 +125,8 @@ const ProjectBalances = forwardRef((props, ref) => {
         const poData = poResponse.data.data;
         const billData = billResponse.data.data;
 
-
-            // console.log("Po data are:", poData);
-            // console.log("All bills are :", billData);
-            
+        // console.log("Po data are:", poData);
+        // console.log("All bills are :", billData);
 
         // Update state with raw data
         setProjects(projectsData);
@@ -137,9 +134,6 @@ const ProjectBalances = forwardRef((props, ref) => {
         setDebits(debitData);
         setPoData(poData);
         setBillData(billData);
-
-       
-        
 
         // Calculate aggregated values
         const totalCredit = creditData.reduce(
@@ -164,31 +158,26 @@ const ProjectBalances = forwardRef((props, ref) => {
         setAvailable_Amount(availableAmount.toLocaleString("en-IN"));
 
         // console.log(totalDebit);
-        
 
-      //  const ProjectData =  projectsResponse?.data?.data.map((item) => {
-      //     return{
-      //       p_id : item.p_id,
-      //       code: item.code
-      //     }
+        //  const ProjectData =  projectsResponse?.data?.data.map((item) => {
+        //     return{
+        //       p_id : item.p_id,
+        //       code: item.code
+        //     }
 
-      //   })
-      //   console.log(ProjectData);
+        //   })
+        //   console.log(ProjectData);
 
-        
-      //   const Purchase = poData.map((po) => {
-      //     if(po.pid === projectsData.code ){
-      //       return{
-      //         po_number : po.po_number,
-      //         advancePaid: parseFloat(po.amount_paid) || 0,
-      //         poValue: parseFloat(po.po_value) || 0,
-      //     }
-      // }})
-      //   console.log(Purchase);
-        
+        //   const Purchase = poData.map((po) => {
+        //     if(po.pid === projectsData.code ){
+        //       return{
+        //         po_number : po.po_number,
+        //         advancePaid: parseFloat(po.amount_paid) || 0,
+        //         poValue: parseFloat(po.po_value) || 0,
+        //     }
+        // }})
+        //   console.log(Purchase);
 
-
-       
         // const matchingBill = billData.map((bill) => {
         //   const matchingPo = poData.find((po) => po.po_number === bill.po_number);
         //   if (matchingPo) {
@@ -198,9 +187,8 @@ const ProjectBalances = forwardRef((props, ref) => {
         //   }
         //   return bill;
         // });
-        
+
         // console.log("Enriched Bill Values: ", matchingBill);
-        
 
         // const totalAmountPaid = Purchase.reduce(
         //   (sum, po) => sum + po.amountPaid,
@@ -215,7 +203,6 @@ const ProjectBalances = forwardRef((props, ref) => {
         //   0
         // );
 
-      
         // setTotalAmountPaid(totalAmountPaid.toLocaleString("en-IN"));
         // setTotalPoValue(totalPoValue.toLocaleString("en-IN"));
         // setTotalBillValue(totalBillValue.toLocaleString("en-IN"));
@@ -243,7 +230,7 @@ const ProjectBalances = forwardRef((props, ref) => {
         acc[projectId] = (acc[projectId] || 0) + Number(credit.cr_amount);
         return acc;
       }, {});
-  
+
       const debitSumMap = debits.reduce((acc, debit) => {
         const projectId = debit.p_id;
         const amountPaid = Number(debit.amount_paid);
@@ -251,7 +238,7 @@ const ProjectBalances = forwardRef((props, ref) => {
           (acc[projectId] || 0) + (isNaN(amountPaid) ? 0 : amountPaid);
         return acc;
       }, {});
-  
+
       const customerAdjustmentSumMap = debits.reduce((acc, debit) => {
         const projectId = debit.p_id;
         const amountPaid = Number(debit.amount_paid);
@@ -261,35 +248,37 @@ const ProjectBalances = forwardRef((props, ref) => {
         }
         return acc;
       }, {});
-  
+
       // Map project codes to project IDs
       const projectCodeMap = projects.reduce((acc, project) => {
         acc[project.code] = project.p_id;
         return acc;
       }, {});
-  
+
       // Aggregate PO data
       const poSumMap = posData.reduce((acc, po) => {
-        const projectId = projectCodeMap[po.p_id]; 
+        const projectId = projectCodeMap[po.p_id];
         if (projectId) {
           acc[projectId] = (acc[projectId] || 0) + (Number(po.po_value) || 0);
         }
         return acc;
       }, {});
-  
+
       const amountPaidSumMap = posData.reduce((acc, po) => {
-        const projectId = projectCodeMap[po.p_id]; 
+        const projectId = projectCodeMap[po.p_id];
         const amountPaid = Number(po.amount_paid);
         if (projectId) {
-          acc[projectId] = (acc[projectId] || 0) + (isNaN(amountPaid) ? 0 : amountPaid);
+          acc[projectId] =
+            (acc[projectId] || 0) + (isNaN(amountPaid) ? 0 : amountPaid);
         }
         return acc;
       }, {});
-  
-      
+
       const billSumMap = posData.reduce((acc, po) => {
         const poNumber = po.po_number;
-        const matchingBills = billsData.filter((bill) => bill.po_number === poNumber);
+        const matchingBills = billsData.filter(
+          (bill) => bill.po_number === poNumber
+        );
         const totalBillValue = matchingBills.reduce(
           (sum, bill) => sum + (Number(bill.bill_value) || 0),
           0
@@ -300,7 +289,7 @@ const ProjectBalances = forwardRef((props, ref) => {
         }
         return acc;
       }, {});
-  
+
       const merged = projects.map((project) => {
         const projectId = project.p_id;
         const totalCredit = creditSumMap[projectId] || "0";
@@ -310,16 +299,18 @@ const ProjectBalances = forwardRef((props, ref) => {
         const totalPoValue = poSumMap[projectId] || "0";
         const totalBillValue = billSumMap[projectId] || "0";
         const advancePaid = amountPaidSumMap[projectId] || "0";
-  
+
         const netBalance = totalCredit - customerAdjustment;
         const balanceSlnko = netBalance - advancePaid;
         const netAdvance = advancePaid - totalBillValue;
         const balancePayable = totalPoValue - totalBillValue - netAdvance;
-  
+
         const tcs =
-          netBalance > 5000000 ? Math.round((netBalance - 5000000) * 0.001) : "0";
+          netBalance > 5000000
+            ? Math.round((netBalance - 5000000) * 0.001)
+            : "0";
         const balanceRequired = balanceSlnko - balancePayable - tcs;
-  
+
         return {
           ...project,
           creditAmount: totalCredit,
@@ -330,9 +321,9 @@ const ProjectBalances = forwardRef((props, ref) => {
           balanceRequired: Math.round(balanceRequired),
         };
       });
-  
+
       setMergedData(merged);
-  
+
       // Calculate total aggregates
       const total = merged.reduce(
         (acc, project) => {
@@ -341,42 +332,43 @@ const ProjectBalances = forwardRef((props, ref) => {
           acc.totalBalanceRequired += project.balanceRequired || 0;
           return acc;
         },
-        { totalBalanceSlnko: 0, totalBalancePayable: 0, totalBalanceRequired: 0 }
+        {
+          totalBalanceSlnko: 0,
+          totalBalancePayable: 0,
+          totalBalanceRequired: 0,
+        }
       );
 
       setTotals(total);
-  
+
       // Log or set state for totals
       // console.log("Total Balance Slnko:", totals.totalBalanceSlnko);
       // console.log("Total Balance Payable:", totals.totalBalancePayable);
       // console.log("Total Balance Required:", totals.totalBalanceRequired);
-  
+
       // Optional: Update state if you need these totals elsewhere
       // setTotalBalanceSlnko(totals.totalBalanceSlnko);
       // setTotalBalancePayable(totals.totalBalancePayable);
       // setTotalBalanceRequired(totals.totalBalanceRequired);
     }
   }, [credits, projects, debits, posData, billsData]);
-  
-
 
   const RowMenu = ({ currentPage, p_id }) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
     const [user, setUser] = useState(null);
-  
-    
+
     useEffect(() => {
-     const userData = getUserData();
-     setUser(userData);
-   }, []);
-   
-   const getUserData = () => {
-     const userData = localStorage.getItem("userDetails");
-     if (userData) {
-       return JSON.parse(userData);
-     }
-     return null;
-   };
+      const userData = getUserData();
+      setUser(userData);
+    }, []);
+
+    const getUserData = () => {
+      const userData = localStorage.getItem("userDetails");
+      if (userData) {
+        return JSON.parse(userData);
+      }
+      return null;
+    };
 
     return (
       <>
@@ -391,20 +383,24 @@ const ProjectBalances = forwardRef((props, ref) => {
           </MenuButton>
 
           <Menu size="sm" sx={{ minWidth: 100 }}>
-         {(user?.name === "IT Team" || user?.name === "Guddu Rani Dubey" || user?.name === "Prachi Singh" || user?.name === "admin") && (
-  <MenuItem
-    color="primary"
-    onClick={() => {
-      const page = currentPage;
-      const projectId = p_id;
-      localStorage.setItem("add_money", projectId);
-      navigate(`/add_money?page=${page}&p_id=${projectId}`);
-    }}
-  >
-    <AddCircleOutlineIcon />
-    <Typography>Add Money</Typography>
-  </MenuItem>
-)}
+            {(user?.name === "IT Team" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Prachi Singh" ||
+              user?.name === "admin"
+              ) && (
+              <MenuItem
+                color="primary"
+                onClick={() => {
+                  const page = currentPage;
+                  const projectId = p_id;
+                  localStorage.setItem("add_money", projectId);
+                  navigate(`/add_money?page=${page}&p_id=${projectId}`);
+                }}
+              >
+                <AddCircleOutlineIcon />
+                <Typography>Add Money</Typography>
+              </MenuItem>
+            )}
 
             <Divider sx={{ backgroundColor: "lightblue" }} />
             <MenuItem
@@ -761,7 +757,6 @@ const ProjectBalances = forwardRef((props, ref) => {
                 }}
               >
                 {totals.totalBalancePayable.toLocaleString("en-IN")}
-              
               </td>
               <td
                 style={{

@@ -127,7 +127,17 @@ function ProjectBalance() {
                 flexWrap: "wrap",
                 justifyContent: "center",
               }}
-            >
+            > {(user?.name === "IT Team" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Prachi Singh" ||
+              user?.name === "admin" ||
+              user?.name === "Ajay Singh" ||
+              user?.name === "Aryan Maheshwari" ||
+              user?.name === "Sarthak Sharma" ||
+              user?.name === "Naresh Kumar"||
+            user?.name === "Shubham Gupta" ||
+          user?.name === "Saurabh Suman" ||
+        user?.name === "CAM Team") && (
               <Button
                 color="primary"
                 size="sm"
@@ -135,10 +145,12 @@ function ProjectBalance() {
               >
                 Pending Payment
               </Button>
+              )}
               {(user?.name === "IT Team" ||
               user?.name === "Guddu Rani Dubey" ||
               user?.name === "Prachi Singh" ||
-              user?.name === "admin") && (
+              user?.name === "admin" ||
+              user?.name === "Shubham Gupta") && (
               <Button
                 color="primary"
                 size="sm"
@@ -150,7 +162,7 @@ function ProjectBalance() {
               {(user?.name === "IT Team" ||
               user?.name === "Guddu Rani Dubey" ||
               user?.name === "Prachi Singh" ||
-              user?.name === "admin") && (
+              user?.name === "admin" ) && (
               <Button
                 color="primary"
                 startDecorator={<DownloadRoundedIcon />}

@@ -127,7 +127,8 @@ function POSummary() {
               user?.name === "Ajay Singh" ||
               user?.name === "Aryan Maheshwari" ||
               user?.name === "Sarthak Sharma" ||
-              user?.name === "Naresh Kumar") && (
+              user?.name === "Naresh Kumar" ||
+            user?.name === "Shubham Gupta") && (
               <Box
                 sx={{
                   display: "flex",

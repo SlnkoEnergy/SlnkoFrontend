@@ -180,7 +180,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             user?.name === "Ajay Singh" ||
             user?.name === "Aryan Maheshwari" ||
             user?.name === "Sarthak Sharma" ||
-            user?.name === "Naresh Kumar") && (
+            user?.name === "Naresh Kumar"||
+          user?.name === "Shubham Gupta") && (
             <MenuItem
               onClick={() => {
                 const page = currentPage;

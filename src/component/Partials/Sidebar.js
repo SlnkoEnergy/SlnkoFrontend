@@ -841,7 +841,16 @@ function Sidebar() {
                 )}
               >
                 <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
+                {(user?.name === "Shubham Gupta") && (
+                <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton
+                      onClick={() => navigate("/project-balance")}
+                    >
+                      Project Balances
+                    </ListItemButton>
+                  </ListItem>
+                )}
+                  <ListItem>
                     <ListItemButton
                       onClick={() => navigate("/daily-payment-request")}
                     >
