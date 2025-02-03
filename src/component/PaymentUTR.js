@@ -137,8 +137,25 @@ function UTRPayment() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isUtrSubmitted, setIsUtrSubmitted] = useState(false);
     const { enqueueSnackbar } = useSnackbar();
-  
+
+    
+  const [user, setUser] = useState(null);
+         useEffect(() => {
+        const userData = getUserData();
+        setUser(userData);
+      }, []);
+      
+      const getUserData = () => {
+        const userData = localStorage.getItem("userDetails");
+        if (userData) {
+          return JSON.parse(userData);
+        }
+        return null;
+      };
+
     const handleUtrSubmit = async () => {
+       
+
       if (!utr) {
         enqueueSnackbar("Please enter a valid UTR.", { variant: "warning" });
         return;
@@ -180,7 +197,7 @@ function UTRPayment() {
               vendor: matchedPo.vendor || "",
               po_number: matchedPo.po_number || "",
               utr: matchedPo.utr || "",
-              submitted_by: "user123",
+              submitted_by: user?.name,
             });
   
             if (debitResponse.status === 200) {

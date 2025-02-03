@@ -228,6 +228,7 @@ const Customer_Payment_Summary = () => {
   const [debitSearch, setDebitSearch] = useState("");
   const [selectedDebits, setSelectedDebits] = useState([]);
   const [filteredDebits, setFilteredDebits] = useState([]);
+  const [payments, setPayments] = useState([]);
 
   const totalCredited = creditHistory.reduce(
     (sum, item) => sum + item.cr_amount,
@@ -256,7 +257,7 @@ const Customer_Payment_Summary = () => {
         (item.vendor && item.vendor.toLowerCase().includes(searchValue))
     );
 
-    setFilteredDebits(filteredD);
+    setDebitHistory(filteredD);
     // console.log("Search Data are:", filteredD);
   };
 
@@ -549,7 +550,7 @@ const Customer_Payment_Summary = () => {
       return matchesSearch && matchesDate;
     });
 
-    setFilteredDebits(filteredData);
+    setDebitHistory(filteredData);
   };
 
   useEffect(() => {
@@ -561,11 +562,16 @@ const Customer_Payment_Summary = () => {
           //   projectData.code
           // );
 
+          const payResponse = await Axios.get("/get-pay-summary")
           // Step 1: Fetch all PO data
           const poResponse = await Axios.get("/get-all-po");
           // console.log("PO Response:", poResponse.data);
-
+          const payData = payResponse.data?.data || [];
+          console.log(payData);
+          
           const poData = poResponse.data?.data || [];
+
+          // setPayments(payData);
 
           // Step 2: Filter POs where p_id matches projectData.code
           const filteredPOs = poData.filter(
@@ -581,6 +587,7 @@ const Customer_Payment_Summary = () => {
 
           // Step 4: Enrich POs with billed values
           const enrichedPOs = filteredPOs.map((po) => {
+            const matchingPay = payData.find((pay) => pay.po_number === po.po_number && pay.approved === "Approved");
             // Find the matching bill for this PO
             const matchingBill = billData.find(
               (bill) => bill.po_number === po.po_number
@@ -589,6 +596,7 @@ const Customer_Payment_Summary = () => {
             return {
               ...po,
               billedValue: matchingBill?.bill_value || 0,
+              AdvancePaid: matchingPay?.amount_paid || 0,
             };
           });
 
@@ -1395,7 +1403,7 @@ const Customer_Payment_Summary = () => {
           <div>
             {filteredClients.map((client) => {
               const po_value = client.po_value || 0;
-              const amountPaid = client.amount_paid || 0;
+              const amountPaid = client.AdvancePaid || 0;
               const billedValue = client.billedValue || 0;
 
               return (

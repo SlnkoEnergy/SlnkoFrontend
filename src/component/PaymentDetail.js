@@ -90,12 +90,11 @@ const PaymentDetail = forwardRef((props, ref) => {
     let stringValue = String(value).replace(/"/g, '""');
 
     if (isAccountNumber) {
-      return "'${stringValue}";
+      return `'${stringValue}`;
     }
-
-    return "${stringValue}";
+  
+    return `${stringValue}`;
   };
-
   const downloadSelectedRows = async () => {
     setError("");
     setSuccess("");
