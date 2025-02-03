@@ -39,14 +39,13 @@ const PaymentDetail = forwardRef((props, ref) => {
 
         if (Array.isArray(paySummary) && Array.isArray(projects)) {
           const structuredData = paySummary.map((item) => {
-            // Find the matching project by p_id
             const project = projects.find(
               (proj) => String(proj.p_id) === String(item.p_id)
             );
             const remarks = `${item.paid_for || ""} / ${item.vendor || ""} / ${project?.code || "-"}`;
 
             return {
-              id: item.id || Math.random(),
+              id: item._id,
               debitAccount: "025305008971",
               Approved: item.approved || "",
               acc_number: item.acc_number || "",
@@ -63,7 +62,7 @@ const PaymentDetail = forwardRef((props, ref) => {
           });
 
           setData(structuredData);
-          console.log("Structured data are:", structuredData);
+          // console.log("Structured data are:", structuredData);
         } else {
           setError("Invalid data format. Unable to load payment details.");
         }
@@ -85,16 +84,16 @@ const PaymentDetail = forwardRef((props, ref) => {
 
   const escapeValue = (value, isAccountNumber = false) => {
     if (value === null || value === undefined || value === "") {
-      return `"-"`;
+      return "-";
     }
 
     let stringValue = String(value).replace(/"/g, '""');
 
     if (isAccountNumber) {
-      return `"'${stringValue}"`;
+      return "'${stringValue}";
     }
 
-    return `"${stringValue}"`;
+    return "${stringValue}";
   };
 
   const downloadSelectedRows = async () => {
@@ -113,9 +112,17 @@ const PaymentDetail = forwardRef((props, ref) => {
     try {
       setDownloading(true);
 
-      await Axios.put("/update-excel-data", { data: selectedData });
+      for (let row of selectedData) {
+        try {
+          // console.log("Updating row with ID:", row.id);
+          await Axios.put("/update-excel", { _id: row.id });
+        } catch (err) {
+          console.error(
+            `Failed to update status for row ${row.id}: ${err.message}`
+          );
+        }
+      }
 
-      // CSV headers
       const headers = [
         "Debit Ac No",
         "Beneficiary Ac No",
@@ -140,7 +147,6 @@ const PaymentDetail = forwardRef((props, ref) => {
         "Remarks",
       ];
 
-      // Generate CSV content
       const csvContent =
         [headers.join(",")] +
         "\n" +
@@ -172,19 +178,19 @@ const PaymentDetail = forwardRef((props, ref) => {
           )
           .join("\n");
 
-      // Download the file
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const blob = new Blob([csvContent], {
+        type: "text/csv;charset=utf-8;",
+      });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = "Payment_Detail.csv";
+      link.download = "Payment-Bank-Detail.csv";
       link.click();
 
-      // Remove downloaded rows from the table
       const remainingData = data.filter(
         (row) => !selectedRows.includes(row.id)
       );
-      setData(remainingData); // Update table data
-      setSelectedRows([]); // Clear selected rows
+      setData(remainingData);
+      setSelectedRows([]);
       setSuccess("File downloaded successfully.");
     } catch (err) {
       setError(
@@ -431,12 +437,12 @@ const PaymentDetail = forwardRef((props, ref) => {
           </thead>
           <tbody>
             {data
-              .filter((row) => row.status === "Not-paid") // Filter rows with status="Not-paid"
-              .map((row) => (
+              .filter((row) => row.status === "Not-paid")
+              .map((row, index) => (
                 <tr
                   key={row.id}
                   style={{
-                    backgroundColor: row.id % 2 === 0 ? "#f9f9f9" : "#fff",
+                    backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#fff",
                   }}
                 >
                   <td

@@ -19,12 +19,15 @@ import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
 import Modal from "@mui/joy/Modal";
+import  Chip from "@mui/joy/Chip";
 import ModalClose from "@mui/joy/ModalClose";
 import ModalDialog from "@mui/joy/ModalDialog";
 import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
+import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
 import * as React from "react";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -245,6 +248,29 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           </MenuItem> */}
         </Menu>
       </Dropdown>
+    );
+  };
+
+  const BillingStatusChip = ({ status }) => {
+    return (
+      <Chip
+        variant="soft"
+        size="sm"
+        startDecorator={
+          {
+            "Fully Billed": <CheckRoundedIcon />,
+            "Bill Pending": <AutorenewRoundedIcon />,
+          }[status]
+        }
+        color={
+          {
+            "Fully Billed": "success",
+            "Bill Pending": "warning",
+          }[status]
+        }
+      >
+        {status}
+      </Chip>
     );
   };
 
@@ -683,8 +709,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         textAlign: "center",
                         borderBottom: "1px solid",
                       }}
-                    >
-                      {po.bill_status || "-"}
+                    ><BillingStatusChip status={po.bill_status} />
+                      {/* {po.bill_status || "-"} */}
                       {/* {po.bill_status === "Fully Billed" ? (
                         <Chip
                           label="Fully Billed"

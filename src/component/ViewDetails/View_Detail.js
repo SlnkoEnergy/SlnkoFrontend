@@ -440,19 +440,19 @@ const Customer_Payment_Summary = () => {
             (item) => String(item.p_id) === String(projectData.p_id)
           );
 
-          const matchingPO = poData.find(
-            (po) => String(po.p_id) === String(projectData.p_id)
-          );
+          // const matchingPO = poData.find(
+          //   (po) => String(po.p_id) === String(projectData.p_id)
+          // );
 
-          const updatedDebits = filteredDebitHistory.map((item) => ({
-            ...item,
-            po_number: matchingPO ? matchingPO.po_number : "-",
-          }));
+          // const updatedDebits = filteredDebitHistory.map((item) => ({
+          //   ...item,
+          //   po_number: matchingPO ? matchingPO.po_number : "-",
+          // }));
 
-          console.log("Updated Debit History with PO Number:", updatedDebits);
+          // console.log("Updated Debit History with PO Number:", updatedDebits);
 
           setDebitHistory(filteredDebitHistory);
-          setFilteredDebits(updatedDebits);
+          // setFilteredDebits(updatedDebits);
         } catch (err) {
           console.error("Error fetching debit history data:", err);
           setError("Failed to fetch debit history. Please try again later.");
@@ -1194,7 +1194,7 @@ const Customer_Payment_Summary = () => {
 
           {/* Table Body */}
           <div>
-            {filteredDebits
+            {debitHistory
               .slice()
               .sort((a, b) => new Date(a.dbt_date) - new Date(b.dbt_date))
               .map((row) => (
@@ -1228,7 +1228,7 @@ const Customer_Payment_Summary = () => {
                   </div>
                 </div>
               ))}
-            {filteredDebits.length === 0 && (
+            {debitHistory.length === 0 && (
               <div style={{ padding: "10px", textAlign: "center" }}>
                 No debit history available
               </div>

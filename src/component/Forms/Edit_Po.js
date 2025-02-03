@@ -19,8 +19,19 @@ import axios from "axios";
 
 const UpdatePurchaseOrder = () => {
   const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+   useEffect(() => {
+  const userData = getUserData();
+  setUser(userData);
+}, []);
 
-  
+const getUserData = () => {
+  const userData = localStorage.getItem("userDetails");
+  if (userData) {
+    return JSON.parse(userData);
+  }
+  return null;
+};
 
   const [getFormData, setGetFormData] = useState({
     projectIDs: [],
@@ -40,6 +51,7 @@ const UpdatePurchaseOrder = () => {
     po_value: "",
     other: "",
     partial_billing: "",
+    amount_paid:"",
     comment: "",
     submitted_By:""
   });
@@ -48,25 +60,14 @@ const UpdatePurchaseOrder = () => {
   const [items, setItems] = useState([]);
   const [showOtherItem, setShowOtherItem] = useState(false);
   const [allPo, setAllPo] = useState([]);
-  const [user, setUser] = useState(null);
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [response, setResponse] = useState([]);
 
 
   
- useEffect(() => {
-  const userData = getUserData();
-  setUser(userData);
-}, []);
 
-const getUserData = () => {
-  const userData = localStorage.getItem("userDetails");
-  if (userData) {
-    return JSON.parse(userData);
-  }
-  return null;
-};
 
   useEffect(() => {
     const fetchData = async () => {
@@ -109,10 +110,11 @@ const getUserData = () => {
             po_number: poData.po_number || "",
             vendor: poData.vendor || "",
             item: poData.item || "",
+            amount_paid:poData.amount_paid || "0",
             date: poData.date || "",
             po_value: poData.po_value || "",
             partial_billing: poData.partial_billing,
-            submitted_By:poData.submitted_By
+            submitted_By:user?.name
           });
           setShowOtherItem(poData.item === "Other");
         } else {
@@ -264,7 +266,7 @@ const getUserData = () => {
               </Typography>
               <FormControl>
                 <FormControl>
-                  {user?.name === "IT Team" ? (
+                  {user?.name === "IT Team" || user?.name === "admin"  ? (
                     <Select
                       options={getFormData.projectIDs.map((project) => ({
                         label: project.code,
@@ -302,6 +304,7 @@ const getUserData = () => {
             </Grid>
 
             <Grid item xs={12} md={4}>
+          
               <Typography
                 variant="subtitle2"
                 color="secondary"
@@ -309,14 +312,15 @@ const getUserData = () => {
                 sx={{ mb: 1 }}
               >
                 PO Number
-              </Typography>
+              </Typography> 
               <Input
                 name="po_number"
                 placeholder="PO Number"
                 value={formData.po_number || ""}
                 onChange={handleChange}
-                readOnly
+                readOnly={!["IT Team", "Guddu Rani Dubey", "Prachi Singh", "admin"].includes(user?.name)}
               />
+            
             </Grid>
 
             <Grid item xs={12} md={4}>
@@ -455,7 +459,26 @@ const getUserData = () => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} md={8}>
+
+            <Grid item xs={12} md={4}>
+            <Typography
+                variant="subtitle2"
+                color="secondary"
+                fontWeight={"bold"}
+                sx={{ mb: 1 }}
+              >
+                Advance Paid
+              </Typography> 
+              <Input
+                name="amount_paid"
+                placeholder="Advance Paid"
+                value={formData.amount_paid || ""}
+                onChange={handleChange}
+                readOnly={!["IT Team", "Guddu Rani Dubey", "Prachi Singh", "admin"].includes(user?.name)}
+              />
+            
+            </Grid>
+            <Grid item xs={12} md={4}>
               <Typography
                 variant="subtitle2"
                 color="secondary"
@@ -472,6 +495,9 @@ const getUserData = () => {
                 required
               />
             </Grid>
+
+         
+
           </Grid>
 
           <Box sx={{ mt: 3, textAlign: "center" }}>
