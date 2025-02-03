@@ -5,6 +5,7 @@ import {
   Container,
   Divider,
   Grid,
+  IconButton,
   Input,
   Typography,
 } from "@mui/joy";
@@ -12,7 +13,9 @@ import { saveAs } from "file-saver";
 import { jsPDF } from "jspdf";
 import React, { useEffect, useState } from "react";
 import Img12 from "../../assets/slnko_blue_logo.png";
+import DeleteIcon from "@mui/icons-material/Delete";
 import Axios from "../../utils/Axios";
+import { toast } from "react-toastify";
 
 const Customer_Payment_Summary = () => {
   const [error, setError] = useState("");
@@ -67,12 +70,10 @@ const Customer_Payment_Summary = () => {
       row.cr_mode,
       row.cr_amount,
     ]);
-  
-    const totalCredited = creditHistory.reduce(
-      (acc, row) => acc + row.cr_amount,
-      0
-    ) || "0";
-  
+
+    const totalCredited =
+      creditHistory.reduce((acc, row) => acc + row.cr_amount, 0) || "0";
+
     // Debit Table
     const debitHeader = [
       "S.No.",
@@ -96,15 +97,14 @@ const Customer_Payment_Summary = () => {
       row.amount_paid,
       row.utr,
     ]);
-  
-    const totalDebited = debitHistory.reduce(
-      (acc, row) => acc + row.amount_paid,
-      0
-    ) || "0";
-  
+
+    const totalDebited =
+      debitHistory.reduce((acc, row) => acc + row.amount_paid, 0) || "0";
+
     const netBalance = totalCredited - totalReturn;
-    const tcs = netBalance > 5000000 ? Math.round(netBalance - 5000000) * 0.001 : 0;
-  
+    const tcs =
+      netBalance > 5000000 ? Math.round(netBalance - 5000000) * 0.001 : 0;
+
     // Client Table
     const clientHeader = [
       "S.No.",
@@ -126,21 +126,20 @@ const Customer_Payment_Summary = () => {
       (client.po_value || "0") - (client.amount_paid || "0"),
       client.billedValue || "0",
     ]);
-  
-    const totalPOValue = filteredClients.reduce(
-      (acc, client) => acc + client.po_value,
-      0
-    ) || "0";
-    const totalAmountPaid = filteredClients.reduce(
-      (acc, client) => acc + (client.amount_paid || 0),
-      0
-    ) || "0";
-    
+
+    const totalPOValue =
+      filteredClients.reduce((acc, client) => acc + client.po_value, 0) || "0";
+    const totalAmountPaid =
+      filteredClients.reduce(
+        (acc, client) => acc + (client.amount_paid || 0),
+        0
+      ) || "0";
+
     // Debugging logs
-    console.log('filteredClients:', filteredClients);
-    console.log('totalAmountPaid:', totalAmountPaid);
-    console.log('totalPOValue:', totalPOValue);
-  
+    console.log("filteredClients:", filteredClients);
+    console.log("totalAmountPaid:", totalAmountPaid);
+    console.log("totalPOValue:", totalPOValue);
+
     const totalBilledValue = filteredClients.reduce(
       (acc, client) => acc + client.billedValue,
       0
@@ -150,7 +149,7 @@ const Customer_Payment_Summary = () => {
     const balancePayable = totalPOValue - totalBilledValue - netAdvance;
     const balanceRequired = balanceSlnko - balancePayable - tcs;
     const totalAvailable = totalCredited - totalDebited;
-  
+
     const summaryData = [
       ["S.No.", "Balance Summary", "Value"],
       ["1", "Total Received", totalCredited],
@@ -165,14 +164,14 @@ const Customer_Payment_Summary = () => {
       ["10", "TCS as Applicable", tcs],
       ["11", "Balance Required [(5)-(9)-(10)]", balanceRequired],
     ];
-  
+
     const summaryData2 = [
       ["S.No.", "Available Amount (Old)", "Value"],
       ["1", "Total Credit", totalCredited],
       ["2", "Total Debit", totalDebited],
       ["3", "Credit - Debit [(1)-(2)]", totalAvailable],
     ];
-  
+
     const csvContent = [
       // Credit Table
       creditHeader.join(","),
@@ -191,12 +190,11 @@ const Customer_Payment_Summary = () => {
       ...summaryData2.map((row) => row.join(",")),
       "",
     ].join("\n");
-  
+
     // Create a Blob from the CSV content
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
     saveAs(blob, "CustomerPaymentSummary.csv");
   };
-  
 
   const [creditHistory, setCreditHistory] = useState([]);
 
@@ -206,6 +204,7 @@ const Customer_Payment_Summary = () => {
   const [filteredClients, setFilteredClients] = useState([]);
   const [clientSearch, setClientSearch] = useState("");
   const [selectedClients, setSelectedClients] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const adjustmentHistory = [
     {
@@ -269,18 +268,18 @@ const Customer_Payment_Summary = () => {
     }
   };
 
-  const handleSelectAllDebits = (event) => {
-    if (event.target.checked) {
-      setSelectedDebits(filteredDebits.map((item) => item.id));
-    } else {
-      setSelectedDebits([]);
-    }
-  };
+  // const handleSelectAllDebits = (event) => {
+  //   if (event.target.checked) {
+  //     setSelectedDebits(filteredDebits.map((item) => item.id));
+  //   } else {
+  //     setSelectedDebits([]);
+  //   }
+  // };
 
-  const handleDelete = () => {
-    // Logic to delete selected items
-    // console.log("Deleting selected adjustments", selectedAdjustments);
-  };
+  // const handleDelete = () => {
+  //   // Logic to delete selected items
+  //   // console.log("Deleting selected adjustments", selectedAdjustments);
+  // };
 
   const handleCheckboxChange = (id) => {
     setSelectedCredits((prev) =>
@@ -288,11 +287,11 @@ const Customer_Payment_Summary = () => {
     );
   };
 
-  const handleDebitCheckboxChange = (id) => {
-    setSelectedDebits((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
+  // const handleDebitCheckboxChange = (id) => {
+  //   setSelectedDebits((prev) =>
+  //     prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+  //   );
+  // };
 
   const handleSelectAllAdjustments = (event) => {
     if (event.target.checked) {
@@ -325,11 +324,11 @@ const Customer_Payment_Summary = () => {
     }
   };
 
-  const handleDeleteSelectedClient = () => {
-    // Your delete logic here. For now, we just log the selected clients.
-    // console.log("Deleting selected clients with PO numbers:", selectedClients);
-    setSelectedClients([]);
-  };
+  // const handleDeleteSelectedClient = () => {
+  //   // Your delete logic here. For now, we just log the selected clients.
+  //   // console.log("Deleting selected clients with PO numbers:", selectedClients);
+  //   setSelectedClients([]);
+  // };
 
   const handleClientSearch = (event) => {
     const searchValue = event.target.value.toLowerCase();
@@ -464,9 +463,75 @@ const Customer_Payment_Summary = () => {
     }
   }, [projectData.p_id]);
 
+  const handleDeleteDebit = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      if (selectedDebits.length === 0) {
+        toast.error("No debits selected for deletion.");
+        return;
+      }
+
+      console.log("Deleting selected debits:", selectedDebits);
+
+      // Perform all deletions in parallel
+      await Promise.all(
+        selectedDebits.map((_id) =>
+          Axios.delete(`/delete-subtract-money/${_id}`)
+        )
+      );
+
+      toast.success("Deleted successfully.");
+
+      setDebitHistory((prev) =>
+        prev.filter((item) => !selectedDebits.includes(item._id))
+      );
+      setFilteredDebits((prev) =>
+        prev.filter((item) => !selectedDebits.includes(item._id))
+      );
+      setSelectedDebits([]);
+    } catch (err) {
+      console.error("Error deleting debits:", err);
+      setError(err.response?.data?.msg || "Failed to delete selected debits.");
+      toast.error("Failed to delete selected debits.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectAllDebits = (event) => {
+    if (event.target.checked) {
+      setSelectedDebits(filteredDebits.map((item) => item._id));
+    } else {
+      setSelectedDebits([]);
+    }
+  };
+
+  const handleDebitCheckboxChange = (_id) => {
+    setSelectedDebits((prev) =>
+      prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
+    );
+  };
+
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+
   // Handle Date Filter
   const handleDateFilter = (event) => {
-    const dateValue = event.target.value; // Format: YYYY-MM-DD
+    const dateValue = event.target.value;
     setSelectedDate(dateValue);
 
     applyFilters(debitSearch, dateValue);
@@ -1076,17 +1141,20 @@ const Customer_Payment_Summary = () => {
               style={{ width: "200px", marginLeft: "5px" }}
             />
           </Box>
-
-          <Box>
-            <Button
-              variant="contained"
-              color="error"
-              disabled={selectedDebits.length === 0}
-              onClick={handleDelete}
-            >
-              Delete Selected
-            </Button>
-          </Box>
+          {(user?.name === "IT Team" ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Prachi Singh" ||
+            user?.name === "admin") && (
+            <Box>
+              <IconButton
+                color="danger"
+                disabled={selectedDebits.length === 0}
+                onClick={handleDeleteDebit}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Box>
+          )}
         </Box>
 
         <div
@@ -1127,8 +1195,8 @@ const Customer_Payment_Summary = () => {
           {/* Table Body */}
           <div>
             {filteredDebits
-              .slice() // To avoid mutating the original array
-              .sort((a, b) => new Date(a.dbt_date) - new Date(b.dbt_date)) // Sort by date in ascending order
+              .slice()
+              .sort((a, b) => new Date(a.dbt_date) - new Date(b.dbt_date))
               .map((row) => (
                 <div
                   key={row.id}
@@ -1154,8 +1222,8 @@ const Customer_Payment_Summary = () => {
                   <div>
                     <Checkbox
                       color="primary"
-                      checked={selectedDebits.includes(row.id)}
-                      onChange={() => handleDebitCheckboxChange(row.id)}
+                      checked={selectedDebits.includes(row._id)}
+                      onChange={() => handleDebitCheckboxChange(row._id)}
                     />
                   </div>
                 </div>
