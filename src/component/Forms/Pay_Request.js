@@ -63,7 +63,7 @@ function PaymentRequestForm() {
     acc_match:"",
     utr:"",
     total_advance_paid:"",
-    submitted_by:user?.name
+    submitted_by: user?.name
   });
 
   useEffect(() => {

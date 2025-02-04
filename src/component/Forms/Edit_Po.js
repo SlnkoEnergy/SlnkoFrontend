@@ -53,7 +53,7 @@ const getUserData = () => {
     partial_billing: "",
     amount_paid:"",
     comment: "",
-    submitted_By:""
+    submitted_By:user?.name
   });
   const [projectIDs, setProjectIDs] = useState([]);
   const [vendors, setVendors] = useState([]);
@@ -266,7 +266,7 @@ const getUserData = () => {
               </Typography>
               <FormControl>
                 <FormControl>
-                  {user?.name === "IT Team" || user?.name === "admin"  ? (
+                  {user?.name === "IT Team" || user?.name === "admin" || user?.name === "Guddu Rani Dubey" || user?.name=== "Prachi Singh"  ? (
                     <Select
                       options={getFormData.projectIDs.map((project) => ({
                         label: project.code,

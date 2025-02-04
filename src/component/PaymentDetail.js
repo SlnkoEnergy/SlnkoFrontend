@@ -35,7 +35,7 @@ const PaymentDetail = forwardRef((props, ref) => {
         const paySummary = paySummaryRes.data?.data || [];
         const projects = projectRes.data?.data || [];
 
-        console.log(projects);
+        // console.log(projects);
 
         if (Array.isArray(paySummary) && Array.isArray(projects)) {
           const structuredData = paySummary.map((item) => {
@@ -50,8 +50,8 @@ const PaymentDetail = forwardRef((props, ref) => {
               Approved: item.approved || "",
               acc_number: item.acc_number || "",
               benificiary: item.benificiary || "",
-              amount_paid: item.amount_paid || 0,
-              pay_mod: item.amount_paid > 100000 ? "R" : "N",
+              amt_for_customer: item.amt_for_customer || 0,
+              pay_mod: item.amt_for_customer > 100000 ? "R" : "N",
               dbt_date: formatDate(item.dbt_date),
               ifsc: item.ifsc || "",
               comment: remarks,
@@ -155,7 +155,7 @@ const PaymentDetail = forwardRef((props, ref) => {
               escapeValue(row.debitAccount),
               escapeValue(row.acc_number, true),
               escapeValue(row.benificiary),
-              escapeValue(row.amount_paid),
+              escapeValue(row.amt_for_customer),
               escapeValue(row.pay_mod),
               escapeValue(row.dbt_date),
               escapeValue(row.ifsc),
@@ -491,7 +491,7 @@ const PaymentDetail = forwardRef((props, ref) => {
                       border: "1px solid #ddd",
                     }}
                   >
-                    {row.amount_paid}
+                    {row.amt_for_customer}
                   </td>
                   <td
                     style={{
