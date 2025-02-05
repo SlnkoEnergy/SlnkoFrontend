@@ -27,6 +27,8 @@ import Login from "../pages/Users/auth/Login";
 import EditUser from "../pages/Users/EditUser";
 import VendorBill from "../pages/SCM/VendorBill";
 import PaymentUTR from "../pages/Accounts/Payment_UTR";
+import CommercialOffer from "../pages/BD/Comm_Offer";
+import Offer_Form from "../pages/BD/Add_Offer";
 // import { BalanceProvider } from "../store/Context/Balance_Context";
 import PrivateRoute from "./PrivateRoute";
 import Testing from "../component/testing";
@@ -56,6 +58,15 @@ function index() {
         element={
           <PrivateRoute>
             <EditUser />
+          </PrivateRoute>
+        }
+      />
+{/*-------BD------- */}
+<Route
+        path="/comm_offer"
+        element={
+          <PrivateRoute>
+            <CommercialOffer />
           </PrivateRoute>
         }
       />
@@ -253,6 +264,14 @@ function index() {
         element={
           <PrivateRoute>
             <Edit_Po />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/add_offer"
+        element={
+          <PrivateRoute>
+            <Offer_Form />
           </PrivateRoute>
         }
       />

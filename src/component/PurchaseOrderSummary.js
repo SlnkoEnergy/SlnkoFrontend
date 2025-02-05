@@ -99,13 +99,15 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   useEffect(() => {
     const fetchTableData = async () => {
       try {
-        const [PoResponse, BillResponse] = await Promise.all([
+        const [PoResponse, BillResponse,payResponse] = await Promise.all([
           Axios.get("/get-all-po"),
           Axios.get("/get-all-bill"),
+          Axios.get("/get-pay-summary")
         ]);
 
         const PoData = PoResponse.data.data || [];
         const BillData = BillResponse.data.data || [];
+        const payData = payResponse.data.data || [];
 
         const updatedPoData = PoData.map((po) => {
           const poBills = BillData.filter(
@@ -116,6 +118,16 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             const billValue = parseFloat(bill.bill_value) || 0;
             return sum + billValue;
           }, 0);
+
+          const totalPaidAmount = payData
+          .filter((pay) => pay.po_number === po.po_number)
+          .reduce((sum, pay) => sum + (parseFloat(pay.amount_paid) || 0), 0);
+
+        // Format the total paid amount
+        const formattedPaidAmount = totalPaidAmount.toLocaleString("en-IN");
+
+        // Improved logging to show the total paid amount
+        console.log(`PO Number: ${po.po_number}, Total Paid Amount:`, formattedPaidAmount);
 
           const billingTypes = [...new Set(poBills.map((bill) => bill.type))];
 
@@ -132,8 +144,11 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             formattedTotal,
             billingTypes,
             bill_status: billStatus,
+            paidAmount : formattedPaidAmount
           };
         });
+
+        console.log("Updated PO Data:", updatedPoData);
 
         setPos(updatedPoData);
       } catch (err) {
@@ -148,7 +163,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   }, []);
 
   const RowMenu = ({ currentPage, po_number }) => {
-    // console.log("currentPage is:", currentPage, "Po_number is:", po_number);
+    
 
     const [user, setUser] = useState(null);
 
@@ -697,10 +712,11 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         borderBottom: "1px solid",
                       }}
                     >
-                      {new Intl.NumberFormat("en-IN", {
+                      {/* {new Intl.NumberFormat("en-IN", {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
-                      }).format(po.amount_paid || 0)}
+                      }).format(po.paidAmount)} */}
+                     {po.paidAmount || "0"}
                     </Box>
                     <Box
                       component="td"

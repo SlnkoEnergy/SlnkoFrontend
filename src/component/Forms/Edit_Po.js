@@ -16,22 +16,22 @@ import Img7 from "../../assets/update-po.png";
 import Axios from "../../utils/Axios";
 import axios from "axios";
 
-
 const UpdatePurchaseOrder = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-   useEffect(() => {
-  const userData = getUserData();
-  setUser(userData);
-}, []);
 
-const getUserData = () => {
-  const userData = localStorage.getItem("userDetails");
-  if (userData) {
-    return JSON.parse(userData);
-  }
-  return null;
-};
+  const [user, setUser] = useState(null);
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
 
   const [getFormData, setGetFormData] = useState({
     projectIDs: [],
@@ -39,7 +39,7 @@ const getUserData = () => {
     vendors: [],
     AllPo: [],
   });
-  
+
   const [formData, setFormData] = useState({
     // _id:"",
     p_id: "",
@@ -51,30 +51,23 @@ const getUserData = () => {
     po_value: "",
     other: "",
     partial_billing: "",
-    amount_paid:"",
+    amount_paid: "",
     comment: "",
-    submitted_By:user?.name
+    submitted_By: "",
   });
   const [projectIDs, setProjectIDs] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [items, setItems] = useState([]);
   const [showOtherItem, setShowOtherItem] = useState(false);
   const [allPo, setAllPo] = useState([]);
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [response, setResponse] = useState([]);
 
-
-  
-
-
   useEffect(() => {
     const fetchData = async () => {
       try {
-
-        
-
         // const userData = getUserData();
         // setUser(userData);
 
@@ -110,11 +103,11 @@ const getUserData = () => {
             po_number: poData.po_number || "",
             vendor: poData.vendor || "",
             item: poData.item || "",
-            amount_paid:poData.amount_paid || "0",
+            amount_paid: poData.amount_paid || "0",
             date: poData.date || "",
             po_value: poData.po_value || "",
             partial_billing: poData.partial_billing,
-            submitted_By:user?.name
+            submitted_By: user?.name,
           });
           setShowOtherItem(poData.item === "Other");
         } else {
@@ -129,8 +122,6 @@ const getUserData = () => {
     fetchData();
   }, []);
 
- 
- 
   const options = [
     { value: "", label: "Select" },
     { value: "Partial", label: "Partial" },
@@ -139,10 +130,10 @@ const getUserData = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     // console.log("Field:", name, "Value:", value);
-    if(name === "po_value" && value < 0){
-          toast.warning("PO Value can't be Negative !!")
-          return;
-        }
+    if (name === "po_value" && value < 0) {
+      toast.warning("PO Value can't be Negative !!");
+      return;
+    }
     setFormData((prev) => ({ ...prev, [name]: value || "" }));
   };
 
@@ -161,12 +152,10 @@ const getUserData = () => {
     } else if (field === "item") {
       setShowOtherItem(false);
     }
-    
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
 
     // const userData = getUserData();
     // if (userData && userData.name) {
@@ -175,7 +164,7 @@ const getUserData = () => {
     //     submitted_By: userData.name,
     //   }));
     // }
-    // setUser(userData); 
+    // setUser(userData);
 
     if (!formData._id) {
       setError("Document ID (_id) is missing. Cannot update PO.");
@@ -184,13 +173,11 @@ const getUserData = () => {
     }
     console.log("Submitting with _id:", formData._id);
     try {
-     
       setLoading(true);
       setError("");
       const endpoint = `https://api.slnkoprotrac.com/v1/edit-po/${formData._id}`;
       const response = await axios.put(endpoint, formData);
 
-      
       if (response.status === 200) {
         setResponse(response.data);
         toast.success("PO updated successfully.");
@@ -200,7 +187,6 @@ const getUserData = () => {
         throw new Error("Unexpected response from the server.");
       }
     } catch (err) {
-     
       console.error("Error updating PO:", err);
       setError(
         err.response?.data?.message || "Failed to update PO. Please try again."
@@ -209,12 +195,9 @@ const getUserData = () => {
         err.response?.data?.message || "Failed to update PO. Please try again."
       );
     } finally {
-    
       setLoading(false);
     }
   };
-
-  
 
   return (
     <Box
@@ -266,7 +249,10 @@ const getUserData = () => {
               </Typography>
               <FormControl>
                 <FormControl>
-                  {user?.name === "IT Team" || user?.name === "admin" || user?.name === "Guddu Rani Dubey" || user?.name=== "Prachi Singh"  ? (
+                  {user?.name === "IT Team" ||
+                  user?.name === "admin" ||
+                  user?.name === "Guddu Rani Dubey" ||
+                  user?.name === "Prachi Singh" ? (
                     <Select
                       options={getFormData.projectIDs.map((project) => ({
                         label: project.code,
@@ -304,7 +290,6 @@ const getUserData = () => {
             </Grid>
 
             <Grid item xs={12} md={4}>
-          
               <Typography
                 variant="subtitle2"
                 color="secondary"
@@ -312,15 +297,21 @@ const getUserData = () => {
                 sx={{ mb: 1 }}
               >
                 PO Number
-              </Typography> 
+              </Typography>
               <Input
                 name="po_number"
                 placeholder="PO Number"
                 value={formData.po_number || ""}
                 onChange={handleChange}
-                readOnly={!["IT Team", "Guddu Rani Dubey", "Prachi Singh", "admin"].includes(user?.name)}
+                readOnly={
+                  ![
+                    "IT Team",
+                    "Guddu Rani Dubey",
+                    "Prachi Singh",
+                    "admin",
+                  ].includes(user?.name)
+                }
               />
-            
             </Grid>
 
             <Grid item xs={12} md={4}>
@@ -459,26 +450,31 @@ const getUserData = () => {
               </FormControl>
             </Grid>
 
-
-            <Grid item xs={12} md={4}>
-            <Typography
+            {/* <Grid item xs={12} md={4}>
+              <Typography
                 variant="subtitle2"
                 color="secondary"
                 fontWeight={"bold"}
                 sx={{ mb: 1 }}
               >
                 Advance Paid
-              </Typography> 
+              </Typography>
               <Input
                 name="amount_paid"
                 placeholder="Advance Paid"
                 value={formData.amount_paid || ""}
                 onChange={handleChange}
-                readOnly={!["IT Team", "Guddu Rani Dubey", "Prachi Singh", "admin"].includes(user?.name)}
+                readOnly={
+                  ![
+                    "IT Team",
+                    "Guddu Rani Dubey",
+                    "Prachi Singh",
+                    "admin",
+                  ].includes(user?.name)
+                }
               />
-            
-            </Grid>
-            <Grid item xs={12} md={4}>
+            </Grid> */}
+            <Grid item xs={12} md={8}>
               <Typography
                 variant="subtitle2"
                 color="secondary"
@@ -495,9 +491,6 @@ const getUserData = () => {
                 required
               />
             </Grid>
-
-         
-
           </Grid>
 
           <Box sx={{ mt: 3, textAlign: "center" }}>

@@ -248,7 +248,7 @@ function Sidebar() {
                     </ListItemButton>
                   </ListItem>
                   <ListItem>
-                    <ListItemButton onClick={() => navigate("#")}>
+                    <ListItemButton onClick={() => navigate("/comm_offer")}>
                       Commercial Offer
                     </ListItemButton>
                   </ListItem>
