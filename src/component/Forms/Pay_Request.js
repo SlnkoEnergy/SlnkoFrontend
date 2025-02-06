@@ -22,6 +22,7 @@ function PaymentRequestForm() {
     projectIDs: [],
     poNumbers: [],
     vendors: [],
+    pays: []
   });
 
   const [user, setUser] = useState(null);
@@ -69,16 +70,18 @@ function PaymentRequestForm() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [projectsResponse, poNumbersResponse, vendorsResponse] = await Promise.all([
+        const [projectsResponse, poNumbersResponse, vendorsResponse, payResponse] = await Promise.all([
           Axios.get("/get-all-project"),
           Axios.get("/get-all-po"),
           Axios.get("/get-all-vendor"),
+          Axios.get("/get-pay-summary")
         ]);
 
         setGetFormData({
           projectIDs: projectsResponse.data.data || [],
           poNumbers: poNumbersResponse.data.data || [],
           vendors: vendorsResponse.data.data || [],
+          pays: payResponse.data.data || [],
         });
 
         // console.log("Fetched all data:", {
@@ -172,17 +175,27 @@ function PaymentRequestForm() {
       setFormData((prev) => ({
         ...prev,
         p_id: selectedOption.value,
-        name: selectedOption.label, // assuming label corresponds to the project name
+        name: selectedOption.label,
       }));
     }
   };
 
   const handlePoChange = (selectedOption: { value: string; label: string }) => {
-    const selectedPo = getFormData.poNumbers.find((po) => po.po_number === selectedOption?.value);
+    const selectedPo = getFormData.poNumbers.find(
+      (po) => po.po_number === selectedOption?.value
+    );
+  
     if (selectedPo) {
       const poValue = parseFloat(selectedPo.po_value || "0");
-      const totalAdvancePaid = parseFloat(selectedPo.amount_paid || "0");
+  
+      
+      const matchedAdvance = getFormData.pays.find(
+        (pay) => pay.po_number === selectedPo.po_number
+      );
+  
+      const totalAdvancePaid = parseFloat(matchedAdvance?.amount_paid || "0");
       const po_balance = poValue - totalAdvancePaid;
+  
       setFormData((prev) => ({
         ...prev,
         po_number: selectedPo.po_number,
@@ -192,13 +205,13 @@ function PaymentRequestForm() {
         total_advance_paid: totalAdvancePaid.toString(),
         po_balance: po_balance.toString(),
       }));
-
-      // Update beneficiary and other details if vendor is found
+  
+     
       if (selectedPo.vendor) {
         const matchedVendor = getFormData.vendors.find(
           (vendor) => vendor.name === selectedPo.vendor
         );
-
+  
         if (matchedVendor) {
           setFormData((prev) => ({
             ...prev,
@@ -206,12 +219,12 @@ function PaymentRequestForm() {
             acc_number: matchedVendor.Account_No || "",
             ifsc: matchedVendor.IFSC_Code || "",
             branch: matchedVendor.Bank_Name || "",
-            
           }));
         }
       }
     }
   };
+  
   const [responseMessage, setResponseMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 

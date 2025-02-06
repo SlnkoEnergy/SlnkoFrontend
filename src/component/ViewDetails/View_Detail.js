@@ -206,6 +206,7 @@ const Customer_Payment_Summary = () => {
   const [clientHistory, setClientHistory] = useState([]);
   const [filteredClients, setFilteredClients] = useState([]);
   const [clientSearch, setClientSearch] = useState("");
+  const [creditSearch, setCreditSearch] = useState("");
   const [selectedClients, setSelectedClients] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -264,13 +265,13 @@ const Customer_Payment_Summary = () => {
     // console.log("Search Data are:", filteredD);
   };
 
-  const handleSelectAll = (event) => {
-    if (event.target.checked) {
-      setSelectedCredits(creditHistory.map((item) => item.id));
-    } else {
-      setSelectedCredits([]);
-    }
-  };
+  // const handleSelectAll = (event) => {
+  //   if (event.target.checked) {
+  //     setSelectedCredits(creditHistory.map((item) => item.id));
+  //   } else {
+  //     setSelectedCredits([]);
+  //   }
+  // };
 
   // const handleSelectAllDebits = (event) => {
   //   if (event.target.checked) {
@@ -285,11 +286,11 @@ const Customer_Payment_Summary = () => {
   //   // console.log("Deleting selected adjustments", selectedAdjustments);
   // };
 
-  const handleCheckboxChange = (id) => {
-    setSelectedCredits((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
+  // const handleCheckboxChange = (id) => {
+  //   setSelectedCredits((prev) =>
+  //     prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+  //   );
+  // };
 
   // const handleDebitCheckboxChange = (id) => {
   //   setSelectedDebits((prev) =>
@@ -297,19 +298,19 @@ const Customer_Payment_Summary = () => {
   //   );
   // };
 
-  const handleSelectAllAdjustments = (event) => {
-    if (event.target.checked) {
-      setSelectedAdjustments(adjustmentHistory.map((item) => item.id));
-    } else {
-      setSelectedAdjustments([]);
-    }
-  };
+  // const handleSelectAllAdjustments = (event) => {
+  //   if (event.target.checked) {
+  //     setSelectedAdjustments(adjustmentHistory.map((item) => item.id));
+  //   } else {
+  //     setSelectedAdjustments([]);
+  //   }
+  // };
 
-  const handleAdjustmentCheckboxChange = (id) => {
-    setSelectedAdjustments((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
+  // const handleAdjustmentCheckboxChange = (id) => {
+  //   setSelectedAdjustments((prev) =>
+  //     prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+  //   );
+  // };
 
   // const handleClientCheckboxChange = (poNumber) => {
   //   if (selectedClients.includes(poNumber)) {
@@ -347,6 +348,20 @@ const Customer_Payment_Summary = () => {
 
     setFilteredClients(filtered);
   };
+
+  // const handleCreditSearch = (event) => {
+  //   const searchValue = event.target.value.toLowerCase();
+  //   setCreditSearch(searchValue);
+
+  //   const filtered = creditHistory.filter(
+  //     (client) =>
+  //       client.po_number.toLowerCase().includes(searchValue) ||
+  //       client.vendor.toLowerCase().includes(searchValue) ||
+  //       client.item.toLowerCase().includes(searchValue)
+  //   );
+
+  //   setCreditHistory(filtered);
+  // };
 
   useEffect(() => {
     const fetchProjectData = async () => {
@@ -596,7 +611,7 @@ const Customer_Payment_Summary = () => {
   .filter(pay => pay.po_number === po.po_number && pay.approved === "Approved")
   .reduce((sum, pay) => sum + Number(pay.amount_paid || 0), 0);
 
-    // console.log(`Total Advance Paid for PO ${po.po_number}:`, totalAdvancePaid);
+    
 
             // Find the matching bill for this PO
             const matchingBill = billData.find(
@@ -673,6 +688,56 @@ const Customer_Payment_Summary = () => {
       setSelectedClients(filteredClients.map((client) => client._id));
     } else {
       setSelectedClients([]);
+    }
+  };
+
+  const handleDeleteCredit = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      if (creditHistory.length === 0) {
+        toast.error("No debits selected for deletion.");
+        return;
+      }
+
+      console.log("Deleting selected clients:", creditHistory);
+
+      
+      await Promise.all(
+        creditHistory.map((_id) =>
+          Axios.delete(`/delete-crdit-amount/${_id}`)
+        )
+      );
+
+      toast.success("Credit Money Deleted successfully.");
+
+      setCreditHistory((prev) =>
+        prev.filter((item) => !creditHistory.includes(item._id))
+      );
+      // setFilteredClients((prev) =>
+      //   prev.filter((item) => !creditHistory.includes(item._id))
+      // );
+      setSelectedCredits([]);
+    } catch (err) {
+      console.error("Error deleting credits:", err);
+      setError(err.response?.data?.msg || "Failed to delete selected credit.");
+      toast.error("Failed to delete selected credits.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreditCheckboxChange = (_id) => {
+    setSelectedCredits((prev) =>
+      prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
+    );
+  };
+  const handleSelectAllCredit = (event) => {
+    if (event.target.checked) {
+      setSelectedCredits(creditHistory.map((client) => client._id));
+    } else {
+      setSelectedCredits([]);
     }
   };
 
@@ -1085,19 +1150,50 @@ const Customer_Payment_Summary = () => {
           <Divider style={{ borderWidth: "2px", marginBottom: "20px" }} />
 
           <Box
-            display="flex"
-            justifyContent="flex-end"
-            alignItems="center"
-            mb={2}
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexDirection: { md: "row", xs: "column" },
+          }}
+          mb={2}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              flexDirection: { md: "row", xs: "column" },
+            }}
           >
-            <Button
-              variant="contained"
-              color="danger"
-              // onClick={() => console.log("Delete Selected")}
-            >
-              Delete Selected
-            </Button>
+            {/* <Input
+              label="Search Paid For"
+              value={creditSearch}
+              placeholder="Search here"
+              onChange={handleCreditSearch}
+              style={{ width: "250px" }}
+            /> */}
+            {/* <Input
+              type="date"
+              value={selectedDate}
+              onChange={handleDateFilter}
+              style={{ width: "200px", marginLeft: "5px" }}
+            /> */}
           </Box>
+          {(user?.name === "IT Team" ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Prachi Singh" ||
+            user?.name === "admin") && (
+            <Box>
+              <IconButton
+                color="danger"
+                disabled={selectedCredits.length === 0}
+                onClick={handleDeleteCredit}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Box>
+          )}
+        </Box>
 
           <Sheet
       variant="outlined"
@@ -1140,7 +1236,7 @@ const Customer_Payment_Summary = () => {
             <th style={{textAlign:"center"}}>
               <Checkbox
                 color="primary"
-                onChange={handleSelectAll}
+                onChange={handleSelectAllCredit}
                 checked={selectedCredits.length === creditHistory.length}
                 
               />
@@ -1164,8 +1260,8 @@ const Customer_Payment_Summary = () => {
               <td style={{textAlign:"center"}}>
                 <Checkbox
                   color="primary"
-                  checked={selectedCredits.includes(row.id)}
-                  onChange={() => handleCheckboxChange(row.id)}
+                  checked={selectedCredits.includes(row._id)}
+                  onChange={() => handleCreditCheckboxChange(row._id)}
                 />
               </td>
             </tr>
