@@ -679,7 +679,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         borderBottom: "1px solid",
                       }}
                     >
-                      {po.item}
+                      {po.item === "other" ? po.other : po.item}
                     </Box>
                     <Box
                       component="td"

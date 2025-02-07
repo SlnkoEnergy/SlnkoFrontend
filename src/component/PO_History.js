@@ -6,7 +6,7 @@ import Typography from "@mui/joy/Typography";
 import { useNavigate } from "react-router-dom";
 
 function PoHistoryTable() {
-  const [poHistoryData, setPoHistoryData] = useState([]);
+  const [poHistoryData, setPoHistoryData] = useState("");
   const [poNumber, setPoNumber] = useState(null);
    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();

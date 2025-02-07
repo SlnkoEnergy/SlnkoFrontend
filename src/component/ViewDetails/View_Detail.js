@@ -239,7 +239,7 @@ const Customer_Payment_Summary = () => {
     0
   );
 
-  const totalDebited = debitHistory.reduce(
+  const totalDebited = filteredDebits.reduce(
     (sum, item) => sum + item.amount_paid,
     0
   );
@@ -261,7 +261,7 @@ const Customer_Payment_Summary = () => {
         (item.vendor && item.vendor.toLowerCase().includes(searchValue))
     );
 
-    setDebitHistory(filteredD);
+    setFilteredDebits(filteredD);
     // console.log("Search Data are:", filteredD);
   };
 
@@ -459,9 +459,9 @@ const Customer_Payment_Summary = () => {
             (item) => String(item.p_id) === String(projectData.p_id)
           );
 
-          const matchingPO = poData.find(
-            (po) => String(po.p_id) === String(projectData.p_id)
-          );
+          // const matchingPO = poData.find(
+          //   (po) => String(po.p_id) === String(projectData.p_id)
+          // );
 
           const updatedDebits = filteredDebitHistory.map((item) => ({
             ...item,
@@ -566,10 +566,10 @@ const Customer_Payment_Summary = () => {
       const matchesDate = dateValue
         ? new Date(item.dbt_date).toISOString().split("T")[0] === dateValue
         : true;
-      return matchesSearch && matchesDate;
+      return  matchesSearch && matchesDate;
     });
 
-    setDebitHistory(filteredData);
+    setFilteredDebits(filteredData);
   };
 
   useEffect(() => {
@@ -1375,7 +1375,7 @@ const Customer_Payment_Summary = () => {
                 <Checkbox
                   color="primary"
                   onChange={handleSelectAllDebits}
-                  checked={selectedDebits.length === debitHistory.length}
+                  checked={selectedDebits.length === filteredDebits.length}
                 />
               </Box>
             </th>
@@ -1384,7 +1384,7 @@ const Customer_Payment_Summary = () => {
 
         {/* Table Body */}
         <tbody>
-          {debitHistory
+          {filteredDebits
             .slice()
             .sort((a, b) => new Date(a.dbt_date) - new Date(b.dbt_date))
             .map((row) => (
@@ -1413,7 +1413,7 @@ const Customer_Payment_Summary = () => {
         </tbody>
 
         {/* No Data Row */}
-        {debitHistory.length === 0 && (
+        {filteredDebits.length === 0 && (
           <tfoot>
             <tr>
               <td colSpan={7} style={{ textAlign: "center", padding: "10px" }}>

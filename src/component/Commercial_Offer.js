@@ -44,6 +44,7 @@ function Offer() {
   const [accountNumber, setAccountNumber] = useState([]);
   const [ifscCode, setIfscCode] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [commRate, setCommRate] = useState([]);
   const [isUtrSubmitted, setIsUtrSubmitted] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -76,21 +77,19 @@ function Offer() {
     const fetchPaymentsAndProjects = async () => {
       setLoading(true);
       try {
-        const [paymentResponse, projectResponse] = await Promise.all([
-          Axios.get("/get-pay-summary"),
-          Axios.get("/get-all-project"),
+        const [commResponse] = await Promise([
+          Axios.get("/get-comm-offer"),
+          // Axios.get("/get-all-project"),
         ]);
 
-        const approvedPayments = paymentResponse.data.data.filter(
-          (payment) =>
-            payment.acc_match === "matched" && payment.utr === ""
-        );
+        // const approvedPayments = paymentResponse.data.data.filter(
+        //   (payment) =>
+        //     payment.acc_match === "matched" && payment.utr === ""
+        // );
+    const commRate = commResponse.data
+        setCommRate(commRate);
+        console.log("Payment Data (approved) are:", commRate);
 
-        setPayments(approvedPayments);
-        console.log("Payment Data (approved) are:", approvedPayments);
-
-        setProjects(projectResponse.data.data);
-        console.log("Project Data are:", projectResponse.data.data);
 
         // const uniqueVendors = [
         //   ...new Set(
@@ -111,24 +110,24 @@ function Offer() {
     fetchPaymentsAndProjects();
   }, []);
 
-  useEffect(() => {
-    if (payments.length > 0 && projects.length > 0) {
-      const merged = payments.map((payment) => {
-        const matchingProject = projects.find(
-          (project) => Number(project.p_id) === Number(payment.p_id)
-        );
-        return {
-          ...payment,
-          projectCode: matchingProject?.code || "-",
-          projectName: matchingProject?.name || "-",
-          // projectCustomer: matchingProject?.customer || "-",
-          // projectGroup: matchingProject?.p_group || "-",
-        };
-      });
+  // useEffect(() => {
+  //   if (payments.length > 0 && projects.length > 0) {
+  //     const merged = payments.map((payment) => {
+  //       const matchingProject = projects.find(
+  //         (project) => Number(project.p_id) === Number(payment.p_id)
+  //       );
+  //       return {
+  //         ...payment,
+  //         projectCode: matchingProject?.code || "-",
+  //         projectName: matchingProject?.name || "-",
+  //         // projectCustomer: matchingProject?.customer || "-",
+  //         // projectGroup: matchingProject?.p_group || "-",
+  //       };
+  //     });
 
-      setMergedData(merged);
-    }
-  }, [payments, projects]);
+  //     setMergedData(merged);
+  //   }
+  // }, [payments, projects]);
 
  
   // const RowMenu = ({ currentPage, pay_id, p_id }) => {
@@ -350,7 +349,7 @@ function Offer() {
     setSearchQuery(query.toLowerCase());
   };
 
-  const filteredAndSortedData = mergedData
+  const filteredAndSortedData = commRate
     .filter((project) => {
       const matchesSearchQuery = ["pay_id", "projectName", "vendor"].some(
         (key) => project[key]?.toLowerCase().includes(searchQuery)

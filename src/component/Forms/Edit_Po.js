@@ -70,6 +70,7 @@ const UpdatePurchaseOrder = () => {
       try {
         // const userData = getUserData();
         // setUser(userData);
+        if (!user) return;
 
         const poNumberFromStorage = localStorage.getItem("edit-po");
         if (!poNumberFromStorage) {
@@ -107,7 +108,7 @@ const UpdatePurchaseOrder = () => {
             date: poData.date || "",
             po_value: poData.po_value || "",
             partial_billing: poData.partial_billing,
-            submitted_By: user?.name,
+            submitted_By: user.name || "Anonymous",
           });
           setShowOtherItem(poData.item === "Other");
         } else {
@@ -120,7 +121,7 @@ const UpdatePurchaseOrder = () => {
     };
 
     fetchData();
-  }, []);
+  }, [user]);
 
   const options = [
     { value: "", label: "Select" },

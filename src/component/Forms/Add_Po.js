@@ -35,9 +35,12 @@ const AddPurchaseOrder = () => {
   const [user, setUser] = useState(null);
   
     
-   useEffect(() => {
+  useEffect(() => {
     const userData = getUserData();
     setUser(userData);
+    if (userData && userData.name) {
+      setFormData((prev) => ({ ...prev, submitted_By: userData.name }));
+    }
   }, []);
   
   const getUserData = () => {
@@ -126,6 +129,11 @@ const AddPurchaseOrder = () => {
   };
 
   const handleSubmit = async (e) => {
+    const userData = getUserData(); // Get user data right before submitting
+    if (!userData || !userData.name) {
+      toast.error("User details not found. Please log in again.");
+      return;
+    }
     e.preventDefault();
     const dataToPost = {
       p_id: formData.code,
@@ -136,7 +144,7 @@ const AddPurchaseOrder = () => {
       other: formData.item === "Other" ? formData.other : "",
       po_value: formData.po_value,
       partial_billing: formData.partial_billing|| "",
-      submitted_By:user?.name,
+      submitted_By:userData.name,
     };
 
     try {
@@ -155,7 +163,7 @@ const AddPurchaseOrder = () => {
         po_value: "",
         partial_billing:"",
         other: "",
-        submitted_By:""
+        submitted_By:userData.name
       });
       setShowOtherItem(false);
     } catch (error) {
