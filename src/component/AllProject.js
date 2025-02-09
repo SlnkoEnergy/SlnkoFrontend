@@ -1,4 +1,3 @@
-import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
@@ -6,7 +5,6 @@ import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
-import Divider from "@mui/joy/Divider";
 import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
@@ -15,9 +13,6 @@ import Input from "@mui/joy/Input";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
-import Modal from "@mui/joy/Modal";
-import ModalClose from "@mui/joy/ModalClose";
-import ModalDialog from "@mui/joy/ModalDialog";
 import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
@@ -55,18 +50,18 @@ const AllProjects = forwardRef((props, ref) => {
           : [];
         setProjects(projectsData);
 
-        const uniqueStates = [
-          ...new Set(projectsData.map((project) => project.state)),
-        ].filter(Boolean);
+        // const uniqueStates = [
+        //   ...new Set(projectsData.map((project) => project.state)),
+        // ].filter(Boolean);
 
         // console.log("states are:", uniqueStates);
 
-        const uniqueCustomers = [
-          ...new Set(projectsData.map((project) => project.customer)),
-        ].filter(Boolean);
+        // const uniqueCustomers = [
+        //   ...new Set(projectsData.map((project) => project.customer)),
+        // ].filter(Boolean);
 
-        setStates(uniqueStates);
-        setCustomers(uniqueCustomers);
+        // setStates(uniqueStates);
+        // setCustomers(uniqueCustomers);
       } catch (err) {
         console.error("API Error:", err);
         setError("Failed to fetch table data.");
@@ -285,7 +280,7 @@ const AllProjects = forwardRef((props, ref) => {
   return (
     <>
       {/* Mobile Filters */}
-      <Sheet
+      {/* <Sheet
         className="SearchAndFilters-mobile"
         sx={{ display: { xs: "flex", sm: "none" }, my: 1, gap: 1 }}
       >
@@ -318,7 +313,7 @@ const AllProjects = forwardRef((props, ref) => {
             </Sheet>
           </ModalDialog>
         </Modal>
-      </Sheet>
+      </Sheet> */}
 
       {/* Tablet and Up Filters */}
       <Box

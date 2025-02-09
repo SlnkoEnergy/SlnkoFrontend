@@ -1,3 +1,4 @@
+import { Player } from "@lottiefiles/react-lottie-player";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
@@ -27,6 +28,7 @@ import Typography from "@mui/joy/Typography";
 import * as React from "react";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import animationData from "../assets/Lotties/animation-loading.json";
 import Axios from "../utils/Axios";
 
 const ProjectBalances = forwardRef((props, ref) => {
@@ -100,6 +102,15 @@ const ProjectBalances = forwardRef((props, ref) => {
     </>
   );
 
+  const defaultOptions = {
+    loop: true,
+    autoplay: true,
+    animationData: animationData,
+    rendererSettings: {
+      preserveAspectRatio: "xMidYMid slice",
+    },
+  };
+
   useEffect(() => {
     const fetchAccountsAndData = async () => {
       setLoading(true);
@@ -111,14 +122,14 @@ const ProjectBalances = forwardRef((props, ref) => {
           debitResponse,
           poResponse,
           billResponse,
-          payResponse
+          payResponse,
         ] = await Promise.all([
           Axios.get("/get-all-project"),
           Axios.get("/all-bill"),
           Axios.get("/get-subtract-amount"),
           Axios.get("/get-all-po"),
           Axios.get("/get-all-bill"),
-          Axios.get("/get-pay-summary")
+          Axios.get("/get-pay-summary"),
         ]);
 
         // Extract data from responses
@@ -245,7 +256,6 @@ const ProjectBalances = forwardRef((props, ref) => {
         return acc;
       }, {});
 
-
       const customerAdjustmentSumMap = debits.reduce((acc, debit) => {
         const projectId = debit.p_id;
         const amountPaid = Number(debit.amount_paid);
@@ -271,8 +281,6 @@ const ProjectBalances = forwardRef((props, ref) => {
         return acc;
       }, {});
 
-   
-      
       const amountPaidSumMap = posData.reduce((acc, po) => {
         const poNumber = po.po_number;
         const matchingPayments = paysData.filter(
@@ -286,23 +294,21 @@ const ProjectBalances = forwardRef((props, ref) => {
         acc[projectId] = (acc[projectId] || 0) + totalPaymentValue;
         return acc;
       }, {});
-      
 
       const billSumMap = posData.reduce((acc, po) => {
         const poNumber = po.po_number;
         const matchingBills = billsData.filter(
           (bill) => bill.po_number === poNumber
         );
-       
+
         const totalBillValue = matchingBills.reduce(
           (sum, bill) => sum + (Number(bill.bill_value) || 0),
           0
         );
-        
+
         const projectId = projectCodeMap[po.p_id];
         if (projectId) {
           acc[projectId] = (acc[projectId] || 0) + totalBillValue;
-        
         }
         return acc;
       }, {});
@@ -329,8 +335,6 @@ const ProjectBalances = forwardRef((props, ref) => {
             ? Math.round((netBalance - 5000000) * 0.001)
             : "0";
         const balanceRequired = balanceSlnko - balancePayable - tcs;
-
-        
 
         return {
           ...project,
@@ -407,8 +411,7 @@ const ProjectBalances = forwardRef((props, ref) => {
             {(user?.name === "IT Team" ||
               user?.name === "Guddu Rani Dubey" ||
               user?.name === "Prachi Singh" ||
-              user?.name === "admin"
-              ) && (
+              user?.name === "admin") && (
               <MenuItem
                 color="primary"
                 onClick={() => {
@@ -730,7 +733,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                   padding: "12px 15px",
                   textAlign: "left",
                   border: "1px solid #ddd",
-                  fontWeight:800
+                  fontWeight: 800,
                 }}
               >
                 {aggregate_MW} MW AC
@@ -740,7 +743,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                   padding: "12px 15px",
                   textAlign: "left",
                   border: "1px solid #ddd",
-                  fontWeight:800
+                  fontWeight: 800,
                 }}
               >
                 {total_Credit}
@@ -750,7 +753,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                   padding: "12px 15px",
                   textAlign: "left",
                   border: "1px solid #ddd",
-                  fontWeight:800
+                  fontWeight: 800,
                 }}
               >
                 {total_Debit}
@@ -760,7 +763,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                   padding: "12px 15px",
                   textAlign: "left",
                   border: "1px solid #ddd",
-                  fontWeight:800
+                  fontWeight: 800,
                 }}
               >
                 {available_Amount}
@@ -770,7 +773,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                   padding: "12px 15px",
                   textAlign: "left",
                   border: "1px solid #ddd",
-                  fontWeight:800
+                  fontWeight: 800,
                 }}
               >
                 {totals.totalBalanceSlnko.toLocaleString("en-IN")}
@@ -780,7 +783,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                   padding: "12px 15px",
                   textAlign: "left",
                   border: "1px solid #ddd",
-                  fontWeight:800
+                  fontWeight: 800,
                 }}
               >
                 {totals.totalBalancePayable.toLocaleString("en-IN")}
@@ -790,7 +793,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                   padding: "12px 15px",
                   textAlign: "left",
                   border: "1px solid #ddd",
-                  fontWeight:800
+                  fontWeight: 800,
                 }}
               >
                 {totals.totalBalanceRequired.toLocaleString("en-IN")}
@@ -819,7 +822,24 @@ const ProjectBalances = forwardRef((props, ref) => {
             {error}
           </Typography>
         ) : loading ? (
-          <Typography textAlign="center">Loading...</Typography>
+          <Box
+            display="flex"
+            flexDirection="column"
+            justifyContent="center"
+            alignItems="center"
+            height="200px"
+          >
+            <Player
+              autoplay
+              loop
+              src={animationData}
+              style={{ height: 100, width: 100 }}
+            />
+
+            <Typography textAlign="center" mt={2} fontWeight="bold">
+              Loading...
+            </Typography>
+          </Box>
         ) : (
           <Box
             component="table"

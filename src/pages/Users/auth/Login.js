@@ -11,9 +11,9 @@ import "react-toastify/dist/ReactToastify.css";
 import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
 import * as Yup from "yup";
+import Img1 from "../../../assets/New_Solar3.png";
 import Img5 from "../../../assets/Protrac_blue.png";
 import ImgX from "../../../assets/slnko_white_logo.png";
-import Img1 from "../../../assets/New_Solar3.png";
 // import Img4 from "../../../assets/solar3.jpg";
 import Axios from "../../../utils/Axios";
 import Colors from "../../../utils/colors";
@@ -68,10 +68,10 @@ const Login = () => {
       const response = await Axios.post("/login", postData);
       const user = response.data;
 
-      console.log("Login successful:", user);
+      // console.log("Login successful:", user);
 
       const response2 = await Axios.get("/get-all-user");
-      console.log(response2.data?.data);
+      // console.log(response2.data?.data);
 
       response2.data.data.map((item) => {
         if (user.userID == item._id) {

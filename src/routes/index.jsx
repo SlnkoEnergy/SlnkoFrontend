@@ -2,6 +2,7 @@ import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import AddMoney_Page from "../pages/Accounts/AddMoney_Page";
 import AddPayment_Request from "../pages/Accounts/AddPayment_Request";
+import PaymentUTR from "../pages/Accounts/Payment_UTR";
 import PaymentApproval from "../pages/Accounts/PaymentApproval";
 import PaymentApproved from "../pages/Accounts/PaymentApproved";
 import Payment_Detail from "../pages/Accounts/PaymentDetail";
@@ -11,6 +12,8 @@ import ProjectBalance from "../pages/Accounts/ProjectBalance";
 import StandByRecords from "../pages/Accounts/StandByRecords";
 import StandBy_ReqSummary from "../pages/Accounts/StandByRequest";
 import ViewDetail from "../pages/Accounts/ViewDetail";
+import Offer_Form from "../pages/BD/Add_Offer";
+import CommercialOffer from "../pages/BD/Comm_Offer";
 import AddProject from "../pages/Projects/Add_Project";
 import AllProjects from "../pages/Projects/AllProject";
 import BillHistory from "../pages/Projects/BillHistory";
@@ -21,17 +24,13 @@ import Add_Purchase from "../pages/SCM/AddPO";
 import Add_Vendor from "../pages/SCM/AddVendor";
 import Edit_Po from "../pages/SCM/EditPO";
 import PurchaseOrder from "../pages/SCM/POSummary";
+import VendorBill from "../pages/SCM/VendorBill";
 import AddUser from "../pages/Users/AddUser";
 import ForgotPassword from "../pages/Users/auth/ForgotPassword";
 import Login from "../pages/Users/auth/Login";
 import EditUser from "../pages/Users/EditUser";
-import VendorBill from "../pages/SCM/VendorBill";
-import PaymentUTR from "../pages/Accounts/Payment_UTR";
-import CommercialOffer from "../pages/BD/Comm_Offer";
-import Offer_Form from "../pages/BD/Add_Offer";
 // import { BalanceProvider } from "../store/Context/Balance_Context";
 import PrivateRoute from "./PrivateRoute";
-import Testing from "../component/testing";
 
 function index() {
   return (
@@ -61,8 +60,8 @@ function index() {
           </PrivateRoute>
         }
       />
-{/*-------BD------- */}
-<Route
+      {/*-------BD------- */}
+      <Route
         path="/comm_offer"
         element={
           <PrivateRoute>
