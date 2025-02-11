@@ -1,8 +1,11 @@
 import React, { useState,useEffect  } from "react";
 import { Box, Button, Grid, Input, Select, Option, Typography, FormControl, FormLabel } from "@mui/joy";
 import Axios from "../../utils/Axios";
+import {toast} from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 const FormOffer = () => {
+  const navigate = useNavigate();
     const [formData, setFormData] = useState({
         offer_id: "",
         client_name: "",
@@ -46,7 +49,9 @@ const FormOffer = () => {
         if (response.data.data && response.data.data._id) {
           console.log("Generated _id:", response.data.data._id);
         }
-        setMessage("Offer created successfully!");
+        // setMessage("Offer created successfully!");
+        toast.success("Offer created successfully!")
+        navigate("/comm_offer");
         // Reset the form
         setFormData({
           offer_id: "",
@@ -74,7 +79,8 @@ const FormOffer = () => {
         });
       } else {
         console.error("Unexpected response status:", response.status);
-        setMessage("Failed to create offer. Try again.");
+        // setMessage("Failed to create offer. Try again.");
+        toast.error("Failed to create offer. Try again.");
       }
     } catch (error) {
       console.error("Error creating offer:", error.response?.data || error.message);

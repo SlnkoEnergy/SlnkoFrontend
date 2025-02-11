@@ -31,6 +31,7 @@ import Login from "../pages/Users/auth/Login";
 import EditUser from "../pages/Users/EditUser";
 // import { BalanceProvider } from "../store/Context/Balance_Context";
 import PrivateRoute from "./PrivateRoute";
+import CommercialRateOffer from "../pages/BD/OfferRate";
 
 function index() {
   return (
@@ -274,7 +275,16 @@ function index() {
           </PrivateRoute>
         }
       />
+      <Route
+        path="/offer_rate"
+        element={
+          <PrivateRoute>
+            <CommercialRateOffer />
+          </PrivateRoute>
+        }
+      />
     </Routes>
+    
   );
 }
 

@@ -827,7 +827,7 @@ const ProjectBalances = forwardRef((props, ref) => {
             flexDirection="column"
             justifyContent="center"
             alignItems="center"
-            height="200px"
+            height="100px"
           >
             <Player
               autoplay
@@ -836,9 +836,9 @@ const ProjectBalances = forwardRef((props, ref) => {
               style={{ height: 100, width: 100 }}
             />
 
-            <Typography textAlign="center" mt={2} fontWeight="bold">
+            {/* <Typography textAlign="center" mt={2} fontWeight="bold">
               Loading...
-            </Typography>
+            </Typography> */}
           </Box>
         ) : (
           <Box

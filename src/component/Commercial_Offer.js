@@ -3,20 +3,25 @@ import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
+import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
 import Chip from "@mui/joy/Chip";
-import AddIcon from '@mui/icons-material/Add';
+import AddIcon from "@mui/icons-material/Add";
 import Divider from "@mui/joy/Divider";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
+import Menu from "@mui/joy/Menu";
+import MenuButton from "@mui/joy/MenuButton";
+import MenuItem from "@mui/joy/MenuItem";
 import Modal from "@mui/joy/Modal";
 import ModalClose from "@mui/joy/ModalClose";
 import ModalDialog from "@mui/joy/ModalDialog";
+import Dropdown from "@mui/joy/Dropdown";
 import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
@@ -25,11 +30,14 @@ import { toast } from "react-toastify";
 import Typography from "@mui/joy/Typography";
 import { useSnackbar } from "notistack";
 import * as React from "react";
+import DeleteIcon from '@mui/icons-material/Delete';
+import ContentPasteGoIcon from '@mui/icons-material/ContentPasteGo';
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Axios from "../utils/Axios";
 
 function Offer() {
+  const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -77,29 +85,16 @@ function Offer() {
     const fetchPaymentsAndProjects = async () => {
       setLoading(true);
       try {
-        const [commResponse] = await Promise([
-          Axios.get("/get-comm-offer"),
-          // Axios.get("/get-all-project"),
-        ]);
+        const commResponse = await Axios.get("/get-comm-offer");
+        const newCommOffr = commResponse.data;
 
-        // const approvedPayments = paymentResponse.data.data.filter(
-        //   (payment) =>
-        //     payment.acc_match === "matched" && payment.utr === ""
-        // );
-    const commRate = commResponse.data
-        setCommRate(commRate);
-        console.log("Payment Data (approved) are:", commRate);
-
-
-        // const uniqueVendors = [
-        //   ...new Set(
-        //     paymentResponse.data.data.map((payment) => payment.vendor)
-        //   ),
-        // ].filter(Boolean);
-
-        // console.log("Vendors are: ", uniqueVendors);
-
-        // setVendors(uniqueVendors);
+        setCommRate((prevCommRate) => {
+          if (JSON.stringify(prevCommRate) !== JSON.stringify(newCommOffr)) {
+            console.log("Commercial Offer updated:", newCommOffr);
+            return newCommOffr;
+          }
+          return prevCommRate;
+        });
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -109,6 +104,72 @@ function Offer() {
 
     fetchPaymentsAndProjects();
   }, []);
+
+  const RowMenu = ({ currentPage, offer_id }) => {
+    // console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
+    return (
+      <>
+        <Dropdown>
+          <MenuButton
+            slots={{ root: IconButton }}
+            slotProps={{
+              root: { variant: "plain", color: "neutral", size: "sm" },
+            }}
+          >
+            <MoreHorizRoundedIcon />
+          </MenuButton>
+          <Menu size="sm" sx={{ minWidth: 140 }}>
+        <MenuItem
+              color="primary"
+              onClick={() => {
+                const page = currentPage;
+                const offerId = String(offer_id);
+                localStorage.setItem("offer_summary", offerId);
+                // localStorage.setItem("p_id", projectID);
+                navigate(`/offer_summary?page=${page}&offer_id=${offerId}`);
+              }}
+            >
+              <ContentPasteGoIcon />
+              <Typography>Offer Summary</Typography>
+            </MenuItem>
+          <Divider sx={{ backgroundColor: "lightblue" }} />
+            <MenuItem color="danger">
+            <DeleteIcon />
+            <Typography>Delete</Typography>
+            </MenuItem>
+        </Menu>
+        </Dropdown>
+      </>
+    );
+  };
+
+  const AddMenu = ({currentPage, offer_id}) => {
+    return(
+      <Tooltip title="Add" arrow>
+      <IconButton
+        size="small"
+        sx={{
+          backgroundColor: "skyblue",
+          color: "white",
+          "&:hover": {
+            backgroundColor: "#45a049",
+          },
+          borderRadius: "50%",
+          padding: "4px",
+        }}
+        onClick={() =>{
+          const page = currentPage;
+          const offerId = String(offer_id);
+          localStorage.setItem("offer_rate", offerId);
+          // localStorage.setItem("p_id", projectID);
+          navigate(`/offer_rate?page=${page}&offer_id=${offerId}`);
+        }}
+      >
+        <AddIcon fontSize="small" />
+      </IconButton>
+    </Tooltip>
+    )
+  }
 
   // useEffect(() => {
   //   if (payments.length > 0 && projects.length > 0) {
@@ -129,7 +190,6 @@ function Offer() {
   //   }
   // }, [payments, projects]);
 
- 
   // const RowMenu = ({ currentPage, pay_id, p_id }) => {
   //   // console.log("currentPage:", currentPage, "pay_id:", pay_id, "p_id:", p_id);
   //   return (
@@ -183,13 +243,12 @@ function Offer() {
   //   const [isUtrSubmitted, setIsUtrSubmitted] = useState(false);
   //   const { enqueueSnackbar } = useSnackbar();
 
-    
   // const [user, setUser] = useState(null);
   //        useEffect(() => {
   //       const userData = getUserData();
   //       setUser(userData);
   //     }, []);
-      
+
   //     const getUserData = () => {
   //       const userData = localStorage.getItem("userDetails");
   //       if (userData) {
@@ -199,38 +258,37 @@ function Offer() {
   //     };
 
   //   const handleUtrSubmit = async () => {
-       
 
   //     if (!utr) {
   //       enqueueSnackbar("Please enter a valid UTR.", { variant: "warning" });
   //       return;
   //     }
-  
+
   //     setIsSubmitting(true); // Set loading state
-  
+
   //     try {
   //       console.log("Submitting UTR...");
   //       const utrResponse = await Axios.put("/utr-update", {
   //         pay_id: paymentId,
   //         utr: utr,
   //       });
-  
+
   //       console.log("UTR Response:", utrResponse);
-  
+
   //       if (utrResponse.status === 200 && utrResponse.data) {
   //         enqueueSnackbar("UTR submitted successfully!", { variant: "success" });
   //         setIsUtrSubmitted(true);
-  
+
   //         // Fetch PO details
   //         console.log("Fetching PO details...");
   //         const poResponse = await Axios.get("/get-pay-summary");
   //         console.log("PO Summary Response:", poResponse.data);
-  
+
   //         // Match PO and perform debit operation
   //         const matchedPo = poResponse.data.data.find((po) => po.pay_id === paymentId);
   //         if (matchedPo) {
   //           console.log("Matched PO data:", matchedPo);
-  
+
   //           const debitResponse = await Axios.post("/debit-money", {
   //             p_id: matchedPo.p_id,
   //             p_group: matchedPo.p_group || "",
@@ -244,11 +302,11 @@ function Offer() {
   //             utr: matchedPo.utr || "",
   //             submitted_by: user?.name,
   //           });
-  
+
   //           if (debitResponse.status === 200) {
   //             enqueueSnackbar("Money debited successfully!", { variant: "success" });
   //             console.log("Money debited successfully:", debitResponse.data);
-  
+
   //             // Call the parent callback if provided
   //             if (onAccountMatchSuccess) {
   //               onAccountMatchSuccess(utr);
@@ -269,7 +327,7 @@ function Offer() {
   //       setIsSubmitting(false);
   //     }
   //   };
-  
+
   //   return (
   //     <div style={{ marginTop: "1rem" }}>
   //       {!isUtrSubmitted ? (
@@ -351,7 +409,7 @@ function Offer() {
 
   const filteredAndSortedData = commRate
     .filter((project) => {
-      const matchesSearchQuery = ["pay_id", "projectName", "vendor"].some(
+      const matchesSearchQuery = ["offer_id", "client_name", "state"].some(
         (key) => project[key]?.toLowerCase().includes(searchQuery)
       );
 
@@ -363,18 +421,18 @@ function Offer() {
     })
 
     .sort((a, b) => {
-      if (a.projectName?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.projectName?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.vendor?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.vendor?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.pay_id?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.pay_id?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.offer_id?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.offer_id?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.client_name?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.client_name?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.state?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.state?.toLowerCase().includes(searchQuery)) return 1;
       return 0;
     });
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelected(mergedData.map((row) => row.id));
+      setSelected(commRate.map((row) => row.id));
     } else {
       setSelected([]);
     }
@@ -579,165 +637,138 @@ function Offer() {
               </Box>
             </Box>
             <Box component="tbody">
-              {paginatedPayments.filter(
-                (payment) =>
-                  payment.acc_match === "matched"
-              ).length > 0 ? (
-                paginatedPayments
-                  .filter(
-                    (payment) =>
-                      payment.acc_match === "matched"
-                  )
-                  .map((payment, index) => (
+              {paginatedPayments.length > 0 ? (
+                paginatedPayments.map((offer, index) => (
+                  <Box
+                    component="tr"
+                    key={index}
+                    sx={{
+                      "&:hover": { backgroundColor: "neutral.plainHoverBg" },
+                    }}
+                  >
                     <Box
-                      component="tr"
-                      key={index}
+                      component="td"
                       sx={{
-                        "&:hover": { backgroundColor: "neutral.plainHoverBg" },
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
                       }}
                     >
-                      <Box
-                        component="td"
-                        sx={{
-                          borderBottom: "1px solid #ddd",
-                          padding: "8px",
-                          textAlign: "center",
-                        }}
-                      >
-                        <Checkbox
-                          size="sm"
-                          checked={selected.includes(payment.pay_id)}
-                          onChange={(event) =>
-                            handleRowSelect(
-                              payment.pay_id,
-                              event.target.checked
-                            )
-                          }
-                        />
-                      </Box>
-                      <Box
-                        component="td"
-                        sx={{
-                          borderBottom: "1px solid #ddd",
-                          padding: "8px",
-                          textAlign: "center",
-                        }}
-                      >
-                        {payment.pay_id}
-                      </Box>
-                      <Box
-                        component="td"
-                        sx={{
-                          borderBottom: "1px solid #ddd",
-                          padding: "8px",
-                          textAlign: "center",
-                        }}
-                      >
-                        {payment.projectCode}
-                      </Box>
-                      <Box
-                        component="td"
-                        sx={{
-                          borderBottom: "1px solid #ddd",
-                          padding: "8px",
-                          textAlign: "center",
-                        }}
-                      >
-                        {payment.projectName || "-"}
-                      </Box>
-                      <Box
-                        component="td"
-                        sx={{
-                          borderBottom: "1px solid #ddd",
-                          padding: "8px",
-                          textAlign: "center",
-                        }}
-                      >
-                        {payment.paid_for || "-"}
-                      </Box>
-                      <Box
-                        component="td"
-                        sx={{
-                          borderBottom: "1px solid #ddd",
-                          padding: "8px",
-                          textAlign: "center",
-                        }}
-                      >
-                        {payment.vendor || "-"}
-                      </Box>
-                      <Box
-                        component="td"
-                        sx={{
-                          borderBottom: "1px solid #ddd",
-                          padding: "8px",
-                          textAlign: "center",
-                        }}
-                      >
-                        {payment.comment || "-"}
-                      </Box>
-                      <Box
-                        component="td"
-                        sx={{
-                          borderBottom: "1px solid #ddd",
-                          padding: "8px",
-                          textAlign: "center",
-                        }}
-                      >
-                        {Number(payment.amt_for_customer).toLocaleString("en-IN")}
-                      </Box>
-                      <Box
-                        component="td"
-                        sx={{
-                          borderBottom: "1px solid #ddd",
-                          padding: "8px",
-                          textAlign: "center",
-                        }}
-                      >
-                           <Tooltip title="Add" arrow>
-    <IconButton
-      size="small"
-      sx={{
-        backgroundColor: "skyblue",
-        color: "white",
-        '&:hover': {
-          backgroundColor: "#45a049",
-        },
-        borderRadius: "50%",
-        padding: "4px",
-      }}
-    >
-      <AddIcon fontSize="small" />
-    </IconButton>
-  </Tooltip>
-
-                      </Box>
-                      <Box
-                        component="td"
-                        sx={{
-                          borderBottom: "1px solid #ddd",
-                          padding: "8px",
-                          textAlign: "center",
-                        }}
-                      >
-                         {/* <UTRRow paymentId={payment.pay_id} onAccountMatchSuccess={handleAccountMatchSuccess} /> */}
-                      </Box>
-                      <Box
-                        component="td"
-                        sx={{
-                          borderBottom: "1px solid #ddd",
-                          padding: "8px",
-                          textAlign: "center",
-                        }}
-                      >
-                         {/* <UTRRow paymentId={payment.pay_id} onAccountMatchSuccess={handleAccountMatchSuccess} /> */}
-                      </Box>
+                      <Checkbox
+                        size="sm"
+                        checked={selected.includes(offer.offer_id)}
+                        onChange={(event) =>
+                          handleRowSelect(offer.offer_id, event.target.checked)
+                        }
+                      />
                     </Box>
-                  ))
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {offer.offer_id}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {offer.client_name}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {offer.state || "-"}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {offer.ac_capacity || "-"}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {offer.scheme || "-"}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {offer.component || "-"}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {Number(offer.rate).toLocaleString("en-IN")}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                     <AddMenu currentPage={currentPage} offer_id={offer.offer_id} />
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {offer.prepared_by || "-"}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      <RowMenu currentPage={currentPage} offer_id={offer.offer_id} />
+                    </Box>
+                  </Box>
+                ))
               ) : (
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={10}
+                    colSpan={12}
                     sx={{
                       padding: "8px",
                       textAlign: "center",
