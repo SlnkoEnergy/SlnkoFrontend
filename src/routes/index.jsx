@@ -32,6 +32,7 @@ import EditUser from "../pages/Users/EditUser";
 // import { BalanceProvider } from "../store/Context/Balance_Context";
 import PrivateRoute from "./PrivateRoute";
 import CommercialRateOffer from "../pages/BD/OfferRate";
+import ListReference from "../pages/BD/Comm_/offer_ref";
 
 function index() {
   return (
@@ -70,6 +71,15 @@ function index() {
           </PrivateRoute>
         }
       />
+       <Route
+  path="/ref_list"
+  element={
+    <PrivateRoute>
+      <ListReference />
+    </PrivateRoute>
+  }
+/>
+
 
       {/*-------Accounting------- */}
       <Route

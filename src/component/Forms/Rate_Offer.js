@@ -84,55 +84,53 @@ const Rate_Offer = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
+  
     try {
       const OfferRate = localStorage.getItem("offer_rate");
-
+  
       if (!OfferRate) {
         console.error("Offer ID not found in localStorage");
         alert("Offer ID is missing!");
-        setLoading(false);
         return;
       }
-
-      const { data } = await Axios.get("/get-comm-offer");
-      // console.log("Commercial Offers:", data);
-      setOfferData(data);
-
-      const offerData = data.find((item) => item.offer_id === OfferRate);
-
+  
+      const { data: commercialOffers } = await Axios.get("/get-comm-offer");
+      setOfferData(commercialOffers);
+  
+      const offerData = commercialOffers.find((item) => item.offer_id === OfferRate);
+  
       if (!offerData) {
         console.error("Matching offer not found.");
         alert("No matching offer found.");
-        setLoading(false);
         return;
       }
-
-      setscmData((prev) => ({
-        ...prev,
-        offer_id: offerData.offer_id,
-      }));
-
+  
       const user = getUserData();
-      if (!user || !user.name) {
+      if (!user?.name) {
         console.error("User details not found.");
         alert("User details are missing!");
-        setLoading(false);
         return;
       }
+  
       const scmPayload = {
         ...scmData,
         offer_id: offerData.offer_id,
+        submitted_by: user.name, // Ensuring user name is set in payload
       };
-
+  
       const response = await Axios.post("/create-scm-rate", scmPayload, {
         headers: { "Content-Type": "application/json" },
       });
-
+  
       console.log("Response:", response?.data);
       toast.success("Costing submitted successfully!");
-      navigate("/comm_offer")
-
+  
+      // Set offer_id in localStorage after successful submission
+      localStorage.setItem("offerId", offerData.offer_id);
+  
+      navigate("/ref_list");
+  
+      // Reset form state after successful submission
       setscmData({
         offer_id: "",
         spv_modules: "",
@@ -164,15 +162,17 @@ const Rate_Offer = () => {
           machinery: "",
           civil_material: "",
         },
-        submitted_by:user.name
+        submitted_by: user.name,
       });
     } catch (error) {
-      console.error("Error:", error?.response?.data || error.message);
+      console.error("Submission Error:", error?.response?.data || error.message);
       toast.error("Submission failed");
     } finally {
       setLoading(false);
     }
   };
+  
+  
 
   return (
     <Sheet
