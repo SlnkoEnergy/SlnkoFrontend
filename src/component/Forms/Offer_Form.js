@@ -38,7 +38,7 @@ const FormOffer = () => {
     module_orientation: "",
     transmission_length: "",
     transformer: "",
-    column_type: "",
+    // column_type: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -85,7 +85,7 @@ const FormOffer = () => {
           module_orientation: "",
           transmission_length: "",
           transformer: "",
-          column_type: "",
+          // column_type: "",
         });
       } else {
         console.error("Unexpected response status:", response.status);
@@ -279,41 +279,44 @@ const FormOffer = () => {
         </Grid>
 
         {/* Scheme */}
-        <Grid xs={12} sm={6}>
-          <FormControl>
-            <FormLabel>Scheme</FormLabel>
-            <Input
-              type="text"
-              name="scheme"
-              value={formData.scheme}
-              onChange={handleChange}
-              placeholder="Scheme"
-            />
-          </FormControl>
-        </Grid>
-
-        {/* Component */}
         <Grid item xs={12} sm={6}>
           <FormControl>
-            <FormLabel>Component</FormLabel>
+            <FormLabel>Scheme</FormLabel>
             <Select
-              name="component"
-              value={formData.component}
+              name="scheme"
+              value={formData.scheme}
               onChange={(e, newValue) =>
-                handleSelectChange("component", newValue)
+                handleSelectChange("scheme", newValue)
               }
-              placeholder="Component"
+              placeholder="Scheme"
             >
-              <Option value="A">A</Option>
-              <Option value="B">B</Option>
+              <Option value="KUSUM">KUSUM</Option>
+              <Option value="Others">Others</Option>
             </Select>
           </FormControl>
         </Grid>
 
+
+        {/* Component */}
+        <Grid item xs={12} sm={6}>
+  <FormControl>
+    <FormLabel>Component</FormLabel>
+    <Select
+      name="component"
+      value={formData.component}
+      onChange={(e, newValue) => handleSelectChange("component", newValue)}
+      placeholder="Component"
+      disabled={formData.scheme === "Others"} // Disable when scheme is "Others"
+    >
+      <Option value="A">A</Option>
+      <Option value="C">C</Option>
+    </Select>
+  </FormControl>
+</Grid>
         {/* Rate */}
         <Grid xs={12} sm={6}>
           <FormControl>
-            <FormLabel>Rate</FormLabel>
+            <FormLabel>Slnko Service Charges (INR/Wp)</FormLabel>
             <Input
               type="number"
               name="rate"
@@ -327,7 +330,7 @@ const FormOffer = () => {
         {/* Timeline */}
         <Grid xs={12} sm={6}>
           <FormControl>
-            <FormLabel>Timeline</FormLabel>
+            <FormLabel>Timeline (Weeks)</FormLabel>
             <Input
               type="text"
               name="timeline"
@@ -410,7 +413,7 @@ const FormOffer = () => {
           {
             label: "Module Orientation",
             name: "module_orientation",
-            options: ["Landscape", "Portrait", "Agrivoltaic Dropdown"],
+            options: ["Landscape", "Portrait", "Agrivoltaic"],
           },
           {
             label: "Evacuation Voltage Level (kV)",

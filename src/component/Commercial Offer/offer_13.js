@@ -302,11 +302,11 @@ const Reference4 = () => {
                     <td>{internalQuantity24}</td>
                     <td>{internalQuantity24}</td>
                     <td>{scmData.balance_of_system}</td>
-                    <td>INR/Set</td>
+                    <td>INR/Wp</td>
                     <td>{TotalVal23}</td>
                     <td>18%</td>
-                    <td>{(TotalVal23 * 18) / 100}</td>
-                    <td>{(TotalVal23 * 18) / 100 + TotalVal23}</td>
+                    <td>{Math.round(TotalVal23*18/100)}</td>
+                    <td>{Math.round(TotalVal23*18/100+TotalVal23)}</td>
                   </tr>
                 </tbody>
               </Table>
@@ -390,8 +390,8 @@ const Reference4 = () => {
                   <td>INR/Wp</td>
                   <td>{TotalVal24}</td>
                   <td>18%</td>
-                  <td>{(TotalVal24 * 18) / 100}</td>
-                  <td>{(TotalVal24 * 18) / 100 + TotalVal24}</td>
+                  <td>{Math.round(TotalVal24*18/100)}</td>
+                  <td>{Math.round(TotalVal24*18/100+TotalVal24)}</td>
                 </tr>
               </tbody>
             </Table>

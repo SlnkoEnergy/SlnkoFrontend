@@ -127,9 +127,10 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         const formattedPaidAmount = totalPaidAmount.toLocaleString("en-IN");
 
         // Improved logging to show the total paid amount
-        console.log(`PO Number: ${po.po_number}, Total Paid Amount:`, formattedPaidAmount);
+        // console.log(`PO Number: ${po.po_number}, Total Paid Amount:`, formattedPaidAmount);
 
-          const billingTypes = [...new Set(poBills.map((bill) => bill.type))];
+        const latestBill = poBills.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
+        const billingTypes = latestBill ? latestBill.type.trim() : "-";
 
           const formattedTotal = totalBill.toLocaleString("en-IN");
 

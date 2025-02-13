@@ -27,7 +27,7 @@ const CivilWorks1 = () => {
     module_orientation: "",
     transmission_length: "",
     transformer: "",
-    column_type: "",
+    // column_type: "",
   });
 
   const [scmData, setscmData] = useState({
@@ -64,7 +64,6 @@ const CivilWorks1 = () => {
 
   //  const[loading, setLoading] = useState(true)
 
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -90,7 +89,9 @@ const CivilWorks1 = () => {
         const offerData = fetchedData.find(
           (item) => item.offer_id === offerRate
         );
-        const fetchRate = fetchedScmData.find((item) => item.offer_id === offerRate)
+        const fetchRate = fetchedScmData.find(
+          (item) => item.offer_id === offerRate
+        );
 
         if (!offerData) {
           console.error("No matching offer data found");
@@ -130,13 +131,11 @@ const CivilWorks1 = () => {
         setscmData({
           spv_modules: fetchRate.spv_modules || "",
           solar_inverter: fetchRate.solar_inverter || "",
-          module_mounting_structure:
-            fetchRate.module_mounting_structure || "",
+          module_mounting_structure: fetchRate.module_mounting_structure || "",
           mounting_hardware: fetchRate.mounting_hardware || "",
           dc_cable: fetchRate.dc_cable || "",
           ac_cable_inverter_accb: fetchRate.ac_cable_inverter_accb || "",
-          ac_cable_accb_transformer:
-            fetchRate.ac_cable_accb_transformer || "",
+          ac_cable_accb_transformer: fetchRate.ac_cable_accb_transformer || "",
           ac_ht_cable: fetchRate.ac_ht_cable || "",
           earthing_station: fetchRate.earthing_station || "",
           earthing_strips: fetchRate.earthing_strips || "",
@@ -148,8 +147,9 @@ const CivilWorks1 = () => {
           balance_of_system: fetchRate.balance_of_system || "",
           transportation: fetchRate.transportation || "",
           transmission_line: fetchRate.transmission_line || "",
-          transmission_line_internal:fetchRate.transmission_line_internal || "",
-          transmission_line_print:fetchRate.transmission_line_print || "",
+          transmission_line_internal:
+            fetchRate.transmission_line_internal || "",
+          transmission_line_print: fetchRate.transmission_line_print || "",
           ct_pt: fetchRate.ct_pt || "",
           abt_meter: fetchRate.abt_meter || "",
           vcb_kiosk: fetchRate.vcb_kiosk || "",
@@ -157,8 +157,7 @@ const CivilWorks1 = () => {
           installation_commissioing: {
             labour_works:
               fetchRate.installation_commissioing?.labour_works || "",
-            machinery:
-              fetchRate.installation_commissioing?.machinery || "",
+            machinery: fetchRate.installation_commissioing?.machinery || "",
             civil_material:
               fetchRate.installation_commissioing?.civil_material || "",
           },
@@ -443,53 +442,156 @@ const CivilWorks1 = () => {
   const TotalVal24 =
     scmData.installation_commissioing.labour_works * internalQuantity24 * 1000;
 
-  const SumO6ToO38 =
-    (TotalVal1 * 12) / 100 +
+    const SumO6ToO38 = (TotalVal1*12/100+TotalVal1) + (TotalVal2*12/100+TotalVal2) + 
+    (TotalVal3*18/100+TotalVal3) + (TotalVal4*18/100+TotalVal4) + (TotalVal5*18/100+TotalVal5) + 
+    (Math.round(TotalVal6*18/100+TotalVal6)) + (TotalVal7*18/100+TotalVal7) +
+     (TotalVal8*18/100+TotalVal8) + (TotalVal9*18/100+TotalVal9) + (TotalVal10*18/100+TotalVal10) +
+      (TotalVal11*18/100+TotalVal11) + (TotalVal12*18/100+TotalVal12) + (TotalVal13*18/100+TotalVal13)
+       + (scmWeekly2(offerData.transformer, offerData.ac_capacity, offerData.evacuation_voltage)*18/100+scmWeekly2(offerData.transformer, offerData.ac_capacity, offerData.evacuation_voltage)) +
+        (scmWeekly3(offerData.evacuation_voltage)*18/100+scmWeekly3(offerData.evacuation_voltage)) + 
+        (TotalVal16*18/100+TotalVal16) + (TotalVal17*18/100+TotalVal17) + (TotalVal19*18/100+TotalVal19) + 
+        (TotalVal20*18/100+TotalVal20) + (TotalVal21*18/100+TotalVal21) + (TotalVal22*18/100+TotalVal22) + 
+        (TotalVal23*18/100+TotalVal23) + (TotalVal24*18/100+TotalVal24) + (TotalVal25*18/100+TotalVal25) + 
+        (TotalVal26*18/100+TotalVal26) + (TotalVal27*18/100+TotalVal27) + ((offerData.transmission_length)*(scmData.transmission_line))*18/100+(scmData.transmission_line)*(offerData.transmission_length) + ((scmData.ct_pt*2)*18/100+(scmData.ct_pt*2)) + 
+        ((scmData.abt_meter*3)*18/100+(scmData.abt_meter*3)) + ((scmData.vcb_kiosk*1)*18/100+(scmData.vcb_kiosk*1))
+         + ((scmWeekly4(offerData.ac_capacity)*1)*18/100+(scmWeekly4(offerData.ac_capacity)*1));
+
+
+         const scmWeekly5 = Math.round(SumO6ToO38*0.1/100);
+
+  const SumOfTotal_Value = Math.round(
     TotalVal1 +
-    ((TotalVal2 * 12) / 100 + TotalVal2) +
-    ((TotalVal3 * 18) / 100 + TotalVal3) +
-    ((TotalVal4 * 18) / 100 + TotalVal4) +
-    ((TotalVal5 * 18) / 100 + TotalVal5) +
-    Math.round((TotalVal6 * 18) / 100 + TotalVal6) +
-    ((TotalVal7 * 18) / 100 + TotalVal7) +
-    ((TotalVal8 * 18) / 100 + TotalVal8) +
-    ((TotalVal9 * 18) / 100 + TotalVal9) +
-    ((TotalVal10 * 18) / 100 + TotalVal10) +
-    ((TotalVal11 * 18) / 100 + TotalVal11) +
-    ((TotalVal12 * 18) / 100 + TotalVal12) +
-    ((TotalVal13 * 18) / 100 + TotalVal13) +
-    ((scmWeekly2(
+      TotalVal2 +
+      TotalVal3 +
+      TotalVal4 +
+      TotalVal5 +
+      TotalVal6 +
+      TotalVal7 +
+      TotalVal8 +
+      TotalVal9 +
+      TotalVal10 +
+      TotalVal11 +
+      TotalVal12 +
+      TotalVal13 +
+      scmWeekly2(
+        offerData.transformer,
+        offerData.ac_capacity,
+        offerData.evacuation_voltage
+      ) +
+      scmWeekly3(offerData.evacuation_voltage) +
+      TotalVal16 +
+      TotalVal17 +
+      0 +
+      TotalVal19 +
+      TotalVal20 +
+      TotalVal21 +
+      TotalVal22 +
+      TotalVal23 +
+      TotalVal24 +
+      TotalVal25 +
+      TotalVal26 +
+      TotalVal27 +
+      offerData.transmission_length * scmData.transmission_line +
+      scmData.ct_pt * 2 +
+      scmData.abt_meter * 3 +
+      scmData.vcb_kiosk * 1 +
+      scmWeekly4(offerData.ac_capacity) * 1 +
+      scmWeekly5 +
+      TotalVal32
+  );
+
+  const SumOfTotal_With_GST = Math.round(
+    (TotalVal1 * 12) / 100 +
+      TotalVal1 +
+      ((TotalVal2 * 12) / 100 + TotalVal2) +
+      ((TotalVal3 * 18) / 100 + TotalVal3) +
+      ((TotalVal4 * 18) / 100 + TotalVal4) +
+      ((TotalVal5 * 18) / 100 + TotalVal5) +
+      Math.round((TotalVal6 * 18) / 100 + TotalVal6) +
+      ((TotalVal7 * 18) / 100 + TotalVal7) +
+      ((TotalVal8 * 18) / 100 + TotalVal8) +
+      ((TotalVal9 * 18) / 100 + TotalVal9) +
+      ((TotalVal10 * 18) / 100 + TotalVal10) +
+      ((TotalVal11 * 18) / 100 + TotalVal11) +
+      ((TotalVal12 * 18) / 100 + TotalVal12) +
+      ((TotalVal13 * 18) / 100 + TotalVal13) +
+      ((scmWeekly2(
+        offerData.transformer,
+        offerData.ac_capacity,
+        offerData.evacuation_voltage
+      ) *
+        18) /
+        100 +
+        scmWeekly2(
+          offerData.transformer,
+          offerData.ac_capacity,
+          offerData.evacuation_voltage
+        )) +
+      ((scmWeekly3(offerData.evacuation_voltage) * 18) / 100 +
+        scmWeekly3(offerData.evacuation_voltage)) +
+      ((TotalVal16 * 18) / 100 + TotalVal16) +
+      ((TotalVal17 * 18) / 100 + TotalVal17) +
+      ((TotalVal19 * 18) / 100 + TotalVal19) +
+      ((TotalVal20 * 18) / 100 + TotalVal20) +
+      ((TotalVal21 * 18) / 100 + TotalVal21) +
+      ((TotalVal22 * 18) / 100 + TotalVal22) +
+      ((TotalVal23 * 18) / 100 + TotalVal23) +
+      ((TotalVal24 * 18) / 100 + TotalVal24) +
+      ((TotalVal25 * 18) / 100 + TotalVal25) +
+      ((TotalVal26 * 18) / 100 + TotalVal26) +
+      ((TotalVal27 * 18) / 100 + TotalVal27) +
+      (offerData.transmission_length * scmData.transmission_line * 18) / 100 +
+      scmData.transmission_line * offerData.transmission_length +
+      ((scmData.ct_pt * 2 * 18) / 100 + scmData.ct_pt * 2) +
+      ((scmData.abt_meter * 3 * 18) / 100 + scmData.abt_meter * 3) +
+      ((scmData.vcb_kiosk * 1 * 18) / 100 + scmData.vcb_kiosk * 1) +
+      ((scmWeekly4(offerData.ac_capacity) * 1 * 18) / 100 +
+        scmWeekly4(offerData.ac_capacity) * 1) +
+      ((scmWeekly5 * 18) / 100 + scmWeekly5) +
+      ((TotalVal32 * 18) / 100 + TotalVal32)
+  );
+
+  const SumOf_Total_GST_Value =
+    (TotalVal1 * 12) / 100 +
+    (TotalVal2 * 12) / 100 +
+    (TotalVal3 * 18) / 100 +
+    (TotalVal4 * 18) / 100 +
+    (TotalVal5 * 18) / 100 +
+    (TotalVal6 * 18) / 100 +
+    (TotalVal7 * 18) / 100 +
+    (TotalVal8 * 18) / 100 +
+    (TotalVal9 * 18) / 100 +
+    (TotalVal10 * 18) / 100 +
+    (TotalVal11 * 18) / 100 +
+    (TotalVal12 * 18) / 100 +
+    (TotalVal13 * 18) / 100 +
+    (scmWeekly2(
       offerData.transformer,
       offerData.ac_capacity,
       offerData.evacuation_voltage
     ) *
       18) /
       100 +
-      scmWeekly2(
-        offerData.transformer,
-        offerData.ac_capacity,
-        offerData.evacuation_voltage
-      )) +
-    ((scmWeekly3(offerData.evacuation_voltage) * 18) / 100 +
-      scmWeekly3(offerData.evacuation_voltage)) +
-    ((TotalVal16 * 18) / 100 + TotalVal16) +
-    ((TotalVal17 * 18) / 100 + TotalVal17) +
-    ((TotalVal19 * 18) / 100 + TotalVal19) +
-    ((TotalVal20 * 18) / 100 + TotalVal20) +
-    ((TotalVal21 * 18) / 100 + TotalVal21) +
-    ((TotalVal22 * 18) / 100 + TotalVal22) +
-    ((TotalVal23 * 18) / 100 + TotalVal23) +
-    ((TotalVal24 * 18) / 100 + TotalVal24) +
-    ((TotalVal25 * 18) / 100 + TotalVal25) +
-    ((TotalVal26 * 18) / 100 + TotalVal26) +
-    ((TotalVal27 * 18) / 100 + TotalVal27) +
-    ((scmData.ct_pt * 2 * 18) / 100 + scmData.ct_pt * 2) +
-    ((scmData.abt_meter * 3 * 18) / 100 + scmData.abt_meter * 3) +
-    ((scmData.vcb_kiosk * 1 * 18) / 100 + scmData.vcb_kiosk * 1) +
-    ((scmWeekly4(offerData.ac_capacity) * 1 * 18) / 100 +
-      scmWeekly4(offerData.ac_capacity) * 1);
-
-  const scmWeekly5 = Math.round((SumO6ToO38 * 0.1) / 100);
+    (scmWeekly3(offerData.evacuation_voltage) * 18) / 100 +
+    (TotalVal16 * 18) / 100 +
+    (TotalVal17 * 18) / 100 +
+    0 +
+    (TotalVal19 * 18) / 100 +
+    (TotalVal20 * 18) / 100 +
+    (TotalVal21 * 18) / 100 +
+    (TotalVal22 * 18) / 100 +
+    (TotalVal23 * 18) / 100 +
+    (TotalVal24 * 18) / 100 +
+    (TotalVal25 * 18) / 100 +
+    (TotalVal26 * 18) / 100 +
+    (TotalVal27 * 18) / 100 +
+    (offerData.transmission_length * scmData.transmission_line * 18) / 100 +
+    (scmData.ct_pt * 2 * 18) / 100 +
+    (scmData.abt_meter * 3 * 18) / 100 +
+    (scmData.vcb_kiosk * 1 * 18) / 100 +
+    (scmWeekly4(offerData.ac_capacity) * 1 * 18) / 100 +
+    (scmWeekly5 * 18) / 100 +
+    (TotalVal32 * 18) / 100;
 
   return (
     <>
@@ -614,8 +716,8 @@ const CivilWorks1 = () => {
                     <td>INR/Wp</td>
                     <td>{TotalVal25}</td>
                     <td>18%</td>
-                    <td>{(TotalVal25 * 18) / 100}</td>
-                    <td>{(TotalVal25 * 18) / 100 + TotalVal25}</td>
+                    <td>{Math.round((TotalVal25 * 18) / 100)}</td>
+                    <td>{Math.round((TotalVal25 * 18) / 100 + TotalVal25)}</td>
                   </tr>
 
                   <tr>
@@ -635,8 +737,8 @@ const CivilWorks1 = () => {
                     <td>INR/Wp</td>
                     <td>{TotalVal26}</td>
                     <td>18%</td>
-                    <td>{(TotalVal26 * 18) / 100}</td>
-                    <td>{(TotalVal26 * 18) / 100 + TotalVal26}</td>
+                    <td>{Math.round((TotalVal26 * 18) / 100)}</td>
+                    <td>{Math.round((TotalVal26 * 18) / 100 + TotalVal26)}</td>
                   </tr>
 
                   <tr>
@@ -651,43 +753,26 @@ const CivilWorks1 = () => {
                     <td>INR/Vehicle</td>
                     <td>{TotalVal27}</td>
                     <td>18%</td>
-                    <td>{(TotalVal27 * 18) / 100}</td>
-                    <td>{(TotalVal27 * 18) / 100 + TotalVal27}</td>
+                    <td>{Math.round((TotalVal27 * 18) / 100)}</td>
+                    <td>{Math.round((TotalVal27 * 18) / 100 + TotalVal27)}</td>
                   </tr>
 
                   <tr>
-                    <td>26.</td>
-                    <td>Transmission Line</td>
-                    <td>
-                      11 kV Transmission Line with appropriate conductor size
-                      and PCC Poles
-                    </td>
-                    <td></td>
-                    <td>Km</td>
-                    <td>{scmData.transmission_line_internal}</td>
-                    <td>{scmData.transmission_line_print}</td>
-                    <td>{scmData.transmission_line}</td>
-                    <td>INR/Km</td>
-                    <td>
-                      {scmData.transmission_line *
-                        scmData.transmission_line_print}
-                    </td>
-                    <td>18%</td>
-                    <td>
-                      {(scmData.transmission_line *
-                        scmData.transmission_line_print *
-                        18) /
-                        100}
-                    </td>
-                    <td>
-                      {(scmData.transmission_line *
-                        scmData.transmission_line_print *
-                        18) /
-                        100 +
-                        scmData.transmission_line *
-                          scmData.transmission_line_print}
-                    </td>
-                  </tr>
+                            <td>26.</td>
+                            <td>Transmission Line</td>
+                            <td>11 kV Transmission Line with appropriate conductor size and PCC Poles</td>
+                            <td>
+                            </td>
+                            <td>Km</td>
+                            <td>{offerData.transmission_length}</td>
+                            <td>{offerData.transmission_length}</td>
+                            <td>{scmData.transmission_line}</td>
+                            <td>INR/Km</td>
+                            <td>{(offerData.transmission_length)*(scmData.transmission_line)}</td>
+                            <td>18%</td>
+                            <td>{Math.round(((offerData.transmission_length)*(scmData.transmission_line))*18/100)}</td>
+                            <td>{Math.round(((offerData.transmission_length)*(scmData.transmission_line))*18/100+(scmData.transmission_line)*(offerData.transmission_length))}</td>
+                          </tr>
 
                   <tr>
                     <td>27.</td>
@@ -701,9 +786,11 @@ const CivilWorks1 = () => {
                     <td>INR/Set</td>
                     <td>{scmData.ct_pt * 2}</td>
                     <td>18%</td>
-                    <td>{(scmData.ct_pt * 2 * 18) / 100}</td>
+                    <td>{Math.round((scmData.ct_pt * 2 * 18) / 100)}</td>
                     <td>
-                      {(scmData.ct_pt * 2 * 18) / 100 + scmData.ct_pt * 2}
+                      {Math.round(
+                        (scmData.ct_pt * 2 * 18) / 100 + scmData.ct_pt * 2
+                      )}
                     </td>
                   </tr>
 
@@ -719,10 +806,12 @@ const CivilWorks1 = () => {
                     <td>INR/Set</td>
                     <td>{scmData.abt_meter * 3}</td>
                     <td>18%</td>
-                    <td>{(scmData.abt_meter * 3 * 18) / 100}</td>
+                    <td>{Math.round((scmData.abt_meter * 3 * 18) / 100)}</td>
                     <td>
-                      {(scmData.abt_meter * 3 * 18) / 100 +
-                        scmData.abt_meter * 3}
+                      {Math.round(
+                        (scmData.abt_meter * 3 * 18) / 100 +
+                          scmData.abt_meter * 3
+                      )}
                     </td>
                   </tr>
 
@@ -738,10 +827,12 @@ const CivilWorks1 = () => {
                     <td>INR/Set</td>
                     <td>{scmData.vcb_kiosk * 1}</td>
                     <td>18%</td>
-                    <td>{(scmData.vcb_kiosk * 1 * 18) / 100}</td>
+                    <td>{Math.round((scmData.vcb_kiosk * 1 * 18) / 100)}</td>
                     <td>
-                      {(scmData.vcb_kiosk * 1 * 18) / 100 +
-                        scmData.vcb_kiosk * 1}
+                      {Math.round(
+                        (scmData.vcb_kiosk * 1 * 18) / 100 +
+                          scmData.vcb_kiosk * 1
+                      )}
                     </td>
                   </tr>
 
@@ -758,11 +849,15 @@ const CivilWorks1 = () => {
                     <td>{scmWeekly4(offerData.ac_capacity) * 1}</td>
                     <td>18%</td>
                     <td>
-                      {(scmWeekly4(offerData.ac_capacity) * 1 * 18) / 100}
+                      {Math.round(
+                        (scmWeekly4(offerData.ac_capacity) * 1 * 18) / 100
+                      )}
                     </td>
                     <td>
-                      {(scmWeekly4(offerData.ac_capacity) * 1 * 18) / 100 +
-                        scmWeekly4(offerData.ac_capacity) * 1}
+                      {Math.round(
+                        (scmWeekly4(offerData.ac_capacity) * 1 * 18) / 100 +
+                          scmWeekly4(offerData.ac_capacity) * 1
+                      )}
                     </td>
                   </tr>
 
@@ -794,10 +889,18 @@ const CivilWorks1 = () => {
                     <td>INR</td>
                     <td>{TotalVal32}</td>
                     <td>18%</td>
-                    <td>{(TotalVal32 * 18) / 100}</td>
-                    <td>{(TotalVal32 * 18) / 100 + TotalVal32}</td>
+                    <td>{Math.round((TotalVal32 * 18) / 100)}</td>
+                    <td>{Math.round((TotalVal32 * 18) / 100 + TotalVal32)}</td>
                   </tr>
                 </tbody>
+                <tfoot>
+                  <td colSpan={9}>Total Value</td>
+                  <td>{Math.round(SumOfTotal_Value)}</td>
+                  <td></td>
+                  <td>{Math.round(SumOf_Total_GST_Value)}</td>
+                  <td >{Math.round(SumOfTotal_With_GST)}</td>
+                </tfoot>
+                
               </Table>
             </Sheet>
           </Box>

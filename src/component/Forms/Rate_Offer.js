@@ -35,8 +35,8 @@ const Rate_Offer = () => {
     balance_of_system: "",
     transportation: "",
     transmission_line: "",
-    transmission_line_internal: "",
-    transmission_line_print: "",
+    // transmission_line_internal: "",
+    // transmission_line_print: "",
     ct_pt: "",
     abt_meter: "",
     vcb_kiosk: "",
@@ -151,8 +151,8 @@ const Rate_Offer = () => {
         balance_of_system: "",
         transportation: "",
         transmission_line: "",
-        transmission_line_internal: "",
-        transmission_line_print: "",
+        // transmission_line_internal: "",
+        // transmission_line_print: "",
         ct_pt: "",
         abt_meter: "",
         vcb_kiosk: "",
@@ -353,7 +353,7 @@ const Rate_Offer = () => {
           <Grid xs={12} sm={12}>
             <FormLabel>
               Balance of system with Wet Module Cleaning System (MCS) & Dry
-              Cleaning semi automatic robot (INR/Set)
+              Cleaning semi automatic robot (INR/Wp)
             </FormLabel>
             <Input
               type="number"
@@ -443,7 +443,7 @@ const Rate_Offer = () => {
               fullWidth
             />
           </Grid>
-          <Grid xs={12} sm={4}>
+          {/* <Grid xs={12} sm={4}>
             <FormLabel>Transmission Line Internal (INR/km)</FormLabel>
             <Input
               type="number"
@@ -462,7 +462,7 @@ const Rate_Offer = () => {
               onChange={handleChange}
               fullWidth
             />
-          </Grid>
+          </Grid> */}
           <Grid xs={12} sm={4}>
             <FormLabel>Transmission Line (INR/km)</FormLabel>
             <Input

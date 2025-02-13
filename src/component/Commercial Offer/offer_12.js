@@ -327,7 +327,7 @@ const Reference3 = () => {
                         <tbody>
                           <tr>
                             <td>15.</td>
-                            <td>11 kV ICOG, Outdoor Panel</td>
+                            <td>ICOG, Outdoor Panel</td>
                             <td>{EvacuationVoltage(offerData.evacuation_voltage)}</td>
                             <td>
                               CT-25 kA For 3 Sec, XXX/5A, CORE-1,10VA,5P20, CORE-2,
@@ -349,8 +349,8 @@ const Reference3 = () => {
                             <td>INR/Nos.</td>
                             <td>{scmWeekly3(offerData.evacuation_voltage)}</td>
                             <td>18%</td>
-                            <td>{scmWeekly3(offerData.evacuation_voltage)*18/100}</td>
-                            <td>{scmWeekly3(offerData.evacuation_voltage)*18/100+scmWeekly3(offerData.evacuation_voltage)}</td>
+                            <td>{Math.round(scmWeekly3(offerData.evacuation_voltage)*18/100)}</td>
+                            <td>{Math.round(scmWeekly3(offerData.evacuation_voltage)*18/100+scmWeekly3(offerData.evacuation_voltage))}</td>
                           </tr>
         
                           <tr>
@@ -376,8 +376,8 @@ const Reference3 = () => {
                             <td>INR/Set</td>
                             <td>{TotalVal16}</td>
                             <td>18%</td>
-                            <td>{TotalVal16*18/100}</td>
-                            <td>{TotalVal16*18/100+TotalVal16}</td>
+                            <td>{Math.round(TotalVal16*18/100)}</td>
+                            <td>{Math.round(TotalVal16*18/100+TotalVal16)}</td>
                           </tr>
         
                           <tr>
@@ -394,8 +394,8 @@ const Reference3 = () => {
                             <td>INR/m</td>
                             <td>{TotalVal17}</td>
                             <td>18%</td>
-                            <td>{TotalVal17*18/100}</td>
-                            <td>{TotalVal17*18/100+TotalVal17}</td>
+                            <td>{Math.round(TotalVal17*18/100)}</td>
+                            <td>{Math.round(TotalVal17*18/100+TotalVal17)}</td>
                           </tr>
         
                           <tr>
@@ -431,8 +431,8 @@ const Reference3 = () => {
                             <td>INR/Set</td>
                             <td>{TotalVal19}</td>
                             <td>18%</td>
-                            <td>{TotalVal19*18/100}</td>
-                            <td>{TotalVal19*18/100+TotalVal19}</td>
+                            <td>{Math.round(TotalVal19*18/100)}</td>
+                            <td>{Math.round(TotalVal19*18/100+TotalVal19)}</td>
                           </tr>
         
                           <tr>
@@ -444,7 +444,7 @@ const Reference3 = () => {
                             <td>1</td>
                             <td>1</td>
                             <td>{scmData.datalogger}</td>
-                            <td></td>
+                            <td>INR/Set</td>
                             <td>{TotalVal20}</td>
                             <td>18%</td>
                             <td>{TotalVal20*18/100}</td>
@@ -463,8 +463,8 @@ const Reference3 = () => {
                             <td>INR/Nos.</td>
                             <td>{TotalVal21}</td>
                             <td>18%</td>
-                            <td>{TotalVal21*18/100}</td>
-                            <td>{TotalVal21*18/100+TotalVal21}</td>
+                            <td>{Math.round(TotalVal21*18/100)}</td>
+                            <td>{Math.round(TotalVal21*18/100+TotalVal21)}</td>
                           </tr>
         
                           <tr>
@@ -479,8 +479,8 @@ const Reference3 = () => {
                             <td>INR/Set</td>
                             <td>{TotalVal22}</td>
                             <td>18%</td>
-                            <td>{TotalVal22*18/100}</td>
-                            <td>{TotalVal22*18/100+TotalVal22}</td>
+                            <td>{Math.round(TotalVal22*18/100)}</td>
+                            <td>{Math.round(TotalVal22*18/100+TotalVal22)}</td>
                           </tr>
                         </tbody>
                       </Table>
