@@ -107,20 +107,21 @@ function Comm_Offer() {
             >
               <Button
               color="primary"
+              startDecorator={<DownloadRoundedIcon />}
+              size="sm"
+              onClick={() => navigate("/costing_input")}
+            >
+              Add Costing +
+            </Button>
+              <Button
+              color="primary"
               
               size="sm"
               onClick={() => navigate("/add_offer")}
             >
               Add New offer +
             </Button>
-            {/* <Button
-              color="primary"
-              startDecorator={<DownloadRoundedIcon />}
-              size="sm"
-              onClick={() => navigate("/payment_detail")}
-            >
-              Payment Detail
-            </Button> */}
+            
             </Box>
           </Box>
           <Commercial_Offer />

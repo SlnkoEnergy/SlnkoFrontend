@@ -33,6 +33,7 @@ import EditUser from "../pages/Users/EditUser";
 import PrivateRoute from "./PrivateRoute";
 import CommercialRateOffer from "../pages/BD/OfferRate";
 import ListReference from "../pages/BD/Comm_/offer_ref";
+import Costing_form from "../pages/BD/Costing_form";
 
 function index() {
   return (
@@ -290,6 +291,14 @@ function index() {
         element={
           <PrivateRoute>
             <CommercialRateOffer />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/costing_input"
+        element={
+          <PrivateRoute>
+            <Costing_form />
           </PrivateRoute>
         }
       />

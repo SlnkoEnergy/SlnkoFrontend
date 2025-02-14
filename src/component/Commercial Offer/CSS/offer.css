@@ -172,3 +172,31 @@ border: 1px solid #dee2e6 !important; /* Ensures text is centered */
 font-weight: 500;
 padding: 8px !important;
 }
+
+/* CSS For Summary Page */
+
+.table-header-Summary {
+width: 100%;
+border-collapse: collapse !important; /* Ensures proper table structure */
+table-layout: auto;
+border: 1px solid #dee2e6 !important;
+}
+
+.table-header-Summary th {
+vertical-align: middle !important; /* Corrected */
+font-size: 1rem !important;
+font-weight: bold;
+background-color: #0f4c7f !important;
+color: #95aac9 !important;
+font-family: serif !important;
+text-align: center !important;
+border: 1px solid #dee2e6 !important; /* Ensures text is centered */
+}
+
+.table-header-Summary td {
+vertical-align: middle !important; /* Corrected */
+font-size: 0.8rem ;
+font-family: sans-serif !important;
+text-align: center !important;
+border: 1px solid #dee2e6 !important; /* Ensures text is centered */
+}

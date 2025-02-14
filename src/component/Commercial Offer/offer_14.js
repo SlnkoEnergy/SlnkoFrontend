@@ -221,10 +221,12 @@ const CivilWorks1 = () => {
     : 0;
 
   // ***for 3rd row***
-  const InternalQuantity3 =
-    (offerData.module_orientation === "Portrait" ? 23 : 29) *
-    1000 *
-    offerData.dc_capacity;
+  const InternalQuantity3 = 
+  offerData.module_orientation === "Portrait"
+    ? 23 * 1000 * offerData.dc_capacity
+    : offerData.module_orientation === "Landscape"
+    ? 29 * 1000 * offerData.dc_capacity
+    : 33 * 1000 * offerData.dc_capacity;
 
   // ***for 5th row***
   const InternalQuantity5 = offerData.dc_capacity * 7000;
@@ -760,7 +762,7 @@ const CivilWorks1 = () => {
                   <tr>
                             <td>26.</td>
                             <td>Transmission Line</td>
-                            <td>11 kV Transmission Line with appropriate conductor size and PCC Poles</td>
+                            <td>{offerData.evacuation_voltage}kV Transmission Line with appropriate conductor size and PCC Poles</td>
                             <td>
                             </td>
                             <td>Km</td>
