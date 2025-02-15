@@ -185,11 +185,11 @@ const Rate_Offer = () => {
       }}
     >
       <Typography level="h2" sx={{ textAlign: "center", mb: 2 }}>
-        Solar Equipment Rate Form
+        BD Costing Rate Form
       </Typography>
       <form onSubmit={handleSubmit}>
         <Grid container spacing={2}>
-          <Grid xs={12} sm={12}>
+          <Grid md={12} sm={12}>
             <FormLabel>Offer ID</FormLabel>
             <Input
               type="text"
@@ -200,7 +200,7 @@ const Rate_Offer = () => {
               readOnly
             />
           </Grid>
-          <Grid xs={12} sm={4}>
+          <Grid md={6} sm={12}>
             <FormLabel>SPV Modules (INR/Wp)</FormLabel>
             <Input
               type="number"
@@ -208,19 +208,10 @@ const Rate_Offer = () => {
               value={scmData.spv_modules}
               onChange={handleChange}
               fullWidth
+              required
             />
           </Grid>
-          <Grid xs={12} sm={4}>
-            <FormLabel>Solar Inverter (INR/Nos.)</FormLabel>
-            <Input
-              type="number"
-              name="solar_inverter"
-              value={scmData.solar_inverter}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-          <Grid xs={12} sm={4}>
+          <Grid md={6} sm={12}>
             <FormLabel>Module Mounting Structure (INR/kg)</FormLabel>
             <Input
               type="number"
@@ -228,242 +219,17 @@ const Rate_Offer = () => {
               value={scmData.module_mounting_structure}
               onChange={handleChange}
               fullWidth
+              required
             />
           </Grid>
-          <Grid xs={12} sm={4}>
-            <FormLabel>Module Mounting & MMS Hardware (INR/Wp)</FormLabel>
-            <Input
-              type="number"
-              name="mounting_hardware"
-              value={scmData.mounting_hardware}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-          <Grid xs={12} sm={4}>
-            <FormLabel>DC Cable (Solar Module to Inverter) (INR/m)</FormLabel>
-            <Input
-              type="number"
-              name="dc_cable"
-              value={scmData.dc_cable}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-          <Grid xs={12} sm={4}>
-            <FormLabel>AC Cable (Inverter to ACCB) (INR/m)</FormLabel>
-            <Input
-              type="number"
-              name="ac_cable_inverter_accb"
-              value={scmData.ac_cable_inverter_accb}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-          <Grid xs={12} sm={4}>
-            <FormLabel>AC Cable (ACCB to Transformer) (INR/m)</FormLabel>
-            <Input
-              type="number"
-              name="ac_cable_accb_transformer"
-              value={scmData.ac_cable_accb_transformer}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-          <Grid xs={12} sm={4}>
-            <FormLabel>AC HT Cable (Transformer to HT Panel) (INR/m)</FormLabel>
-            <Input
-              type="number"
-              name="ac_ht_cable"
-              value={scmData.ac_ht_cable}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-          <Grid xs={12} sm={4}>
-            <FormLabel>Earthing Station (INR/Set)</FormLabel>
-            <Input
-              type="number"
-              name="earthing_station"
-              value={scmData.earthing_station}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-          <Grid xs={12} sm={4}>
-            <FormLabel>Earthing Strips (25x3 mm GI strip) (INR/m)</FormLabel>
-            <Input
-              type="number"
-              name="earthing_strips"
-              value={scmData.earthing_strips}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-          <Grid xs={12} sm={4}>
-            <FormLabel>Earthing Strips (50x6 mm GI strip) (INR/m)</FormLabel>
-            <Input
-              type="number"
-              name="earthing_strip"
-              value={scmData.earthing_strip}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-          <Grid xs={12} sm={4}>
-            <FormLabel>Lightening Arrestor (INR/Set)</FormLabel>
-            <Input
-              type="number"
-              name="lightening_arrestor"
-              value={scmData.lightening_arrestor}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-          <Grid xs={12} sm={4}>
-            <FormLabel>Datalogger (INR/Set)</FormLabel>
-            <Input
-              type="number"
-              name="datalogger"
-              value={scmData.datalogger}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-          <Grid xs={12} sm={4}>
-            <FormLabel>Auxilary transformer (INR/Nos.)</FormLabel>
-            <Input
-              type="number"
-              name="auxilary_transformer"
-              value={scmData.auxilary_transformer}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-          <Grid xs={12} sm={4}>
-            <FormLabel>UPS & LDB (INR/Set)</FormLabel>
-            <Input
-              type="number"
-              name="ups_ldb"
-              value={scmData.ups_ldb}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-          <Grid xs={12} sm={12}>
-            <FormLabel>
-              Balance of system with Wet Module Cleaning System (MCS) & Dry
-              Cleaning semi automatic robot (INR/Wp)
-            </FormLabel>
-            <Input
-              type="number"
-              name="balance_of_system"
-              value={scmData.balance_of_system}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
+          
           <Grid xs={12}>
-            <Typography
-              level="h3"
-              sx={{
-                mt: 3,
-                textAlign: "center",
-                fontWeight: "bold",
-                color: "#2D3748",
-              }}
-            >
-              Civil Works Rate
-            </Typography>
-          </Grid>
-          <Grid xs={12}>
-            <Typography level="h4" sx={{ mt: 2 }}>
+            <Typography level="h4">
               Installation & Commissioning
             </Typography>
           </Grid>
-          <Grid xs={12} sm={4}>
-            <FormLabel>Labour Works (INR/Wp)</FormLabel>
-            <Input
-              type="number"
-              name="labour_works"
-              value={scmData.installation_commissioing.labour_works}
-              onChange={(e) =>
-                handleNestedChange(
-                  "installation_commissioing",
-                  "labour_works",
-                  e.target.value
-                )
-              }
-              fullWidth
-            />
-          </Grid>
-          <Grid xs={12} sm={4}>
-            <FormLabel>Machinary (INR/Wp)</FormLabel>
-            <Input
-              type="number"
-              name="machinery"
-              value={scmData.installation_commissioing.machinery}
-              onChange={(e) =>
-                handleNestedChange(
-                  "installation_commissioing",
-                  "machinery",
-                  e.target.value
-                )
-              }
-              fullWidth
-            />
-          </Grid>
-          <Grid xs={12} sm={4}>
-            <FormLabel>Civil Material (INR/Wp)</FormLabel>
-            <Input
-              type="number"
-              name="civil_material"
-              value={scmData.installation_commissioing.civil_material}
-              onChange={(e) =>
-                handleNestedChange(
-                  "installation_commissioing",
-                  "civil_material",
-                  e.target.value
-                )
-              }
-              fullWidth
-            />
-          </Grid>
-          {/* Add a margin or divider for separation */}
-          <Grid xs={12}>
-            <Box sx={{ mt: 3, mb: 2, borderBottom: "1px solid #ccc" }} />
-          </Grid>
-          <Grid xs={12} sm={4}>
-            <FormLabel>Transportaion (INR/Vehicle)</FormLabel>
-            <Input
-              type="number"
-              name="transportation"
-              value={scmData.transportation}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-          {/* <Grid xs={12} sm={4}>
-            <FormLabel>Transmission Line Internal (INR/km)</FormLabel>
-            <Input
-              type="number"
-              name="transmission_line_internal"
-              value={scmData.transmission_line_internal}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-          <Grid xs={12} sm={4}>
-            <FormLabel>Transmission Line Print (INR/km)</FormLabel>
-            <Input
-              type="number"
-              name="transmission_line_print"
-              value={scmData.transmission_line_print}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid> */}
-          <Grid xs={12} sm={4}>
+         
+          <Grid md={6} sm={12}>
             <FormLabel>Transmission Line (INR/km)</FormLabel>
             <Input
               type="number"
@@ -471,39 +237,10 @@ const Rate_Offer = () => {
               value={scmData.transmission_line}
               onChange={handleChange}
               fullWidth
+              required
             />
           </Grid>
-          <Grid xs={12} sm={4}>
-            <FormLabel>CT PT (INR/Set)</FormLabel>
-            <Input
-              type="number"
-              name="ct_pt"
-              value={scmData.ct_pt}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-          <Grid xs={12} sm={4}>
-            <FormLabel>ABT Meter (INR/Set)</FormLabel>
-            <Input
-              type="number"
-              name="abt_meter"
-              value={scmData.abt_meter}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-          <Grid xs={12} sm={4}>
-            <FormLabel>VCB Kiosk (INR/Set)</FormLabel>
-            <Input
-              type="number"
-              name="vcb_kiosk"
-              value={scmData.vcb_kiosk}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-          <Grid xs={12} sm={4}>
+          <Grid md={6} sm={12}>
             <FormLabel>SLNKO EPCM Service Charges (INR/Wp)</FormLabel>
             <Input
               type="number"
@@ -511,6 +248,7 @@ const Rate_Offer = () => {
               value={scmData.slnko_charges}
               onChange={handleChange}
               fullWidth
+              required
             />
           </Grid>
         </Grid>
