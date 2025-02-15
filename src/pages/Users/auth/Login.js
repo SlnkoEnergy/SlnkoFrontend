@@ -65,12 +65,12 @@ const Login = () => {
       password: values.password,
     };
     try {
-      const response = await Axios.post("/login", postData);
+      const response = await Axios.post("/logiN-IT", postData);
       const user = response.data;
 
       // console.log("Login successful:", user);
 
-      const response2 = await Axios.get("/get-all-user");
+      const response2 = await Axios.get("/get-all-useR-IT");
       // console.log(response2.data?.data);
 
       response2.data.data.map((item) => {

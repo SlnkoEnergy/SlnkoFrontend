@@ -366,7 +366,7 @@ const Customer_Payment_Summary = () => {
   useEffect(() => {
     const fetchProjectData = async () => {
       try {
-        const response = await Axios.get("/get-all-project");
+        const response = await Axios.get("/get-all-projecT-IT");
         // const data = response.data?.data?.[0];
         let project = localStorage.getItem("view_detail");
         project = Number.parseInt(project);
@@ -410,7 +410,7 @@ const Customer_Payment_Summary = () => {
           // console.log("Fetching credit history for p_id:", projectData.p_id);
 
           const response = await Axios.get(
-            `/all-bill?p_id=${projectData.p_id}`
+            `/all-bilL-IT?p_id=${projectData.p_id}`
           );
           // console.log("Credit History Response:", response);
 
@@ -442,14 +442,14 @@ const Customer_Payment_Summary = () => {
 
           // Fetch debit history data from the API
           const response = await Axios.get(
-            `/get-subtract-amount?p_id=${projectData.p_id}`
+            `/get-subtract-amounT-IT?p_id=${projectData.p_id}`
           );
           // console.log("Debit History Response:", response.data);
 
           const data = response.data?.data ?? [];
 
           // Fetch purchase orders (PO) data
-          const poResponse = await Axios.get("/get-all-po");
+          const poResponse = await Axios.get("/get-all-pO-IT");
           // console.log("PO Response:", poResponse.data);
 
           const poData = poResponse.data?.data || [];
@@ -497,7 +497,7 @@ const Customer_Payment_Summary = () => {
       // Perform all deletions in parallel
       await Promise.all(
         selectedDebits.map((_id) =>
-          Axios.delete(`/delete-subtract-money/${_id}`)
+          Axios.delete(`/delete-subtract-moneY-IT/${_id}`)
         )
       );
 
@@ -581,9 +581,9 @@ const Customer_Payment_Summary = () => {
           //   projectData.code
           // );
 
-          const payResponse = await Axios.get("/get-pay-summary")
+          const payResponse = await Axios.get("/get-pay-summarY-IT")
           // Step 1: Fetch all PO data
-          const poResponse = await Axios.get("/get-all-po");
+          const poResponse = await Axios.get("/get-all-pO-IT");
           // console.log("PO Response:", poResponse.data);
           const payData = payResponse.data?.data || [];
           // console.log(payData);
@@ -599,7 +599,7 @@ const Customer_Payment_Summary = () => {
           // console.log("Filtered POs based on projectData.code:", filteredPOs);
 
           // Step 3: Fetch all bills
-          const billResponse = await Axios.get("/get-all-bill");
+          const billResponse = await Axios.get("/get-all-bilL-IT");
           // console.log("Bill Response:", billResponse.data);
 
           const billData = billResponse.data?.data || [];
@@ -656,7 +656,7 @@ const Customer_Payment_Summary = () => {
       
       await Promise.all(
         selectedClients.map((_id) =>
-          Axios.delete(`/delete-po/${_id}`)
+          Axios.delete(`/delete-pO-IT/${_id}`)
         )
       );
 

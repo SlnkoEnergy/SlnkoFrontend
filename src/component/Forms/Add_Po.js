@@ -73,17 +73,17 @@ const AddPurchaseOrder = () => {
     const fetchData = async () => {
       try {
         // Fetch projects
-        const projectsRes = await Axios.get("/get-all-project");
+        const projectsRes = await Axios.get("/get-all-projecT-IT");
         console.log("Project Data: ", projectsRes.data.data);
         setProjectIDs(projectsRes.data.data || []);
   
         // Fetch vendors
-        const vendorsRes = await Axios.get("/get-all-vendor");
+        const vendorsRes = await Axios.get("/get-all-vendoR-IT");
         console.log("Vendor Data: ", vendorsRes.data.data);
         setVendors(vendorsRes.data.data || []);
   
         // Fetch items
-        const itemsRes = await Axios.get("/get-item");
+        const itemsRes = await Axios.get("/get-iteM-IT");
         const itemsData = itemsRes.data.Data || [];
         const transformedItems = itemsData.map((item) => ({
           value: item.item,
@@ -148,7 +148,7 @@ const AddPurchaseOrder = () => {
     };
 
     try {
-      const response = await Axios.post("/Add-purchase-order", dataToPost);
+      const response = await Axios.post("/Add-purchase-ordeR-IT", dataToPost);
       console.log("Add Po:", response);
       toast.success("Purchase Order Successfully !!");
       navigate("/purchase-order");

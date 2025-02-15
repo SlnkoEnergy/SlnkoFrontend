@@ -110,7 +110,7 @@ const Add_Project = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const response = await Axios.post("/add-new-project", payload);
+      const response = await Axios.post("/add-new-projecT-IT", payload);
       const { message, p_id } = response.data;
 
       setResponseMessage(message);

@@ -51,8 +51,8 @@ const PaymentRequest = forwardRef((props, ref) => {
     const fetchTableData = async () => {
       try {
         const [paymentResponse, projectResponse] = await Promise.all([
-          Axios.get("/get-pay-summary"),
-          Axios.get("/get-all-project"),
+          Axios.get("/get-pay-summarY-IT"),
+          Axios.get("/get-all-projecT-IT"),
         ]);
         setPayments(paymentResponse.data.data);
         console.log("Payment Data are:", paymentResponse.data.data);

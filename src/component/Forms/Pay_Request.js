@@ -71,10 +71,10 @@ function PaymentRequestForm() {
     const fetchData = async () => {
       try {
         const [projectsResponse, poNumbersResponse, vendorsResponse, payResponse] = await Promise.all([
-          Axios.get("/get-all-project"),
-          Axios.get("/get-all-po"),
-          Axios.get("/get-all-vendor"),
-          Axios.get("/get-pay-summary")
+          Axios.get("/get-all-projecT-IT"),
+          Axios.get("/get-all-pO-IT"),
+          Axios.get("/get-all-vendoR-IT"),
+          Axios.get("/get-pay-summarY-IT")
         ]);
 
         setGetFormData({
@@ -235,7 +235,7 @@ function PaymentRequestForm() {
     // console.log("Form data submitted:", formData);
 
     try {
-      const response = await Axios.post("/add-pay-request", formData);
+      const response = await Axios.post("/add-pay-requesT-IT", formData);
       const { message } = response.data;
 
     setResponseMessage(message);
@@ -258,7 +258,7 @@ function PaymentRequestForm() {
 
   const handleHoldPayment = async () => {
     try {
-      const response = await Axios.post("/hold-Payment", formData );
+      const response = await Axios.post("/hold-PaymenT-IT", formData );
       const { message } = response.data;
 
       setResponseMessage(message);

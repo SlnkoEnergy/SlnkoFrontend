@@ -43,7 +43,7 @@ const AddVendor = () => {
 
     try {
       const response = await Axios.post(
-        "/Add-vendor",
+        "/Add-vendoR-IT",
         formData
       );
       setResponseMessage("Vendor added successfully!");

@@ -43,7 +43,7 @@ const AllProjects = forwardRef((props, ref) => {
   useEffect(() => {
     const fetchTableData = async () => {
       try {
-        const response = await Axios.get("/get-all-project");
+        const response = await Axios.get("/get-all-projecT-IT");
 
         const projectsData = Array.isArray(response.data.data)
           ? response.data.data

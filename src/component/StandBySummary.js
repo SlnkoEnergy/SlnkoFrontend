@@ -57,8 +57,8 @@ const StandByRequest = () => {
     const fetchTableData = async () => {
       try {
      const [paymentResponse, projectResponse] = await Promise.all([
-          Axios.get("/hold-pay-summary"),
-          Axios.get("/get-all-project"),
+          Axios.get("/hold-pay-summary-IT"),
+          Axios.get("/get-all-projecT-IT"),
         ]);
         setPayments(paymentResponse.data.data);
         console.log("Payment Data are:", paymentResponse.data.data);

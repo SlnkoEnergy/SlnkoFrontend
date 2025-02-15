@@ -20,13 +20,13 @@ const navigate = useNavigate();
         const poNumberFromStorage = localStorage.getItem("get-po");
 
    
-        const poResponse = await Axios.get("/get-all-po");
+        const poResponse = await Axios.get("/get-all-pO-IT");
         const fetchedPoNumber = poResponse.data;
         setPoNumber(fetchedPoNumber);
         console.log("Enriched POs are:", fetchedPoNumber);
         
 
-        const billResponse = await Axios.get("/get-all-bill");
+        const billResponse = await Axios.get("/get-all-bilL-IT");
         const billData = Array.isArray(billResponse.data)
           ? billResponse.data
           : billResponse.data.data;

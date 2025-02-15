@@ -85,7 +85,7 @@ const PasswordReset = () => {
       setEmailError("");
 
       try {
-        await Axios.post("/forget-password-send-otp", { email });
+        await Axios.post("/forget-password-send-otP-IT", { email });
         toast.success("OTP sent to your email");
         setOtpSent(true);
       } catch (error) {
@@ -101,7 +101,7 @@ const PasswordReset = () => {
       setLoading(true);
 
       try {
-        await Axios.post("/received-email", { email, otp: enteredOtp });
+        await Axios.post("/received-emaiL-IT", { email, otp: enteredOtp });
         toast.success("Password sent successfully to your email");
 
        

@@ -98,10 +98,10 @@ function PaymentRequest() {
           creditResponse,
           debitResponse,
         ] = await Promise.all([
-          Axios.get("/get-pay-summary", { params: { approved: "Pending" } }),
-          Axios.get("/get-all-project"),
-          Axios.get("/all-bill"),
-          Axios.get("/get-subtract-amount"),
+          Axios.get("/get-pay-summarY-IT", { params: { approved: "Pending" } }),
+          Axios.get("/get-all-projecT-IT"),
+          Axios.get("/all-bilL-IT"),
+          Axios.get("/get-subtract-amounT-IT"),
         ]);
 
         // Handle payments data

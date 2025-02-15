@@ -100,9 +100,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const fetchTableData = async () => {
       try {
         const [PoResponse, BillResponse,payResponse] = await Promise.all([
-          Axios.get("/get-all-po"),
-          Axios.get("/get-all-bill"),
-          Axios.get("/get-pay-summary")
+          Axios.get("/get-all-pO-IT"),
+          Axios.get("/get-all-bilL-IT"),
+          Axios.get("/get-pay-summarY-IT")
         ]);
 
         const PoData = PoResponse.data.data || [];

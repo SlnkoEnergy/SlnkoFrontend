@@ -24,12 +24,12 @@ function PoHistoryTable() {
               return;
             }
       
-            const poResponse = await Axios.get("/get-all-po");
+            const poResponse = await Axios.get("/get-all-pO-IT");
             const fetchedPoNumber = poResponse.data;
             setPoNumber(fetchedPoNumber);
             console.log("Enriched POs are:", fetchedPoNumber);
       
-            const historyResponse = await Axios.get("get-po-history");
+            const historyResponse = await Axios.get("get-po-historY-IT");
             console.log("PO History API Response:", historyResponse.data);
       
             const historyData = Array.isArray(historyResponse.data) ? historyResponse.data : historyResponse.data.data;

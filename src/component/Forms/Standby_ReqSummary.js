@@ -26,7 +26,7 @@ const PaymentRequestSummary = () => {
   useEffect(() => {
     const fetchProjectData = async () => {
       try {
-        const projectResponse = await Axios.get("/get-all-project");
+        const projectResponse = await Axios.get("/get-all-projecT-IT");
         const projectIdFromStorage = Number(localStorage.getItem("p_id"));
 
         if (!projectIdFromStorage) {
@@ -59,7 +59,7 @@ const PaymentRequestSummary = () => {
   useEffect(() => {
     const fetchPayRequestData = async () => {
       try {
-        const payRequestResponse = await Axios.get("/hold-pay-summary");
+        const payRequestResponse = await Axios.get("/hold-pay-summarY-IT");
         const payIdFromStorage = localStorage.getItem("standby_summary");
 
         if (!payIdFromStorage) {

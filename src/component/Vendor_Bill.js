@@ -43,7 +43,7 @@ function VendorBillSummary() {
   useEffect(() => {
     async function fetchPoData() {
       try {
-        const response = await Axios.get("/get-all-po");
+        const response = await Axios.get("/get-all-pO-IT");
         console.log("PO Data:", response.data.data); // Check PO Data
         setPoData(response.data.data);
       } catch (error) {
@@ -57,7 +57,7 @@ function VendorBillSummary() {
   useEffect(() => {
     async function fetchBillData() {
       try {
-        const response = await Axios.get("/get-all-bill");
+        const response = await Axios.get("/get-all-bilL-IT");
         console.log("Bill Data:", response.data.data); // Check Bill Data
         setBillData(response.data.data);
       } catch (error) {

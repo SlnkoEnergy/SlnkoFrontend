@@ -80,7 +80,7 @@ const UpdateProject = () => {
 
         console.log("Sending API request to fetch projects...");
         const response = await Axios.get(
-          "/get-all-project"
+          "/get-all-projecT-IT"
         );
         console.log("API Response:", response);
 
@@ -170,7 +170,7 @@ const UpdateProject = () => {
 
       // Send the PUT request to update the project
       const response = await Axios.put(
-        `/update-project/${formData._id}`,
+        `/update-projecT-IT/${formData._id}`,
         formData
       );
       console.log("API Response:", response);

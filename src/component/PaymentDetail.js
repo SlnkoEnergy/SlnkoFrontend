@@ -29,7 +29,7 @@ const PaymentDetail = forwardRef((props, ref) => {
               status: "Not-paid",
             },
           }),
-          Axios.get("/get-all-project"),
+          Axios.get("/get-all-projecT-IT"),
         ]);
 
         const paySummary = paySummaryRes.data?.data || [];

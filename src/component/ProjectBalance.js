@@ -124,12 +124,12 @@ const ProjectBalances = forwardRef((props, ref) => {
           billResponse,
           payResponse,
         ] = await Promise.all([
-          Axios.get("/get-all-project"),
-          Axios.get("/all-bill"),
-          Axios.get("/get-subtract-amount"),
-          Axios.get("/get-all-po"),
-          Axios.get("/get-all-bill"),
-          Axios.get("/get-pay-summary"),
+          Axios.get("/get-all-projecT-IT"),
+          Axios.get("/all-bilL-IT"),
+          Axios.get("/get-subtract-amounT-IT"),
+          Axios.get("/get-all-pO-IT"),
+          Axios.get("/get-all-bilL-IT"),
+          Axios.get("/get-pay-summarY-IT"),
         ]);
 
         // Extract data from responses

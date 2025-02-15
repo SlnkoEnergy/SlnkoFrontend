@@ -65,7 +65,7 @@ const getUserData = () => {
         const po_Number = po ? String(po) : null;
         // console.log("PO from localStorage:", po_Number);
 
-        const response = await Axios.get("/get-all-po");
+        const response = await Axios.get("/get-all-pO-IT");
         const pos = response.data?.data || [];
         // console.log("Fetched PO data:", pos);
 
@@ -135,7 +135,7 @@ const getUserData = () => {
     };
 
     try {
-      const response = await Axios.post("/add-bill", dataToPost);
+      const response = await Axios.post("/add-bilL-IT", dataToPost);
       if (response.status === 400 && response.data.message === "Bill Number already used!") {
         toast.warning("Bill number already exists!");
         return;

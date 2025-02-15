@@ -76,8 +76,8 @@ function UTRPayment() {
       setLoading(true);
       try {
         const [paymentResponse, projectResponse] = await Promise.all([
-          Axios.get("/get-pay-summary"),
-          Axios.get("/get-all-project"),
+          Axios.get("/get-pay-summarY-IT"),
+          Axios.get("/get-all-projecT-IT"),
         ]);
 
         const approvedPayments = paymentResponse.data.data.filter(
@@ -178,7 +178,7 @@ function UTRPayment() {
   
           // Fetch PO details
           console.log("Fetching PO details...");
-          const poResponse = await Axios.get("/get-pay-summary");
+          const poResponse = await Axios.get("/get-pay-summarY-IT");
           console.log("PO Summary Response:", poResponse.data);
   
           // Match PO and perform debit operation
@@ -186,7 +186,7 @@ function UTRPayment() {
           if (matchedPo) {
             console.log("Matched PO data:", matchedPo);
   
-            const debitResponse = await Axios.post("/debit-money", {
+            const debitResponse = await Axios.post("/debit-moneY-IT", {
               p_id: matchedPo.p_id,
               p_group: matchedPo.p_group || "",
               pay_type: matchedPo.pay_type || "",

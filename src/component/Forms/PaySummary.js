@@ -26,7 +26,7 @@ const PaymentRequestSummary = () => {
     const fetchData = async () => {
       try {
         // Fetch project data
-        const projectResponse = await Axios.get("/get-all-project");
+        const projectResponse = await Axios.get("/get-all-projecT-IT");
         const projectIdFromStorage = Number(localStorage.getItem("p_id"));
 
         if (!projectIdFromStorage) {
@@ -43,7 +43,7 @@ const PaymentRequestSummary = () => {
         setProjectData(matchingProject);
 
         // Fetch payment request data
-        const payRequestResponse = await Axios.get("/get-pay-summary");
+        const payRequestResponse = await Axios.get("/get-pay-summarY-IT");
         const payIdFromStorage = localStorage.getItem("pay_summary");
 
         const matchingPayRequest = payRequestResponse.data?.data?.find(

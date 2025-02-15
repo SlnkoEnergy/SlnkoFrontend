@@ -79,10 +79,10 @@ const UpdatePurchaseOrder = () => {
         }
 
         const [projectsRes, vendorsRes, itemsRes, poRes] = await Promise.all([
-          Axios.get("/get-all-project"),
-          Axios.get("/get-all-vendor"),
-          Axios.get("/get-item"),
-          Axios.get("/get-all-po"),
+          Axios.get("/get-all-projecT-IT"),
+          Axios.get("/get-all-vendoR-IT"),
+          Axios.get("/get-iteM-IT"),
+          Axios.get("/get-all-pO-IT"),
         ]);
 
         setGetFormData({
@@ -176,7 +176,7 @@ const UpdatePurchaseOrder = () => {
     try {
       setLoading(true);
       setError("");
-      const endpoint = `https://api.slnkoprotrac.com/v1/edit-po/${formData._id}`;
+      const endpoint = `https://api.slnkoprotrac.com/v1/edit-pO-IT/${formData._id}`;
       const response = await axios.put(endpoint, formData);
 
       if (response.status === 200) {

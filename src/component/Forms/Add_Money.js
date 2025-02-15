@@ -58,7 +58,7 @@ const Add_Money = () => {
   useEffect(() => {
     const fetchProjectData = async () => {
       try {
-        const response = await Axios.get("/get-all-project");
+        const response = await Axios.get("/get-all-projecT-IT");
         let project = localStorage.getItem("add_money");
 
         project = Number.parseInt(project);
@@ -160,7 +160,7 @@ const Add_Money = () => {
     };
 
     try {
-      const response = await Axios.post("/Add-Money", payload);
+      const response = await Axios.post("/Add-MoneY-IT", payload);
       setResponseMessage("Form submitted successfully!");
       toast.success("Money Added Successfully ")
       navigate("/project-balance");

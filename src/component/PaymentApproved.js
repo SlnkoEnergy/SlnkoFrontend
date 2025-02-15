@@ -76,10 +76,10 @@ function PaymentRequest() {
       setLoading(true);
       try {
         const [paymentResponse, projectResponse] = await Promise.all([
-          Axios.get("/get-pay-summary", {
+          Axios.get("/get-pay-summarY-IT", {
             params: { approved: "Approved", acc_match: "" },
           }),
-          Axios.get("/get-all-project"),
+          Axios.get("/get-all-projecT-IT"),
         ]);
 
         const approvedPayments = paymentResponse.data.data.filter(
