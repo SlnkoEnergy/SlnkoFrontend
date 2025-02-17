@@ -256,6 +256,22 @@ const ProjectBalances = forwardRef((props, ref) => {
         return acc;
       }, {});
 
+      const groupCreditMap = {};
+      const groupDebitMap = {};
+      const groupBalanceMap = {};
+
+      projects.forEach((project) => {
+        const group = project.p_group;
+
+        if (!groupCreditMap[group]) groupCreditMap[group] = 0;
+        if (!groupDebitMap[group]) groupDebitMap[group] = 0;
+
+        groupCreditMap[group] += creditSumMap[project.p_id] || 0;
+        groupDebitMap[group] += debitSumMap[project.p_id] || 0;
+
+        groupBalanceMap[group] = groupCreditMap[group] - groupDebitMap[group];
+      });
+
       const customerAdjustmentSumMap = debits.reduce((acc, debit) => {
         const projectId = debit.p_id;
         const amountPaid = Number(debit.amount_paid);
@@ -504,6 +520,7 @@ const ProjectBalances = forwardRef((props, ref) => {
   }, [searchParams]);
 
   const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
+  
 
   const paginatedPayments = filteredAndSortedData.slice(
     (currentPage - 1) * itemsPerPage,

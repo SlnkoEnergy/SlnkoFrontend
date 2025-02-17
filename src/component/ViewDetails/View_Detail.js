@@ -492,12 +492,12 @@ const Customer_Payment_Summary = () => {
         return;
       }
 
-      console.log("Deleting selected debits:", selectedDebits);
+      // console.log("Deleting selected debits:", selectedDebits);
 
       // Perform all deletions in parallel
       await Promise.all(
         selectedDebits.map((_id) =>
-          Axios.delete(`/delete-subtract-moneY-IT/${_id}`)
+          Axios.delete(`/delete-subtract-moneY/${_id}`)
         )
       );
 
@@ -696,16 +696,16 @@ const Customer_Payment_Summary = () => {
       setLoading(true);
       setError("");
 
-      if (creditHistory.length === 0) {
+      if (selectedCredits.length === 0) {
         toast.error("No debits selected for deletion.");
         return;
       }
 
-      console.log("Deleting selected clients:", creditHistory);
+      console.log("Deleting selected clients:", selectedCredits);
 
       
       await Promise.all(
-        creditHistory.map((_id) =>
+        selectedCredits.map((_id) =>
           Axios.delete(`/delete-crdit-amount/${_id}`)
         )
       );
@@ -713,7 +713,7 @@ const Customer_Payment_Summary = () => {
       toast.success("Credit Money Deleted successfully.");
 
       setCreditHistory((prev) =>
-        prev.filter((item) => !creditHistory.includes(item._id))
+        prev.filter((item) => !selectedCredits.includes(item._id))
       );
       // setFilteredClients((prev) =>
       //   prev.filter((item) => !creditHistory.includes(item._id))
@@ -1104,7 +1104,7 @@ const Customer_Payment_Summary = () => {
             />
             <Input
               fullWidth
-              value={projectData.customer}
+              value={projectData.customer || "-"}
               readOnly
               label="Client Name"
             />
@@ -1112,14 +1112,14 @@ const Customer_Payment_Summary = () => {
           <Box display="flex" justifyContent="space-between">
             <Input
               fullWidth
-              value={projectData.p_group}
+              value={projectData.p_group || "-"}
               readOnly
               label="Group Name"
               sx={{ mr: 2 }}
             />
             <Input
               fullWidth
-              value={projectData.billing_address}
+              value={projectData.billing_address || "-"}
               readOnly
               label="Plant Location"
               sx={{ mr: 2 }}

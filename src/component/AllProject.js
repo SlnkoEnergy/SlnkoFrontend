@@ -18,8 +18,12 @@ import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
+import DeleteIcon from "@mui/icons-material/Delete";
+import ModeEditIcon from '@mui/icons-material/ModeEdit';
+import Divider from "@mui/joy/Divider";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
 import Axios from "../utils/Axios";
 
 const AllProjects = forwardRef((props, ref) => {
@@ -37,6 +41,7 @@ const AllProjects = forwardRef((props, ref) => {
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedProjects, setSelectedProjects] = useState([]);
 
   // const states = ["California", "Texas", "New York", "Florida"];
 
@@ -97,28 +102,64 @@ const AllProjects = forwardRef((props, ref) => {
                 navigate(`/edit_project?page=${page}&p_id=${ID}`);
               }}
             >
-              Edit
+              <ModeEditIcon />
+              <Typography>
+                 Edit
+              </Typography>
+             
             </MenuItem>
-            <MenuItem color="danger">Delete</MenuItem>
+            <Divider sx={{ backgroundColor: "lightblue" }} />
+            <MenuItem color="danger" disabled={selectedProjects.length === 0}
+                onClick={handleDelete}
+                >
+                  <DeleteIcon />
+                  <Typography>Delete</Typography>
+                </MenuItem>
           </Menu>
         </Dropdown>
       </>
     );
   };
 
-  const handleSelectAll = (event) => {
-    if (event.target.checked) {
-      setSelected(paginatedProjects.map((row) => row.id));
-    } else {
-      setSelected([]);
+  const handleDelete = async () => {
+    if (selectedProjects.length === 0) {
+      toast.error("No projects selected for deletion.");
+      return;
+    }
+    // console.log("Deleting selected projects:", selectedProjects);
+    try {
+      await Promise.all(
+        selectedProjects.map((_id) => Axios.delete(`/delete-by-iD-IT/${_id}`))
+      );
+      
+      toast.success("Deleted successfully.");
+  
+      // Remove deleted projects from state
+      setProjects((prevProjects) =>
+        prevProjects.filter((project) => !selectedProjects.includes(project._id))
+      );
+  
+      // Clear selection after deletion
+      setSelectedProjects([]);
+    } catch (error) {
+      console.error("Delete Error:", error);
+      toast.error("Failed to delete projects.");
     }
   };
+  
 
-  const handleRowSelect = (id, isSelected) => {
-    setSelected((prevSelected) =>
-      isSelected
-        ? [...prevSelected, id]
-        : prevSelected.filter((item) => item !== id)
+
+  // const handleSelectAll = (event) => {
+  //   if (event.target.checked) {
+  //     setSelected(paginatedProjects.map((row) => row._id));
+  //   } else {
+  //     setSelected([]);
+  //   }
+  // };
+
+  const handleRowSelect = (_id) => {
+    setSelectedProjects((prev) =>
+      prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
     );
   };
   const handleSearch = (query) => {
@@ -436,10 +477,9 @@ const AllProjects = forwardRef((props, ref) => {
                     >
                       <Checkbox
                         size="sm"
-                        checked={selected.includes(project.code)}
-                        onChange={(event) =>
-                          handleRowSelect(project.code, event.target.checked)
-                        }
+                        color="primary"
+                        checked={selectedProjects.includes(project._id)}
+                        onChange={() => handleRowSelect(project._id)}
                       />
                     </Box>
                     <Box

@@ -8,7 +8,7 @@ import {
   Sheet,
   Typography,
 } from "@mui/joy";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import { useNavigate } from "react-router-dom";
@@ -49,8 +49,10 @@ const states = [
 const categories = ["KUSUM A", "KUSUM C", "OTHER"];
 const landTypes = ["Leased", "Owned"];
 
+ 
 const Add_Project = () => {
   const navigate = useNavigate();
+  
   const [formData, setFormData] = useState({
     code: "",
     customer: "",
@@ -78,9 +80,13 @@ const Add_Project = () => {
     },
     service: "",
     project_status: "incomplete",
+    submitted_by:""
   });
   const [responseMessage, setResponseMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -101,20 +107,44 @@ const Add_Project = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const payload = {
-    ...formData,
-    land: JSON.stringify(formData.land),
-  };
+  // const payload = {
+  //   ...formData,
+  //   land: JSON.stringify(formData.land),
+  // };
+  const [user, setUser] = useState(null);
+  
+  useEffect(() => {
+    const getUserData = () => {
+      const userData = localStorage.getItem("userDetails");
+      return userData ? JSON.parse(userData) : null;
+    };
+
+    const storedUser = getUserData();
+    if (storedUser) {
+      setUser(storedUser);
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!user?.name) {
+      console.error("User details not found.");
+      alert("User details are missing!");
+      return;
+    }
     setIsLoading(true);
+
+    const updatedPayload = {
+      ...formData,
+      submitted_by: user.name,
+      land: JSON.stringify(formData.land)
+    };
     try {
-      const response = await Axios.post("/add-new-projecT-IT", payload);
+      const response = await Axios.post("/add-new-projecT-IT", updatedPayload);
       const { message, p_id } = response.data;
 
       setResponseMessage(message);
-      toast.success("Project added successfully with ID: " + p_id);
+      toast.success("Project added successfully");
 
       setFormData({
         code: "",
@@ -134,7 +164,9 @@ const Add_Project = () => {
         land: { type: "", acres: "" },
         service: "",
         project_status: "incomplete",
+        submitted_by: user?.name
       });
+
       navigate("/all-Project");
     } catch (error) {
       console.error(
@@ -148,6 +180,7 @@ const Add_Project = () => {
       setIsLoading(false);
     }
   };
+
 
   return (
     <Box
