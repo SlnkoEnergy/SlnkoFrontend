@@ -28,18 +28,18 @@ function PaymentRequestForm() {
   const [user, setUser] = useState(null);
     
       
-     useEffect(() => {
-      const userData = getUserData();
-      setUser(userData);
-    }, []);
+  //    useEffect(() => {
+  //     const userData = getUserData();
+  //     setUser(userData);
+  //   }, []);
     
-    const getUserData = () => {
-      const userData = localStorage.getItem("userDetails");
-      if (userData) {
-        return JSON.parse(userData);
-      }
-      return null;
-    };
+  //   const getUserData = () => {
+  //     const userData = localStorage.getItem("userDetails");
+  //     if (userData) {
+  //       return JSON.parse(userData);
+  //     }
+  //     return null;
+  //   };
 
 
   const [formData, setFormData] = useState({
@@ -64,7 +64,7 @@ function PaymentRequestForm() {
     acc_match:"",
     utr:"",
     total_advance_paid:"",
-    submitted_by: user?.name
+    submitted_by:""
   });
 
   useEffect(() => {
@@ -209,14 +209,15 @@ function PaymentRequestForm() {
      
       if (selectedPo.vendor) {
         const matchedVendor = getFormData.vendors.find(
-          (vendor) => vendor.name === selectedPo.vendor
+          (vendor) => vendor.name === String(selectedPo.vendor)
         );
   
         if (matchedVendor) {
+          console.log(matchedVendor);
           setFormData((prev) => ({
             ...prev,
             benificiary: matchedVendor.name || "",
-            acc_number: matchedVendor.Account_No || "",
+            acc_number: matchedVendor.Account_No|| "",
             ifsc: matchedVendor.IFSC_Code || "",
             branch: matchedVendor.Bank_Name || "",
           }));
@@ -228,6 +229,27 @@ function PaymentRequestForm() {
   const [responseMessage, setResponseMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  
+    if (userData) {
+      setFormData((prev) => ({
+        ...prev,
+        submitted_by: userData.name || "", // Ensure the correct key from localStorage
+      }));
+    }
+  }, []);
+  
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -235,7 +257,10 @@ function PaymentRequestForm() {
     // console.log("Form data submitted:", formData);
 
     try {
-      const response = await Axios.post("/add-pay-requesT-IT", formData);
+      const response = await Axios.post("/add-pay-requesT-IT", {
+        ...formData,
+        submitted_by: user?.name || getUserData()?.name || "", // Ensure it's always included
+      });
       const { message } = response.data;
 
     setResponseMessage(message);
@@ -258,7 +283,10 @@ function PaymentRequestForm() {
 
   const handleHoldPayment = async () => {
     try {
-      const response = await Axios.post("/hold-PaymenT-IT", formData );
+      const response = await Axios.post("/hold-PaymenT-IT", {
+        ...formData,
+        submitted_by: user?.name || getUserData()?.name || "", // Ensure submitted_by is included
+      });
       const { message } = response.data;
 
       setResponseMessage(message);

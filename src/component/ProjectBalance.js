@@ -26,7 +26,7 @@ import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../assets/Lotties/animation-loading.json";
 import Axios from "../utils/Axios";
@@ -232,10 +232,19 @@ const ProjectBalances = forwardRef((props, ref) => {
     fetchAccountsAndData();
   }, []);
 
+  const filteredProjects = useMemo(() => {
+    return projects.filter((project) =>
+      ["code", "customer", "name", "p_group"].some((key) =>
+        project[key]?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    );
+  }, [searchQuery, projects]);
+
   useEffect(() => {
     if (
       credits.length > 0 &&
       projects.length > 0 &&
+      filteredProjects.length > 0 &&
       debits.length > 0 &&
       posData.length > 0 &&
       billsData.length > 0 &&
@@ -247,48 +256,30 @@ const ProjectBalances = forwardRef((props, ref) => {
         acc[projectId] = (acc[projectId] || 0) + Number(credit.cr_amount);
         return acc;
       }, {});
-
+  
       const debitSumMap = debits.reduce((acc, debit) => {
         const projectId = debit.p_id;
         const amountPaid = Number(debit.amount_paid);
-        acc[projectId] =
-          (acc[projectId] || 0) + (isNaN(amountPaid) ? 0 : amountPaid);
+        acc[projectId] = (acc[projectId] || 0) + (isNaN(amountPaid) ? 0 : amountPaid);
         return acc;
       }, {});
-
-      const groupCreditMap = {};
-      const groupDebitMap = {};
-      const groupBalanceMap = {};
-
-      projects.forEach((project) => {
-        const group = project.p_group;
-
-        if (!groupCreditMap[group]) groupCreditMap[group] = 0;
-        if (!groupDebitMap[group]) groupDebitMap[group] = 0;
-
-        groupCreditMap[group] += creditSumMap[project.p_id] || 0;
-        groupDebitMap[group] += debitSumMap[project.p_id] || 0;
-
-        groupBalanceMap[group] = groupCreditMap[group] - groupDebitMap[group];
-      });
-
+  
       const customerAdjustmentSumMap = debits.reduce((acc, debit) => {
         const projectId = debit.p_id;
         const amountPaid = Number(debit.amount_paid);
         if (debit.paid_for === "Customer Adjustment") {
-          acc[projectId] =
-            (acc[projectId] || 0) + (isNaN(amountPaid) ? 0 : amountPaid);
+          acc[projectId] = (acc[projectId] || 0) + (isNaN(amountPaid) ? 0 : amountPaid);
         }
         return acc;
       }, {});
-
-      // Map project codes to project IDs
+  
       const projectCodeMap = projects.reduce((acc, project) => {
         acc[project.code] = project.p_id;
         return acc;
       }, {});
-
-      // Aggregate PO data
+      
+      
+  
       const poSumMap = posData.reduce((acc, po) => {
         const projectId = projectCodeMap[po.p_id];
         if (projectId) {
@@ -297,6 +288,12 @@ const ProjectBalances = forwardRef((props, ref) => {
         return acc;
       }, {});
 
+      // const totalMW = Math.round(
+      //   projects.reduce((sum, project) => sum + (project.project_kwp || 0), 0)
+      // );
+
+      
+  
       const amountPaidSumMap = posData.reduce((acc, po) => {
         const poNumber = po.po_number;
         const matchingPayments = paysData.filter(
@@ -310,51 +307,46 @@ const ProjectBalances = forwardRef((props, ref) => {
         acc[projectId] = (acc[projectId] || 0) + totalPaymentValue;
         return acc;
       }, {});
-
+  
       const billSumMap = posData.reduce((acc, po) => {
         const poNumber = po.po_number;
-        const matchingBills = billsData.filter(
-          (bill) => bill.po_number === poNumber
-        );
-
+        const matchingBills = billsData.filter((bill) => bill.po_number === poNumber);
+  
         const totalBillValue = matchingBills.reduce(
           (sum, bill) => sum + (Number(bill.bill_value) || 0),
           0
         );
-
+  
         const projectId = projectCodeMap[po.p_id];
         if (projectId) {
           acc[projectId] = (acc[projectId] || 0) + totalBillValue;
         }
         return acc;
       }, {});
-
-      const merged = projects.map((project) => {
+  
+      const merged = filteredProjects.map((project) => {
         const projectId = project.p_id;
-        const totalCredit = creditSumMap[projectId] || "0";
-        const totalDebits = debitSumMap[projectId] || "0";
-        const oldAmount = totalCredit - totalDebits || "0";
-        const customerAdjustment = customerAdjustmentSumMap[projectId] || "0";
-        const totalPoValue = poSumMap[projectId] || "0";
-        const totalBillValue = billSumMap[projectId] || "0";
-        const advancePaid = amountPaidSumMap[projectId] || "0";
-        // console.log(
-        //   `Project ${projectId}: Credit=${totalCredit}, Debits=${totalDebits}, Advance Paid=${advancePaid}`
-        // );
+        const totalCredit = creditSumMap[projectId] || 0;
+        const totalDebits = debitSumMap[projectId] || 0;
+        const oldAmount = totalCredit - totalDebits || 0;
+        const customerAdjustment = customerAdjustmentSumMap[projectId] || 0;
+        const totalPoValue = poSumMap[projectId] || 0;
+        const totalBillValue = billSumMap[projectId] || 0;
+        const advancePaid = amountPaidSumMap[projectId] || 0;
+        const projectMW = Number(project.project_kwp) || 0;
+  
         const netBalance = totalCredit - customerAdjustment;
         const balanceSlnko = netBalance - advancePaid;
         const netAdvance = advancePaid - totalBillValue;
         const balancePayable = totalPoValue - totalBillValue - netAdvance;
-
-        const tcs =
-          netBalance > 5000000
-            ? Math.round((netBalance - 5000000) * 0.001)
-            : "0";
+  
+        const tcs = netBalance > 5000000 ? Math.round((netBalance - 5000000) * 0.001) : 0;
         const balanceRequired = balanceSlnko - balancePayable - tcs;
-
+  
         return {
           ...project,
-          creditAmount: totalCredit,
+          projectMW: projectMW,
+          creditAmount: Math.round(totalCredit),
           debitAmount: totalDebits,
           oldAmount: oldAmount,
           balanceSlnko: Math.round(balanceSlnko),
@@ -362,37 +354,37 @@ const ProjectBalances = forwardRef((props, ref) => {
           balanceRequired: Math.round(balanceRequired),
         };
       });
-
+  
       setMergedData(merged);
-
-      // Calculate total aggregates
+  
+   
       const total = merged.reduce(
         (acc, project) => {
           acc.totalBalanceSlnko += project.balanceSlnko || 0;
           acc.totalBalancePayable += project.balancePayable || 0;
           acc.totalBalanceRequired += project.balanceRequired || 0;
+          acc.totalCreditSum += project.creditAmount || 0;
+          acc.totalDebitSum += project.debitAmount || 0;
+          acc.totalmWSum += project.projectMW || 0;
           return acc;
         },
         {
           totalBalanceSlnko: 0,
           totalBalancePayable: 0,
           totalBalanceRequired: 0,
+          totalCreditSum: 0,
+          totalDebitSum: 0,
+          totalmWSum:0,
         }
       );
-
+  
+      total.totalAmountAvailable = total.totalCreditSum - total.totalDebitSum;
+  
       setTotals(total);
-
-      // Log or set state for totals
-      // console.log("Total Balance Slnko:", totals.totalBalanceSlnko);
-      // console.log("Total Balance Payable:", totals.totalBalancePayable);
-      // console.log("Total Balance Required:", totals.totalBalanceRequired);
-
-      // Optional: Update state if you need these totals elsewhere
-      // setTotalBalanceSlnko(totals.totalBalanceSlnko);
-      // setTotalBalancePayable(totals.totalBalancePayable);
-      // setTotalBalanceRequired(totals.totalBalanceRequired);
     }
-  }, [credits, projects, debits, posData, billsData, paysData]);
+  }, [credits, projects,filteredProjects, debits, posData, billsData, paysData]);
+  
+
 
   const RowMenu = ({ currentPage, p_id }) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
@@ -465,13 +457,8 @@ const ProjectBalances = forwardRef((props, ref) => {
     setSearchQuery(query.toLowerCase());
   };
 
-  const filteredAndSortedData = mergedData
-    .filter((project) =>
-      ["code", "customer", "name", "p_group"].some((key) =>
-        project[key]?.toLowerCase().includes(searchQuery)
-      )
-    )
-    .sort((a, b) => {
+  const filteredAndSortedData = useMemo(() => {
+    return mergedData.sort((a, b) => {
       if (a.name?.toLowerCase().includes(searchQuery)) return -1;
       if (b.name?.toLowerCase().includes(searchQuery)) return 1;
       if (a.code?.toLowerCase().includes(searchQuery)) return -1;
@@ -482,6 +469,7 @@ const ProjectBalances = forwardRef((props, ref) => {
       if (b.customer?.toLowerCase().includes(searchQuery)) return 1;
       return 0;
     });
+  }, [mergedData, searchQuery]);
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -568,17 +556,17 @@ const ProjectBalances = forwardRef((props, ref) => {
         project.creditAmount || "-",
         project.debitAmount || "-",
         project.oldAmount || "-",
-        project.balanceSLnko || "-",
+        project.balanceSlnko || "-",
         project.balancePayable || "-",
         project.balanceRequired || "-",
-        project.viewMore || "-",
-        project.aggregate_MW || "-",
-        project.total_Credit || "-",
-        project.total_Debit || "-",
-        project.available_Amount || "-",
-        project.balance_Slnko || "-",
-        project.balance_Payable || "-",
-        project.balance_Required || "-",
+        project.view_more,
+        project.totalmWSum || "-",
+        project.totalCreditSum || "-",
+        project.totalDebitSum || "-",
+        project.totalAmountAvailable || "-",
+        project.totalBalanceSlnko || "-",
+        project.totalBalancePayable || "-",
+        project.totalBalanceRequired || "-",
       ]);
 
       const csvContent = [
@@ -753,7 +741,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                   fontWeight: 800,
                 }}
               >
-                {aggregate_MW} MW AC
+                {totals.totalmWSum?.toLocaleString("en-IN")} MW AC
               </td>
               <td
                 style={{
@@ -763,7 +751,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                   fontWeight: 800,
                 }}
               >
-                {total_Credit}
+                {totals.totalCreditSum?.toLocaleString("en-IN") || 0}
               </td>
               <td
                 style={{
@@ -773,7 +761,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                   fontWeight: 800,
                 }}
               >
-                {total_Debit}
+                {totals.totalDebitSum?.toLocaleString("en-IN") || 0}
               </td>
               <td
                 style={{
@@ -783,7 +771,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                   fontWeight: 800,
                 }}
               >
-                {available_Amount}
+                {totals.totalAmountAvailable?.toLocaleString("en-IN") || 0}
               </td>
               <td
                 style={{
@@ -793,7 +781,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                   fontWeight: 800,
                 }}
               >
-                {totals.totalBalanceSlnko.toLocaleString("en-IN")}
+                {totals.totalBalanceSlnko.toLocaleString("en-IN") || 0}
               </td>
               <td
                 style={{
@@ -803,7 +791,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                   fontWeight: 800,
                 }}
               >
-                {totals.totalBalancePayable.toLocaleString("en-IN")}
+                {totals.totalBalancePayable.toLocaleString("en-IN") || 0}
               </td>
               <td
                 style={{
@@ -813,7 +801,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                   fontWeight: 800,
                 }}
               >
-                {totals.totalBalanceRequired.toLocaleString("en-IN")}
+                {totals.totalBalanceRequired.toLocaleString("en-IN") || 0}
               </td>
             </tr>
           </tbody>
@@ -909,7 +897,9 @@ const ProjectBalances = forwardRef((props, ref) => {
             </Box>
             <Box component="tbody">
               {paginatedPayments.length > 0 ? (
-                paginatedPayments.map((project, index) => (
+                 paginatedPayments
+                 .sort((b,a) => new Date(a.createdAt) - new Date(b.createdAt))  // Sort by 'updatedAt' in descending order
+                 .map((project, index) => (
                   <Box
                     component="tr"
                     key={index}
@@ -994,7 +984,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                       {new Intl.NumberFormat("en-IN", {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
-                      }).format(project.creditAmount || "-")}
+                      }).format(project.creditAmount || 0)}
                     </Box>
                     <Box
                       component="td"
@@ -1007,7 +997,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                       {new Intl.NumberFormat("en-IN", {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
-                      }).format(project.debitAmount || "-")}
+                      }).format(project.debitAmount || 0)}
                     </Box>
                     <Box
                       component="td"
@@ -1020,7 +1010,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                       {new Intl.NumberFormat("en-IN", {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
-                      }).format(project.oldAmount || "-")}
+                      }).format(project.oldAmount || 0)}
                     </Box>
                     <Box
                       component="td"
@@ -1033,7 +1023,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                       {new Intl.NumberFormat("en-IN", {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
-                      }).format(project.balanceSlnko || "0")}
+                      }).format(project.balanceSlnko || 0)}
                     </Box>
                     <Box
                       component="td"
@@ -1046,7 +1036,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                       {new Intl.NumberFormat("en-IN", {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
-                      }).format(project.balancePayable || "0")}
+                      }).format(project.balancePayable || 0)}
                     </Box>
                     <Box
                       component="td"
@@ -1059,7 +1049,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                       {new Intl.NumberFormat("en-IN", {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
-                      }).format(project.balanceRequired || "0")}
+                      }).format(project.balanceRequired || 0)}
                     </Box>
                     <Box
                       component="td"

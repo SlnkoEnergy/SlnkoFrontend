@@ -140,18 +140,16 @@ function UTRPayment() {
 
     
   const [user, setUser] = useState(null);
-         useEffect(() => {
-        const userData = getUserData();
-        setUser(userData);
-      }, []);
-      
-      const getUserData = () => {
-        const userData = localStorage.getItem("userDetails");
-        if (userData) {
-          return JSON.parse(userData);
-        }
-        return null;
-      };
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    return userData ? JSON.parse(userData) : null;
+  };
+
 
     const handleUtrSubmit = async () => {
        
@@ -160,14 +158,20 @@ function UTRPayment() {
         enqueueSnackbar("Please enter a valid UTR.", { variant: "warning" });
         return;
       }
+      if (!user || !user?.name) {
+        enqueueSnackbar("User details not found. Please login again.", { variant: "error" });
+        return;
+      }
   
-      setIsSubmitting(true); // Set loading state
+  
+      setIsSubmitting(true);
   
       try {
         console.log("Submitting UTR...");
         const utrResponse = await Axios.put("/utr-update", {
           pay_id: paymentId,
           utr: utr,
+          utr_submitted_by: user?.name,
         });
   
         console.log("UTR Response:", utrResponse);
@@ -197,7 +201,7 @@ function UTRPayment() {
               vendor: matchedPo.vendor || "",
               po_number: matchedPo.po_number || "",
               utr: matchedPo.utr || "",
-              submitted_by: user?.name,
+              // submitted_by: user?.name,
             });
   
             if (debitResponse.status === 200) {
