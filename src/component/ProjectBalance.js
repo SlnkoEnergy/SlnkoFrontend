@@ -233,12 +233,60 @@ const ProjectBalances = forwardRef((props, ref) => {
   }, []);
 
   const filteredProjects = useMemo(() => {
-    return projects.filter((project) =>
-      ["code", "customer", "name", "p_group"].some((key) =>
-        project[key]?.toLowerCase().includes(searchQuery.toLowerCase())
+    // Map to get the latest cr_date for each project
+    const latestCrDateMap = credits.reduce((acc, credit) => {
+      const projectId = credit.p_id;
+      const creditDate = new Date(credit.cr_date);
+      if (!acc[projectId] || creditDate > new Date(acc[projectId])) {
+        acc[projectId] = credit.cr_date;
+      }
+      return acc;
+    }, {});
+  
+    return projects
+      .filter((project) =>
+        ["code", "customer", "name", "p_group"].some((key) =>
+          project[key]?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
       )
-    );
-  }, [searchQuery, projects]);
+      .sort((a, b) => {
+        const getCrDate = (item) => new Date(latestCrDateMap[item.p_id] ?? 0);
+        const getProjectDate = (item) => new Date(item.updated_on ?? item.createdAt ?? 0);
+  
+        
+        const crDateDiff = getCrDate(b) - getCrDate(a);
+        if (crDateDiff !== 0) return crDateDiff;
+  
+        
+        return getProjectDate(b) - getProjectDate(a);
+      });
+  }, [searchQuery, projects, credits]);
+
+
+//   const filteredProjects = useMemo(() => {
+//   // Create a map for the latest cr_date of each project
+//   const latestCrDateMap = credits.reduce((acc, credit) => {
+//     const projectId = credit.p_id;
+//     const creditDate = new Date(credit.cr_date);
+//     if (!acc[projectId] || creditDate > new Date(acc[projectId])) {
+//       acc[projectId] = credit.cr_date; // Store latest cr_date
+//     }
+//     return acc;
+//   }, {});
+
+//   return projects
+//     .filter((project) =>
+//       ["code", "customer", "name", "p_group"].some((key) =>
+//         project[key]?.toLowerCase().includes(searchQuery.toLowerCase())
+//       )
+//     )
+//     .sort((a, b) => {
+//       const getCrDate = (item) => new Date(latestCrDateMap[item.p_id] ?? 0);
+//       return getCrDate(b) - getCrDate(a); // Latest cr_date first
+//     });
+// }, [searchQuery, projects, credits]);
+
+
 
   useEffect(() => {
     if (
@@ -898,7 +946,7 @@ const ProjectBalances = forwardRef((props, ref) => {
             <Box component="tbody">
               {paginatedPayments.length > 0 ? (
                  paginatedPayments
-                 .sort((b,a) => new Date(a.createdAt) - new Date(b.createdAt))  // Sort by 'updatedAt' in descending order
+                 .sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt))
                  .map((project, index) => (
                   <Box
                     component="tr"

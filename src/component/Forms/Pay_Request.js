@@ -209,7 +209,7 @@ function PaymentRequestForm() {
      
       if (selectedPo.vendor) {
         const matchedVendor = getFormData.vendors.find(
-          (vendor) => vendor.name === String(selectedPo.vendor)
+          (vendor) => vendor.name === selectedPo.vendor
         );
   
         if (matchedVendor) {

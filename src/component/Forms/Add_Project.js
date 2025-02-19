@@ -329,85 +329,88 @@ const Add_Project = () => {
               )}
             </Grid>
 
-            <Grid item="true" xs={12} md={6}>
-              <label htmlFor="address">Billing Address</label>
-              {isLoading ? (
-                <Box>
-                  <Skeleton height={40} style={{ marginBottom: "10px" }} />
-                  <Skeleton height={40} />
-                </Box>
-              ) : (
-                <Box>
-                  <Input
-                    value={formData.billing_address.village_name}
-                    onChange={(e) =>
-                      handleNestedChange(
-                        "billing_address",
-                        "village_name",
-                        e.target.value
-                      )
-                    }
-                    fullWidth
-                    required
-                    variant="soft"
-                  />
+            <Grid item xs={12} md={6}>
+  <label htmlFor="billing-village">Billing Address - Village Name</label>
+  {isLoading ? (
+    <Skeleton height={40} />
+  ) : (
+    <Input
+      name="billing_village_name"
+      value={formData.billing_address.village_name}
+      onChange={(e) =>
+        setFormData((prev) => ({
+          ...prev,
+          billing_address: { ...prev.billing_address, village_name: e.target.value },
+        }))
+      }
+      fullWidth
+      variant="soft"
+      required
+    />
+  )}
 
-                  <Input
-                    value={formData.billing_address.district_name}
-                    onChange={(e) =>
-                      handleNestedChange(
-                        "billing_address",
-                        "district_name",
-                        e.target.value
-                      )
-                    }
-                    fullWidth
-                    variant="soft"
-                    required
-                    sx={{ mt: 2 }}
-                  />
-                </Box>
-              )}
-            </Grid>
-            <Grid item="true" xs={12} md={6}>
-              <label htmlFor="site-address">Site Address</label>
-              {isLoading ? (
-                <Box>
-                  <Skeleton height={40} style={{ marginBottom: "10px" }} />
-                  <Skeleton height={40} />
-                </Box>
-              ) : (
-                <Box>
-                  <Input
-                    value={formData.site_address.village_name}
-                    onChange={(e) =>
-                      handleNestedChange(
-                        "site_address",
-                        "village_name",
-                        e.target.value
-                      )
-                    }
-                    fullWidth
-                    variant="soft"
-                    required
-                  />
-                  <Input
-                    value={formData.site_address.district_name}
-                    onChange={(e) =>
-                      handleNestedChange(
-                        "site_address",
-                        "district_name",
-                        e.target.value
-                      )
-                    }
-                    fullWidth
-                    required
-                    variant="soft"
-                    sx={{ mt: 2 }}
-                  />
-                </Box>
-              )}
-            </Grid>
+  <label htmlFor="billing-district" style={{ marginTop: '10px' }}>Billing Address - District Name</label>
+  {isLoading ? (
+    <Skeleton height={40} />
+  ) : (
+    <Input
+      name="billing_district_name"
+      value={formData.billing_address.district_name}
+      onChange={(e) =>
+        setFormData((prev) => ({
+          ...prev,
+          billing_address: { ...prev.billing_address, district_name: e.target.value },
+        }))
+      }
+      fullWidth
+      variant="soft"
+      required
+      sx={{ mt: 2 }}
+    />
+  )}
+</Grid>
+
+<Grid item xs={12} md={6}>
+  <label htmlFor="site-village">Site Address - Village Name</label>
+  {isLoading ? (
+    <Skeleton height={40} />
+  ) : (
+    <Input
+      name="site_village_name"
+      value={formData.site_address.village_name}
+      onChange={(e) =>
+        setFormData((prev) => ({
+          ...prev,
+          site_address: { ...prev.site_address, village_name: e.target.value },
+        }))
+      }
+      fullWidth
+      variant="soft"
+      required
+    />
+  )}
+
+  <label htmlFor="site-district" style={{ marginTop: '10px' }}>Site Address - District Name</label>
+  {isLoading ? (
+    <Skeleton height={40} />
+  ) : (
+    <Input
+      name="site_district_name"
+      value={formData.site_address.district_name}
+      onChange={(e) =>
+        setFormData((prev) => ({
+          ...prev,
+          site_address: { ...prev.site_address, district_name: e.target.value },
+        }))
+      }
+      fullWidth
+      variant="soft"
+      required
+      sx={{ mt: 2 }}
+    />
+  )}
+</Grid>
+
 
             <Grid item="true" xs={12}>
               <label htmlFor="state">State</label>
