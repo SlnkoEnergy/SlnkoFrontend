@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useRef } from "react";
+import { useReactToPrint } from "react-to-print";
 import Box from "@mui/joy/Box";
 import Typography from "@mui/joy/Typography";
-import { List, ListItem, ListItemDecorator } from "@mui/joy";
+import { Button, List, ListItem, ListItemDecorator } from "@mui/joy";
 import logo from "../../assets/Comm_offer/page1_logo.png";
 import logo1 from "../../assets/Comm_offer/slnko.png";
 import logo2 from "../../assets/Comm_offer/page1_back.jpeg";
@@ -35,7 +36,7 @@ const Page1 = () => {
             },
             width: "50%",
             height: "130vh",
-            border: "2px solid blue",
+            border: "2px solid #0f4C7f",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",

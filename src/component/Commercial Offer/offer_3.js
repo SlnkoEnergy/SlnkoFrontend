@@ -21,6 +21,8 @@ const Page3 = () => {
           "@media print": {
             width: "210mm",
             height: "297mm",
+            marginTop: "30px",
+            marginBottom:"0px"
           },
         }}
       >
@@ -28,7 +30,7 @@ const Page3 = () => {
           sx={{
             width: "60%",
             height: "100%",
-            border: "2px solid blue",
+            border: "2px solid #0f4C7f",
             "@media print": {
               width: "210mm",
               height: "297mm",

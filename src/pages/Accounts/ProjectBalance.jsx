@@ -138,7 +138,7 @@ function ProjectBalance() {
   {(user?.name === "IT Team" ||
               user?.name === "Guddu Rani Dubey" ||
               user?.name === "Prachi Singh" ||
-              user?.name === "admin" || user?.name === "Naresh Kumar") && (
+              user?.name === "admin" || user?.name === "Naresh Kumar" || user?.name === "Chandan Singh") && (
                 <Button
                   color="primary"
                   startDecorator={<DownloadRoundedIcon />}

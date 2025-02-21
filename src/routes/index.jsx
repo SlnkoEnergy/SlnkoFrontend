@@ -8,6 +8,7 @@ import PaymentApproved from "../pages/Accounts/PaymentApproved";
 import Payment_Detail from "../pages/Accounts/PaymentDetail";
 import PaymentRequest from "../pages/Accounts/PaymentRequest";
 import PaySummary from "../pages/Accounts/PaySummary";
+import OfferSummary from "../pages/BD/Offer_Summary";
 import ProjectBalance from "../pages/Accounts/ProjectBalance";
 import StandByRecords from "../pages/Accounts/StandByRecords";
 import StandBy_ReqSummary from "../pages/Accounts/StandByRequest";
@@ -19,6 +20,7 @@ import AllProjects from "../pages/Projects/AllProject";
 import BillHistory from "../pages/Projects/BillHistory";
 import Edit_Project from "../pages/Projects/Edit_Project";
 import POHistory from "../pages/Projects/PoHistory";
+import BDHistory from "../pages/BD/BDHistory";
 import Add_Bill from "../pages/SCM/AddBill";
 import Add_Purchase from "../pages/SCM/AddPO";
 import Add_Vendor from "../pages/SCM/AddVendor";
@@ -80,6 +82,14 @@ function index() {
     </PrivateRoute>
   }
 />
+<Route
+        path="/bd_history"
+        element={
+          <PrivateRoute>
+            <BDHistory />
+          </PrivateRoute>
+        }
+      />
 
 
       {/*-------Accounting------- */}
@@ -235,6 +245,14 @@ function index() {
         element={
           <PrivateRoute>
             <PaySummary />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/offer_summary"
+        element={
+          <PrivateRoute>
+            <OfferSummary />
           </PrivateRoute>
         }
       />

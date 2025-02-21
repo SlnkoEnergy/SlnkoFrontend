@@ -101,6 +101,7 @@ function Sidebar() {
         gap: 2,
         borderRight: "1px solid",
         borderColor: "divider",
+        "@media print": { display: "none" }
       }}
     >
       <GlobalStyles
@@ -126,9 +127,10 @@ function Sidebar() {
           backgroundColor: "var(--joy-palette-background-backdrop)",
           transition: "opacity 0.4s",
           transform: {
-            xs: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1) + var(--SideNavigation-slideIn, 0) * var(--Sidebar-width, 0px)))",
+            md: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1) + var(--SideNavigation-slideIn, 0) * var(--Sidebar-width, 0px)))",
             lg: "translateX(-100%)",
           },
+        
         }}
         onClick={() => closeSidebar()}
       />
@@ -556,6 +558,95 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
+          ) : user?.department === "Finance" && user?.name === "Chandan Singh" ? (
+            <List
+              size="sm"
+              sx={{
+                gap: 1,
+                "--List-nestedInsetStart": "30px",
+                "--ListItem-radius": (theme) => theme.vars.radius.sm,
+              }}
+            >
+              <ListItem nested>
+                <Toggler
+                  renderToggle={({ open, setOpen }) => (
+                    <ListItemButton onClick={() => setOpen(!open)}>
+                      <AccountBalanceIcon />
+                      <ListItemContent>
+                        <Typography level="title-sm">Accounting</Typography>
+                      </ListItemContent>
+                      <KeyboardArrowDownIcon
+                        sx={[
+                          open
+                            ? {
+                                transform: "rotate(180deg)",
+                              }
+                            : {
+                                transform: "none",
+                              },
+                        ]}
+                      />
+                    </ListItemButton>
+                  )}
+                >
+                  <List sx={{ gap: 0.5 }}>
+                    <ListItem>
+                      <ListItemButton
+                        onClick={() => navigate("/project-balance")}
+                      >
+                        Project Balances
+                      </ListItemButton>
+                    </ListItem>
+                    <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/daily-payment-request")}
+                    >
+                      Daily Payment Request
+                    </ListItemButton>
+                  </ListItem>
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/payment-approved")}
+                    >
+                      Approved Payment
+                    </ListItemButton>
+                  </ListItem>
+                  </List>
+                </Toggler>
+              </ListItem>
+  
+              <ListItem nested>
+                <Toggler
+                  renderToggle={({ open, setOpen }) => (
+                    <ListItemButton onClick={() => setOpen(!open)}>
+                      <MiscellaneousServicesIcon />
+                      <ListItemContent>
+                        <Typography level="title-sm">SCM</Typography>
+                      </ListItemContent>
+                      <KeyboardArrowDownIcon
+                        sx={[
+                          open
+                            ? {
+                                transform: "rotate(180deg)",
+                              }
+                            : {
+                                transform: "none",
+                              },
+                        ]}
+                      />
+                    </ListItemButton>
+                  )}
+                >
+                  <List sx={{ gap: 0.5 }}>
+                    <ListItem sx={{ mt: 0.5 }}>
+                      <ListItemButton onClick={() => navigate("/purchase-order")}>
+                        Purchase Order
+                      </ListItemButton>
+                    </ListItem>
+                  </List>
+                </Toggler>
+              </ListItem>
+            </List>
         ) : user?.department === "account" && user?.name === "Deepti Mittal" ? (
           <List
             size="sm"

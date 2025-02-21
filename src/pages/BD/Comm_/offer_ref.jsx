@@ -10,14 +10,15 @@ import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 
 // import Sidebar from '../../../component/Partials/Sidebar';
 import Header from '../../../component/Partials/Header';
-import ReferenceList from '../../../component/Commercial Offer/offer_10';
+import ReferenceList from '../../../component/Commercial Offer/Comm_Entire';
 
 function Add_Ref() {
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
       <Box sx={{ display: 'flex', minHeight: '100%' }}>
-        <Header />
+      <Header sx={{ "@media print": { display: "none" } }} />
+
         {/* <Sidebar /> */}
         <Box
           component="main"
@@ -38,7 +39,7 @@ function Add_Ref() {
             gap: 1,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', marginLeft:{xl:"17%",lg:"20%", md:"30%"}}}>
+          <Box sx={{ display: 'flex', alignItems: 'center', marginLeft:{xl:"17%",lg:"20%", md:"30%"},   "@media print": { display: "none" } }}>
             <Breadcrumbs
               size="sm"
               aria-label="breadcrumbs"

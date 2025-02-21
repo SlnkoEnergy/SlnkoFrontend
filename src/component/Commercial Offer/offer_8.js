@@ -9,7 +9,7 @@ const Page8 = () => {
       <Grid
         sx={{
           width: "100%",
-          height: "100%",
+          // height: "100%",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
@@ -27,7 +27,7 @@ const Page8 = () => {
           sx={{
             width: "60%",
             height: "100%",
-            border: "2px solid blue",
+            border: "2px solid #0f4C7f",
             "@media print": {
               width: "210mm",
               height: "297mm",

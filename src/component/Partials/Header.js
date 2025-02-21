@@ -23,6 +23,7 @@ function Header() {
         borderBottom: '1px solid',
         borderColor: 'background.level1',
         boxShadow: 'sm',
+         "@media print": { display: "none!important" }
       }}
     >
       <GlobalStyles
@@ -40,6 +41,9 @@ function Header() {
         variant="outlined"
         color="neutral"
         size="sm"
+        sx={{
+           "@media print": { display: "none!important" }
+        }}
       >
         <MenuIcon />
       </IconButton>

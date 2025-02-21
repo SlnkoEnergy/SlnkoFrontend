@@ -107,7 +107,7 @@ const CivilWorks1 = () => {
 
         // Assuming the data returned matches the structure you want
         const fetchedData = response.data; // Adjust based on the structure of API response
-        const fetchedScmData = result.data;
+        const fetchedScmData = result.data[0];
         const fetchedBdData = answer.data;
 
         const offerFetchData = fetchedData.find(
@@ -219,7 +219,7 @@ const CivilWorks1 = () => {
   const internalQuantity24 = offerData.dc_capacity * 1000;
 
   //***for 25th row ***/
-  const internalQuantity25 = Math.round(offerData.dc_capacity * 3) + 4;
+  const internalQuantity25 = Math.ceil(offerData.dc_capacity * 3) + 4;
 
   //***for 31st row ***/
   const internalQuantity31 = offerData.dc_capacity * 1000;
@@ -755,20 +755,27 @@ const CivilWorks1 = () => {
       <Grid
         sx={{
           width: "100%",
-          height: "25%",
+          // height: "100%",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
         }}
       >
-        <Grid
-          sx={{
-            width: "100%",
-            height: "100%",
-            // border: "2px solid blue",
-          }}
-        >
-          <Box
+       <Grid
+                               sx={{
+                                 width: "60%",
+                                 height: "100%",
+                                 border: "2px solid #0f4C7f",
+                                 marginTop:"5%",
+                                 minHeight:"100%",
+                                "@media print": {
+                                  border:"0px",
+                                  width:"100%",
+                                  marginTop:"20%"
+                                 },
+                               }}
+                             >
+          {/* <Box
             sx={{
               display: "flex",
               width: "100%",
@@ -776,7 +783,7 @@ const CivilWorks1 = () => {
               gap: 2,
             }}
           >
-            {/* <img width={"220px"} height={"110px"} alt="logo" src={logo} />
+             <img width={"220px"} height={"110px"} alt="logo" src={logo} />
 
             <hr
               style={{
@@ -785,13 +792,13 @@ const CivilWorks1 = () => {
                 borderTop: "3px solid #0f4C7f",
                 margin: "19px 0",
               }}
-            /> */}
-          </Box>
-          <Box
+            /> 
+          </Box> */}
+          {/* <Box
             sx={{
               width: "100%",
-              // height: "100%",
-              // marginTop: "20px",
+              height: "100%",
+              marginTop: "20px",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
@@ -822,24 +829,34 @@ const CivilWorks1 = () => {
             >
               Works
             </Typography>
-          </Box>
+          </Box> */}
           <Box
-            sx={{
-              width: "100%",
-              height: "76vh",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              margin: "auto",
-            }}
-          >
+                           sx={{
+                             width: "75%",
+                             height: "100%",
+                             display: "flex",
+                             justifyContent: "center",
+                             alignItems: "center",
+                             margin: "auto",
+                             "@media-print":{
+                         width:'70%',
+                        
+                       }
+                           }}
+                         >
             <Sheet
-              sx={{
-                width: "99.5%",
-                height: "100%",
-                backgroundColor: "white",
-              }}
-            >
+                                sx={{
+                                 width: "99.5%",
+                                 height: "100%",
+                                 backgroundColor: "white",
+                                 margin: "10px",
+                                 display: "flex",
+                                 alignItems: "center",
+                                 flexDirection: "row",
+                                 justifyContent: "center",
+                 
+                               }}
+                             >
               <Table className="table-header">
                 <thead>
                   <tr>
@@ -848,15 +865,15 @@ const CivilWorks1 = () => {
                     <th style={{ width: "6%" }}>RATING</th>
                     <th style={{ width: "20%" }}>SPECIFICATION</th>
                     <th>UoM</th>
-                    <th>Qty (Int.)</th>
+                    {/* <th>Qty (Int.)</th> */}
                     <th>Qty</th>
                     <th>Category</th>
-                    <th>Rate</th>
+                    {/* <th>Rate</th>
                     <th>Rate UoM</th>
                     <th>Total Value</th>
                     <th>GST</th>
                     <th>GST Value</th>
-                    <th>Total with GST</th>
+                    <th>Total with GST</th> */}
                   </tr>
                 </thead>
                 <tbody>
@@ -868,15 +885,15 @@ const CivilWorks1 = () => {
                     machinaries
                     <td></td>
                     <td>KWp</td>
-                    <td>{internalQuantity24}</td>
+                    {/* <td>{internalQuantity24}</td> */}
                     <td>{internalQuantity24}</td>
                     <td>Installation Charges inside boundary wall (Labour, Machinary & Civil Material)</td>
-                    <td>{scmData.installation_commissioing.machinery}</td>
+                    {/* <td>{scmData.installation_commissioing.machinery}</td>
                     <td>INR/Wp</td>
                     <td>{TotalVal25}</td>
                     <td>18%</td>
                     <td>{Math.round((TotalVal25 * 18) / 100)}</td>
-                    <td>{Math.round((TotalVal25 * 18) / 100 + TotalVal25)}</td>
+                    <td>{Math.round((TotalVal25 * 18) / 100 + TotalVal25)}</td> */}
                   </tr>
 
                   <tr>
@@ -890,15 +907,15 @@ const CivilWorks1 = () => {
                     </td>
                     <td></td>
                     <td>KWp</td>
+                    {/* <td>{internalQuantity24}</td> */}
                     <td>{internalQuantity24}</td>
-                    <td>{internalQuantity24}</td>
-                    <td>Installation Charges inside boundary wall (Labour, Machinary & Civil Material)</td>
+                    {/* <td>Installation Charges inside boundary wall (Labour, Machinary & Civil Material)</td>
                     <td>{scmData.installation_commissioing.civil_material}</td>
                     <td>INR/Wp</td>
                     <td>{TotalVal26}</td>
                     <td>18%</td>
                     <td>{Math.round((TotalVal26 * 18) / 100)}</td>
-                    <td>{Math.round((TotalVal26 * 18) / 100 + TotalVal26)}</td>
+                    <td>{Math.round((TotalVal26 * 18) / 100 + TotalVal26)}</td> */}
                   </tr>
 
                   <tr>
@@ -907,30 +924,30 @@ const CivilWorks1 = () => {
                     <td>Transformer, LT/HT, Cables, BOS</td>
                     <td></td>
                     <td>Vehicles</td>
-                    <td>{internalQuantity25}</td>
+                    {/* <td>{internalQuantity25}</td> */}
                     <td>{internalQuantity25}</td>
                     <td>Transportation & Insurance</td>
-                    <td>{scmData.transportation}</td>
+                    {/* <td>{scmData.transportation}</td>
                     <td>INR/Vehicle</td>
                     <td>{TotalVal27}</td>
                     <td>18%</td>
                     <td>{Math.round((TotalVal27 * 18) / 100)}</td>
-                    <td>{Math.round((TotalVal27 * 18) / 100 + TotalVal27)}</td>
+                    <td>{Math.round((TotalVal27 * 18) / 100 + TotalVal27)}</td> */}
                   </tr>
 
                   <tr>
                     <td>26.</td>
                     <td>Transmission Line</td>
                     <td>
-                      {offerData.evacuation_voltage} kV Transmission Line with
+                      {offerData.evacuation_voltage}kV Transmission Line with
                       appropriate conductor size and PCC Poles
                     </td>
                     <td></td>
                     <td>Km</td>
-                    <td>{offerData.transmission_length}</td>
+                    {/* <td>{offerData.transmission_length}</td> */}
                     <td>{offerData.transmission_length}</td>
                     <td>Transmission Line</td>
-                    <td>{bdRate.transmission_line}</td>
+                    {/* <td>{bdRate.transmission_line}</td>
                     <td>INR/Km</td>
                     <td>
                       {offerData.transmission_length * bdRate.transmission_line}
@@ -946,7 +963,7 @@ const CivilWorks1 = () => {
                     </td>
                     <td>
                       {(Math.round( offerData.transmission_length * bdRate.transmission_line) * 18) /100 +bdRate.transmission_line *offerData.transmission_length}
-                    </td>
+                    </td> */}
                   </tr>
 
                   <tr>
@@ -955,17 +972,17 @@ const CivilWorks1 = () => {
                     <td>As per DISCOM requirements</td>
                     <td></td>
                     <td>Set</td>
-                    <td>2</td>
+                    {/* <td>2</td> */}
                     <td>2</td>
                     <td>GSS Equipment</td>
-                    <td>{ct_pt_cal}</td>
+                    {/* <td>{ct_pt_cal}</td>
                     <td>INR/Set</td>
                     <td>{2 * ct_pt_cal}</td>
                     <td>18%</td>
                     <td>{Math.round((ct_pt_cal * 2 * 18) / 100)}</td>
                     <td>
                       {Math.round((ct_pt_cal * 2 * 18) / 100 + ct_pt_cal * 2)}
-                    </td>
+                    </td> */}
                   </tr>
 
                   <tr>
@@ -974,17 +991,17 @@ const CivilWorks1 = () => {
                     <td>As per DISCOM requirements</td>
                     <td></td>
                     <td>Set</td>
-                    <td>3</td>
+                    {/* <td>3</td> */}
                     <td>3</td>
                     <td>GSS Equipment</td>
-                    <td>{abt_cal}</td>
+                    {/* <td>{abt_cal}</td>
                     <td>INR/Set</td>
                     <td>{3 * abt_cal}</td>
                     <td>18%</td>
                     <td>{Math.round((abt_cal * 3 * 18) / 100)}</td>
                     <td>
                       {Math.round((abt_cal * 3 * 18) / 100 + abt_cal * 3)}
-                    </td>
+                    </td> */}
                   </tr>
 
                   <tr>
@@ -993,15 +1010,15 @@ const CivilWorks1 = () => {
                     <td>As per DISCOM requirements</td>
                     <td></td>
                     <td>Set</td>
-                    <td>1</td>
+                    {/* <td>1</td> */}
                     <td>1</td>
                     <td>GSS Equipment</td>
-                    <td>{selectedVCBValue}</td>
+                    {/* <td>{selectedVCBValue}</td>
                     <td>INR/Set</td>
                     <td>{totalVCB}</td>
                     <td>18%</td>
                     <td>{Math.round((totalVCB * 18) / 100)}</td>
-                    <td>{Math.round((totalVCB * 18) / 100 + totalVCB)}</td>
+                    <td>{Math.round((totalVCB * 18) / 100 + totalVCB)}</td> */}
                   </tr>
 
                   <tr>
@@ -1010,10 +1027,10 @@ const CivilWorks1 = () => {
                     <td>As per DISCOM requirements</td>
                     <td></td>
                     <td>Set</td>
-                    <td>1</td>
+                    {/* <td>1</td> */}
                     <td>1</td>
                     <td>GSS Equipment</td>
-                    <td>{scmWeekly4(offerData.ac_capacity)}</td>
+                    {/* <td>{scmWeekly4(offerData.ac_capacity)}</td>
                     <td>INR/Set</td>
                     <td>{scmWeekly4(offerData.ac_capacity) * 1}</td>
                     <td>18%</td>
@@ -1027,7 +1044,7 @@ const CivilWorks1 = () => {
                         (scmWeekly4(offerData.ac_capacity) * 1 * 18) / 100 +
                           scmWeekly4(offerData.ac_capacity) * 1
                       )}
-                    </td>
+                    </td> */}
                   </tr>
 
                   <tr>
@@ -1036,15 +1053,15 @@ const CivilWorks1 = () => {
                     <td>Transit & EAR</td>
                     <td></td>
                     <td>KWp</td>
-                    <td>{internalQuantity31}</td>
+                    {/* <td>{internalQuantity31}</td> */}
                     <td>{internalQuantity31}</td>
                     <td>Transportation & Insurance</td>
-                    <td>{scmWeekly5}</td>
+                    {/* <td>{scmWeekly5}</td>
                     <td>INR</td>
                     <td>{scmWeekly5}</td>
                     <td>18%</td>
                     <td>{Math.round((scmWeekly5 * 18) / 100)}</td>
-                    <td>{Math.round((scmWeekly5 * 18) / 100 + scmWeekly5)}</td>
+                    <td>{Math.round((scmWeekly5 * 18) / 100 + scmWeekly5)}</td> */}
                   </tr>
 
                   <tr>
@@ -1053,31 +1070,28 @@ const CivilWorks1 = () => {
                     <td>SLNKO FEE</td>
                     <td></td>
                     <td>KWp</td>
-                    <td>{internalQuantity32}</td>
+                    {/* <td>{internalQuantity32}</td> */}
                     <td>{internalQuantity32}</td>
                     <td>SLNKO Service Charges</td>
-                    <td>{bdRate.slnko_charges}</td>
+                    {/* <td>{bdRate.slnko_charges}</td>
                     <td>INR</td>
                     <td>{TotalVal32}</td>
                     <td>18%</td>
                     <td>{Math.round((TotalVal32 * 18) / 100)}</td>
-                    <td>{Math.round((TotalVal32 * 18) / 100 + TotalVal32)}</td>
+                    <td>{Math.round((TotalVal32 * 18) / 100 + TotalVal32)}</td> */}
                   </tr>
                 </tbody>
 
-                <tfoot>
-                  <td colSpan={9}>Total Value</td>
-                  <td colSpan={4}>{Math.round(SumOfTotal_Value)}</td>
-                  
-                </tfoot>
-                <tfoot>
-                  <td colSpan={9}>Total With GST</td>
-                  <td colSpan={4}>{Math.round(SumOfTotal_With_GST)}</td>
-                </tfoot>
-                <tfoot>
-                  <td colSpan={9}>Total GST Value</td>
-                  <td colSpan={4}>{Math.round(SumOf_Total_GST_Value)}</td>
-                </tfoot>
+                {/* <tfoot>
+                   <tr>
+                    <td colSpan={10}>Totals: </td>
+                    <td>{Math.round(SumOfTotal_Value)}</td>
+                    <td></td>
+                    <td colSpan={1}>{Math.round(SumOf_Total_GST_Value)}</td>
+                    <td >{Math.round(SumOfTotal_With_GST)}</td>
+                    
+                  </tr>
+                  </tfoot> */}
               </Table>
             </Sheet>
           </Box>

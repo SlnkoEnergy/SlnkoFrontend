@@ -1,15 +1,107 @@
 import { Box, Grid, Typography } from "@mui/joy";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import logo from "../../assets/Comm_offer/slnko.png";
 import "../Commercial Offer/CSS/offer.css";
+import Axios from "../../utils/Axios";
+import { toast } from "react-toastify";
 
 const Page5 = () => {
+  const [offerData, setOfferData] = useState({
+    offer_id: "",
+    client_name: "",
+    village: "",
+    district: "",
+    state: "",
+    pincode: "",
+    ac_capacity: "",
+    dc_overloading: "",
+    dc_capacity: "",
+    scheme: "",
+    component: "",
+    rate: "",
+    timeline: "",
+    prepared_by: "",
+    module_type: "",
+    module_capacity: "",
+    inverter_capacity: "",
+    evacuation_voltage: "",
+    module_orientation: "",
+    transmission_length: "",
+    transformer: "",
+    column_type: ""
+  });
+
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const offerRate = localStorage.getItem("offer_rate");
+  
+        if (!offerRate) {
+          console.error("Offer ID not found in localStorage");
+          // alert("Offer ID is missing!");
+          toast.error("Offer ID is missing!")
+          return;
+        }
+  
+        // Fetch all commercial offers
+        const { data: commercialOffers } = await Axios.get("/get-comm-offer");
+        console.log("API Response:", commercialOffers);
+  
+        // Find the matching offer based on offer_id
+        const matchedOffer = commercialOffers.find(
+          (item) => item.offer_id === offerRate
+        );
+  
+        if (!matchedOffer) {
+          console.error("No matching offer found.");
+          // alert("No matching offer found.");
+          toast.error("No matching offer found.")
+          return;
+        }
+  
+        // Set the matched offer data to the state
+        setOfferData({
+          offer_id: matchedOffer.offer_id ?? "",
+          client_name: matchedOffer.client_name ?? "",
+          village: matchedOffer.village ?? "",
+          district: matchedOffer.district ?? "",
+          state: matchedOffer.state ?? "",
+          pincode: matchedOffer.pincode ?? "",
+          ac_capacity: matchedOffer.ac_capacity ?? "",
+          dc_overloading: matchedOffer.dc_overloading ?? "",
+          dc_capacity: matchedOffer.dc_capacity ?? "",
+          scheme: matchedOffer.scheme ?? "",
+          component: matchedOffer.component ?? "",
+          rate: matchedOffer.rate ?? "",
+          timeline: matchedOffer.timeline ?? "",
+          prepared_by: matchedOffer.prepared_by ?? "",
+          module_type: matchedOffer.module_type ?? "",
+          module_capacity: matchedOffer.module_capacity ?? "",
+          inverter_capacity: matchedOffer.inverter_capacity ?? "",
+          evacuation_voltage: matchedOffer.evacuation_voltage ?? "",
+          module_orientation: matchedOffer.module_orientation ?? "",
+          transmission_length: matchedOffer.transmission_length ?? "",
+          transformer: matchedOffer.transformer ?? "",
+          column_type: matchedOffer.column_type ?? "",
+        });
+  
+      } catch (error) {
+        console.error("Error fetching commercial offer data:", error);
+        alert("Failed to fetch offer data. Please try again later.");
+      }
+    };
+  
+    fetchData();
+  }, []);
+  
+
   return (
     <>
       <Grid
         sx={{
           width: "100%",
-          height: "100%",
+          // height: "100%",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
@@ -26,9 +118,9 @@ const Page5 = () => {
         <Box
           sx={{
             position:'absolute',
-            left:'59.59%',
+            left:'60%',
             backgroundColor:'#F2F4F5',
-            height:'137%',
+            height:'1400px',
             width:'20%',
             zIndex:-1,
             '@media print':{
@@ -42,7 +134,7 @@ const Page5 = () => {
           sx={{
             width: "60%",
             height: "100%",
-            border: "2px solid blue",
+            border: "2px solid #0f4C7f",
             "@media print": {
               width: "210mm",
               height: "297mm",
@@ -137,7 +229,7 @@ const Page5 = () => {
                 }
                 }}
               >
-                Mr. xyz singh
+                {offerData.client_name}
               </Typography>
             </Box>
             <Box>
@@ -151,7 +243,7 @@ const Page5 = () => {
                 }
                 }}
               >
-                bfbdhbvhfvb, akfnkdsjnfsji, Lakshadweep - 0258
+                {offerData.village}, {offerData.district}, {offerData.state} - {offerData.pincode}
               </Typography>
             </Box>
             <br />
@@ -168,8 +260,8 @@ const Page5 = () => {
                 }}
               >
                 <span style={{ fontWeight: "bold" }}>Subject:</span> EPCM
-                Services for 3 MW AC / 5 MW DC Ground Mount kusum Solar Project
-                Component A
+                Services for {offerData.ac_capacity} MW AC / {offerData.dc_capacity} MW DC Ground Mount {offerData.scheme} Solar Project
+                Component {offerData.component}
               </Typography>
             </Box>
             <br />
@@ -222,7 +314,7 @@ const Page5 = () => {
                   fontSize:'1.5rem'
                 }
                 }}
-              >Thanking you! <br /> IT TEAM</Typography>
+              >Thanking you! <br /> {offerData.prepared_by}</Typography>
             </Box>
 
             <Box

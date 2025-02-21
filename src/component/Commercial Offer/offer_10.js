@@ -3,14 +3,9 @@ import React, { useState, useEffect } from "react";
 import Axios from "../../utils/Axios";
 import logo from "../../assets/slnko_blue_logo.png";
 import "./CSS/offer.css";
-import Offer11 from "./offer_11";
-import Offer12 from "./offer_12";
-import Offer13 from "./offer_13";
-import Offer14 from "./offer_14";
-import Offer15 from "./offer_15";
+
 
 const Reference = () => {
-
   const [offerData, setOfferData] = useState({
     offer_id: "",
     client_name: "",
@@ -33,7 +28,7 @@ const Reference = () => {
     module_orientation: "",
     transmission_length: "",
     transformer: "",
-    column_type: ""
+    column_type: "",
   });
 
   const [scmData, setscmData] = useState({
@@ -79,15 +74,15 @@ const Reference = () => {
       },
     });
 
-    const [bdRate, setBdRate] = useState({
-      spv_modules: "",
-      module_mounting_structure: "",
-      transmission_line: "",
-      slnko_charges: "",
-      submitted_by_BD: "",
-    });
+  const [bdRate, setBdRate] = useState({
+    spv_modules: "",
+    module_mounting_structure: "",
+    transmission_line: "",
+    slnko_charges: "",
+    submitted_by_BD: "",
+  });
 
-   useEffect(() => {
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const offerRate = localStorage.getItem("offer_rate");
@@ -102,11 +97,11 @@ const Reference = () => {
         const result = await Axios.get("/get-comm-scm-rate");
         const answer = await Axios.get("/get-comm-bd-rate");
         // console.log("API Response:", response.data);
-        // console.log("API Response:", result.data);
+        console.log("SCM rate Response:", result.data);
         // console.log("API Response:", answer.data);
-        // Assuming the data returned matches the structure you want
-        const fetchedData = response.data; // Adjust based on the structure of API response
-        const fetchedScmData = result.data;
+       
+        const fetchedData = response.data; 
+        const fetchedScmData = result.data[0];
         const fetchedBdData = answer.data;
 
         const offerFetchData = fetchedData.find(
@@ -145,7 +140,7 @@ const Reference = () => {
           module_orientation: offerFetchData.module_orientation || "",
           transmission_length: offerFetchData.transmission_length || "",
           transformer: offerFetchData.transformer || "",
-          column_type: offerFetchData.column_type || ""
+          column_type: offerFetchData.column_type || "",
         });
 
         setscmData({
@@ -189,16 +184,16 @@ const Reference = () => {
           },
         });
 
+
         setBdRate({
           // offer_id: fetchRatebd.offer_id || "",
-          // spv_modules: fetchRatebd.spv_modules || "",
-          module_mounting_structure: fetchRatebd.module_mounting_structure || "",
+          spv_modules: fetchRatebd.spv_modules || "",
+          module_mounting_structure:
+            fetchRatebd.module_mounting_structure || "",
           transmission_line: fetchRatebd.transmission_line || "",
           slnko_charges: fetchRatebd.slnko_charges || "",
           submitted_by_BD: fetchRatebd.submitted_by_BD || "",
-
         });
-
       } catch (error) {
         console.error("Error fetching commercial offer data:", error);
       }
@@ -207,8 +202,6 @@ const Reference = () => {
     fetchData();
   }, []);
 
-
-  
   const getSpecification = (module_capacity) => {
     // Use the module_capacity value directly for specification logic
     if (module_capacity === 550 || module_capacity === 555) {
@@ -220,71 +213,77 @@ const Reference = () => {
     }
   };
 
- const mountingStructure = (module_orientation) => {
+  const mountingStructure = (module_orientation) => {
     if (module_orientation === "Portrait") {
       return "2PX12";
-    } else if (module_orientation === "Agrivoltaic") {
+    } else if (module_orientation === "Agrivoltaic"){
       return "2Px24";
     } else {
       return "4LX6";
-    } 
+    }
   };
-
 
   // ***for 1st row***
   const internalQuantity1 = offerData.module_capacity
-  ? Math.round((offerData.dc_capacity * 1000 * 1000) / offerData.module_capacity)
-  : 0;
+    ? Math.round(
+        (offerData.dc_capacity * 1000 * 1000) / offerData.module_capacity
+      )
+    : 0;
 
   const PrintQuantity1 = Math.round(internalQuantity1 / 24) * 24;
 
   // ***for 2nd row***
   const internalQuantity2 = offerData.ac_capacity
-  ? Math.round((offerData.ac_capacity * 1000) / offerData.inverter_capacity)
-  : 0;
+    ? Math.round((offerData.ac_capacity * 1000) / offerData.inverter_capacity)
+    : 0;
 
   // ***for 3rd row***
-  const InternalQuantity3 = (offerData.module_orientation === "Portrait" ? 23 : 29) * 1000 * offerData.dc_capacity;
+  const InternalQuantity3 =
+    (offerData.module_orientation === "Portrait" ? 23 : 29) *
+    1000 *
+    offerData.dc_capacity;
 
-   // ***for 5th row***
-   const InternalQuantity5 = offerData.dc_capacity*7000;
+  // ***for 5th row***
+  const InternalQuantity5 = offerData.dc_capacity * 7000;
 
-   // ***for 6th row***
-   const InternalQuantity6 = internalQuantity2*97.5;
+  // ***for 6th row***
+  const InternalQuantity6 = internalQuantity2 * 97.5;
 
-   // ***for 6th row***
-   const InternalQuantity7 = internalQuantity2*20;
+  // ***for 6th row***
+  const InternalQuantity7 = internalQuantity2 * 20;
 
-   //***Total Value 1***/
-   const TotalVal1 = bdRate.spv_modules*PrintQuantity1*offerData.module_capacity;
+  //***Total Value 1***/
+  const TotalVal1 =
+    bdRate.spv_modules * PrintQuantity1 * offerData.module_capacity;
 
-    //***Total Value 2***/
-    const TotalVal2 = scmData.solar_inverter*internalQuantity2;
+  //***Total Value 2***/
+  const TotalVal2 = scmData.solar_inverter * internalQuantity2;
 
-    //***Total Value 3***/
-    const TotalVal3 = bdRate.module_mounting_structure*InternalQuantity3;
+  //***Total Value 3***/
+  const TotalVal3 = bdRate.module_mounting_structure * InternalQuantity3;
 
-    //***Total Value 4***/
-    const TotalVal4 = Math.round(scmData.mounting_hardware*offerData.dc_capacity*1000*1000);
+  //***Total Value 4***/
+  const TotalVal4 = Math.round(
+    scmData.mounting_hardware * offerData.dc_capacity * 1000 * 1000
+  );
 
-     //***Total Value 5***/
-     const TotalVal5 = scmData.dc_cable*InternalQuantity5;
+  //***Total Value 5***/
+  const TotalVal5 = scmData.dc_cable * InternalQuantity5;
 
-      //***Total Value 6***/
-      const TotalVal6 = Math.round(scmData.ac_cable_inverter_accb*InternalQuantity6);
+  //***Total Value 6***/
+  const TotalVal6 = Math.round(
+    scmData.ac_cable_inverter_accb * InternalQuantity6
+  );
 
-      //***Total Value 7***/
-      const TotalVal7 = scmData.ac_cable_accb_transformer*InternalQuantity7;
-
-
-
+  //***Total Value 7***/
+  const TotalVal7 = scmData.ac_cable_accb_transformer * InternalQuantity7;
 
   return (
     <>
       <Grid
         sx={{
           width: "100%",
-          height: "30%",
+          // height: "100%",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
@@ -292,9 +291,15 @@ const Reference = () => {
       >
         <Grid
           sx={{
-            width: "100%",
+            width: "60%",
             height: "100%",
-            // border: "2px solid blue",
+            border: "2px solid #0f4C7f",
+            marginTop:"5%",
+            minHeight:"100%",
+           "@media print": {
+             border:"0px",
+             width:"100%"
+            },
           }}
         >
           <Box
@@ -303,15 +308,16 @@ const Reference = () => {
               width: "100%",
               alignItems: "flex-end",
               gap: 2,
+              marginTop:"2%"
             }}
           >
             <img width={"220px"} height={"110px"} alt="logo" src={logo} />
 
             <hr
               style={{
-                width: "60%",
+                width: "80%",
                 color: "blue",
-                borderTop: "3px solid #0f4C7f",
+                borderTop: "2px solid #0f4C7f",
                 margin: "19px 0",
               }}
             />
@@ -319,8 +325,8 @@ const Reference = () => {
           <Box
             sx={{
               width: "100%",
-              // height: "100%",
-              // marginTop: "20px",
+              height: "100%",
+              marginTop: "20px",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
@@ -354,12 +360,15 @@ const Reference = () => {
           </Box>
           <Box
             sx={{
-              width: "100%",
-              // height: "76vh",
+              width: "75%",
+              height: "100%",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
               margin: "auto",
+              "@media-print":{
+                width:'75%'
+              }
             }}
           >
             <Sheet
@@ -367,6 +376,12 @@ const Reference = () => {
                 width: "99.5%",
                 height: "100%",
                 backgroundColor: "white",
+                margin: "10px",
+                display: "flex",
+                alignItems: "center",
+                flexDirection: "row",
+                justifyContent: "center",
+
               }}
             >
               <Table className="table-header">
@@ -377,35 +392,35 @@ const Reference = () => {
                     <th style={{ width: "6%" }}>RATING</th>
                     <th style={{ width: "20%" }}>SPECIFICATION</th>
                     <th>UoM</th>
-                    <th>Qty (Int.)</th>
+                    {/* <th>Qty (Int.)</th> */}
                     <th>Qty</th>
                     <th>Category</th>
-                    <th>Rate</th>
+                    {/* <th>Rate</th>
                     <th>Rate UoM</th>
                     <th>Total Value</th>
                     <th>GST</th>
                     <th>GST Value</th>
-                    <th>Total with GST</th>
+                    <th>Total with GST</th> */}
                   </tr>
                 </thead>
                 <tbody>
-                    {/* First row (SPV Modules) - Dynamic */}
-                    <tr>
+                  {/* First row (SPV Modules) - Dynamic */}
+                  <tr>
                     <td>1.</td>
                     <td>SPV Modules</td>
                     <td>{offerData.module_capacity} Wp</td>
                     <td>{getSpecification(offerData.module_capacity)}</td>
 
                     <td>Nos.</td>
-                    <td>{internalQuantity1}</td>
+                    {/* <td>{internalQuantity1}</td> */}
                     <td>{PrintQuantity1}</td>
                     <td>Solar Module</td>
-                    <td>{bdRate.spv_modules}</td>
+                    {/* <td>{bdRate.spv_modules}</td>
                     <td>INR/Wp</td>
-                    <td>{TotalVal1}</td>
+                    <td>{Math.round(TotalVal1)}</td>
                     <td>12%</td>
-                    <td>{Math.round(TotalVal1*12/100)}</td>
-                    <td>{Math.round(TotalVal1*12/100+TotalVal1)}</td>
+                    <td>{Math.round((TotalVal1 * 12) / 100)}</td>
+                    <td>{Math.round((TotalVal1 * 12) / 100 + TotalVal1)}</td> */}
                   </tr>
 
                   <tr>
@@ -419,32 +434,40 @@ const Reference = () => {
                       provided by Manufacturer.
                     </td>
                     <td>Nos.</td>
-                    <td>{internalQuantity2}</td>
+                    {/* <td>{internalQuantity2}</td> */}
                     <td>{internalQuantity2}</td>
                     <td>Solar Inverter & Datalogger</td>
-                    <td>{scmData.solar_inverter}</td>
+                    {/* <td>{scmData.solar_inverter}</td>
                     <td>INR/Nos.</td>
-                    <td>{TotalVal2}</td>
+                    <td>{Math.round(TotalVal2)}</td>
                     <td>12%</td>
                     <td>{Math.round(TotalVal2*12/100)}</td>
-                    <td>{Math.round(TotalVal2*12/100+TotalVal2)}</td>
+                    <td>{Math.round(TotalVal2*12/100+TotalVal2)}</td> */}
                   </tr>
 
                   <tr>
                     <td>3.</td>
                     <td>Module Mounting Structure</td>
                     <td>{mountingStructure(offerData.module_orientation)}</td>
-                    <td></td>
+                    <td>
+                      MMS Shall be designed for wind speed as per IS 875 Part 3
+                      and optimum tilt angle. Galvalume (AZ-150-550MPA) shall
+                      conform to IS 15961, Column (YS-250) shall conform to IS
+                      2062 & HDG shall conform to IS 4759.1996 and . Exact
+                      Sections shall be decided at the time of detailed
+                      engineering. Depth of pile foundation shall be decided
+                      after soil tests.
+                    </td>
                     <td>Kg</td>
-                    <td>{InternalQuantity3}</td>
-                    <td>{InternalQuantity3}</td>
+                    {/* <td>{Math.round(InternalQuantity3)}</td> */}
+                    <td>{Math.round(InternalQuantity3)}</td>
                     <td>MMS With Fasteners</td>
-                    <td>{bdRate.module_mounting_structure}</td>
+                    {/* <td>{bdRate.module_mounting_structure}</td>
                     <td>INR/Kg</td>
-                    <td>{TotalVal3}</td>
+                    <td>{Math.round(TotalVal3)}</td>
                     <td>18%</td>
-                    <td>{Math.round(TotalVal3*18/100)}</td>
-                    <td>{Math.round(TotalVal3*18/100+TotalVal3)}</td>
+                    <td>{Math.round((TotalVal3 * 18) / 100)}</td>
+                    <td>{Math.round((TotalVal3 * 18) / 100 + TotalVal3)}</td> */}
                   </tr>
 
                   <tr>
@@ -456,15 +479,15 @@ const Reference = () => {
                       all other connections
                     </td>
                     <td>Set</td>
-                    <td>1</td>
+                    {/* <td>1</td> */}
                     <td>1</td>
                     <td>MMS With Fasteners</td>
-                    <td>{scmData.mounting_hardware}</td>
+                    {/* <td>{scmData.mounting_hardware}</td>
                     <td>INR/Wp</td>
-                    <td>{TotalVal4}</td>
+                    <td>{Math.round(TotalVal4)}</td>
                     <td>18%</td>
-                    <td>{Math.round(TotalVal4*18/100)}</td>
-                    <td>{Math.round(TotalVal4*18/100+TotalVal4)}</td>
+                    <td>{Math.round((TotalVal4 * 18) / 100)}</td>
+                    <td>{Math.round((TotalVal4 * 18) / 100 + TotalVal4)}</td> */}
                   </tr>
 
                   <tr>
@@ -483,15 +506,15 @@ const Reference = () => {
                       life expectency of 25 years. Flame retardent, UV resistent
                     </td>
                     <td>m</td>
-                    <td>{InternalQuantity5}</td>
-                    <td>{InternalQuantity5}</td>
+                    {/* <td>{Math.round(InternalQuantity5)}</td> */}
+                    <td>{Math.round(InternalQuantity5)}</td>
                     <td>Cables</td>
-                    <td>{scmData.dc_cable}</td>
+                    {/* <td>{scmData.dc_cable}</td>
                     <td>INR/m</td>
-                    <td>{TotalVal5}</td>
+                    <td>{Math.round(TotalVal5)}</td>
                     <td>18%</td>
-                    <td>{Math.round(TotalVal5*18/100)}</td>
-                    <td>{Math.round(TotalVal5*18/100+TotalVal5)}</td>
+                    <td>{Math.round((TotalVal5 * 18) / 100)}</td>
+                    <td>{Math.round((TotalVal5 * 18) / 100 + TotalVal5)}</td> */}
                   </tr>
 
                   <tr>
@@ -506,15 +529,15 @@ const Reference = () => {
                       armouring to be used with minumum 90% area of coverage.
                     </td>
                     <td>m</td>
-                    <td>{InternalQuantity6}</td>
+                    {/* <td>{InternalQuantity6}</td> */}
                     <td>{InternalQuantity6}</td>
                     <td>Cables</td>
-                    <td>{scmData.ac_cable_inverter_accb}</td>
+                    {/* <td>{scmData.ac_cable_inverter_accb}</td>
                     <td>INR/m</td>
-                    <td>{TotalVal6}</td>
+                    <td>{Math.round(TotalVal6)}</td>
                     <td>18%</td>
-                    <td>{Math.round(TotalVal6*18/100)}</td>
-                    <td>{Math.round(TotalVal6*18/100+TotalVal6)}</td>
+                    <td>{Math.round((TotalVal6 * 18) / 100)}</td>
+                    <td>{Math.round((TotalVal6 * 18) / 100 + TotalVal6)}</td> */}
                   </tr>
 
                   <tr>
@@ -529,15 +552,15 @@ const Reference = () => {
                       armouring to be used with minumum 90% area of coverage.
                     </td>
                     <td>m</td>
-                    <td>{InternalQuantity7}</td>
+                    {/* <td>{InternalQuantity7}</td> */}
                     <td>{InternalQuantity7}</td>
                     <td>Cables</td>
-                    <td>{scmData.ac_cable_accb_transformer}</td>
+                    {/* <td>{scmData.ac_cable_accb_transformer}</td>
                     <td>INR/m</td>
-                    <td>{TotalVal7}</td>
+                    <td>{Math.round(TotalVal7)}</td>
                     <td>18%</td>
-                    <td>{Math.round(TotalVal7*18/100)}</td>
-                    <td>{Math.round(TotalVal7*18/100+TotalVal7)}</td>
+                    <td>{Math.round((TotalVal7 * 18) / 100)}</td>
+                    <td>{Math.round((TotalVal7 * 18) / 100 + TotalVal7)}</td> */}
                   </tr>
                 </tbody>
               </Table>
@@ -545,11 +568,6 @@ const Reference = () => {
           </Box>
         </Grid>
       </Grid>
-      <Offer11 />
-      <Offer12 />
-      <Offer13 />
-      <Offer14 />
-      <Offer15 />
     </>
   );
 };

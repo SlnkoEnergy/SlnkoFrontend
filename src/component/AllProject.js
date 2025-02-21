@@ -77,6 +77,20 @@ const AllProjects = forwardRef((props, ref) => {
 
     fetchTableData();
   }, []);
+    const [user, setUser] = useState(null);
+  
+    useEffect(() => {
+      const userData = getUserData();
+      setUser(userData);
+    }, []);
+  
+    const getUserData = () => {
+      const userData = localStorage.getItem("userDetails");
+      if (userData) {
+        return JSON.parse(userData);
+      }
+      return null;
+    };
 
   const RowMenu = ({ currentPage, p_id }) => {
     // console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
@@ -109,12 +123,17 @@ const AllProjects = forwardRef((props, ref) => {
              
             </MenuItem>
             <Divider sx={{ backgroundColor: "lightblue" }} />
+            {(user?.name === "IT Team" ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Prachi Singh" ||
+            user?.name === "admin") && (
             <MenuItem color="danger" disabled={selectedProjects.length === 0}
                 onClick={handleDelete}
                 >
                   <DeleteIcon />
                   <Typography>Delete</Typography>
                 </MenuItem>
+                )}
           </Menu>
         </Dropdown>
       </>

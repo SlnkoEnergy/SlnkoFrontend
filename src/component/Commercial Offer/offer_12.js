@@ -104,7 +104,7 @@ const Reference3 = () => {
               // console.log("API Response:", answer.data);
               // Assuming the data returned matches the structure you want
               const fetchedData = response.data; // Adjust based on the structure of API response
-              const fetchedScmData = result.data;
+              const fetchedScmData = result.data[0];
               const fetchedBdData = answer.data;
 
               const offerFetchData = fetchedData.find((item) => item.offer_id === offerRate);
@@ -208,10 +208,15 @@ const Reference3 = () => {
     ? Math.round((offerData.ac_capacity * 1000) / offerData.inverter_capacity)
     : 0;
 
+    // console.log("Internal2 :", internalQuantity2);
+
     // ***for 16th row***/
 const internalQuantity16 = offerData.dc_capacity
-? Math.round((offerData.dc_capacity*4+internalQuantity2+10))
+? Math.ceil((offerData.dc_capacity)*2 + Math.round(offerData.dc_capacity)*2 + internalQuantity2 + 10) 
 : 0;
+
+// console.log("Internal16 :", internalQuantity16);
+
 
     // ***for 17th row***/
     const internalQuantity17 = offerData.dc_capacity
@@ -270,43 +275,50 @@ const internalQuantity16 = offerData.dc_capacity
             <Grid
               sx={{
                 width: "100%",
-                height: "25%",
+                // height: "100%",
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
               }}
             >
               <Grid
-                sx={{
-                  width: "100%",
-                  height: "100%",
-                  // border: "2px solid blue",
-                }}
-              >
-                <Box
+                        sx={{
+                          width: "60%",
+                          height: "100%",
+                          border: "2px solid #0f4C7f",
+                          marginTop:"5%",
+                          minHeight:"100%",
+                         "@media print": {
+                           border:"0px",
+                           width:"100%"
+                          },
+                        }}
+                      >
+                {/* <Box
                   sx={{
                     display: "flex",
                     width: "100%",
                     alignItems: "flex-end",
                     gap: 2,
+                    marginTop:"2%"
                   }}
                 >
-                  {/* <img width={"220px"} height={"110px"} alt="logo" src={logo} />
+                  <img width={"220px"} height={"110px"} alt="logo" src={logo} />
       
                   <hr
                     style={{
-                      width: "60%",
+                      width: "80%",
                       color: "blue",
-                      borderTop: "3px solid #0f4C7f",
+                      borderTop: "2px solid #0f4C7f",
                       margin: "19px 0",
                     }}
-                  /> */}
+                  />
                 </Box>
                 <Box
                   sx={{
                     width: "100%",
-                    // height: "100%",
-                    // marginTop: "20px",
+                    height: "100%",
+                    marginTop: "20px",
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
@@ -337,22 +349,31 @@ const internalQuantity16 = offerData.dc_capacity
                   >
                     Material List
                   </Typography>
-                </Box>
+                </Box> */}
                 <Box
                   sx={{
-                    width: "100%",
-                    height: "76vh",
+                    width: "75%",
+                    height: "100%",
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
                     margin: "auto",
+                    "@media-print":{
+                width:'70%'
+              }
                   }}
                 >
                   <Sheet
-                    sx={{
+                     sx={{
                       width: "99.5%",
                       height: "100%",
                       backgroundColor: "white",
+                      margin: "10px",
+                      display: "flex",
+                      alignItems: "center",
+                      flexDirection: "row",
+                      justifyContent: "center",
+      
                     }}
                   >
                     <Table className="table-header">
@@ -363,21 +384,21 @@ const internalQuantity16 = offerData.dc_capacity
                           <th style={{ width: "6%" }}>RATING</th>
                           <th style={{ width: "20%" }}>SPECIFICATION</th>
                           <th>UoM</th>
-                          <th>Qty (Int.)</th>
+                          {/* <th>Qty (Int.)</th> */}
                           <th>Qty</th>
                           <th>Category</th>
-                          <th>Rate</th>
+                          {/* <th>Rate</th>
                           <th>Rate UoM</th>
                           <th>Total Value</th>
                           <th>GST</th>
                           <th>GST Value</th>
-                          <th>Total with GST</th>
+                          <th>Total with GST</th> */}
                         </tr>
                       </thead>
                       <tbody>
                         <tr>
                           <td>15.</td>
-                          <td>11 kV ICOG, Outdoor Panel</td>
+                          <td>ICOG, Outdoor Panel</td>
                           <td>{EvacuationVoltage(offerData.evacuation_voltage)}</td>
                           <td>
                             CT-25 kA For 3 Sec, XXX/5A, CORE-1,10VA,5P20, CORE-2,
@@ -393,16 +414,16 @@ const internalQuantity16 = offerData.dc_capacity
                             <br />
                           </td>
                           <td>Nos.</td>
-                          <td>1</td>
+                          {/* <td>1</td> */}
                           <td>1</td>
                           <td>Electrical Equipment - Solar Plant Side
                           (Transformer+LT Panel+HT Panel+Aux Transformer+UPS System)</td>
-                          <td>{scmWeekly3(offerData.evacuation_voltage)}</td>
+                          {/* <td>{scmWeekly3(offerData.evacuation_voltage)}</td>
                           <td>INR/Nos.</td>
                           <td>{scmWeekly3(offerData.evacuation_voltage)}</td>
                           <td>18%</td>
                           <td>{Math.round(scmWeekly3(offerData.evacuation_voltage)*18/100)}</td>
-                          <td>{Math.round(scmWeekly3(offerData.evacuation_voltage)*18/100+scmWeekly3(offerData.evacuation_voltage))}</td>
+                          <td>{Math.round(scmWeekly3(offerData.evacuation_voltage)*18/100+scmWeekly3(offerData.evacuation_voltage))}</td> */}
                         </tr>
       
                         <tr>
@@ -422,15 +443,15 @@ const internalQuantity16 = offerData.dc_capacity
                             coke and salt as required as per provisions of IS: 3043
                           </td>
                           <td>Set</td>
-                          <td>{internalQuantity16}</td>
+                          {/* <td>{internalQuantity16}</td> */}
                           <td>{internalQuantity16}</td>
                           <td>Other Balance of Material</td>
-                          <td>{scmData.earthing_station}</td>
+                          {/* <td>{scmData.earthing_station}</td>
                           <td>INR/Set</td>
                           <td>{TotalVal16}</td>
                           <td>18%</td>
                           <td>{Math.round(TotalVal16*18/100)}</td>
-                          <td>{Math.round(TotalVal16*18/100+TotalVal16)}</td>
+                          <td>{Math.round(TotalVal16*18/100+TotalVal16)}</td> */}
                         </tr>
       
                         <tr>
@@ -441,15 +462,15 @@ const internalQuantity16 = offerData.dc_capacity
                             25x3 mm GI strip With Zinc coating of 70 to 80 microns
                           </td>
                           <td>m</td>
-                          <td>{internalQuantity17}</td>
+                          {/* <td>{internalQuantity17}</td> */}
                           <td>{internalQuantity17}</td>
                           <td>Other Balance of Material</td>
-                          <td>{scmData.earthing_strips}</td>
+                          {/* <td>{scmData.earthing_strips}</td>
                           <td>INR/m</td>
                           <td>{TotalVal17}</td>
                           <td>18%</td>
                           <td>{Math.round(TotalVal17*18/100)}</td>
-                          <td>{Math.round(TotalVal17*18/100+TotalVal17)}</td>
+                          <td>{Math.round(TotalVal17*18/100+TotalVal17)}</td> */}
                         </tr>
       
                         <tr>
@@ -460,15 +481,15 @@ const internalQuantity16 = offerData.dc_capacity
                             50x6 mm GI strip With Zinc coating of 70 to 80 microns
                           </td>
                           <td>m</td>
-                          <td>{internalQuantity17_2}</td>
+                          {/* <td>{internalQuantity17_2}</td> */}
                           <td>{internalQuantity17_2}</td>
                           <td>Other Balance of Material</td>
-                          <td>{scmData.earthing_strip}</td>
+                          {/* <td>{scmData.earthing_strip}</td>
                           <td>INR/m</td>
                           <td>{TotalVal18}</td>
                           <td>18%</td>
                           <td>{Math.round(TotalVal18*18/100)}</td>
-                          <td>{Math.round(TotalVal18*18/100)+TotalVal18}</td>
+                          <td>{Math.round(TotalVal18*18/100)+TotalVal18}</td> */}
                         </tr>
       
                         <tr>
@@ -480,15 +501,15 @@ const internalQuantity16 = offerData.dc_capacity
                             Mtr Dia over 7 Mtr High Mast with counter
                           </td>
                           <td>Set</td>
-                          <td>{internalQuantity18}</td>
+                          {/* <td>{internalQuantity18}</td> */}
                           <td>{internalQuantity18}</td>
                           <td>Other Balance of Material</td>
-                          <td>{scmData.lightening_arrestor}</td>
+                          {/* <td>{scmData.lightening_arrestor}</td>
                           <td>INR/Set</td>
                           <td>{TotalVal19}</td>
                           <td>18%</td>
                           <td>{Math.round(TotalVal19*18/100)}</td>
-                          <td>{Math.round(TotalVal19*18/100+TotalVal19)}</td>
+                          <td>{Math.round(TotalVal19*18/100+TotalVal19)}</td> */}
                         </tr>
       
                         <tr>
@@ -497,15 +518,15 @@ const internalQuantity16 = offerData.dc_capacity
                           <td>As per inverter manufacturer</td>
                           <td>As per inverter manufacturer</td>
                           <td>Set</td>
-                          <td>1</td>
+                          {/* <td>1</td> */}
                           <td>1</td>
                           <td>Solar Inverter & Datalogger</td>
-                          <td>{scmData.datalogger}</td>
+                          {/* <td>{scmData.datalogger}</td>
                           <td>INR/Set</td>
                           <td>{TotalVal20}</td>
                           <td>18%</td>
                           <td>{Math.round(TotalVal20*18/100)}</td>
-                          <td>{Math.round(TotalVal20*18/100+TotalVal20)}</td>
+                          <td>{Math.round(TotalVal20*18/100+TotalVal20)}</td> */}
                         </tr>
       
                         <tr>
@@ -514,16 +535,16 @@ const internalQuantity16 = offerData.dc_capacity
                           <td>10 kVA,50Hz, 800/415 V, Dyn11</td>
                           <td>Dry Type Transformer</td>
                           <td>Nos.</td>
-                          <td>1</td>
+                          {/* <td>1</td> */}
                           <td>1</td>
                           <td>Electrical Equipment - Solar Plant Side
                           (Transformer+LT Panel+HT Panel+Aux Transformer+UPS System)</td>
-                          <td>{scmData.auxilary_transformer}</td>
+                          {/* <td>{scmData.auxilary_transformer}</td>
                           <td>INR/Nos.</td>
                           <td>{TotalVal21}</td>
                           <td>18%</td>
                           <td>{Math.round(TotalVal21*18/100)}</td>
-                          <td>{Math.round(TotalVal21*18/100+TotalVal21)}</td>
+                          <td>{Math.round(TotalVal21*18/100+TotalVal21)}</td> */}
                         </tr>
       
                         <tr>
@@ -532,16 +553,16 @@ const internalQuantity16 = offerData.dc_capacity
                           <td>1.5 kW Load with 1 Hour backup, Battery SMF Type</td>
                           <td></td>
                           <td>Set</td>
-                          <td>1</td>
+                          {/* <td>1</td> */}
                           <td>1</td>
                           <td>Electrical Equipment - Solar Plant Side
                           (Transformer+LT Panel+HT Panel+Aux Transformer+UPS System)</td>
-                          <td>{scmData.ups_ldb}</td>
+                          {/* <td>{scmData.ups_ldb}</td>
                           <td>INR/Set</td>
                           <td>{TotalVal22}</td>
                           <td>18%</td>
                           <td>{Math.round(TotalVal22*18/100)}</td>
-                          <td>{Math.round(TotalVal22*18/100+TotalVal22)}</td>
+                          <td>{Math.round(TotalVal22*18/100+TotalVal22)}</td> */}
                         </tr>
                       </tbody>
                     </Table>

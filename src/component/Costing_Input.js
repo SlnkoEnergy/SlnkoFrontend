@@ -1,10 +1,12 @@
 import { Box, Button, Grid, Sheet, Table, Typography } from "@mui/joy";
 import React from "react";
-import { useState } from "react";
+import { useState , useEffect} from "react";
 import "./Commercial Offer/CSS/offer.css";
 import { useNavigate } from "react-router-dom";
 import Axios from "../utils/Axios";
-import { toast } from "react-toastify";
+import SaveIcon from "@mui/icons-material/Save";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Costing_Input = () => {
   const navigate = useNavigate();
@@ -43,7 +45,7 @@ const Costing_Input = () => {
     abt_meter_11kv_Other: "",
     abt_meter_33kv_Other: "",
     vcb_kiosk: "",
-    slnko_charges: "",
+    slnko_charges_scm: "",
     installation_commissioing: {
       labour_works: "",
       machinery: "",
@@ -52,102 +54,64 @@ const Costing_Input = () => {
     submitted_by_scm:""
   });
 
+  const [id, setId] = useState(""); // Store `_id` dynamically from GET API
+
+  useEffect(() => {
+    Axios
+      .get("/get-comm-scm-rate")
+      .then((response) => {
+        if (response.data && response.data.length > 0) {
+          console.log("Fetched data:", response.data[0]); // Debugging fetched data
+          setscmData(response.data[0]); 
+          setId(response.data[0]._id); // Store `_id` dynamically
+        } else {
+          console.error("No data found in API response");
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+      });
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // Allow only positive numbers with up to 2 decimal places
-    if (/^\d*\.?\d{0,2}$/.test(value) || value === "") {
-      setscmData((prev) => {
-        // Check if the field exists inside installation_commissioing (nested object)
-        if (prev.installation_commissioing?.hasOwnProperty(name)) {
-          return {
-            ...prev,
-            installation_commissioing: {
-              ...prev.installation_commissioing,
-              [name]: value,
-            },
-          };
-        }
-        return { ...prev, [name]: value };
-      });
-    }
+    setscmData((prev) => {
+      if (prev.installation_commissioing?.hasOwnProperty(name)) {
+        return {
+          ...prev,
+          installation_commissioing: {
+            ...prev.installation_commissioing,
+            [name]: value,
+          },
+        };
+      }
+      return { ...prev, [name]: value };
+    });
   };
-
-    const [user, setUser] = useState(null);
-    const getUserData = () => {
-      const userData = localStorage.getItem("userDetails");
-      return userData ? JSON.parse(userData) : null;
-    };
-
-  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    try {
-      const response = await Axios.post("/create-scm-rate", scmData, {
-        headers: { "Content-Type": "application/json" },
-      });
-      console.log("Response:", response.data);
 
-      const user = getUserData();
-      if (!user?.name) {
-        console.error("User details not found.");
-        alert("User details are missing!");
-        return;
-      }
-      // alert("Data submitted successfully!");
-      toast.success("SCM Costing added successfully.");
-      navigate("/comm_offer");
-      setscmData({
-        spv_modules_555: "",
-        spv_modules_580: "",
-        spv_modules_550: "",
-        spv_modules_585: "",
-        solar_inverter: "",
-        module_mounting_structure: "",
-        mounting_hardware: "",
-        dc_cable: "",
-        ac_cable_inverter_accb: "",
-        ac_cable_accb_transformer: "",
-        ac_ht_cable_11KV: "",
-        ac_ht_cable_33KV: "",
-        earthing_station: "",
-        earthing_strips: "",
-        earthing_strip: "",
-        lightening_arrestor: "",
-        datalogger: "",
-        auxilary_transformer: "",
-        ups_ldb: "",
-        balance_of_system: "",
-        transportation: "",
-        transmission_line_11kv: "",
-        transmission_line_33kv: "",
-        transmission_line_internal: "",
-        transmission_line_print: "",
-        ct_pt_11kv_MP: "",
-        ct_pt_33kv_MP: "",
-        ct_pt_11kv_Other: "",
-        ct_pt_33kv_Other: "",
-        abt_meter_11kv_MP: "",
-        abt_meter_33kv_MP: "",
-        abt_meter_11kv_Other: "",
-        abt_meter_33kv_Other: "",
-        vcb_kiosk: "",
-        slnko_charges: "",
-        installation_commissioing: {
-          labour_works: "",
-          machinery: "",
-          civil_material: "",
-        },
-        submitted_by_scm: user.name
-      });
+    if (!id) {
+      console.error("Error: `_id` is missing, cannot update");
+      return;
+    }
+
+    console.log("Submitting data to PUT API:", { id, scmData });
+
+    try {
+      const response = await Axios.put(
+        `/edit-scm-rate/${id}`,
+        scmData
+      );
+     
+      toast.success("Data updated successfully!");
+      console.log("Data updated successfully:", response.data);
+       navigate("/comm_offer");
     } catch (error) {
-      console.error("Error:", error.response?.data || error.message);
-      // alert("Submission failed");
-      toast.error("Submission Failed...");
-    } finally {
-      setLoading(false);
+        toast.error("Error updating data!");
+      console.error("Error updating data:", error.response ? error.response.data : error);
     }
   };
 
@@ -169,9 +133,9 @@ const Costing_Input = () => {
         sm={10}
         md={8}
         lg={7}
-        sx={{
-          height: "100%",
-        }}
+        // sx={{
+        //   height: "100%",
+        // }}
       >
         {/* Table Section */}
         <Box
@@ -192,7 +156,12 @@ const Costing_Input = () => {
                 overflowX: "auto",
               }}
             >
-              <Table className="table-header">
+              <Table sx={{
+                width: "100%",
+                borderCollapse: "collapse!important",
+                tableLayout: "auto",
+                border: "1px solid #dee2e6 !important"
+              }}>
                 <thead>
                   <tr>
                     <th style={{ width: "5%" }}>S.NO.</th>
@@ -1619,7 +1588,7 @@ const Costing_Input = () => {
                     <td>INR/Set</td>
                   </tr>
 
-                  <tr>
+                  {/* <tr>
                     <td>29.</td>
                     <td>VCB Kiosk</td>
                     <td>As per DISCOM requirements</td>
@@ -1654,18 +1623,18 @@ const Costing_Input = () => {
                       />
                     </td>
                     <td>INR/Set</td>
-                  </tr>
+                  </tr> */}
 
                   <tr>
-                    <td>30.</td>
+                    <td>29.</td>
                     <td>SLNKO EPCM Service Charges</td>
                     <td>SLNKO FEE</td>
                     <td></td>
                     <td>
                       <input
                         type="number"
-                        name="slnko_charges"
-                        value={scmData.slnko_charges}
+                        name="slnko_charges_scm"
+                        value={scmData.slnko_charges_scm}
                         onChange={handleChange}
                         min="0"
                         step="0.01"
@@ -1693,7 +1662,7 @@ const Costing_Input = () => {
                     <td>INR/Wp</td>
                   </tr>
                 </tbody>
-                <tfoot>
+                {/* <tfoot>
                   <tr>
                     <td colSpan={6}>
                       <Button type="submit" sx={{ mt: 1 }}>
@@ -1701,7 +1670,45 @@ const Costing_Input = () => {
                       </Button>
                     </td>
                   </tr>
-                </tfoot>
+                </tfoot> */}
+                <tfoot>
+                  <tr>
+                    <td colSpan={6}>
+               <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+        <Button
+          type="submit"
+          variant="contained"
+          startIcon={<SaveIcon />}
+          sx={{
+            background: "linear-gradient(135deg, #007bff, #0056b3)",
+            color: "white",
+            fontSize: "16px",
+            fontWeight: "600",
+            padding: "8px 16px",
+            borderRadius: "6px",
+            textTransform: "none",
+            boxShadow: "0px 3px 8px rgba(0, 123, 255, 0.3)",
+            transition: "all 0.3s ease-in-out",
+            minWidth: "150px",
+            "&:hover": {
+              background: "linear-gradient(135deg, #0056b3, #003580)",
+              transform: "translateY(-2px)",
+              boxShadow: "0px 6px 15px rgba(0, 123, 255, 0.5)",
+            },
+            "&:active": {
+              transform: "translateY(1px)",
+              boxShadow: "0px 2px 8px rgba(0, 123, 255, 0.3)",
+            },
+          }}
+        >
+          Update Data
+        </Button>
+      </Box>
+<ToastContainer />
+               </td>
+                  </tr>
+               
+             </tfoot>
               </Table>
             </Sheet>
           </form>

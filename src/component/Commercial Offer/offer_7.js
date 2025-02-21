@@ -9,7 +9,7 @@ const Page7 = () => {
       <Grid
         sx={{
           width: "100%",
-          height: "100%",
+          // height: "100%",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
@@ -26,9 +26,9 @@ const Page7 = () => {
         <Box
           sx={{
             position: "absolute",
-            left: "59.59%",
+            left: "60%",
             backgroundColor: "#F2F4F5",
-            height: "128%",
+            height: "1140px",
             width: "20%",
             zIndex: -1,
             "@media print": {
@@ -42,7 +42,7 @@ const Page7 = () => {
           sx={{
             width: "60%",
             height: "100%",
-            border: "2px solid blue",
+            border: "2px solid #0f4C7f",
             padding: "20px",
             "@media print": {
               width: "210mm",

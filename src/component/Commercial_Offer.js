@@ -4,6 +4,7 @@ import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
+import HistoryIcon from "@mui/icons-material/History";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
@@ -132,6 +133,17 @@ function Offer() {
               <ContentPasteGoIcon />
               <Typography>Offer Summary</Typography>
             </MenuItem>
+            <MenuItem
+            onClick={() => {
+              const page = currentPage;
+              const offerId = String(offer_id);
+              localStorage.setItem("get-offer", offerId);
+              navigate(`/bd_history?page=${page}&offer_id=${offerId}`);
+            }}
+          >
+            <HistoryIcon />
+            <Typography>Offer History</Typography>
+          </MenuItem>
           <Divider sx={{ backgroundColor: "lightblue" }} />
             <MenuItem color="danger">
             <DeleteIcon />

@@ -105,7 +105,7 @@ const Reference2 = () => {
         // console.log("API Response:", answer.data);
         // Assuming the data returned matches the structure you want
         const fetchedData = response.data; // Adjust based on the structure of API response
-        const fetchedScmData = result.data;
+        const fetchedScmData = result.data[0];
         const fetchedBdData = answer.data;
 
         const offerFetchData = fetchedData.find((item) => item.offer_id === offerRate);
@@ -231,7 +231,7 @@ const Reference2 = () => {
     }
   };
 
-  const final_ht_cable = (ac_ht_cable_11KV, ac_ht_cable_33KV, evacuation_voltage) => 
+   const final_ht_cable = (ac_ht_cable_11KV, ac_ht_cable_33KV, evacuation_voltage) => 
     evacuation_voltage === 11 ? ac_ht_cable_11KV : ac_ht_cable_33KV;
 
 
@@ -337,7 +337,7 @@ const TotalVal13 = scmWeekly1*1;
       <Grid
         sx={{
           width: "100%",
-          height: "25%",
+          // height: "100%",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
@@ -345,29 +345,35 @@ const TotalVal13 = scmWeekly1*1;
       >
         <Grid
           sx={{
-            width: "100%",
+            width: "60%",
             height: "100%",
-            border: "2px solid blue",
+            marginTop:"5%",
+            border: "2px solid #0f4C7f",
+            "@media print": {
+             border:"0px",
+             width:"100%"
+            },
           }}
         >
-          <Box
+          {/* <Box
             sx={{
               display: "flex",
               width: "100%",
               alignItems: "flex-end",
               gap: 2,
+              marginTop:"2%"
             }}
           >
-            {/* <img width={"220px"} height={"110px"} alt="logo" src={logo} />
+            <img width={"220px"} height={"110px"} alt="logo" src={logo} />
 
             <hr
               style={{
-                width: "60%",
+                width: "80%",
                 color: "blue",
-                borderTop: "3px solid #0f4C7f",
+                borderTop: "2px solid #0f4C7f",
                 margin: "19px 0",
               }}
-            /> */}
+            />
           </Box>
           <Box
             sx={{
@@ -404,24 +410,33 @@ const TotalVal13 = scmWeekly1*1;
             >
               Material List
             </Typography>
-          </Box>
+          </Box> */}
           <Box
-            sx={{
-              width: "100%",
-              height: "76vh",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              margin: "auto",
-            }}
-          >
+                      sx={{
+                        width: "75%",
+                        height: "100%",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        margin: "auto",
+                        "@media-print":{
+                          width:'75%'
+                        }
+                      }}
+                    >
             <Sheet
-              sx={{
-                width: "99.5%",
-                height: "100%",
-                backgroundColor: "white",
-              }}
-            >
+                          sx={{
+                            width: "99.5%",
+                            height: "100%",
+                            backgroundColor: "white",
+                            margin: "10px",
+                            display: "flex",
+                            alignItems: "center",
+                            flexDirection: "row",
+                            justifyContent: "center",
+            
+                          }}
+                        >
               <Table className="table-header">
                 <thead>
                   <tr>
@@ -430,15 +445,15 @@ const TotalVal13 = scmWeekly1*1;
                     <th style={{ width: "6%" }}>RATING</th>
                     <th style={{ width: "20%" }}>SPECIFICATION</th>
                     <th>UoM</th>
-                    <th>Qty (Int.)</th>
+                    {/* <th>Qty (Int.)</th> */}
                     <th>Qty</th>
                     <th>Category</th>
-                    <th>Rate</th>
+                    {/* <th>Rate</th>
                     <th>Rate UoM</th>
                     <th>Total Value</th>
                     <th>GST</th>
                     <th>GST Value</th>
-                    <th>Total with GST</th>
+                    <th>Total with GST</th> */}
                   </tr>
                 </thead>
                 <tbody>
@@ -454,15 +469,15 @@ const TotalVal13 = scmWeekly1*1;
                       armouring to be used with minumum 90% area of coverage.
                     </td>
                     <td>m</td>
-                    <td>50</td>
+                    {/* <td>50</td> */}
                     <td>50</td>
                     <td>Cables</td>
-                    <td>{selectedCable}</td>
+                    {/* <td>{selectedCable}</td>
                     <td>INR/m</td>
                     <td>{TotalVal8}</td>
                     <td>18%</td>
                     <td>{Math.round(TotalVal8*18/100)}</td>
-                    <td>{Math.round(TotalVal8*18/100+TotalVal8)}</td>
+                    <td>{Math.round(TotalVal8*18/100+TotalVal8)}</td> */}
                   </tr>
 
                   <tr>
@@ -471,15 +486,15 @@ const TotalVal13 = scmWeekly1*1;
                     <td>1C/35 sqmm /Cu / Green Cable/UnAr</td>
                     <td>Cu / Green Cable/UnAr., 450/750V</td>
                     <td>m</td>
-                    <td>{internalQuantity9}</td>
+                    {/* <td>{internalQuantity9}</td> */}
                     <td>{internalQuantity9}</td>
                     <td>Cables</td>
-                    <td>380</td>
+                    {/* <td>380</td>
                     <td>INR/m</td>
                     <td>{TotalVal9}</td>
                     <td>18%</td>
                     <td>{Math.round(TotalVal9*18/100)}</td>
-                    <td>{Math.round(TotalVal9*18/100+TotalVal9)}</td>
+                    <td>{Math.round(TotalVal9*18/100+TotalVal9)}</td> */}
                   </tr>
 
                   <tr>
@@ -490,15 +505,15 @@ const TotalVal13 = scmWeekly1*1;
                       PVC Insulated flexible Cu Cable, Cu / Green Cable/UnAr
                     </td>
                     <td>m</td>
-                    <td>{internalQuantity10}</td>
+                    {/* <td>{internalQuantity10}</td> */}
                     <td>{internalQuantity10}</td>
                     <td>Cables</td>
-                    <td>660</td>
+                    {/* <td>660</td>
                     <td>INR/m</td>
                     <td>{TotalVal10}</td>
                     <td>18%</td>
                     <td>{Math.round(TotalVal10*18/100)}</td>
-                    <td>{Math.round(TotalVal10*18/100+TotalVal10)}</td>
+                    <td>{Math.round(TotalVal10*18/100+TotalVal10)}</td> */}
                   </tr>
 
                   <tr>
@@ -507,15 +522,15 @@ const TotalVal13 = scmWeekly1*1;
                     <td>RS485 / 2P / 0.5 sqmm / Armoured / Shielded Cable</td>
                     <td>RS485 / 2P / 0.5 sqmm / Armoured / Shielded Cable</td>
                     <td>m</td>
-                    <td>{internalQuantity11}</td>
+                    {/* <td>{internalQuantity11}</td> */}
                     <td>{internalQuantity11}</td>
                     <td>Cables</td>
-                    <td>130</td>
+                    {/* <td>130</td>
                     <td>INR/m</td>
                     <td>{TotalVal11}</td>
                     <td>18%</td>
                     <td>{Math.round(TotalVal11*18/100)}</td>
-                    <td>{Math.round(TotalVal11*18/100+TotalVal11)}</td>
+                    <td>{Math.round(TotalVal11*18/100+TotalVal11)}</td> */}
                   </tr>
 
                   <tr>
@@ -524,15 +539,15 @@ const TotalVal13 = scmWeekly1*1;
                     <td>14Cx2.5 sqmm Cu XLPE Ar Cable</td>
                     <td>14Cx2.5 sqmm Cu XLPE Ar Cable</td>
                     <td>m</td>
-                    <td>20</td>
+                    {/* <td>20</td> */}
                     <td>20</td>
                     <td>Cables</td>
-                    <td>470</td>
+                    {/* <td>470</td>
                     <td>INR/m</td>
                     <td>{TotalVal12}</td>
                     <td>18%</td>
                     <td>{Math.round(TotalVal12*18/100)}</td>
-                    <td>{Math.round(TotalVal12*18/100+TotalVal12)}</td>
+                    <td>{Math.round(TotalVal12*18/100+TotalVal12)}</td> */}
                   </tr>
 
                   <tr>
@@ -557,16 +572,16 @@ const TotalVal13 = scmWeekly1*1;
                       type
                     </td>
                     <td>Set</td>
-                    <td>1</td>
+                    {/* <td>1</td> */}
                     <td>1</td>
                     <td>Electrical Equipment - Solar Plant Side
                     (Transformer+LT Panel+HT Panel+Aux Transformer+UPS System)</td>
-                    <td>{scmWeekly1}</td>
+                    {/* <td>{scmWeekly1}</td>
                     <td>INR/Set</td>
                     <td>{TotalVal13}</td>
                     <td>18%</td>
                     <td>{TotalVal13*18/100}</td>
-                    <td>{TotalVal13*18/100+TotalVal13}</td>
+                    <td>{TotalVal13*18/100+TotalVal13}</td> */}
                   </tr>
 
                   <tr>
@@ -585,16 +600,16 @@ const TotalVal13 = scmWeekly1*1;
                       report required.
                     </td>
                     <td>Nos.</td>
-                    <td>1</td>
+                    {/* <td>1</td> */}
                     <td>1</td>
                     <td>Electrical Equipment - Solar Plant Side
                     (Transformer+LT Panel+HT Panel+Aux Transformer+UPS System)</td>
-                    <td>{scmWeekly2(offerData.transformer, offerData.ac_capacity, offerData.evacuation_voltage)}</td>
+                    {/* <td>{scmWeekly2(offerData.transformer, offerData.ac_capacity, offerData.evacuation_voltage)}</td>
                     <td>INR/Nos.</td>
                     <td>{scmWeekly2(offerData.transformer, offerData.ac_capacity, offerData.evacuation_voltage)}</td>
                     <td>18%</td>
                     <td>{scmWeekly2(offerData.transformer, offerData.ac_capacity, offerData.evacuation_voltage)*18/100}</td>
-                    <td>{scmWeekly2(offerData.transformer, offerData.ac_capacity, offerData.evacuation_voltage)*18/100+scmWeekly2(offerData.transformer, offerData.ac_capacity, offerData.evacuation_voltage)}</td>
+                    <td>{scmWeekly2(offerData.transformer, offerData.ac_capacity, offerData.evacuation_voltage)*18/100+scmWeekly2(offerData.transformer, offerData.ac_capacity, offerData.evacuation_voltage)}</td> */}
                   </tr>
                 </tbody>
               </Table>

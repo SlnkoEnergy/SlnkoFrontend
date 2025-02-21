@@ -115,7 +115,7 @@ const Rate_Offer = () => {
       const scmPayload = {
         ...scmData,
         offer_id: offerData.offer_id,
-        submitted_by: user.name, // Ensuring user name is set in payload
+        submitted_by: user.name,
       };
   
       const response = await Axios.post("/create-bd-rate", scmPayload, {
@@ -125,43 +125,18 @@ const Rate_Offer = () => {
       console.log("Response:", response?.data);
       toast.success("Costing submitted successfully!");
   
-      // Set offer_id in localStorage after successful submission
+      
       localStorage.setItem("offerId", offerData.offer_id);
   
       navigate("/ref_list");
   
-      // Reset form state after successful submission
+     
       setscmData({
         offer_id: "",
         spv_modules: "",
-        // solar_inverter: "",
         module_mounting_structure: "",
-        // mounting_hardware: "",
-        // dc_cable: "",
-        // ac_cable_inverter_accb: "",
-        // ac_cable_accb_transformer: "",
-        // ac_ht_cable: "",
-        // earthing_station: "",
-        // earthing_strips: "",
-        // earthing_strip: "",
-        // lightening_arrestor: "",
-        // datalogger: "",
-        // auxilary_transformer: "",
-        // ups_ldb: "",
-        // balance_of_system: "",
-        // transportation: "",
         transmission_line: "",
-        // transmission_line_internal: "",
-        // transmission_line_print: "",
-        // ct_pt: "",
-        // abt_meter: "",
-        // vcb_kiosk: "",
         slnko_charges: "",
-        // installation_commissioing: {
-        //   labour_works: "",
-        //   machinery: "",
-        //   civil_material: "",
-        // },
         submitted_by_BD: user.name,
       });
     } catch (error) {
@@ -171,6 +146,8 @@ const Rate_Offer = () => {
       setLoading(false);
     }
   };
+
+  
   
   
 

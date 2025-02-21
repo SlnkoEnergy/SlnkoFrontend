@@ -30,7 +30,7 @@ const Page2 = () => {
           width: "60%",
           height: "100%",
           display: "flex",
-          border: "2px solid blue",
+          border: "2px solid #0f4C7f",
           position:'relative',
           "@media print": {
             width: "210mm",

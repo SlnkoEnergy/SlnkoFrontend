@@ -85,6 +85,16 @@ const Summary = () => {
     useEffect(() => {
       const fetchData = async () => {
         try {
+
+          const offerRate = localStorage.getItem("offerId");
+          if (!offerRate) {
+            console.error("Offer ID not found in localStorage");
+            alert("Offer ID is missing!");
+            // setLoading(false);
+            return;
+          }
+
+
           const response = await Axios.get(
             "/get-comm-offer"
           );
@@ -99,33 +109,51 @@ const Summary = () => {
         //   console.log("API Response:", answer.data);
   
           // Assuming the data returned matches the structure you want
-          const fetchedData = response.data[0]; // Adjust based on the structure of API response
+          const fetchedData = response.data; // Adjust based on the structure of API response
           const fetchedScmData = result.data[0];
-          const fetchedBdData = answer.data[0];
+          const fetchedBdData = answer.data;
+
+          const offerFetchData = fetchedData.find(
+            (item) => item.offer_id === offerRate
+          );
+          const fetchRatebd = fetchedBdData.find(
+            (item) => item.offer_id === offerRate
+          );
+  
+          if (!offerFetchData) {
+            console.error("No matching offer data found");
+            alert("No matching offer data found!");
+            // setLoading(false);
+            return;
+          }
+
+          localStorage.setItem("offer_data", JSON.stringify(offerFetchData));
+          localStorage.setItem("scm_data", JSON.stringify(fetchedScmData));
+
           // Map API response to the state keys (for simplicity)
           setOfferData({
-            offer_id: fetchedData.offer_id || "",
-            client_name: fetchedData.client_name || "",
-            village: fetchedData.village || "",
-            district: fetchedData.district || "",
-            state: fetchedData.state || "",
-            pincode: fetchedData.pincode || "",
-            ac_capacity: fetchedData.ac_capacity || "",
-            dc_overloading: fetchedData.dc_overloading || "",
-            dc_capacity: fetchedData.dc_capacity || "",
-            scheme: fetchedData.scheme || "",
-            component: fetchedData.component || "",
-            rate: fetchedData.rate || "",
-            timeline: fetchedData.timeline || "",
-            prepared_by: fetchedData.prepared_by || "",
-            module_type: fetchedData.module_type || "",
-            module_capacity: fetchedData.module_capacity || "",
-            inverter_capacity: fetchedData.inverter_capacity || "",
-            evacuation_voltage: fetchedData.evacuation_voltage || "",
-            module_orientation: fetchedData.module_orientation || "",
-            transmission_length: fetchedData.transmission_length || "",
-            transformer: fetchedData.transformer || "",
-            column_type: fetchedData.column_type || "",
+            offer_id: offerFetchData.offer_id || "",
+            client_name: offerFetchData.client_name || "",
+            village: offerFetchData.village || "",
+            district: offerFetchData.district || "",
+            state: offerFetchData.state || "",
+            pincode: offerFetchData.pincode || "",
+            ac_capacity: offerFetchData.ac_capacity || "",
+            dc_overloading: offerFetchData.dc_overloading || "",
+            dc_capacity: offerFetchData.dc_capacity || "",
+            scheme: offerFetchData.scheme || "",
+            component: offerFetchData.component || "",
+            rate: offerFetchData.rate || "",
+            timeline: offerFetchData.timeline || "",
+            prepared_by: offerFetchData.prepared_by || "",
+            module_type: offerFetchData.module_type || "",
+            module_capacity: offerFetchData.module_capacity || "",
+            inverter_capacity: offerFetchData.inverter_capacity || "",
+            evacuation_voltage: offerFetchData.evacuation_voltage || "",
+            module_orientation: offerFetchData.module_orientation || "",
+            transmission_length: offerFetchData.transmission_length || "",
+            transformer: offerFetchData.transformer || "",
+            column_type: offerFetchData.column_type || "",
           });
   
           setscmData({
@@ -175,13 +203,13 @@ const Summary = () => {
           });
   
           setBdRate({
-            offer_id: fetchedBdData.offer_id || "",
-            spv_modules: fetchedBdData.spv_modules || "",
+            // offer_id: fetchedBdData.offer_id || "",
+            spv_modules: fetchRatebd.spv_modules || "",
             module_mounting_structure:
-              fetchedBdData.module_mounting_structure || "",
-            transmission_line: fetchedBdData.transmission_line || "",
-            slnko_charges: fetchedBdData.slnko_charges || "",
-            submitted_by_BD: fetchedBdData.submitted_by_BD || "",
+              fetchRatebd.module_mounting_structure || "",
+            transmission_line: fetchRatebd.transmission_line || "",
+            slnko_charges: fetchRatebd.slnko_charges || "",
+            submitted_by_BD: fetchRatebd.submitted_by_BD || "",
           });
         } catch (error) {
           console.error("Error fetching commercial offer data:", error);
@@ -195,7 +223,7 @@ const Summary = () => {
     const internalQuantity24 = offerData.dc_capacity * 1000;
   
     //***for 25th row ***/
-    const internalQuantity25 = Math.round(offerData.dc_capacity * 3) + 4;
+    const internalQuantity25 = Math.ceil(offerData.dc_capacity * 3) + 4;
   
     //***for 31st row ***/
     const internalQuantity31 = offerData.dc_capacity * 1000;
@@ -259,6 +287,9 @@ const Summary = () => {
     //***Total Value 1***/
     const TotalVal1 =
       bdRate.spv_modules * PrintQuantity1 * offerData.module_capacity;
+
+      console.log("bd_spvModules", TotalVal1);
+      
   
     //***Total Value 2***/
     const TotalVal2 = scmData.solar_inverter * internalQuantity2;
@@ -478,8 +509,8 @@ const Summary = () => {
   
     // ***for 16th row***/
     const internalQuantity16 = offerData.dc_capacity
-      ? Math.round(offerData.dc_capacity * 4 + internalQuantity2 + 10)
-      : 0;
+    ? Math.ceil((offerData.dc_capacity)*2 + Math.round(offerData.dc_capacity)*2 + internalQuantity2 + 10) 
+    : 0;
   
     // ***for 17th row***/
     const internalQuantity17 = offerData.dc_capacity
@@ -959,7 +990,7 @@ const Summary = () => {
           container
           sx={{
             width: "100%",
-            height: "100%",
+            // height: "100%",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
@@ -973,30 +1004,28 @@ const Summary = () => {
             },
           }}
         >
-          <Grid
-            sx={{
-              width: "50%",
-              minHeight: "115vh",
-              border: "2px solid blue",
-              display: "flex",
-              alignItems: "center",
-              flexDirection: "column",
-              "@media (max-width: 1340px)": {
-                width: "75%",
-              },
-              "@media print": {
-                width: "210mm !important",
-                height: "297mm !important",
-                minHeight: "0vh !important",
-              },
-            }}
-          >
+           <Grid
+                   sx={{
+                     width: "60%",
+                     height: "100%",
+                     border: "2px solid #0f4C7f",
+                     "@media print": {
+                       width: "210mm",
+                       height: "297mm",
+                     },
+                   }}
+                 >
             <Box
               sx={{
                 display: "flex",
                 width: "100%",
                 alignItems: "flex-end",
                 gap: 2,
+                paddingTop: "20px",
+              "@media print": {
+                padding: "5px",
+                marginTop: "10px",
+              },
               }}
             >
               <img
@@ -1019,7 +1048,7 @@ const Summary = () => {
                   style={{
                     width: "100%",
                     color: "blue",
-                    borderTop: "3px solid #0f4C7f",
+                    borderTop: "2px solid #0f4C7f",
                   }}
                 />
               </Box>
@@ -1029,8 +1058,25 @@ const Summary = () => {
               sx={{
                 width: "90%",
                 height: "80%",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                margin: "auto",
               }}
             >
+              <Sheet
+                                   sx={{
+                                    width: "99.5%",
+                                    height: "100%",
+                                    backgroundColor: "white",
+                                    margin: "10px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    flexDirection: "row",
+                                    justifyContent: "center",
+                    
+                                  }}
+                                >
               <Table className="table-header-Summary">
                 <thead>
                   <tr>
@@ -1258,6 +1304,7 @@ const Summary = () => {
                   </tr>
                 </tbody>
               </Table>
+              </Sheet>
             </Box>
           </Grid>
         </Grid>
