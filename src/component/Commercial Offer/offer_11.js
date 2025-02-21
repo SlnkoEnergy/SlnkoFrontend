@@ -1,7 +1,6 @@
-import { Box, Grid, Sheet, Table, Typography } from "@mui/joy";
-import React, { useState, useEffect } from "react";
+import { Box, Grid, Sheet, Table } from "@mui/joy";
+import React, { useEffect, useState } from "react";
 import Axios from "../../utils/Axios";
-import logo from "../../assets/slnko_blue_logo.png";
 import "./CSS/offer.css";
 
 const Reference2 = () => {
@@ -32,54 +31,54 @@ const Reference2 = () => {
 
   const [scmData, setscmData] = useState({
     spv_modules_555: "",
-          spv_modules_580: "",
-          spv_modules_550: "",
-          spv_modules_585: "",
-        solar_inverter: "",
-        module_mounting_structure: "",
-        mounting_hardware: "",
-        dc_cable: "",
-        ac_cable_inverter_accb: "",
-        ac_cable_accb_transformer: "",
-        ac_ht_cable_11KV: "",
-        ac_ht_cable_33KV: "",
-        earthing_station: "",
-        earthing_strips: "",
-        earthing_strip: "",
-        lightening_arrestor: "",
-        datalogger: "",
-        auxilary_transformer: "",
-        ups_ldb: "",
-        balance_of_system: "",
-        transportation: "",
-        transmission_line_11kv: "",
-        transmission_line_33kv: "",
-        transmission_line_internal: "",
-        transmission_line_print: "",
-            ct_pt_11kv_MP: "",
-            ct_pt_33kv_MP: "",
-            ct_pt_11kv_Other: "",
-            ct_pt_33kv_Other: "",
-            abt_meter_11kv_MP: "",
-            abt_meter_33kv_MP: "",
-            abt_meter_11kv_Other: "",
-            abt_meter_33kv_Other: "",
-        vcb_kiosk: "",
-        slnko_charges: "",
-        installation_commissioing: {
-          labour_works: "",
-          machinery: "",
-          civil_material: "",
+    spv_modules_580: "",
+    spv_modules_550: "",
+    spv_modules_585: "",
+    solar_inverter: "",
+    module_mounting_structure: "",
+    mounting_hardware: "",
+    dc_cable: "",
+    ac_cable_inverter_accb: "",
+    ac_cable_accb_transformer: "",
+    ac_ht_cable_11KV: "",
+    ac_ht_cable_33KV: "",
+    earthing_station: "",
+    earthing_strips: "",
+    earthing_strip: "",
+    lightening_arrestor: "",
+    datalogger: "",
+    auxilary_transformer: "",
+    ups_ldb: "",
+    balance_of_system: "",
+    transportation: "",
+    transmission_line_11kv: "",
+    transmission_line_33kv: "",
+    transmission_line_internal: "",
+    transmission_line_print: "",
+    ct_pt_11kv_MP: "",
+    ct_pt_33kv_MP: "",
+    ct_pt_11kv_Other: "",
+    ct_pt_33kv_Other: "",
+    abt_meter_11kv_MP: "",
+    abt_meter_33kv_MP: "",
+    abt_meter_11kv_Other: "",
+    abt_meter_33kv_Other: "",
+    vcb_kiosk: "",
+    slnko_charges: "",
+    installation_commissioing: {
+      labour_works: "",
+      machinery: "",
+      civil_material: "",
     },
   });
 
-   const [bdRate, setBdRate] = useState({
-        spv_modules: "",
-        module_mounting_structure: "",
-        transmission_line: "",
-        slnko_charges: "",
-        submitted_by_BD: "",
-      });
+  const [bdRate, setBdRate] = useState({
+    spv_modules: "",
+    module_mounting_structure: "",
+    transmission_line: "",
+    slnko_charges: "",
+    submitted_by_BD: "",
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -92,14 +91,9 @@ const Reference2 = () => {
           return;
         }
 
-        const response = await Axios.get(
-          "/get-comm-offer"
-        );
-        const result = await Axios.get(
-          "/get-comm-scm-rate"
-        );
-        const answer = await Axios.get(
-          "/get-comm-bd-rate");
+        const response = await Axios.get("/get-comm-offer");
+        const result = await Axios.get("/get-comm-scm-rate");
+        const answer = await Axios.get("/get-comm-bd-rate");
         // console.log("API Response:", response.data);
         // console.log("API Response:", result.data);
         // console.log("API Response:", answer.data);
@@ -108,8 +102,12 @@ const Reference2 = () => {
         const fetchedScmData = result.data[0];
         const fetchedBdData = answer.data;
 
-        const offerFetchData = fetchedData.find((item) => item.offer_id === offerRate);
-        const fetchRatebd = fetchedBdData.find((item) => item.offer_id === offerRate)
+        const offerFetchData = fetchedData.find(
+          (item) => item.offer_id === offerRate
+        );
+        const fetchRatebd = fetchedBdData.find(
+          (item) => item.offer_id === offerRate
+        );
 
         if (!offerFetchData) {
           console.error("No matching offer data found");
@@ -148,52 +146,56 @@ const Reference2 = () => {
           spv_modules_580: fetchedScmData.spv_modules_580 || "",
           spv_modules_550: fetchedScmData.spv_modules_550 || "",
           spv_modules_585: fetchedScmData.spv_modules_585 || "",
-          solar_inverter:  fetchedScmData.solar_inverter || "",
-          module_mounting_structure:  fetchedScmData.module_mounting_structure || "",
-          mounting_hardware:  fetchedScmData.mounting_hardware || "",
-          dc_cable:  fetchedScmData.dc_cable || "",
-          ac_cable_inverter_accb:  fetchedScmData.ac_cable_inverter_accb || "",
-          ac_cable_accb_transformer:  fetchedScmData.ac_cable_accb_transformer || "",
-          ac_ht_cable_11KV:  fetchedScmData.ac_ht_cable_11KV || "",
-          ac_ht_cable_33KV:  fetchedScmData.ac_ht_cable_33KV || "",
-          earthing_station:  fetchedScmData.earthing_station || "",
-          earthing_strips:  fetchedScmData.earthing_strips || "",
-          earthing_strip:  fetchedScmData.earthing_strip || "",
-          lightening_arrestor:  fetchedScmData.lightening_arrestor || "",
-          datalogger:  fetchedScmData.datalogger || "",
-          auxilary_transformer:  fetchedScmData.auxilary_transformer || "",
-          ups_ldb:  fetchedScmData.ups_ldb || "",
-          balance_of_system:  fetchedScmData.balance_of_system || "",
-          transportation:  fetchedScmData.transportation || "",
-          transmission_line_11kv:  fetchedScmData.transmission_line_11kv || "",
-          transmission_line_33kv:  fetchedScmData.transmission_line_33kv || "",
-          ct_pt_11kv_MP:  fetchedScmData.ct_pt_11kv_MP || "",
-          ct_pt_33kv_MP:  fetchedScmData.ct_pt_33kv_MP || "",
-          ct_pt_11kv_Other:  fetchedScmData.ct_pt_11kv_Other || "",
-          ct_pt_33kv_Other:  fetchedScmData.ct_pt_33kv_Other || "",
-          abt_meter_11kv_MP:  fetchedScmData.abt_meter_11kv_MP || "",
-          abt_meter_33kv_MP:  fetchedScmData.abt_meter_33kv_MP || "",
-          abt_meter_11kv_Other:  fetchedScmData.abt_meter_11kv_Other || "",
-          abt_meter_33kv_Other:  fetchedScmData.abt_meter_33kv_Other || "",
-          vcb_kiosk:  fetchedScmData.vcb_kiosk || "",
-          slnko_charges:  fetchedScmData.slnko_charges || "",
+          solar_inverter: fetchedScmData.solar_inverter || "",
+          module_mounting_structure:
+            fetchedScmData.module_mounting_structure || "",
+          mounting_hardware: fetchedScmData.mounting_hardware || "",
+          dc_cable: fetchedScmData.dc_cable || "",
+          ac_cable_inverter_accb: fetchedScmData.ac_cable_inverter_accb || "",
+          ac_cable_accb_transformer:
+            fetchedScmData.ac_cable_accb_transformer || "",
+          ac_ht_cable_11KV: fetchedScmData.ac_ht_cable_11KV || "",
+          ac_ht_cable_33KV: fetchedScmData.ac_ht_cable_33KV || "",
+          earthing_station: fetchedScmData.earthing_station || "",
+          earthing_strips: fetchedScmData.earthing_strips || "",
+          earthing_strip: fetchedScmData.earthing_strip || "",
+          lightening_arrestor: fetchedScmData.lightening_arrestor || "",
+          datalogger: fetchedScmData.datalogger || "",
+          auxilary_transformer: fetchedScmData.auxilary_transformer || "",
+          ups_ldb: fetchedScmData.ups_ldb || "",
+          balance_of_system: fetchedScmData.balance_of_system || "",
+          transportation: fetchedScmData.transportation || "",
+          transmission_line_11kv: fetchedScmData.transmission_line_11kv || "",
+          transmission_line_33kv: fetchedScmData.transmission_line_33kv || "",
+          ct_pt_11kv_MP: fetchedScmData.ct_pt_11kv_MP || "",
+          ct_pt_33kv_MP: fetchedScmData.ct_pt_33kv_MP || "",
+          ct_pt_11kv_Other: fetchedScmData.ct_pt_11kv_Other || "",
+          ct_pt_33kv_Other: fetchedScmData.ct_pt_33kv_Other || "",
+          abt_meter_11kv_MP: fetchedScmData.abt_meter_11kv_MP || "",
+          abt_meter_33kv_MP: fetchedScmData.abt_meter_33kv_MP || "",
+          abt_meter_11kv_Other: fetchedScmData.abt_meter_11kv_Other || "",
+          abt_meter_33kv_Other: fetchedScmData.abt_meter_33kv_Other || "",
+          vcb_kiosk: fetchedScmData.vcb_kiosk || "",
+          slnko_charges: fetchedScmData.slnko_charges || "",
           installation_commissioing: {
-            labour_works: fetchedScmData.installation_commissioing?.labour_works || "",
-            machinery: fetchedScmData.installation_commissioing?.machinery || "",
-            civil_material: fetchedScmData.installation_commissioing?.civil_material || "",
+            labour_works:
+              fetchedScmData.installation_commissioing?.labour_works || "",
+            machinery:
+              fetchedScmData.installation_commissioing?.machinery || "",
+            civil_material:
+              fetchedScmData.installation_commissioing?.civil_material || "",
           },
         });
 
         setBdRate({
           // offer_id: fetchedBdData.offer_id || "",
           spv_modules: fetchRatebd.spv_modules || "",
-          module_mounting_structure: fetchRatebd.module_mounting_structure || "",
+          module_mounting_structure:
+            fetchRatebd.module_mounting_structure || "",
           transmission_line: fetchRatebd.transmission_line || "",
           slnko_charges: fetchRatebd.slnko_charges || "",
           submitted_by_BD: fetchRatebd.submitted_by_BD || "",
-
         });
-
       } catch (error) {
         console.error("Error fetching commercial offer data:", error);
       }
@@ -231,18 +233,20 @@ const Reference2 = () => {
     }
   };
 
-   const final_ht_cable = (ac_ht_cable_11KV, ac_ht_cable_33KV, evacuation_voltage) => 
-    evacuation_voltage === 11 ? ac_ht_cable_11KV : ac_ht_cable_33KV;
-
+  const final_ht_cable = (
+    ac_ht_cable_11KV,
+    ac_ht_cable_33KV,
+    evacuation_voltage
+  ) => (evacuation_voltage === 11 ? ac_ht_cable_11KV : ac_ht_cable_33KV);
 
   //***finding P17***/
   const setUp = (ac) => {
     const acValue = parseFloat(ac);
     if (!isNaN(acValue)) {
-        return Math.round(acValue * 1.1 * 1000 / 100) * 100;
+      return Math.round((acValue * 1.1 * 1000) / 100) * 100;
     }
     return "";
-};
+  };
 
   //***for N10 ***/
   const Nten = (internalQuantity2) => {
@@ -268,69 +272,68 @@ const Reference2 = () => {
   const findQ22 = (setupValue) => {
     const setupFloat = parseFloat(setupValue);
     if (!isNaN(setupFloat) && setupFloat > 0) {
-      return parseFloat(((-0.211 * Math.log(setupFloat) )+ 2.4482));
+      return parseFloat(-0.211 * Math.log(setupFloat) + 2.4482);
     }
     return 0; // Default value if setupValue is invalid
   };
 
   // *** Finding Q24 ***
-const findQ24 = (evacuation_voltage, Q22Value) => {
-  return (evacuation_voltage === 11 ? Math.ceil((Q22Value)*100)/100 : 0.90);
-};
+  const findQ24 = (evacuation_voltage, Q22Value) => {
+    return evacuation_voltage === 11 ? Math.ceil(Q22Value * 100) / 100 : 0.9;
+  };
 
+  // *** Finding scmWeekly2 ***
+  const scmWeekly2 = (transformer, ac_capacity, evacuation_voltage) => {
+    const setupValue = setUp(ac_capacity); // Get setup value
+    const Q22Value = findQ22(setupValue); // Compute Q22
+    const Q24Value = findQ24(evacuation_voltage, Q22Value); // Compute Q24
 
- 
-// *** Finding scmWeekly2 ***
-const scmWeekly2 = (transformer, ac_capacity, evacuation_voltage) => {
-  const setupValue = setUp(ac_capacity); // Get setup value
-  const Q22Value = findQ22(setupValue); // Compute Q22
-  const Q24Value = findQ24(evacuation_voltage, Q22Value); // Compute Q24
+    console.log("Transformer:", transformer);
+    console.log("AC Capacity:", ac_capacity);
+    console.log("Evacuation Voltage:", evacuation_voltage);
+    console.log("setupValue:", setupValue);
+    console.log("Q22Value:", Q22Value);
+    console.log("Q24Value:", Q24Value);
 
-  console.log("Transformer:", transformer);
-  console.log("AC Capacity:", ac_capacity);
-  console.log("Evacuation Voltage:", evacuation_voltage);
-  console.log("setupValue:", setupValue);
-  console.log("Q22Value:", Q22Value);
-  console.log("Q24Value:", Q24Value);
+    if (transformer === "OLTC") {
+      const result = Math.round(
+        ((Q24Value * setupValue * 1000 + 400000) / setupValue / 1000) *
+          setupValue *
+          1000
+      );
+      console.log("scmWeekly2 (OLTC):", result);
+      return result;
+    } else {
+      const result = Q24Value * setupValue * 1000;
+      console.log("scmWeekly2 (Non-OLTC):", result);
+      return result;
+    }
+  };
 
-  if (transformer === "OLTC") {
-    const result = Math.round(((((Q24Value * setupValue * 1000) + 400000) / setupValue) / 1000)*setupValue*1000);
-    console.log("scmWeekly2 (OLTC):", result);
-    return result;
-  } else {
-    const result = Q24Value * setupValue * 1000;
-    console.log("scmWeekly2 (Non-OLTC):", result);
-    return result;
-  }
-};
+  // Call the function with actual values from offerData
+  const selectedCable = final_ht_cable(
+    scmData.ac_ht_cable_11KV,
+    scmData.ac_ht_cable_33KV,
+    offerData.evacuation_voltage
+  );
 
-// Call the function with actual values from offerData
-const selectedCable = final_ht_cable(
-  scmData.ac_ht_cable_11KV, 
-  scmData.ac_ht_cable_33KV, 
-  offerData.evacuation_voltage
-);
+  //***Total Value 8***/
+  const TotalVal8 = selectedCable * 50;
 
-//***Total Value 8***/
-const TotalVal8 = selectedCable*50;
+  //***Total Value 9***/
+  const TotalVal9 = 380 * internalQuantity9;
 
-//***Total Value 9***/
-const TotalVal9 = 380*internalQuantity9;
+  //***Total Value 10***/
+  const TotalVal10 = 660 * internalQuantity10;
 
-//***Total Value 10***/
-const TotalVal10 = 660*internalQuantity10;
+  //***Total Value 11***/
+  const TotalVal11 = 130 * internalQuantity11;
 
-//***Total Value 11***/
-const TotalVal11 = 130*internalQuantity11;
+  //***Total Value 12***/
+  const TotalVal12 = 470 * 20;
 
-//***Total Value 12***/
-const TotalVal12 = 470*20;
-
-//***Total Value 13***/
-const TotalVal13 = scmWeekly1*1;
-
-
-
+  //***Total Value 13***/
+  const TotalVal13 = scmWeekly1 * 1;
 
   return (
     <>
@@ -347,11 +350,11 @@ const TotalVal13 = scmWeekly1*1;
           sx={{
             width: "60%",
             height: "100%",
-            marginTop:"5%",
+            marginTop: "5%",
             border: "2px solid #0f4C7f",
             "@media print": {
-             border:"0px",
-             width:"100%"
+              border: "0px",
+              width: "100%",
             },
           }}
         >
@@ -412,31 +415,30 @@ const TotalVal13 = scmWeekly1*1;
             </Typography>
           </Box> */}
           <Box
-                      sx={{
-                        width: "75%",
-                        height: "100%",
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        margin: "auto",
-                        "@media-print":{
-                          width:'75%'
-                        }
-                      }}
-                    >
+            sx={{
+              width: "75%",
+              height: "100%",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              margin: "auto",
+              "@media-print": {
+                width: "75%",
+              },
+            }}
+          >
             <Sheet
-                          sx={{
-                            width: "99.5%",
-                            height: "100%",
-                            backgroundColor: "white",
-                            margin: "10px",
-                            display: "flex",
-                            alignItems: "center",
-                            flexDirection: "row",
-                            justifyContent: "center",
-            
-                          }}
-                        >
+              sx={{
+                width: "99.5%",
+                height: "100%",
+                backgroundColor: "white",
+                margin: "10px",
+                display: "flex",
+                alignItems: "center",
+                flexDirection: "row",
+                justifyContent: "center",
+              }}
+            >
               <Table className="table-header">
                 <thead>
                   <tr>
@@ -574,8 +576,10 @@ const TotalVal13 = scmWeekly1*1;
                     <td>Set</td>
                     {/* <td>1</td> */}
                     <td>1</td>
-                    <td>Electrical Equipment - Solar Plant Side
-                    (Transformer+LT Panel+HT Panel+Aux Transformer+UPS System)</td>
+                    <td>
+                      Electrical Equipment - Solar Plant Side (Transformer+LT
+                      Panel+HT Panel+Aux Transformer+UPS System)
+                    </td>
                     {/* <td>{scmWeekly1}</td>
                     <td>INR/Set</td>
                     <td>{TotalVal13}</td>
@@ -602,8 +606,10 @@ const TotalVal13 = scmWeekly1*1;
                     <td>Nos.</td>
                     {/* <td>1</td> */}
                     <td>1</td>
-                    <td>Electrical Equipment - Solar Plant Side
-                    (Transformer+LT Panel+HT Panel+Aux Transformer+UPS System)</td>
+                    <td>
+                      Electrical Equipment - Solar Plant Side (Transformer+LT
+                      Panel+HT Panel+Aux Transformer+UPS System)
+                    </td>
                     {/* <td>{scmWeekly2(offerData.transformer, offerData.ac_capacity, offerData.evacuation_voltage)}</td>
                     <td>INR/Nos.</td>
                     <td>{scmWeekly2(offerData.transformer, offerData.ac_capacity, offerData.evacuation_voltage)}</td>

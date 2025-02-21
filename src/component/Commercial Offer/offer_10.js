@@ -1,9 +1,8 @@
 import { Box, Grid, Sheet, Table, Typography } from "@mui/joy";
-import React, { useState, useEffect } from "react";
-import Axios from "../../utils/Axios";
+import React, { useEffect, useState } from "react";
 import logo from "../../assets/slnko_blue_logo.png";
+import Axios from "../../utils/Axios";
 import "./CSS/offer.css";
-
 
 const Reference = () => {
   const [offerData, setOfferData] = useState({
@@ -36,43 +35,43 @@ const Reference = () => {
     spv_modules_580: "",
     spv_modules_550: "",
     spv_modules_585: "",
-  solar_inverter: "",
-  module_mounting_structure: "",
-  mounting_hardware: "",
-  dc_cable: "",
-  ac_cable_inverter_accb: "",
-  ac_cable_accb_transformer: "",
-  ac_ht_cable_11KV: "",
-  ac_ht_cable_33KV: "",
-  earthing_station: "",
-  earthing_strips: "",
-  earthing_strip: "",
-  lightening_arrestor: "",
-  datalogger: "",
-  auxilary_transformer: "",
-  ups_ldb: "",
-  balance_of_system: "",
-  transportation: "",
-  transmission_line_11kv: "",
-  transmission_line_33kv: "",
-  transmission_line_internal: "",
-  transmission_line_print: "",
-      ct_pt_11kv_MP: "",
-      ct_pt_33kv_MP: "",
-      ct_pt_11kv_Other: "",
-      ct_pt_33kv_Other: "",
-      abt_meter_11kv_MP: "",
-      abt_meter_33kv_MP: "",
-      abt_meter_11kv_Other: "",
-      abt_meter_33kv_Other: "",
-  vcb_kiosk: "",
-  slnko_charges: "",
-  installation_commissioing: {
-    labour_works: "",
-    machinery: "",
-    civil_material: "",
-      },
-    });
+    solar_inverter: "",
+    module_mounting_structure: "",
+    mounting_hardware: "",
+    dc_cable: "",
+    ac_cable_inverter_accb: "",
+    ac_cable_accb_transformer: "",
+    ac_ht_cable_11KV: "",
+    ac_ht_cable_33KV: "",
+    earthing_station: "",
+    earthing_strips: "",
+    earthing_strip: "",
+    lightening_arrestor: "",
+    datalogger: "",
+    auxilary_transformer: "",
+    ups_ldb: "",
+    balance_of_system: "",
+    transportation: "",
+    transmission_line_11kv: "",
+    transmission_line_33kv: "",
+    transmission_line_internal: "",
+    transmission_line_print: "",
+    ct_pt_11kv_MP: "",
+    ct_pt_33kv_MP: "",
+    ct_pt_11kv_Other: "",
+    ct_pt_33kv_Other: "",
+    abt_meter_11kv_MP: "",
+    abt_meter_33kv_MP: "",
+    abt_meter_11kv_Other: "",
+    abt_meter_33kv_Other: "",
+    vcb_kiosk: "",
+    slnko_charges: "",
+    installation_commissioing: {
+      labour_works: "",
+      machinery: "",
+      civil_material: "",
+    },
+  });
 
   const [bdRate, setBdRate] = useState({
     spv_modules: "",
@@ -99,8 +98,8 @@ const Reference = () => {
         // console.log("API Response:", response.data);
         console.log("SCM rate Response:", result.data);
         // console.log("API Response:", answer.data);
-       
-        const fetchedData = response.data; 
+
+        const fetchedData = response.data;
         const fetchedScmData = result.data[0];
         const fetchedBdData = answer.data;
 
@@ -148,42 +147,46 @@ const Reference = () => {
           spv_modules_580: fetchedScmData.spv_modules_580 || "",
           spv_modules_550: fetchedScmData.spv_modules_550 || "",
           spv_modules_585: fetchedScmData.spv_modules_585 || "",
-          solar_inverter:  fetchedScmData.solar_inverter || "",
-          module_mounting_structure_scm:  fetchedScmData.module_mounting_structure || "",
-          mounting_hardware:  fetchedScmData.mounting_hardware || "",
-          dc_cable:  fetchedScmData.dc_cable || "",
-          ac_cable_inverter_accb:  fetchedScmData.ac_cable_inverter_accb || "",
-          ac_cable_accb_transformer:  fetchedScmData.ac_cable_accb_transformer || "",
-          ac_ht_cable_11KV:  fetchedScmData.ac_ht_cable_11KV || "",
-          ac_ht_cable_33KV:  fetchedScmData.ac_ht_cable_33KV || "",
-          earthing_station:  fetchedScmData.earthing_station || "",
-          earthing_strips:  fetchedScmData.earthing_strips || "",
-          earthing_strip:  fetchedScmData.earthing_strip || "",
-          lightening_arrestor:  fetchedScmData.lightening_arrestor || "",
-          datalogger:  fetchedScmData.datalogger || "",
-          auxilary_transformer:  fetchedScmData.auxilary_transformer || "",
-          ups_ldb:  fetchedScmData.ups_ldb || "",
-          balance_of_system:  fetchedScmData.balance_of_system || "",
-          transportation:  fetchedScmData.transportation || "",
-          transmission_line_11kv:  fetchedScmData.transmission_line_11kv || "",
-          transmission_line_33kv:  fetchedScmData.transmission_line_33kv || "",
-          ct_pt_11kv_MP:  fetchedScmData.ct_pt_11kv_MP || "",
-          ct_pt_33kv_MP:  fetchedScmData.ct_pt_33kv_MP || "",
-          ct_pt_11kv_Other:  fetchedScmData.ct_pt_11kv_Other || "",
-          ct_pt_33kv_Other:  fetchedScmData.ct_pt_33kv_Other || "",
-          abt_meter_11kv_MP:  fetchedScmData.abt_meter_11kv_MP || "",
-          abt_meter_33kv_MP:  fetchedScmData.abt_meter_33kv_MP || "",
-          abt_meter_11kv_Other:  fetchedScmData.abt_meter_11kv_Other || "",
-          abt_meter_33kv_Other:  fetchedScmData.abt_meter_33kv_Other || "",
-          vcb_kiosk:  fetchedScmData.vcb_kiosk || "",
-          slnko_charges_scm:  fetchedScmData.slnko_charges_scm || "",
+          solar_inverter: fetchedScmData.solar_inverter || "",
+          module_mounting_structure_scm:
+            fetchedScmData.module_mounting_structure || "",
+          mounting_hardware: fetchedScmData.mounting_hardware || "",
+          dc_cable: fetchedScmData.dc_cable || "",
+          ac_cable_inverter_accb: fetchedScmData.ac_cable_inverter_accb || "",
+          ac_cable_accb_transformer:
+            fetchedScmData.ac_cable_accb_transformer || "",
+          ac_ht_cable_11KV: fetchedScmData.ac_ht_cable_11KV || "",
+          ac_ht_cable_33KV: fetchedScmData.ac_ht_cable_33KV || "",
+          earthing_station: fetchedScmData.earthing_station || "",
+          earthing_strips: fetchedScmData.earthing_strips || "",
+          earthing_strip: fetchedScmData.earthing_strip || "",
+          lightening_arrestor: fetchedScmData.lightening_arrestor || "",
+          datalogger: fetchedScmData.datalogger || "",
+          auxilary_transformer: fetchedScmData.auxilary_transformer || "",
+          ups_ldb: fetchedScmData.ups_ldb || "",
+          balance_of_system: fetchedScmData.balance_of_system || "",
+          transportation: fetchedScmData.transportation || "",
+          transmission_line_11kv: fetchedScmData.transmission_line_11kv || "",
+          transmission_line_33kv: fetchedScmData.transmission_line_33kv || "",
+          ct_pt_11kv_MP: fetchedScmData.ct_pt_11kv_MP || "",
+          ct_pt_33kv_MP: fetchedScmData.ct_pt_33kv_MP || "",
+          ct_pt_11kv_Other: fetchedScmData.ct_pt_11kv_Other || "",
+          ct_pt_33kv_Other: fetchedScmData.ct_pt_33kv_Other || "",
+          abt_meter_11kv_MP: fetchedScmData.abt_meter_11kv_MP || "",
+          abt_meter_33kv_MP: fetchedScmData.abt_meter_33kv_MP || "",
+          abt_meter_11kv_Other: fetchedScmData.abt_meter_11kv_Other || "",
+          abt_meter_33kv_Other: fetchedScmData.abt_meter_33kv_Other || "",
+          vcb_kiosk: fetchedScmData.vcb_kiosk || "",
+          slnko_charges_scm: fetchedScmData.slnko_charges_scm || "",
           installation_commissioing: {
-            labour_works: fetchedScmData.installation_commissioing?.labour_works || "",
-            machinery: fetchedScmData.installation_commissioing?.machinery || "",
-            civil_material: fetchedScmData.installation_commissioing?.civil_material || "",
+            labour_works:
+              fetchedScmData.installation_commissioing?.labour_works || "",
+            machinery:
+              fetchedScmData.installation_commissioing?.machinery || "",
+            civil_material:
+              fetchedScmData.installation_commissioing?.civil_material || "",
           },
         });
-
 
         setBdRate({
           // offer_id: fetchRatebd.offer_id || "",
@@ -216,7 +219,7 @@ const Reference = () => {
   const mountingStructure = (module_orientation) => {
     if (module_orientation === "Portrait") {
       return "2PX12";
-    } else if (module_orientation === "Agrivoltaic"){
+    } else if (module_orientation === "Agrivoltaic") {
       return "2Px24";
     } else {
       return "4LX6";
@@ -294,11 +297,11 @@ const Reference = () => {
             width: "60%",
             height: "100%",
             border: "2px solid #0f4C7f",
-            marginTop:"5%",
-            minHeight:"100%",
-           "@media print": {
-             border:"0px",
-             width:"100%"
+            marginTop: "5%",
+            minHeight: "100%",
+            "@media print": {
+              border: "0px",
+              width: "100%",
             },
           }}
         >
@@ -308,7 +311,7 @@ const Reference = () => {
               width: "100%",
               alignItems: "flex-end",
               gap: 2,
-              marginTop:"2%"
+              marginTop: "2%",
             }}
           >
             <img width={"220px"} height={"110px"} alt="logo" src={logo} />
@@ -366,9 +369,9 @@ const Reference = () => {
               justifyContent: "center",
               alignItems: "center",
               margin: "auto",
-              "@media-print":{
-                width:'75%'
-              }
+              "@media-print": {
+                width: "75%",
+              },
             }}
           >
             <Sheet
@@ -381,7 +384,6 @@ const Reference = () => {
                 alignItems: "center",
                 flexDirection: "row",
                 justifyContent: "center",
-
               }}
             >
               <Table className="table-header">

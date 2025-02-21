@@ -1,21 +1,23 @@
-import React, { useEffect, useState } from "react";
+import { Button, Grid } from "@mui/joy";
 import Box from "@mui/joy/Box";
-import Axios from "../utils/Axios";
-import { Grid, Button } from "@mui/joy";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import Axios from "../utils/Axios";
 
 function BdHistoryTable() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const [scmData, setScmData] = useState([]); // ✅ Initialize as an array
+  const [scmData, setScmData] = useState([]);
 
   useEffect(() => {
     const fetchSCMData = async () => {
       setLoading(true);
       try {
-        const offerRate = localStorage.getItem("offer_summary");
+        const offerRate = localStorage.getItem("get-offer");
+
+        console.log(offerRate);
 
         if (!offerRate) {
           console.error("Offer ID not found in localStorage");
@@ -26,22 +28,29 @@ function BdHistoryTable() {
         const { data: response } = await Axios.get("/get-bd-rate-history");
         const offerBDRATE = response?.data;
 
+        console.log(offerBDRATE);
+
         if (Array.isArray(offerBDRATE)) {
-          const matchedData = offerBDRATE.filter((item) => item.offer_id === offerRate); // ✅ Use filter for array
+          const matchedData = offerBDRATE.filter(
+            (item) => item.offer_id === offerRate
+          );
 
-          if (matchedData.length === 0) {
-            console.error("No matching offer found.");
-            toast.error("No matching offer found.");
-            return;
-          }
+          // if (matchedData.length === 0) {
+          //   console.error("No matching offer found.");
+          //   toast.error("No matching offer found.");
+          //   return;
+          // }
 
-          setScmData(matchedData); // ✅ Store as an array
+          setScmData(matchedData);
         } else {
           console.error("Invalid data format in API response.");
           toast.error("No data found.");
         }
       } catch (error) {
-        console.error("Error fetching SCM data:", error?.response?.data || error.message);
+        console.error(
+          "Error fetching SCM data:",
+          error?.response?.data || error.message
+        );
         toast.error("Failed to fetch data.");
       } finally {
         setLoading(false);
@@ -52,7 +61,13 @@ function BdHistoryTable() {
   }, []);
 
   return (
-    <Box sx={{ padding: 1, width: { lg: "85%", md: "80%", sm: "100%" }, marginLeft: { xl: "15%", lg: "18%", md: "25%", sm: "0%" } }}>
+    <Box
+      sx={{
+        padding: 1,
+        width: { lg: "85%", md: "80%", sm: "100%" },
+        marginLeft: { xl: "15%", lg: "18%", md: "25%", sm: "0%" },
+      }}
+    >
       {/* Table */}
       <Box
         component="table"
@@ -65,24 +80,32 @@ function BdHistoryTable() {
         }}
       >
         {/* Table Header */}
-        <Box component="thead" sx={{ backgroundColor: "neutral.300", color: "neutral.900" }}>
+        <Box
+          component="thead"
+          sx={{ backgroundColor: "neutral.300", color: "neutral.900" }}
+        >
           <Box component="tr">
-            {["S.No.", "SPV Modules", "Module Mounting Structure", "Transmission Line", "Slnko Charges", "Submitted By BD"].map(
-              (header, index) => (
-                <Box
-                  component="th"
-                  key={index}
-                  sx={{
-                    padding: 2,
-                    textAlign: "left",
-                    fontWeight: "bold",
-                    fontSize: "14px",
-                  }}
-                >
-                  {header}
-                </Box>
-              )
-            )}
+            {[
+              "S.No.",
+              "SPV Modules",
+              "Module Mounting Structure",
+              "Transmission Line",
+              "Slnko Charges",
+              "Submitted By BD",
+            ].map((header, index) => (
+              <Box
+                component="th"
+                key={index}
+                sx={{
+                  padding: 2,
+                  textAlign: "left",
+                  fontWeight: "bold",
+                  fontSize: "14px",
+                }}
+              >
+                {header}
+              </Box>
+            ))}
           </Box>
         </Box>
 
@@ -94,20 +117,36 @@ function BdHistoryTable() {
                 component="tr"
                 key={index}
                 sx={{
-                  backgroundColor: index % 2 === 0 ? "neutral.100" : "neutral.50",
+                  backgroundColor:
+                    index % 2 === 0 ? "neutral.100" : "neutral.50",
                   "&:hover": { backgroundColor: "neutral.200" },
                 }}
               >
-                <Box component="td" sx={{ padding: 2 }}>{index + 1}</Box>
-                <Box component="td" sx={{ padding: 2 }}>{row.spv_modules || "-"}</Box>
-                <Box component="td" sx={{ padding: 2 }}>{row.module_mounting_structure || "-"}</Box>
-                <Box component="td" sx={{ padding: 2 }}>{row.transmission_line || "-"}</Box>
-                <Box component="td" sx={{ padding: 2 }}>{row.slnko_charges || "-"}</Box>
-                <Box component="td" sx={{ padding: 2 }}>{row.submitted_by_BD || "-"}</Box>
+                <Box component="td" sx={{ padding: 2 }}>
+                  {index + 1}
+                </Box>
+                <Box component="td" sx={{ padding: 2 }}>
+                  {row.spv_modules || "-"}
+                </Box>
+                <Box component="td" sx={{ padding: 2 }}>
+                  {row.module_mounting_structure || "-"}
+                </Box>
+                <Box component="td" sx={{ padding: 2 }}>
+                  {row.transmission_line || "-"}
+                </Box>
+                <Box component="td" sx={{ padding: 2 }}>
+                  {row.slnko_charges || "-"}
+                </Box>
+                <Box component="td" sx={{ padding: 2 }}>
+                  {row.submitted_by_BD || "-"}
+                </Box>
               </Box>
             ))
           ) : (
-            <Box component="tr" sx={{ textAlign: "center", backgroundColor: "neutral.50" }}>
+            <Box
+              component="tr"
+              sx={{ textAlign: "center", backgroundColor: "neutral.50" }}
+            >
               <Box component="td" colSpan={7} sx={{ padding: 2 }}>
                 No matching history data found.
               </Box>
@@ -117,7 +156,11 @@ function BdHistoryTable() {
       </Box>
 
       <Grid xs={12} textAlign="center" pt={2}>
-        <Button variant="soft" color="neutral" onClick={() => navigate("/comm_offer")}>
+        <Button
+          variant="soft"
+          color="neutral"
+          onClick={() => navigate("/comm_offer")}
+        >
           Back
         </Button>
       </Grid>

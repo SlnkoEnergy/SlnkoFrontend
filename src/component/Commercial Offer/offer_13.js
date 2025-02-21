@@ -1,7 +1,6 @@
 import { Box, Grid, Sheet, Table, Typography } from "@mui/joy";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Axios from "../../utils/Axios";
-import logo from "../../assets/slnko_blue_logo.png";
 import "./CSS/offer.css";
 
 const Reference4 = () => {
@@ -219,19 +218,19 @@ const Reference4 = () => {
           alignItems: "center",
         }}
       >
-         <Grid
-                                sx={{
-                                  width: "60%",
-                                  height: "100%",
-                                  border: "2px solid #0f4C7f",
-                                  marginTop:"5%",
-                                  minHeight:"100%",
-                                 "@media print": {
-                                   border:"0px",
-                                   width:"100%"
-                                  },
-                                }}
-                              >
+        <Grid
+          sx={{
+            width: "60%",
+            height: "100%",
+            border: "2px solid #0f4C7f",
+            marginTop: "5%",
+            minHeight: "100%",
+            "@media print": {
+              border: "0px",
+              width: "100%",
+            },
+          }}
+        >
           {/* <Box
             sx={{
               display: "flex",
@@ -287,32 +286,31 @@ const Reference4 = () => {
                     Material List
                   </Typography>
                 </Box> */}
-         <Box
-                           sx={{
-                             width: "75%",
-                             height: "100%",
-                             display: "flex",
-                             justifyContent: "center",
-                             alignItems: "center",
-                             margin: "auto",
-                             "@media-print":{
-                         width:'75%'
-                       }
-                           }}
-                         >
-             <Sheet
-                                 sx={{
-                                  width: "99.5%",
-                                  height: "100%",
-                                  backgroundColor: "white",
-                                  margin: "10px",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  flexDirection: "row",
-                                  justifyContent: "center",
-                  
-                                }}
-                              >
+          <Box
+            sx={{
+              width: "75%",
+              height: "100%",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              margin: "auto",
+              "@media-print": {
+                width: "75%",
+              },
+            }}
+          >
+            <Sheet
+              sx={{
+                width: "99.5%",
+                height: "100%",
+                backgroundColor: "white",
+                margin: "10px",
+                display: "flex",
+                alignItems: "center",
+                flexDirection: "row",
+                justifyContent: "center",
+              }}
+            >
               <Table className="table-header">
                 <thead>
                   <tr>
@@ -403,12 +401,12 @@ const Reference4 = () => {
               backgroundColor: "white",
               marginBottom: "10px",
               display: "flex",
-                      alignItems: "center",
-                      flexDirection: "row",
-                      justifyContent: "center",
-                      "@media print": {
-                           marginTop:"15%"
-                          },
+              alignItems: "center",
+              flexDirection: "row",
+              justifyContent: "center",
+              "@media print": {
+                marginTop: "15%",
+              },
             }}
           >
             <Table className="table-header">

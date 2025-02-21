@@ -1,7 +1,6 @@
-import { Box, Grid, Sheet, Table, Typography } from "@mui/joy";
-import React, { useState, useEffect } from "react";
+import { Box, Grid, Sheet, Table } from "@mui/joy";
+import React, { useEffect, useState } from "react";
 import Axios from "../../utils/Axios";
-import logo from "../../assets/slnko_blue_logo.png";
 import "./CSS/offer.css";
 
 const CivilWorks1 = () => {
@@ -92,15 +91,9 @@ const CivilWorks1 = () => {
           return;
         }
 
-        const response = await Axios.get(
-          "/get-comm-offer"
-        );
-        const result = await Axios.get(
-          "/get-comm-scm-rate"
-        );
-        const answer = await Axios.get(
-          "/get-comm-bd-rate"
-        );
+        const response = await Axios.get("/get-comm-offer");
+        const result = await Axios.get("/get-comm-scm-rate");
+        const answer = await Axios.get("/get-comm-bd-rate");
         // console.log("API Response:", response.data);
         // console.log("API Response:", result.data);
         // console.log("API Response:", answer.data);
@@ -266,12 +259,12 @@ const CivilWorks1 = () => {
     : 0;
 
   // ***for 3rd row***
-  const InternalQuantity3 = 
-  offerData.module_orientation === "Portrait"
-    ? 23 * 1000 * offerData.dc_capacity
-    : offerData.module_orientation === "Landscape"
-    ? 29 * 1000 * offerData.dc_capacity
-    : 33 * 1000 * offerData.dc_capacity;
+  const InternalQuantity3 =
+    offerData.module_orientation === "Portrait"
+      ? 23 * 1000 * offerData.dc_capacity
+      : offerData.module_orientation === "Landscape"
+        ? 29 * 1000 * offerData.dc_capacity
+        : 33 * 1000 * offerData.dc_capacity;
 
   // ***for 5th row***
   const InternalQuantity5 = offerData.dc_capacity * 7000;
@@ -329,13 +322,13 @@ const CivilWorks1 = () => {
     ? Math.round(offerData.dc_capacity * 0.4 * 1000)
     : 0;
 
-    const evacuationVoltage = (evacuation_voltage) => {
-      if (evacuation_voltage === 11) {
-        return "11 kV(E),3C,120Sqmm Al,Ar,HT,XLPE, CABLE";
-      } else {
-        return "33 kV(E),3C,120Sqmm Al,Ar,HT,XLPE, CABLE";
-      }
-    };
+  const evacuationVoltage = (evacuation_voltage) => {
+    if (evacuation_voltage === 11) {
+      return "11 kV(E),3C,120Sqmm Al,Ar,HT,XLPE, CABLE";
+    } else {
+      return "33 kV(E),3C,120Sqmm Al,Ar,HT,XLPE, CABLE";
+    }
+  };
 
   //***finding P17***/
   const setUp = (ac) => {
@@ -504,7 +497,12 @@ const CivilWorks1 = () => {
 
   // ***for 16th row***/
   const internalQuantity16 = offerData.dc_capacity
-    ? Math.round(offerData.dc_capacity * 4 + internalQuantity2 + 10)
+    ? Math.ceil(
+        offerData.dc_capacity * 2 +
+          Math.round(offerData.dc_capacity) * 2 +
+          internalQuantity2 +
+          10
+      )
     : 0;
 
   // ***for 17th row***/
@@ -650,7 +648,7 @@ const CivilWorks1 = () => {
       offerData.transmission_length * bdRate.transmission_line +
       2 * ct_pt_cal +
       3 * abt_cal +
-      totalVCB  +
+      totalVCB +
       scmWeekly4(offerData.ac_capacity) * 1 +
       scmWeekly5 +
       TotalVal32
@@ -732,7 +730,7 @@ const CivilWorks1 = () => {
     (scmWeekly3(offerData.evacuation_voltage) * 18) / 100 +
     (TotalVal16 * 18) / 100 +
     (TotalVal17 * 18) / 100 +
-    (TotalVal18*18/100) +
+    (TotalVal18 * 18) / 100 +
     (TotalVal19 * 18) / 100 +
     (TotalVal20 * 18) / 100 +
     (TotalVal21 * 18) / 100 +
@@ -743,12 +741,12 @@ const CivilWorks1 = () => {
     (TotalVal26 * 18) / 100 +
     (TotalVal27 * 18) / 100 +
     (offerData.transmission_length * bdRate.transmission_line * 18) / 100 +
-    ((ct_pt_cal * 2 * 18) / 100) +
-    ((abt_cal * 3 * 18) / 100) +
-    ((totalVCB * 18) / 100) +
-    ((scmWeekly4(offerData.ac_capacity) * 1 * 18) / 100) +
-    ((scmWeekly5 * 18) / 100) +
-    ((TotalVal32 * 18) / 100);
+    (ct_pt_cal * 2 * 18) / 100 +
+    (abt_cal * 3 * 18) / 100 +
+    (totalVCB * 18) / 100 +
+    (scmWeekly4(offerData.ac_capacity) * 1 * 18) / 100 +
+    (scmWeekly5 * 18) / 100 +
+    (TotalVal32 * 18) / 100;
 
   return (
     <>
@@ -761,20 +759,20 @@ const CivilWorks1 = () => {
           alignItems: "center",
         }}
       >
-       <Grid
-                               sx={{
-                                 width: "60%",
-                                 height: "100%",
-                                 border: "2px solid #0f4C7f",
-                                 marginTop:"5%",
-                                 minHeight:"100%",
-                                "@media print": {
-                                  border:"0px",
-                                  width:"100%",
-                                  marginTop:"20%"
-                                 },
-                               }}
-                             >
+        <Grid
+          sx={{
+            width: "60%",
+            height: "100%",
+            border: "2px solid #0f4C7f",
+            marginTop: "5%",
+            minHeight: "100%",
+            "@media print": {
+              border: "0px",
+              width: "100%",
+              marginTop: "20%",
+            },
+          }}
+        >
           {/* <Box
             sx={{
               display: "flex",
@@ -831,32 +829,30 @@ const CivilWorks1 = () => {
             </Typography>
           </Box> */}
           <Box
-                           sx={{
-                             width: "75%",
-                             height: "100%",
-                             display: "flex",
-                             justifyContent: "center",
-                             alignItems: "center",
-                             margin: "auto",
-                             "@media-print":{
-                         width:'70%',
-                        
-                       }
-                           }}
-                         >
+            sx={{
+              width: "75%",
+              height: "100%",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              margin: "auto",
+              "@media-print": {
+                width: "70%",
+              },
+            }}
+          >
             <Sheet
-                                sx={{
-                                 width: "99.5%",
-                                 height: "100%",
-                                 backgroundColor: "white",
-                                 margin: "10px",
-                                 display: "flex",
-                                 alignItems: "center",
-                                 flexDirection: "row",
-                                 justifyContent: "center",
-                 
-                               }}
-                             >
+              sx={{
+                width: "99.5%",
+                height: "100%",
+                backgroundColor: "white",
+                margin: "10px",
+                display: "flex",
+                alignItems: "center",
+                flexDirection: "row",
+                justifyContent: "center",
+              }}
+            >
               <Table className="table-header">
                 <thead>
                   <tr>
@@ -887,12 +883,15 @@ const CivilWorks1 = () => {
                     <td>KWp</td>
                     {/* <td>{internalQuantity24}</td> */}
                     <td>{internalQuantity24}</td>
-                    <td>Installation Charges inside boundary wall (Labour, Machinary & Civil Material)</td>
+                    <td>
+                      Installation Charges inside boundary wall (Labour,
+                      Machinary & Civil Material)
+                    </td>
                     {/* <td>{scmData.installation_commissioing.machinery}</td>
                     <td>INR/Wp</td>
                     <td>{TotalVal25}</td>
                     <td>18%</td>
-                    <td>{Math.round((TotalVal25 * 18) / 100)}</td>
+                    <td>{Math.round((TotalVal25 * 18) / 100)} </td>
                     <td>{Math.round((TotalVal25 * 18) / 100 + TotalVal25)}</td> */}
                   </tr>
 
@@ -909,8 +908,11 @@ const CivilWorks1 = () => {
                     <td>KWp</td>
                     {/* <td>{internalQuantity24}</td> */}
                     <td>{internalQuantity24}</td>
-                    {/* <td>Installation Charges inside boundary wall (Labour, Machinary & Civil Material)</td>
-                    <td>{scmData.installation_commissioing.civil_material}</td>
+                    <td>
+                      Installation Charges inside boundary wall (Labour,
+                      Machinary & Civil Material)
+                    </td>
+                    {/* <td>{scmData.installation_commissioing.civil_material}</td>
                     <td>INR/Wp</td>
                     <td>{TotalVal26}</td>
                     <td>18%</td>
@@ -962,7 +964,13 @@ const CivilWorks1 = () => {
                       )}
                     </td>
                     <td>
-                      {(Math.round( offerData.transmission_length * bdRate.transmission_line) * 18) /100 +bdRate.transmission_line *offerData.transmission_length}
+                      {(Math.round(
+                        offerData.transmission_length * bdRate.transmission_line
+                      ) *
+                        18) /
+                        100 +
+                        bdRate.transmission_line *
+                          offerData.transmission_length}
                     </td> */}
                   </tr>
 
@@ -1083,15 +1091,14 @@ const CivilWorks1 = () => {
                 </tbody>
 
                 {/* <tfoot>
-                   <tr>
+                  <tr>
                     <td colSpan={10}>Totals: </td>
                     <td>{Math.round(SumOfTotal_Value)}</td>
                     <td></td>
                     <td colSpan={1}>{Math.round(SumOf_Total_GST_Value)}</td>
-                    <td >{Math.round(SumOfTotal_With_GST)}</td>
-                    
+                    <td>{Math.round(SumOfTotal_With_GST)}</td>
                   </tr>
-                  </tfoot> */}
+                </tfoot> */}
               </Table>
             </Sheet>
           </Box>
