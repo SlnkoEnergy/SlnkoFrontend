@@ -36,7 +36,7 @@ const Page6 = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const offerRate = localStorage.getItem("offer_rate");
+        const offerRate = localStorage.getItem("offer_summary");
   
         if (!offerRate) {
           console.error("Offer ID not found in localStorage");

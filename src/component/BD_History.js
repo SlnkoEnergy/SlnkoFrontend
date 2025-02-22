@@ -15,7 +15,7 @@ function BdHistoryTable() {
     const fetchSCMData = async () => {
       setLoading(true);
       try {
-        const offerRate = localStorage.getItem("offer_summary");
+        const offerRate = localStorage.getItem("get-offer");
 
         if (!offerRate) {
           console.error("Offer ID not found in localStorage");
@@ -29,11 +29,11 @@ function BdHistoryTable() {
         if (Array.isArray(offerBDRATE)) {
           const matchedData = offerBDRATE.filter((item) => item.offer_id === offerRate); // ✅ Use filter for array
 
-          if (matchedData.length === 0) {
-            console.error("No matching offer found.");
-            toast.error("No matching offer found.");
-            return;
-          }
+          // if (matchedData.length === 0) {
+          //   console.error("No matching offer found.");
+          //   toast.error("No matching offer found.");
+          //   return;
+          // }
 
           setScmData(matchedData); // ✅ Store as an array
         } else {

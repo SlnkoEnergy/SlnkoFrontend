@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import Axios from "../../utils/Axios";
 import logo from "../../assets/slnko_blue_logo.png";
 import "./CSS/offer.css";
+import { toast } from "react-toastify";
 
 const CivilWorks1 = () => {
   const [offerData, setOfferData] = useState({
@@ -84,49 +85,41 @@ const CivilWorks1 = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const offerRate = localStorage.getItem("offerId");
+        const offerRate = localStorage.getItem("offer_summary");
+        console.log("Fetched offer_id from localStorage:", offerRate);
+  
         if (!offerRate) {
           console.error("Offer ID not found in localStorage");
-          alert("Offer ID is missing!");
-          // setLoading(false);
+          toast.error("Offer ID is missing!");
           return;
         }
-
-        const response = await Axios.get(
-          "/get-comm-offer"
-        );
-        const result = await Axios.get(
-          "/get-comm-scm-rate"
-        );
-        const answer = await Axios.get(
-          "/get-comm-bd-rate"
-        );
-        // console.log("API Response:", response.data);
-        // console.log("API Response:", result.data);
-        // console.log("API Response:", answer.data);
-
-        // Assuming the data returned matches the structure you want
-        const fetchedData = response.data; // Adjust based on the structure of API response
+  
+        const [response, result, answer] = await Promise.all([
+          Axios.get("/get-comm-offer"),
+          Axios.get("/get-comm-scm-rate"),
+          Axios.get("/get-comm-bd-rate"),
+        ]);
+  
+        const fetchedData = response.data;
         const fetchedScmData = result.data[0];
         const fetchedBdData = answer.data;
-
-        const offerFetchData = fetchedData.find(
-          (item) => item.offer_id === offerRate
-        );
-        const fetchRatebd = fetchedBdData.find(
-          (item) => item.offer_id === offerRate
-        );
-
+  
+        console.log("Fetched Offer Data:", fetchedData);
+        console.log("Fetched SCM Rate Data:", fetchedScmData);
+        console.log("Fetched BD Rate Data:", fetchedBdData);
+  
+        const offerFetchData = fetchedData.find((item) => item.offer_id === offerRate);
+        const fetchRatebd = fetchedBdData.find((item) => item.offer_id === offerRate);
+  
+        console.log("Matched Offer Data:", offerFetchData);
+        console.log("Matched BD Rate Data:", fetchRatebd);
+  
         if (!offerFetchData) {
           console.error("No matching offer data found");
-          alert("No matching offer data found!");
-          // setLoading(false);
+          toast.error("No matching offer data found!");
           return;
         }
-
-        localStorage.setItem("offer_data", JSON.stringify(offerFetchData));
-        localStorage.setItem("scm_data", JSON.stringify(fetchedScmData));
-        // Map API response to the state keys (for simplicity)
+  
         setOfferData({
           offer_id: offerFetchData.offer_id || "",
           client_name: offerFetchData.client_name || "",
@@ -151,20 +144,20 @@ const CivilWorks1 = () => {
           transformer: offerFetchData.transformer || "",
           column_type: offerFetchData.column_type || "",
         });
-
+  
+        console.log("Set Offer Data:", offerFetchData);
+  
         setscmData({
           spv_modules_555: fetchedScmData.spv_modules_555 || "",
           spv_modules_580: fetchedScmData.spv_modules_580 || "",
           spv_modules_550: fetchedScmData.spv_modules_550 || "",
           spv_modules_585: fetchedScmData.spv_modules_585 || "",
           solar_inverter: fetchedScmData.solar_inverter || "",
-          module_mounting_structure:
-            fetchedScmData.module_mounting_structure || "",
+          module_mounting_structure_scm: fetchedScmData.module_mounting_structure || "",
           mounting_hardware: fetchedScmData.mounting_hardware || "",
           dc_cable: fetchedScmData.dc_cable || "",
           ac_cable_inverter_accb: fetchedScmData.ac_cable_inverter_accb || "",
-          ac_cable_accb_transformer:
-            fetchedScmData.ac_cable_accb_transformer || "",
+          ac_cable_accb_transformer: fetchedScmData.ac_cable_accb_transformer || "",
           ac_ht_cable_11KV: fetchedScmData.ac_ht_cable_11KV || "",
           ac_ht_cable_33KV: fetchedScmData.ac_ht_cable_33KV || "",
           earthing_station: fetchedScmData.earthing_station || "",
@@ -187,33 +180,38 @@ const CivilWorks1 = () => {
           abt_meter_11kv_Other: fetchedScmData.abt_meter_11kv_Other || "",
           abt_meter_33kv_Other: fetchedScmData.abt_meter_33kv_Other || "",
           vcb_kiosk: fetchedScmData.vcb_kiosk || "",
-          slnko_charges: fetchedScmData.slnko_charges || "",
+          slnko_charges_scm: fetchedScmData.slnko_charges_scm || "",
           installation_commissioing: {
-            labour_works:
-              fetchedScmData.installation_commissioing?.labour_works || "",
-            machinery:
-              fetchedScmData.installation_commissioing?.machinery || "",
-            civil_material:
-              fetchedScmData.installation_commissioing?.civil_material || "",
+            labour_works: fetchedScmData.installation_commissioing?.labour_works || "",
+            machinery: fetchedScmData.installation_commissioing?.machinery || "",
+            civil_material: fetchedScmData.installation_commissioing?.civil_material || "",
           },
         });
-
-        setBdRate({
-          // offer_id: fetchRatebd.offer_id || "",
-          spv_modules: fetchRatebd.spv_modules || "",
-          module_mounting_structure:
-            fetchRatebd.module_mounting_structure || "",
-          transmission_line: fetchRatebd.transmission_line || "",
-          slnko_charges: fetchRatebd.slnko_charges || "",
-          submitted_by_BD: fetchRatebd.submitted_by_BD || "",
-        });
+  
+        console.log("Set SCM Data:", fetchedScmData);
+  
+        if (fetchRatebd) {
+          setBdRate({
+            offer_id: fetchRatebd.offer_id || "",
+            spv_modules: fetchRatebd.spv_modules || "",
+            module_mounting_structure: fetchRatebd.module_mounting_structure || "",
+            transmission_line: fetchRatebd.transmission_line || "",
+            slnko_charges: fetchRatebd.slnko_charges || "",
+            submitted_by_BD: fetchRatebd.submitted_by_BD || "",
+          });
+          console.log("Set BD Rate Data:", fetchRatebd);
+        } else {
+          console.warn("No matching BD Rate data found for offer_id:", offerRate);
+        }
+  
       } catch (error) {
         console.error("Error fetching commercial offer data:", error);
       }
     };
-
+  
     fetchData();
-  }, []); // Run only once on component mount
+  }, []);
+   // Run only once on component mount
 
   //***for 24th row ***/
   const internalQuantity24 = offerData.dc_capacity * 1000;
@@ -909,8 +907,8 @@ const CivilWorks1 = () => {
                     <td>KWp</td>
                     {/* <td>{internalQuantity24}</td> */}
                     <td>{internalQuantity24}</td>
-                    {/* <td>Installation Charges inside boundary wall (Labour, Machinary & Civil Material)</td>
-                    <td>{scmData.installation_commissioing.civil_material}</td>
+                    <td>Installation Charges inside boundary wall (Labour, Machinary & Civil Material)</td>
+                    {/* <td>{scmData.installation_commissioing.civil_material}</td>
                     <td>INR/Wp</td>
                     <td>{TotalVal26}</td>
                     <td>18%</td>

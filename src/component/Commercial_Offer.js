@@ -131,7 +131,7 @@ function Offer() {
               }}
             >
               <ContentPasteGoIcon />
-              <Typography>Offer Summary</Typography>
+              <Typography>Edit Offer</Typography>
             </MenuItem>
             <MenuItem
             onClick={() => {
