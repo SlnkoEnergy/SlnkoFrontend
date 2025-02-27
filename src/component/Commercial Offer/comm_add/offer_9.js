@@ -269,7 +269,7 @@ const Page9 = () => {
                   className="ul-item"
                   style={{ fontFamily: "sans-serif", fontSize: "1.3rem" }}
                 >
-                  GST @1 % is Additional as actual.
+                  GST @18% is Additional as actual.
                 </li>
               </ul>
             </Box>

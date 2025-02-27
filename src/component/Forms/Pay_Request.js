@@ -216,6 +216,7 @@ function PaymentRequestForm() {
       console.log("Matched Project details from PO p_id:", matchingProject);
       setFormData((prev) => ({
         ...prev,
+        p_id: matchingProject.p_id ?? "",
         projectID: matchingProject.code ?? "",
         name: matchingProject.name ?? "",
         customer: matchingProject.customer ?? "",
@@ -279,6 +280,7 @@ function PaymentRequestForm() {
     try {
       const response = await Axios.post("/add-pay-requesT-IT", {
         ...formData,
+        p_id: formData?.p_id, 
         submitted_by: user?.name || getUserData()?.name || "", // Ensure it's always included
       });
       const { message } = response.data;
@@ -305,7 +307,8 @@ function PaymentRequestForm() {
     try {
       const response = await Axios.post("/hold-PaymenT-IT", {
         ...formData,
-        submitted_by: user?.name || getUserData()?.name || "", // Ensure submitted_by is included
+        p_id: formData?.p_id, 
+        submitted_by: user?.name || getUserData()?.name || "",
       });
       const { message } = response.data;
 
@@ -353,9 +356,9 @@ function PaymentRequestForm() {
             <Grid container spacing={2}>
               <Grid xs={12} sm={6}>
               <Typography level="body2" fontWeight="bold">
-     Select Project
+    Projects: 
     </Typography>
-              {/* <Select
+      <Select
           name="p_id"
           value={formData.p_id? {label: getFormData.projectIDs.find((project) => project.p_id === formData.p_id)?.code,
           value: formData.p_id,
@@ -371,15 +374,15 @@ function PaymentRequestForm() {
     value: project.p_id,
   }))}
   placeholder="Select Project"
-/> */}
-<Input
+/>           
+{/* <Input
                   name="projectID"
                   value={formData.projectID || ""}
                   onChange={handleChange}
                   placeholder="Project ID"
                   required
                   readOnly
-                />
+                /> */}
 
               </Grid>
 

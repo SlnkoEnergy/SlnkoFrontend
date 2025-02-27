@@ -4,6 +4,9 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import Axios from "../utils/Axios";
+import Tooltip from "@mui/joy/Tooltip";
+import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
+import IconButton from "@mui/joy/IconButton";
 
 function BdHistoryTable() {
   const [loading, setLoading] = useState(false);
@@ -58,6 +61,35 @@ function BdHistoryTable() {
     fetchSCMData();
   }, []);
 
+  const AddMenu = ({offer_id, _id}) => {
+    return(
+      <Tooltip title="Add" arrow>
+      <IconButton
+        size="small"
+        sx={{
+          backgroundColor: "skyblue",
+          color: "white",
+          "&:hover": {
+            backgroundColor: "#45a049",
+          },
+          borderRadius: "50%",
+          padding: "4px",
+        }}
+        onClick={() =>{
+          // const page = currentPage;
+          const offerId = String(offer_id);
+          const Id = _id;
+          localStorage.setItem("preview_id", Id);
+          localStorage.setItem("preview_offerId", offerId);
+          navigate(`/offer_preview?_id=${Id}&offer_id=${offerId}`);
+        }}
+      >
+        <RemoveRedEyeIcon fontSize="xl" />
+      </IconButton>
+    </Tooltip>
+    )
+  }
+
   return (
     <Box
       sx={{
@@ -90,13 +122,14 @@ function BdHistoryTable() {
               "Transmission Line",
               "Slnko Charges",
               "Submitted By BD",
+              "Costing Preview"
             ].map((header, index) => (
               <Box
                 component="th"
                 key={index}
                 sx={{
                   padding: 2,
-                  textAlign: "left",
+                  textAlign: "center",
                   fontWeight: "bold",
                   fontSize: "14px",
                 }}
@@ -115,6 +148,7 @@ function BdHistoryTable() {
                 component="tr"
                 key={index}
                 sx={{
+                  textAlign:"center",
                   backgroundColor:
                     index % 2 === 0 ? "neutral.100" : "neutral.50",
                   "&:hover": { backgroundColor: "neutral.200" },
@@ -138,6 +172,9 @@ function BdHistoryTable() {
                 <Box component="td" sx={{ padding: 2 }}>
                   {row.submitted_by_BD || "-"}
                 </Box>
+                <Box component="td" sx={{ padding: 2 }}>
+                <AddMenu offer_id={row.offer_id} _id={row._id} />
+                </Box>
               </Box>
             ))
           ) : (
@@ -145,7 +182,7 @@ function BdHistoryTable() {
               component="tr"
               sx={{ textAlign: "center", backgroundColor: "neutral.50" }}
             >
-              <Box component="td" colSpan={7} sx={{ padding: 2 }}>
+              <Box component="td" colSpan={8} sx={{ padding: 2 }}>
                 No matching history data found.
               </Box>
             </Box>

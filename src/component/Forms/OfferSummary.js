@@ -74,9 +74,25 @@ import {
   
     fetchSCMData();
   }, []);
+
+  const [user, setUser] = useState(null);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    return userData ? JSON.parse(userData) : null;
+  };
+  
+  useEffect(() => {
+    setUser(getUserData());
+  }, []);
   
   const handleSubmit = async () => {
     if (scmData.status === "Posted") {
+      if (!user?.name) {
+        toast.error("User details are missing!");
+        return;
+      }
+  
       try {
         const response = await Axios.put(`/edit-bd-rate/${scmData._id}`, {
           _id: scmData._id,
@@ -84,13 +100,12 @@ import {
           module_mounting_structure: scmData.module_mounting_structure,
           transmission_line: scmData.transmission_line,
           slnko_charges: scmData.slnko_charges,
-          submitted_by_BD: scmData.submitted_by_BD,
+          submitted_by_BD: user.name,
         });
   
         if (response.status === 200) {
           setResponse(response.data);
           toast.success(response.data.msg || "Commercial Offer updated successfully.");
-
           navigate("/ref_list_update");
         } else {
           throw new Error("Unexpected response from the server.");
@@ -100,9 +115,10 @@ import {
         toast.error("Failed to update Comm Rate.");
       }
     } else {
-      toast.error("Status must be 'Posted' to edit the data.");
+      toast.error("Cost cannot be update.");
     }
   };
+  
 
     return (
         <Sheet

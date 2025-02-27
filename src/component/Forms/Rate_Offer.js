@@ -75,12 +75,16 @@ const Rate_Offer = () => {
   };
 
   const [user, setUser] = useState(null);
+
   const getUserData = () => {
     const userData = localStorage.getItem("userDetails");
     return userData ? JSON.parse(userData) : null;
   };
   
-
+  useEffect(() => {
+    setUser(getUserData());
+  }, []);
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -90,7 +94,7 @@ const Rate_Offer = () => {
   
       if (!OfferRate) {
         console.error("Offer ID not found in localStorage");
-        alert("Offer ID is missing!");
+        toast.error("Offer ID is missing!");
         return;
       }
   
@@ -101,21 +105,28 @@ const Rate_Offer = () => {
   
       if (!offerData) {
         console.error("Matching offer not found.");
-        alert("No matching offer found.");
+        toast.error("No matching offer found.");
         return;
       }
   
-      const user = getUserData();
       if (!user?.name) {
         console.error("User details not found.");
-        alert("User details are missing!");
+        toast.error("User details are missing!");
+        return;
+      }
+  
+      const { data: existingBDRates } = await Axios.get("/get-comm-bd-rate");
+      const existingRate = existingBDRates.find((item) => item.offer_id === offerData.offer_id);
+  
+      if (existingRate) {
+        toast.error("Cost already Submitted. Only you can edit cost!");
         return;
       }
   
       const scmPayload = {
         ...scmData,
         offer_id: offerData.offer_id,
-        submitted_by: user.name,
+        submitted_by_BD: user.name,
       };
   
       const response = await Axios.post("/create-bd-rate", scmPayload, {
@@ -125,19 +136,16 @@ const Rate_Offer = () => {
       console.log("Response:", response?.data);
       toast.success("Costing submitted successfully!");
   
-      
       localStorage.setItem("offerId", offerData.offer_id);
-  
       navigate("/ref_list_add");
   
-     
       setscmData({
         offer_id: "",
         spv_modules: "",
         module_mounting_structure: "",
         transmission_line: "",
         slnko_charges: "",
-        submitted_by_BD: user.name,
+        submitted_by_BD: "",
       });
     } catch (error) {
       console.error("Submission Error:", error?.response?.data || error.message);
@@ -146,6 +154,7 @@ const Rate_Offer = () => {
       setLoading(false);
     }
   };
+  
 
   
   

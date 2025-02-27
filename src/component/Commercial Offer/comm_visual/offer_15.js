@@ -1,9 +1,10 @@
-import { Box, Grid, Sheet, Table } from "@mui/joy";
+import { Box, Grid, Sheet, Table, Button } from "@mui/joy";
 import React, { useEffect, useState } from "react";
 import logo from "../../../assets/slnko_blue_logo.png";
 import Axios from "../../../utils/Axios";
 import "../CSS/offer.css";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 const Summary = () => {
   const [offerData, setOfferData] = useState({
@@ -82,11 +83,16 @@ const Summary = () => {
     submitted_by_BD: "",
   });
 
+  const navigate = useNavigate();
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const offerRate = localStorage.getItem("offer_summary");
+        const offerRate = localStorage.getItem("preview_offerId");
+        const previewId = localStorage.getItem("preview_id");
+
         console.log("Fetched offer_id from localStorage:", offerRate);
+        console.log("Fetched preview_id from localStorage:", previewId);
 
         if (!offerRate) {
           console.error("Offer ID not found in localStorage");
@@ -94,62 +100,58 @@ const Summary = () => {
           return;
         }
 
-        const [response, result, answer] = await Promise.all([
+        // Fetch all data simultaneously
+        const [offerRes, result, bdRes] = await Promise.all([
           Axios.get("/get-comm-offer"),
           Axios.get("/get-comm-scm-rate"),
-          Axios.get("/get-comm-bd-rate"),
+          Axios.get("/get-bd-rate-history"),
         ]);
 
-        const fetchedData = response.data;
+        const offerDataList = offerRes?.data ?? [];
         const fetchedScmData = result.data[0];
-        const fetchedBdData = answer.data;
+        const bdDataList = bdRes?.data?.data ?? [];
 
-        console.log("Fetched Offer Data:", fetchedData);
+        console.log("Fetched Offer Data:", offerDataList);
         console.log("Fetched SCM Rate Data:", fetchedScmData);
-        console.log("Fetched BD Rate Data:", fetchedBdData);
+        console.log("Fetched BD Rate Data:", bdDataList);
 
-        const offerFetchData = fetchedData.find(
+        // Match data based on localStorage values
+        const matchedOffer = offerDataList.find(
           (item) => item.offer_id === offerRate
         );
-        const fetchRatebd = fetchedBdData.find(
-          (item) => item.offer_id === offerRate
-        );
+        const matchedBdRate = bdDataList.find((item) => item._id === previewId);
 
-        console.log("Matched Offer Data:", offerFetchData);
-        console.log("Matched BD Rate Data:", fetchRatebd);
-
-        if (!offerFetchData) {
+        if (!matchedOffer) {
           console.error("No matching offer data found");
           toast.error("No matching offer data found!");
           return;
         }
 
         setOfferData({
-          offer_id: offerFetchData.offer_id || "",
-          client_name: offerFetchData.client_name || "",
-          village: offerFetchData.village || "",
-          district: offerFetchData.district || "",
-          state: offerFetchData.state || "",
-          pincode: offerFetchData.pincode || "",
-          ac_capacity: offerFetchData.ac_capacity || "",
-          dc_overloading: offerFetchData.dc_overloading || "",
-          dc_capacity: offerFetchData.dc_capacity || "",
-          scheme: offerFetchData.scheme || "",
-          component: offerFetchData.component || "",
-          rate: offerFetchData.rate || "",
-          timeline: offerFetchData.timeline || "",
-          prepared_by: offerFetchData.prepared_by || "",
-          module_type: offerFetchData.module_type || "",
-          module_capacity: offerFetchData.module_capacity || "",
-          inverter_capacity: offerFetchData.inverter_capacity || "",
-          evacuation_voltage: offerFetchData.evacuation_voltage || "",
-          module_orientation: offerFetchData.module_orientation || "",
-          transmission_length: offerFetchData.transmission_length || "",
-          transformer: offerFetchData.transformer || "",
-          column_type: offerFetchData.column_type || "",
+          offer_id: matchedOffer.offer_id ?? "",
+          client_name: matchedOffer.client_name ?? "",
+          village: matchedOffer.village ?? "",
+          district: matchedOffer.district ?? "",
+          state: matchedOffer.state ?? "",
+          pincode: matchedOffer.pincode ?? "",
+          ac_capacity: matchedOffer.ac_capacity ?? "",
+          dc_overloading: matchedOffer.dc_overloading ?? "",
+          dc_capacity: matchedOffer.dc_capacity ?? "",
+          scheme: matchedOffer.scheme ?? "",
+          component: matchedOffer.component ?? "",
+          rate: matchedOffer.rate ?? "",
+          timeline: matchedOffer.timeline ?? "",
+          prepared_by: matchedOffer.prepared_by ?? "",
+          module_type: matchedOffer.module_type ?? "",
+          module_capacity: matchedOffer.module_capacity ?? "",
+          inverter_capacity: matchedOffer.inverter_capacity ?? "",
+          evacuation_voltage: matchedOffer.evacuation_voltage ?? "",
+          module_orientation: matchedOffer.module_orientation ?? "",
+          transmission_length: matchedOffer.transmission_length ?? "",
+          transformer: matchedOffer.transformer ?? "",
+          column_type: matchedOffer.column_type ?? "",
         });
-
-        console.log("Set Offer Data:", offerFetchData);
+        console.log("Set Offer Data:", matchedOffer);
 
         setscmData({
           spv_modules_555: fetchedScmData.spv_modules_555 || "",
@@ -199,30 +201,36 @@ const Summary = () => {
 
         console.log("Set SCM Data:", fetchedScmData);
 
-        if (fetchRatebd) {
+        if (matchedBdRate) {
           setBdRate({
-            // offer_id: fetchRatebd.offer_id || "",
-            spv_modules: fetchRatebd.spv_modules || "",
+            spv_modules: matchedBdRate.spv_modules ?? "",
             module_mounting_structure:
-              fetchRatebd.module_mounting_structure || "",
-            transmission_line: fetchRatebd.transmission_line || "",
-            slnko_charges: fetchRatebd.slnko_charges || "",
-            submitted_by_BD: fetchRatebd.submitted_by_BD || "",
+              matchedBdRate.module_mounting_structure ?? "",
+            transmission_line: matchedBdRate.transmission_line ?? "",
+            slnko_charges: matchedBdRate.slnko_charges ?? "",
+            submitted_by_BD: matchedBdRate.submitted_by_BD ?? "",
           });
-          console.log("Set BD Rate Data:", fetchRatebd);
+          console.log("Set BD Rate Data:", matchedBdRate);
         } else {
           console.warn(
             "No matching BD Rate data found for offer_id:",
-            offerRate
+            previewId
           );
         }
       } catch (error) {
         console.error("Error fetching commercial offer data:", error);
+        toast.error("Failed to fetch data. Please try again.");
       }
     };
 
     fetchData();
   }, []);
+
+  const handleBack = () => {
+    const offerRate = localStorage.getItem("preview_offerId");
+    navigate(`/bd_history?offer_id=${offerRate}`);
+    localStorage.removeItem("preview_offerId");
+  };
 
   //***for 24th row ***/
   const internalQuantity24 = offerData.dc_capacity * 1000;
@@ -871,6 +879,9 @@ const Summary = () => {
   const Total_Basic_Other_Material = Math.round(
     TotalVal16 + TotalVal17 + TotalVal18 + TotalVal19 + TotalVal23
   );
+
+  console.log("Total_Basic_Other_Material: ", Total_Basic_Other_Material);
+
   const Total_Gst_Other_Material = Math.round(
     (TotalVal16 * 18) / 100 +
       (TotalVal17 * 18) / 100 +
@@ -959,6 +970,8 @@ const Summary = () => {
     3 * abt_cal +
     totalVCB +
     scmWeekly4(offerData.ac_capacity) * 1;
+  console.log(totalVCB);
+
   const Total_GST_GSS_Equipment =
     (ct_pt_cal * 2 * 18) / 100 +
     (abt_cal * 3 * 18) / 100 +
@@ -1023,6 +1036,7 @@ const Summary = () => {
           width: "100%",
           // height: "100%",
           display: "flex",
+          flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
           "@media print": {
@@ -1037,53 +1051,63 @@ const Summary = () => {
       >
         <Grid
           sx={{
-            width: "60%",
-            height: "100%",
-            border: "2px solid #0f4C7f",
             "@media print": {
-              width: "210mm",
-              height: "297mm",
+              display: "none",
             },
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
+          <Button onClick={handleBack}>Back</Button>
+        </Grid>
+
+        <Grid
+          sx={{
+            width: "60%",
+            height: "100%",
+            //  border: "2px solid #0f4C7f",
+            "@media print": {
               width: "100%",
-              alignItems: "flex-end",
-              gap: 2,
-              paddingTop: "20px",
-              "@media print": {
-                padding: "5px",
-                marginTop: "10px",
-              },
-            }}
-          >
-            <img
-              width={"220px"}
-              height={"110px"}
-              alt="logo"
-              src={logo}
-              style={{ maxWidth: "100%" }}
-            />
-            <Box
-              sx={{
-                width: "60%",
-                margin: "18px 0",
-                "@media (max-width: 1340px)": {
-                  width: "50%",
-                },
-              }}
-            >
-              <hr
-                style={{
-                  width: "100%",
-                  color: "blue",
-                  borderTop: "2px solid #0f4C7f",
-                }}
-              />
-            </Box>
-          </Box>
+              height: "100%",
+            },
+          }}
+        >
+          {/* <Box
+             sx={{
+               display: "flex",
+               width: "100%",
+               alignItems: "flex-end",
+               gap: 2,
+               paddingTop: "20px",
+               "@media print": {
+                 padding: "5px",
+                 marginTop: "10px",
+               },
+             }}
+           >
+             <img
+               width={"220px"}
+               height={"110px"}
+               alt="logo"
+               src={logo}
+               style={{ maxWidth: "100%" }}
+             />
+             <Box
+               sx={{
+                 width: "60%",
+                 margin: "18px 0",
+                 "@media (max-width: 1340px)": {
+                   width: "50%",
+                 },
+               }}
+             >
+               <hr
+                 style={{
+                   width: "100%",
+                   color: "blue",
+                   borderTop: "2px solid #0f4C7f",
+                 }}
+               />
+             </Box>
+           </Box> */}
 
           <Box
             sx={{

@@ -8,9 +8,9 @@ import Link from '@mui/joy/Link';
 import Typography from '@mui/joy/Typography';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 
-// import Sidebar from '../../../component/Partials/Sidebar';
+import Sidebar from '../../../component/Partials/Sidebar';
 import Header from '../../../component/Partials/Header';
-import ReferenceList from '../../../component/Commercial Offer/comm_add/Comm_Entire';
+import ReferencePreview from '../../../component/Commercial Offer/comm_visual/offer_15';
 
 function Add_Ref() {
   return (
@@ -19,7 +19,7 @@ function Add_Ref() {
       <Box sx={{ display: 'flex', minHeight: '100%' }}>
       <Header sx={{ "@media print": { display: "none" } }} />
 
-        {/* <Sidebar /> */}
+        <Sidebar />
         <Box
           component="main"
           className="MainContent"
@@ -60,10 +60,10 @@ function Add_Ref() {
                 href=""
                 sx={{ fontSize: 12, fontWeight: 500 }}
               >
-                BD
+                BD History
               </Link>
               <Typography color="primary" sx={{ fontWeight: 500, fontSize: 12 }}>
-                Reference List
+                Costing Summary
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -78,7 +78,7 @@ function Add_Ref() {
               justifyContent: 'space-between',
             }}
           >
-           <ReferenceList />
+           <ReferencePreview />
            
           </Box>
           

@@ -425,9 +425,9 @@ const CivilWorks1 = () => {
     const { state, evacuation_voltage } = offerData; // Extract values from offerData
 
     if (evacuation_voltage === 11) {
-      return state === "madhya pradesh" ? ct_pt_11kv_MP : ct_pt_11kv_Other;
+      return state === "Madhya Pradesh" ? ct_pt_11kv_MP : ct_pt_11kv_Other;
     } else {
-      return state === "madhya pradesh" ? ct_pt_33kv_MP : ct_pt_33kv_Other;
+      return state === "Madhya Pradesh" ? ct_pt_33kv_MP : ct_pt_33kv_Other;
     }
   };
 
@@ -441,11 +441,11 @@ const CivilWorks1 = () => {
     const { state, evacuation_voltage } = offerData; // Extract values from offerData
 
     if (evacuation_voltage === 11) {
-      return state === "madhya pradesh"
+      return state === "Madhya Pradesh"
         ? abt_meter_11kv_MP
         : abt_meter_11kv_Other;
     } else {
-      return state === "madhya pradesh"
+      return state === "Madhya Pradesh"
         ? abt_meter_33kv_MP
         : abt_meter_33kv_Other;
     }
