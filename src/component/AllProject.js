@@ -21,20 +21,17 @@ import * as React from "react";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ModeEditIcon from '@mui/icons-material/ModeEdit';
 import Divider from "@mui/joy/Divider";
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import Axios from "../utils/Axios";
+// import Axios from "../utils/Axios";
+import { useDeleteProjectMutation, useGetProjectsQuery } from "../redux/projectsSlice";
 
 const AllProjects = forwardRef((props, ref) => {
   const navigate = useNavigate();
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [states, setStates] = useState([]);
-  const [customers, setCustomers] = useState([]);
-  const [stateFilter, setStateFilter] = useState("");
-  const [customerFilter, setCustomerFilter] = useState("");
+  // const [projects, setProjects] = useState([]);
+  // const [loading, setLoading] = useState(true);
+  // const [error, setError] = useState(null);
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
@@ -45,38 +42,35 @@ const AllProjects = forwardRef((props, ref) => {
 
   // const states = ["California", "Texas", "New York", "Florida"];
 
-  useEffect(() => {
-    const fetchTableData = async () => {
-      try {
-        const response = await Axios.get("/get-all-projecT-IT");
+  
 
-        const projectsData = Array.isArray(response.data.data)
-          ? response.data.data
-          : [];
-        setProjects(projectsData);
+  // useEffect(() => {
+  //   const fetchTableData = async () => {
+  //     try {
+  //       const response = await Axios.get("/get-all-projecT-IT");
 
-        // const uniqueStates = [
-        //   ...new Set(projectsData.map((project) => project.state)),
-        // ].filter(Boolean);
+  //       const projectsData = Array.isArray(response.data.data)
+  //         ? response.data.data
+  //         : [];
+  //       setProjects(projectsData);
+  //     } catch (err) {
+  //       console.error("API Error:", err);
+  //       setError("Failed to fetch table data.");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-        // console.log("states are:", uniqueStates);
+  //   fetchTableData();
+  // }, []);
 
-        // const uniqueCustomers = [
-        //   ...new Set(projectsData.map((project) => project.customer)),
-        // ].filter(Boolean);
+  const { data: getProject = [], isLoading, error } = useGetProjectsQuery();
 
-        // setStates(uniqueStates);
-        // setCustomers(uniqueCustomers);
-      } catch (err) {
-        console.error("API Error:", err);
-        setError("Failed to fetch table data.");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const [deleteProject] = useDeleteProjectMutation();
 
-    fetchTableData();
-  }, []);
+console.log("getProject: ", getProject);
+
+
     const [user, setUser] = useState(null);
   
     useEffect(() => {
@@ -92,7 +86,10 @@ const AllProjects = forwardRef((props, ref) => {
       return null;
     };
 
-  const RowMenu = ({ currentPage, p_id }) => {
+
+
+
+  const RowMenu = ({ currentPage, p_id, _id }) => {
     // console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
     return (
       <>
@@ -128,8 +125,8 @@ const AllProjects = forwardRef((props, ref) => {
             user?.name === "Prachi Singh" ||
             user?.name === "admin") && (
             <MenuItem color="danger" disabled={selectedProjects.length === 0}
-                onClick={handleDelete}
-                >
+            onClick={handleDelete}>
+                
                   <DeleteIcon />
                   <Typography>Delete</Typography>
                 </MenuItem>
@@ -139,42 +136,68 @@ const AllProjects = forwardRef((props, ref) => {
       </>
     );
   };
+// Delete Api 
 
-  const handleDelete = async () => {
-    if (selectedProjects.length === 0) {
-      toast.error("No projects selected for deletion.");
-      return;
-    }
-    // console.log("Deleting selected projects:", selectedProjects);
-    try {
-      await Promise.all(
-        selectedProjects.map((_id) => Axios.delete(`/delete-by-iD-IT/${_id}`))
-      );
+  // const handleDelete = async () => {
+  //   if (selectedProjects.length === 0) {
+  //     toast.error("No projects selected for deletion.");
+  //     return;
+  //   }
+  //   // console.log("Deleting selected projects:", selectedProjects);
+  //   try {
+  //     await Promise.all(
+  //       selectedProjects.map((_id) => Axios.delete(`/delete-by-iD-IT/${_id}`))
+  //     );
       
-      toast.success("Deleted successfully.");
+  //     toast.success("Deleted successfully.");
   
-      // Remove deleted projects from state
-      setProjects((prevProjects) =>
-        prevProjects.filter((project) => !selectedProjects.includes(project._id))
-      );
+  //     // Remove deleted projects from state
+  //     setProjects((prevProjects) =>
+  //       prevProjects.filter((project) => !selectedProjects.includes(project._id))
+  //     );
   
-      // Clear selection after deletion
+  //     // Clear selection after deletion
+  //     setSelectedProjects([]);
+  //   } catch (error) {
+  //     console.error("Delete Error:", error);
+  //     toast.error("Failed to delete projects.");
+  //   }
+  // };
+  
+
+
+  const handleSelectAll = (event) => {
+    if (event.target.checked) {
+      setSelectedProjects(getProject.map((row) => row._id));
+    } else {
       setSelectedProjects([]);
-    } catch (error) {
-      console.error("Delete Error:", error);
-      toast.error("Failed to delete projects.");
     }
   };
   
 
+const handleDelete = async () => {
+  if (selectedProjects.length === 0) {
+    toast.error("No projects selected for deletion.");
+    return;
+  }
 
-  // const handleSelectAll = (event) => {
-  //   if (event.target.checked) {
-  //     setSelected(paginatedProjects.map((row) => row._id));
-  //   } else {
-  //     setSelected([]);
-  //   }
-  // };
+  try {
+    await Promise.all(
+      selectedProjects.map(async (_id) => {
+        await deleteProject(_id).unwrap();
+      })
+    );
+
+    toast.success("Selected projects deleted successfully.");
+
+    // Clear selection after successful deletion
+    setSelectedProjects([]);
+  } catch (err) {
+    console.error("Failed to delete selected projects:", err);
+    toast.error("Failed to delete selected projects.");
+  }
+};
+
 
   const handleRowSelect = (_id) => {
     setSelectedProjects((prev) =>
@@ -184,22 +207,22 @@ const AllProjects = forwardRef((props, ref) => {
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
+  const projects = useMemo(() => Array.isArray(getProject?.data) ? getProject.data : [], [getProject]);
 
-  const filteredAndSortedData = projects
-    .filter((project) => {
+  const filteredAndSortedData = projects.filter((project) => {
       const matchesSearchQuery = ["code", "customer", "name"].some((key) =>
         project[key]?.toLowerCase().includes(searchQuery)
       );
       // Apply the state filter
-      const matchesStateFilter = !stateFilter || project.state === stateFilter;
-      // console.log("MatchStates are: ", matchesStateFilter);
+      // const matchesStateFilter = !stateFilter || project.state === stateFilter;
+      // // console.log("MatchStates are: ", matchesStateFilter);
 
-      // Apply the customer filter
-      const matchesCustomerFilter =
-        !customerFilter || project.customer === customerFilter;
+      // // Apply the customer filter
+      // const matchesCustomerFilter =
+      //   !customerFilter || project.customer === customerFilter;
 
       // Combine all filters
-      return matchesSearchQuery && matchesStateFilter && matchesCustomerFilter;
+      return matchesSearchQuery;
     })
     .sort((a, b) => {
       if (a.name?.toLowerCase().includes(searchQuery)) return -1;
@@ -246,7 +269,7 @@ const AllProjects = forwardRef((props, ref) => {
     setCurrentPage(page);
   }, [searchParams]);
 
-  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
+  const totalPages = Math.ceil((filteredAndSortedData?.length || 0) / itemsPerPage);
 
   const paginatedProjects = filteredAndSortedData.slice(
     (currentPage - 1) * itemsPerPage,
@@ -262,7 +285,7 @@ const AllProjects = forwardRef((props, ref) => {
 
   const renderFilters = () => (
     <>
-      <FormControl size="sm">
+      {/* <FormControl size="sm">
         <FormLabel>State</FormLabel>
         <Select
           size="sm"
@@ -297,7 +320,7 @@ const AllProjects = forwardRef((props, ref) => {
             </Option>
           ))}
         </Select>
-      </FormControl>
+      </FormControl> */}
     </>
   );
 
@@ -339,42 +362,6 @@ const AllProjects = forwardRef((props, ref) => {
 
   return (
     <>
-      {/* Mobile Filters */}
-      {/* <Sheet
-        className="SearchAndFilters-mobile"
-        sx={{ display: { xs: "flex", sm: "none" }, my: 1, gap: 1 }}
-      >
-        <Input
-          size="sm"
-          placeholder="Search"
-          startDecorator={<SearchIcon />}
-          sx={{ flexGrow: 1 }}
-        />
-        <IconButton
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          onClick={() => setOpen(true)}
-        >
-          <FilterAltIcon />
-        </IconButton>
-        <Modal open={open} onClose={() => setOpen(false)}>
-          <ModalDialog aria-labelledby="filter-modal" layout="fullscreen">
-            <ModalClose />
-            <Typography id="filter-modal" level="h2">
-              Filters
-            </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Sheet sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {renderFilters()}
-              <Button color="primary" onClick={() => setOpen(false)}>
-                Submit
-              </Button>
-            </Sheet>
-          </ModalDialog>
-        </Modal>
-      </Sheet> */}
-
       {/* Tablet and Up Filters */}
       <Box
         className="SearchAndFilters-tabletUp"
@@ -418,13 +405,7 @@ const AllProjects = forwardRef((props, ref) => {
           maxWidth: { lg: "85%", sm: "100%", md: "75%" },
         }}
       >
-        {error ? (
-          <Typography color="danger" textAlign="center">
-            {error}
-          </Typography>
-        ) : loading ? (
-          <Typography textAlign="center">Loading...</Typography>
-        ) : (
+     
           <Box
             component="table"
             sx={{ width: "100%", borderCollapse: "collapse" }}
@@ -440,16 +421,14 @@ const AllProjects = forwardRef((props, ref) => {
                   }}
                 >
                   <Checkbox
-                    size="sm"
-                    checked={selected.length === paginatedProjects.length}
-                    onChange={(event) =>
-                      handleRowSelect("all", event.target.checked)
-                    }
-                    indeterminate={
-                      selected.length > 0 &&
-                      selected.length < paginatedProjects.length
-                    }
-                  />
+  size="sm"
+  checked={selectedProjects.length === getProject.length}
+  onChange={handleSelectAll}
+  indeterminate={
+    selectedProjects.length > 0 && selectedProjects.length < getProject.length
+  }
+/>
+
                 </Box>
                 {[
                   "Project ID",
@@ -600,7 +579,7 @@ const AllProjects = forwardRef((props, ref) => {
               )}
             </Box>
           </Box>
-        )}
+      
       </Sheet>
 
       {/* Pagination */}

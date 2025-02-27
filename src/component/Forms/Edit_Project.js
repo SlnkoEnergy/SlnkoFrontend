@@ -12,129 +12,90 @@ import React, { useEffect, useState } from "react";
 import Axios from "../../utils/Axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import {
+  useUpdateProjectMutation,
+  useGetProjectsQuery,
+} from "../../redux/projectsSlice";
 
 const UpdateProject = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    p_id: "",
-    code: "",
-    customer: "",
-    name: "",
-    p_group: "",
-    email: "",
-    number: "",
-    alt_number: "",
-    billing_address: {
-      village_name: "",
-      district_name: "",
-    },
-    site_address: {
-      village_name: "",
-      district_name: "",
-    },
-    state: "",
-    project_category: "",
-    project_kwp: "",
-    distance: "",
-    tarrif: "",
-    land: {
-      type: "",
-      acres: "",
-    },
-    service: "",
-    status: "incomplete",
-  });
+  // const [formData, setFormData] = useState({
+  //   p_id: "",
+  //   code: "",
+  //   customer: "",
+  //   name: "",
+  //   p_group: "",
+  //   email: "",
+  //   number: "",
+  //   alt_number: "",
+  //   billing_address: {
+  //     village_name: "",
+  //     district_name: "",
+  //   },
+  //   site_address: {
+  //     village_name: "",
+  //     district_name: "",
+  //   },
+  //   state: "",
+  //   project_category: "",
+  //   project_kwp: "",
+  //   distance: "",
+  //   tarrif: "",
+  //   land: {
+  //     type: "",
+  //     acres: "",
+  //   },
+  //   service: "",
+  //   status: "incomplete",
+  // });
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const [updateProject, { isLoading: isUpdating }] = useUpdateProjectMutation();
+  const { data: projectsData, isLoading, error } = useGetProjectsQuery();
+  const [formData, setFormData] = useState(null);
 
   useEffect(() => {
-    const fetchProjectData = async () => {
-      console.log("Initializing data fetch...");
+    if (!projectsData) {
+      console.error("Error: projectsData is undefined or null.", projectsData);
+      return;
+    }
 
-      try {
-        setLoading(true);
-        setError("");
+    // Ensure projectsData is an array, extract data if wrapped inside an object
+    const projectsArray = Array.isArray(projectsData)
+      ? projectsData
+      : projectsData?.data || [];
 
-        let project = localStorage.getItem("idd");
+    if (!Array.isArray(projectsArray)) {
+      console.error(
+        "Error: Extracted projectsData is not an array.",
+        projectsData
+      );
+      return;
+    }
 
-        if (!project) {
-          console.error(
-            "No project ID found in localStorage. Setting a dummy ID for testing."
-          );
-          setError(
-            "Project ID is missing. Please ensure it is set in localStorage."
-          );
-          localStorage.setItem("idd", "1"); // Dummy value for testing
-          project = "1"; // Set a default for fallback
-        }
+    const projectId = Number(localStorage.getItem("idd"));
 
-        project = Number.parseInt(project);
-        console.log("Parsed Project ID after retrieval:", project);
+    console.log(projectId);
 
-        if (isNaN(project)) {
-          console.error("Project ID from localStorage is invalid.");
-          setError("Invalid Project ID. Please check your input.");
-          return;
-        }
+    if (isNaN(projectId)) {
+      console.error("Invalid project ID retrieved from localStorage.");
+      return;
+    }
 
-        console.log("Sending API request to fetch projects...");
-        const response = await Axios.get(
-          "/get-all-projecT-IT"
-        );
-        console.log("API Response:", response);
+    const matchingProject = projectsArray.find(
+      (item) => Number(item.p_id) === projectId
+    );
 
-        if (!response || !response.data || !response.data.data) {
-          console.error("Invalid API response structure.");
-          setError("No project data available. Please add projects first.");
-          return;
-        }
-
-        const projects = response.data.data;
-        console.log("Projects Fetched:", projects);
-
-        const matchingItem = projects.find(
-          (item) => Number(item.p_id) === project
-        );
-
-        if (matchingItem) {
-          console.log("Matching Project Data Found:", matchingItem);
-          setFormData({
-            ...formData,
-            _id: matchingItem._id, 
-            p_id: matchingItem.p_id || "",
-            code: matchingItem.code || "",
-            name: matchingItem.name || "",
-            customer: matchingItem.customer || "",
-            p_group: matchingItem.p_group || "",
-            email: matchingItem.email || "",
-            number: matchingItem.number || "",
-            alt_number: matchingItem.alt_number || "",
-            billing_address: matchingItem.billing_address || "",
-            site_address: matchingItem.site_address || "",
-            state: matchingItem.state || "",
-            project_category: matchingItem.project_category || "",
-            project_kwp: matchingItem.project_kwp || "",
-            distance: matchingItem.distance || "",
-            tarrif: matchingItem.tarrif || "",
-            land: matchingItem.land || "",
-            service: matchingItem.service || "",
-          });
-        } else {
-          console.error("No matching project found for the given ID.");
-          setError("No matching project found for the given ID.");
-        }
-      } catch (err) {
-        console.error("Error fetching project data:", err);
-        setError("Failed to fetch project data. Please try again later.");
-      } finally {
-        console.log("Data fetch completed. Setting loading to false.");
-        setLoading(false);
-      }
-    };
-
-    fetchProjectData();
-  }, []);
+    if (matchingProject) {
+      setFormData((prev) => ({
+        ...prev,
+        ...matchingProject, // Spread existing project data into formData
+      }));
+    } else {
+      console.error(`No matching project found for ID: ${projectId}`);
+    }
+  }, [projectsData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -156,39 +117,27 @@ const UpdateProject = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submitting form with data:", formData);
+    if (!formData || !formData._id) {
+      toast.error("Project ID is missing. Cannot update project.");
+      return;
+    }
 
     try {
-      setLoading(true);
-      setError("");
-
-      // Ensure we have the correct ID before sending the request
-      if (!formData._id) {
-        setError("Project ID is missing. Cannot update project.");
-        return;
-      }
-
-      // Send the PUT request to update the project
-      const response = await Axios.put(
-        `/update-projecT-IT/${formData._id}`,
-        formData
-      );
-      console.log("API Response:", response);
-
-      if (response && response.data) {
-        console.log("Project updated successfully:", response.data);
-        // alert("Project updated successfully.");
-        toast.success("Project updated successfully.");
-        navigate("/all-project")
-      }
+      await updateProject({
+        _id: formData._id,
+        updatedData: formData,
+      }).unwrap();
+      toast.success("Project updated successfully.");
+      navigate("/all-project");
     } catch (err) {
-      console.error("Error during project update:", err);
-      toast.error("oops!! something went wrong..")
-      setError("Failed to update project. Please try again later.");
-    } finally {
-      setLoading(false);
+      toast.error("Oops! Something went wrong.");
     }
   };
+
+  if (isLoading || !formData)
+    return <Skeleton variant="rectangular" height={400} />;
+  if (error)
+    return <Typography color="error">Failed to load project data.</Typography>;
 
   return (
     <Box
@@ -328,8 +277,21 @@ const UpdateProject = () => {
                     name="billing_address"
                     required
                     fullWidth
-                    value={formData.billing_address}
-                    onChange={handleChange}
+                    value={
+                      formData.billing_address?.village_name +
+                        ", " +
+                        formData.billing_address?.district_name || ""
+                    }
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        billing_address: {
+                          ...formData.billing_address,
+                          village_name: e.target.value,
+                        },
+                      })
+                    }
+                  
                   />
                 </Grid>
 
@@ -342,8 +304,20 @@ const UpdateProject = () => {
                     name="site_address"
                     required
                     fullWidth
-                    value={formData.site_address}
-                    onChange={handleChange}
+                    value={
+                      formData.site_address?.village_name +
+                        ", " +
+                        formData.site_address?.district_name || ""
+                    }
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        site_address: {
+                          ...formData.site_address,
+                          village_name: e.target.value,
+                        },
+                      })
+                    }
                   />
                 </Grid>
 
@@ -447,14 +421,29 @@ const UpdateProject = () => {
                   />
                 </Grid>
 
-                <Grid xs={12}>
+                <Grid
+                  xs={12}
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    mt: 2,
+                  }}
+                >
                   <Button
                     type="submit"
-                    fullWidth
                     color="primary"
-                    sx={{ mt: 2 }}
+                    variant="solid"
+                    sx={{ width: "48%", py: 1.5 }}
                   >
-                    Update Project
+                    Update
+                  </Button>
+                  <Button
+                    color="neutral"
+                    variant="soft"
+                    sx={{ width: "48%", py: 1.5 }}
+                    onClick={() => navigate("/all-project")}
+                  >
+                    Back
                   </Button>
                 </Grid>
               </Grid>

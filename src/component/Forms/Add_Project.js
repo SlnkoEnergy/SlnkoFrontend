@@ -15,6 +15,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import Img9 from "../../assets/solar.png";
 import Axios from "../../utils/Axios";
+import { useAddProjectMutation } from "../../redux/projectsSlice";
+import { useDispatch } from "react-redux";
 
 const states = [
   "Andhra Pradesh",
@@ -52,6 +54,9 @@ const landTypes = ["Leased", "Owned"];
  
 const Add_Project = () => {
   const navigate = useNavigate();
+
+  const dispatch = useDispatch();
+  const [addProject, { isLoading }] = useAddProjectMutation();
   
   const [formData, setFormData] = useState({
     code: "",
@@ -83,7 +88,7 @@ const Add_Project = () => {
     submitted_by:""
   });
   const [responseMessage, setResponseMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false);
 
 
 
@@ -128,22 +133,18 @@ const Add_Project = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user?.name) {
-      console.error("User details not found.");
       alert("User details are missing!");
       return;
     }
-    setIsLoading(true);
 
     const updatedPayload = {
       ...formData,
       submitted_by: user.name,
-      land: JSON.stringify(formData.land)
+      land: JSON.stringify(formData.land),
     };
-    try {
-      const response = await Axios.post("/add-new-projecT-IT", updatedPayload);
-      const { message, p_id } = response.data;
 
-      setResponseMessage(message);
+    try {
+      const response = await addProject(updatedPayload).unwrap();
       toast.success("Project added successfully");
 
       setFormData({
@@ -164,20 +165,13 @@ const Add_Project = () => {
         land: { type: "", acres: "" },
         service: "",
         project_status: "incomplete",
-        submitted_by: user?.name
+        submitted_by: user?.name,
       });
 
       navigate("/all-Project");
     } catch (error) {
-      console.error(
-        "Error adding project:",
-        error.response?.data || error.message
-      );
-      setResponseMessage("Failed to add project. Please try again!!");
-
+      console.error("Error adding project:", error);
       toast.error("Failed to add project. Please try again.");
-    } finally {
-      setIsLoading(false);
     }
   };
 
