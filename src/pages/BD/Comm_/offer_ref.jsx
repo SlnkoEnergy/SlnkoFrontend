@@ -10,7 +10,7 @@ import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 
 // import Sidebar from '../../../component/Partials/Sidebar';
 import Header from '../../../component/Partials/Header';
-import ReferenceList from '../../../component/Commercial Offer/Comm_Entire';
+import ReferenceList from '../../../component/Commercial Offer/comm_add/Comm_Entire';
 
 function Add_Ref() {
   return (

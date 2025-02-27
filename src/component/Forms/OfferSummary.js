@@ -89,9 +89,9 @@ import {
   
         if (response.status === 200) {
           setResponse(response.data);
-          toast.success(response.data.msg || "Comm Rate updated successfully.");
+          toast.success(response.data.msg || "Commercial Offer updated successfully.");
 
-          navigate("/ref_list");
+          navigate("/ref_list_update");
         } else {
           throw new Error("Unexpected response from the server.");
         }

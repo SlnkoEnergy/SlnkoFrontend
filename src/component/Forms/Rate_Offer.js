@@ -128,7 +128,7 @@ const Rate_Offer = () => {
       
       localStorage.setItem("offerId", offerData.offer_id);
   
-      navigate("/ref_list");
+      navigate("/ref_list_add");
   
      
       setscmData({

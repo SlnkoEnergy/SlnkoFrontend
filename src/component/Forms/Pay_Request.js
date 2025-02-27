@@ -185,46 +185,66 @@ function PaymentRequestForm() {
       (po) => po.po_number === selectedOption?.value
     );
   
-    if (selectedPo) {
-      const poValue = parseFloat(selectedPo.po_value || "0");
+    if (!selectedPo) {
+      console.warn("PO number not found in the list:", selectedOption?.value);
+      return;
+    }
   
-      
-      const matchedAdvance = getFormData.pays.find(
-        (pay) => pay.po_number === selectedPo.po_number
-      );
+    const poValue = parseFloat(selectedPo.po_value ?? "0");
   
-      const totalAdvancePaid = parseFloat(matchedAdvance?.amount_paid || "0");
-      const po_balance = poValue - totalAdvancePaid;
+    const matchedAdvance = getFormData.pays.find(
+      (pay) => pay.po_number === selectedPo.po_number
+    );
+    const totalAdvancePaid = parseFloat(matchedAdvance?.amount_paid ?? "0");
+    const po_balance = poValue - totalAdvancePaid;
   
+    setFormData((prev) => ({
+      ...prev,
+      po_number: selectedPo.po_number,
+      paid_for: selectedPo.item ?? "",
+      vendor: selectedPo.vendor ?? "",
+      po_value: poValue.toString(),
+      total_advance_paid: totalAdvancePaid.toString(),
+      po_balance: po_balance.toString(),
+    }));
+  
+    const matchingProject = getFormData.projectIDs.find(
+      (project) => project.code === selectedPo.p_id
+    );
+  
+    if (matchingProject) {
+      console.log("Matched Project details from PO p_id:", matchingProject);
       setFormData((prev) => ({
         ...prev,
-        po_number: selectedPo.po_number,
-        paid_for: selectedPo.item || "",
-        vendor: selectedPo.vendor || "",
-        po_value: poValue.toString(),
-        total_advance_paid: totalAdvancePaid.toString(),
-        po_balance: po_balance.toString(),
+        projectID: matchingProject.code ?? "",
+        name: matchingProject.name ?? "",
+        customer: matchingProject.customer ?? "",
+        p_group: matchingProject.p_group ?? "",
       }));
+    } else {
+      console.warn("No matching project found for p_id:", selectedPo.p_id);
+    }
   
-     
-      if (selectedPo.vendor) {
-        const matchedVendor = getFormData.vendors.find(
-          (vendor) => vendor.name === selectedPo.vendor
-        );
+    if (selectedPo.vendor) {
+      const matchedVendor = getFormData.vendors.find(
+        (vendor) => vendor.name === selectedPo.vendor
+      );
   
-        if (matchedVendor) {
-          console.log(matchedVendor);
-          setFormData((prev) => ({
-            ...prev,
-            benificiary: matchedVendor.name || "",
-            acc_number: matchedVendor.Account_No|| "",
-            ifsc: matchedVendor.IFSC_Code || "",
-            branch: matchedVendor.Bank_Name || "",
-          }));
-        }
+      if (matchedVendor) {
+        console.log("Matched Vendor:", matchedVendor);
+        setFormData((prev) => ({
+          ...prev,
+          benificiary: matchedVendor.name ?? "",
+          acc_number: matchedVendor.Account_No ?? "",
+          ifsc: matchedVendor.IFSC_Code ?? "",
+          branch: matchedVendor.Bank_Name ?? "",
+        }));
+      } else {
+        console.warn("No matching vendor found for:", selectedPo.vendor);
       }
     }
   };
+  
   
   const [responseMessage, setResponseMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -335,7 +355,7 @@ function PaymentRequestForm() {
               <Typography level="body2" fontWeight="bold">
      Select Project
     </Typography>
-              <Select
+              {/* <Select
           name="p_id"
           value={formData.p_id? {label: getFormData.projectIDs.find((project) => project.p_id === formData.p_id)?.code,
           value: formData.p_id,
@@ -351,7 +371,16 @@ function PaymentRequestForm() {
     value: project.p_id,
   }))}
   placeholder="Select Project"
-/>
+/> */}
+<Input
+                  name="projectID"
+                  value={formData.projectID || ""}
+                  onChange={handleChange}
+                  placeholder="Project ID"
+                  required
+                  readOnly
+                />
+
               </Grid>
 
               <Grid xs={12} sm={6}>

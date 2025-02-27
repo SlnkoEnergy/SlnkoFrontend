@@ -144,11 +144,11 @@ function Offer() {
             <HistoryIcon />
             <Typography>Offer History</Typography>
           </MenuItem>
-          <Divider sx={{ backgroundColor: "lightblue" }} />
+          {/* <Divider sx={{ backgroundColor: "lightblue" }} />
             <MenuItem color="danger">
             <DeleteIcon />
             <Typography>Delete</Typography>
-            </MenuItem>
+            </MenuItem> */}
         </Menu>
         </Dropdown>
       </>

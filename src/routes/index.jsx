@@ -35,6 +35,7 @@ import EditUser from "../pages/Users/EditUser";
 import PrivateRoute from "./PrivateRoute";
 import CommercialRateOffer from "../pages/BD/OfferRate";
 import ListReference from "../pages/BD/Comm_/offer_ref";
+import ListReference2 from "../pages/BD/Comm_/offer_ref_edit";
 import Costing_form from "../pages/BD/Costing_form";
 
 function index() {
@@ -75,10 +76,18 @@ function index() {
         }
       />
        <Route
-  path="/ref_list"
+  path="/ref_list_add"
   element={
     <PrivateRoute>
       <ListReference />
+    </PrivateRoute>
+  }
+/>
+<Route
+  path="/ref_list_update"
+  element={
+    <PrivateRoute>
+      <ListReference2 />
     </PrivateRoute>
   }
 />
