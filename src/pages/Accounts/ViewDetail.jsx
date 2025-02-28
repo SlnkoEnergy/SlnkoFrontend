@@ -47,14 +47,14 @@ function ViewDetail() {
             sx={{
               display: "flex",
               alignItems: "center",
-              marginLeft: { xl: "15%", lg: "20%", md: "27%" },
+              marginLeft: { xl: "15%", lg: "20%" },
             }}
           >
             <Breadcrumbs
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0 }}
+              sx={{ pl: 0, marginTop: {md:"4%", lg:"0%"} }}
             >
               {/* <Link
                 underline="none"

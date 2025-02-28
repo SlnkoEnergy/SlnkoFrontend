@@ -366,7 +366,7 @@ const handleDelete = async () => {
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
-          marginLeft: { xl: "15%", lg: "18%", md: "25%" },
+          marginLeft: { xl: "15%", lg: "18%", },
           borderRadius: "sm",
           py: 2,
           display: { xs: "none", sm: "flex" },
@@ -401,8 +401,8 @@ const handleDelete = async () => {
           flexShrink: 1,
           overflow: "auto",
           minHeight: 0,
-          marginLeft: { xl: "15%", md: "25%", lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%", md: "75%" },
+          marginLeft: { xl: "15%",lg: "18%" },
+          maxWidth: { lg: "85%", sm: "100%", },
         }}
       >
      
@@ -591,7 +591,7 @@ const handleDelete = async () => {
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: { xs: "none", md: "flex" },
           alignItems: "center",
-          marginLeft: { xl: "15%", md: "25%", lg: "18%" },
+          marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
         <Button

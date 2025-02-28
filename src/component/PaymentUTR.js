@@ -437,10 +437,12 @@ function UTRPayment() {
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
-          marginLeft: { xl: "15%", lg: "18%", md: "25%" },
+          marginLeft: { xl: "15%", lg: "18%", },
           borderRadius: "sm",
           py: 2,
-          display: { xs: "none", sm: "flex" },
+          // display: { xs: "none", sm: "flex" },
+          display:"flex",
+          flexDirection:{xs: "column", sm: "row"},
           flexWrap: "wrap",
           gap: 1.5,
           "& > *": {
@@ -472,8 +474,8 @@ function UTRPayment() {
           flexShrink: 1,
           overflow: "auto",
           minHeight: 0,
-          marginLeft: { md: "25%", lg: "18%", xl: "15%" },
-          maxWidth: { lg: "85%", sm: "100%", md: "75%" },
+          marginLeft: {lg: "18%", xl: "15%" },
+          maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
         {error ? (
@@ -692,9 +694,10 @@ function UTRPayment() {
           pt: 2,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
-          display: { xs: "none", md: "flex" },
+          display:"flex",
+          flexDirection:{xs: "column", sm: "row"},
           alignItems: "center",
-          marginLeft: { md: "25%", lg: "18%", xl: "15%" },
+          marginLeft: { lg: "18%", xl: "15%" },
         }}
       >
         <Button

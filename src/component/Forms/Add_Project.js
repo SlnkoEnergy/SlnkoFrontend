@@ -183,18 +183,18 @@ const Add_Project = () => {
         justifyContent: "center",
         alignItems: "center",
         minHeight: "100vh",
-        backgroundColor: "#f5f5f5",
+        // backgroundColor: "#f5f5f5"
         padding: 2,
       }}
     >
       <Sheet
         variant="outlined"
         sx={{
-          width: { xs: "100%", sm: "80%", md: "80%" },
+          width: { sm: "100%", lg: "60%"},
           padding: { xs: 2, md: 4 },
           borderRadius: "md",
           boxShadow: 3,
-          marginLeft: { sm: "0", md: "30%", lg: "18%", xl: "10%" },
+          // marginLeft: { sm: "0", lg: "18%", xl: "10%" },
         }}
       >
         <Box textAlign="center" sx={{ mb: 4 }}>

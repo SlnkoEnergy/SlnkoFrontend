@@ -41,14 +41,27 @@ function Edit_Project() {
             sx={{
               display: "flex",
               alignItems: "center",
-              marginLeft: { xl: "16%", lg: "20%", md: "30%" },
+              marginLeft: {
+                xs: "3vw",
+                sm: "3vw",
+                md: "3vw",
+                lg: "22vw",
+                xl: "16vw",
+              },
+              marginTop: {
+                xs: "10vh",
+                sm: "8vh",
+                md: "4vh",
+                lg: "2vh",
+                xl: "0vh",
+              },
             }}
           >
             <Breadcrumbs
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0 }}
+              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
               {/* <Link
                 underline="none"
@@ -83,7 +96,7 @@ function Edit_Project() {
               alignItems: { xs: "start", sm: "center" },
               flexWrap: "wrap",
               justifyContent: "space-between",
-              marginLeft: { xl: "16%", lg: "20%", md: "15%" },
+              marginLeft: { xl: "16%", lg: "20%" },
             }}
           >
             <EditProject />

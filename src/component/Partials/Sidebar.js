@@ -26,7 +26,7 @@ import { useNavigate } from "react-router-dom";
 import Main_Logo from "../../assets/protrac_logo.png";
 import Main_Logo2 from "../../assets/white_logo.png";
 import { closeSidebar } from "../../utils/utils";
-// import ColorSchemeToggle from "./ColorSchemeToggle";
+import ColorSchemeToggle from "./ColorSchemeToggle";
 
 function Toggler({ defaultExpanded = false, renderToggle, children }) {
   const [open, setOpen] = useState(defaultExpanded);
@@ -87,7 +87,7 @@ function Sidebar() {
         position: "fixed",
         transform: {
           xs: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1)))",
-          md: "none",
+          lg: "none",
         },
         transition: "transform 0.4s, width 0.4s",
         zIndex: 10000,
@@ -124,7 +124,7 @@ function Sidebar() {
           width: "100vw",
           height: "100vh",
           opacity: "var(--SideNavigation-slideIn)",
-          backgroundColor: "var(--joy-palette-background-backdrop)",
+          // backgroundColor: "var(--joy-palette-background-backdrop)",
           transition: "opacity 0.4s",
           transform: {
             md: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1) + var(--SideNavigation-slideIn, 0) * var(--Sidebar-width, 0px)))",
@@ -142,7 +142,7 @@ function Sidebar() {
             style={{ width: "70px", height: "60px" }}
           />
         </IconButton>
-        {/* <ColorSchemeToggle sx={{ ml: "auto" }} /> */}
+        <ColorSchemeToggle sx={{ ml: "auto" }} />
 
         {/* <IconButton variant="soft" color="primary" size="sm">
       <img src={Main_Logo} alt="Protrac" style={{ width: '70px', height: '60px' }} />

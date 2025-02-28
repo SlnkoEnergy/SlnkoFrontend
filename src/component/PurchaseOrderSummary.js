@@ -26,12 +26,14 @@ import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
+import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
 import * as React from "react";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Axios from "../utils/Axios";
+import NoData from "../assets/alert-bell.svg";
 
 // function descendingComparator(a, b, orderBy) {
 //   if (b[orderBy] < a[orderBy]) {
@@ -154,7 +156,15 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         setPos(updatedPoData);
       } catch (err) {
         console.error("Error fetching table data:", err);
-        setError("Failed to fetch table data.");
+        setError(
+          <span style={{ display: "flex", alignItems: "center", gap: "5px", color: "red", justifyContent:"center", flexDirection:"column" , padding: "20px"}}>
+            <PermScanWifiIcon />
+            <Typography fontStyle={"italic"} fontWeight={"600"} sx={{color:"#0a6bcc"}} >
+            Hang tight! Internet Connection will be back soon..
+            </Typography>
+            
+          </span>
+        );
       } finally {
         setLoading(false);
       }
@@ -504,10 +514,10 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
-          marginLeft: { xl: "15%", lg: "18%", md: "25%" },
+          marginLeft: { xl: "15%", lg: "18%" },
           borderRadius: "sm",
           py: 2,
-          display: { xs: "none", sm: "flex" },
+          display:"flex",
           flexWrap: "wrap",
           gap: 1.5,
           "& > *": {
@@ -539,8 +549,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           flexShrink: 1,
           overflow: "auto",
           minHeight: 0,
-          marginLeft: { xl: "15%", md: "25%", lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%", md: "75%" },
+          marginLeft: { xl: "15%", lg: "18%" },
+          maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
         {error ? (
@@ -808,7 +818,18 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       fontStyle: "italic",
                     }}
                   >
-                    No data available
+                     <Box sx={{
+                      fontStyle: "italic",
+                      display:"flex",
+                      flexDirection:"column",
+                      alignItems:"center",
+                      justifyContent:"center"
+                    }}>
+                      <img src = {NoData} alt="No data Image" style={{width:"50px", height:'50px'}}/>
+                    <Typography fontStyle={"italic"}>
+                      No data available
+                      </Typography>
+                      </Box>
                   </Box>
                 </Box>
               )}
@@ -824,9 +845,10 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           pt: 2,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
-          display: { xs: "none", md: "flex" },
+          display:"flex",
+          flexDirection:{xs: "column", sm: "row"},
           alignItems: "center",
-          marginLeft: { xl: "15%", md: "25%", lg: "18%" },
+          marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
         <Button

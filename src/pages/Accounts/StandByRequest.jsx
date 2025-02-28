@@ -40,14 +40,14 @@ function Edit_Project() {
             sx={{
               display: "flex",
               alignItems: "center",
-              marginLeft: { xl: "16%", lg: "20%", md: "30%" },
+              marginLeft: { xl: "16%", lg: "20%" },
             }}
           >
             <Breadcrumbs
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0 }}
+              sx={{ pl: 0, marginTop: {md:"4%", lg:"0%"} }}
             >
               {/* <Link
                 underline="none"

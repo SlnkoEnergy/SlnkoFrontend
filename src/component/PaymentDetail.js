@@ -207,8 +207,8 @@ const PaymentDetail = forwardRef((props, ref) => {
   return (
     <Box
       sx={{
-        marginLeft: { xl: "15%", md: "25%", lg: "18%" },
-        maxWidth: { lg: "85%", sm: "100%", md: "75%" },
+        marginLeft: { xl: "15%", lg: "18%" },
+        maxWidth: { lg: "85%", sm: "100%" },
       }}
     >
       <Box

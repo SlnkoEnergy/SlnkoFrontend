@@ -38,12 +38,12 @@ function Add_Project() {
             gap: 1,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', marginLeft:{xl:"17%",lg:"20%", md:"30%"}}}>
+          <Box sx={{ display: 'flex', alignItems: 'center', marginLeft:{xl:"17%",lg:"20%"}}}>
             <Breadcrumbs
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0 }}
+              sx={{ pl: 0, marginTop: {md:"4%", lg:"0%"} }}
             >
               {/* <Link
                 underline="none"

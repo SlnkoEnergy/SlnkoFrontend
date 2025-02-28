@@ -1,7 +1,7 @@
 import Box from "@mui/joy/Box";
 import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider } from "@mui/joy/styles";
-import React, {useRef} from "react";
+import React from "react";
 import Button from "@mui/joy/Button";
 // import Button from '@mui/joy/Button';
 import Breadcrumbs from "@mui/joy/Breadcrumbs";
@@ -11,20 +11,13 @@ import Typography from "@mui/joy/Typography";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
 import Sidebar from "../../component/Partials/Sidebar";
-import PaymentApproved from "../../component/PaymentApproved";
+import Commercial_Offer from "../../component/Commercial_Offer";
 
 import Header from "../../component/Partials/Header";
-import PaymentDetail from "../../component/PaymentDetail";
+import { useNavigate } from "react-router-dom";
 
-const Payment_Detail = () => {
-      const PaymentDetailRef = useRef();
-    
-  
-      const handleExportToCSV = () => {
-        if (PaymentDetailRef.current) {
-          PaymentDetailRef.current.exportToCSV();
-        }
-      };
+function Comm_Offer() {
+  const navigate = useNavigate();
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -61,7 +54,7 @@ const Payment_Detail = () => {
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0 , marginTop: {md:"4%", lg:"0%"}}}
+              sx={{ pl: 0, marginTop: {md:"4%", lg:"0%"} }}
             >
               {/* <Link
                 underline="none"
@@ -76,19 +69,13 @@ const Payment_Detail = () => {
                 color="neutral"
                 sx={{ fontSize: 12, fontWeight: 500 }}
               >
-                Accounting
+                Business Development
               </Link>
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Payment Approved
-              </Typography>
-              <Typography
-                color="primary"
-                sx={{ fontWeight: 500, fontSize: 12 }}
-              >
-                Payment Detail
+                Commercial Offer
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -105,7 +92,7 @@ const Payment_Detail = () => {
             }}
           >
             <Typography level="h2" component="h1">
-              Payment Detail
+            Commercial Offer
             </Typography>
             <Box
               sx={{
@@ -116,29 +103,28 @@ const Payment_Detail = () => {
                 alignItems: { xs: "start", sm: "center" },
                 flexWrap: "wrap",
                 justifyContent: "center",
-                marginLeft: { xl: "15%", lg: "18%" },
-                maxWidth: { lg: "85%", sm: "100%", },
-
               }}
             >
-              {/* <Button
-              color="primary"
-              
-              size="sm"
-            >
-              Add New Project +
-            </Button> */}
-            {/* <Button
+              <Button
               color="primary"
               startDecorator={<DownloadRoundedIcon />}
               size="sm"
-              onClick={handleExportToCSV} 
+              onClick={() => navigate("/costing_input")}
             >
-              Payment Detail
-            </Button> */}
+              Add Costing +
+            </Button>
+              <Button
+              color="primary"
+              
+              size="sm"
+              onClick={() => navigate("/add_offer")}
+            >
+              Add New offer +
+            </Button>
+            
             </Box>
           </Box>
-          <PaymentDetail ref={PaymentDetailRef} />
+          <Commercial_Offer />
           {/* <OrderTable />
           <OrderList /> */}
         </Box>
@@ -146,4 +132,4 @@ const Payment_Detail = () => {
     </CssVarsProvider>
   );
 }
-export default Payment_Detail;
+export default Comm_Offer;

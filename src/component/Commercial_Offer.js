@@ -509,9 +509,9 @@ function Offer() {
   return (
     <>
       {/* Mobile Filters */}
-      <Sheet
+      {/* <Sheet
         className="SearchAndFilters-mobile"
-        sx={{ display: { xs: "flex", sm: "none" }, my: 1, gap: 1 }}
+        sx={{ display: { xs: "", sm: "none" }, my: 1, gap: 1 }}
       >
         <Input
           size="sm"
@@ -542,16 +542,18 @@ function Offer() {
             </Sheet>
           </ModalDialog>
         </Modal>
-      </Sheet>
+      </Sheet> */}
 
       {/* Tablet and Up Filters */}
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
-          marginLeft: { xl: "15%", lg: "18%", md: "25%" },
+          marginLeft: { xl: "15%", lg: "18%", },
           borderRadius: "sm",
           py: 2,
-          display: { xs: "none", sm: "flex" },
+          // display: { xs: "none", sm: "flex" },
+          display:"flex",
+          // flexDirection:{xs: "none", sm: "flex"}
           flexWrap: "wrap",
           gap: 1.5,
           "& > *": {
@@ -583,8 +585,8 @@ function Offer() {
           flexShrink: 1,
           overflow: "auto",
           minHeight: 0,
-          marginLeft: { md: "25%", lg: "18%", xl: "15%" },
-          maxWidth: { lg: "85%", sm: "100%", md: "75%" },
+          marginLeft: { lg: "18%", xl: "15%" },
+          maxWidth: { lg: "85%", sm: "100%", },
         }}
       >
         {error ? (
@@ -803,9 +805,11 @@ function Offer() {
           pt: 2,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
-          display: { xs: "none", md: "flex" },
+          // display: { xs: "none", md: "flex" },
+          display:"flex",
+          flexDirection:{xs: "column", sm: "row"},
           alignItems: "center",
-          marginLeft: { md: "25%", lg: "18%", xl: "15%" },
+          marginLeft: { lg: "18%", xl: "15%" },
         }}
       >
         <Button

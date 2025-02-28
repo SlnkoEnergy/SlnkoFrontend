@@ -210,7 +210,7 @@ const UpdatePurchaseOrder = () => {
         backgroundColor: "#f4f6f8",
         padding: 3,
         // width:{ lg:"85%",md:"80%", sm:"100%"},
-        marginLeft: { xl: "15%", lg: "18%", md: "22%", sm: "7%" },
+        marginLeft: { xl: "15%", lg: "18%", sm: "7%" },
       }}
     >
       <Container

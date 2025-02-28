@@ -43,14 +43,14 @@ function Edit_PO() {
             sx={{
               display: "flex",
               alignItems: "center",
-              marginLeft: { xl: "16%", lg: "20%", md: "30%" },
+              marginLeft: { xl: "16%", lg: "20%" },
             }}
           >
             <Breadcrumbs
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0 }}
+              sx={{ pl: 0 , marginTop: {md:"4%", lg:"0%"}}}
             >
               {/* <Link
                 underline="none"
@@ -85,7 +85,7 @@ function Edit_PO() {
               alignItems: { xs: "start", sm: "center" },
               flexWrap: "wrap",
               justifyContent: "space-between",
-              marginLeft: { xl: "16%", lg: "20%", md: "15%" },
+              marginLeft: { xl: "16%", lg: "20%", },
             }}
           >
             <EDITPO />

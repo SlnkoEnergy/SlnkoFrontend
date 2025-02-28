@@ -44,14 +44,14 @@ function ProjectBalance() {
             sx={{
               display: "flex",
               alignItems: "center",
-              marginLeft: { xl: "15%", lg: "18%", md: "25%" },
+              marginLeft: { xl: "15%", lg: "18%",},
             }}
           >
             <Breadcrumbs
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0 }}
+              sx={{ pl: 0 , marginTop: {md:"4%", lg:"0%"}}}
             >
               {/* <Link
                 underline="none"
@@ -85,7 +85,7 @@ function ProjectBalance() {
               alignItems: { xs: "start", sm: "center" },
               flexWrap: "wrap",
               justifyContent: "space-between",
-              marginLeft: { xl: "15%",md: "25%", lg: "18%" },
+              marginLeft: { xl: "15%", lg: "18%" },
             }}
           >
             <Typography level="h2" component="h1">

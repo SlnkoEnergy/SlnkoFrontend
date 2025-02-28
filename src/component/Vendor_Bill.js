@@ -307,10 +307,11 @@ function VendorBillSummary() {
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
-          marginLeft: { xl: "15%", lg: "18%", md: "25%" },
+          marginLeft: { xl: "15%", lg: "18%" },
           borderRadius: "sm",
           py: 2,
-          display: { xs: "none", sm: "flex" },
+          // display: { xs: "none", sm: "flex" },
+          display:"flex",
           flexWrap: "wrap",
           gap: 1.5,
           "& > *": {
@@ -336,7 +337,7 @@ function VendorBillSummary() {
           padding: 3,
           maxWidth: "100%",
           overflow: "auto",
-          marginLeft: { xl: "15%", lg: "18%", md: "25%", sm: "0%" },
+          marginLeft: { xl: "15%", lg: "18%", sm: "0%" },
           minHeight: { xs: "100%", md: "0%" },
         }}
       >
@@ -488,7 +489,7 @@ function VendorBillSummary() {
           display: "flex",
           flexDirection: { xs: "column", md: "row" },
           alignItems: "center",
-          marginLeft: { xl: "15%", md: "25%", lg: "18%" },
+          marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
         <Button

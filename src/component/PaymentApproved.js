@@ -17,6 +17,7 @@ import Input from "@mui/joy/Input";
 import Modal from "@mui/joy/Modal";
 import ModalClose from "@mui/joy/ModalClose";
 import ModalDialog from "@mui/joy/ModalDialog";
+import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
@@ -26,6 +27,7 @@ import { useSnackbar } from "notistack";
 import * as React from "react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import NoData from "../assets/alert-bell.svg";
 import Axios from "../utils/Axios";
 
 function PaymentRequest() {
@@ -104,6 +106,15 @@ function PaymentRequest() {
         // setVendors(uniqueVendors);
       } catch (error) {
         console.error("Error fetching data:", error);
+        setError(
+          <span style={{ display: "flex", alignItems: "center", gap: "5px", color: "red", justifyContent:"center", flexDirection:"column" , padding: "20px"}}>
+            <PermScanWifiIcon />
+            <Typography fontStyle={"italic"} fontWeight={"600"} sx={{color:"#0a6bcc"}} >
+            Hang tight! Internet Connection will be back soon..
+            </Typography>
+            
+          </span>
+        );
       } finally {
         setLoading(false);
       }
@@ -381,7 +392,7 @@ function PaymentRequest() {
   return (
     <>
       {/* Mobile Filters */}
-      <Sheet
+      {/* <Sheet
         className="SearchAndFilters-mobile"
         sx={{ display: { xs: "flex", sm: "none" }, my: 1, gap: 1 }}
       >
@@ -414,17 +425,18 @@ function PaymentRequest() {
             </Sheet>
           </ModalDialog>
         </Modal>
-      </Sheet>
+      </Sheet> */}
 
       {/* Tablet and Up Filters */}
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
-          marginLeft: { xl: "15%", lg: "18%", md: "25%" },
+          marginLeft: { xl: "15%", lg: "18%",},
           borderRadius: "sm",
           py: 2,
-          display: { xs: "none", sm: "flex" },
+          // display: { xs: "none", sm: "flex" },
           flexWrap: "wrap",
+          display:"flex",
           gap: 1.5,
           "& > *": {
             minWidth: { xs: "120px", md: "160px" },
@@ -449,14 +461,14 @@ function PaymentRequest() {
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "initial" },
+          display: { xs: "flex", sm: "initial" },
           width: "100%",
           borderRadius: "sm",
           flexShrink: 1,
           overflow: "auto",
           minHeight: 0,
-          marginLeft: { md: "25%", lg: "18%", xl: "15%" },
-          maxWidth: { lg: "85%", sm: "100%", md: "75%" },
+          marginLeft: { lg: "18%", xl: "15%" },
+          maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
         {error ? (
@@ -646,10 +658,22 @@ function PaymentRequest() {
                     sx={{
                       padding: "8px",
                       textAlign: "center",
-                      fontStyle: "italic",
+                      // fontStyle: "italic",
                     }}
                   >
-                    No data available
+                     <Box sx={{
+                      fontStyle: "italic",
+                      display:"flex",
+                      flexDirection:"column",
+                      alignItems:"center",
+                      justifyContent:"center"
+                    }}>
+                      <img src = {NoData} alt="No data Image" style={{width:"50px", height:'50px'}}/>
+                    <Typography fontStyle={"italic"}>
+                      No approved available
+                      </Typography>
+                      </Box>
+                    
                   </Box>
                 </Box>
               )}
@@ -665,9 +689,11 @@ function PaymentRequest() {
           pt: 2,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
-          display: { xs: "none", md: "flex" },
+          // display: { xs: "none", md: "flex" },
+          display:"flex",
+          flexDirection:{xs: "column", sm: "row"},
           alignItems: "center",
-          marginLeft: { md: "25%", lg: "18%", xl: "15%" },
+          marginLeft: {lg: "18%", xl: "15%" },
         }}
       >
         <Button

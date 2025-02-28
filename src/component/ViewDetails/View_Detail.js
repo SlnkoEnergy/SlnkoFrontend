@@ -1033,8 +1033,8 @@ const Customer_Payment_Summary = () => {
       sx={{
         border: "1px solid black",
         padding: "20px",
-        marginLeft: { xl: "15%", lg: "20%", md: "27%", sm: "0%" },
-        maxWidth: { md: "75%", lg: "80%", sm: "100%", xl: "85%" },
+        marginLeft: { xl: "15%", lg: "20%", sm: "0%" },
+        maxWidth: { lg: "80%", sm: "100%", xl: "85%" },
       }}
     >
       {/* Header Section */}

@@ -49,7 +49,7 @@ function Bill_History() {
             sx={{
               display: "flex",
               alignItems: "center",
-              marginLeft: { xl: "15%", lg: "18%", md: "25%" },
+              marginLeft: { xl: "15%", lg: "18%", },
             }}
           >
             <Breadcrumbs
@@ -91,7 +91,7 @@ function Bill_History() {
               alignItems: { xs: "start", sm: "center" },
               flexWrap: "wrap",
               justifyContent: "space-between",
-              marginLeft: { xl: "15%", md: "25%", lg: "18%" },
+              marginLeft: { xl: "15%", lg: "18%" },
             }}
           >
             <Typography level="h2" component="h1">

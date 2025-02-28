@@ -21,11 +21,13 @@ import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
+import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Axios from "../utils/Axios";
+import NoData from "../assets/alert-bell.svg";
 
 const PaymentRequest = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -79,7 +81,15 @@ const PaymentRequest = forwardRef((props, ref) => {
         setVendors(uniqueVendors);
       } catch (err) {
         console.error("API Error:", err);
-        setError("Failed to fetch table data.");
+        setError(
+          <span style={{ display: "flex", alignItems: "center", gap: "5px", color: "red", justifyContent:"center", flexDirection:"column" , padding: "20px"}}>
+            <PermScanWifiIcon />
+            <Typography fontStyle={"italic"} fontWeight={"600"} sx={{color:"#0a6bcc"}} >
+            Hang tight! Internet Connection will be back soon..
+            </Typography>
+            
+          </span>
+        );
       } finally {
         setLoading(false);
       }
@@ -439,10 +449,12 @@ const PaymentRequest = forwardRef((props, ref) => {
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
-          marginLeft: { xl: "15%", lg: "18%", md: "25%" },
+          marginLeft: { xl: "15%", lg: "18%" },
           borderRadius: "sm",
           py: 2,
-          display: { xs: "none", sm: "flex" },
+          // display: { xs: "none", sm: "flex" },
+          display:"flex",
+          flexDirection:{xs:"column", md:"row"},
           flexWrap: "wrap",
           gap: 1.5,
           "& > *": {
@@ -468,14 +480,14 @@ const PaymentRequest = forwardRef((props, ref) => {
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "initial" },
+          display: { xs: "flex", sm: "initial" },
           width: "100%",
           borderRadius: "sm",
           flexShrink: 1,
           overflow: "auto",
           minHeight: 0,
-          marginLeft: { xl: "15%", md: "25%", lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%", md: "75%" },
+          marginLeft: { xl: "15%", lg: "18%" },
+          maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
         {error ? (
@@ -690,14 +702,30 @@ const PaymentRequest = forwardRef((props, ref) => {
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={10}
+                    colSpan={12}
                     sx={{
                       padding: "8px",
                       textAlign: "center",
-                      fontStyle: "italic",
+                      // fontStyle: "italic",
+                      // display:"flex",
+                      // flexDirection:"column",
+                      // alignItems:"center",
+                      // justifyContent:"center"
                     }}
                   >
-                    No data available
+                    <Box sx={{
+                      fontStyle: "italic",
+                      display:"flex",
+                      flexDirection:"column",
+                      alignItems:"center",
+                      justifyContent:"center"
+                    }}>
+                      <img src = {NoData} alt="No data Image" style={{width:"50px", height:'50px'}}/>
+                    <Typography fontStyle={"italic"}>
+                      No records available
+                      </Typography>
+                      </Box>
+                    
                   </Box>
                 </Box>
               )}
@@ -713,9 +741,11 @@ const PaymentRequest = forwardRef((props, ref) => {
           pt: 2,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
-          display: { xs: "none", md: "flex" },
+          // display: { xs: "none", md: "flex" },
+          display:"flex",
+          flexDirection:{xs: "column", sm: "row"},
           alignItems: "center",
-          marginLeft: { xl: "15%", md: "25%", lg: "18%" },
+          marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
         <Button

@@ -94,8 +94,8 @@ function BdHistoryTable() {
     <Box
       sx={{
         padding: 1,
-        width: { lg: "85%", md: "80%", sm: "100%" },
-        marginLeft: { xl: "15%", lg: "18%", md: "25%", sm: "0%" },
+        width: { lg: "85%", sm: "100%" },
+        marginLeft: { xl: "15%", lg: "18%", sm: "0%" },
       }}
     >
       {/* Table */}
