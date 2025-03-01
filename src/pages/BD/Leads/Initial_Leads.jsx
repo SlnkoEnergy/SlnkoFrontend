@@ -10,13 +10,14 @@ import Typography from "@mui/joy/Typography";
 // import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
-import Sidebar from "../../component/Partials/Sidebar";
-import Commercial_Offer from "../../component/Commercial_Offer";
+import Sidebar from "../../../component/Partials/Sidebar";
+import Lead_Initial from "../../../component/Initial_Lead";
+import  Lead_Warm from "../../../component/Warm_Lead";
 
-import Header from "../../component/Partials/Header";
+import Header from "../../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
 
-function Comm_Offer() {
+function InitialLeads() {
   const navigate = useNavigate();
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -75,7 +76,7 @@ function Comm_Offer() {
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Commercial Offer
+                Leads
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -92,7 +93,7 @@ function Comm_Offer() {
             }}
           >
             <Typography level="h2" component="h1">
-            Commercial Offer
+            Leads
             </Typography>
             <Box
               sx={{
@@ -105,26 +106,45 @@ function Comm_Offer() {
                 justifyContent: "center",
               }}
             >
-              <Button
+              {/* <Button
               color="primary"
               startDecorator={<DownloadRoundedIcon />}
               size="sm"
               onClick={() => navigate("/costing_input")}
             >
               Add Costing +
-            </Button>
+            </Button> */}
               <Button
               color="primary"
               
               size="sm"
-              onClick={() => navigate("/add_offer")}
+              onClick={() => navigate("/initial_leads")}
             >
-              Add New offer +
+              Add New leads +
             </Button>
             
             </Box>
           </Box>
-          <Commercial_Offer />
+
+          <ul>
+            <li>
+              <Lead_Initial />
+            </li>
+            <li>
+              <Lead_Warm />
+            </li>
+            <li>
+              {/* <FollowUp_Initial /> */}
+            </li>
+            {/* <li>
+              <Lead_Initial />
+            </li>
+            <li>
+              <Lead_Initial />
+            </li> */}
+          </ul>
+          
+
           {/* <OrderTable />
           <OrderList /> */}
         </Box>
@@ -132,4 +152,4 @@ function Comm_Offer() {
     </CssVarsProvider>
   );
 }
-export default Comm_Offer;
+export default InitialLeads;

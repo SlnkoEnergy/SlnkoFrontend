@@ -32,6 +32,7 @@ import ForgotPassword from "../pages/Users/auth/ForgotPassword";
 import Login from "../pages/Users/auth/Login";
 import EditUser from "../pages/Users/EditUser";
 // import { BalanceProvider } from "../store/Context/Balance_Context";
+import Initial_Leads from "../pages/BD/Leads/Initial_Leads";
 import PrivateRoute from "./PrivateRoute";
 import CommercialRateOffer from "../pages/BD/OfferRate";
 import ListReference from "../pages/BD/Comm_/offer_ref";
@@ -106,6 +107,14 @@ function index() {
   element={
     <PrivateRoute>
       <ListReference3 />
+    </PrivateRoute>
+  }
+/>
+<Route
+  path="/initial_leads"
+  element={
+    <PrivateRoute>
+      <Initial_Leads />
     </PrivateRoute>
   }
 />

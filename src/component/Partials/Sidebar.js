@@ -245,7 +245,7 @@ function Sidebar() {
               >
                 <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("#")}>
+                    <ListItemButton onClick={() => navigate("/initial_leads")}>
                       Leads
                     </ListItemButton>
                   </ListItem>
