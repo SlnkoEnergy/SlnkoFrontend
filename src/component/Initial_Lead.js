@@ -1,7 +1,5 @@
-import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
-import BlockIcon from "@mui/icons-material/Block";
-import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import FilterAltIcon from "@mui/icons-material/FilterAlt";
+import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
+import DeleteIcon from "@mui/icons-material/Delete";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
@@ -9,7 +7,6 @@ import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
-import Chip from "@mui/joy/Chip";
 import Divider from "@mui/joy/Divider";
 import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
@@ -19,21 +16,12 @@ import Input from "@mui/joy/Input";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
-import Modal from "@mui/joy/Modal";
-import ModalClose from "@mui/joy/ModalClose";
-import ModalDialog from "@mui/joy/ModalDialog";
-import Option from "@mui/joy/Option";
-import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
 import { useEffect, useState } from "react";
-import Axios from "../utils/Axios";
-import DeleteIcon from '@mui/icons-material/Delete';
-import ContentPasteGoIcon from '@mui/icons-material/ContentPasteGo';
 import { useNavigate, useSearchParams } from "react-router-dom";
-
-
+import Axios from "../utils/Axios";
 
 const StandByRequest = () => {
   const navigate = useNavigate();
@@ -48,15 +36,15 @@ const StandByRequest = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
-    const [projects, setProjects] = useState([]);
-    const [mergedData, setMergedData] = useState([]);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [searchParams, setSearchParams] = useSearchParams();
+  const [projects, setProjects] = useState([]);
+  const [mergedData, setMergedData] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     const fetchTableData = async () => {
       try {
-     const [paymentResponse, projectResponse] = await Promise.all([
+        const [paymentResponse, projectResponse] = await Promise.all([
           Axios.get("/hold-pay-summary-IT"),
           Axios.get("/get-all-projecT-IT"),
         ]);
@@ -87,23 +75,23 @@ const StandByRequest = () => {
     fetchTableData();
   }, []);
 
-    useEffect(() => {
-      if (payments.length > 0 && projects.length > 0) {
-        const merged = payments.map((payment) => {
-          const matchingProject = projects.find(
-            (project) => Number(project.p_id) === Number(payment.p_id)
-          );
-          return {
-            ...payment,
-            // projectCode: matchingProject?.code || "-",
-            // projectName: matchingProject?.name || "-",
-            projectCustomer: matchingProject?.customer || "-",
-            // projectGroup: matchingProject?.p_group || "-",
-          };
-        });
-        setMergedData(merged);
-      }
-    }, [payments, projects]);
+  useEffect(() => {
+    if (payments.length > 0 && projects.length > 0) {
+      const merged = payments.map((payment) => {
+        const matchingProject = projects.find(
+          (project) => Number(project.p_id) === Number(payment.p_id)
+        );
+        return {
+          ...payment,
+          // projectCode: matchingProject?.code || "-",
+          // projectName: matchingProject?.name || "-",
+          projectCustomer: matchingProject?.customer || "-",
+          // projectGroup: matchingProject?.p_group || "-",
+        };
+      });
+      setMergedData(merged);
+    }
+  }, [payments, projects]);
 
   // const renderFilters = () => (
   //   <>
@@ -158,82 +146,83 @@ const StandByRequest = () => {
     );
   };
 
-  const RowMenu = ({currentPage, pay_id, p_id }) => {
+  const RowMenu = ({ currentPage, pay_id, p_id }) => {
     return (
       <Dropdown>
         <MenuButton
           slots={{ root: IconButton }}
-          slotProps={{ root: { variant: "plain", color: "neutral", size: "sm" } }}
+          slotProps={{
+            root: { variant: "plain", color: "neutral", size: "sm" },
+          }}
         >
           <MoreHorizRoundedIcon />
         </MenuButton>
         <Menu size="sm" sx={{ minWidth: 140 }}>
-        <MenuItem
-              color="primary"
-              onClick={() => {
-                const page = currentPage;
-                const payId = String(pay_id);
-                const projectID = Number(p_id);
-                localStorage.setItem("standby_summary", payId);
-                localStorage.setItem("p_id", projectID);
-                navigate(`/standby_Request?page=${page}&pay_id=${payId}`);
-              }}
-            >
-              <ContentPasteGoIcon />
-              <Typography>StandBy summary</Typography>
-            </MenuItem>
+          <MenuItem
+            color="primary"
+            onClick={() => {
+              const page = currentPage;
+              const payId = String(pay_id);
+              const projectID = Number(p_id);
+              localStorage.setItem("standby_summary", payId);
+              localStorage.setItem("p_id", projectID);
+              navigate(`/standby_Request?page=${page}&pay_id=${payId}`);
+            }}
+          >
+            <ContentPasteGoIcon />
+            <Typography>StandBy summary</Typography>
+          </MenuItem>
           <Divider sx={{ backgroundColor: "lightblue" }} />
-            <MenuItem color="danger">
+          <MenuItem color="danger">
             <DeleteIcon />
             <Typography>Delete</Typography>
-            </MenuItem>
+          </MenuItem>
         </Menu>
       </Dropdown>
     );
-  }
+  };
 
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
   const filteredAndSortedData = mergedData
-  .filter((payment) => {
-    const matchesSearchQuery = [
-      "pay_id",
-      "vendor",
-      "approved",
-      "projectCustomer",
-      "paid_for"
-    ].some((key) => payment[key]?.toLowerCase().includes(searchQuery));
+    .filter((payment) => {
+      const matchesSearchQuery = [
+        "pay_id",
+        "vendor",
+        "approved",
+        "projectCustomer",
+        "paid_for",
+      ].some((key) => payment[key]?.toLowerCase().includes(searchQuery));
 
-    // const matchesDateFilter =
-    //   !dateFilter ||
-    //   new Date(payment.date).toLocaleDateString() ===
-    //     new Date(dateFilter).toLocaleDateString();
+      // const matchesDateFilter =
+      //   !dateFilter ||
+      //   new Date(payment.date).toLocaleDateString() ===
+      //     new Date(dateFilter).toLocaleDateString();
 
-    // const matchesStatusFilter =
-    //   !statusFilter || payment.approved === statusFilter;
-    // console.log("MatchVendors are: ", matchesStatusFilter);
+      // const matchesStatusFilter =
+      //   !statusFilter || payment.approved === statusFilter;
+      // console.log("MatchVendors are: ", matchesStatusFilter);
 
-    // const matchesVendorFilter =
-    //   !vendorFilter || payment.vendor === vendorFilter;
-    // console.log("MatchVendors are: ", matchesVendorFilter);
+      // const matchesVendorFilter =
+      //   !vendorFilter || payment.vendor === vendorFilter;
+      // console.log("MatchVendors are: ", matchesVendorFilter);
 
-    return matchesSearchQuery;
-  })
-  .sort((a, b) => {
-    if (a.pay_id?.toLowerCase().includes(searchQuery)) return -1;
-    if (b.pay_id?.toLowerCase().includes(searchQuery)) return 1;
-    if (a.paid_for?.toLowerCase().includes(searchQuery)) return -1;
-    if (b.paid_for?.toLowerCase().includes(searchQuery)) return 1;
-    if (a.projectCustomer?.toLowerCase().includes(searchQuery)) return -1;
-    if (b.projectCustomer?.toLowerCase().includes(searchQuery)) return 1;
-    if (a.vendor?.toLowerCase().includes(searchQuery)) return -1;
-    if (b.vendor?.toLowerCase().includes(searchQuery)) return 1;
-    if (a.approved?.toLowerCase().includes(searchQuery)) return -1;
-    if (b.approved?.toLowerCase().includes(searchQuery)) return 1;
-    return 0;
-  });
-
+      return matchesSearchQuery;
+    })
+    .sort((a, b) => {
+      if (a.pay_id?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.pay_id?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.paid_for?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.paid_for?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.projectCustomer?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.projectCustomer?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.vendor?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.vendor?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.approved?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.approved?.toLowerCase().includes(searchQuery)) return 1;
+      return 0;
+    });
 
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
@@ -265,11 +254,10 @@ const StandByRequest = () => {
     return pages;
   };
 
-    useEffect(() => {
-      const page = parseInt(searchParams.get("page")) || 1;
-      setCurrentPage(page);
-    }, [searchParams]);
-
+  useEffect(() => {
+    const page = parseInt(searchParams.get("page")) || 1;
+    setCurrentPage(page);
+  }, [searchParams]);
 
   const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
 
@@ -287,7 +275,6 @@ const StandByRequest = () => {
       .format(date)
       .replace(/ /g, "/");
   };
-
 
   const paginatedPayments = filteredAndSortedData.slice(
     (currentPage - 1) * itemsPerPage,
@@ -354,11 +341,11 @@ const StandByRequest = () => {
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
-          marginLeft: { xl: "15%", lg: "18%"},
+          marginLeft: { xl: "15%", lg: "18%" },
           borderRadius: "sm",
           py: 2,
           // display: { xs: "none", sm: "flex" },
-          display:"flex",
+          display: "flex",
           flexWrap: "wrap",
           gap: 1.5,
           "& > *": {
@@ -391,7 +378,7 @@ const StandByRequest = () => {
           overflow: "auto",
           minHeight: 0,
           marginLeft: { xl: "15%", lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%" }
+          maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
         {error ? (
@@ -417,7 +404,9 @@ const StandByRequest = () => {
                 >
                   <Checkbox
                     size="sm"
-                    checked={selected.length === paymentsWithFormattedDate.length}
+                    checked={
+                      selected.length === paymentsWithFormattedDate.length
+                    }
                     onChange={(event) =>
                       handleRowSelect("all", event.target.checked)
                     }
@@ -611,10 +600,10 @@ const StandByRequest = () => {
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           // display: { xs: "none", md: "flex" },
-          display:"flex",
-          flexDirection:{xs: "column", sm: "row"},
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          marginLeft: {xl: "15%", lg: "18%" },
+          marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
         <Button
@@ -676,5 +665,5 @@ const StandByRequest = () => {
       </Box>
     </>
   );
-}
+};
 export default StandByRequest;

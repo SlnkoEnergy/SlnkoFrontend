@@ -1,9 +1,9 @@
 import { Box, Grid, Sheet, Table, Typography } from "@mui/joy";
 import React, { useEffect, useState } from "react";
-import logo from "../../../assets/Comm_offer/slnko.png";
-import "../CSS/offer.css";
-import Axios from "../../../utils/Axios";
 import { toast } from "react-toastify";
+import logo from "../../../assets/Comm_offer/slnko.png";
+import Axios from "../../../utils/Axios";
+import "../CSS/offer.css";
 
 const Page9 = () => {
   const [offerData, setOfferData] = useState({
@@ -28,14 +28,12 @@ const Page9 = () => {
     module_orientation: "",
     transmission_length: "",
     transformer: "",
-    column_type: ""
+    column_type: "",
   });
-
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-       
         const offerRate = localStorage.getItem("offer_summary");
 
         if (!offerRate) {
@@ -44,17 +42,14 @@ const Page9 = () => {
           return;
         }
 
-        
         const { data: commercialOffers } = await Axios.get("/get-comm-offer");
         console.log("API Response:", commercialOffers);
 
-     
         const matchedOffer = commercialOffers.find(
           (item) => item.offer_id === offerRate
         );
 
         if (matchedOffer) {
-         
           setOfferData({
             offer_id: matchedOffer.offer_id ?? "",
             client_name: matchedOffer.client_name ?? "",
@@ -83,7 +78,6 @@ const Page9 = () => {
           console.error("No matching offer found.");
           toast.error("No matching offer found.");
         }
-
       } catch (error) {
         console.error("Error fetching commercial offer data:", error);
         toast.error("Failed to fetch offer data. Please try again later.");
@@ -93,10 +87,9 @@ const Page9 = () => {
     fetchData();
   }, []);
 
-
   return (
     <>
-         <Grid
+      <Grid
         sx={{
           width: "100%",
           // height: "100%",
@@ -245,7 +238,7 @@ const Page9 = () => {
                     </td>
                     <td>{offerData.ac_capacity} MW AC</td>
                     <td>INR</td>
-                    <td>{offerData.rate}/- kWp</td>
+                    <td>{offerData.rate}/- Wp</td>
                   </tr>
                 </tbody>
               </Table>
@@ -261,7 +254,7 @@ const Page9 = () => {
                   }}
                   className="ul-item"
                 >
-                  We have considered {offerData.timeline} the complete site
+                  We have considered {offerData.timeline} weeks to complete site
                   execution work, if any delay in site execution additional
                   charges to be disscussed and finalized again.
                 </li>

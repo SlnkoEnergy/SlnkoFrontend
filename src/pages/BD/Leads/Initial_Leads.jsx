@@ -1,24 +1,42 @@
 import Box from "@mui/joy/Box";
+import Button from "@mui/joy/Button";
 import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider } from "@mui/joy/styles";
-import React from "react";
-import Button from "@mui/joy/Button";
+import { React, useState } from "react";
 // import Button from '@mui/joy/Button';
 import Breadcrumbs from "@mui/joy/Breadcrumbs";
 import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
 // import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
-import Sidebar from "../../../component/Partials/Sidebar";
 import Lead_Initial from "../../../component/Initial_Lead";
-import  Lead_Warm from "../../../component/Warm_Lead";
+import Sidebar from "../../../component/Partials/Sidebar";
+import Lead_Warm from "../../../component/Warm_Lead";
 
-import Header from "../../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
+import Header from "../../../component/Partials/Header";
 
 function InitialLeads() {
   const navigate = useNavigate();
+  const [selectedLead, setSelectedLead] = useState("Initial");
+
+  const leadOptions = ["Initial", "Warm", "Follow Up", "Won", "Dead"];
+
+  const renderLeadComponent = () => {
+    switch (selectedLead) {
+      case "Warm":
+        return <Lead_Warm />;
+      case "Follow Up":
+      // return <Lead_FollowUp />;
+      case "Won":
+      // return <Lead_Won />;
+      case "Dead":
+      // return <Lead_Dead />;
+      default:
+        return <Lead_Initial />;
+    }
+  };
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -44,27 +62,20 @@ function InitialLeads() {
             gap: 1,
           }}
         >
+          {/* Breadcrumb Navigation */}
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
-              marginLeft: { xl: "15%", lg: "18%"},
+              marginLeft: { xl: "15%", lg: "18%" },
             }}
           >
             <Breadcrumbs
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: {md:"4%", lg:"0%"} }}
+              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
-              {/* <Link
-                underline="none"
-                color="neutral"
-                href="#some-link"
-                aria-label="Home"
-              >
-                <HomeRoundedIcon />
-              </Link> */}
               <Link
                 underline="none"
                 color="neutral"
@@ -80,6 +91,8 @@ function InitialLeads() {
               </Typography>
             </Breadcrumbs>
           </Box>
+
+          {/* Page Header */}
           <Box
             sx={{
               display: "flex",
@@ -93,7 +106,7 @@ function InitialLeads() {
             }}
           >
             <Typography level="h2" component="h1">
-            Leads
+              {selectedLead} Leads
             </Typography>
             <Box
               sx={{
@@ -106,50 +119,70 @@ function InitialLeads() {
                 justifyContent: "center",
               }}
             >
-              {/* <Button
-              color="primary"
-              startDecorator={<DownloadRoundedIcon />}
-              size="sm"
-              onClick={() => navigate("/costing_input")}
-            >
-              Add Costing +
-            </Button> */}
               <Button
-              color="primary"
-              
-              size="sm"
-              onClick={() => navigate("/initial_leads")}
-            >
-              Add New leads +
-            </Button>
-            
+                color="primary"
+                size="sm"
+                onClick={() => navigate("/initial_leads")}
+              >
+                Add New Leads +
+              </Button>
             </Box>
           </Box>
 
-          <ul>
-            <li>
-              <Lead_Initial />
-            </li>
-            <li>
-              <Lead_Warm />
-            </li>
-            <li>
-              {/* <FollowUp_Initial /> */}
-            </li>
-            {/* <li>
-              <Lead_Initial />
-            </li>
-            <li>
-              <Lead_Initial />
-            </li> */}
-          </ul>
-          
+          <Box
+            component="ul"
+            sx={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "flex-start",
+              listStyle: "none",
+              padding: 0,
+              margin: "10px 0",
+              gap: 3,
+              marginLeft: { xl: "15%", lg: "18%" },
+            }}
+          >
+            {leadOptions.map((item, index) => (
+              <Box
+                component="li"
+                key={index}
+                sx={{
+                  position: "relative",
+                  padding: "8px 15px",
+                  cursor: "pointer",
+                  fontWeight: 500,
+                  fontSize: "14px",
+                  color: selectedLead === item ? "#007bff" : "black",
+                  transition: "color 0.3s ease-in-out",
+                  "&:hover": { color: "#007bff" },
+                  "&::after": {
+                    content: '""',
+                    position: "absolute",
+                    left: "50%",
+                    bottom: "-3px",
+                    width: selectedLead === item ? "100%" : 0,
+                    height: "2px",
+                    backgroundColor: "#007bff",
+                    transition: "width 0.3s ease-in-out, left 0.3s ease-in-out",
+                  },
+                  "&:hover::after": {
+                    width: "100%",
+                    left: 0,
+                  },
+                }}
+                onClick={() => setSelectedLead(item)}
+              >
+                {item}
+              </Box>
+            ))}
+          </Box>
 
-          {/* <OrderTable />
-          <OrderList /> */}
+          {renderLeadComponent()}
         </Box>
       </Box>
     </CssVarsProvider>
   );
 }
+
 export default InitialLeads;
