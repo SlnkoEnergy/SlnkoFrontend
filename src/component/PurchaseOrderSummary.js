@@ -1,14 +1,18 @@
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import EditNoteIcon from "@mui/icons-material/EditNote";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import HistoryIcon from "@mui/icons-material/History";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
+import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
+import Chip from "@mui/joy/Chip";
 import Divider from "@mui/joy/Divider";
 import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
@@ -19,21 +23,17 @@ import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
 import Modal from "@mui/joy/Modal";
-import  Chip from "@mui/joy/Chip";
 import ModalClose from "@mui/joy/ModalClose";
 import ModalDialog from "@mui/joy/ModalDialog";
 import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
-import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
 import * as React from "react";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import Axios from "../utils/Axios";
 import NoData from "../assets/alert-bell.svg";
+import Axios from "../utils/Axios";
 
 // function descendingComparator(a, b, orderBy) {
 //   if (b[orderBy] < a[orderBy]) {
@@ -101,10 +101,10 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   useEffect(() => {
     const fetchTableData = async () => {
       try {
-        const [PoResponse, BillResponse,payResponse] = await Promise.all([
+        const [PoResponse, BillResponse, payResponse] = await Promise.all([
           Axios.get("/get-all-pO-IT"),
           Axios.get("/get-all-bilL-IT"),
-          Axios.get("/get-pay-summarY-IT")
+          Axios.get("/get-pay-summarY-IT"),
         ]);
 
         const PoData = PoResponse.data.data || [];
@@ -122,17 +122,24 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           }, 0);
 
           const totalPaidAmount = payData
-          .filter((pay) => pay.po_number === po.po_number)
-          .reduce((sum, pay) => sum + (parseFloat(pay.amount_paid) || 0), 0);
+            .filter(
+              (pay) =>
+                pay.po_number === po.po_number &&
+                pay.approved === "Approved" &&
+                pay.utr
+            )
+            .reduce((sum, pay) => sum + (parseFloat(pay.amount_paid) || 0), 0);
 
-        // Format the total paid amount
-        const formattedPaidAmount = totalPaidAmount.toLocaleString("en-IN");
+          // Format the total paid amount
+          const formattedPaidAmount = totalPaidAmount.toLocaleString("en-IN");
 
-        // Improved logging to show the total paid amount
-        // console.log(`PO Number: ${po.po_number}, Total Paid Amount:`, formattedPaidAmount);
+          // Improved logging to show the total paid amount
+          // console.log(`PO Number: ${po.po_number}, Total Paid Amount:`, formattedPaidAmount);
 
-        const latestBill = poBills.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
-        const billingTypes = latestBill ? latestBill.type.trim() : "-";
+          const latestBill = poBills.sort(
+            (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+          )[0];
+          const billingTypes = latestBill ? latestBill.type.trim() : "-";
 
           const formattedTotal = totalBill.toLocaleString("en-IN");
 
@@ -147,7 +154,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             formattedTotal,
             billingTypes,
             bill_status: billStatus,
-            paidAmount : formattedPaidAmount
+            paidAmount: formattedPaidAmount,
           };
         });
 
@@ -157,12 +164,25 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       } catch (err) {
         console.error("Error fetching table data:", err);
         setError(
-          <span style={{ display: "flex", alignItems: "center", gap: "5px", color: "red", justifyContent:"center", flexDirection:"column" , padding: "20px"}}>
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              color: "red",
+              justifyContent: "center",
+              flexDirection: "column",
+              padding: "20px",
+            }}
+          >
             <PermScanWifiIcon />
-            <Typography fontStyle={"italic"} fontWeight={"600"} sx={{color:"#0a6bcc"}} >
-            Hang tight! Internet Connection will be back soon..
+            <Typography
+              fontStyle={"italic"}
+              fontWeight={"600"}
+              sx={{ color: "#0a6bcc" }}
+            >
+              Hang tight! Internet Connection will be back soon..
             </Typography>
-            
           </span>
         );
       } finally {
@@ -174,8 +194,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   }, []);
 
   const RowMenu = ({ currentPage, po_number }) => {
-    
-
     const [user, setUser] = useState(null);
 
     useEffect(() => {
@@ -209,8 +227,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             user?.name === "Ajay Singh" ||
             user?.name === "Aryan Maheshwari" ||
             user?.name === "Sarthak Sharma" ||
-            user?.name === "Naresh Kumar"||
-          user?.name === "Shubham Gupta") && (
+            user?.name === "Naresh Kumar" ||
+            user?.name === "Shubham Gupta") && (
             <MenuItem
               onClick={() => {
                 const page = currentPage;
@@ -517,7 +535,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           marginLeft: { xl: "15%", lg: "18%" },
           borderRadius: "sm",
           py: 2,
-          display:"flex",
+          display: "flex",
           flexWrap: "wrap",
           gap: 1.5,
           "& > *": {
@@ -727,7 +745,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
                       }).format(po.paidAmount)} */}
-                     {po.paidAmount || "0"}
+                      {po.paidAmount || "0"}
                     </Box>
                     <Box
                       component="td"
@@ -736,7 +754,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         textAlign: "center",
                         borderBottom: "1px solid",
                       }}
-                    ><BillingStatusChip status={po.bill_status} />
+                    >
+                      <BillingStatusChip status={po.bill_status} />
                       {/* {po.bill_status || "-"} */}
                       {/* {po.bill_status === "Fully Billed" ? (
                         <Chip
@@ -818,18 +837,24 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       fontStyle: "italic",
                     }}
                   >
-                     <Box sx={{
-                      fontStyle: "italic",
-                      display:"flex",
-                      flexDirection:"column",
-                      alignItems:"center",
-                      justifyContent:"center"
-                    }}>
-                      <img src = {NoData} alt="No data Image" style={{width:"50px", height:'50px'}}/>
-                    <Typography fontStyle={"italic"}>
-                      No data available
+                    <Box
+                      sx={{
+                        fontStyle: "italic",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <img
+                        src={NoData}
+                        alt="No data Image"
+                        style={{ width: "50px", height: "50px" }}
+                      />
+                      <Typography fontStyle={"italic"}>
+                        No data available
                       </Typography>
-                      </Box>
+                    </Box>
                   </Box>
                 </Box>
               )}
@@ -845,8 +870,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           pt: 2,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
-          display:"flex",
-          flexDirection:{xs: "column", sm: "row"},
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
           marginLeft: { xl: "15%", lg: "18%" },
         }}

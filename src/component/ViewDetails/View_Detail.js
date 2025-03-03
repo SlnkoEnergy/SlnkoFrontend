@@ -1,4 +1,4 @@
-
+import DeleteIcon from "@mui/icons-material/Delete";
 import {
   Box,
   Button,
@@ -10,15 +10,14 @@ import {
   Input,
   Typography,
 } from "@mui/joy";
+import Sheet from "@mui/joy/Sheet";
+import Table from "@mui/joy/Table";
 import { saveAs } from "file-saver";
 import { jsPDF } from "jspdf";
 import React, { useEffect, useState } from "react";
-import Img12 from "../../assets/slnko_blue_logo.png";
-import DeleteIcon from "@mui/icons-material/Delete";
-import Axios from "../../utils/Axios";
-import Sheet from "@mui/joy/Sheet";
-import Table from "@mui/joy/Table";
 import { toast } from "react-toastify";
+import Img12 from "../../assets/slnko_blue_logo.png";
+import Axios from "../../utils/Axios";
 
 const Customer_Payment_Summary = () => {
   const [error, setError] = useState("");
@@ -533,7 +532,6 @@ const Customer_Payment_Summary = () => {
     );
   };
 
-
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -549,14 +547,12 @@ const Customer_Payment_Summary = () => {
     return null;
   };
 
-
   const handleDateFilter = (event) => {
     const dateValue = event.target.value;
     setSelectedDate(dateValue);
 
     applyFilters(debitSearch, dateValue);
   };
-
 
   const applyFilters = (searchValue, dateValue) => {
     const filteredData = debitHistory.filter((item) => {
@@ -566,7 +562,7 @@ const Customer_Payment_Summary = () => {
       const matchesDate = dateValue
         ? new Date(item.dbt_date).toISOString().split("T")[0] === dateValue
         : true;
-      return  matchesSearch && matchesDate;
+      return matchesSearch && matchesDate;
     });
 
     setFilteredDebits(filteredData);
@@ -581,13 +577,13 @@ const Customer_Payment_Summary = () => {
           //   projectData.code
           // );
 
-          const payResponse = await Axios.get("/get-pay-summarY-IT")
+          const payResponse = await Axios.get("/get-pay-summarY-IT");
           // Step 1: Fetch all PO data
           const poResponse = await Axios.get("/get-all-pO-IT");
           // console.log("PO Response:", poResponse.data);
           const payData = payResponse.data?.data || [];
           // console.log(payData);
-          
+
           const poData = poResponse.data?.data || [];
 
           // setPayments(payData);
@@ -608,10 +604,13 @@ const Customer_Payment_Summary = () => {
           const enrichedPOs = filteredPOs.map((po) => {
             // const matchingPay = payData.find((pay) => pay.po_number === po.po_number && pay.approved === "Approved");
             const totalAdvancePaid = payData
-  .filter(pay => pay.po_number === po.po_number && pay.approved === "Approved")
-  .reduce((sum, pay) => sum + Number(pay.amount_paid || 0), 0);
-
-    
+              .filter(
+                (pay) =>
+                  pay.po_number === po.po_number &&
+                  pay.approved === "Approved" &&
+                  pay.utr
+              )
+              .reduce((sum, pay) => sum + Number(pay.amount_paid || 0), 0);
 
             // Find the matching bill for this PO
             const matchingBill = billData.find(
@@ -622,7 +621,7 @@ const Customer_Payment_Summary = () => {
               ...po,
               billedValue: matchingBill?.bill_value || 0,
               // AdvancePaid: matchingPay?.amount_paid || 0,
-              totalAdvancePaid : totalAdvancePaid || 0
+              totalAdvancePaid: totalAdvancePaid || 0,
             };
           });
 
@@ -653,11 +652,8 @@ const Customer_Payment_Summary = () => {
 
       console.log("Deleting selected clients:", selectedClients);
 
-      
       await Promise.all(
-        selectedClients.map((_id) =>
-          Axios.delete(`/delete-pO-IT/${_id}`)
-        )
+        selectedClients.map((_id) => Axios.delete(`/delete-pO-IT/${_id}`))
       );
 
       toast.success("PO Deleted successfully.");
@@ -703,7 +699,6 @@ const Customer_Payment_Summary = () => {
 
       console.log("Deleting selected clients:", selectedCredits);
 
-      
       await Promise.all(
         selectedCredits.map((_id) =>
           Axios.delete(`/delete-crdit-amount/${_id}`)
@@ -752,7 +747,8 @@ const Customer_Payment_Summary = () => {
     ),
     totalBalance: filteredClients.reduce(
       (sum, client) =>
-        sum + parseFloat((client.po_value || 0) - (client.totalAdvancePaid || 0)),
+        sum +
+        parseFloat((client.po_value || 0) - (client.totalAdvancePaid || 0)),
       0
     ),
     totalBilledValue: filteredClients.reduce(
@@ -1150,133 +1146,134 @@ const Customer_Payment_Summary = () => {
           <Divider style={{ borderWidth: "2px", marginBottom: "20px" }} />
 
           <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexDirection: { md: "row", xs: "column" },
-          }}
-          mb={2}
-        >
-          <Box
             sx={{
               display: "flex",
+              justifyContent: "space-between",
               alignItems: "center",
               flexDirection: { md: "row", xs: "column" },
             }}
+            mb={2}
           >
-            {/* <Input
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                flexDirection: { md: "row", xs: "column" },
+              }}
+            >
+              {/* <Input
               label="Search Paid For"
               value={creditSearch}
               placeholder="Search here"
               onChange={handleCreditSearch}
               style={{ width: "250px" }}
             /> */}
-            {/* <Input
+              {/* <Input
               type="date"
               value={selectedDate}
               onChange={handleDateFilter}
               style={{ width: "200px", marginLeft: "5px" }}
             /> */}
-          </Box>
-          {(user?.name === "IT Team" ||
-            user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Prachi Singh" ||
-            user?.name === "admin") && (
-            <Box>
-              <IconButton
-                color="danger"
-                disabled={selectedCredits.length === 0}
-                onClick={handleDeleteCredit}
-              >
-                <DeleteIcon />
-              </IconButton>
             </Box>
-          )}
-        </Box>
+            {(user?.name === "IT Team" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Prachi Singh" ||
+              user?.name === "admin") && (
+              <Box>
+                <IconButton
+                  color="danger"
+                  disabled={selectedCredits.length === 0}
+                  onClick={handleDeleteCredit}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
+            )}
+          </Box>
 
           <Sheet
-      variant="outlined"
-      sx={{
-        borderRadius: "12px",
-        overflow: "hidden",
-        p: 2,
-        boxShadow: "md",
-        maxWidth: "100%",
-      }}
-    >
-      <Table
-        borderAxis="both"
-        sx={{
-          minWidth: "100%",
-          "& thead": { backgroundColor: "neutral.softBg" },
-          "& th, & td": { textAlign: "left", px: 2, py: 1.5 },
-          "@media (max-width: 768px)": {
-            display: "block",
-            "& thead": { display: "none" },
-            "& tbody tr": {
-              display: "flex",
-              flexDirection: "column",
-              borderBottom: "1px solid #ddd",
+            variant="outlined"
+            sx={{
+              borderRadius: "12px",
+              overflow: "hidden",
               p: 2,
-              mb: 2,
-              backgroundColor: "background.level1",
-              borderRadius: "8px",
-            },
-            "& td": { display: "flex", justifyContent: "space-between" },
-          },
-        }}
-      >
-        {/* Table Header */}
-        <thead>
-          <tr>
-            <th>Credit Date</th>
-            <th>Credit Mode</th>
-            <th>Credited Amount (₹)</th>
-            <th style={{textAlign:"center"}}>
-              <Checkbox
-                color="primary"
-                onChange={handleSelectAllCredit}
-                checked={selectedCredits.length === creditHistory.length}
-                
-              />
-            </th>
-          </tr>
-        </thead>
+              boxShadow: "md",
+              maxWidth: "100%",
+            }}
+          >
+            <Table
+              borderAxis="both"
+              sx={{
+                minWidth: "100%",
+                "& thead": { backgroundColor: "neutral.softBg" },
+                "& th, & td": { textAlign: "left", px: 2, py: 1.5 },
+                "@media (max-width: 768px)": {
+                  display: "block",
+                  "& thead": { display: "none" },
+                  "& tbody tr": {
+                    display: "flex",
+                    flexDirection: "column",
+                    borderBottom: "1px solid #ddd",
+                    p: 2,
+                    mb: 2,
+                    backgroundColor: "background.level1",
+                    borderRadius: "8px",
+                  },
+                  "& td": { display: "flex", justifyContent: "space-between" },
+                },
+              }}
+            >
+              {/* Table Header */}
+              <thead>
+                <tr>
+                  <th>Credit Date</th>
+                  <th>Credit Mode</th>
+                  <th>Credited Amount (₹)</th>
+                  <th style={{ textAlign: "center" }}>
+                    <Checkbox
+                      color="primary"
+                      onChange={handleSelectAllCredit}
+                      checked={selectedCredits.length === creditHistory.length}
+                    />
+                  </th>
+                </tr>
+              </thead>
 
-        {/* Table Body */}
-        <tbody>
-          {creditHistory.map((row) => (
-            <tr key={row.id}>
-              <td>
-                {new Date(row.cr_date).toLocaleDateString("en-IN", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                })}
-              </td>
-              <td>{row.cr_mode}</td>
-              <td>₹ {row.cr_amount.toLocaleString("en-IN")}</td>
-              <td style={{textAlign:"center"}}>
-                <Checkbox
-                  color="primary"
-                  checked={selectedCredits.includes(row._id)}
-                  onChange={() => handleCreditCheckboxChange(row._id)}
-                />
-              </td>
-            </tr>
-          ))}
-        </tbody>
+              {/* Table Body */}
+              <tbody>
+                {creditHistory.map((row) => (
+                  <tr key={row.id}>
+                    <td>
+                      {new Date(row.cr_date).toLocaleDateString("en-IN", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </td>
+                    <td>{row.cr_mode}</td>
+                    <td>₹ {row.cr_amount.toLocaleString("en-IN")}</td>
+                    <td style={{ textAlign: "center" }}>
+                      <Checkbox
+                        color="primary"
+                        checked={selectedCredits.includes(row._id)}
+                        onChange={() => handleCreditCheckboxChange(row._id)}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
 
-        {/* Total Row */}
-        <tfoot>
-          <tr style={{ fontWeight: "bold", backgroundColor: "#f5f5f5" }}>
-            <td colSpan={2} style={{ textAlign: "right" }}>Total Credited:</td>
-            <td>₹ {totalCredited.toLocaleString("en-IN")}</td>
-            <td />
-          </tr>
-        </tfoot>
-      </Table>
+              {/* Total Row */}
+              <tfoot>
+                <tr style={{ fontWeight: "bold", backgroundColor: "#f5f5f5" }}>
+                  <td colSpan={2} style={{ textAlign: "right" }}>
+                    Total Credited:
+                  </td>
+                  <td>₹ {totalCredited.toLocaleString("en-IN")}</td>
+                  <td />
+                </tr>
+              </tfoot>
+            </Table>
           </Sheet>
         </Box>
       )}
@@ -1342,100 +1339,105 @@ const Customer_Payment_Summary = () => {
         </Box>
 
         <Sheet
-      variant="outlined"
-      sx={{
-        borderRadius: "12px",
-        overflow: "hidden",
-        p: 2,
-        boxShadow: "md",
-        maxWidth: "100%",
-        width: "100%",
-      }}
-    >
-      <Table
-        borderAxis="both"
-        stickyHeader
-        sx={{
-          minWidth: "100%",
-          "& thead": { backgroundColor: "neutral.softBg" },
-          "& th, & td": { textAlign: "left", px: 2, py: 1.5 },
-        }}
-      >
-        {/* Table Header */}
-        <thead>
-          <tr>
-            <th>Debit Date</th>
-            <th>PO Number</th>
-            <th>Paid For</th>
-            <th>Paid To</th>
-            <th>Amount (₹)</th>
-            <th>UTR</th>
-            <th style={{textAlign:"center"}}>
-              <Box>
-                <Checkbox
-                  color="primary"
-                  onChange={handleSelectAllDebits}
-                  checked={selectedDebits.length === filteredDebits.length}
-                />
-              </Box>
-            </th>
-          </tr>
-        </thead>
-
-        {/* Table Body */}
-        <tbody>
-          {filteredDebits
-            .slice()
-            .sort((a, b) => new Date(a.dbt_date) - new Date(b.dbt_date))
-            .map((row) => (
-              <tr key={row.id}>
-                <td>
-                  {new Date(row.dbt_date).toLocaleDateString("en-IN", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </td>
-                <td>{row.po_number}</td>
-                <td>{row.paid_for}</td>
-                <td>{row.vendor}</td>
-                <td>₹ {row.amount_paid.toLocaleString("en-IN")}</td>
-                <td>{row.utr}</td>
-                <td style={{textAlign:"center"}}>
-                  <Checkbox
-                    color="primary"
-                    checked={selectedDebits.includes(row._id)}
-                    onChange={() => handleDebitCheckboxChange(row._id)}
-                  />
-                </td>
+          variant="outlined"
+          sx={{
+            borderRadius: "12px",
+            overflow: "hidden",
+            p: 2,
+            boxShadow: "md",
+            maxWidth: "100%",
+            width: "100%",
+          }}
+        >
+          <Table
+            borderAxis="both"
+            stickyHeader
+            sx={{
+              minWidth: "100%",
+              "& thead": { backgroundColor: "neutral.softBg" },
+              "& th, & td": { textAlign: "left", px: 2, py: 1.5 },
+            }}
+          >
+            {/* Table Header */}
+            <thead>
+              <tr>
+                <th>Debit Date</th>
+                <th>PO Number</th>
+                <th>Paid For</th>
+                <th>Paid To</th>
+                <th>Amount (₹)</th>
+                <th>UTR</th>
+                <th style={{ textAlign: "center" }}>
+                  <Box>
+                    <Checkbox
+                      color="primary"
+                      onChange={handleSelectAllDebits}
+                      checked={selectedDebits.length === filteredDebits.length}
+                    />
+                  </Box>
+                </th>
               </tr>
-            ))}
-        </tbody>
+            </thead>
 
-        {/* No Data Row */}
-        {filteredDebits.length === 0 && (
-          <tfoot>
-            <tr>
-              <td colSpan={7} style={{ textAlign: "center", padding: "10px" }}>
-                No debit history available
-              </td>
-            </tr>
-          </tfoot>
-        )}
+            {/* Table Body */}
+            <tbody>
+              {filteredDebits
+                .slice()
+                .sort((a, b) => new Date(a.dbt_date) - new Date(b.dbt_date))
+                .map((row) => (
+                  <tr key={row.id}>
+                    <td>
+                      {new Date(row.dbt_date).toLocaleDateString("en-IN", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </td>
+                    <td>{row.po_number}</td>
+                    <td>{row.paid_for}</td>
+                    <td>{row.vendor}</td>
+                    <td>₹ {row.amount_paid.toLocaleString("en-IN")}</td>
+                    <td>{row.utr}</td>
+                    <td style={{ textAlign: "center" }}>
+                      <Checkbox
+                        color="primary"
+                        checked={selectedDebits.includes(row._id)}
+                        onChange={() => handleDebitCheckboxChange(row._id)}
+                      />
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
 
-        {/* Total Row */}
-        <tfoot>
-          <tr style={{ fontWeight: "bold", backgroundColor: "#f5f5f5" }}>
-            <td colSpan={4} style={{ color: "red", textAlign:'right' }}>Total Debited:</td>
-            <td colSpan={2} style={{ color: "red" }}>
-               ₹ {totalDebited.toLocaleString("en-IN")}
-            </td>
-        
-            <td></td>
-          </tr>
-        </tfoot>
-      </Table>
-    </Sheet>
+            {/* No Data Row */}
+            {filteredDebits.length === 0 && (
+              <tfoot>
+                <tr>
+                  <td
+                    colSpan={7}
+                    style={{ textAlign: "center", padding: "10px" }}
+                  >
+                    No debit history available
+                  </td>
+                </tr>
+              </tfoot>
+            )}
+
+            {/* Total Row */}
+            <tfoot>
+              <tr style={{ fontWeight: "bold", backgroundColor: "#f5f5f5" }}>
+                <td colSpan={4} style={{ color: "red", textAlign: "right" }}>
+                  Total Debited:
+                </td>
+                <td colSpan={2} style={{ color: "red" }}>
+                  ₹ {totalDebited.toLocaleString("en-IN")}
+                </td>
+
+                <td></td>
+              </tr>
+            </tfoot>
+          </Table>
+        </Sheet>
       </Box>
 
       {/*Adjustment History Section */}
@@ -1546,11 +1548,11 @@ const Customer_Payment_Summary = () => {
             }}
           >
             <Input
-            placeholder="Search Client"
-            value={clientSearch}
-            onChange={handleClientSearch}
-            style={{ width: "250px" }}
-          />
+              placeholder="Search Client"
+              value={clientSearch}
+              onChange={handleClientSearch}
+              style={{ width: "250px" }}
+            />
             {/* <Input
               type="date"
               value={selectedDate}
@@ -1575,83 +1577,86 @@ const Customer_Payment_Summary = () => {
         </Box>
 
         <Sheet
-      variant="outlined"
-      sx={{
-        borderRadius: "12px",
-        overflow: "hidden",
-        p: 2,
-        boxShadow: "md",
-        maxWidth: "100%",
-      }}
-    >
-      <Table
-        borderAxis="both"
-        sx={{
-          minWidth: "100%",
-          "& thead": { backgroundColor: "neutral.softBg" },
-          "& th, & td": { textAlign: "left", px: 2, py: 1.5 },
-        }}
-      >
-        {/* Table Header */}
-        <thead>
-          <tr>
-            
-            <th>PO Number</th>
-            <th>Vendor</th>
-            <th>Item Name</th>
-            <th>PO Value (₹)</th>
-            <th>Advance Paid (₹)</th>
-            <th>Remaining Amount (₹)</th>
-            <th>Total Billed Value (₹)</th>
-            <th style={{textAlign:"center"}}>
-              <Checkbox
-              onChange={handleSelectAllClient}
-              checked={selectedClients.length === filteredClients.length}
-              />
-            </th>
-          </tr>
-        </thead>
-
-        {/* Table Body */}
-        <tbody>
-          {filteredClients.map((client) => {
-            const po_value = client.po_value || 0;
-            const amountPaid = client.totalAdvancePaid || 0;
-            const billedValue = client.billedValue || 0;
-
-            return (
-              <tr key={client.po_number}>
-                <td>{client.po_number || "N/A"}</td>
-                <td>{client.vendor || "N/A"}</td>
-                <td>{client.item || "N/A"}</td>
-                <td>₹ {po_value.toLocaleString("en-IN")}</td>
-                <td>₹ {amountPaid.toLocaleString("en-IN")}</td>
-                <td>₹ {(po_value - amountPaid).toLocaleString("en-IN")}</td>
-                <td>₹ {billedValue.toLocaleString("en-IN")}</td>
-                <td style={{textAlign:"center"}}>
+          variant="outlined"
+          sx={{
+            borderRadius: "12px",
+            overflow: "hidden",
+            p: 2,
+            boxShadow: "md",
+            maxWidth: "100%",
+          }}
+        >
+          <Table
+            borderAxis="both"
+            sx={{
+              minWidth: "100%",
+              "& thead": { backgroundColor: "neutral.softBg" },
+              "& th, & td": { textAlign: "left", px: 2, py: 1.5 },
+            }}
+          >
+            {/* Table Header */}
+            <thead>
+              <tr>
+                <th>PO Number</th>
+                <th>Vendor</th>
+                <th>Item Name</th>
+                <th>PO Value (₹)</th>
+                <th>Advance Paid (₹)</th>
+                <th>Remaining Amount (₹)</th>
+                <th>Total Billed Value (₹)</th>
+                <th style={{ textAlign: "center" }}>
                   <Checkbox
-                   checked={selectedClients.includes(client._id)}
-                   onChange={() => handleClientCheckboxChange(client._id)}
+                    onChange={handleSelectAllClient}
+                    checked={selectedClients.length === filteredClients.length}
                   />
-                </td>
+                </th>
               </tr>
-            );
-          })}
-        </tbody>
+            </thead>
 
-        {/* Total Row */}
-        <tfoot>
-          <tr style={{ fontWeight: "bold", backgroundColor: "#f5f5f5" }}>
-            <td colSpan={3} >Total: </td>
-            <td>₹ {clientSummary.totalPOValue.toLocaleString("en-IN")}</td>
-            <td>₹ {clientSummary.totalAmountPaid.toLocaleString("en-IN")}</td>
-            <td>₹ {clientSummary.totalBalance.toLocaleString("en-IN")}</td>
-            <td>₹ {clientSummary.totalBilledValue.toLocaleString("en-IN")}</td>
-            <td />
-          </tr>
-        </tfoot>
-      </Table>
-    </Sheet>
+            {/* Table Body */}
+            <tbody>
+              {filteredClients.map((client) => {
+                const po_value = client.po_value || 0;
+                const amountPaid = client.totalAdvancePaid || 0;
+                const billedValue = client.billedValue || 0;
+
+                return (
+                  <tr key={client.po_number}>
+                    <td>{client.po_number || "N/A"}</td>
+                    <td>{client.vendor || "N/A"}</td>
+                    <td>{client.item || "N/A"}</td>
+                    <td>₹ {po_value.toLocaleString("en-IN")}</td>
+                    <td>₹ {amountPaid.toLocaleString("en-IN")}</td>
+                    <td>₹ {(po_value - amountPaid).toLocaleString("en-IN")}</td>
+                    <td>₹ {billedValue.toLocaleString("en-IN")}</td>
+                    <td style={{ textAlign: "center" }}>
+                      <Checkbox
+                        checked={selectedClients.includes(client._id)}
+                        onChange={() => handleClientCheckboxChange(client._id)}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+
+            {/* Total Row */}
+            <tfoot>
+              <tr style={{ fontWeight: "bold", backgroundColor: "#f5f5f5" }}>
+                <td colSpan={3}>Total: </td>
+                <td>₹ {clientSummary.totalPOValue.toLocaleString("en-IN")}</td>
+                <td>
+                  ₹ {clientSummary.totalAmountPaid.toLocaleString("en-IN")}
+                </td>
+                <td>₹ {clientSummary.totalBalance.toLocaleString("en-IN")}</td>
+                <td>
+                  ₹ {clientSummary.totalBilledValue.toLocaleString("en-IN")}
+                </td>
+                <td />
+              </tr>
+            </tfoot>
+          </Table>
+        </Sheet>
       </Box>
 
       <hr />
