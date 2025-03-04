@@ -111,7 +111,7 @@ function index() {
   }
 />
 <Route
-  path="/initial_leads"
+  path="/leads"
   element={
     <PrivateRoute>
       <Initial_Leads />

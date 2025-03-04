@@ -186,16 +186,16 @@ function PaymentRequestForm() {
     );
   
     if (!selectedPo) {
-      console.warn("PO number not found in the list:", selectedOption?.value);
+      // console.warn("PO number not found in the list:", selectedOption?.value);
       return;
     }
   
     const poValue = parseFloat(selectedPo.po_value ?? "0");
   
-    const matchedAdvance = getFormData.pays.find(
-      (pay) => pay.po_number === selectedPo.po_number
-    );
-    const totalAdvancePaid = parseFloat(matchedAdvance?.amount_paid ?? "0");
+    const totalAdvancePaid = getFormData.pays
+    .filter((pay) => pay.po_number === selectedPo.po_number && pay.approved === "Approved")
+    .reduce((sum, pay) => sum + parseFloat(pay.amount_paid ?? "0"), 0); 
+    
     const po_balance = poValue - totalAdvancePaid;
   
     setFormData((prev) => ({
@@ -213,7 +213,7 @@ function PaymentRequestForm() {
     );
   
     if (matchingProject) {
-      console.log("Matched Project details from PO p_id:", matchingProject);
+      // console.log("Matched Project details from PO p_id:", matchingProject);
       setFormData((prev) => ({
         ...prev,
         p_id: matchingProject.p_id ?? "",

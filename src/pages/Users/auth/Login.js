@@ -26,15 +26,15 @@ const Login = () => {
 
   const handleTogglePassword = () => setShowPassword((prev) => !prev);
 
-  const paperStyle = {
-    background: Colors.palette.primary.main,
-    marginTop: "20%",
-    height: "auto",
-    padding: "20px",
-    display: "flex",
-    flexDirection: "column",
-    borderRadius: 25,
-  };
+  // const paperStyle = {
+  //   background: Colors.palette.primary.main,
+  //   // marginTop: "20%",
+  //   height: "auto",
+  //   padding: "20px",
+  //   display: "flex",
+  //   flexDirection: "column",
+  //   borderRadius: 25,
+  // };
 
   const submitButtonStyle = {
     padding: "12px",
@@ -98,7 +98,7 @@ const Login = () => {
     } catch (error) {
       const errorMessage = error.response
         ? error.response.data.message
-        : "An unexpected error occurred.";
+        : "Internal Server Error.";
       toast.error(`Login failed: ${errorMessage}`, { position: "top-right" });
     } finally {
       setIsSubmitting(false);
@@ -126,7 +126,7 @@ const Login = () => {
       sx={{
         background:
           "radial-gradient(circle at 100% 100%, #023159, #1F476A, #F5F5F5)",
-        height: { sm: "100%", xs: "100vh" },
+        height: {md:"100%",xs:"100vh"},
         width: "100%",
         display: "flex",
         justifyContent: "center",
@@ -152,7 +152,7 @@ const Login = () => {
             <img
               src={ImgX}
               alt="Solar 2"
-              style={{ width: "100%", height: "auto" }}
+              style={{ width: "100%", height: "auto", marginTop:"20%" }}
             />
             <img
               src={Img1}
@@ -182,10 +182,17 @@ const Login = () => {
         >
           <Paper
             elevation={3}
-            style={paperStyle}
+            // style={paperStyle}
             sx={{
-              background: `linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8))`,
+              // background: `linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8))`,
               width: { sm: "60%", xl: "60%", md: "85%" },
+              background: Colors.palette.primary.main,
+              marginTop: {xl:"20%",sm:"0%"},
+              height: "auto",
+              padding: "20px",
+              display: "flex",
+              flexDirection: "column",
+              borderRadius: 10,
             }}
           >
             <Box
@@ -209,7 +216,7 @@ const Login = () => {
               onSubmit={formik.handleSubmit}
               style={{ width: "100%" }}
             >
-              <Typography>UserName:</Typography>
+              <Typography>Username:</Typography>
               <TextField
                 variant="outlined"
                 placeholder="Enter your name"
@@ -223,7 +230,15 @@ const Login = () => {
                 onChange={formik.handleChange}
                 error={formik.touched.name && Boolean(formik.errors.name)}
                 helperText={formik.touched.name && formik.errors.name}
-                sx={{ marginBottom: "20px" }}
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "8px",
+                    "& fieldset": { borderColor: "#ccc" },
+                    "&:hover fieldset": { borderColor: "#1976d2" },
+                    "&.Mui-focused fieldset": { borderColor: "#1976d2" },
+                  },
+                }}
               />
               <Typography>Password:</Typography>
               <TextField
@@ -252,6 +267,15 @@ const Login = () => {
                     </Button>
                   ),
                 }}
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "8px",
+                    "& fieldset": { borderColor: "#ccc" },
+                    "&:hover fieldset": { borderColor: "#1976d2" },
+                    "&.Mui-focused fieldset": { borderColor: "#1976d2" },
+                  },
+                }}
               />
               {/* Error Message */}
               {errorMessage && (
@@ -265,7 +289,7 @@ const Login = () => {
                 sx={{
                   color: "#023159",
                   display: "flex",
-                  mt: "1.2rem",
+                  // mt: "1.2rem",
                   cursor: "pointer",
                 }}
                 onClick={() => navigate("/forgot-password")}

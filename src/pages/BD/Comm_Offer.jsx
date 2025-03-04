@@ -1,7 +1,7 @@
 import Box from "@mui/joy/Box";
 import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider } from "@mui/joy/styles";
-import React from "react";
+import React,{useEffect,useState} from "react";
 import Button from "@mui/joy/Button";
 // import Button from '@mui/joy/Button';
 import Breadcrumbs from "@mui/joy/Breadcrumbs";
@@ -18,6 +18,21 @@ import { useNavigate } from "react-router-dom";
 
 function Comm_Offer() {
   const navigate = useNavigate();
+   const [user, setUser] = useState(null);
+        
+          
+          useEffect(() => {
+           const userData = getUserData();
+           setUser(userData);
+         }, []);
+         
+         const getUserData = () => {
+           const userData = localStorage.getItem("userDetails");
+           if (userData) {
+             return JSON.parse(userData);
+           }
+           return null;
+         };
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -105,6 +120,9 @@ function Comm_Offer() {
                 justifyContent: "center",
               }}
             >
+              {(user?.name === "IT Team" ||
+              user?.name === "admin" ||
+              user?.name === "Naresh Kumar") && (
               <Button
               color="primary"
               startDecorator={<DownloadRoundedIcon />}
@@ -113,6 +131,11 @@ function Comm_Offer() {
             >
               Add Costing +
             </Button>
+            )}
+
+{(user?.name === "IT Team" ||
+              user?.name === "admin" ||
+              user?.name === "BD Team") && (
               <Button
               color="primary"
               
@@ -121,7 +144,7 @@ function Comm_Offer() {
             >
               Add New offer +
             </Button>
-            
+             )}
             </Box>
           </Box>
           <Commercial_Offer />

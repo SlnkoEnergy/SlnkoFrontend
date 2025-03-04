@@ -245,7 +245,7 @@ function Sidebar() {
               >
                 <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/initial_leads")}>
+                    <ListItemButton onClick={() => navigate("/leads")}>
                       Leads
                     </ListItemButton>
                   </ListItem>
@@ -647,6 +647,43 @@ function Sidebar() {
                 </Toggler>
               </ListItem>
             </List>
+        ) : user?.department === "BD" && user?.name === "BD Team" ? (
+          <ListItem nested>
+          <Toggler
+            renderToggle={({ open, setOpen }) => (
+              <ListItemButton onClick={() => setOpen(!open)}>
+                <AssignmentRoundedIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">BD</Typography>
+                </ListItemContent>
+                <KeyboardArrowDownIcon
+                  sx={[
+                    open
+                      ? {
+                          transform: "rotate(180deg)",
+                        }
+                      : {
+                          transform: "none",
+                        },
+                  ]}
+                />
+              </ListItemButton>
+            )}
+          >
+            <List sx={{ gap: 0.5 }}>
+              <ListItem sx={{ mt: 0.5 }}>
+                <ListItemButton onClick={() => navigate("#")}>
+                  Leads
+                </ListItemButton>
+              </ListItem>
+              <ListItem>
+                <ListItemButton onClick={() => navigate("/comm_offer")}>
+                  Commercial Offer
+                </ListItemButton>
+              </ListItem>
+            </List>
+          </Toggler>
+        </ListItem>
         ) : user?.department === "account" && user?.name === "Deepti Mittal" ? (
           <List
             size="sm"
@@ -1086,6 +1123,43 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
+
+            <ListItem nested>
+          <Toggler
+            renderToggle={({ open, setOpen }) => (
+              <ListItemButton onClick={() => setOpen(!open)}>
+                <AssignmentRoundedIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">BD</Typography>
+                </ListItemContent>
+                <KeyboardArrowDownIcon
+                  sx={[
+                    open
+                      ? {
+                          transform: "rotate(180deg)",
+                        }
+                      : {
+                          transform: "none",
+                        },
+                  ]}
+                />
+              </ListItemButton>
+            )}
+          >
+            <List sx={{ gap: 0.5 }}>
+              {/* <ListItem sx={{ mt: 0.5 }}>
+                <ListItemButton onClick={() => navigate("#")}>
+                  Leads
+                </ListItemButton>
+              </ListItem> */}
+              <ListItem>
+                <ListItemButton onClick={() => navigate("/comm_offer")}>
+                  Commercial Offer
+                </ListItemButton>
+              </ListItem>
+            </List>
+          </Toggler>
+        </ListItem>
           </List>
         ) : user?.role === "visitor" &&
           (user?.name === "Sanjiv Kumar" ||

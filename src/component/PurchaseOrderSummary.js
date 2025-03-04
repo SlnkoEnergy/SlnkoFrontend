@@ -181,7 +181,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
               fontWeight={"600"}
               sx={{ color: "#0a6bcc" }}
             >
-              Hang tight! Internet Connection will be back soon..
+              Sit Back! Internet Connection will be back soon..
             </Typography>
           </span>
         );
@@ -852,7 +852,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         style={{ width: "50px", height: "50px" }}
                       />
                       <Typography fontStyle={"italic"}>
-                        No data available
+                        No PO available
                       </Typography>
                     </Box>
                   </Box>

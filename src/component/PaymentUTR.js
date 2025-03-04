@@ -23,10 +23,12 @@ import Tooltip from "@mui/joy/Tooltip";
 import { toast } from "react-toastify";
 import Typography from "@mui/joy/Typography";
 import { useSnackbar } from "notistack";
+import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import * as React from "react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Axios from "../utils/Axios";
+import NoData from "../assets/alert-bell.svg";
 
 function UTRPayment() {
   const [payments, setPayments] = useState([]);
@@ -678,7 +680,18 @@ function UTRPayment() {
                       fontStyle: "italic",
                     }}
                   >
-                    No data available
+                     <Box sx={{
+                      fontStyle: "italic",
+                      display:"flex",
+                      flexDirection:"column",
+                      alignItems:"center",
+                      justifyContent:"center"
+                    }}>
+                      <img src = {NoData} alt="No data Image" style={{width:"50px", height:'50px'}}/>
+                    <Typography fontStyle={"italic"}>
+                      No UTR available
+                      </Typography>
+                      </Box>
                   </Box>
                 </Box>
               )}

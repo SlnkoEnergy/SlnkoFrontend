@@ -230,7 +230,7 @@ const ProjectBalances = forwardRef((props, ref) => {
           <span style={{ display: "flex", alignItems: "center", gap: "5px", color: "red", justifyContent:"center", flexDirection:"column" , padding: "20px"}}>
             <PermScanWifiIcon />
             <Typography fontStyle={"italic"} fontWeight={"600"} sx={{color:"#0a6bcc"}} >
-            Hang tight! Internet Connection will be back soon..
+            Sit Back! Internet Connection will be back soon..
             </Typography>
             
           </span>
@@ -1143,7 +1143,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                     }}>
                       <img src = {NoData} alt="No data Image" style={{width:"50px", height:'50px'}}/>
                     <Typography fontStyle={"italic"}>
-                      No data available
+                      No Balance available
                       </Typography>
                       </Box>
                   </Box>
