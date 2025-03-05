@@ -8,6 +8,7 @@ import logo1 from "../../../assets/Comm_offer/slnko.png";
 import logo2 from "../../../assets/Comm_offer/page1_back.jpeg";
 import logo3 from "../../../assets/Comm_offer/phone_icon (2).png";
 import logo4 from "../../../assets/Comm_offer/email_icon (2).png";
+import logo5 from "../../../assets/Comm_offer/linkedin.png";
 import Divider from "@mui/joy/Divider";
 
 const Page1 = () => {
@@ -63,7 +64,13 @@ const Page1 = () => {
                 height: "10%",
               }}
             >
-              <img width={"50%"} height={"100%"} alt="logo" src={logo} loading="lazy" />
+              <img
+                width={"50%"}
+                height={"100%"}
+                alt="logo"
+                src={logo}
+                loading="lazy"
+              />
             </Box>
 
             {/* Main section with background image, branding, and text */}
@@ -253,7 +260,7 @@ const Page1 = () => {
                 flexDirection: "row",
                 paddingTop: "20px",
                 "@media print": {
-                  paddingTop: "10px",
+                  paddingTop: "20px",
                 },
               }}
             >
@@ -269,7 +276,7 @@ const Page1 = () => {
                 <Divider
                   sx={{ width: "50%", alignSelf: "center", marginY: 2 }}
                 />
-                <Typography>+91 9123153939</Typography>
+                <Typography>+91 6202528672</Typography>
               </Box>
 
               <Box
@@ -285,6 +292,30 @@ const Page1 = () => {
                   sx={{ width: "50%", alignSelf: "center", marginY: 2 }}
                 />
                 <Typography>info@slnkoenergy.com</Typography>
+              </Box>
+
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <img width={"10%"} alt="phone" src={logo5} loading="lazy" />
+                <Divider
+                  sx={{ width: "50%", alignSelf: "center", marginY: 2 }}
+                />
+                <Typography sx={{ cursor: "pointer" }}>
+                  <a
+                    href="https://www.linkedin.com/company/slnkoenergy/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ textDecoration: "none", color: "inherit" }}
+                  >
+                    company/slnkoenergy
+                  </a>
+                </Typography>
               </Box>
             </Box>
           </Box>

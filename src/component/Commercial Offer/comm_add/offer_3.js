@@ -1,6 +1,6 @@
 import { Box, Grid, Typography } from "@mui/joy";
 import React from "react";
-import logo from "../../../assets/Comm_offer/Img.png";
+import logo from "../../../assets/Comm_offer/3(1).jpeg";
 import Logo from "../../../assets/Comm_offer/white_logo.png";
 import img1 from "../../../assets/Comm_offer/ImgP03_02.png";
 import img2 from "../../../assets/Comm_offer/ImgP03_03.png";
@@ -127,7 +127,7 @@ const Page3 = () => {
                   }}
                 >
                   We add incredible value to a project through our holistic and
-                  systemetic approach. We ensure that the project is optimized
+                  systematic approach. We ensure that the project is optimized
                   for design along with other aspects such as execution,
                   durability, and operations thereby creating higher value for
                   money.
@@ -271,7 +271,7 @@ const Page3 = () => {
                     },
                   }}
                 >
-                  Right Material soucing to ensure timely, high quality, and
+                  Right material sourcing to ensure timely, high quality, and
                   cost effective project delivery
                 </Typography>
               </Box>

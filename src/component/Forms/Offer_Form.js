@@ -31,6 +31,7 @@ const FormOffer = () => {
     rate: "",
     timeline: "",
     prepared_by: "",
+    mob_number:"",
     module_type: "",
     module_capacity: "",
     inverter_capacity: "",
@@ -487,7 +488,7 @@ const FormOffer = () => {
           </FormControl>
         </Grid>
         {/* Prepared By */}
-        <Grid xs={12} sm={12}>
+        <Grid xs={12} sm={6}>
           <FormControl>
             <FormLabel>Prepared By</FormLabel>
             <Input
@@ -496,6 +497,18 @@ const FormOffer = () => {
               value={formData.prepared_by}
               onChange={handleChange}
               placeholder="Prepared By"
+            />
+          </FormControl>
+        </Grid>
+        <Grid xs={12} sm={6}>
+          <FormControl>
+            <FormLabel>Mobile Number</FormLabel>
+            <Input
+              type="number"
+              name="mob_number"
+              value={formData.mob_number}
+              onChange={handleChange}
+              placeholder="BD Executive Mobile No."
             />
           </FormControl>
         </Grid>

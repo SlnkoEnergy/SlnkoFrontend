@@ -5,7 +5,7 @@ import "../CSS/offer.css";
 import img1 from "../../../assets/Comm_offer/1.jpeg";
 import img2 from "../../../assets/Comm_offer/2.jpeg";
 import img3 from "../../../assets/Comm_offer/3.jpeg";
-import img4 from "../../../assets/Comm_offer/4.jpeg";
+import img4 from "../../../assets/Comm_offer/hisar.png";
 import img5 from "../../../assets/Comm_offer/5.jpeg";
 import img6 from "../../../assets/Comm_offer/6.jpeg";
 import img7 from "../../../assets/Comm_offer/7.jpeg";
@@ -525,7 +525,7 @@ const Page17= () => {
                 },
               }}
             >
-              207.36
+              401
             </Typography>
 
             <Typography
@@ -586,7 +586,7 @@ const Page17= () => {
                 },
               }}
             >
-              121 MWp Outgoing
+              245 MWp Ongoing
             </Typography>
           </Box>
 
@@ -612,7 +612,7 @@ const Page17= () => {
                 },
               }}
             >
-              86.36 MWp Completed
+              156 MWp Completed
             </Typography>
           </Box>
         </Grid>

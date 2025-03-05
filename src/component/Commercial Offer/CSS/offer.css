@@ -90,7 +90,7 @@
 /* styles.css */
 
 .table-header {
-width: 60%;
+width: 93%;
 border-collapse: collapse !important; /* Ensures proper table structure */
 table-layout: auto;
 border: 1px solid #dee2e6 !important;
@@ -130,9 +130,9 @@ vertical-align: middle !important; /* Corrected */
 font-size: 1.2rem !important;
 font-weight: 700;
 background-color: #0f4c7f !important;
-color: #95aac9 !important;
+color: #ffffff !important;
 font-family: serif !important;
-text-align: center !important;
+text-align: left !important;
 border: 1px solid #dee2e6 !important; /* Ensures text is centered */
 text-transform: uppercase;
 }
@@ -141,10 +141,10 @@ text-transform: uppercase;
 vertical-align: middle !important; /* Corrected */
 font-size: 1.2rem;
 font-family: serif !important;
-text-align: center !important;
+text-align: left !important;
 border: 1px solid #dee2e6 !important; /* Ensures text is centered */
 font-weight: 500;
-padding: 1px !important;
+padding-left: 1% !important;
 }
 
 /* Styling of Commercial offer page 9 */
@@ -162,9 +162,9 @@ vertical-align: middle !important; /* Corrected */
 font-size: 1.2rem;
 font-weight: 700;
 background-color: #0f4c7f !important;
-color: #95aac9 !important;
+color: #ffffff !important;
 font-family: serif !important;
-text-align: center !important;
+text-align: left !important;
 border: 1px solid #dee2e6 !important; /* Ensures text is centered */
 text-transform: uppercase;
 padding: 8px !important;
@@ -174,7 +174,7 @@ padding: 8px !important;
 vertical-align: middle !important; /* Corrected */
 font-size: 1.2rem;
 font-family: serif !important;
-text-align: center !important;
+text-align: left !important;
 border: 1px solid #dee2e6 !important; /* Ensures text is centered */
 font-weight: 500;
 padding: 8px !important;
@@ -193,9 +193,9 @@ border: 1px solid #dee2e6 !important;
 vertical-align: middle !important; /* Corrected */
 font-size: 1rem !important;
 font-weight: bold;
-background-color: #0f4c7f !important;
-color: #95aac9 !important;
-font-family: serif !important;
+background-color: #0f4c7f;
+color: #95aac9 ;
+font-family: serif ;
 text-align: center !important;
 border: 1px solid #dee2e6 !important; /* Ensures text is centered */
 }

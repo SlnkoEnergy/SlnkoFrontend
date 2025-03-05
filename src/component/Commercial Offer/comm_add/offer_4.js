@@ -326,7 +326,7 @@ const Page4 = () => {
                   className="ul-item"
                 >
                   <li style={{ marginBottom: "20px" }}>
-                    Pre-dispatched Inspection
+                    Pre-dispatch Inspection
                   </li>
                   <li style={{ marginBottom: "20px" }}>
                     Complete Transparency
@@ -437,7 +437,7 @@ const Page4 = () => {
                   }}
                   className="ul-item"
                 >
-                  <li style={{ marginBottom: "20px" }}>Liasoning</li>
+                  <li style={{ marginBottom: "20px" }}>Liaising</li>
                   <li style={{ marginBottom: "20px" }}>Testing</li>
                   <li style={{ marginBottom: "20px" }}>Commissioning</li>
                   <li style={{ marginBottom: "40px" }}>Maintenance Support</li>

@@ -21,6 +21,7 @@ const Page5 = () => {
     rate: "",
     timeline: "",
     prepared_by: "",
+    mob_number:"",
     module_type: "",
     module_capacity: "",
     inverter_capacity: "",
@@ -70,6 +71,7 @@ const Page5 = () => {
             rate: matchedOffer.rate ?? "",
             timeline: matchedOffer.timeline ?? "",
             prepared_by: matchedOffer.prepared_by ?? "",
+            mob_number: matchedOffer.mob_number ?? "",
             module_type: matchedOffer.module_type ?? "",
             module_capacity: matchedOffer.module_capacity ?? "",
             inverter_capacity: matchedOffer.inverter_capacity ?? "",
@@ -241,7 +243,7 @@ const Page5 = () => {
                 }
                 }}
               >
-                {offerData.village}, {offerData.district}, {offerData.state} - {offerData.pincode}
+                {offerData.village}, {offerData.district}, {offerData.state} {offerData.pincode}
               </Typography>
             </Box>
             <br />
@@ -312,7 +314,10 @@ const Page5 = () => {
                   fontSize:'1.5rem'
                 }
                 }}
-              >Thanking you! <br /> {offerData.prepared_by}</Typography>
+              >Thanking you! <br /> {offerData.prepared_by}
+              <br />
+              {offerData.mob_number || "979279XXX "}
+              </Typography>
             </Box>
 
             <Box

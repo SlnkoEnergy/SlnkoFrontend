@@ -1133,7 +1133,7 @@ const Summary = () => {
             >
               <Table className="table-header-Summary">
                 <thead>
-                  <tr>
+                  {/* <tr>
                     <th
                       colSpan={4}
                       style={{
@@ -1144,7 +1144,7 @@ const Summary = () => {
                         backgroundColor: "#B4C7E7",
                       }}
                     ></th>
-                  </tr>
+                  </tr> */}
 
                   <tr>
                     <th
@@ -1154,7 +1154,8 @@ const Summary = () => {
                         fontFamily: "serif",
 
                         textAlign: "center",
-                        backgroundColor: "#D9D9D9",
+                        // backgroundColor: "#D9D9D9",
+                        background: "#0f4c7f"
                       }}
                     >
                       PLANT COSTING SUMMARY ONLY
@@ -1170,7 +1171,20 @@ const Summary = () => {
                         textAlign: "center",
                       }}
                     >
-                      Capacity (kWp DC)
+                      Capacity
+                    </th>
+                    <th
+                    colSpan={3}
+                    style={{
+                      fontWeight: "500",
+                      fontFamily: "sans-serif !important",
+                      fontSize: "1.2rem",
+                      textAlign: "center",
+                      background:"#ffffff",
+                      color:"black"
+                    }}
+                    >
+                      {offerData.dc_capacity} kWp DC
                     </th>
                   </tr>
 

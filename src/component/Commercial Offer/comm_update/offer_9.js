@@ -224,7 +224,7 @@ const Page9 = () => {
                   <tr>
                     <th>Description</th>
                     <th style={{ width: "16%" }}>
-                      kW(AC) <br /> Capacity
+                      Capacity
                     </th>
                     <th style={{ width: "8%" }}> UoM</th>
                     <th style={{ width: "12%" }}>Rate</th>
@@ -236,7 +236,7 @@ const Page9 = () => {
                       Engineering, Procurement, Construction and Management
                       Services as per above scope of work
                     </td>
-                    <td>{offerData.ac_capacity} MW AC</td>
+                    <td>{offerData.ac_capacity} MW AC / {offerData.dc_capacity} MW DC</td>
                     <td>INR</td>
                     <td>{offerData.rate}/- Wp</td>
                   </tr>
@@ -307,12 +307,12 @@ const Page9 = () => {
                 <tbody>
                   <tr>
                     <td>Advance along with work order</td>
-                    <td>30% of the Project Cost</td>
+                    <td>30% of the Service fee</td>
                   </tr>
 
                   <tr>
                     <td>On releasing Phase 01 drawings</td>
-                    <td> 20% of the Project Cost</td>
+                    <td> 20% of the Service fee</td>
                   </tr>
 
                   <tr>
@@ -320,17 +320,17 @@ const Page9 = () => {
                       After orders finalization of major items (Module,
                       Inverter, MMS, Cables, Transformer and ACDB)
                     </td>
-                    <td>20% of the Project Cost</td>
+                    <td>20% of the Service fee</td>
                   </tr>
 
                   <tr>
                     <td>On releasing Phase 02 drawings & MMS Installation</td>
-                    <td>20% of the Project Cost</td>
+                    <td>20% of the Service fee</td>
                   </tr>
 
                   <tr>
                     <td>After delivery and Installation of major items</td>
-                    <td>5% of the Project Cost</td>
+                    <td>5% of the Service fee</td>
                   </tr>
 
                   <tr>
@@ -338,7 +338,7 @@ const Page9 = () => {
                       Before testing and charging of Plant before
                       commissioningAdvance along with work order
                     </td>
-                    <td>5% of the Project Cost</td>
+                    <td>5% of the Service fee</td>
                   </tr>
                 </tbody>
               </Table>

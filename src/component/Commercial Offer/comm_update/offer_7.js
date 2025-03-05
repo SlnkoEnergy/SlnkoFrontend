@@ -227,11 +227,10 @@ const Page7 = () => {
                       }
                     }}
                     >
-                      <strong>NOTE:</strong> All the above design and documents
-                      are the general ones required for execution. However, if
-                      there is any specific requirement raised by the
-                      authority/client for any document not mentioned in the
-                      list, SLNKO will be providing the same.
+                      <strong>NOTE:</strong> The above designs and documents
+                      are the standard requirements for execution. However, if
+                      the authority or client requests any additional documents
+                      not listed, SLNKO will provide them as required.
                     </Typography>
                   </td>
                 </tr>
