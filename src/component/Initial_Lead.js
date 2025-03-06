@@ -19,15 +19,16 @@ import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import Axios from "../utils/Axios";
+// import Axios from "../utils/Axios";
+import {useGetLeadsQuery} from "../redux/leadsSlice";
 
 const StandByRequest = () => {
   const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // const [error, setError] = useState(null);
   // const [states, setStates] = useState([]);
   // const [customers, setCustomers] = useState([]);
   // const [stateFilter, setStateFilter] = useState("");
@@ -41,57 +42,63 @@ const StandByRequest = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
 
-  useEffect(() => {
-    const fetchTableData = async () => {
-      try {
-        const [paymentResponse, projectResponse] = await Promise.all([
-          Axios.get("/hold-pay-summary-IT"),
-          Axios.get("/get-all-projecT-IT"),
-        ]);
-        setPayments(paymentResponse.data.data);
-        console.log("Payment Data are:", paymentResponse.data.data);
+  const {data: getLead = [], isLoading, error} = useGetLeadsQuery();
 
-        setProjects(projectResponse.data.data);
-        console.log("Project Data are:", projectResponse.data.data);
 
-        // const uniqueStates = [
-        //   ...new Set(paymentsData.map((payment) => payment.state)),
-        // ].filter(Boolean);
+  console.log("getLead :", getLead);
+  
 
-        // const uniqueCustomers = [
-        //   ...new Set(paymentsData.map((payment) => payment.customer)),
-        // ].filter(Boolean);
+  // useEffect(() => {
+  //   const fetchTableData = async () => {
+  //     try {
+  //       const [paymentResponse, projectResponse] = await Promise.all([
+  //         Axios.get("/hold-pay-summary-IT"),
+  //         Axios.get("/get-all-projecT-IT"),
+  //       ]);
+  //       setPayments(paymentResponse.data.data);
+  //       console.log("Payment Data are:", paymentResponse.data.data);
 
-        // setStates(uniqueStates);
-        // setCustomers(uniqueCustomers);
-      } catch (err) {
-        console.error("API Error:", err);
-        setError("Failed to fetch table data.");
-      } finally {
-        setLoading(false);
-      }
-    };
+  //       setProjects(projectResponse.data.data);
+  //       console.log("Project Data are:", projectResponse.data.data);
 
-    fetchTableData();
-  }, []);
+  //       // const uniqueStates = [
+  //       //   ...new Set(paymentsData.map((payment) => payment.state)),
+  //       // ].filter(Boolean);
 
-  useEffect(() => {
-    if (payments.length > 0 && projects.length > 0) {
-      const merged = payments.map((payment) => {
-        const matchingProject = projects.find(
-          (project) => Number(project.p_id) === Number(payment.p_id)
-        );
-        return {
-          ...payment,
-          // projectCode: matchingProject?.code || "-",
-          // projectName: matchingProject?.name || "-",
-          projectCustomer: matchingProject?.customer || "-",
-          // projectGroup: matchingProject?.p_group || "-",
-        };
-      });
-      setMergedData(merged);
-    }
-  }, [payments, projects]);
+  //       // const uniqueCustomers = [
+  //       //   ...new Set(paymentsData.map((payment) => payment.customer)),
+  //       // ].filter(Boolean);
+
+  //       // setStates(uniqueStates);
+  //       // setCustomers(uniqueCustomers);
+  //     } catch (err) {
+  //       console.error("API Error:", err);
+  //       setError("Failed to fetch table data.");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchTableData();
+  // }, []);
+
+  // useEffect(() => {
+  //   if (payments.length > 0 && projects.length > 0) {
+  //     const merged = payments.map((payment) => {
+  //       const matchingProject = projects.find(
+  //         (project) => Number(project.p_id) === Number(payment.p_id)
+  //       );
+  //       return {
+  //         ...payment,
+  //         // projectCode: matchingProject?.code || "-",
+  //         // projectName: matchingProject?.name || "-",
+  //         projectCustomer: matchingProject?.customer || "-",
+  //         // projectGroup: matchingProject?.p_group || "-",
+  //       };
+  //     });
+  //     setMergedData(merged);
+  //   }
+  // }, [payments, projects]);
 
   // const renderFilters = () => (
   //   <>
@@ -185,7 +192,9 @@ const StandByRequest = () => {
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
-  const filteredAndSortedData = mergedData
+
+   const leads = useMemo(() => Array.isArray(getLead?.data) ? getLead.data : [], [getLead]);
+  const filteredAndSortedData = leads
     .filter((payment) => {
       const matchesSearchQuery = [
         "pay_id",
@@ -403,27 +412,26 @@ const StandByRequest = () => {
                   }}
                 >
                   <Checkbox
-                    size="sm"
-                    checked={
-                      selected.length === paymentsWithFormattedDate.length
-                    }
-                    onChange={(event) =>
-                      handleRowSelect("all", event.target.checked)
-                    }
-                    indeterminate={
-                      selected.length > 0 &&
-                      selected.length < paymentsWithFormattedDate.length
-                    }
-                  />
+  size="sm"
+  checked={selected.length === getLead.length}
+  onChange={handleSelectAll}
+  indeterminate={
+    selected.length > 0 && selected.length < getLead.length
+  }
+/>
                 </Box>
                 {[
-                  "Payment Id",
-                  "Request Date",
-                  "Paid To",
-                  "Client Name",
-                  "Amount (₹)",
-                  // "Payment Status",
-                  "UTR",
+                  "Lead Id",
+                  "Customer",
+                  "Mobile",
+                  "Location",
+                  "Scheme",
+                  "Capacity",
+                  "Substation Distance",
+                  "Comments",
+                  "FollowUp Date",
+                  "Creation Date",
+                  "Status",
                   "",
                 ].map((header, index) => (
                   <Box
@@ -443,7 +451,7 @@ const StandByRequest = () => {
             </Box>
             <Box component="tbody">
               {paymentsWithFormattedDate.length > 0 ? (
-                paymentsWithFormattedDate.map((payment, index) => (
+                paymentsWithFormattedDate.map((lead, index) => (
                   <Box
                     component="tr"
                     key={index}
@@ -461,10 +469,9 @@ const StandByRequest = () => {
                     >
                       <Checkbox
                         size="sm"
-                        checked={selected.includes(payment.pay_id)}
-                        onChange={(event) =>
-                          handleRowSelect(payment.pay_id, event.target.checked)
-                        }
+                        color="primary"
+                        checked={selected.includes(lead._id)}
+                        onChange={() => handleRowSelect(lead._id)}
                       />
                     </Box>
                     <Box
@@ -475,7 +482,7 @@ const StandByRequest = () => {
                         textAlign: "center",
                       }}
                     >
-                      {payment.pay_id}
+                      {lead.id}
                     </Box>
                     <Box
                       component="td"
@@ -485,7 +492,7 @@ const StandByRequest = () => {
                         textAlign: "center",
                       }}
                     >
-                      {payment.formattedDate}
+                      {lead.c_name}
                     </Box>
                     <Box
                       component="td"
@@ -495,7 +502,7 @@ const StandByRequest = () => {
                         textAlign: "center",
                       }}
                     >
-                      {payment.vendor}
+                      {lead.vendor}
                     </Box>
                     <Box
                       component="td"
@@ -505,7 +512,7 @@ const StandByRequest = () => {
                         textAlign: "center",
                       }}
                     >
-                      {payment.projectCustomer || "-"}
+                      {lead.projectCustomer || "-"}
                     </Box>
                     <Box
                       component="td"
@@ -515,7 +522,7 @@ const StandByRequest = () => {
                         textAlign: "center",
                       }}
                     >
-                      {payment.amt_for_customer}
+                      {lead.amt_for_customer}
                     </Box>
                     {/* <Box
                       component="td"
@@ -554,7 +561,7 @@ const StandByRequest = () => {
                         textAlign: "center",
                       }}
                     >
-                      {payment.utr || "-"}
+                      {lead.utr || "-"}
                     </Box>
                     <Box
                       component="td"
@@ -566,8 +573,8 @@ const StandByRequest = () => {
                     >
                       <RowMenu
                         currentPage={currentPage}
-                        pay_id={payment.pay_id}
-                        p_id={payment.p_id}
+                        pay_id={lead.pay_id}
+                        p_id={lead.p_id}
                       />
                     </Box>
                   </Box>

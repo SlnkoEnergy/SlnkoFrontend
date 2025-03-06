@@ -31,6 +31,14 @@ const Page9 = () => {
     column_type: "",
   });
 
+   const [bdRate, setBdRate] = useState({
+      spv_modules: "",
+      module_mounting_structure: "",
+      transmission_line: "",
+      slnko_charges: "",
+      submitted_by_BD: "",
+    });
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -42,41 +50,65 @@ const Page9 = () => {
           return;
         }
 
-        const { data: commercialOffers } = await Axios.get("/get-comm-offer");
-        console.log("API Response:", commercialOffers);
+        const [response, answer] = await Promise.all([
+          Axios.get("/get-comm-offer"),
+          Axios.get("/get-comm-bd-rate"),
+        ]);
+  
+        const fetchedData = response.data;
+        const fetchedBdData = answer.data;
 
-        const matchedOffer = commercialOffers.find(
-          (item) => item.offer_id === offerRate
-        );
+        const offerFetchData = fetchedData.find((item) => item.offer_id === offerRate);
+        const fetchRatebd = fetchedBdData.find((item) => item.offer_id === offerRate);
 
-        if (matchedOffer) {
+        // const { data: commercialOffers } = await Axios.get("/get-comm-offer");
+        // console.log("API Response:", commercialOffers);
+
+        // const matchedOffer = commercialOffers.find(
+        //   (item) => item.offer_id === offerRate
+        // );
+
+        if (offerFetchData) {
           setOfferData({
-            offer_id: matchedOffer.offer_id ?? "",
-            client_name: matchedOffer.client_name ?? "",
-            village: matchedOffer.village ?? "",
-            district: matchedOffer.district ?? "",
-            state: matchedOffer.state ?? "",
-            pincode: matchedOffer.pincode ?? "",
-            ac_capacity: matchedOffer.ac_capacity ?? "",
-            dc_overloading: matchedOffer.dc_overloading ?? "",
-            dc_capacity: matchedOffer.dc_capacity ?? "",
-            scheme: matchedOffer.scheme ?? "",
-            component: matchedOffer.component ?? "",
-            rate: matchedOffer.rate ?? "",
-            timeline: matchedOffer.timeline ?? "",
-            prepared_by: matchedOffer.prepared_by ?? "",
-            module_type: matchedOffer.module_type ?? "",
-            module_capacity: matchedOffer.module_capacity ?? "",
-            inverter_capacity: matchedOffer.inverter_capacity ?? "",
-            evacuation_voltage: matchedOffer.evacuation_voltage ?? "",
-            module_orientation: matchedOffer.module_orientation ?? "",
-            transmission_length: matchedOffer.transmission_length ?? "",
-            transformer: matchedOffer.transformer ?? "",
-            column_type: matchedOffer.column_type ?? "",
+            offer_id: offerFetchData.offer_id ?? "",
+            client_name: offerFetchData.client_name ?? "",
+            village: offerFetchData.village ?? "",
+            district: offerFetchData.district ?? "",
+            state: offerFetchData.state ?? "",
+            pincode: offerFetchData.pincode ?? "",
+            ac_capacity: offerFetchData.ac_capacity ?? "",
+            dc_overloading: offerFetchData.dc_overloading ?? "",
+            dc_capacity: offerFetchData.dc_capacity ?? "",
+            scheme: offerFetchData.scheme ?? "",
+            component: offerFetchData.component ?? "",
+            rate: offerFetchData.rate ?? "",
+            timeline: offerFetchData.timeline ?? "",
+            prepared_by: offerFetchData.prepared_by ?? "",
+            module_type: offerFetchData.module_type ?? "",
+            module_capacity: offerFetchData.module_capacity ?? "",
+            inverter_capacity: offerFetchData.inverter_capacity ?? "",
+            evacuation_voltage: offerFetchData.evacuation_voltage ?? "",
+            module_orientation: offerFetchData.module_orientation ?? "",
+            transmission_length: offerFetchData.transmission_length ?? "",
+            transformer: offerFetchData.transformer ?? "",
+            column_type: offerFetchData.column_type ?? "",
           });
         } else {
           console.error("No matching offer found.");
           toast.error("No matching offer found.");
+        }
+        if (fetchRatebd) {
+          setBdRate({
+            // offer_id: fetchRatebd.offer_id || "",
+            // spv_modules: fetchRatebd.spv_modules || "",
+            // module_mounting_structure: fetchRatebd.module_mounting_structure || "",
+            // transmission_line: fetchRatebd.transmission_line || "",
+            slnko_charges: fetchRatebd.slnko_charges || "",
+            // submitted_by_BD: fetchRatebd.submitted_by_BD || "",
+          });
+          console.log("Set BD Rate Data:", fetchRatebd);
+        } else {
+          console.warn("No matching BD Rate data found for offer_id:", offerRate);
         }
       } catch (error) {
         console.error("Error fetching commercial offer data:", error);
@@ -197,17 +229,17 @@ const Page9 = () => {
 
           <Box
             sx={{
-              margin: "20px 20px",
+              margin: "20px 10px",
             }}
           >
             <Typography
               marginBottom={"10px"}
               fontSize={"1.7rem"}
-              fontWeight={400}
-              fontFamily={"sans-serif"}
+              fontWeight={600}
+              fontFamily={"serif"}
               sx={{
                 "@media print": {
-                  fontSize: "1.4rem",
+                  fontSize: "1.5rem",
                 },
               }}
             >
@@ -223,11 +255,11 @@ const Page9 = () => {
                 <thead>
                   <tr>
                     <th>Description</th>
-                    <th style={{ width: "16%" }}>
-                     Capacity
+                    <th>
+                      Capacity
                     </th>
-                    <th style={{ width: "8%" }}> UoM</th>
-                    <th style={{ width: "12%" }}>Rate</th>
+                    <th > UoM</th>
+                    <th>Rate</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -238,19 +270,22 @@ const Page9 = () => {
                     </td>
                     <td>{offerData.ac_capacity} MW AC / {offerData.dc_capacity} MW DC</td>
                     <td>INR</td>
-                    <td>{offerData.rate}/- Wp</td>
+                    <td>{bdRate.slnko_charges}/- Wp</td>
                   </tr>
                 </tbody>
               </Table>
             </Sheet>
 
             <Box>
-              <ul>
+              <ul style={{textAlign:"justify", "@media_print" :{
+                      fontSize:"1.2rem"
+                    }}}>
                 <li
                   style={{
                     fontFamily: "sans-serif",
                     fontSize: "1.3rem",
                     margin: "20px 0",
+                   
                   }}
                   className="ul-item"
                 >
@@ -278,11 +313,11 @@ const Page9 = () => {
             >
               <Typography
                 sx={{
-                  fontSize: "1.5rem",
-                  fontFamily: "sans-serif",
-                  fontWeight: "400",
+                  fontSize: "1.7rem",
+                  fontFamily: "serif",
+                  fontWeight: "600",
                   "@media print": {
-                    fontSize: "1.4rem",
+                    fontSize: "1.5rem",
                   },
                 }}
               >
@@ -299,8 +334,8 @@ const Page9 = () => {
                 <thead>
                   <tr>
                     <th>Description</th>
-                    <th style={{ width: "20%" }}>
-                      Payment <br /> Percentage
+                    <th>
+                      Payment Percentage
                     </th>
                   </tr>
                 </thead>

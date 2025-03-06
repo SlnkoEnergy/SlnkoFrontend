@@ -50,7 +50,7 @@ import {
         const offerData = data.find((item) => item.offer_id === offerRate);
   
         if (!offerData) {
-          toast.error("No matching offer found.");
+          toast.error("Please Add Cost!");
           return;
         }
   
@@ -197,6 +197,16 @@ import {
                 required
               />
             </Grid>
+            <Grid md={12} sm={12}>
+            <FormLabel>Comment (if/any)</FormLabel>
+            <Input
+              type="text"
+              name="comment"
+              value={scmData.comment}
+              onChange={handleChange}
+              fullWidth
+            />
+          </Grid>
           </Grid>
           <Box sx={{ mt: 3, textAlign: "center" }}>
             <Button type="submit" color="primary" sx={{ mx: 1 }} onClick={handleSubmit}>

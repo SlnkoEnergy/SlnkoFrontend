@@ -41,6 +41,7 @@ const Rate_Offer = () => {
     // abt_meter: "",
     // vcb_kiosk: "",
     slnko_charges: "",
+    comment:"",
     // installation_commissioing: {
     //   labour_works: "",
     //   machinery: "",
@@ -145,6 +146,7 @@ const Rate_Offer = () => {
         module_mounting_structure: "",
         transmission_line: "",
         slnko_charges: "",
+        comment:"",
         submitted_by_BD: "",
       });
     } catch (error) {
@@ -235,6 +237,16 @@ const Rate_Offer = () => {
               onChange={handleChange}
               fullWidth
               required
+            />
+          </Grid>
+          <Grid md={12} sm={12}>
+            <FormLabel>Comment (if/any)</FormLabel>
+            <Input
+              type="text"
+              name="comment"
+              value={scmData.comment}
+              onChange={handleChange}
+              fullWidth
             />
           </Grid>
         </Grid>

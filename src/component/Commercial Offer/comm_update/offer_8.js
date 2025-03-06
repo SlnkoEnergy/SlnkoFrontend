@@ -30,7 +30,7 @@ const Page8 = () => {
             width: "60%",
             height: "100%",
             border: "2px solid #0f4C7f",
-            padding: "20px",
+            padding: "10px",
             "@media print": {
               width: "210mm",
               height: "297mm",
@@ -71,10 +71,10 @@ const Page8 = () => {
           <Box
             sx={{
               width: "100%",
-              padding: "30px",
+              padding: "5px",
               gap: 2,
               "@media print": {
-                paddingTop: "0px",
+                paddingLeft: "15px",
               },
             }}
           >
@@ -87,7 +87,8 @@ const Page8 = () => {
                   lg: "1.8rem",
                   xl: "2rem",
                 }}
-                fontWeight={"400"}
+                fontWeight={"600"}
+                fontFamily={"serif"}
                 sx={{ "@media print": { fontSize: "1.5rem" } }}
               >
                 2. Vendor Management:
@@ -95,17 +96,19 @@ const Page8 = () => {
             </Box>
             <Box
               sx={{
-                width: {
-                  xs: "95%",
-                  sm: "80%",
-                  md: "85%",
-                  lg: "90%",
-                  xl: "90%",
-                },
+                textAlign:"justify",
+                // width: {
+                //   xs: "95%",
+                //   sm: "80%",
+                //   md: "85%",
+                //   lg: "90%",
+                //   xl: "90%",
+                // },
+                width:"100%",
                 backgroundColor: "#F1EFEF",
                 padding: "10px 15px",
                 "@media print": {
-                  width: "90%",
+                  width: "100%",
                 },
               }}
             >
@@ -118,8 +121,8 @@ const Page8 = () => {
                   xl: "1.4rem",
                 }}
                 fontWeight={500}
-                fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                fontFamily={"sans-serif"}
+                sx={{ "@media print": { fontSize: "1.3rem" } }}
               >
                 a. We will be providing best negotiated market price and vendors
                 suggestion basis our extensive market research to ensure the
@@ -134,8 +137,8 @@ const Page8 = () => {
                   xl: "1.4rem",
                 }}
                 fontWeight={500}
-                fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                fontFamily={"sans-serif"}
+                sx={{ "@media print": { fontSize: "1.3rem" } }}
               >
                 b. This will be completely transparent; all orders will be
                 issued post approval from client. If any recommendation from
@@ -151,7 +154,7 @@ const Page8 = () => {
                 }}
                 fontWeight={"bold"}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.3rem" } }}
               >
                 c. All the payments shall be made, from developer to SLNKO which
                 shall be transparently paid to respective vendors.
@@ -166,7 +169,7 @@ const Page8 = () => {
                 }}
                 fontWeight={500}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.3rem" } }}
               >
                 d. Vendors’ follow-up to ensure delivery at site as per
                 schedule.
@@ -181,7 +184,7 @@ const Page8 = () => {
                 }}
                 fontWeight={500}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.3rem" } }}
               >
                 e. Evaluation of all technical documents received from vendors
               </Typography>
@@ -196,13 +199,9 @@ const Page8 = () => {
                 }}
                 fontWeight={500}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.3rem" } }}
               >
-                f.{" "}
-                <span style={{ fontWeight: "bold" }}>
-                  PDI (Pre-Dispatch Inspection)
-                </span>{" "}
-                for customized Fabricated/Manufactured material and report
+                f. <strong>PDI(Pre-Dispatch Inspection)</strong> for customized Fabricated/Manufactured material and report
                 generation for the same to maintain the quality standards.
               </Typography>
             </Box>
@@ -216,7 +215,8 @@ const Page8 = () => {
                   lg: "1.8rem",
                   xl: "2rem",
                 }}
-                fontWeight={"400"}
+                fontFamily={"serif"}
+                fontWeight={"600"}
                 sx={{ "@media print": { fontSize: "1.5rem" } }}
               >
                 3. Site Management:
@@ -224,17 +224,20 @@ const Page8 = () => {
             </Box>
             <Box
               sx={{
-                width: {
-                  xs: "95%",
-                  sm: "80%",
-                  md: "85%",
-                  lg: "90%",
-                  xl: "90%",
-                },
+                textAlign:"justify",
+                // width: {
+                //   xs: "95%",
+                //   sm: "80%",
+                //   md: "85%",
+                //   lg: "90%",
+                //   xl: "90%",
+                // },
+                width:"100%",
+                
                 backgroundColor: "#F1EFEF",
                 padding: "10px 15px",
                 "@media print": {
-                  width: "90%",
+                  width: "100%",
                 },
               }}
             >
@@ -248,9 +251,9 @@ const Page8 = () => {
                 }}
                 fontWeight={500}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.3rem" } }}
               >
-                a. SLnko’s services are limited to inside boundary wall of
+                a. Slnko’s services are limited to inside boundary wall of
                 project site only, any additional shall be discussed.
               </Typography>
               <Typography
@@ -263,7 +266,7 @@ const Page8 = () => {
                 }}
                 fontWeight={500}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.3rem" } }}
               >
                 b. We will be deputing site supervisor on site to ensure
                 installation as per design and project schedule mutually agreed.
@@ -278,7 +281,7 @@ const Page8 = () => {
                 }}
                 fontWeight={500}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.3rem" } }}
               >
                 c. Scheduled visit of Engineering Team/Senior Authority.
               </Typography>
@@ -292,7 +295,7 @@ const Page8 = () => {
                 }}
                 fontWeight={500}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.3rem" } }}
               >
                 d. Daily work report/progress and project update to the client
                 through using SAAS ProTrac.
@@ -307,7 +310,7 @@ const Page8 = () => {
                 }}
                 fontWeight={500}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.3rem" } }}
               >
                 e. Escalation of any issues arise at site.
               </Typography>
@@ -322,7 +325,8 @@ const Page8 = () => {
                   lg: "1.8rem",
                   xl: "2rem",
                 }}
-                fontWeight={"400"}
+                fontWeight={"600"}
+                fontFamily={"serif"}
                 sx={{ "@media print": { fontSize: "1.5rem" } }}
               >
                 4. Liasoning:
@@ -330,17 +334,20 @@ const Page8 = () => {
             </Box>
             <Box
               sx={{
-                width: {
-                  xs: "95%",
-                  sm: "80%",
-                  md: "85%",
-                  lg: "90%",
-                  xl: "90%",
-                },
+                textAlign:"justify",
+                // width: {
+                //   xs: "95%",
+                //   sm: "80%",
+                //   md: "85%",
+                //   lg: "90%",
+                //   xl: "90%",
+                // },
+                width:"100%",
+               
                 backgroundColor: "#F1EFEF",
                 padding: "10px 15px",
                 "@media print": {
-                  width: "90%",
+                  width: "100%",
                 },
               }}
             >
@@ -354,7 +361,7 @@ const Page8 = () => {
                 }}
                 fontWeight={500}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.3rem" } }}
               >
                 a. All DISCOM liasoning shall be in the scope of SLNKO.
               </Typography>
@@ -368,7 +375,7 @@ const Page8 = () => {
                 }}
                 fontWeight={500}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.3rem" } }}
               >
                 b. All the Banks and CEIG liasoning shall be in scope of SLNKO.
               </Typography>

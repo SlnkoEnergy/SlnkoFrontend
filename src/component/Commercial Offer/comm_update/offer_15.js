@@ -995,25 +995,31 @@ const Summary = () => {
   const Cost_Without_Module_with_GST =
     Final_Total_with_GST_Plant_Cost - ((TotalVal1 * 12) / 100 + TotalVal1);
 
-  const Total_Cost_Basic = Math.round(
-    Final_Total_Plant_Cost / offerData.dc_capacity / 1000 / 1000
-  );
-  const Total_Cost_GST = Math.round(
-    Final_Total_GST_Plant_Cost / offerData.dc_capacity / 1000 / 1000
-  );
-  const Total_Cost_with_GST = Math.round(
-    Final_Total_with_GST_Plant_Cost / offerData.dc_capacity / 1000 / 1000
-  );
+    const Total_Cost_Basic = (
+      Final_Total_Plant_Cost / offerData.dc_capacity / 1000 / 1000
+    ).toFixed(2);
+    
+    const Total_Cost_GST = (
+      Final_Total_GST_Plant_Cost / offerData.dc_capacity / 1000 / 1000
+    ).toFixed(2);
+    
+    const Total_Cost_with_GST = (
+      Final_Total_with_GST_Plant_Cost / offerData.dc_capacity / 1000 / 1000
+    ).toFixed(2);
+    
 
-  const Without_module_INR_wp_Basic = Math.round(
-    Cost_Without_Module / offerData.dc_capacity / 1000 / 1000
-  );
-  const Without_module_INR_wp_GST = Math.round(
-    Cost_Without_Module_GST / offerData.dc_capacity / 1000 / 1000
-  );
-  const Without_Module__INR_wp_with_GST = Math.round(
-    Cost_Without_Module_with_GST / offerData.dc_capacity / 1000 / 1000
-  );
+    const Without_module_INR_wp_Basic = (
+      Cost_Without_Module / offerData.dc_capacity / 1000 / 1000
+    ).toFixed(2);
+    
+    const Without_module_INR_wp_GST = (
+      Cost_Without_Module_GST / offerData.dc_capacity / 1000 / 1000
+    ).toFixed(2);
+    
+    const Without_Module__INR_wp_with_GST = (
+      Cost_Without_Module_with_GST / offerData.dc_capacity / 1000 / 1000
+    ).toFixed(2);
+    
 
   return (
     <>

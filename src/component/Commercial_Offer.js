@@ -106,7 +106,7 @@ function Offer() {
           <span style={{ display: "flex", alignItems: "center", gap: "5px", color: "red", justifyContent:"center", flexDirection:"column" , padding: "20px"}}>
             <PermScanWifiIcon />
             <Typography fontStyle={"italic"} fontWeight={"600"} sx={{color:"#0a6bcc"}} >
-            Sit Back! Internet Connection will be back soon..
+            Hang Tight! Internet Connection will be back soon..
             </Typography>
             
           </span>
@@ -741,7 +741,8 @@ function Offer() {
                   "Ac Capacity(MW)",
                   "Scheme",
                   "Component",
-                  "Rate",
+                  "Original Rate",
+                  "Revised Rate",
                   "Add Costing",
                   "Prepared By",
                   "View More",
@@ -866,6 +867,16 @@ function Offer() {
                         textAlign: "center",
                       }}
                     >
+                      {Number(offer.rate).toLocaleString("en-IN")}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
                      <AddMenu currentPage={currentPage} offer_id={offer.offer_id} />
                     </Box>
                     <Box
@@ -894,7 +905,7 @@ function Offer() {
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={12}
+                    colSpan={13}
                     sx={{
                       padding: "8px",
                       textAlign: "center",

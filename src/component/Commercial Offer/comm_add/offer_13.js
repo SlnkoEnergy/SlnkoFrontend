@@ -223,258 +223,275 @@ const Reference4 = () => {
     scmData.installation_commissioing.labour_works * internalQuantity24 * 1000;
 
   return (
-    <>
+     <>
       <Grid
-        sx={{
-          width: "100%",
-          // height: "100%",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Grid
-          sx={{
-            width: "60%",
-            height: "100%",
-            marginTop: "5%",
-            border: "2px solid #0f4C7f",
-            "@media print": {
-              border: "0px",
-              width: "100%",
-              border: "2px solid #0f4C7f",
-              marginTop:'12%'
-            },
-          }}
-        >
-          {/* <Box
             sx={{
-              display: "flex",
               width: "100%",
-              alignItems: "flex-end",
-              gap: 2,
+              // height: "100%",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
             }}
           >
-             <img width={"220px"} height={"110px"} alt="logo" src={logo} />
-      
-                  <hr
-                    style={{
-                      width: "60%",
-                      color: "blue",
-                      borderTop: "3px solid #0f4C7f",
-                      margin: "19px 0",
-                    }}
-                  /> 
-          </Box> */}
-          {/* <Box
-                  sx={{
+            <Grid
+              sx={{
+                width: "60%",
+                height: "100%",
+               //  marginTop: "5%",
+                border: "2px solid #0f4C7f",
+                "@media print": {
+                  border: "0px",
+                  width: "100%",
+                  border: "2px solid #0f4C7f",
+                  marginTop:'10%'
+                },
+              }}
+            >
+              {/* <Box
+                sx={{
+                  display: "flex",
+                  width: "100%",
+                  alignItems: "flex-end",
+                  gap: 2,
+                }}
+              >
+                 <img width={"220px"} height={"110px"} alt="logo" src={logo} />
+          
+                      <hr
+                        style={{
+                          width: "60%",
+                          color: "blue",
+                          borderTop: "3px solid #0f4C7f",
+                          margin: "19px 0",
+                        }}
+                      /> 
+              </Box> */}
+              {/* <Box
+                      sx={{
+                        width: "100%",
+                        height: "100%",
+                        marginTop: "20px",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          color: "#56A4DA",
+                          fontSize: "3rem",
+                          fontWeight: "bolder",
+                          textDecoration: "underline rgb(243, 182, 39)",
+                          textDecorationThickness: "3px",
+                          textUnderlineOffset: "6px",
+                        }}
+                      >
+                        Reference&nbsp;{" "}
+                      </Typography>
+          
+                      <Typography
+                        sx={{
+                          color: "black",
+                          fontSize: "3rem",
+                          fontWeight: "bolder",
+                          textDecoration: "underline rgb(243, 182, 39)",
+                          textDecorationThickness: "3px",
+                          textUnderlineOffset: "6px",
+                        }}
+                      >
+                        Material List
+                      </Typography>
+                    </Box> */}
+              <Box
+                sx={{
+                  width: "100%",
+                  height: "100%",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  margin: "auto",
+                  "@media-print": {
                     width: "100%",
+                  },
+                }}
+              >
+                <Sheet
+                  sx={{
+                    width: "99.5%",
                     height: "100%",
-                    marginTop: "20px",
+                    backgroundColor: "white",
+                    margin: "10px",
                     display: "flex",
-                    justifyContent: "center",
                     alignItems: "center",
+                    flexDirection: "row",
+                    justifyContent: "center",
                   }}
                 >
-                  <Typography
-                    sx={{
-                      color: "#56A4DA",
-                      fontSize: "3rem",
-                      fontWeight: "bolder",
-                      textDecoration: "underline rgb(243, 182, 39)",
-                      textDecorationThickness: "3px",
-                      textUnderlineOffset: "6px",
-                    }}
-                  >
-                    Reference&nbsp;{" "}
-                  </Typography>
-      
-                  <Typography
-                    sx={{
-                      color: "black",
-                      fontSize: "3rem",
-                      fontWeight: "bolder",
-                      textDecoration: "underline rgb(243, 182, 39)",
-                      textDecorationThickness: "3px",
-                      textUnderlineOffset: "6px",
-                    }}
-                  >
-                    Material List
-                  </Typography>
-                </Box> */}
-          <Box
-            sx={{
-              width: "75%",
-              height: "100%",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              margin: "auto",
-              "@media-print": {
-                width: "75%",
-              },
-            }}
-          >
-            <Sheet
-              sx={{
-                width: "99.5%",
-                height: "100%",
-                backgroundColor: "white",
-                margin: "10px",
-                display: "flex",
-                alignItems: "center",
-                flexDirection: "row",
-                justifyContent: "center",
-              }}
-            >
-              <Table className="table-header">
-                <thead>
-                  <tr>
-                    <th style={{ width: "2.5%" }}>S.NO.</th>
-                    <th style={{ width: "5.5%" }}>ITEM NAME</th>
-                    <th style={{ width: "6%" }}>RATING</th>
-                    <th style={{ width: "20%" }}>SPECIFICATION</th>
-                    <th>UoM</th>
-                    {/* <th>Qty (Int.)</th> */}
-                    <th>Qty</th>
-                    <th>Category</th>
-                    {/* <th>Rate</th>
-                    <th>Rate UoM</th>
-                    <th>Total Value</th>
-                    <th>GST</th>
-                    <th>GST Value</th>
-                    <th>Total with GST</th> */}
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>23.</td>
-                    <td>
-                      Balance of system with Wet Module Cleaning System (MCS) &
-                      Dry Cleaning semi automatic robot
-                    </td>
-                    <td>
-                      Class C Items including Connectors, Lungs, Glands,
-                      Termination Kits, Conduits, Cable Tie, Ferruls, Sleeves,
-                      PU Foam, Route Marker, Danger boards and signages, Double
-                      Warning Tape, & Fire Fighting System
-                    </td>
-                    <td></td>
-                    <td>KWp</td>
-                    {/* <td>{internalQuantity24}</td> */}
-                    <td>{internalQuantity24}</td>
-                    <td>Other Balance of Material</td>
-                    {/* <td>{scmData.balance_of_system}</td>
-                    <td>INR/Set</td>
-                    <td>{TotalVal23}</td>
-                    <td>18%</td>
-                    <td>{Math.round((TotalVal23 * 18) / 100)}</td>
-                    <td>{Math.round((TotalVal23 * 18) / 100 + TotalVal23)}</td> */}
-                  </tr>
-                </tbody>
-              </Table>
-            </Sheet>
-          </Box>
-          <Box
-            sx={{
-              width: "100%",
-              marginTop: "20px",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Typography
-              sx={{
-                color: "#56A4DA",
-                fontSize: "3rem",
-                fontWeight: "bolder",
-                textDecoration: "underline rgb(243, 182, 39)",
-                textDecorationThickness: "3px",
-                textUnderlineOffset: "6px",
-              }}
-            >
-              Civil&nbsp;{" "}
-            </Typography>
-
-            <Typography
-              sx={{
-                color: "black",
-                fontSize: "3rem",
-                fontWeight: "bolder",
-                textDecoration: "underline rgb(243, 182, 39)",
-                textDecorationThickness: "3px",
-                textUnderlineOffset: "6px",
-              }}
-            >
-              Works
-            </Typography>
-          </Box>
-          <Sheet
-            sx={{
-              width: "99.5%",
-              height: "100%",
-              backgroundColor: "white",
-              marginBottom: "10px",
-              display: "flex",
-              alignItems: "center",
-              flexDirection: "row",
-              justifyContent: "center",
-              "@media print": {
-                marginTop: "10%",
-              },
-            }}
-          >
-            <Table className="table-header">
-              <thead>
-                <tr>
-                  <th style={{ width: "2.5%" }}>S.NO.</th>
-                  <th style={{ width: "5.5%" }}>ITEM NAME</th>
-                  <th style={{ width: "6%" }}>RATING</th>
-                  <th style={{ width: "20%" }}>SPECIFICATION</th>
-                  <th>UoM</th>
-                  {/* <th>Qty (Int.)</th> */}
-                  <th>Qty</th>
-                  <th>Category</th>
-                  {/* <th>Rate</th>
-                  <th>Rate UoM</th>
-                  <th>Total Value</th>
-                  <th>GST</th>
-                  <th>GST Value</th>
-                  <th>Total with GST</th> */}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>24.</td>
-                  <td>Installation and commissioing</td>
-                  <td>
-                    <span style={{ fontWeight: "bold" }}>LABOUR WORKS:</span>{" "}
-                    Includes Pile casting, Module Mounting & Alignment, and
-                    complete AC-DC work till commissioning inside plant boundary
-                  </td>
-                  <td></td>
-                  <td>KWp</td>
-                  {/* <td>{internalQuantity24}</td> */}
-                  <td>{internalQuantity24}</td>
-                  <td>
-                    Installation Charges inside boundary wall (Labour, Machinary
-                    & Civil Material)
-                  </td>
-                  {/* <td>{scmData.installation_commissioing.labour_works}</td>
-                  <td>INR/Wp</td>
-                  <td>{TotalVal24}</td>
-                  <td>18%</td>
-                  <td>{Math.round((TotalVal24 * 18) / 100)}</td>
-                  <td>{Math.round((TotalVal24 * 18) / 100 + TotalVal24)}</td> */}
-                </tr>
-              </tbody>
-            </Table>
-          </Sheet>
-        </Grid>
-      </Grid>
-    </>
-  );
+                  <Table className="table-header">
+                    <thead>
+                      <tr>
+                        <th>S.NO.</th>
+                        <th>ITEM NAME</th>
+                        <th >RATING</th>
+                        <th >SPECIFICATION</th>
+                        <th>UoM</th>
+                        {/* <th>Qty (Int.)</th> */}
+                        <th>Qty</th>
+                        <th>Category</th>
+                        {/* <th>Rate</th>
+                        <th>Rate UoM</th>
+                        <th>Total Value</th>
+                        <th>GST</th>
+                        <th>GST Value</th>
+                        <th>Total with GST</th> */}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>23.</td>
+                        <td>
+                          Balance of system with Wet Module Cleaning System (MCS) &
+                          Dry Cleaning semi automatic robot
+                        </td>
+                        <td>
+                          Class C Items including Connectors, Lungs, Glands,
+                          Termination Kits, Conduits, Cable Tie, Ferruls, Sleeves,
+                          PU Foam, Route Marker, Danger boards and signages, Double
+                          Warning Tape, & Fire Fighting System
+                        </td>
+                        <td></td>
+                        <td>KWp</td>
+                        {/* <td>{internalQuantity24}</td> */}
+                        <td>{internalQuantity24}</td>
+                        <td>Other Balance of Material</td>
+                        {/* <td>{scmData.balance_of_system}</td>
+                        <td>INR/Set</td>
+                        <td>{TotalVal23}</td>
+                        <td>18%</td>
+                        <td>{Math.round((TotalVal23 * 18) / 100)}</td>
+                        <td>{Math.round((TotalVal23 * 18) / 100 + TotalVal23)}</td> */}
+                      </tr>
+                    </tbody>
+                  </Table>
+                </Sheet>
+              </Box>
+              <Box
+                sx={{
+                  width: "100%",
+                  marginTop: "10px",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Typography
+                  sx={{
+                    color: "#56A4DA",
+                    fontSize: "3rem",
+                    fontWeight: "bolder",
+                    textDecoration: "underline rgb(243, 182, 39)",
+                    textDecorationThickness: "3px",
+                    textUnderlineOffset: "6px",
+                  }}
+                >
+                  Civil&nbsp;{" "}
+                </Typography>
+    
+                <Typography
+                  sx={{
+                    color: "black",
+                    fontSize: "3rem",
+                    fontWeight: "bolder",
+                    textDecoration: "underline rgb(243, 182, 39)",
+                    textDecorationThickness: "3px",
+                    textUnderlineOffset: "6px",
+                  }}
+                >
+                  Works
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  width: "100%",
+                  height: "100%",
+                  display: "flex",
+                 
+                  justifyContent: "center",
+                  alignItems: "center",
+                  margin: "auto",
+                  "@media-print": {
+                    width: "100%",
+                  },
+                }}
+              >
+               <Sheet
+                sx={{
+                  width: "99.5%",
+                  height: "100%",
+                  backgroundColor: "white",
+                 //  marginBottom: "10px",
+                  display: "flex",
+                  alignItems: "center",
+                  flexDirection: "row",
+                  margin:"10px",
+                  justifyContent: "center",
+                  "@media print": {
+                    marginTop: "5%",
+                  },
+                }}
+              >
+                <Table className="table-header">
+                  <thead>
+                    <tr>
+                      <th >S.NO.</th>
+                      <th >ITEM NAME</th>
+                      <th >RATING</th>
+                      <th >SPECIFICATION</th>
+                      <th>UoM</th>
+                      {/* <th>Qty (Int.)</th> */}
+                      <th>Qty</th>
+                      <th>Category</th>
+                      {/* <th>Rate</th>
+                      <th>Rate UoM</th>
+                      <th>Total Value</th>
+                      <th>GST</th>
+                      <th>GST Value</th>
+                      <th>Total with GST</th> */}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>24.</td>
+                      <td>Installation and commissioing</td>
+                      <td>
+                        <span style={{ fontWeight: "bold" }}>LABOUR WORKS:</span>{" "}
+                        Includes Pile casting, Module Mounting & Alignment, and
+                        complete AC-DC work till commissioning inside plant boundary
+                      </td>
+                      <td></td>
+                      <td>KWp</td>
+                      {/* <td>{internalQuantity24}</td> */}
+                      <td>{internalQuantity24}</td>
+                      <td>
+                        Installation Charges inside boundary wall (Labour, Machinary
+                        & Civil Material)
+                      </td>
+                      {/* <td>{scmData.installation_commissioing.labour_works}</td>
+                      <td>INR/Wp</td>
+                      <td>{TotalVal24}</td>
+                      <td>18%</td>
+                      <td>{Math.round((TotalVal24 * 18) / 100)}</td>
+                      <td>{Math.round((TotalVal24 * 18) / 100 + TotalVal24)}</td> */}
+                    </tr>
+                  </tbody>
+                </Table>
+              </Sheet>
+              </Box>
+              
+            </Grid>
+          </Grid>
+     </>
+   );
 };
 
 export default Reference4;

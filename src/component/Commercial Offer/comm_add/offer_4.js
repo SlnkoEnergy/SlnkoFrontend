@@ -2,10 +2,10 @@ import { Box, Grid, Typography } from "@mui/joy";
 import React from "react";
 import logo from "../../../assets/Comm_offer/slnko.png";
 import "../CSS/offer.css";
-import img1 from "../../../assets/Comm_offer/ImgP04_01.png";
-import img2 from "../../../assets/Comm_offer/ImgP04_02.png";
-import img3 from "../../../assets/Comm_offer/ImgP04_03.png";
-import img4 from "../../../assets/Comm_offer/photo.jpg";
+import img1 from "../../../assets/Comm_offer/cost.jpeg";
+import img2 from "../../../assets/Comm_offer/evaluation.jpeg";
+import img3 from "../../../assets/Comm_offer/cropped-Detailed.jpeg";
+import img4 from "../../../assets/Comm_offer/testing.jpeg";
 
 
 const Page4 = () => {
@@ -153,8 +153,9 @@ const Page4 = () => {
             >
               <Typography
                 fontSize={"1.7rem"}
-                fontFamily={"serif"}
+                fontFamily={"sans-serif"}
                 padding={"45px 20px"}
+                textAlign={"justify"}
                 sx={{
                   "@media print": {
                     fontSize: "1.3rem",
@@ -437,7 +438,7 @@ const Page4 = () => {
                   }}
                   className="ul-item"
                 >
-                  <li style={{ marginBottom: "20px" }}>Liaising</li>
+                  <li style={{ marginBottom: "20px" }}>Liasoning</li>
                   <li style={{ marginBottom: "20px" }}>Testing</li>
                   <li style={{ marginBottom: "20px" }}>Commissioning</li>
                   <li style={{ marginBottom: "40px" }}>Maintenance Support</li>

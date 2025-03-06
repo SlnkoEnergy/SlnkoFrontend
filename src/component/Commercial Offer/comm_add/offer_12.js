@@ -290,321 +290,321 @@ const Reference3 = () => {
   //***Total Value 22***/
   const TotalVal22 = scmData.ups_ldb * 1;
 
-  return (
+ return (
     <>
-      <Grid
-        sx={{
-          width: "100%",
-          // height: "100%",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Grid
-          sx={{
-            width: "60%",
-            height: "100%",
-            marginTop: "5%",
-            border: "2px solid #0f4C7f",
-            "@media print": {
-              border: "0px",
-              width: "100%",
-              border: "2px solid #0f4C7f",
-              marginTop:'12%'
-            },
-          }}
-        >
-          {/* <Box
-                  sx={{
-                    display: "flex",
-                    width: "100%",
-                    alignItems: "flex-end",
-                    gap: 2,
-                    marginTop:"2%"
-                  }}
-                >
-                  <img width={"220px"} height={"110px"} alt="logo" src={logo} />
-      
-                  <hr
-                    style={{
-                      width: "80%",
-                      color: "blue",
-                      borderTop: "2px solid #0f4C7f",
-                      margin: "19px 0",
-                    }}
-                  />
-                </Box>
-                <Box
-                  sx={{
-                    width: "100%",
-                    height: "100%",
-                    marginTop: "20px",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                >
-                  <Typography
-                    sx={{
-                      color: "#56A4DA",
-                      fontSize: "3rem",
-                      fontWeight: "bolder",
-                      textDecoration: "underline rgb(243, 182, 39)",
-                      textDecorationThickness: "3px",
-                      textUnderlineOffset: "6px",
-                    }}
-                  >
-                    Reference&nbsp;{" "}
-                  </Typography>
-      
-                  <Typography
-                    sx={{
-                      color: "black",
-                      fontSize: "3rem",
-                      fontWeight: "bolder",
-                      textDecoration: "underline rgb(243, 182, 39)",
-                      textDecorationThickness: "3px",
-                      textUnderlineOffset: "6px",
-                    }}
-                  >
-                    Material List
-                  </Typography>
-                </Box> */}
-          <Box
-            sx={{
-              width: "75%",
-              height: "100%",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              margin: "auto",
-              "@media-print": {
-                width: "70%",
-              },
-            }}
-          >
-            <Sheet
-              sx={{
-                width: "99.5%",
-                height: "100%",
-                backgroundColor: "white",
-                margin: "10px",
-                display: "flex",
-                alignItems: "center",
-                flexDirection: "row",
-                justifyContent: "center",
-              }}
-            >
-              <Table className="table-header">
-                <thead>
-                  <tr>
-                    <th style={{ width: "2.5%" }}>S.NO.</th>
-                    <th style={{ width: "5.5%" }}>ITEM NAME</th>
-                    <th style={{ width: "6%" }}>RATING</th>
-                    <th style={{ width: "20%" }}>SPECIFICATION</th>
-                    <th>UoM</th>
-                    {/* <th>Qty (Int.)</th> */}
-                    <th>Qty</th>
-                    <th>Category</th>
-                    {/* <th>Rate</th>
-                    <th>Rate UoM</th>
-                    <th>Total Value</th>
-                    <th>GST</th>
-                    <th>GST Value</th>
-                    <th>Total with GST</th> */}
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>15.</td>
-                    <td>ICOG, Outdoor Panel</td>
-                    <td>{EvacuationVoltage(offerData.evacuation_voltage)}</td>
-                    <td>
-                      CT-25 kA For 3 Sec, XXX/5A, CORE-1,10VA,5P20, CORE-2,
-                      10VA,CL0.2s
-                      <br />
-                      PT-XXkV/SQRT3/110/SQRT3/110/SQRT3
-                      <br />
-                      30VA,30VA,
-                      <br />
-                      CORE-1,CL-3P
-                      <br />
-                      CORE-2,CL0.2
-                      <br />
-                    </td>
-                    <td>Nos.</td>
-                    {/* <td>1</td> */}
-                    <td>1</td>
-                    <td>
-                      Electrical Equipment - Solar Plant Side (Transformer+LT
-                      Panel+HT Panel+Aux Transformer+UPS System)
-                    </td>
-                    {/* <td>{scmWeekly3(offerData.evacuation_voltage)}</td>
-                    <td>INR/Nos.</td>
-                    <td>{scmWeekly3(offerData.evacuation_voltage)}</td>
-                    <td>18%</td>
-                    <td>
-                      {Math.round(
-                        (scmWeekly3(offerData.evacuation_voltage) * 18) / 100
-                      )}
-                    </td>
-                    <td>
-                      {Math.round(
-                        (scmWeekly3(offerData.evacuation_voltage) * 18) / 100 +
-                          scmWeekly3(offerData.evacuation_voltage)
-                      )}
-                    </td> */}
-                  </tr>
-
-                  <tr>
-                    <td>16.</td>
-                    <td>Earthing Station</td>
-                    <td>
-                      Maintenance Free Earth Electrode with Chemical Earthing
-                      Set{" "}
-                    </td>
-                    <td>
-                      The earthing for array and LT power system shall be made
-                      of 3 mtr long , 17.2 mm dia, Copper Bonded , thickness of
-                      250 microns, chemical compound filled, double walled
-                      earthing electrodes including accessories, and providing
-                      masonry enclosure with cast iron cover plate having
-                      pad-locking arrangement, watering pipe using charcoal or
-                      coke and salt as required as per provisions of IS: 3043
-                    </td>
-                    <td>Set</td>
-                    {/* <td>{internalQuantity16}</td> */}
-                    <td>{internalQuantity16}</td>
-                    <td>Other Balance of Material</td>
-                    {/* <td>{scmData.earthing_station}</td>
-                    <td>INR/Set</td>
-                    <td>{TotalVal16}</td>
-                    <td>18%</td>
-                    <td>{Math.round((TotalVal16 * 18) / 100)}</td>
-                    <td>{Math.round((TotalVal16 * 18) / 100 + TotalVal16)}</td> */}
-                  </tr>
-
-                  <tr>
-                    <td>17.</td>
-                    <td>Earthing Strips</td>
-                    <td>25x3 mm GI strip</td>
-                    <td>
-                      25x3 mm GI strip With Zinc coating of 70 to 80 microns
-                    </td>
-                    <td>m</td>
-                    {/* <td>{internalQuantity17}</td> */}
-                    <td>{internalQuantity17}</td>
-                    <td>Other Balance of Material</td>
-                    {/* <td>{scmData.earthing_strips}</td>
-                    <td>INR/m</td>
-                    <td>{TotalVal17}</td>
-                    <td>18%</td>
-                    <td>{Math.round((TotalVal17 * 18) / 100)}</td>
-                    <td>{Math.ceil((TotalVal17 * 18) / 100 + TotalVal17)}</td> */}
-                  </tr>
-
-                  <tr>
-                    <td>18.</td>
-                    <td>Earthing Strips</td>
-                    <td>50x6 mm GI strip</td>
-                    <td>
-                      50x6 mm GI strip With Zinc coating of 70 to 80 microns
-                    </td>
-                    <td>m</td>
-                    {/* <td>{internalQuantity17_2}</td> */}
-                    <td>{internalQuantity17_2}</td>
-                    <td>Other Balance of Material</td>
-                    {/* <td>{scmData.earthing_strip}</td>
-                    <td>INR/m</td>
-                    <td>{TotalVal18}</td>
-                    <td>18%</td>
-                    <td>{Math.round((TotalVal18 * 18) / 100)}</td>
-                    <td>{Math.round((TotalVal18 * 18) / 100) + TotalVal18}</td> */}
-                  </tr>
-
-                  <tr>
-                    <td>19.</td>
-                    <td>Lightening Arrestor</td>
-                    <td>107 Mtr Dia over 7 Mtr High Mast with counter</td>
-                    <td>
-                      ESE type as per NFC 17-102, ESE are considered with 107
-                      Mtr Dia over 7 Mtr High Mast with counter
-                    </td>
-                    <td>Set</td>
-                    {/* <td>{internalQuantity18}</td> */}
-                    <td>{internalQuantity18}</td>
-                    <td>Other Balance of Material</td>
-                    {/* <td>{scmData.lightening_arrestor}</td>
-                    <td>INR/Set</td>
-                    <td>{TotalVal19}</td>
-                    <td>18%</td>
-                    <td>{Math.round((TotalVal19 * 18) / 100)}</td>
-                    <td>{Math.round((TotalVal19 * 18) / 100 + TotalVal19)}</td> */}
-                  </tr>
-
-                  <tr>
-                    <td>20.</td>
-                    <td>Datalogger</td>
-                    <td>As per inverter manufacturer</td>
-                    <td>As per inverter manufacturer</td>
-                    <td>Set</td>
-                    {/* <td>1</td> */}
-                    <td>1</td>
-                    <td>Solar Inverter & Datalogger</td>
-                    {/* <td>{scmData.datalogger}</td>
-                    <td>INR/Set</td>
-                    <td>{TotalVal20}</td>
-                    <td>18%</td>
-                    <td>{Math.round((TotalVal20 * 18) / 100)}</td>
-                    <td>{Math.round((TotalVal20 * 18) / 100 + TotalVal20)}</td> */}
-                  </tr>
-
-                  <tr>
-                    <td>21.</td>
-                    <td>Auxilary transformer</td>
-                    <td>10 kVA,50Hz, 800/415 V, Dyn11</td>
-                    <td>Dry Type Transformer</td>
-                    <td>Nos.</td>
-                    {/* <td>1</td> */}
-                    <td>1</td>
-                    <td>
-                      Electrical Equipment - Solar Plant Side (Transformer+LT
-                      Panel+HT Panel+Aux Transformer+UPS System)
-                    </td>
-                    {/* <td>{scmData.auxilary_transformer}</td>
-                    <td>INR/Nos.</td>
-                    <td>{TotalVal21}</td>
-                    <td>18%</td>
-                    <td>{Math.round((TotalVal21 * 18) / 100)}</td>
-                    <td>{Math.round((TotalVal21 * 18) / 100 + TotalVal21)}</td> */}
-                  </tr>
-
-                  <tr>
-                    <td>22.</td>
-                    <td>UPS & LDB</td>
-                    <td>1.5 kW Load with 1 Hour backup, Battery SMF Type</td>
-                    <td></td>
-                    <td>Set</td>
-                    {/* <td>1</td> */}
-                    <td>1</td>
-                    <td>
-                      Electrical Equipment - Solar Plant Side (Transformer+LT
-                      Panel+HT Panel+Aux Transformer+UPS System)
-                    </td>
-                    {/* <td>{scmData.ups_ldb}</td>
-                    <td>INR/Set</td>
-                    <td>{TotalVal22}</td>
-                    <td>18%</td>
-                    <td>{Math.round((TotalVal22 * 18) / 100)}</td>
-                    <td>{Math.round((TotalVal22 * 18) / 100 + TotalVal22)}</td> */}
-                  </tr>
-                </tbody>
-              </Table>
-            </Sheet>
-          </Box>
-        </Grid>
-      </Grid>
+   <Grid
+         sx={{
+           width: "100%",
+           // height: "100%",
+           display: "flex",
+           justifyContent: "center",
+           alignItems: "center",
+         }}
+       >
+         <Grid
+           sx={{
+             width: "60%",
+             height: "100%",
+            //  marginTop: "5%",
+             border: "2px solid #0f4C7f",
+             "@media print": {
+               border: "0px",
+               width: "100%",
+               border: "2px solid #0f4C7f",
+               marginTop:'1%'
+             },
+           }}
+         >
+           {/* <Box
+                   sx={{
+                     display: "flex",
+                     width: "100%",
+                     alignItems: "flex-end",
+                     gap: 2,
+                     marginTop:"2%"
+                   }}
+                 >
+                   <img width={"220px"} height={"110px"} alt="logo" src={logo} />
+       
+                   <hr
+                     style={{
+                       width: "80%",
+                       color: "blue",
+                       borderTop: "2px solid #0f4C7f",
+                       margin: "19px 0",
+                     }}
+                   />
+                 </Box>
+                 <Box
+                   sx={{
+                     width: "100%",
+                     height: "100%",
+                     marginTop: "20px",
+                     display: "flex",
+                     justifyContent: "center",
+                     alignItems: "center",
+                   }}
+                 >
+                   <Typography
+                     sx={{
+                       color: "#56A4DA",
+                       fontSize: "3rem",
+                       fontWeight: "bolder",
+                       textDecoration: "underline rgb(243, 182, 39)",
+                       textDecorationThickness: "3px",
+                       textUnderlineOffset: "6px",
+                     }}
+                   >
+                     Reference&nbsp;{" "}
+                   </Typography>
+       
+                   <Typography
+                     sx={{
+                       color: "black",
+                       fontSize: "3rem",
+                       fontWeight: "bolder",
+                       textDecoration: "underline rgb(243, 182, 39)",
+                       textDecorationThickness: "3px",
+                       textUnderlineOffset: "6px",
+                     }}
+                   >
+                     Material List
+                   </Typography>
+                 </Box> */}
+           <Box
+             sx={{
+               width: "100%",
+               height: "100%",
+               display: "flex",
+               justifyContent: "center",
+               alignItems: "center",
+               margin: "auto",
+               "@media-print": {
+                 width: "100%",
+               },
+             }}
+           >
+             <Sheet
+               sx={{
+                 width: "99.5%",
+                 height: "100%",
+                 backgroundColor: "white",
+                 margin: "10px",
+                 display: "flex",
+                 alignItems: "center",
+                 flexDirection: "row",
+                 justifyContent: "center",
+               }}
+             >
+               <Table className="table-header">
+                 <thead>
+                   <tr>
+                     <th >S.NO.</th>
+                     <th>ITEM NAME</th>
+                     <th>RATING</th>
+                     <th>SPECIFICATION</th>
+                     <th>UoM</th>
+                     {/* <th>Qty (Int.)</th> */}
+                     <th>Qty</th>
+                     <th>Category</th>
+                     {/* <th>Rate</th>
+                     <th>Rate UoM</th>
+                     <th>Total Value</th>
+                     <th>GST</th>
+                     <th>GST Value</th>
+                     <th>Total with GST</th> */}
+                   </tr>
+                 </thead>
+                 <tbody>
+                   <tr>
+                     <td>15.</td>
+                     <td>ICOG, Outdoor Panel</td>
+                     <td>{EvacuationVoltage(offerData.evacuation_voltage)}</td>
+                     <td>
+                       CT-25 kA For 3 Sec, XXX/5A, CORE-1,10VA,5P20, CORE-2,
+                       10VA,CL0.2s
+                       <br />
+                       PT-XXkV/SQRT3/110/SQRT3/110/SQRT3
+                       <br />
+                       30VA,30VA,
+                       <br />
+                       CORE-1,CL-3P
+                       <br />
+                       CORE-2,CL0.2
+                       <br />
+                     </td>
+                     <td>Nos.</td>
+                     {/* <td>1</td> */}
+                     <td>1</td>
+                     <td>
+                       Electrical Equipment - Solar Plant Side (Transformer+LT
+                       Panel+HT Panel+Aux Transformer+UPS System)
+                     </td>
+                     {/* <td>{scmWeekly3(offerData.evacuation_voltage)}</td>
+                     <td>INR/Nos.</td>
+                     <td>{scmWeekly3(offerData.evacuation_voltage)}</td>
+                     <td>18%</td>
+                     <td>
+                       {Math.round(
+                         (scmWeekly3(offerData.evacuation_voltage) * 18) / 100
+                       )}
+                     </td>
+                     <td>
+                       {Math.round(
+                         (scmWeekly3(offerData.evacuation_voltage) * 18) / 100 +
+                           scmWeekly3(offerData.evacuation_voltage)
+                       )}
+                     </td> */}
+                   </tr>
+ 
+                   <tr>
+                     <td>16.</td>
+                     <td>Earthing Station</td>
+                     <td>
+                       Maintenance Free Earth Electrode with Chemical Earthing
+                       Set{" "}
+                     </td>
+                     <td>
+                       The earthing for array and LT power system shall be made
+                       of 3 mtr long , 17.2 mm dia, Copper Bonded , thickness of
+                       250 microns, chemical compound filled, double walled
+                       earthing electrodes including accessories, and providing
+                       masonry enclosure with cast iron cover plate having
+                       pad-locking arrangement, watering pipe using charcoal or
+                       coke and salt as required as per provisions of IS: 3043
+                     </td>
+                     <td>Set</td>
+                     {/* <td>{internalQuantity16}</td> */}
+                     <td>{internalQuantity16}</td>
+                     <td>Other Balance of Material</td>
+                     {/* <td>{scmData.earthing_station}</td>
+                     <td>INR/Set</td>
+                     <td>{TotalVal16}</td>
+                     <td>18%</td>
+                     <td>{Math.round((TotalVal16 * 18) / 100)}</td>
+                     <td>{Math.round((TotalVal16 * 18) / 100 + TotalVal16)}</td> */}
+                   </tr>
+ 
+                   <tr>
+                     <td>17.</td>
+                     <td>Earthing Strips</td>
+                     <td>25x3 mm GI strip</td>
+                     <td>
+                       25x3 mm GI strip With Zinc coating of 70 to 80 microns
+                     </td>
+                     <td>m</td>
+                     {/* <td>{internalQuantity17}</td> */}
+                     <td>{internalQuantity17}</td>
+                     <td>Other Balance of Material</td>
+                     {/* <td>{scmData.earthing_strips}</td>
+                     <td>INR/m</td>
+                     <td>{TotalVal17}</td>
+                     <td>18%</td>
+                     <td>{Math.round((TotalVal17 * 18) / 100)}</td>
+                     <td>{Math.ceil((TotalVal17 * 18) / 100 + TotalVal17)}</td> */}
+                   </tr>
+ 
+                   <tr>
+                     <td>18.</td>
+                     <td>Earthing Strips</td>
+                     <td>50x6 mm GI strip</td>
+                     <td>
+                       50x6 mm GI strip With Zinc coating of 70 to 80 microns
+                     </td>
+                     <td>m</td>
+                     {/* <td>{internalQuantity17_2}</td> */}
+                     <td>{internalQuantity17_2}</td>
+                     <td>Other Balance of Material</td>
+                     {/* <td>{scmData.earthing_strip}</td>
+                     <td>INR/m</td>
+                     <td>{TotalVal18}</td>
+                     <td>18%</td>
+                     <td>{Math.round((TotalVal18 * 18) / 100)}</td>
+                     <td>{Math.round((TotalVal18 * 18) / 100) + TotalVal18}</td> */}
+                   </tr>
+ 
+                   <tr>
+                     <td>19.</td>
+                     <td>Lightening Arrestor</td>
+                     <td>107 Mtr Dia over 7 Mtr High Mast with counter</td>
+                     <td>
+                       ESE type as per NFC 17-102, ESE are considered with 107
+                       Mtr Dia over 7 Mtr High Mast with counter
+                     </td>
+                     <td>Set</td>
+                     {/* <td>{internalQuantity18}</td> */}
+                     <td>{internalQuantity18}</td>
+                     <td>Other Balance of Material</td>
+                     {/* <td>{scmData.lightening_arrestor}</td>
+                     <td>INR/Set</td>
+                     <td>{TotalVal19}</td>
+                     <td>18%</td>
+                     <td>{Math.round((TotalVal19 * 18) / 100)}</td>
+                     <td>{Math.round((TotalVal19 * 18) / 100 + TotalVal19)}</td> */}
+                   </tr>
+ 
+                   <tr>
+                     <td>20.</td>
+                     <td>Datalogger</td>
+                     <td>As per inverter manufacturer</td>
+                     <td>As per inverter manufacturer</td>
+                     <td>Set</td>
+                     {/* <td>1</td> */}
+                     <td>1</td>
+                     <td>Solar Inverter & Datalogger</td>
+                     {/* <td>{scmData.datalogger}</td>
+                     <td>INR/Set</td>
+                     <td>{TotalVal20}</td>
+                     <td>18%</td>
+                     <td>{Math.round((TotalVal20 * 18) / 100)}</td>
+                     <td>{Math.round((TotalVal20 * 18) / 100 + TotalVal20)}</td> */}
+                   </tr>
+ 
+                   <tr>
+                     <td>21.</td>
+                     <td>Auxilary transformer</td>
+                     <td>10 kVA,50Hz, 800/415 V, Dyn11</td>
+                     <td>Dry Type Transformer</td>
+                     <td>Nos.</td>
+                     {/* <td>1</td> */}
+                     <td>1</td>
+                     <td>
+                       Electrical Equipment - Solar Plant Side (Transformer+LT
+                       Panel+HT Panel+Aux Transformer+UPS System)
+                     </td>
+                     {/* <td>{scmData.auxilary_transformer}</td>
+                     <td>INR/Nos.</td>
+                     <td>{TotalVal21}</td>
+                     <td>18%</td>
+                     <td>{Math.round((TotalVal21 * 18) / 100)}</td>
+                     <td>{Math.round((TotalVal21 * 18) / 100 + TotalVal21)}</td> */}
+                   </tr>
+ 
+                   <tr>
+                     <td>22.</td>
+                     <td>UPS & LDB</td>
+                     <td>1.5 kW Load with 1 Hour backup, Battery SMF Type</td>
+                     <td></td>
+                     <td>Set</td>
+                     {/* <td>1</td> */}
+                     <td>1</td>
+                     <td>
+                       Electrical Equipment - Solar Plant Side (Transformer+LT
+                       Panel+HT Panel+Aux Transformer+UPS System)
+                     </td>
+                     {/* <td>{scmData.ups_ldb}</td>
+                     <td>INR/Set</td>
+                     <td>{TotalVal22}</td>
+                     <td>18%</td>
+                     <td>{Math.round((TotalVal22 * 18) / 100)}</td>
+                     <td>{Math.round((TotalVal22 * 18) / 100 + TotalVal22)}</td> */}
+                   </tr>
+                 </tbody>
+               </Table>
+             </Sheet>
+           </Box>
+         </Grid>
+       </Grid>
     </>
   );
 };

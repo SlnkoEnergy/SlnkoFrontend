@@ -86,7 +86,7 @@ const Reference = () => {
     const fetchData = async () => {
       try {
         const offerRate = localStorage.getItem("offer_rate");
-        console.log("Fetched offer_id from localStorage:", offerRate);
+        // console.log("Fetched offer_id from localStorage:", offerRate);
   
         if (!offerRate) {
           console.error("Offer ID not found in localStorage");
@@ -304,18 +304,18 @@ const Reference = () => {
         }}
       >
         <Grid
-         sx={{
-          width: "60%",
-          height: "100%",
-          marginTop: "5%",
-          border: "2px solid #0f4C7f",
-          "@media print": {
-            border: "0px",
-            width: "100%",
+          sx={{
+            width: "60%",
+            height: "100%",
+            // marginTop: "5%",
             border: "2px solid #0f4C7f",
-            marginTop:'5%'
-          },
-        }}
+            "@media print": {
+              border: "0px",
+              width: "100%",
+              border: "2px solid #0f4C7f",
+              marginTop: "5%",
+            },
+          }}
         >
           <Box
             sx={{
@@ -326,7 +326,13 @@ const Reference = () => {
               marginTop: "2%",
             }}
           >
-            <img width={"220px"} height={"110px"} alt="logo" src={logo} loading="lazy" />
+            <img
+              width={"220px"}
+              height={"110px"}
+              alt="logo"
+              src={logo}
+              loading="lazy"
+            />
 
             <hr
               style={{
@@ -375,14 +381,14 @@ const Reference = () => {
           </Box>
           <Box
             sx={{
-              width: "75%",
+              width: "100%",
               height: "100%",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
               margin: "auto",
               "@media-print": {
-                width: "75%",
+                width: "100%",
               },
             }}
           >
@@ -401,20 +407,20 @@ const Reference = () => {
               <Table className="table-header">
                 <thead>
                   <tr>
-                    <th style={{ width: "2.5%" }}>S.NO.</th>
-                    <th style={{ width: "5.5%" }}>ITEM NAME</th>
-                    <th style={{ width: "6%" }}>RATING</th>
-                    <th style={{ width: "20%" }}>SPECIFICATION</th>
+                    <th>S.NO.</th>
+                    <th>ITEM NAME</th>
+                    <th >RATING</th>
+                    <th>SPECIFICATION</th>
                     <th>UoM</th>
                     {/* <th>Qty (Int.)</th> */}
                     <th>Qty</th>
                     <th>Category</th>
                     {/* <th>Rate</th>
-                    <th>Rate UoM</th>
-                    <th>Total Value</th>
-                    <th>GST</th>
-                    <th>GST Value</th>
-                    <th>Total with GST</th> */}
+                         <th>Rate UoM</th>
+                         <th>Total Value</th>
+                         <th>GST</th>
+                         <th>GST Value</th>
+                         <th>Total with GST</th> */}
                   </tr>
                 </thead>
                 <tbody>
@@ -430,11 +436,11 @@ const Reference = () => {
                     <td>{PrintQuantity1}</td>
                     <td>Solar Module</td>
                     {/* <td>{bdRate.spv_modules}</td>
-                    <td>INR/Wp</td>
-                    <td>{Math.round(TotalVal1)}</td>
-                    <td>12%</td>
-                    <td>{Math.round((TotalVal1 * 12) / 100)}</td>
-                    <td>{Math.round((TotalVal1 * 12) / 100 + TotalVal1)}</td> */}
+                         <td>INR/Wp</td>
+                         <td>{Math.round(TotalVal1)}</td>
+                         <td>12%</td>
+                         <td>{Math.round((TotalVal1 * 12) / 100)}</td>
+                         <td>{Math.round((TotalVal1 * 12) / 100 + TotalVal1)}</td> */}
                   </tr>
 
                   <tr>
@@ -452,11 +458,11 @@ const Reference = () => {
                     <td>{internalQuantity2}</td>
                     <td>Solar Inverter & Datalogger</td>
                     {/* <td>{scmData.solar_inverter}</td>
-                    <td>INR/Nos.</td>
-                    <td>{Math.round(TotalVal2)}</td>
-                    <td>12%</td>
-                    <td>{Math.round(TotalVal2*12/100)}</td>
-                    <td>{Math.round(TotalVal2*12/100+TotalVal2)}</td> */}
+                         <td>INR/Nos.</td>
+                         <td>{Math.round(TotalVal2)}</td>
+                         <td>12%</td>
+                         <td>{Math.round(TotalVal2*12/100)}</td>
+                         <td>{Math.round(TotalVal2*12/100+TotalVal2)}</td> */}
                   </tr>
 
                   <tr>
@@ -477,11 +483,11 @@ const Reference = () => {
                     <td>{Math.round(InternalQuantity3)}</td>
                     <td>MMS With Fasteners</td>
                     {/* <td>{bdRate.module_mounting_structure}</td>
-                    <td>INR/Kg</td>
-                    <td>{Math.round(TotalVal3)}</td>
-                    <td>18%</td>
-                    <td>{Math.round((TotalVal3 * 18) / 100)}</td>
-                    <td>{Math.round((TotalVal3 * 18) / 100 + TotalVal3)}</td> */}
+                         <td>INR/Kg</td>
+                         <td>{Math.round(TotalVal3)}</td>
+                         <td>18%</td>
+                         <td>{Math.round((TotalVal3 * 18) / 100)}</td>
+                         <td>{Math.round((TotalVal3 * 18) / 100 + TotalVal3)}</td> */}
                   </tr>
 
                   <tr>
@@ -497,11 +503,11 @@ const Reference = () => {
                     <td>1</td>
                     <td>MMS With Fasteners</td>
                     {/* <td>{scmData.mounting_hardware}</td>
-                    <td>INR/Wp</td>
-                    <td>{Math.round(TotalVal4)}</td>
-                    <td>18%</td>
-                    <td>{Math.round((TotalVal4 * 18) / 100)}</td>
-                    <td>{Math.round((TotalVal4 * 18) / 100 + TotalVal4)}</td> */}
+                         <td>INR/Wp</td>
+                         <td>{Math.round(TotalVal4)}</td>
+                         <td>18%</td>
+                         <td>{Math.round((TotalVal4 * 18) / 100)}</td>
+                         <td>{Math.round((TotalVal4 * 18) / 100 + TotalVal4)}</td> */}
                   </tr>
 
                   <tr>
@@ -524,11 +530,11 @@ const Reference = () => {
                     <td>{Math.round(InternalQuantity5)}</td>
                     <td>Cables</td>
                     {/* <td>{scmData.dc_cable}</td>
-                    <td>INR/m</td>
-                    <td>{Math.round(TotalVal5)}</td>
-                    <td>18%</td>
-                    <td>{Math.round((TotalVal5 * 18) / 100)}</td>
-                    <td>{Math.round((TotalVal5 * 18) / 100 + TotalVal5)}</td> */}
+                         <td>INR/m</td>
+                         <td>{Math.round(TotalVal5)}</td>
+                         <td>18%</td>
+                         <td>{Math.round((TotalVal5 * 18) / 100)}</td>
+                         <td>{Math.round((TotalVal5 * 18) / 100 + TotalVal5)}</td> */}
                   </tr>
 
                   <tr>
@@ -547,11 +553,11 @@ const Reference = () => {
                     <td>{InternalQuantity6}</td>
                     <td>Cables</td>
                     {/* <td>{scmData.ac_cable_inverter_accb}</td>
-                    <td>INR/m</td>
-                    <td>{Math.round(TotalVal6)}</td>
-                    <td>18%</td>
-                    <td>{Math.round((TotalVal6 * 18) / 100)}</td>
-                    <td>{Math.round((TotalVal6 * 18) / 100 + TotalVal6)}</td> */}
+                         <td>INR/m</td>
+                         <td>{Math.round(TotalVal6)}</td>
+                         <td>18%</td>
+                         <td>{Math.round((TotalVal6 * 18) / 100)}</td>
+                         <td>{Math.round((TotalVal6 * 18) / 100 + TotalVal6)}</td> */}
                   </tr>
 
                   <tr>
@@ -570,11 +576,11 @@ const Reference = () => {
                     <td>{InternalQuantity7}</td>
                     <td>Cables</td>
                     {/* <td>{scmData.ac_cable_accb_transformer}</td>
-                    <td>INR/m</td>
-                    <td>{Math.round(TotalVal7)}</td>
-                    <td>18%</td>
-                    <td>{Math.round((TotalVal7 * 18) / 100)}</td>
-                    <td>{Math.round((TotalVal7 * 18) / 100 + TotalVal7)}</td> */}
+                         <td>INR/m</td>
+                         <td>{Math.round(TotalVal7)}</td>
+                         <td>18%</td>
+                         <td>{Math.round((TotalVal7 * 18) / 100)}</td>
+                         <td>{Math.round((TotalVal7 * 18) / 100 + TotalVal7)}</td> */}
                   </tr>
                 </tbody>
               </Table>

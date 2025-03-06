@@ -315,7 +315,7 @@ const FormOffer = () => {
   </FormControl>
 </Grid>
         {/* Rate */}
-        <Grid xs={12} sm={6}>
+        {/* <Grid xs={12} sm={6}>
           <FormControl>
             <FormLabel>Slnko Service Charges (INR/Wp)</FormLabel>
             <Input
@@ -326,10 +326,10 @@ const FormOffer = () => {
               placeholder="Rate"
             />
           </FormControl>
-        </Grid>
+        </Grid> */}
 
         {/* Timeline */}
-        <Grid xs={12} sm={6}>
+        <Grid xs={12} sm={8}>
           <FormControl>
             <FormLabel>Timeline (Weeks)</FormLabel>
             <Input

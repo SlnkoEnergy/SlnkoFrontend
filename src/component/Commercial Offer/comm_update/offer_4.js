@@ -153,8 +153,9 @@ const Page4 = () => {
             >
               <Typography
                 fontSize={"1.7rem"}
-                fontFamily={"serif"}
+                fontFamily={"sans-serif"}
                 padding={"45px 20px"}
+                textAlign={"justify"}
                 sx={{
                   "@media print": {
                     fontSize: "1.3rem",
@@ -437,7 +438,7 @@ const Page4 = () => {
                   }}
                   className="ul-item"
                 >
-                  <li style={{ marginBottom: "20px" }}>Liaising</li>
+                  <li style={{ marginBottom: "20px" }}>Liasoning</li>
                   <li style={{ marginBottom: "20px" }}>Testing</li>
                   <li style={{ marginBottom: "20px" }}>Commissioning</li>
                   <li style={{ marginBottom: "40px" }}>Maintenance Support</li>

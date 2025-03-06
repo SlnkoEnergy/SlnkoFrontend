@@ -766,13 +766,13 @@ const CivilWorks1 = () => {
                 sx={{
                   width: "60%",
                   height: "100%",
-                  marginTop: "5%",
+                  // marginTop: "5%",
                   border: "2px solid #0f4C7f",
                   "@media print": {
                     border: "0px",
                     width: "100%",
                     border: "2px solid #0f4C7f",
-                    marginTop:'12%'
+                    marginTop:'10%'
                   },
                 }}
               >
@@ -833,14 +833,14 @@ const CivilWorks1 = () => {
                 </Box> */}
                 <Box
                   sx={{
-                    width: "75%",
+                    width: "100%",
                     height: "100%",
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
                     margin: "auto",
                     "@media-print": {
-                      width: "70%",
+                      width: "100%",
                     },
                   }}
                 >
@@ -859,10 +859,10 @@ const CivilWorks1 = () => {
                     <Table className="table-header">
                       <thead>
                         <tr>
-                          <th style={{ width: "2.5%" }}>S.NO.</th>
-                          <th style={{ width: "5.5%" }}>ITEM NAME</th>
-                          <th style={{ width: "6%" }}>RATING</th>
-                          <th style={{ width: "20%" }}>SPECIFICATION</th>
+                          <th>S.NO.</th>
+                          <th >ITEM NAME</th>
+                          <th >RATING</th>
+                          <th>SPECIFICATION</th>
                           <th>UoM</th>
                           {/* <th>Qty (Int.)</th> */}
                           <th>Qty</th>
@@ -879,7 +879,8 @@ const CivilWorks1 = () => {
                         <tr>
                           <td></td>
                           <td></td>
-                          <span style={{ fontWeight: "bold" }}>MACHINARY :</span>{" "}
+                          <span style={{ fontWeight: "bold" }}>MACHINARY :
+                            </span>{" "}
                           Includes Augar, Tractor, JCBs, Hydra, Ajax and other
                           machinaries
                           <td></td>

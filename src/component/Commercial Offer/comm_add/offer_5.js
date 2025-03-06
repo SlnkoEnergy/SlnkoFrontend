@@ -98,7 +98,7 @@ const Page5 = () => {
 
   return (
     <>
-      <Grid
+ <Grid
         sx={{
           width: "100%",
           // height: "100%",
@@ -243,7 +243,7 @@ const Page5 = () => {
                 }
                 }}
               >
-                {offerData.village}, {offerData.district}, {offerData.state}  {offerData.pincode}
+                {offerData.village}, {offerData.district}, {offerData.state} {offerData.pincode}
               </Typography>
             </Box>
             <br />
@@ -315,16 +315,10 @@ const Page5 = () => {
                 }
                 }}
               >Thanking you! <br /> {offerData.prepared_by}
-               <br />
+              <br />
               {offerData.mob_number || "979279XXX "}
-              {/* 9792XXXXX */}
               </Typography>
-             
-              
             </Box>
-
-            
-            
 
             <Box
             sx={{

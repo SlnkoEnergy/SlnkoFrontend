@@ -2,8 +2,8 @@ import Box from "@mui/joy/Box";
 import Typography from "@mui/joy/Typography";
 import React from "react";
 import logo from "../../../assets/Comm_offer//white_logo.png";
-import logo1 from "../../../assets/Comm_offer/2(1).png";
-import logo2 from "../../../assets/Comm_offer/2(2).JPG";
+import logo1 from "../../../assets/Comm_offer/2(1).jpg";
+import logo2 from "../../../assets/Comm_offer/2(2).jpg";
 import "../CSS/offer.css";
 
 const Page2 = () => {
@@ -122,7 +122,7 @@ const Page2 = () => {
               <Typography component="h1" textColor="black" fontSize="4rem">
                 ABOUT
               </Typography>
-              <Typography component="h1" textColor="#17a2b8" fontSize="4rem" ml={3}>
+              <Typography component="h1" textColor="#0f4C7f" fontSize="4rem" ml={3}>
                 US...
               </Typography>
             </Box>
@@ -132,11 +132,16 @@ const Page2 = () => {
                   "@media print": {
                     fontWeight: "500",
                     fontSize: "1.3rem",
+                    
                   },
+                 
                 }}
                 marginBottom="1rem"
+                fontFamily={"sans-serif"}
                 fontSize="1.6rem"
                 fontWeight="500"
+                textAlign={"justify"}
+                
               >
                 SLnko is a one-stop platform offering Engineering, Vendor
                 Management, and Project Management Services. Our solutions can
@@ -181,7 +186,7 @@ const Page2 = () => {
           marginTop: "50px",
           "@media print": {
             top: "138%",
-            left: "35.8%",
+            left: "35.1%",
           },
         }}
       >
@@ -198,10 +203,10 @@ const Page2 = () => {
             },
           }}
         >
-          <span style={{ fontWeight: "bolder" }}>
-            India's <span style={{ color: "#17a2b8" }}>Prominent</span>&nbsp;
-            Com<span style={{ color: "#17a2b8" }}>pany for</span>&nbsp; KUSUM{" "}
-            <span style={{ color: "#17a2b8" }}>Projects !!!</span>
+          <span style={{ fontWeight: "bold" }}>
+          &nbsp;&nbsp;India's<span style={{ color: "#0f4C7f",marginInline:"3px"}}>Prominent</span>&nbsp;
+          &nbsp;&nbsp;Com<span style={{ color: "#0f4C7f",marginInline:"3px" }}>pany for</span>&nbsp;
+          KUSUM<span style={{ color: "#0f4C7f", marginInline:"3px" }}>Projects !!!</span>
           </span>
         </Typography>
       </Box>

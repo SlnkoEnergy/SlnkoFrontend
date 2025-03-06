@@ -118,9 +118,12 @@ const Page3 = () => {
                 <Typography
                   textColor={"#56A4DA"}
                   fontSize={"x-large"}
-                  fontWeight={"bold"}
+                  // fontWeight={"bold"}
                   fontFamily={"serif"}
+                  textAlign={"justify"}
+                  
                   sx={{
+                    paddingRight:"20px",
                     "@media print": {
                       fontSize: "1.2rem !important",
                     },

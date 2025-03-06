@@ -1124,7 +1124,7 @@ const Summary = () => {
 
                         textAlign: "center",
                         // backgroundColor: "#D9D9D9",
-                    background: "#0f4c7f"
+                        background: "#0f4c7f"
                       }}
                     >
                       PLANT COSTING SUMMARY ONLY
@@ -1133,19 +1133,17 @@ const Summary = () => {
 
                   <tr>
                     <th
-                     colSpan={2}
                       style={{
                         fontWeight: "bold",
                         fontFamily: "serif",
                         fontSize: "1.2rem",
                         textAlign: "center",
-                        
                       }}
                     >
                       Capacity
                     </th>
                     <th
-                    colSpan={2}
+                    colSpan={3}
                     style={{
                       fontWeight: "500",
                       fontFamily: "sans-serif !important",

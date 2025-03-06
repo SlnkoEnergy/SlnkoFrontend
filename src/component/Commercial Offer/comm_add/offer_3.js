@@ -2,8 +2,8 @@ import { Box, Grid, Typography } from "@mui/joy";
 import React from "react";
 import logo from "../../../assets/Comm_offer/3(1).jpeg";
 import Logo from "../../../assets/Comm_offer/white_logo.png";
-import img1 from "../../../assets/Comm_offer/ImgP03_02.png";
-import img2 from "../../../assets/Comm_offer/ImgP03_03.png";
+import img1 from "../../../assets/Comm_offer/cropped-Detailed_2.jpeg";
+import img2 from "../../../assets/Comm_offer/vendor_manage.jpeg";
 import img3 from "../../../assets/Comm_offer/ImgP03_04.png";
 import "../CSS/offer.css";
 const Page3 = () => {
@@ -118,9 +118,12 @@ const Page3 = () => {
                 <Typography
                   textColor={"#56A4DA"}
                   fontSize={"x-large"}
-                  fontWeight={"bold"}
+                  // fontWeight={"bold"}
                   fontFamily={"serif"}
+                  textAlign={"justify"}
+                  
                   sx={{
+                    paddingRight:"20px",
                     "@media print": {
                       fontSize: "1.2rem !important",
                     },
@@ -254,8 +257,9 @@ const Page3 = () => {
                     filter: " drop-shadow(0 0 0.50rem black)",
                     borderRadius: "50%",
                     padding: "10px",
+                    width: "150px",
                   }}
-                  width={"150px"}
+                  // width={"150px"}
                   alt="img"
                   src={img2}
                   loading="lazy"
