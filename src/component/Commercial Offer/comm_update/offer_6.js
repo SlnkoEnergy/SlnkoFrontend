@@ -114,7 +114,7 @@ const Page6 = () => {
           },
         }}
       >
-        <Box
+        {/* <Box
           sx={{
             position: "absolute",
             left: "60%",
@@ -128,7 +128,7 @@ const Page6 = () => {
               width: "40%",
             },
           }}
-        ></Box>
+        ></Box> */}
         <Grid
           sx={{
             width: "60%",
@@ -222,7 +222,7 @@ const Page6 = () => {
                 }}
               >
                 Slnko will be providing following services to
-                <span style={{ fontWeight: "bold" }}> Mr. {offerData.client_name}</span> ,
+                <span style={{ fontWeight: "bold" }}> {offerData.client_name}</span> ,
                 here after referred as “Client”. Detailed technical documents
                 list defined further. (refer “Design & Documents List”)
               </Typography>

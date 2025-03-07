@@ -23,7 +23,7 @@ const Page7 = () => {
           },
         }}
       >
-        <Box
+        {/* <Box
           sx={{
             position: "absolute",
             left: "60%",
@@ -37,7 +37,7 @@ const Page7 = () => {
               width: "40%",
             },
           }}
-        ></Box>
+        ></Box> */}
         <Grid
           sx={{
             width: "60%",

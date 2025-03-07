@@ -445,7 +445,7 @@ const Reference = () => {
                     <td>Nos.</td>
                     {/* <td>{internalQuantity1}</td> */}
                     <td>{PrintQuantity1}</td>
-                    <td></td>
+                    <td>TIER 01 Domestic</td>
                     <td>Solar Module</td>
                     {/* <td>{bdRate.spv_modules}</td>
                          <td>INR/Wp</td>
@@ -468,7 +468,7 @@ const Reference = () => {
                     <td>Nos.</td>
                     {/* <td>{internalQuantity2}</td> */}
                     <td>{internalQuantity2}</td>
-                    <td></td>
+                    <td>Sungrow/Wattpower/Equivalent</td>
                     <td>Solar Inverter & Datalogger</td>
                     {/* <td>{scmData.solar_inverter}</td>
                          <td>INR/Nos.</td>
@@ -494,7 +494,7 @@ const Reference = () => {
                     <td>Kg</td>
                     {/* <td>{Math.round(InternalQuantity3)}</td> */}
                     <td>{Math.round(InternalQuantity3)}</td>
-                    <td></td>
+                    <td>JSW/TATA</td>
                     <td>MMS With Fasteners</td>
                     {/* <td>{bdRate.module_mounting_structure}</td>
                          <td>INR/Kg</td>
@@ -515,7 +515,7 @@ const Reference = () => {
                     <td>Set</td>
                     {/* <td>1</td> */}
                     <td>1</td>
-                    <td></td>
+                    <td>Reputed</td>
                     <td>MMS With Fasteners</td>
                     {/* <td>{scmData.mounting_hardware}</td>
                          <td>INR/Wp</td>
@@ -543,7 +543,7 @@ const Reference = () => {
                     <td>m</td>
                     {/* <td>{Math.round(InternalQuantity5)}</td> */}
                     <td>{Math.round(InternalQuantity5)}</td>
-                    <td></td>
+                    <td>Apar/Polycab/Equivalent</td>
                     <td>Cables</td>
                     {/* <td>{scmData.dc_cable}</td>
                          <td>INR/m</td>
@@ -567,7 +567,7 @@ const Reference = () => {
                     <td>m</td>
                     {/* <td>{InternalQuantity6}</td> */}
                     <td>{InternalQuantity6}</td>
-                    <td></td>
+                    <td>Polycab/Equivalent</td>
                     <td>Cables</td>
                     {/* <td>{scmData.ac_cable_inverter_accb}</td>
                          <td>INR/m</td>
@@ -591,7 +591,7 @@ const Reference = () => {
                     <td>m</td>
                     {/* <td>{InternalQuantity7}</td> */}
                     <td>{InternalQuantity7}</td>
-                    <td></td>
+                    <td>Polycab/Equivalent</td>
                     <td>Cables</td>
                     {/* <td>{scmData.ac_cable_accb_transformer}</td>
                          <td>INR/m</td>

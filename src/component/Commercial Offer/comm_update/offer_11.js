@@ -486,7 +486,7 @@ const Reference2 = () => {
                     <td>m</td>
                     {/* <td>50</td> */}
                     <td>50</td>
-                    <td></td>
+                    <td>Polycab/Equivalent</td>
                     <td>Cables</td>
                     {/* <td>{selectedCable}</td>
                     <td>INR/m</td>
@@ -504,7 +504,7 @@ const Reference2 = () => {
                     <td>m</td>
                     {/* <td>{internalQuantity9}</td> */}
                     <td>{internalQuantity9}</td>
-                    <td></td>
+                    <td>Polycab/Equivalent</td>
                     <td>Cables</td>
                     {/* <td>380</td>
                     <td>INR/m</td>
@@ -524,7 +524,7 @@ const Reference2 = () => {
                     <td>m</td>
                     {/* <td>{internalQuantity10}</td> */}
                     <td>{internalQuantity10}</td>
-                    <td></td>
+                    <td>Polycab/Equivalent</td>
                     <td>Cables</td>
                     {/* <td>660</td>
                     <td>INR/m</td>
@@ -542,7 +542,7 @@ const Reference2 = () => {
                     <td>m</td>
                     {/* <td>{internalQuantity11}</td> */}
                     <td>{internalQuantity11}</td>
-                    <td></td>
+                    <td>Polycab/Equivalent</td>
                     <td>Cables</td>
                     {/* <td>130</td>
                     <td>INR/m</td>
@@ -560,7 +560,7 @@ const Reference2 = () => {
                     <td>m</td>
                     {/* <td>20</td> */}
                     <td>20</td>
-                    <td></td>
+                    <td>Polycab/Equivalent</td>
                     <td>Cables</td>
                     {/* <td>470</td>
                     <td>INR/m</td>
@@ -594,7 +594,7 @@ const Reference2 = () => {
                     <td>Set</td>
                     {/* <td>1</td> */}
                     <td>1</td>
-                    <td></td>
+                    <td>Switchgears of L&T/ABB/Equivalent</td>
                     <td>
                       Electrical Equipment - Solar Plant Side (Transformer+LT
                       Panel+HT Panel+Aux Transformer+UPS System)
@@ -625,7 +625,7 @@ const Reference2 = () => {
                     <td>Nos.</td>
                     {/* <td>1</td> */}
                     <td>1</td>
-                    <td></td>
+                    <td>Uttam/ABC/Marsons/Equivalent</td>
                     <td>
                       Electrical Equipment - Solar Plant Side (Transformer+LT
                       Panel+HT Panel+Aux Transformer+UPS System)

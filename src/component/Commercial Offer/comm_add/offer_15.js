@@ -87,39 +87,43 @@ const Summary = () => {
       try {
         const offerRate = localStorage.getItem("offer_rate");
         console.log("Fetched offer_id from localStorage:", offerRate);
-  
+
         if (!offerRate) {
           console.error("Offer ID not found in localStorage");
           toast.error("Offer ID is missing!");
           return;
         }
-  
+
         const [response, result, answer] = await Promise.all([
           Axios.get("/get-comm-offer"),
           Axios.get("/get-comm-scm-rate"),
           Axios.get("/get-comm-bd-rate"),
         ]);
-  
+
         const fetchedData = response.data;
         const fetchedScmData = result.data[0];
         const fetchedBdData = answer.data;
-  
+
         console.log("Fetched Offer Data:", fetchedData);
         console.log("Fetched SCM Rate Data:", fetchedScmData);
         console.log("Fetched BD Rate Data:", fetchedBdData);
-  
-        const offerFetchData = fetchedData.find((item) => item.offer_id === offerRate);
-        const fetchRatebd = fetchedBdData.find((item) => item.offer_id === offerRate);
-  
+
+        const offerFetchData = fetchedData.find(
+          (item) => item.offer_id === offerRate
+        );
+        const fetchRatebd = fetchedBdData.find(
+          (item) => item.offer_id === offerRate
+        );
+
         console.log("Matched Offer Data:", offerFetchData);
         console.log("Matched BD Rate Data:", fetchRatebd);
-  
+
         if (!offerFetchData) {
           console.error("No matching offer data found");
           toast.error("No matching offer data found!");
           return;
         }
-  
+
         setOfferData({
           offer_id: offerFetchData.offer_id || "",
           client_name: offerFetchData.client_name || "",
@@ -144,20 +148,22 @@ const Summary = () => {
           transformer: offerFetchData.transformer || "",
           column_type: offerFetchData.column_type || "",
         });
-  
+
         console.log("Set Offer Data:", offerFetchData);
-  
+
         setscmData({
           spv_modules_555: fetchedScmData.spv_modules_555 || "",
           spv_modules_580: fetchedScmData.spv_modules_580 || "",
           spv_modules_550: fetchedScmData.spv_modules_550 || "",
           spv_modules_585: fetchedScmData.spv_modules_585 || "",
           solar_inverter: fetchedScmData.solar_inverter || "",
-          module_mounting_structure_scm: fetchedScmData.module_mounting_structure || "",
+          module_mounting_structure_scm:
+            fetchedScmData.module_mounting_structure || "",
           mounting_hardware: fetchedScmData.mounting_hardware || "",
           dc_cable: fetchedScmData.dc_cable || "",
           ac_cable_inverter_accb: fetchedScmData.ac_cable_inverter_accb || "",
-          ac_cable_accb_transformer: fetchedScmData.ac_cable_accb_transformer || "",
+          ac_cable_accb_transformer:
+            fetchedScmData.ac_cable_accb_transformer || "",
           ac_ht_cable_11KV: fetchedScmData.ac_ht_cable_11KV || "",
           ac_ht_cable_33KV: fetchedScmData.ac_ht_cable_33KV || "",
           earthing_station: fetchedScmData.earthing_station || "",
@@ -182,33 +188,39 @@ const Summary = () => {
           vcb_kiosk: fetchedScmData.vcb_kiosk || "",
           slnko_charges_scm: fetchedScmData.slnko_charges_scm || "",
           installation_commissioing: {
-            labour_works: fetchedScmData.installation_commissioing?.labour_works || "",
-            machinery: fetchedScmData.installation_commissioing?.machinery || "",
-            civil_material: fetchedScmData.installation_commissioing?.civil_material || "",
+            labour_works:
+              fetchedScmData.installation_commissioing?.labour_works || "",
+            machinery:
+              fetchedScmData.installation_commissioing?.machinery || "",
+            civil_material:
+              fetchedScmData.installation_commissioing?.civil_material || "",
           },
         });
-  
+
         console.log("Set SCM Data:", fetchedScmData);
-  
+
         if (fetchRatebd) {
           setBdRate({
             // offer_id: fetchRatebd.offer_id || "",
             spv_modules: fetchRatebd.spv_modules || "",
-            module_mounting_structure: fetchRatebd.module_mounting_structure || "",
+            module_mounting_structure:
+              fetchRatebd.module_mounting_structure || "",
             transmission_line: fetchRatebd.transmission_line || "",
             slnko_charges: fetchRatebd.slnko_charges || "",
             submitted_by_BD: fetchRatebd.submitted_by_BD || "",
           });
           console.log("Set BD Rate Data:", fetchRatebd);
         } else {
-          console.warn("No matching BD Rate data found for offer_id:", offerRate);
+          console.warn(
+            "No matching BD Rate data found for offer_id:",
+            offerRate
+          );
         }
-  
       } catch (error) {
         console.error("Error fetching commercial offer data:", error);
       }
     };
-  
+
     fetchData();
   }, []);
 
@@ -292,10 +304,8 @@ const Summary = () => {
   const TotalVal3 = bdRate.module_mounting_structure * InternalQuantity3;
 
   // console.log("scmData.module_mounting_structure: ", scmData.module_mounting_structure);
-  
 
   console.log("TotalVal3", TotalVal3);
-  
 
   //***Total Value 4***/
   const TotalVal4 = Math.round(
@@ -303,7 +313,6 @@ const Summary = () => {
   );
 
   // console.log("TotalVal4", TotalVal4);
-  
 
   //***Total Value 5***/
   const TotalVal5 = scmData.dc_cable * InternalQuantity5;
@@ -950,8 +959,8 @@ const Summary = () => {
     3 * abt_cal +
     totalVCB +
     scmWeekly4(offerData.ac_capacity) * 1;
-    console.log(totalVCB);
-    
+  console.log(totalVCB);
+
   const Total_GST_GSS_Equipment =
     (ct_pt_cal * 2 * 18) / 100 +
     (abt_cal * 3 * 18) / 100 +
@@ -988,25 +997,25 @@ const Summary = () => {
   const Cost_Without_Module_with_GST =
     Final_Total_with_GST_Plant_Cost - ((TotalVal1 * 12) / 100 + TotalVal1);
 
-  const Total_Cost_Basic = Math.round(
+  const Total_Cost_Basic = (
     Final_Total_Plant_Cost / offerData.dc_capacity / 1000 / 1000
-  );
-  const Total_Cost_GST = Math.round(
+  ).toFixed(2);
+  const Total_Cost_GST = (
     Final_Total_GST_Plant_Cost / offerData.dc_capacity / 1000 / 1000
-  );
-  const Total_Cost_with_GST = Math.round(
+  ).toFixed(2);
+  const Total_Cost_with_GST = (
     Final_Total_with_GST_Plant_Cost / offerData.dc_capacity / 1000 / 1000
-  );
+  ).toFixed(2);
 
-  const Without_module_INR_wp_Basic = Math.round(
+  const Without_module_INR_wp_Basic = (
     Cost_Without_Module / offerData.dc_capacity / 1000 / 1000
-  );
-  const Without_module_INR_wp_GST = Math.round(
+  ).toFixed(2);
+  const Without_module_INR_wp_GST = (
     Cost_Without_Module_GST / offerData.dc_capacity / 1000 / 1000
-  );
-  const Without_Module__INR_wp_with_GST = Math.round(
+  ).toFixed(2);
+  const Without_Module__INR_wp_with_GST = (
     Cost_Without_Module_with_GST / offerData.dc_capacity / 1000 / 1000
-  );
+  ).toFixed(2);
 
   return (
     <>
@@ -1039,46 +1048,45 @@ const Summary = () => {
             },
           }}
         >
-         <Box
-          sx={{
-            display: "flex",
-            width: "100%",
-            alignItems: "flex-end",
-            gap: 2,
-            marginTop: "2%",
-          }}
-        >
-          <img
-            width={"220px"}
-            height={"110px"}
-            alt="logo"
-            src={logo}
-            loading="lazy"
-          />
-
-          <hr
-            style={{
-              width: "60%",
-              color: "blue",
-              borderTop: "2px solid #0f4C7f",
-              margin: "19px 0",
+          <Box
+            sx={{
+              display: "flex",
+              width: "100%",
+              alignItems: "flex-end",
+              gap: 2,
+              marginTop: "2%",
             }}
-          />
-        </Box>
+          >
+            <img
+              width={"220px"}
+              height={"110px"}
+              alt="logo"
+              src={logo}
+              loading="lazy"
+            />
+
+            <hr
+              style={{
+                width: "60%",
+                color: "blue",
+                borderTop: "2px solid #0f4C7f",
+                margin: "19px 0",
+              }}
+            />
+          </Box>
 
           <Box
             sx={{
               width: "98%",
               height: "80%",
               display: "flex",
-              flexDirection:"column",
+              flexDirection: "column",
               justifyContent: "center",
               alignItems: "center",
               margin: "auto",
-              "@media print":{
-                marginTop:"30px"
-              }
-             
+              "@media print": {
+                marginTop: "30px",
+              },
             }}
           >
             <Sheet
@@ -1091,10 +1099,9 @@ const Summary = () => {
                 alignItems: "center",
                 flexDirection: "row",
                 justifyContent: "center",
-                
               }}
             >
-              <Table className="table-header-Summary" >
+              <Table className="table-header-Summary">
                 <thead>
                   {/* <tr>
                     <th
@@ -1118,7 +1125,7 @@ const Summary = () => {
 
                         textAlign: "center",
                         // backgroundColor: "#D9D9D9",
-                        background: "#0f4c7f"
+                        background: "#0f4c7f",
                       }}
                     >
                       PLANT COSTING SUMMARY ONLY
@@ -1137,15 +1144,15 @@ const Summary = () => {
                       Capacity
                     </th>
                     <th
-                    colSpan={3}
-                    style={{
-                      fontWeight: "500",
-                      fontFamily: "sans-serif !important",
-                      fontSize: "1.2rem",
-                      textAlign: "center",
-                      background:"#ffffff",
-                      color:"black"
-                    }}
+                      colSpan={3}
+                      style={{
+                        fontWeight: "500",
+                        fontFamily: "sans-serif !important",
+                        fontSize: "1.2rem",
+                        textAlign: "center",
+                        background: "#ffffff",
+                        color: "black",
+                      }}
                     >
                       {offerData.dc_capacity} kWp DC
                     </th>
@@ -1408,7 +1415,7 @@ const Summary = () => {
                 </tbody>
               </Table>
             </Sheet>
-            <Box sx={{ width: "98%", marginTop: "10px" }}>
+            <Box sx={{ width: "98%" }}>
   <Typography
     variant="h6"
     sx={{
@@ -1420,12 +1427,37 @@ const Summary = () => {
   >
     Exclusions:
   </Typography>
-  <Typography fontWeight={"bold"}>1. Control Room</Typography>
-  <Typography fontWeight={"bold"}>2. Water Arrangement</Typography>
-  <Typography fontWeight={"bold"}>3. Boundary Wall / Fencing</Typography>
+  <Box
+    sx={{
+      display: "flex",
+      flexDirection: "row",
+      justifyContent: "flex-start",
+      p: 2,
+      "@media print": {
+        padding: 0,
+      },
+    }}
+  >
+    <Box sx={{ px: 2, "@media print": { pl: 1 } }}>
+      <Typography fontWeight="bold">1. Control Room</Typography>
+      <Typography fontWeight="bold">2. Water Arrangement</Typography>
+      <Typography fontWeight="bold">3. Boundary Wall / Fencing</Typography>
+    </Box>
+    <Box sx={{ px: 2, "@media print": { pl: 1 } }}>
+      <Typography fontWeight="bold">4. Road & Drainage System</Typography>
+      <Typography fontWeight="bold">5. WMS (Weather Monitoring System)</Typography>
+      <Typography fontWeight="bold">6. ROW (Right of Way)</Typography>
+    </Box>
+    <Box sx={{ px: 2, "@media print": { pl: 1 } }}>
+      <Typography fontWeight="bold">7. Dry Cleaning Robot</Typography>
+      <Typography fontWeight="bold">
+        {bdRate.transmission_line === 0 ? "8. Transmission Line" : ""}
+      </Typography>
+    </Box>
+  </Box>
 </Box>
+
           </Box>
-         
         </Grid>
       </Grid>
     </>
@@ -1433,4 +1465,3 @@ const Summary = () => {
 };
 
 export default Summary;
-

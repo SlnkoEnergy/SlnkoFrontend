@@ -34,6 +34,7 @@ const Page1 = () => {
             "@media print": {
               width: "210mm",
               height: "297mm",
+              
             },
             width: "50%",
             height: "100%",

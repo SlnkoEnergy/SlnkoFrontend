@@ -437,7 +437,7 @@ const Reference3 = () => {
                      <td>Nos.</td>
                      {/* <td>1</td> */}
                      <td>1</td>
-                     <td></td>
+                     <td>Switchgears of L&T/ABB/Equivalent</td>
                      <td>
                        Electrical Equipment - Solar Plant Side (Transformer+LT
                        Panel+HT Panel+Aux Transformer+UPS System)
@@ -478,7 +478,7 @@ const Reference3 = () => {
                      <td>Set</td>
                      {/* <td>{internalQuantity16}</td> */}
                      <td>{internalQuantity16}</td>
-                     <td></td>
+                     <td>Reputed</td>
                      <td>Other Balance of Material</td>
                      {/* <td>{scmData.earthing_station}</td>
                      <td>INR/Set</td>
@@ -498,7 +498,7 @@ const Reference3 = () => {
                      <td>m</td>
                      {/* <td>{internalQuantity17}</td> */}
                      <td>{internalQuantity17}</td>
-                     <td></td>
+                     <td>Reputed</td>
                      <td>Other Balance of Material</td>
                      {/* <td>{scmData.earthing_strips}</td>
                      <td>INR/m</td>
@@ -518,7 +518,7 @@ const Reference3 = () => {
                      <td>m</td>
                      {/* <td>{internalQuantity17_2}</td> */}
                      <td>{internalQuantity17_2}</td>
-                     <td></td>
+                     <td>Reputed</td>
                      <td>Other Balance of Material</td>
                      {/* <td>{scmData.earthing_strip}</td>
                      <td>INR/m</td>
@@ -539,7 +539,7 @@ const Reference3 = () => {
                      <td>Set</td>
                      {/* <td>{internalQuantity18}</td> */}
                      <td>{internalQuantity18}</td>
-                     <td></td>
+                     <td>Reputed</td>
                      <td>Other Balance of Material</td>
                      {/* <td>{scmData.lightening_arrestor}</td>
                      <td>INR/Set</td>
@@ -557,7 +557,7 @@ const Reference3 = () => {
                      <td>Set</td>
                      {/* <td>1</td> */}
                      <td>1</td>
-                     <td></td>
+                     <td>Reputed</td>
                      <td>Solar Inverter & Datalogger</td>
                      {/* <td>{scmData.datalogger}</td>
                      <td>INR/Set</td>
@@ -575,7 +575,7 @@ const Reference3 = () => {
                      <td>Nos.</td>
                      {/* <td>1</td> */}
                      <td>1</td>
-                     <td></td>
+                     <td>Reputed</td>
                      <td>
                        Electrical Equipment - Solar Plant Side (Transformer+LT
                        Panel+HT Panel+Aux Transformer+UPS System)
@@ -596,7 +596,7 @@ const Reference3 = () => {
                      <td>Set</td>
                      {/* <td>1</td> */}
                      <td>1</td>
-                     <td></td>
+                     <td>Reputed</td>
                      <td>
                        Electrical Equipment - Solar Plant Side (Transformer+LT
                        Panel+HT Panel+Aux Transformer+UPS System)

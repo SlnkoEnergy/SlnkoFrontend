@@ -115,7 +115,7 @@ const Page5 = () => {
           },
         }}
       >
-        <Box
+        {/* <Box
           sx={{
             position:'absolute',
             left:'60%',
@@ -129,7 +129,7 @@ const Page5 = () => {
               width:'40%',
             }
           }}
-          ></Box>
+          ></Box> */}
         <Grid
           sx={{
             width: "60%",

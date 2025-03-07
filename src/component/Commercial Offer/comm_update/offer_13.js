@@ -364,7 +364,7 @@ const Reference4 = () => {
                        <td>KWp</td>
                        {/* <td>{internalQuantity24}</td> */}
                        <td>{internalQuantity24}</td>
-                       <td></td>
+                       <td>Reputed</td>
                        <td>Other Balance of Material</td>
                        {/* <td>{scmData.balance_of_system}</td>
                        <td>INR/Set</td>
@@ -475,7 +475,7 @@ const Reference4 = () => {
                      <td>KWp</td>
                      {/* <td>{internalQuantity24}</td> */}
                      <td>{internalQuantity24}</td>
-                     <td></td>
+                     <td>Standard</td>
                      <td>
                        Installation Charges inside boundary wall (Labour, Machinary
                        & Civil Material)

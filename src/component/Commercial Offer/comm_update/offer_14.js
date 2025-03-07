@@ -891,7 +891,7 @@ const CivilWorks1 = () => {
                           <td>KWp</td>
                           {/* <td>{internalQuantity24}</td> */}
                           <td>{internalQuantity24}</td>
-                          <td></td>
+                          <td>Standard</td>
                           <td>
                             Installation Charges inside boundary wall (Labour,
                             Machinary & Civil Material)
@@ -917,7 +917,7 @@ const CivilWorks1 = () => {
                           <td>KWp</td>
                           {/* <td>{internalQuantity24}</td> */}
                           <td>{internalQuantity24}</td>
-                          <td></td>
+                          <td>Standard</td>
                           <td>Installation Charges inside boundary wall (Labour, Machinary & Civil Material)</td>
       
                           {/* <td>{scmData.installation_commissioing.civil_material}</td>
@@ -936,7 +936,7 @@ const CivilWorks1 = () => {
                           <td>Vehicles</td>
                           {/* <td>{internalQuantity25}</td> */}
                           <td>{internalQuantity25}</td>
-                          <td></td>
+                          <td>Standard</td>
                           <td>Transportation & Insurance</td>
                           {/* <td>{scmData.transportation}</td>
                           <td>INR/Vehicle</td>
@@ -953,11 +953,11 @@ const CivilWorks1 = () => {
                             {offerData.evacuation_voltage}kV Transmission Line with
                             appropriate conductor size and PCC Poles
                           </td>
-                          <td></td>
+                          <td>Standard</td>
                           <td>Km</td>
                           {/* <td>{offerData.transmission_length}</td> */}
                           <td>{offerData.transmission_length}</td>
-                          <td></td>
+                          <td>Standard</td>
                           <td>Transmission Line</td>
                           {/* <td>{bdRate.transmission_line}</td>
                           <td>INR/Km</td>
@@ -992,7 +992,7 @@ const CivilWorks1 = () => {
                           <td>Set</td>
                           {/* <td>2</td> */}
                           <td>2</td>
-                          <td></td>
+                          <td>Standard</td>
                           <td>GSS Equipment</td>
                           {/* <td>{ct_pt_cal}</td>
                           <td>INR/Set</td>
@@ -1012,7 +1012,7 @@ const CivilWorks1 = () => {
                           <td>Set</td>
                           {/* <td>3</td> */}
                           <td>3</td>
-                          <td></td>
+                          <td>Standard</td>
                           <td>GSS Equipment</td>
                           {/* <td>{abt_cal}</td>
                           <td>INR/Set</td>
@@ -1032,7 +1032,7 @@ const CivilWorks1 = () => {
                           <td>Set</td>
                           {/* <td>1</td> */}
                           <td>1</td>
-                          <td></td>
+                          <td>Standard</td>
                           <td>GSS Equipment</td>
                           {/* <td>{selectedVCBValue}</td>
                           <td>INR/Set</td>
@@ -1050,7 +1050,7 @@ const CivilWorks1 = () => {
                           <td>Set</td>
                           {/* <td>1</td> */}
                           <td>1</td>
-                          <td></td>
+                          <td>Standard</td>
                           <td>GSS Equipment</td>
                           {/* <td>{scmWeekly4(offerData.ac_capacity)}</td>
                           <td>INR/Set</td>
@@ -1077,7 +1077,7 @@ const CivilWorks1 = () => {
                           <td>KWp</td>
                           {/* <td>{internalQuantity31}</td> */}
                           <td>{internalQuantity31}</td>
-                          <td></td>
+                          <td>Standard</td>
                           <td>Transportation & Insurance</td>
                           {/* <td>{scmWeekly5}</td>
                           <td>INR</td>
@@ -1095,7 +1095,7 @@ const CivilWorks1 = () => {
                           <td>KWp</td>
                           {/* <td>{internalQuantity32}</td> */}
                           <td>{internalQuantity32}</td>
-                          <td></td>
+                          <td>Standard</td>
                           <td>SLNKO Service Charges</td>
                           {/* <td>{bdRate.slnko_charges}</td>
                           <td>INR</td>

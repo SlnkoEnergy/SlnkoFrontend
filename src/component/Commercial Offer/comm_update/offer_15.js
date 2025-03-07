@@ -1052,46 +1052,45 @@ const Summary = () => {
               },
             }}
           >
-           <Box
-            sx={{
-              display: "flex",
-              width: "100%",
-              alignItems: "flex-end",
-              gap: 2,
-              marginTop: "2%",
-            }}
-          >
-            <img
-              width={"220px"}
-              height={"110px"}
-              alt="logo"
-              src={logo}
-              loading="lazy"
-            />
-
-            <hr
-              style={{
-                width: "60%",
-                color: "blue",
-                borderTop: "2px solid #0f4C7f",
-                margin: "19px 0",
+            <Box
+              sx={{
+                display: "flex",
+                width: "100%",
+                alignItems: "flex-end",
+                gap: 2,
+                marginTop: "2%",
               }}
-            />
-          </Box>
+            >
+              <img
+                width={"220px"}
+                height={"110px"}
+                alt="logo"
+                src={logo}
+                loading="lazy"
+              />
+  
+              <hr
+                style={{
+                  width: "60%",
+                  color: "blue",
+                  borderTop: "2px solid #0f4C7f",
+                  margin: "19px 0",
+                }}
+              />
+            </Box>
   
             <Box
               sx={{
                 width: "98%",
                 height: "80%",
                 display: "flex",
-                flexDirection:"column",
+                flexDirection: "column",
                 justifyContent: "center",
                 alignItems: "center",
                 margin: "auto",
-                "@media print":{
-                  marginTop:"30px"
-                }
-               
+                "@media print": {
+                  marginTop: "30px",
+                },
               }}
             >
               <Sheet
@@ -1104,10 +1103,9 @@ const Summary = () => {
                   alignItems: "center",
                   flexDirection: "row",
                   justifyContent: "center",
-                  
                 }}
               >
-                <Table className="table-header-Summary" >
+                <Table className="table-header-Summary">
                   <thead>
                     {/* <tr>
                       <th
@@ -1131,7 +1129,7 @@ const Summary = () => {
   
                           textAlign: "center",
                           // backgroundColor: "#D9D9D9",
-                          background: "#0f4c7f"
+                          background: "#0f4c7f",
                         }}
                       >
                         PLANT COSTING SUMMARY ONLY
@@ -1150,15 +1148,15 @@ const Summary = () => {
                         Capacity
                       </th>
                       <th
-                      colSpan={3}
-                      style={{
-                        fontWeight: "500",
-                        fontFamily: "sans-serif !important",
-                        fontSize: "1.2rem",
-                        textAlign: "center",
-                        background:"#ffffff",
-                        color:"black"
-                      }}
+                        colSpan={3}
+                        style={{
+                          fontWeight: "500",
+                          fontFamily: "sans-serif !important",
+                          fontSize: "1.2rem",
+                          textAlign: "center",
+                          background: "#ffffff",
+                          color: "black",
+                        }}
                       >
                         {offerData.dc_capacity} kWp DC
                       </th>
@@ -1287,7 +1285,7 @@ const Summary = () => {
                       <td>{Number(TotalVal32).toLocaleString()}</td>
                       <td>{((TotalVal32 * 18) / 100).toLocaleString()}</td>
                       <td>
-                        {(((TotalVal32 * 18) / 100) + TotalVal32).toLocaleString()}
+                        {((TotalVal32 * 18) / 100 + TotalVal32).toLocaleString()}
                       </td>
                     </tr>
   
@@ -1421,7 +1419,7 @@ const Summary = () => {
                   </tbody>
                 </Table>
               </Sheet>
-              <Box sx={{ width: "98%", marginTop: "10px" }}>
+              <Box sx={{ width: "98%" }}>
     <Typography
       variant="h6"
       sx={{
@@ -1433,12 +1431,37 @@ const Summary = () => {
     >
       Exclusions:
     </Typography>
-    <Typography fontWeight={"bold"}>1. Control Room</Typography>
-    <Typography fontWeight={"bold"}>2. Water Arrangement</Typography>
-    <Typography fontWeight={"bold"}>3. Boundary Wall / Fencing</Typography>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "row",
+        justifyContent: "flex-start",
+        p: 2,
+        "@media print": {
+          padding: 0,
+        },
+      }}
+    >
+      <Box sx={{ px: 2, "@media print": { pl: 1 } }}>
+        <Typography fontWeight="bold">1. Control Room</Typography>
+        <Typography fontWeight="bold">2. Water Arrangement</Typography>
+        <Typography fontWeight="bold">3. Boundary Wall / Fencing</Typography>
+      </Box>
+      <Box sx={{ px: 2, "@media print": { pl: 1 } }}>
+        <Typography fontWeight="bold">4. Road & Drainage System</Typography>
+        <Typography fontWeight="bold">5. WMS (Weather Monitoring System)</Typography>
+        <Typography fontWeight="bold">6. ROW (Right of Way)</Typography>
+      </Box>
+      <Box sx={{ px: 2, "@media print": { pl: 1 } }}>
+        <Typography fontWeight="bold">7. Dry Cleaning Robot</Typography>
+        <Typography fontWeight="bold">
+          {bdRate.transmission_line === 0 ? "8. Transmission Line" : ""}
+        </Typography>
+      </Box>
+    </Box>
   </Box>
+  
             </Box>
-           
           </Grid>
         </Grid>
       </>
