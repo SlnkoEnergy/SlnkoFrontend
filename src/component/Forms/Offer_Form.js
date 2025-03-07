@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
-  Grid,
-  Input,
-  Select,
-  Option,
-  Typography,
   FormControl,
   FormLabel,
+  Grid,
+  Input,
+  Option,
+  Select,
+  Typography,
 } from "@mui/joy";
-import Axios from "../../utils/Axios";
-import { toast } from "react-toastify";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import Axios from "../../utils/Axios";
 
 const FormOffer = () => {
   const navigate = useNavigate();
@@ -31,7 +31,7 @@ const FormOffer = () => {
     rate: "",
     timeline: "",
     prepared_by: "",
-    mob_number:"",
+    mob_number: "",
     module_type: "",
     module_capacity: "",
     inverter_capacity: "",
@@ -286,9 +286,7 @@ const FormOffer = () => {
             <Select
               name="scheme"
               value={formData.scheme}
-              onChange={(e, newValue) =>
-                handleSelectChange("scheme", newValue)
-              }
+              onChange={(e, newValue) => handleSelectChange("scheme", newValue)}
               placeholder="Scheme"
             >
               <Option value="KUSUM">KUSUM</Option>
@@ -297,27 +295,28 @@ const FormOffer = () => {
           </FormControl>
         </Grid>
 
-
         {/* Component */}
         <Grid item xs={12} sm={6}>
-  <FormControl>
-    <FormLabel>Component</FormLabel>
-    <Select
-      name="component"
-      value={formData.component}
-      onChange={(e, newValue) => handleSelectChange("component", newValue)}
-      placeholder="Component"
-      disabled={formData.scheme === "Others"} // Disable when scheme is "Others"
-    >
-      <Option value="A">A</Option>
-      <Option value="C">C</Option>
-    </Select>
-  </FormControl>
-</Grid>
-        {/* Rate */}
-        {/* <Grid xs={12} sm={6}>
           <FormControl>
-            <FormLabel>Slnko Service Charges (INR/Wp)</FormLabel>
+            <FormLabel>Component</FormLabel>
+            <Select
+              name="component"
+              value={formData.component}
+              onChange={(e, newValue) =>
+                handleSelectChange("component", newValue)
+              }
+              placeholder="Component"
+              disabled={formData.scheme === "Others"} // Disable when scheme is "Others"
+            >
+              <Option value="A">A</Option>
+              <Option value="C">C</Option>
+            </Select>
+          </FormControl>
+        </Grid>
+        {/* Rate */}
+        <Grid xs={12} sm={6}>
+          <FormControl>
+            <FormLabel>Slnko Service Charges without GST(INR)</FormLabel>
             <Input
               type="number"
               name="rate"
@@ -326,10 +325,10 @@ const FormOffer = () => {
               placeholder="Rate"
             />
           </FormControl>
-        </Grid> */}
+        </Grid>
 
         {/* Timeline */}
-        <Grid xs={12} sm={8}>
+        <Grid xs={12} sm={6}>
           <FormControl>
             <FormLabel>Timeline (Weeks)</FormLabel>
             <Input

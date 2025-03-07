@@ -1,15 +1,14 @@
-import React, { useRef } from "react";
-import { useReactToPrint } from "react-to-print";
+import { List, ListItem, ListItemDecorator } from "@mui/joy";
 import Box from "@mui/joy/Box";
+import Divider from "@mui/joy/Divider";
 import Typography from "@mui/joy/Typography";
-import { Button, List, ListItem, ListItemDecorator } from "@mui/joy";
-import logo from "../../../assets/Comm_offer/page1_logo.png";
-import logo1 from "../../../assets/Comm_offer/White Slnko Logo .png";
-import logo2 from "../../../assets/Comm_offer/pag1_back2.jpg";
-import logo3 from "../../../assets/Comm_offer/phone_icon (2).png";
+import React from "react";
 import logo4 from "../../../assets/Comm_offer/email_icon (2).png";
 import logo5 from "../../../assets/Comm_offer/linkedin.png";
-import Divider from "@mui/joy/Divider";
+import logo2 from "../../../assets/Comm_offer/pag1_back2.jpg";
+import logo from "../../../assets/Comm_offer/page1_logo.png";
+import logo3 from "../../../assets/Comm_offer/phone_icon (2).png";
+import logo1 from "../../../assets/Comm_offer/White Slnko Logo .png";
 
 const Page1 = () => {
   return (
@@ -17,26 +16,26 @@ const Page1 = () => {
       {/* Outer container Box with full width and height */}
       <Box
         sx={{
-          "@media print": {
-            width: "210mm",
-            height: "297mm",
-          },
           width: "100%",
-          height: "125vh",
+          height: "100%",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          "@media print": {
+            width: "100%",
+            height: "100%",
+            marginTop: "30px",
+          },
         }}
       >
         {/* Inner container Box with border and centered layout */}
         <Box
           sx={{
             "@media print": {
-              width: "210mm",
-              height: "297mm",
-              
+              width: "100%",
+              height: "98vh",
             },
-            width: "50%",
+            width: "60%",
             height: "100%",
             border: "2px solid #0f4C7f",
             display: "flex",
@@ -50,8 +49,8 @@ const Page1 = () => {
               width: "70%",
               height: "100%",
               "@media print": {
-                width: "210mm",
-                height: "297mm",
+                width: "100%",
+                height: "100%",
               },
             }}
           >
@@ -100,7 +99,7 @@ const Page1 = () => {
                   justifyContent: "center",
                   alignItems: "center",
                   flexDirection: "column",
-                  marginTop:'15px'
+                  marginTop: "15px",
                 }}
               >
                 {/* Secondary logo */}
@@ -165,7 +164,7 @@ const Page1 = () => {
                     sx={{
                       "@media print": {
                         fontSize: "2.5rem",
-                        paddingTop: "320px",
+                        paddingTop: "480px",
                       },
                     }}
                   >
@@ -193,7 +192,7 @@ const Page1 = () => {
                       letterSpacing: "18px",
                       marginTop: "-40px",
                       "@media print": {
-                        fontSize: "100px",
+                        fontSize: "120px",
                       },
                     }}
                     fontSize={{ md: "6rem", lg: "6rem", xl: "7.5rem" }}
@@ -239,7 +238,7 @@ const Page1 = () => {
                               fontWeight: "600",
                               fontSize: { md: "0.9rem", xl: "1rem" },
                               "@media print": {
-                                fontSize: "0.9rem",
+                                fontSize: "1.3rem",
                               },
                               color: "white", // Added this to ensure text is white
                             }}
@@ -262,7 +261,7 @@ const Page1 = () => {
                 flexDirection: "row",
                 paddingTop: "20px",
                 "@media print": {
-                  paddingTop: "10px",
+                  paddingTop: "50px",
                 },
               }}
             >
@@ -339,7 +338,7 @@ const Page1 = () => {
               backgroundColor: "#0f4C7f",
               "@media print": {
                 backgroundColor: "#0f4C7f",
-                height: "1128px",
+                height: "100%",
               },
             }}
           >

@@ -3,7 +3,7 @@ import Typography from "@mui/joy/Typography";
 import React from "react";
 import logo from "../../../assets/Comm_offer//white_logo.png";
 import logo1 from "../../../assets/Comm_offer/2(1).jpg";
-import logo2 from "../../../assets/Comm_offer/2(2).jpg";
+import logo2 from "../../../assets/Comm_offer/2(2).JPG";
 import "../CSS/offer.css";
 
 const Page2 = () => {
@@ -13,15 +13,13 @@ const Page2 = () => {
         width: "100%",
         height: "130vh",
         display: "flex",
+        marginTop: "10px",
         justifyContent: "center",
         alignItems: "center",
         "@media print": {
-          width: "210mm",
-            height: "297mm",
-            overflow: "hidden",
-            margin: "0",
-            padding: "0",
-            pageBreakInside: "avoid",
+          width: "100%",
+          height: "100%",
+          marginTop: "30px",
         },
       }}
     >
@@ -31,10 +29,10 @@ const Page2 = () => {
           height: "100%",
           display: "flex",
           border: "2px solid #0f4C7f",
-          position:'relative',
+          position: "relative",
           "@media print": {
-            width: "210mm",
-            height: "297mm",
+            width: "100%",
+            height: "100%",
             boxShadow: "none",
           },
         }}
@@ -122,7 +120,12 @@ const Page2 = () => {
               <Typography component="h1" textColor="black" fontSize="4rem">
                 ABOUT
               </Typography>
-              <Typography component="h1" textColor="#0f4C7f" fontSize="4rem" ml={3}>
+              <Typography
+                component="h1"
+                textColor="#0f4C7f"
+                fontSize="4rem"
+                ml={3}
+              >
                 US...
               </Typography>
             </Box>
@@ -132,21 +135,18 @@ const Page2 = () => {
                   "@media print": {
                     fontWeight: "500",
                     fontSize: "1.3rem",
-                    
                   },
-                 
                 }}
                 marginBottom="1rem"
                 fontFamily={"sans-serif"}
                 fontSize="1.6rem"
                 fontWeight="500"
                 textAlign={"justify"}
-                
               >
                 SLnko is a one-stop platform offering Engineering, Vendor
                 Management, and Project Management Services. Our solutions can
-                be availed at any stage, from early planning up to
-                construction, installation, and commissioning.
+                be availed at any stage, from early planning up to construction,
+                installation, and commissioning.
               </Typography>
             </Box>
           </Box>
@@ -164,10 +164,22 @@ const Page2 = () => {
             }}
           >
             <Box sx={{ width: "98%", height: "50%" }}>
-              <img width="100%" height="100%" alt="logo" src={logo1} loading="lazy" />
+              <img
+                width="100%"
+                height="100%"
+                alt="logo"
+                src={logo1}
+                loading="lazy"
+              />
             </Box>
             <Box sx={{ width: "98%", height: "50%" }}>
-              <img width="100%" height="100%" alt="logo" src={logo2} loading="lazy" />
+              <img
+                width="100%"
+                height="100%"
+                alt="logo"
+                src={logo2}
+                loading="lazy"
+              />
             </Box>
           </Box>
         </Box>
@@ -195,7 +207,7 @@ const Page2 = () => {
             fontSize: "64px",
             maxWidth: "600px",
             fontWeight: 100,
-            color: "white !important" ,
+            color: "white !important",
             "@media print": {
               maxWidth: "450px",
               fontSize: "48px",
@@ -204,9 +216,18 @@ const Page2 = () => {
           }}
         >
           <span style={{ fontWeight: "bold" }}>
-          &nbsp;&nbsp;India's<span style={{ color: "#0f4C7f",marginInline:"3px"}}>Prominent</span>&nbsp;
-          &nbsp;&nbsp;Com<span style={{ color: "#0f4C7f",marginInline:"3px" }}>pany for</span>&nbsp;
-          KUSUM<span style={{ color: "#0f4C7f", marginInline:"3px" }}>Projects !!!</span>
+            &nbsp;&nbsp;India's
+            <span style={{ color: "#0f4C7f", marginInline: "3px" }}>
+              Prominent
+            </span>
+            &nbsp; &nbsp;&nbsp;Com
+            <span style={{ color: "#0f4C7f", marginInline: "3px" }}>
+              pany for
+            </span>
+            &nbsp; KUSUM
+            <span style={{ color: "#0f4C7f", marginInline: "3px" }}>
+              Projects !!!
+            </span>
           </span>
         </Typography>
       </Box>

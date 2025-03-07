@@ -1,18 +1,17 @@
-import BlockIcon from "@mui/icons-material/Block";
 import { Player } from "@lottiefiles/react-lottie-player";
-import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import FilterAltIcon from "@mui/icons-material/FilterAlt";
+import AddIcon from "@mui/icons-material/Add";
+import BlockIcon from "@mui/icons-material/Block";
+import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
+import HistoryIcon from "@mui/icons-material/History";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
-import HistoryIcon from "@mui/icons-material/History";
+import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
-import Chip from "@mui/joy/Chip";
-import AddIcon from "@mui/icons-material/Add";
-import Divider from "@mui/joy/Divider";
+import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
@@ -20,26 +19,17 @@ import Input from "@mui/joy/Input";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
-import Modal from "@mui/joy/Modal";
-import ModalClose from "@mui/joy/ModalClose";
-import ModalDialog from "@mui/joy/ModalDialog";
-import Dropdown from "@mui/joy/Dropdown";
 import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Tooltip from "@mui/joy/Tooltip";
-import { toast } from "react-toastify";
 import Typography from "@mui/joy/Typography";
-import { useSnackbar } from "notistack";
 import * as React from "react";
-import DeleteIcon from "@mui/icons-material/Delete";
-import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
 import { useEffect, useState } from "react";
-import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import NoData from "../assets/alert-bell.svg";
 import animationData from "../assets/Lotties/animation-loading.json";
 import Axios from "../utils/Axios";
-import NoData from "../assets/alert-bell.svg";
 
 function Offer() {
   const navigate = useNavigate();
@@ -104,12 +94,25 @@ function Offer() {
       } catch (error) {
         console.error("Error fetching data:", error);
         setError(
-          <span style={{ display: "flex", alignItems: "center", gap: "5px", color: "red", justifyContent:"center", flexDirection:"column" , padding: "20px"}}>
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              color: "red",
+              justifyContent: "center",
+              flexDirection: "column",
+              padding: "20px",
+            }}
+          >
             <PermScanWifiIcon />
-            <Typography fontStyle={"italic"} fontWeight={"600"} sx={{color:"#0a6bcc"}} >
-            Hang Tight! Internet Connection will be back soon..
+            <Typography
+              fontStyle={"italic"}
+              fontWeight={"600"}
+              sx={{ color: "#0a6bcc" }}
+            >
+              Hang Tight! Internet Connection will be back soon..
             </Typography>
-            
           </span>
         );
       } finally {
@@ -119,7 +122,6 @@ function Offer() {
 
     fetchPaymentsAndProjects();
   }, []);
-  
 
   const RowMenu = ({ currentPage, offer_id }) => {
     // console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
