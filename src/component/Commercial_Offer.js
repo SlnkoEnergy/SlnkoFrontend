@@ -32,8 +32,8 @@ import { toast } from "react-toastify";
 import Typography from "@mui/joy/Typography";
 import { useSnackbar } from "notistack";
 import * as React from "react";
-import DeleteIcon from '@mui/icons-material/Delete';
-import ContentPasteGoIcon from '@mui/icons-material/ContentPasteGo';
+import DeleteIcon from "@mui/icons-material/Delete";
+import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
 import { useEffect, useState } from "react";
 import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -52,7 +52,8 @@ function Offer() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
-  const [projects, setProjects] = useState([]);
+  // const [projects, setProjects] = useState([]);
+  const [bdRateData, setBdRateData] = useState([]);
   const [mergedData, setMergedData] = useState([]);
   const [accountNumber, setAccountNumber] = useState([]);
   const [ifscCode, setIfscCode] = useState([]);
@@ -118,79 +119,13 @@ function Offer() {
 
     fetchPaymentsAndProjects();
   }, []);
+  
 
   const RowMenu = ({ currentPage, offer_id }) => {
     // console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
 
-     const [user, setUser] = useState(null);
-    
-        useEffect(() => {
-          const userData = getUserData();
-          setUser(userData);
-        }, []);
-    
-        const getUserData = () => {
-          const userData = localStorage.getItem("userDetails");
-          if (userData) {
-            return JSON.parse(userData);
-          }
-          return null;
-        };
-
-    return (
-      <>
-        <Dropdown>
-          <MenuButton
-            slots={{ root: IconButton }}
-            slotProps={{
-              root: { variant: "plain", color: "neutral", size: "sm" },
-            }}
-          >
-            <MoreHorizRoundedIcon />
-          </MenuButton>
-          {(user?.name === "IT Team" ||
-              user?.name === "admin" ||
-              user?.name === "BD Team") && (
-          <Menu size="sm" sx={{ minWidth: 140 }}>
-        <MenuItem
-              color="primary"
-              onClick={() => {
-                const page = currentPage;
-                const offerId = String(offer_id);
-                localStorage.setItem("offer_summary", offerId);
-                // localStorage.setItem("p_id", projectID);
-                navigate(`/offer_summary?page=${page}&offer_id=${offerId}`);
-              }}
-            >
-              <ContentPasteGoIcon />
-              <Typography>Edit Offer</Typography>
-            </MenuItem>
-            <MenuItem
-            onClick={() => {
-              const page = currentPage;
-              const offerId = String(offer_id);
-              localStorage.setItem("get-offer", offerId);
-              navigate(`/bd_history?page=${page}&offer_id=${offerId}`);
-            }}
-          >
-            <HistoryIcon />
-            <Typography>Offer History</Typography>
-          </MenuItem>
-          {/* <Divider sx={{ backgroundColor: "lightblue" }} />
-            <MenuItem color="danger">
-            <DeleteIcon />
-            <Typography>Delete</Typography>
-            </MenuItem> */}
-        </Menu>
-              )}
-        </Dropdown>
-      </>
-    );
-  };
-
-  const AddMenu = ({currentPage, offer_id}) => {
     const [user, setUser] = useState(null);
-    
+
     useEffect(() => {
       const userData = getUserData();
       setUser(userData);
@@ -204,81 +139,163 @@ function Offer() {
       return null;
     };
 
-    return(
+    return (
       <>
-      {user?.name === "IT Team" || user?.name === "admin" || user?.name === "BD Team" ? (
-  <Tooltip title="Add" arrow>
-    <IconButton
-      size="small"
-      sx={{
-        backgroundColor: "skyblue",
-        color: "white",
-        "&:hover": { backgroundColor: "#45a049" },
-        borderRadius: "50%",
-        padding: "4px",
-      }}
-      onClick={() => {
-        if (offer_id) {
-          const page = currentPage;
-          const offerId = String(offer_id);
-          localStorage.setItem("offer_rate", offerId);
-          navigate(`/offer_rate?page=${page}&offer_id=${offerId}`);
-        }
-      }}
-    >
-      <AddIcon fontSize="small" />
-    </IconButton>
-  </Tooltip>
-) : (
-  <Tooltip title="Not Authorized" arrow>
-    <IconButton
-      size="small"
-      disabled
-      sx={{
-        backgroundColor: "gray",
-        color: "red",
-        borderRadius: "50%",
-        padding: "4px",
-      }}
-    >
-      <BlockIcon fontSize="small" />
-    </IconButton>
-  </Tooltip>
-)}
-
+        <Dropdown>
+          <MenuButton
+            slots={{ root: IconButton }}
+            slotProps={{
+              root: { variant: "plain", color: "neutral", size: "sm" },
+            }}
+          >
+            <MoreHorizRoundedIcon />
+          </MenuButton>
+          {(user?.name === "IT Team" ||
+            user?.name === "admin" ||
+            user?.name === "Navin Kumar Gautam" ||
+            user?.name === "Mohd Shakir Khan" ||
+            user?.name === "Shiv Ram Tathagat" ||
+            user?.name === "Kana Sharma" ||
+            user?.name === "Ketan Kumar Jha" ||
+            user?.name === "Vibhav Upadhyay" ||
+            user?.name === "Shantanu Sameer" ||
+            user?.name === "Arnav Shahi") && (
+            <Menu size="sm" sx={{ minWidth: 140 }}>
+              <MenuItem
+                color="primary"
+                onClick={() => {
+                  const page = currentPage;
+                  const offerId = String(offer_id);
+                  localStorage.setItem("offer_summary", offerId);
+                  // localStorage.setItem("p_id", projectID);
+                  navigate(`/offer_summary?page=${page}&offer_id=${offerId}`);
+                }}
+              >
+                <ContentPasteGoIcon />
+                <Typography>Edit Offer</Typography>
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  const page = currentPage;
+                  const offerId = String(offer_id);
+                  localStorage.setItem("get-offer", offerId);
+                  navigate(`/bd_history?page=${page}&offer_id=${offerId}`);
+                }}
+              >
+                <HistoryIcon />
+                <Typography>Offer History</Typography>
+              </MenuItem>
+              {/* <Divider sx={{ backgroundColor: "lightblue" }} />
+            <MenuItem color="danger">
+            <DeleteIcon />
+            <Typography>Delete</Typography>
+            </MenuItem> */}
+            </Menu>
+          )}
+        </Dropdown>
       </>
-    //   <Tooltip title="Add" arrow>
-    //     {(user?.name === "IT Team" ||
-    //           user?.name === "admin" ||
-    //           user?.name === "BD Team") && (
-        
-    //   <IconButton
-    //     size="small"
-    //     sx={{
-    //       backgroundColor: "skyblue",
-    //       color: "white",
-    //       "&:hover": {
-    //         backgroundColor: "#45a049",
-    //       },
-    //       borderRadius: "50%",
-    //       padding: "4px",
-    //     }}
-    //     onClick={() =>{
-    //       const page = currentPage;
-    //       const offerId = String(offer_id);
-    //       localStorage.setItem("offer_rate", offerId);
-    //       // localStorage.setItem("p_id", projectID);
-    //       navigate(`/offer_rate?page=${page}&offer_id=${offerId}`);
-    //     }}
-    //   > 
-    //     <AddIcon fontSize="small" />
-         
-    //   </IconButton>
-    //  )}
-            
-    // </Tooltip>
-    )
-  }
+    );
+  };
+
+  const AddMenu = ({ currentPage, offer_id }) => {
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+      const userData = getUserData();
+      setUser(userData);
+    }, []);
+
+    const getUserData = () => {
+      const userData = localStorage.getItem("userDetails");
+      if (userData) {
+        return JSON.parse(userData);
+      }
+      return null;
+    };
+
+    return (
+      <>
+        {user?.name === "IT Team" ||
+        user?.name === "admin" ||
+        user?.name === "Navin Kumar Gautam" ||
+        user?.name === "Mohd Shakir Khan" ||
+        user?.name === "Shiv Ram Tathagat" ||
+        user?.name === "Kana Sharma" ||
+        user?.name === "Ketan Kumar Jha" ||
+        user?.name === "Vibhav Upadhyay" ||
+        user?.name === "Shantanu Sameer" ||
+        user?.name === "Arnav Shahi" ? (
+          <Tooltip title="Add" arrow>
+            <IconButton
+              size="small"
+              sx={{
+                backgroundColor: "skyblue",
+                color: "white",
+                "&:hover": { backgroundColor: "#45a049" },
+                borderRadius: "50%",
+                padding: "4px",
+              }}
+              onClick={() => {
+                if (offer_id) {
+                  const page = currentPage;
+                  const offerId = String(offer_id);
+                  localStorage.setItem("offer_rate", offerId);
+                  navigate(`/offer_rate?page=${page}&offer_id=${offerId}`);
+                }
+              }}
+            >
+              <AddIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        ) : (
+          <Tooltip title="Not Authorized" arrow>
+            <IconButton
+              size="small"
+              disabled
+              sx={{
+                backgroundColor: "gray",
+                color: "red",
+                borderRadius: "50%",
+                padding: "4px",
+              }}
+            >
+              <BlockIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+      </>
+      //   <Tooltip title="Add" arrow>
+      //     {(user?.name === "IT Team" ||
+      //           user?.name === "admin" ||
+      //           user?.name === "BD Team") && (
+
+      //   <IconButton
+      //     size="small"
+      //     sx={{
+      //       backgroundColor: "skyblue",
+      //       color: "white",
+      //       "&:hover": {
+      //         backgroundColor: "#45a049",
+      //       },
+      //       borderRadius: "50%",
+      //       padding: "4px",
+      //     }}
+      //     onClick={() =>{
+      //       const page = currentPage;
+      //       const offerId = String(offer_id);
+      //       localStorage.setItem("offer_rate", offerId);
+      //       // localStorage.setItem("p_id", projectID);
+      //       navigate(`/offer_rate?page=${page}&offer_id=${offerId}`);
+      //     }}
+      //   >
+      //     <AddIcon fontSize="small" />
+
+      //   </IconButton>
+      //  )}
+
+      // </Tooltip>
+    );
+  };
 
   // useEffect(() => {
   //   if (payments.length > 0 && projects.length > 0) {
@@ -518,9 +535,12 @@ function Offer() {
 
   const filteredAndSortedData = commRate
     .filter((project) => {
-      const matchesSearchQuery = ["offer_id", "client_name", "state", "prepared_by"].some(
-        (key) => project[key]?.toLowerCase().includes(searchQuery)
-      );
+      const matchesSearchQuery = [
+        "offer_id",
+        "client_name",
+        "state",
+        "prepared_by",
+      ].some((key) => project[key]?.toLowerCase().includes(searchQuery));
 
       // const matchesVendorFilter =
       //   !vendorFilter || project.vendor === vendorFilter;
@@ -647,11 +667,11 @@ function Offer() {
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
-          marginLeft: { xl: "15%", lg: "18%", },
+          marginLeft: { xl: "15%", lg: "18%" },
           borderRadius: "sm",
           py: 2,
           // display: { xs: "none", sm: "flex" },
-          display:"flex",
+          display: "flex",
           // flexDirection:{xs: "none", sm: "flex"}
           flexWrap: "wrap",
           gap: 1.5,
@@ -685,7 +705,7 @@ function Offer() {
           overflow: "auto",
           minHeight: 0,
           marginLeft: { lg: "18%", xl: "15%" },
-          maxWidth: { lg: "85%", sm: "100%", },
+          maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
         {error ? (
@@ -741,8 +761,7 @@ function Offer() {
                   "Ac Capacity(MW)",
                   "Scheme",
                   "Component",
-                  "Original Rate",
-                  "Revised Rate",
+                  "Latest Rate",
                   "Add Costing",
                   "Prepared By",
                   "View More",
@@ -849,6 +868,7 @@ function Offer() {
                     >
                       {offer.component || "-"}
                     </Box>
+
                     <Box
                       component="td"
                       sx={{
@@ -867,17 +887,10 @@ function Offer() {
                         textAlign: "center",
                       }}
                     >
-                      {Number(offer.rate).toLocaleString("en-IN")}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                     <AddMenu currentPage={currentPage} offer_id={offer.offer_id} />
+                      <AddMenu
+                        currentPage={currentPage}
+                        offer_id={offer.offer_id}
+                      />
                     </Box>
                     <Box
                       component="td"
@@ -897,7 +910,10 @@ function Offer() {
                         textAlign: "center",
                       }}
                     >
-                      <RowMenu currentPage={currentPage} offer_id={offer.offer_id} />
+                      <RowMenu
+                        currentPage={currentPage}
+                        offer_id={offer.offer_id}
+                      />
                     </Box>
                   </Box>
                 ))
@@ -905,25 +921,31 @@ function Offer() {
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={13}
+                    colSpan={12}
                     sx={{
                       padding: "8px",
                       textAlign: "center",
                       fontStyle: "italic",
                     }}
                   >
-                  <Box sx={{
-                      fontStyle: "italic",
-                      display:"flex",
-                      flexDirection:"column",
-                      alignItems:"center",
-                      justifyContent:"center"
-                    }}>
-                      <img src = {NoData} alt="No data Image" style={{width:"50px", height:'50px'}}/>
-                    <Typography fontStyle={"italic"}>
-                      No offer available
+                    <Box
+                      sx={{
+                        fontStyle: "italic",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <img
+                        src={NoData}
+                        alt="No data Image"
+                        style={{ width: "50px", height: "50px" }}
+                      />
+                      <Typography fontStyle={"italic"}>
+                        No offer available
                       </Typography>
-                      </Box>
+                    </Box>
                   </Box>
                 </Box>
               )}
@@ -940,8 +962,8 @@ function Offer() {
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           // display: { xs: "none", md: "flex" },
-          display:"flex",
-          flexDirection:{xs: "column", sm: "row"},
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
           marginLeft: { lg: "18%", xl: "15%" },
         }}

@@ -1,4 +1,4 @@
-import { Box, Grid, Sheet, Table } from "@mui/joy";
+import { Box, Grid, Sheet, Table, Typography } from "@mui/joy";
 import React, { useEffect, useState } from "react";
 import logo from "../../../assets/slnko_blue_logo.png";
 import Axios from "../../../utils/Axios";
@@ -258,7 +258,7 @@ const Summary = () => {
   const TotalVal27 = scmData.transportation * internalQuantity25;
 
   //***Total Value 32***/
-  const TotalVal32 = bdRate.slnko_charges * internalQuantity32 * 1000;
+  const TotalVal32 = Number(bdRate.slnko_charges);
 
   // ***for 1st row***
   const internalQuantity1 = offerData.module_capacity
@@ -1021,48 +1021,44 @@ const Summary = () => {
     ).toFixed(2);
     
 
-  return (
-    <>
-      <Grid
-        container
-        sx={{
-          width: "100%",
-          // height: "100%",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          "@media print": {
-            width: "210mm",
-            height: "297mm",
-            overflow: "hidden",
-            margin: "0",
-            padding: "0",
-            pageBreakInside: "avoid",
-          },
-        }}
-      >
+    return (
+      <>
         <Grid
+          container
           sx={{
-            width: "60%",
-            height: "100%",
-            border: "2px solid #0f4C7f",
+            width: "100%",
+            // height: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
             "@media print": {
               width: "210mm",
               height: "297mm",
+              overflow: "hidden",
+              margin: "0",
+              padding: "0",
+              pageBreakInside: "avoid",
             },
           }}
         >
-          <Box
+          <Grid
+            sx={{
+              width: "60%",
+              height: "100%",
+              border: "2px solid #0f4C7f",
+              "@media print": {
+                width: "210mm",
+                height: "297mm",
+              },
+            }}
+          >
+           <Box
             sx={{
               display: "flex",
               width: "100%",
               alignItems: "flex-end",
               gap: 2,
-              paddingTop: "20px",
-              "@media print": {
-                padding: "5px",
-                marginTop: "10px",
-              },
+              marginTop: "2%",
             }}
           >
             <img
@@ -1070,368 +1066,383 @@ const Summary = () => {
               height={"110px"}
               alt="logo"
               src={logo}
-              style={{ maxWidth: "100%" }}
+              loading="lazy"
             />
+
+            <hr
+              style={{
+                width: "60%",
+                color: "blue",
+                borderTop: "2px solid #0f4C7f",
+                margin: "19px 0",
+              }}
+            />
+          </Box>
+  
             <Box
               sx={{
-                width: "60%",
-                margin: "18px 0",
-                "@media (max-width: 1340px)": {
-                  width: "50%",
-                },
-              }}
-            >
-              <hr
-                style={{
-                  width: "100%",
-                  color: "blue",
-                  borderTop: "2px solid #0f4C7f",
-                }}
-              />
-            </Box>
-          </Box>
-
-          <Box
-            sx={{
-              width: "90%",
-              height: "80%",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              margin: "auto",
-            }}
-          >
-            <Sheet
-              sx={{
-                width: "99.5%",
-                height: "100%",
-                backgroundColor: "white",
-                margin: "10px",
+                width: "98%",
+                height: "80%",
                 display: "flex",
-                alignItems: "center",
-                flexDirection: "row",
+                flexDirection:"column",
                 justifyContent: "center",
+                alignItems: "center",
+                margin: "auto",
+                "@media print":{
+                  marginTop:"30px"
+                }
+               
               }}
             >
-              <Table className="table-header-Summary">
-                <thead>
-                  {/* <tr>
-                    <th
-                      colSpan={4}
+              <Sheet
+                sx={{
+                  width: "99.5%",
+                  height: "100%",
+                  backgroundColor: "white",
+                  margin: "10px",
+                  display: "flex",
+                  alignItems: "center",
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  
+                }}
+              >
+                <Table className="table-header-Summary" >
+                  <thead>
+                    {/* <tr>
+                      <th
+                        colSpan={4}
+                        style={{
+                          fontWeight: "bold",
+                          fontFamily: "serif",
+                          fontSize: "1.2rem",
+                          textAlign: "center",
+                          backgroundColor: "#B4C7E7",
+                        }}
+                      ></th>
+                    </tr> */}
+  
+                    <tr>
+                      <th
+                        colSpan={4}
+                        style={{
+                          fontWeight: "bold",
+                          fontFamily: "serif",
+  
+                          textAlign: "center",
+                          // backgroundColor: "#D9D9D9",
+                          background: "#0f4c7f"
+                        }}
+                      >
+                        PLANT COSTING SUMMARY ONLY
+                      </th>
+                    </tr>
+  
+                    <tr>
+                      <th
+                        style={{
+                          fontWeight: "bold",
+                          fontFamily: "serif",
+                          fontSize: "1.2rem",
+                          textAlign: "center",
+                        }}
+                      >
+                        Capacity
+                      </th>
+                      <th
+                      colSpan={3}
                       style={{
-                        fontWeight: "bold",
-                        fontFamily: "serif",
+                        fontWeight: "500",
+                        fontFamily: "sans-serif !important",
                         fontSize: "1.2rem",
                         textAlign: "center",
-                        backgroundColor: "#B4C7E7",
+                        background:"#ffffff",
+                        color:"black"
                       }}
-                    ></th>
-                  </tr> */}
-
-                  <tr>
-                    <th
-                      colSpan={4}
-                      style={{
-                        fontWeight: "bold",
-                        fontFamily: "serif",
-
-                        textAlign: "center",
-                        // backgroundColor: "#D9D9D9",
-                        background: "#0f4c7f"
-                      }}
-                    >
-                      PLANT COSTING SUMMARY ONLY
-                    </th>
-                  </tr>
-
-                  <tr>
-                    <th
-                      style={{
-                        fontWeight: "bold",
-                        fontFamily: "serif",
-                        fontSize: "1.2rem",
-                        textAlign: "center",
-                      }}
-                    >
-                      Capacity
-                    </th>
-                    <th
-                    colSpan={3}
-                    style={{
-                      fontWeight: "500",
-                      fontFamily: "sans-serif !important",
-                      fontSize: "1.2rem",
-                      textAlign: "center",
-                      background:"#ffffff",
-                      color:"black"
-                    }}
-                    >
-                      {offerData.dc_capacity} kWp DC
-                    </th>
-                  </tr>
-
-                  <th style={{ width: "40%" }}>Items</th>
-                  <th>Basic Value</th>
-                  <th>GST Value</th>
-                  <th>Total With GST Value</th>
-                </thead>
-
-                <tbody>
-                  <tr>
-                    <td>Solar Module</td>
-                    <td>{Number(TotalVal1).toLocaleString()}</td>
-                    <td>
-                      {Math.round((TotalVal1 * 12) / 100).toLocaleString()}
-                    </td>
-                    <td>
-                      {Math.round(
-                        (TotalVal1 * 12) / 100 + TotalVal1
-                      ).toLocaleString()}
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <td>Solar Inverter & Datalogger</td>
-                    <td>
-                      {Number(Total_Basic_Solar_Datalogger).toLocaleString()}
-                    </td>
-                    <td>
-                      {Number(Total_GST_Solar_Datalogger).toLocaleString()}
-                    </td>
-                    <td>
-                      {Number(Total_with_GST_Solar_Datalogger).toLocaleString()}
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <td>MMS With Fasteners</td>
-                    <td>{Number(Total_Basic_MMS_Fastner).toLocaleString()}</td>
-                    <td>{Number(Total_GST_MMS_Fastner).toLocaleString()}</td>
-                    <td>
-                      {Number(Total_with_GST_MMS_Fastner).toLocaleString()}
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <td>Cables</td>
-                    <td>{Number(Total_Basic_Cables).toLocaleString()}</td>
-                    <td>{Number(Total_GST_Cables).toLocaleString()}</td>
-                    <td>{Number(Total_with_GST_Cables).toLocaleString()}</td>
-                  </tr>
-
-                  <tr>
-                    <td>
-                      Electrical Equipment - Solar Plant Side (Transformer+LT
-                      Panel+HT Panel+Aux Transformer+UPS System)
-                    </td>
-                    <td>
-                      {Number(
-                        Total_Basic_Electrical_Equipment
-                      ).toLocaleString()}
-                    </td>
-                    <td>
-                      {Number(Total_GST_Electrical_Equipment).toLocaleString()}
-                    </td>
-                    <td>
-                      {Number(
-                        Total_with_GST_Electrical_Equipment
-                      ).toLocaleString()}
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <td>Other Balance of Material</td>
-                    <td>
-                      {Number(Total_Basic_Other_Material).toLocaleString()}
-                    </td>
-                    <td>{Number(Total_Gst_Other_Material).toLocaleString()}</td>
-                    <td>
-                      {Number(Total_with_Gst_Other_Material).toLocaleString()}
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <td>
-                      Installation Charges inside boundary wall (Labour,
-                      Machinery & Civil Material)
-                    </td>
-                    <td>
-                      {Number(
-                        Total_Basic_Installation_Charges
-                      ).toLocaleString()}
-                    </td>
-                    <td>
-                      {Number(Total_GST_Installation_Charges).toLocaleString()}
-                    </td>
-                    <td>
-                      {Number(
-                        Total_with_GST_Installation_Charges
-                      ).toLocaleString()}
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <td>Transportation & Insurance</td>
-                    <td>
-                      {Number(
-                        Total_Basic_Transportatiom_Insurance
-                      ).toLocaleString()}
-                    </td>
-                    <td>
-                      {Number(
-                        Total_GST_Transportatiom_Insurance
-                      ).toLocaleString()}
-                    </td>
-                    <td>
-                      {Number(
-                        Total_with_GST_Transportatiom_Insurance
-                      ).toLocaleString()}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>SLnko Service Charges</td>
-                    <td>{Number(TotalVal32).toLocaleString()}</td>
-                    <td>{((TotalVal32 * 18) / 100).toLocaleString()}</td>
-                    <td>
-                      {((TotalVal32 * 18) / 100 + TotalVal32).toLocaleString()}
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <td
+                      >
+                        {offerData.dc_capacity} kWp DC
+                      </th>
+                    </tr>
+  
+                    <th>Items</th>
+                    <th>Basic Value</th>
+                    <th>GST Value</th>
+                    <th>Total With GST Value</th>
+                  </thead>
+  
+                  <tbody>
+                    <tr>
+                      <td>Solar Module</td>
+                      <td>{Number(TotalVal1).toLocaleString()}</td>
+                      <td>
+                        {Math.round((TotalVal1 * 12) / 100).toLocaleString()}
+                      </td>
+                      <td>
+                        {Math.round(
+                          (TotalVal1 * 12) / 100 + TotalVal1
+                        ).toLocaleString()}
+                      </td>
+                    </tr>
+  
+                    <tr>
+                      <td>Solar Inverter & Datalogger</td>
+                      <td>
+                        {Number(Total_Basic_Solar_Datalogger).toLocaleString()}
+                      </td>
+                      <td>
+                        {Number(Total_GST_Solar_Datalogger).toLocaleString()}
+                      </td>
+                      <td>
+                        {Number(Total_with_GST_Solar_Datalogger).toLocaleString()}
+                      </td>
+                    </tr>
+  
+                    <tr>
+                      <td>MMS With Fasteners</td>
+                      <td>{Number(Total_Basic_MMS_Fastner).toLocaleString()}</td>
+                      <td>{Number(Total_GST_MMS_Fastner).toLocaleString()}</td>
+                      <td>
+                        {Number(Total_with_GST_MMS_Fastner).toLocaleString()}
+                      </td>
+                    </tr>
+  
+                    <tr>
+                      <td>Cables</td>
+                      <td>{Number(Total_Basic_Cables).toLocaleString()}</td>
+                      <td>{Number(Total_GST_Cables).toLocaleString()}</td>
+                      <td>{Number(Total_with_GST_Cables).toLocaleString()}</td>
+                    </tr>
+  
+                    <tr>
+                      <td>
+                        Electrical Equipment - Solar Plant Side (Transformer+LT
+                        Panel+HT Panel+Aux Transformer+UPS System)
+                      </td>
+                      <td>
+                        {Number(
+                          Total_Basic_Electrical_Equipment
+                        ).toLocaleString()}
+                      </td>
+                      <td>
+                        {Number(Total_GST_Electrical_Equipment).toLocaleString()}
+                      </td>
+                      <td>
+                        {Number(
+                          Total_with_GST_Electrical_Equipment
+                        ).toLocaleString()}
+                      </td>
+                    </tr>
+  
+                    <tr>
+                      <td>Other Balance of Material</td>
+                      <td>
+                        {Number(Total_Basic_Other_Material).toLocaleString()}
+                      </td>
+                      <td>{Number(Total_Gst_Other_Material).toLocaleString()}</td>
+                      <td>
+                        {Number(Total_with_Gst_Other_Material).toLocaleString()}
+                      </td>
+                    </tr>
+  
+                    <tr>
+                      <td>
+                        Installation Charges inside boundary wall (Labour,
+                        Machinery & Civil Material)
+                      </td>
+                      <td>
+                        {Number(
+                          Total_Basic_Installation_Charges
+                        ).toLocaleString()}
+                      </td>
+                      <td>
+                        {Number(Total_GST_Installation_Charges).toLocaleString()}
+                      </td>
+                      <td>
+                        {Number(
+                          Total_with_GST_Installation_Charges
+                        ).toLocaleString()}
+                      </td>
+                    </tr>
+  
+                    <tr>
+                      <td>Transportation & Insurance</td>
+                      <td>
+                        {Number(
+                          Total_Basic_Transportatiom_Insurance
+                        ).toLocaleString()}
+                      </td>
+                      <td>
+                        {Number(
+                          Total_GST_Transportatiom_Insurance
+                        ).toLocaleString()}
+                      </td>
+                      <td>
+                        {Number(
+                          Total_with_GST_Transportatiom_Insurance
+                        ).toLocaleString()}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>SLnko Service Charges</td>
+                      <td>{Number(TotalVal32).toLocaleString()}</td>
+                      <td>{((TotalVal32 * 18) / 100).toLocaleString()}</td>
+                      <td>
+                        {(((TotalVal32 * 18) / 100) + TotalVal32).toLocaleString()}
+                      </td>
+                    </tr>
+  
+                    <tr>
+                      <td
+                        style={{ backgroundColor: "#FFF2CC", fontWeight: "bold" }}
+                      >
+                        1. Total Plant Cost
+                      </td>
+                      <td style={{ backgroundColor: "#FFF2CC" }}>
+                        {Number(Total_Plant_Cost_1).toLocaleString()}
+                      </td>
+                      <td style={{ backgroundColor: "#FFF2CC" }}>
+                        {Number(Total_Plant_Cost_GST_1).toLocaleString()}
+                      </td>
+                      <td style={{ backgroundColor: "#FFF2CC" }}>
+                        {Number(Total_Plant_Cost_with_GST_1).toLocaleString()}
+                      </td>
+                    </tr>
+  
+                    <tr>
+                      <td
+                        colSpan={4}
+                        style={{
+                          fontWeight: "bold",
+                          fontFamily: "sans-serif",
+                          fontSize: "1rem",
+                          backgroundColor: "#D9D9D9",
+                        }}
+                      >
+                        GSS ITEMS COSTING SUMMARY
+                      </td>
+                    </tr>
+  
+                    <tr>
+                      <td>GSS Equipments</td>
+                      <td>
+                        {Number(Total_Basic_GSS_Equipment).toLocaleString()}
+                      </td>
+                      <td>{Number(Total_GST_GSS_Equipment).toLocaleString()}</td>
+                      <td>
+                        {Number(Totalwith_GST_GSS_Equipment).toLocaleString()}
+                      </td>
+                    </tr>
+  
+                    <tr>
+                      <td>Transmission Line</td>
+                      <td>
+                        {Number(
+                          offerData.transmission_length * bdRate.transmission_line
+                        ).toLocaleString()}
+                      </td>
+                      <td>
+                        {Number(
+                          (offerData.transmission_length *
+                            bdRate.transmission_line *
+                            18) /
+                            100
+                        ).toLocaleString()}
+                      </td>
+                      <td>
+                        {Number(
+                          (Math.round(
+                            offerData.transmission_length *
+                              bdRate.transmission_line
+                          ) *
+                            18) /
+                            100 +
+                            bdRate.transmission_line *
+                              offerData.transmission_length
+                        ).toLocaleString()}
+                      </td>
+                    </tr>
+  
+                    <tr
                       style={{ backgroundColor: "#FFF2CC", fontWeight: "bold" }}
                     >
-                      1. Total Plant Cost
-                    </td>
-                    <td style={{ backgroundColor: "#FFF2CC" }}>
-                      {Number(Total_Plant_Cost_1).toLocaleString()}
-                    </td>
-                    <td style={{ backgroundColor: "#FFF2CC" }}>
-                      {Number(Total_Plant_Cost_GST_1).toLocaleString()}
-                    </td>
-                    <td style={{ backgroundColor: "#FFF2CC" }}>
-                      {Number(Total_Plant_Cost_with_GST_1).toLocaleString()}
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <td
-                      colSpan={4}
+                      <td>2. Total GSS Equipment Cost</td>
+                      <td>{Number(Total_Basic_GSS_Cost).toLocaleString()}</td>
+                      <td>{Number(Total_GST_GSS_Cost).toLocaleString()}</td>
+                      <td>{Number(Total_with_GST_Cost).toLocaleString()}</td>
+                    </tr>
+  
+                    <tr
                       style={{
+                        backgroundColor: "#ead34d",
                         fontWeight: "bold",
+                        fontSize: "0.8rem",
                         fontFamily: "sans-serif",
-                        fontSize: "1rem",
-                        backgroundColor: "#D9D9D9",
                       }}
                     >
-                      GSS ITEMS COSTING SUMMARY
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <td>GSS Equipments</td>
-                    <td>
-                      {Number(Total_Basic_GSS_Equipment).toLocaleString()}
-                    </td>
-                    <td>{Number(Total_GST_GSS_Equipment).toLocaleString()}</td>
-                    <td>
-                      {Number(Totalwith_GST_GSS_Equipment).toLocaleString()}
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <td>Transmission Line</td>
-                    <td>
-                      {Number(
-                        offerData.transmission_length * bdRate.transmission_line
-                      ).toLocaleString()}
-                    </td>
-                    <td>
-                      {Number(
-                        (offerData.transmission_length *
-                          bdRate.transmission_line *
-                          18) /
-                          100
-                      ).toLocaleString()}
-                    </td>
-                    <td>
-                      {Number(
-                        (Math.round(
-                          offerData.transmission_length *
-                            bdRate.transmission_line
-                        ) *
-                          18) /
-                          100 +
-                          bdRate.transmission_line *
-                            offerData.transmission_length
-                      ).toLocaleString()}
-                    </td>
-                  </tr>
-
-                  <tr
-                    style={{ backgroundColor: "#FFF2CC", fontWeight: "bold" }}
-                  >
-                    <td>2. Total GSS Equipment Cost</td>
-                    <td>{Number(Total_Basic_GSS_Cost).toLocaleString()}</td>
-                    <td>{Number(Total_GST_GSS_Cost).toLocaleString()}</td>
-                    <td>{Number(Total_with_GST_Cost).toLocaleString()}</td>
-                  </tr>
-
-                  <tr
-                    style={{
-                      backgroundColor: "#ead34d",
-                      fontWeight: "bold",
-                      fontSize: "0.8rem",
-                      fontFamily: "sans-serif",
-                    }}
-                  >
-                    <td>TOTAL PLANT COST (1+2)</td>
-                    <td>{Number(Final_Total_Plant_Cost).toLocaleString()}</td>
-                    <td>
-                      {Number(Final_Total_GST_Plant_Cost).toLocaleString()}
-                    </td>
-                    <td>
-                      {Number(Final_Total_with_GST_Plant_Cost).toLocaleString()}
-                    </td>
-                  </tr>
-
-                  <tr
-                    style={{
-                      backgroundColor: "#D9D9D9",
-                      fontWeight: "bold",
-                      fontSize: "1rem",
-                      fontFamily: "sans-serif",
-                    }}
-                  >
-                    <td>Cost without Module</td>
-                    <td>{Number(Cost_Without_Module).toLocaleString()}</td>
-                    <td>{Number(Cost_Without_Module_GST).toLocaleString()}</td>
-                    <td>
-                      {Number(Cost_Without_Module_with_GST).toLocaleString()}
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <td>Total Cost (INR/Wp DC)</td>
-                    <td>{Total_Cost_Basic}</td>
-                    <td>{Total_Cost_GST}</td>
-                    <td>{Total_Cost_with_GST}</td>
-                  </tr>
-
-                  <tr>
-                    <td>Cost without Module (INR/Wp DC)</td>
-                    <td>{Without_module_INR_wp_Basic}</td>
-                    <td>{Without_module_INR_wp_GST}</td>
-                    <td>{Without_Module__INR_wp_with_GST}</td>
-                  </tr>
-                </tbody>
-              </Table>
-            </Sheet>
-          </Box>
+                      <td>TOTAL PLANT COST (1+2)</td>
+                      <td>{Number(Final_Total_Plant_Cost).toLocaleString()}</td>
+                      <td>
+                        {Number(Final_Total_GST_Plant_Cost).toLocaleString()}
+                      </td>
+                      <td>
+                        {Number(Final_Total_with_GST_Plant_Cost).toLocaleString()}
+                      </td>
+                    </tr>
+  
+                    <tr
+                      style={{
+                        backgroundColor: "#D9D9D9",
+                        fontWeight: "bold",
+                        fontSize: "1rem",
+                        fontFamily: "sans-serif",
+                      }}
+                    >
+                      <td>Cost without Module</td>
+                      <td>{Number(Cost_Without_Module).toLocaleString()}</td>
+                      <td>{Number(Cost_Without_Module_GST).toLocaleString()}</td>
+                      <td>
+                        {Number(Cost_Without_Module_with_GST).toLocaleString()}
+                      </td>
+                    </tr>
+  
+                    <tr>
+                      <td>Total Cost (INR/Wp DC)</td>
+                      <td>{Total_Cost_Basic}</td>
+                      <td>{Total_Cost_GST}</td>
+                      <td>{Total_Cost_with_GST}</td>
+                    </tr>
+  
+                    <tr>
+                      <td>Cost without Module (INR/Wp DC)</td>
+                      <td>{Without_module_INR_wp_Basic}</td>
+                      <td>{Without_module_INR_wp_GST}</td>
+                      <td>{Without_Module__INR_wp_with_GST}</td>
+                    </tr>
+                  </tbody>
+                </Table>
+              </Sheet>
+              <Box sx={{ width: "98%", marginTop: "10px" }}>
+    <Typography
+      variant="h6"
+      sx={{
+        fontWeight: "bold",
+        fontFamily: "sans-serif",
+        backgroundColor: "#D9D9D9",
+        padding: "8px",
+      }}
+    >
+      Exclusions:
+    </Typography>
+    <Typography fontWeight={"bold"}>1. Control Room</Typography>
+    <Typography fontWeight={"bold"}>2. Water Arrangement</Typography>
+    <Typography fontWeight={"bold"}>3. Boundary Wall / Fencing</Typography>
+  </Box>
+            </Box>
+           
+          </Grid>
         </Grid>
-      </Grid>
-    </>
-  );
+      </>
+    );
 };
 
 export default Summary;

@@ -243,7 +243,7 @@ const Reference4 = () => {
                  border: "0px",
                  width: "100%",
                  border: "2px solid #0f4C7f",
-                 marginTop:'10%'
+                 marginTop:'1%'
                },
              }}
            >
@@ -337,6 +337,7 @@ const Reference4 = () => {
                        <th>UoM</th>
                        {/* <th>Qty (Int.)</th> */}
                        <th>Qty</th>
+                       <th>Tentative Mac</th>
                        <th>Category</th>
                        {/* <th>Rate</th>
                        <th>Rate UoM</th>
@@ -363,6 +364,7 @@ const Reference4 = () => {
                        <td>KWp</td>
                        {/* <td>{internalQuantity24}</td> */}
                        <td>{internalQuantity24}</td>
+                       <td></td>
                        <td>Other Balance of Material</td>
                        {/* <td>{scmData.balance_of_system}</td>
                        <td>INR/Set</td>
@@ -450,6 +452,7 @@ const Reference4 = () => {
                      <th>UoM</th>
                      {/* <th>Qty (Int.)</th> */}
                      <th>Qty</th>
+                     <th>Tentative Mac</th>
                      <th>Category</th>
                      {/* <th>Rate</th>
                      <th>Rate UoM</th>
@@ -472,6 +475,7 @@ const Reference4 = () => {
                      <td>KWp</td>
                      {/* <td>{internalQuantity24}</td> */}
                      <td>{internalQuantity24}</td>
+                     <td></td>
                      <td>
                        Installation Charges inside boundary wall (Labour, Machinary
                        & Civil Material)

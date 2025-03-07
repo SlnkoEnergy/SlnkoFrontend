@@ -86,7 +86,7 @@ const Reference = () => {
     const fetchData = async () => {
       try {
         const offerRate = localStorage.getItem("offer_rate");
-        // console.log("Fetched offer_id from localStorage:", offerRate);
+        console.log("Fetched offer_id from localStorage page10:", offerRate);
   
         if (!offerRate) {
           console.error("Offer ID not found in localStorage");

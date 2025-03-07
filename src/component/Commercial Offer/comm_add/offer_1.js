@@ -4,8 +4,8 @@ import Box from "@mui/joy/Box";
 import Typography from "@mui/joy/Typography";
 import { Button, List, ListItem, ListItemDecorator } from "@mui/joy";
 import logo from "../../../assets/Comm_offer/page1_logo.png";
-import logo1 from "../../../assets/Comm_offer/slnko.png";
-import logo2 from "../../../assets/Comm_offer/pag1_back.jpeg";
+import logo1 from "../../../assets/Comm_offer/White Slnko Logo .png";
+import logo2 from "../../../assets/Comm_offer/pag1_back2.jpg";
 import logo3 from "../../../assets/Comm_offer/phone_icon (2).png";
 import logo4 from "../../../assets/Comm_offer/email_icon (2).png";
 import logo5 from "../../../assets/Comm_offer/linkedin.png";
@@ -64,7 +64,13 @@ const Page1 = () => {
                 height: "10%",
               }}
             >
-              <img width={"50%"} height={"100%"} alt="logo" src={logo} loading="lazy" />
+              <img
+                width={"50%"}
+                height={"100%"}
+                alt="logo"
+                src={logo}
+                loading="lazy"
+              />
             </Box>
 
             {/* Main section with background image, branding, and text */}
@@ -93,10 +99,11 @@ const Page1 = () => {
                   justifyContent: "center",
                   alignItems: "center",
                   flexDirection: "column",
+                  marginTop:'15px'
                 }}
               >
                 {/* Secondary logo */}
-                <img width={"40%"} alt="logo" src={logo1} loading="lazy" />
+                <img width={"25%"} alt="logo" src={logo1} loading="lazy" />
                 {/* Branding Text */}
                 <Typography
                   sx={{
@@ -157,7 +164,7 @@ const Page1 = () => {
                     sx={{
                       "@media print": {
                         fontSize: "2.5rem",
-                        paddingTop: "305px",
+                        paddingTop: "320px",
                       },
                     }}
                   >
@@ -222,7 +229,7 @@ const Page1 = () => {
                           sx={{ display: "flex", alignItems: "center" }}
                         >
                           <ListItemDecorator
-                            sx={{ minWidth: "auto", mr: 0.5, color: "black" }}
+                            sx={{ minWidth: "auto", mr: 0.5, color: "white" }} // Changed to white
                           >
                             •
                           </ListItemDecorator>
@@ -233,8 +240,8 @@ const Page1 = () => {
                               "@media print": {
                                 fontSize: "0.9rem",
                               },
+                              color: "white", // Added this to ensure text is white
                             }}
-                            textColor={"black"}
                           >
                             {item}
                           </Typography>
@@ -311,7 +318,6 @@ const Page1 = () => {
                   </a>
                 </Typography>
               </Box>
-
             </Box>
           </Box>
 

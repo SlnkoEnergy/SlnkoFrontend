@@ -56,12 +56,12 @@ const Page7 = () => {
               width: "100%",
               alignItems: "flex-end",
               gap: 2,
+              marginTop: "2%",
             }}
           >
             <img
-              className="logo-img2"
-              width={"300px"}
-              height={"180px"}
+              width={"220px"}
+              height={"110px"}
               alt="logo"
               src={logo}
               loading="lazy"
@@ -70,16 +70,14 @@ const Page7 = () => {
             <hr
               style={{
                 width: "60%",
-                borderTop: "3px solid #0f4C7f", // Keeps the line visible
-                margin: "40px 0",
-                boxShadow: "none !important", // Force removal of any shadow
-                background: "transparent !important", // Ensure no background color
-                border: "none !important", // Ensure no border shadow
-                // Remove any outline if applied
+                color: "blue",
+                borderTop: "2px solid #0f4C7f",
+                margin: "19px 0",
               }}
-              className="hr-line3"
             />
           </Box>
+
+
           <Sheet
             sx={{
               width: "100%",
@@ -228,7 +226,7 @@ const Page7 = () => {
                       textAlign={"justify"}
                       sx={{
                       '@media print':{
-                        fontSize:'1.2rem'
+                        fontSize:'1.3rem'
                       }
                     }}
                     >

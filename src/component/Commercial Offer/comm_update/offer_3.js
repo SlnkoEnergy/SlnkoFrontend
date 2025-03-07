@@ -21,7 +21,7 @@ const Page3 = () => {
           "@media print": {
             width: "210mm",
             height: "297mm",
-            marginTop: "30px",
+            marginTop: "40px",
             marginBottom:"0px"
           },
         }}
@@ -211,7 +211,9 @@ const Page3 = () => {
                   textColor={"#0f4C7f"}
                   fontSize={"22px"}
                   fontFamily={"serif"}
+                  textAlign={"justify"}
                   sx={{
+                    paddingRight:"20px",
                     "@media print": {
                       fontSize: "1.02rem",
                     },
@@ -264,12 +266,13 @@ const Page3 = () => {
                   src={img2}
                   loading="lazy"
                 />
-                <Typography
+               <Typography
                   textColor={"#0f4C7f"}
                   fontSize={"22px"}
                   fontFamily={"serif"}
-                  paddingLeft={"20px"}
+                  textAlign={"justify"}
                   sx={{
+                    paddingLeft:"20px",
                     "@media print": {
                       fontSize: "1.02rem",
                     },
@@ -361,11 +364,13 @@ const Page3 = () => {
                   loading="lazy"
                 />
 
-                <Typography
+<Typography
                   textColor={"#0f4C7f"}
                   fontSize={"22px"}
                   fontFamily={"serif"}
+                  textAlign={"justify"}
                   sx={{
+                    paddingRight:"20px",
                     "@media print": {
                       fontSize: "1.02rem",
                     },

@@ -1,4 +1,4 @@
-import { Box, Grid, Sheet, Table } from "@mui/joy";
+import { Box, Grid, Sheet, Table, Typography } from "@mui/joy";
 import React, { useEffect, useState } from "react";
 import logo from "../../../assets/slnko_blue_logo.png";
 import Axios from "../../../utils/Axios";
@@ -246,7 +246,7 @@ const Summary = () => {
   const TotalVal27 = scmData.transportation * internalQuantity25;
 
   //***Total Value 32***/
-  const TotalVal32 = bdRate.slnko_charges * internalQuantity32 * 1000;
+  const TotalVal32 = Number(bdRate.slnko_charges);
 
   // ***for 1st row***
   const internalQuantity1 = offerData.module_capacity
@@ -1039,53 +1039,46 @@ const Summary = () => {
             },
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              width: "100%",
-              alignItems: "flex-end",
-              gap: 2,
-              paddingTop: "20px",
-              "@media print": {
-                padding: "5px",
-                marginTop: "10px",
-              },
+         <Box
+          sx={{
+            display: "flex",
+            width: "100%",
+            alignItems: "flex-end",
+            gap: 2,
+            marginTop: "2%",
+          }}
+        >
+          <img
+            width={"220px"}
+            height={"110px"}
+            alt="logo"
+            src={logo}
+            loading="lazy"
+          />
+
+          <hr
+            style={{
+              width: "60%",
+              color: "blue",
+              borderTop: "2px solid #0f4C7f",
+              margin: "19px 0",
             }}
-          >
-            <img
-              width={"220px"}
-              height={"110px"}
-              alt="logo"
-              src={logo}
-              style={{ maxWidth: "100%" }}
-            />
-            <Box
-              sx={{
-                width: "60%",
-                margin: "18px 0",
-                "@media (max-width: 1340px)": {
-                  width: "50%",
-                },
-              }}
-            >
-              <hr
-                style={{
-                  width: "100%",
-                  color: "blue",
-                  borderTop: "2px solid #0f4C7f",
-                }}
-              />
-            </Box>
-          </Box>
+          />
+        </Box>
 
           <Box
             sx={{
-              width: "90%",
+              width: "98%",
               height: "80%",
               display: "flex",
+              flexDirection:"column",
               justifyContent: "center",
               alignItems: "center",
               margin: "auto",
+              "@media print":{
+                marginTop:"30px"
+              }
+             
             }}
           >
             <Sheet
@@ -1098,9 +1091,10 @@ const Summary = () => {
                 alignItems: "center",
                 flexDirection: "row",
                 justifyContent: "center",
+                
               }}
             >
-              <Table className="table-header-Summary">
+              <Table className="table-header-Summary" >
                 <thead>
                   {/* <tr>
                     <th
@@ -1157,7 +1151,7 @@ const Summary = () => {
                     </th>
                   </tr>
 
-                  <th style={{ width: "40%" }}>Items</th>
+                  <th>Items</th>
                   <th>Basic Value</th>
                   <th>GST Value</th>
                   <th>Total With GST Value</th>
@@ -1414,7 +1408,24 @@ const Summary = () => {
                 </tbody>
               </Table>
             </Sheet>
+            <Box sx={{ width: "98%", marginTop: "10px" }}>
+  <Typography
+    variant="h6"
+    sx={{
+      fontWeight: "bold",
+      fontFamily: "sans-serif",
+      backgroundColor: "#D9D9D9",
+      padding: "8px",
+    }}
+  >
+    Exclusions:
+  </Typography>
+  <Typography fontWeight={"bold"}>1. Control Room</Typography>
+  <Typography fontWeight={"bold"}>2. Water Arrangement</Typography>
+  <Typography fontWeight={"bold"}>3. Boundary Wall / Fencing</Typography>
+</Box>
           </Box>
+         
         </Grid>
       </Grid>
     </>

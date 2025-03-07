@@ -148,27 +148,26 @@ const Page5 = () => {
               width: "100%",
               alignItems: "flex-end",
               gap: 2,
+              marginTop: "2%",
             }}
           >
-            <img width={"300px"} height={"180px"} alt="logo" src={logo} loading="lazy" />
+            <img
+              width={"220px"}
+              height={"110px"}
+              alt="logo"
+              src={logo}
+              loading="lazy"
+            />
 
             <hr
               style={{
-                width: "50%",
-                borderTop: "3px solid #0f4C7f", // Keeps the line visible
-                margin: "36px 0",
-                boxShadow: "none !important", // Force removal of any shadow
-                background: "transparent !important", // Ensure no background color
-                border: "none !important", // Ensure no border shadow
-                // Remove any outline if applied
+                width: "60%",
+                color: "blue",
+                borderTop: "2px solid #0f4C7f",
+                margin: "19px 0",
               }}
-              
             />
           </Box>
-          <br />
-          <br />
-          <br />
-          <br />
           <Box
             sx={{
               width: "100%",
@@ -253,6 +252,7 @@ const Page5 = () => {
                 fontSize={"1.8rem"}
                 fontFamily={"serif"}
                 fontWeight={"400"}
+
                 sx={{
                   '@media print':{
                   fontSize:'1.5rem'
@@ -271,6 +271,7 @@ const Page5 = () => {
                 fontSize={"1.8rem"}
                 fontFamily={"serif"}
                 fontWeight={"400"}
+                textAlign={"justify"}
                 sx={{
                   '@media print':{
                   fontSize:'1.5rem'
@@ -291,6 +292,7 @@ const Page5 = () => {
                 fontSize={"1.8rem"}
                 fontFamily={"serif"}
                 fontWeight={"400"}
+                textAlign={"justify"}
                 sx={{
                   '@media print':{
                   fontSize:'1.5rem'

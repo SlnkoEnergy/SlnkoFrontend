@@ -647,7 +647,15 @@ function Sidebar() {
                 </Toggler>
               </ListItem>
             </List>
-        ) : user?.department === "BD" && user?.name === "BD Team" ? (
+        ) : user?.department === "BD" && user?.name === "Navin Kumar Gautam" || 
+        user?.name === "Mohd Shakir Khan" 
+        || user?.name === "Shiv Ram Tathagat" 
+        || user?.name === "Kana Sharma" 
+        || user?.name === "Ketan Kumar Jha"
+        || user?.name === "Vibhav Upadhyay"
+        || user?.name === "Shantanu Sameer"
+        || user?.name === "Arnav Shahi"
+        ? (
           <ListItem nested>
           <Toggler
             renderToggle={({ open, setOpen }) => (

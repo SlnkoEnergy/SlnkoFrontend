@@ -21,7 +21,8 @@ const Page5 = () => {
     rate: "",
     timeline: "",
     prepared_by: "",
-    mob_number:"",
+    comment: "",
+    mob_number: "",
     module_type: "",
     module_capacity: "",
     inverter_capacity: "",
@@ -29,33 +30,32 @@ const Page5 = () => {
     module_orientation: "",
     transmission_length: "",
     transformer: "",
-    column_type: ""
+    column_type: "",
   });
-
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-       
         const offerRate = localStorage.getItem("offer_rate");
 
         if (!offerRate) {
-          console.error("Offer ID not found in localStorage");
+          console.error("Offer ID not found in localStorage or is null.");
           toast.error("Offer ID is missing!");
           return;
         }
 
-        
+        console.log("Fetched Offer ID from localStorage:", offerRate);
+
         const { data: commercialOffers } = await Axios.get("/get-comm-offer");
         console.log("API Response:", commercialOffers);
 
-     
         const matchedOffer = commercialOffers.find(
           (item) => item.offer_id === offerRate
         );
 
         if (matchedOffer) {
-         
+          console.log("Matched Offer Found:", matchedOffer);
+
           setOfferData({
             offer_id: matchedOffer.offer_id ?? "",
             client_name: matchedOffer.client_name ?? "",
@@ -72,6 +72,7 @@ const Page5 = () => {
             timeline: matchedOffer.timeline ?? "",
             prepared_by: matchedOffer.prepared_by ?? "",
             mob_number: matchedOffer.mob_number ?? "",
+            comment: matchedOffer.comment ?? "",
             module_type: matchedOffer.module_type ?? "",
             module_capacity: matchedOffer.module_capacity ?? "",
             inverter_capacity: matchedOffer.inverter_capacity ?? "",
@@ -82,10 +83,9 @@ const Page5 = () => {
             column_type: matchedOffer.column_type ?? "",
           });
         } else {
-          console.error("No matching offer found.");
+          console.warn("No matching offer found for Offer ID:", offerRate);
           toast.error("No matching offer found.");
         }
-
       } catch (error) {
         console.error("Error fetching commercial offer data:", error);
         toast.error("Failed to fetch offer data. Please try again later.");
@@ -148,27 +148,26 @@ const Page5 = () => {
               width: "100%",
               alignItems: "flex-end",
               gap: 2,
+              marginTop: "2%",
             }}
           >
-            <img width={"300px"} height={"180px"} alt="logo" src={logo} loading="lazy" />
+            <img
+              width={"220px"}
+              height={"110px"}
+              alt="logo"
+              src={logo}
+              loading="lazy"
+            />
 
             <hr
               style={{
-                width: "50%",
-                borderTop: "3px solid #0f4C7f", // Keeps the line visible
-                margin: "36px 0",
-                boxShadow: "none !important", // Force removal of any shadow
-                background: "transparent !important", // Ensure no background color
-                border: "none !important", // Ensure no border shadow
-                // Remove any outline if applied
+                width: "60%",
+                color: "blue",
+                borderTop: "2px solid #0f4C7f",
+                margin: "19px 0",
               }}
-              
             />
           </Box>
-          <br />
-          <br />
-          <br />
-          <br />
           <Box
             sx={{
               width: "100%",
@@ -253,6 +252,7 @@ const Page5 = () => {
                 fontSize={"1.8rem"}
                 fontFamily={"serif"}
                 fontWeight={"400"}
+
                 sx={{
                   '@media print':{
                   fontSize:'1.5rem'
@@ -271,6 +271,7 @@ const Page5 = () => {
                 fontSize={"1.8rem"}
                 fontFamily={"serif"}
                 fontWeight={"400"}
+                textAlign={"justify"}
                 sx={{
                   '@media print':{
                   fontSize:'1.5rem'
@@ -291,6 +292,7 @@ const Page5 = () => {
                 fontSize={"1.8rem"}
                 fontFamily={"serif"}
                 fontWeight={"400"}
+                textAlign={"justify"}
                 sx={{
                   '@media print':{
                   fontSize:'1.5rem'

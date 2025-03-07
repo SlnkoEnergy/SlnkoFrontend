@@ -187,7 +187,7 @@ import {
               />
             </Grid>
             <Grid md={6} sm={12}>
-              <FormLabel>SLNKO EPCM Service Charges (INR/Wp)</FormLabel>
+              <FormLabel>SLNKO EPCM Service Charges without GST (INR)</FormLabel>
               <Input
                 type="number"
                 name="slnko_charges"

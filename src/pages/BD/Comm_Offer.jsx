@@ -1,7 +1,7 @@
 import Box from "@mui/joy/Box";
 import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider } from "@mui/joy/styles";
-import React,{useEffect,useState} from "react";
+import React, { useEffect, useState } from "react";
 import Button from "@mui/joy/Button";
 // import Button from '@mui/joy/Button';
 import Breadcrumbs from "@mui/joy/Breadcrumbs";
@@ -9,7 +9,7 @@ import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
 // import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
+import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import Sidebar from "../../component/Partials/Sidebar";
 import Commercial_Offer from "../../component/Commercial_Offer";
 
@@ -18,21 +18,20 @@ import { useNavigate } from "react-router-dom";
 
 function Comm_Offer() {
   const navigate = useNavigate();
-   const [user, setUser] = useState(null);
-        
-          
-          useEffect(() => {
-           const userData = getUserData();
-           setUser(userData);
-         }, []);
-         
-         const getUserData = () => {
-           const userData = localStorage.getItem("userDetails");
-           if (userData) {
-             return JSON.parse(userData);
-           }
-           return null;
-         };
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -69,7 +68,7 @@ function Comm_Offer() {
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: {md:"4%", lg:"0%"} }}
+              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
               {/* <Link
                 underline="none"
@@ -107,7 +106,7 @@ function Comm_Offer() {
             }}
           >
             <Typography level="h2" component="h1">
-            Commercial Offer
+              Commercial Offer
             </Typography>
             <Box
               sx={{
@@ -121,30 +120,36 @@ function Comm_Offer() {
               }}
             >
               {(user?.name === "IT Team" ||
-              user?.name === "admin" ||
-              user?.name === "Naresh Kumar") && (
-              <Button
-              color="primary"
-              startDecorator={<DownloadRoundedIcon />}
-              size="sm"
-              onClick={() => navigate("/costing_input")}
-            >
-              Add Costing +
-            </Button>
-            )}
+                user?.name === "admin" ||
+                user?.name === "Naresh Kumar") && (
+                <Button
+                  color="primary"
+                  startDecorator={<DownloadRoundedIcon />}
+                  size="sm"
+                  onClick={() => navigate("/costing_input")}
+                >
+                  Add Costing +
+                </Button>
+              )}
 
-{(user?.name === "IT Team" ||
-              user?.name === "admin" ||
-              user?.name === "BD Team") && (
-              <Button
-              color="primary"
-              
-              size="sm"
-              onClick={() => navigate("/add_offer")}
-            >
-              Add New offer +
-            </Button>
-             )}
+              {(user?.name === "IT Team" ||
+                user?.name === "admin" ||
+                user?.name === "Navin Kumar Gautam" ||
+                user?.name === "Mohd Shakir Khan" ||
+                user?.name === "Shiv Ram Tathagat" ||
+                user?.name === "Kana Sharma" ||
+                user?.name === "Ketan Kumar Jha" ||
+                user?.name === "Vibhav Upadhyay" ||
+                user?.name === "Shantanu Sameer" ||
+                user?.name === "Arnav Shahi") && (
+                <Button
+                  color="primary"
+                  size="sm"
+                  onClick={() => navigate("/add_offer")}
+                >
+                  Add New offer +
+                </Button>
+              )}
             </Box>
           </Box>
           <Commercial_Offer />

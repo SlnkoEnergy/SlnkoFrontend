@@ -424,7 +424,7 @@ const FormOffer = () => {
           {
             label: "Inverter Capacity (kVA)",
             name: "inverter_capacity",
-            options: [275, 295, 302],
+            options: [275, 295],
           },
           {
             label: "Transformer",

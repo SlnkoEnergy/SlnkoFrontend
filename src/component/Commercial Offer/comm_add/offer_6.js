@@ -39,6 +39,7 @@ const Page6 = () => {
        
         const offerRate = localStorage.getItem("offer_rate");
 
+
         if (!offerRate) {
           console.error("Offer ID not found in localStorage");
           toast.error("Offer ID is missing!");
@@ -47,7 +48,7 @@ const Page6 = () => {
 
         
         const { data: commercialOffers } = await Axios.get("/get-comm-offer");
-        console.log("API Response:", commercialOffers);
+        // console.log("API Response:", commercialOffers);
 
      
         const matchedOffer = commercialOffers.find(
@@ -147,12 +148,12 @@ const Page6 = () => {
               width: "100%",
               alignItems: "flex-end",
               gap: 2,
+              marginTop: "2%",
             }}
           >
             <img
-              className="logo-img2"
-              width={"300px"}
-              height={"180px"}
+              width={"220px"}
+              height={"110px"}
               alt="logo"
               src={logo}
               loading="lazy"
@@ -161,18 +162,14 @@ const Page6 = () => {
             <hr
               style={{
                 width: "60%",
-                borderTop: "3px solid #0f4C7f", // Keeps the line visible
-                margin: "36px 0",
-                boxShadow: "none !important", // Force removal of any shadow
-                background: "transparent !important", // Ensure no background color
-                border: "none !important", // Ensure no border shadow
-                // Remove any outline if applied
+                color: "blue",
+                borderTop: "2px solid #0f4C7f",
+                margin: "19px 0",
               }}
-              className="hr-line3"
             />
           </Box>
 
-          <br />
+         
 
           <Box
             sx={{
@@ -221,7 +218,7 @@ const Page6 = () => {
                 textAlign={"justify"}
                 sx={{
                   "@media print": {
-                    fontSize: "1.2rem",
+                    fontSize: "1.3rem",
                   },
                 }}
               >
@@ -258,7 +255,7 @@ const Page6 = () => {
                   fontFamily={"serif"}
                   sx={{
                     "@media print": {
-                      fontSize: "1.2rem",
+                      fontSize: "1.3rem",
                     },
                   }}
                 >
@@ -271,7 +268,7 @@ const Page6 = () => {
                   fontFamily={"serif"}
                   sx={{
                     "@media print": {
-                      fontSize: "1.2rem",
+                      fontSize: "1.3rem",
                     },
                   }}
                 >

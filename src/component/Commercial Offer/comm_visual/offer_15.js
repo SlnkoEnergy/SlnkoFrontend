@@ -1,4 +1,4 @@
-import { Box, Grid, Sheet, Table, Button } from "@mui/joy";
+import { Box, Grid, Sheet, Table, Button, Typography } from "@mui/joy";
 import React, { useEffect, useState } from "react";
 import logo from "../../../assets/slnko_blue_logo.png";
 import Axios from "../../../utils/Axios";
@@ -266,7 +266,7 @@ const Summary = () => {
   const TotalVal27 = scmData.transportation * internalQuantity25;
 
   //***Total Value 32***/
-  const TotalVal32 = bdRate.slnko_charges * internalQuantity32 * 1000;
+  const TotalVal32 = Number(bdRate.slnko_charges);
 
   // ***for 1st row***
   const internalQuantity1 = offerData.module_capacity
@@ -1446,6 +1446,23 @@ const Summary = () => {
               </Table>
             </Sheet>
           </Box>
+          <Box sx={{ width: "90%", marginTop: "20px" }}>
+  <Typography
+    variant="h6"
+    sx={{
+      fontWeight: "bold",
+      fontFamily: "sans-serif",
+      backgroundColor: "#D9D9D9",
+      padding: "8px",
+    }}
+  >
+    Exclusions:
+  </Typography>
+  <Typography>- 1. Control Room</Typography>
+  <Typography>- 2. Water Arrangement</Typography>
+  <Typography>- 3. Boundary Wall / Fencing</Typography>
+</Box>
+         
         </Grid>
       </Grid>
     </>

@@ -163,23 +163,18 @@ const Page9 = () => {
             },
           }}
         >
-          <Box
+        <Box
             sx={{
               display: "flex",
               width: "100%",
               alignItems: "flex-end",
               gap: 2,
-              paddingTop: "20px",
-              "@media print": {
-                padding: "5px",
-                marginTop: "10px",
-              },
+              marginTop: "2%",
             }}
           >
             <img
-              width={"350px"}
-              height={"200px"}
-              className="logo-img2"
+              width={"220px"}
+              height={"110px"}
               alt="logo"
               src={logo}
               loading="lazy"
@@ -187,15 +182,11 @@ const Page9 = () => {
 
             <hr
               style={{
-                width: "50%",
-                borderTop: "3px solid #0f4C7f", // Keeps the line visible
-                margin: "40px 0",
-                boxShadow: "none !important", // Force removal of any shadow
-                background: "transparent !important", // Ensure no background color
-                border: "none !important", // Ensure no border shadow
-                // Remove any outline if applied
+                width: "60%",
+                color: "blue",
+                borderTop: "2px solid #0f4C7f",
+                margin: "19px 0",
               }}
-              className="hr-line3"
             />
           </Box>
 
@@ -277,24 +268,24 @@ const Page9 = () => {
 
             <Box>
               <ul style={{textAlign:"justify", "@media_print" :{
-                      fontSize:"1.2rem"
+                      fontSize:"1.3rem !important"
                     }}}>
                 <li
                   style={{
-                    fontFamily: "sans-serif",
+                    fontFamily: "serif",
                     fontSize: "1.3rem",
                     margin: "20px 0",
                    
                   }}
-                  className="ul-item"
+                  // className="ul-item"
                 >
                   We have considered {offerData.timeline} weeks to complete site
                   execution work, if any delay in site execution additional
                   charges to be disscussed and finalized again.
                 </li>
                 <li
-                  className="ul-item"
-                  style={{ fontFamily: "sans-serif", fontSize: "1.3rem" }}
+                  // className="ul-item"
+                  style={{ fontFamily: "serif", fontSize: "1.3rem" }}
                 >
                   GST @18% is Additional as actual.
                 </li>

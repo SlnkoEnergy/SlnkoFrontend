@@ -140,40 +140,30 @@ const Page18 = () => {
             },
           }}
         >
-          <Box
+        <Box
             sx={{
               display: "flex",
               width: "100%",
               alignItems: "flex-end",
               gap: 2,
-              paddingTop: "20px",
-              "@media print": {
-                padding: "5px",
-                marginTop: "10px",
-              },
+              marginTop: "2%",
             }}
           >
             <img
-              width={"350px"}
-              height={"200px"}
-              className="logo-img2"
+              width={"220px"}
+              height={"110px"}
               alt="logo"
               src={logo}
               loading="lazy"
-
             />
 
             <hr
               style={{
-                width: "50%",
-                borderTop: "3px solid #0f4C7f", // Keeps the line visible
-                margin: "40px 0",
-                boxShadow: "none !important", // Force removal of any shadow
-                background: "transparent !important", // Ensure no background color
-                border: "none !important", // Ensure no border shadow
-                // Remove any outline if applied
+                width: "60%",
+                color: "blue",
+                borderTop: "2px solid #0f4C7f",
+                margin: "19px 0",
               }}
-              className="hr-line3"
             />
           </Box>
 
