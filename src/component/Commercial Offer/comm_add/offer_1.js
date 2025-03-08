@@ -24,7 +24,7 @@ const Page1 = () => {
           "@media print": {
             width: "100%",
             height: "100%",
-            marginTop: "30px",
+            // marginTop: "30px",
           },
         }}
       >
@@ -108,7 +108,7 @@ const Page1 = () => {
                 <Typography
                   sx={{
                     "@media print": {
-                      fontSize: "1.125rem",
+                      fontSize: "1.5rem",
                     },
                   }}
                   paddingTop={"50px"}
@@ -134,7 +134,7 @@ const Page1 = () => {
                   component={"span"}
                   sx={{
                     "@media print": {
-                      fontSize: "1.125rem",
+                      fontSize: "1.5rem",
                     },
                   }}
                 >
@@ -163,7 +163,7 @@ const Page1 = () => {
                     textColor={"white"}
                     sx={{
                       "@media print": {
-                        fontSize: "2.5rem",
+                        fontSize: "3.5rem",
                         paddingTop: "480px",
                       },
                     }}
@@ -178,7 +178,7 @@ const Page1 = () => {
                     textColor={"white"}
                     sx={{
                       "@media print": {
-                        fontSize: "2.5rem",
+                        fontSize: "3.5rem",
                       },
                     }}
                   >
@@ -192,7 +192,7 @@ const Page1 = () => {
                       letterSpacing: "18px",
                       marginTop: "-40px",
                       "@media print": {
-                        fontSize: "120px",
+                        fontSize: "150px",
                       },
                     }}
                     fontSize={{ md: "6rem", lg: "6rem", xl: "7.5rem" }}
@@ -238,7 +238,7 @@ const Page1 = () => {
                               fontWeight: "600",
                               fontSize: { md: "0.9rem", xl: "1rem" },
                               "@media print": {
-                                fontSize: "1.3rem",
+                                fontSize: "1.25rem",
                               },
                               color: "white", // Added this to ensure text is white
                             }}
@@ -261,7 +261,7 @@ const Page1 = () => {
                 flexDirection: "row",
                 paddingTop: "20px",
                 "@media print": {
-                  paddingTop: "50px",
+                  paddingTop: "60px",
                 },
               }}
             >
@@ -339,62 +339,74 @@ const Page1 = () => {
               "@media print": {
                 backgroundColor: "#0f4C7f",
                 height: "100%",
+                width:"40% !important"
               },
             }}
           >
-            <Typography
-              sx={{
-                transform: "rotate(-90deg)",
-                transformOrigin: "center",
-                fontSize: {
-                  xs: "4rem",
-                  sm: "5rem",
-                  md: "5.5rem",
-                  lg: "6.5rem",
-                  xl: "7.5rem",
-                },
-                marginTop: "350px",
-                letterSpacing: "8px",
-                fontWeight: "bold",
-                opacity: "0.3",
+      <Typography
+  sx={{
+    transform: "rotate(-90deg)",
+    transformOrigin: "center",
+    fontSize: {
+      xs: "4rem",
+      sm: "5rem",
+      md: "5.5rem",
+      lg: "6.5rem",
+      xl: "7.5rem",
+    },
+    marginTop: "350px",
+    letterSpacing: "8px",
+    fontWeight: "bold",
+    opacity: "0.3",
+  
 
-                "@media print": {
-                  fontSize: "7.5rem",
-                },
-              }}
-              textColor={"#56A4DA"}
-              variant="h1"
-            >
-              YOJANA
-            </Typography>
-            <Typography
-              sx={{
-                transform: "rotate(-90deg)",
-                transformOrigin: "center",
-                fontSize: {
-                  xs: "4rem",
-                  sm: "5rem",
-                  md: "5.5rem",
-                  lg: "6.5rem",
-                  xl: "7.5rem",
-                },
-                marginTop: "350px",
-                letterSpacing: "8px",
-                fontWeight: "bold",
-                opacity: "0.3",
+    "@media print": {
+      
+      fontSize: "11rem !important",
+      // marginBottom:"-100px !important",
+      marginTop: "400px !important",
+      // padding:"40% !important"
+      // marginRight:"50px"
+    },
+  }}
+  textColor={"#56A4DA"}
+  variant="h1"
+>
+  YOJANA
+</Typography>
 
-                "@media print": {
-                  fontSize: "7.5rem",
-                },
-                "@media (min-width: 1536px) and (max-width: 1750px)": {
-                  marginTop: "300px",
-                },
-              }}
-              textColor={"#56A4DA"}
-              variant="h1"
-            >
-              KUSUM
-            </Typography>
+<Typography
+  sx={{
+    transform: "rotate(-90deg)",
+    transformOrigin: "center",
+    fontSize: {
+      xs: "4rem",
+      sm: "5rem",
+      md: "5.5rem",
+      lg: "6.5rem",
+      xl: "7.5rem",
+    },
+    marginTop: "350px",
+    letterSpacing: "8px",
+    fontWeight: "bold",
+    opacity: "0.3",
+    
+
+    "@media print": {
+      fontSize: "11rem !important",
+      marginTop: "450px !important",
+      // marginBottom:"-100px !important",
+      // padding:"40% !important"
+    },
+  }}
+  textColor={"#56A4DA"}
+  variant="h1"
+>
+  KUSUM
+</Typography>
+
+
+
           </Box>
         </Box>
       </Box>

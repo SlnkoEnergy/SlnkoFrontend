@@ -301,6 +301,14 @@ const Reference = () => {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
+          "@media print": {
+            width: "210mm",
+            height: "297mm",
+            overflow: "hidden",
+            margin: "0",
+            padding: "0",
+            pageBreakInside: "avoid",
+          },
         }}
       >
         <Grid
@@ -310,9 +318,9 @@ const Reference = () => {
             // marginTop: "5%",
             border: "2px solid #0f4C7f",
             "@media print": {
-              border: "0px",
-              width: "100%",
-              border: "2px solid #0f4C7f",
+              width: "210mm",
+              height: "297mm",
+              // border: "2px solid #0f4C7f",
               marginTop: "5%",
             },
           }}

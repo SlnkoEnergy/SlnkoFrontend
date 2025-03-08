@@ -19,10 +19,12 @@ const Page3 = () => {
           marginTop: "100px",
           marginBottom: "100px",
           "@media print": {
-            width: "210mm",
-            height: "297mm",
-            marginTop: "40px",
-            marginBottom:"0px"
+            width: "100%",
+            height: "100%",
+            overflow: "hidden",
+            margin: "0",
+            padding: "0",
+            pageBreakInside: "avoid",
           },
         }}
       >
@@ -32,8 +34,9 @@ const Page3 = () => {
             height: "100%",
             border: "2px solid #0f4C7f",
             "@media print": {
-              width: "210mm",
-              height: "297mm",
+              width: "100%",
+              height: "98vh",
+              boxShadow: "none",
             },
           }}
         >

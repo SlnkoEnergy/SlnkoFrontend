@@ -49,8 +49,8 @@ const Page18 = () => {
           justifyContent: "center",
           alignItems: "center",
           "@media print": {
-            width: "210mm",
-            height: "297mm",
+            width: "100%",
+            height: "100%",
             overflow: "hidden",
             margin: "0",
             padding: "0",
@@ -67,7 +67,7 @@ const Page18 = () => {
             width: "20%",
             zIndex: -1,
             "@media print": {
-              height: "297mm !important",
+              height: "100% !important",
               left: "67.59%",
               width: "40%",
               WebkitPrintColorAdjust: "exact",

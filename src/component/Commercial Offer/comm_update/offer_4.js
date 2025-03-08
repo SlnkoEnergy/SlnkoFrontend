@@ -18,8 +18,8 @@ const Page4 = () => {
           justifyContent: "center",
           alignItems: "center",
           "@media print": {
-            width: "210mm",
-            height: "297mm",
+            width: "100%",
+            height: "100%",
             overflow: "hidden",
             margin: "0",
             padding: "0",
@@ -33,8 +33,8 @@ const Page4 = () => {
             height: "100%",
             border: "2px solid #0f4C7f",
             "@media print": {
-              width: "210mm",
-              height: "297mm",
+              width: "100%",
+              height: "98vh",
             },
           }}
         >

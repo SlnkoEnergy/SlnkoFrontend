@@ -3,7 +3,7 @@ import Typography from "@mui/joy/Typography";
 import React from "react";
 import logo from "../../../assets/Comm_offer//white_logo.png";
 import logo1 from "../../../assets/Comm_offer/2(1).jpg";
-import logo2 from "../../../assets/Comm_offer/2(2).JPG";
+import logo2 from "../../../assets/Comm_offer/2(2).jpg";
 import "../CSS/offer.css";
 
 const Page2 = () => {
@@ -16,8 +16,8 @@ const Page2 = () => {
         justifyContent: "center",
         alignItems: "center",
         "@media print": {
-          width: "210mm",
-            height: "297mm",
+          width: "100%",
+            height: "100%",
             overflow: "hidden",
             margin: "0",
             padding: "0",
@@ -33,8 +33,8 @@ const Page2 = () => {
           border: "2px solid #0f4C7f",
           position:'relative',
           "@media print": {
-            width: "210mm",
-            height: "297mm",
+            width: "100%",
+            height: "98vh",
             boxShadow: "none",
           },
         }}
