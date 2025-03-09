@@ -2,9 +2,8 @@ import { Box, Grid, Typography } from "@mui/joy";
 import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import logo from "../../../assets/slnko_blue_logo.png";
-import "../CSS/offer.css";
 import Axios from "../../../utils/Axios";
-
+import "../CSS/offer.css";
 
 const Page16 = () => {
   const [offerData, setOfferData] = useState({
@@ -30,16 +29,16 @@ const Page16 = () => {
     transmission_length: "",
     transformer: "",
     column_type: "",
-    comment:""
+    comment: "",
   });
-    const [bdRate, setBdRate] = useState({
-        // spv_modules: "",
-        // module_mounting_structure: "",
-        // transmission_line: "",
-        slnko_charges: "",
-        // submitted_by_BD: "",
-        comment:""
-      });
+  const [bdRate, setBdRate] = useState({
+    // spv_modules: "",
+    // module_mounting_structure: "",
+    // transmission_line: "",
+    slnko_charges: "",
+    // submitted_by_BD: "",
+    comment: "",
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,12 +55,16 @@ const Page16 = () => {
           Axios.get("/get-comm-offer"),
           Axios.get("/get-comm-bd-rate"),
         ]);
-  
+
         const fetchedData = response.data;
         const fetchedBdData = answer.data;
 
-        const offerFetchData = fetchedData.find((item) => item.offer_id === offerRate);
-        const fetchRatebd = fetchedBdData.find((item) => item.offer_id === offerRate);
+        const offerFetchData = fetchedData.find(
+          (item) => item.offer_id === offerRate
+        );
+        const fetchRatebd = fetchedBdData.find(
+          (item) => item.offer_id === offerRate
+        );
 
         // const { data: commercialOffers } = await Axios.get("/get-comm-offer");
         // console.log("API Response:", commercialOffers);
@@ -111,7 +114,10 @@ const Page16 = () => {
           });
           console.log("Set BD Rate Data:", fetchRatebd);
         } else {
-          console.warn("No matching BD Rate data found for offer_id:", offerRate);
+          console.warn(
+            "No matching BD Rate data found for offer_id:",
+            offerRate
+          );
         }
       } catch (error) {
         console.error("Error fetching commercial offer data:", error);
@@ -122,7 +128,6 @@ const Page16 = () => {
     fetchData();
   }, []);
 
-
   return (
     <>
       <Grid
@@ -131,10 +136,11 @@ const Page16 = () => {
           // height: "100%",
           display: "flex",
           justifyContent: "center",
+          marginTop: "10px",
           alignItems: "center",
           "@media print": {
-            width: "210mm",
-            height: "297mm",
+            width: "84%",
+            height: "100%",
             overflow: "hidden",
             margin: "0",
             padding: "0",
@@ -163,8 +169,8 @@ const Page16 = () => {
             height: "100%",
             border: "2px solid #0f4C7f",
             "@media print": {
-              width: "210mm",
-              height: "297mm",
+              width: "100%",
+              height: "98vh",
             },
           }}
         >
@@ -178,8 +184,9 @@ const Page16 = () => {
             }}
           >
             <img
-              width={"220px"}
-              height={"110px"}
+              width={"350px"}
+              height={"200px"}
+              className="logo-img1"
               alt="logo"
               src={logo}
               loading="lazy"
@@ -187,11 +194,15 @@ const Page16 = () => {
 
             <hr
               style={{
-                width: "60%",
-                color: "blue",
-                borderTop: "2px solid #0f4C7f",
-                margin: "19px 0",
+                width: "50%",
+                borderTop: "3px solid #0f4C7f", // Keeps the line visible
+                margin: "40px 0",
+                boxShadow: "none !important", // Force removal of any shadow
+                background: "transparent !important", // Ensure no background color
+                border: "none !important", // Ensure no border shadow
+                // Remove any outline if applied
               }}
+              className="hr-line"
             />
           </Box>
 
@@ -209,66 +220,65 @@ const Page16 = () => {
                 textDecoration: "underline 2px rgb(243, 182, 39)",
                 textUnderlineOffset: "8px",
                 "@media print": {
-                  fontSize: "2rem",
+                  fontSize: "2.3rem",
                 },
               }}
               textColor={"#56A4DA"}
               fontSize={"3rem"}
               fontWeight={"bolder"}
             >
-              Terms & Condition
+              Terms & Conditions
             </Typography>
           </Box>
           <Box
-  sx={{
-    width: "100%",
-    padding: "0 15px",
-    textAlign: "justify",
-    paddingLeft: "2%",
-  }}
->
-  {[
-    "All the charges to be paid for Authority approval (direct or indirect) shall be paid by the client.",
-    "Client shall provide a clear ground in workable condition before start of the project.",
-    "Site security, material security and all kinds of insurance is in the scope of client.",
-    "All the liasoning paper works shall be done by SLNKO, however all the direct or indirect payments shall be made by client at actual.",
-    "Client shall timely make payment. Any delay due to non-payment or late payment shall be the client’s responsibility.",
-    "The above quantity is tentative and based on our previous records of sites which have been executed. It will change based on actual site conditions & land profile which shall be analyzed after detailed engineering.",
-    "The above rates are based on recent market conditions and may change in case of change in law or market conditions.",
-  ].map((text, index) => (
-    <Typography
-      key={index}
-      margin={"0 0 20px"}
-      fontSize={"1.5rem"}
-      fontWeight={400}
-      fontFamily={"serif"}
-      sx={{
-        "@media print": {
-          fontSize: "1.4rem",
-        },
-      }}
-    >
-      {String.fromCharCode(97 + index)}. {text}
-    </Typography>
-  ))}
+            sx={{
+              width: "100%",
+              padding: "0 15px",
+              textAlign: "justify",
+              paddingLeft: "2%",
+            }}
+          >
+            {[
+              "All the charges to be paid for Authority approval (direct or indirect) shall be paid by the client.",
+              "Client shall provide a clear ground in workable condition before start of the project.",
+              "Site security, material security and all kinds of insurance is in the scope of client.",
+              "All the liasoning paper works shall be done by SLNKO, however all the direct or indirect payments shall be made by client at actual.",
+              "Client shall timely make payment. Any delay due to non-payment or late payment shall be the client’s responsibility.",
+              "The above quantity is tentative and based on our previous records of sites which have been executed. It will change based on actual site conditions & land profile which shall be analyzed after detailed engineering.",
+              "The above rates are based on recent market conditions and may change in case of change in law or market conditions.",
+            ].map((text, index) => (
+              <Typography
+                key={index}
+                margin={"0 0 20px"}
+                fontSize={"1.5rem"}
+                fontWeight={400}
+                fontFamily={"serif"}
+                sx={{
+                  "@media print": {
+                    fontSize: "1.7rem",
+                  },
+                }}
+              >
+                {String.fromCharCode(97 + index)}. {text}
+              </Typography>
+            ))}
 
-  {bdRate.comment && (
-    <Typography
-      margin={"0 0 20px"}
-      fontSize={"1.5rem"}
-      fontWeight={400}
-      fontFamily={"serif"}
-      sx={{
-        "@media print": {
-          fontSize: "1.4rem",
-        },
-      }}
-    >
-      h. {bdRate.comment}
-    </Typography>
-  )}
-</Box>
-
+            {bdRate.comment && (
+              <Typography
+                margin={"0 0 20px"}
+                fontSize={"1.5rem"}
+                fontWeight={400}
+                fontFamily={"serif"}
+                sx={{
+                  "@media print": {
+                    fontSize: "1.7rem",
+                  },
+                }}
+              >
+                h. {bdRate.comment}
+              </Typography>
+            )}
+          </Box>
 
           <Box
             sx={{
@@ -278,7 +288,7 @@ const Page16 = () => {
               alignItems: "center",
               position: "relative",
               "@media print": {
-                marginTop: "49%",
+                marginTop: "45%",
               },
             }}
           >

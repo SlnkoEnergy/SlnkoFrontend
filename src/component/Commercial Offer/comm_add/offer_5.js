@@ -1,9 +1,9 @@
 import { Box, Grid, Typography } from "@mui/joy";
 import React, { useEffect, useState } from "react";
-import logo from "../../../assets/Comm_offer/slnko.png";
-import "../CSS/offer.css";
-import Axios from "../../../utils/Axios";
 import { toast } from "react-toastify";
+import logo from "../../../assets/Comm_offer/slnko.png";
+import Axios from "../../../utils/Axios";
+import "../CSS/offer.css";
 
 const Page5 = () => {
   const [offerData, setOfferData] = useState({
@@ -94,20 +94,20 @@ const Page5 = () => {
 
     fetchData();
   }, []);
-  
 
   return (
     <>
- <Grid
+      <Grid
         sx={{
           width: "100%",
           // height: "100%",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
+          marginTop: "10px",
           "@media print": {
-            width: "210mm",
-            height: "297mm",
+            width: "84%",
+            height: "100%",
             overflow: "hidden",
             margin: "0",
             padding: "0",
@@ -136,12 +136,11 @@ const Page5 = () => {
             height: "100%",
             border: "2px solid #0f4C7f",
             "@media print": {
-              width: "210mm",
-              height: "297mm",
+              width: "100%",
+              height: "98vh",
             },
           }}
         >
-          
           <Box
             sx={{
               display: "flex",
@@ -152,8 +151,9 @@ const Page5 = () => {
             }}
           >
             <img
-              width={"220px"}
-              height={"110px"}
+              width={"350px"}
+              height={"200px"}
+              className="logo-img1"
               alt="logo"
               src={logo}
               loading="lazy"
@@ -161,13 +161,18 @@ const Page5 = () => {
 
             <hr
               style={{
-                width: "60%",
-                color: "blue",
-                borderTop: "2px solid #0f4C7f",
-                margin: "19px 0",
+                width: "50%",
+                borderTop: "3px solid #0f4C7f", // Keeps the line visible
+                margin: "40px 0",
+                boxShadow: "none !important", // Force removal of any shadow
+                background: "transparent !important", // Ensure no background color
+                border: "none !important", // Ensure no border shadow
+                // Remove any outline if applied
               }}
+              className="hr-line"
             />
           </Box>
+          <br />
           <Box
             sx={{
               width: "100%",
@@ -180,9 +185,9 @@ const Page5 = () => {
               sx={{
                 textDecoration: "underline 3px rgb(243, 182, 39)",
                 textUnderlineOffset: "8px",
-                '@media print':{
-                  fontSize:'2rem'
-                }
+                "@media print": {
+                  fontSize: "2.5rem",
+                },
               }}
               textColor={"#56A4DA"}
               fontWeight={"bold"}
@@ -209,10 +214,10 @@ const Page5 = () => {
                 fontFamily={"serif"}
                 fontWeight={"400"}
                 sx={{
-                '@media print':{
-                  fontSize:'1.5rem'
-                }
-              }}
+                  "@media print": {
+                    fontSize: "2.2rem",
+                  },
+                }}
               >
                 To
               </Typography>
@@ -223,9 +228,9 @@ const Page5 = () => {
                 fontFamily={"serif"}
                 fontWeight={"400"}
                 sx={{
-                  '@media print':{
-                  fontSize:'1.5rem'
-                }
+                  "@media print": {
+                    fontSize: "2.2rem",
+                  },
                 }}
               >
                 {offerData.client_name}
@@ -237,12 +242,13 @@ const Page5 = () => {
                 fontFamily={"serif"}
                 fontWeight={"400"}
                 sx={{
-                  '@media print':{
-                  fontSize:'1.5rem'
-                }
+                  "@media print": {
+                    fontSize: "2.2rem",
+                  },
                 }}
               >
-                {offerData.village}, {offerData.district}, {offerData.state} {offerData.pincode}
+                {offerData.village}, {offerData.district}, {offerData.state}{" "}
+                {offerData.pincode}
               </Typography>
             </Box>
             <br />
@@ -252,16 +258,16 @@ const Page5 = () => {
                 fontSize={"1.8rem"}
                 fontFamily={"serif"}
                 fontWeight={"400"}
-
                 sx={{
-                  '@media print':{
-                  fontSize:'1.5rem'
-                }
+                  "@media print": {
+                    fontSize: "2.2rem",
+                  },
                 }}
               >
                 <span style={{ fontWeight: "bold" }}>Subject:</span> EPCM
-                Services for {offerData.ac_capacity} MW AC / {offerData.dc_capacity} MW DC Ground Mount {offerData.scheme} Solar Project
-                Component {offerData.component}
+                Services for {offerData.ac_capacity} MW AC /{" "}
+                {offerData.dc_capacity} MW DC Ground Mount {offerData.scheme}{" "}
+                Solar Project Component {offerData.component}
               </Typography>
             </Box>
             <br />
@@ -273,9 +279,9 @@ const Page5 = () => {
                 fontWeight={"400"}
                 textAlign={"justify"}
                 sx={{
-                  '@media print':{
-                  fontSize:'1.5rem'
-                }
+                  "@media print": {
+                    fontSize: "2.2rem",
+                  },
                 }}
               >
                 We are pleased to submit our commercial offer for the
@@ -288,60 +294,60 @@ const Page5 = () => {
             <br />
             <br />
             <Box>
-            <Typography
+              <Typography
                 fontSize={"1.8rem"}
                 fontFamily={"serif"}
                 fontWeight={"400"}
                 textAlign={"justify"}
                 sx={{
-                  '@media print':{
-                  fontSize:'1.5rem'
-                }
+                  "@media print": {
+                    fontSize: "2.2rem",
+                  },
                 }}
               >
-              We are looking forward to having a long and fruitful association with your esteemed organization through this project.
-
+                We are looking forward to having a long and fruitful association
+                with your esteemed organization through this project.
               </Typography>
             </Box>
             <br />
             <br />
 
             <Box>
-            <Typography
+              <Typography
                 fontSize={"1.8rem"}
                 fontFamily={"serif"}
                 fontWeight={"400"}
                 sx={{
-                  '@media print':{
-                  fontSize:'1.5rem'
-                }
+                  "@media print": {
+                    fontSize: "2.2rem",
+                  },
                 }}
-              >Thanking you! <br /> {offerData.prepared_by}
-              <br />
-              {offerData.mob_number || "979279XXX "}
+              >
+                Thanking you! <br /> {offerData.prepared_by}
+                <br />
+                {offerData.mob_number || "979279XXX "}
               </Typography>
             </Box>
 
             <Box
-            sx={{
-              display:'flex',
-              justifyContent:'center',
-              alignItems:'center',
-              position:"relative",
-              marginTop:'24%',
-              '@media print':{
-                marginTop:'18%'
-              }
-            }}
-            >
-            <hr
-              style={{
-                width: "80%",
-                color: "blue",
-                borderTop: "2px solid goldenrod",
-                
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                position: "relative",
+                marginTop: "24%",
+                "@media print": {
+                  marginTop: "16%",
+                },
               }}
-            />
+            >
+              <hr
+                style={{
+                  width: "80%",
+                  color: "blue",
+                  borderTop: "2px solid goldenrod",
+                }}
+              />
             </Box>
           </Box>
         </Grid>

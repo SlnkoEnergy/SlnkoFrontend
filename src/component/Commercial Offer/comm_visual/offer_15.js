@@ -1,10 +1,9 @@
-import { Box, Grid, Sheet, Table, Button, Typography } from "@mui/joy";
+import { Box, Button, Grid, Sheet, Table, Typography } from "@mui/joy";
 import React, { useEffect, useState } from "react";
-import logo from "../../../assets/slnko_blue_logo.png";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import Axios from "../../../utils/Axios";
 import "../CSS/offer.css";
-import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
 
 const Summary = () => {
   const [offerData, setOfferData] = useState({
@@ -1155,7 +1154,7 @@ const Summary = () => {
 
                         textAlign: "center",
                         // backgroundColor: "#D9D9D9",
-                        background: "#0f4c7f"
+                        background: "#0f4c7f",
                       }}
                     >
                       PLANT COSTING SUMMARY ONLY
@@ -1174,15 +1173,15 @@ const Summary = () => {
                       Capacity
                     </th>
                     <th
-                    colSpan={3}
-                    style={{
-                      fontWeight: "500",
-                      fontFamily: "sans-serif !important",
-                      fontSize: "1.2rem",
-                      textAlign: "center",
-                      background:"#ffffff",
-                      color:"black"
-                    }}
+                      colSpan={3}
+                      style={{
+                        fontWeight: "500",
+                        fontFamily: "sans-serif !important",
+                        fontSize: "1.2rem",
+                        textAlign: "center",
+                        background: "#ffffff",
+                        color: "black",
+                      }}
                     >
                       {offerData.dc_capacity} kWp DC
                     </th>
@@ -1446,23 +1445,96 @@ const Summary = () => {
               </Table>
             </Sheet>
           </Box>
-          <Box sx={{ width: "90%", marginTop: "20px" }}>
-  <Typography
-    variant="h6"
-    sx={{
-      fontWeight: "bold",
-      fontFamily: "sans-serif",
-      backgroundColor: "#D9D9D9",
-      padding: "8px",
-    }}
-  >
-    Exclusions:
-  </Typography>
-  <Typography>- 1. Control Room</Typography>
-  <Typography>- 2. Water Arrangement</Typography>
-  <Typography>- 3. Boundary Wall / Fencing</Typography>
-</Box>
-         
+          <Box
+            sx={{
+              width: "100%",
+              padding: "7px 10px",
+              "@media print": { marginTop: "20px" },
+            }}
+          >
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: "bold",
+                fontFamily: "sans-serif",
+                backgroundColor: "#D9D9D9",
+                padding: "8px",
+                "@media print": {
+                  fontSize: "1.2rem",
+                },
+              }}
+            >
+              Exclusions:
+            </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "flex-start",
+                p: 2,
+                "@media print": {
+                  padding: 0,
+                },
+              }}
+            >
+              <Box sx={{ px: 2, "@media print": { pl: 1 } }}>
+                <Typography
+                  sx={{ "@media print": { fontSize: "1.2rem" } }}
+                  fontWeight="bold"
+                >
+                  1. Control Room
+                </Typography>
+                <Typography
+                  sx={{ "@media print": { fontSize: "1.2rem" } }}
+                  fontWeight="bold"
+                >
+                  2. Water Arrangement
+                </Typography>
+                <Typography
+                  sx={{ "@media print": { fontSize: "1.2rem" } }}
+                  fontWeight="bold"
+                >
+                  3. Boundary Wall / Fencing
+                </Typography>
+              </Box>
+              <Box sx={{ px: 2, "@media print": { pl: 1 } }}>
+                <Typography
+                  sx={{ "@media print": { fontSize: "1.2rem" } }}
+                  fontWeight="bold"
+                >
+                  4. Road & Drainage System
+                </Typography>
+                <Typography
+                  sx={{ "@media print": { fontSize: "1.2rem" } }}
+                  fontWeight="bold"
+                >
+                  5. WMS (Weather Monitoring System)
+                </Typography>
+                <Typography
+                  sx={{ "@media print": { fontSize: "1.2rem" } }}
+                  fontWeight="bold"
+                >
+                  6. ROW (Right of Way)
+                </Typography>
+              </Box>
+              <Box sx={{ px: 2, "@media print": { pl: 1 } }}>
+                <Typography
+                  sx={{ "@media print": { fontSize: "1.2rem" } }}
+                  fontWeight="bold"
+                >
+                  7. Dry Cleaning Robot
+                </Typography>
+                <Typography
+                  sx={{ "@media print": { fontSize: "1.2rem" } }}
+                  fontWeight="bold"
+                >
+                  {bdRate.transmission_line === "0"
+                    ? "8. Transmission Line"
+                    : ""}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
         </Grid>
       </Grid>
     </>

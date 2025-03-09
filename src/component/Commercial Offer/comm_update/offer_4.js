@@ -1,11 +1,11 @@
 import { Box, Grid, Typography } from "@mui/joy";
 import React from "react";
-import logo from "../../../assets/Comm_offer/slnko.png";
-import "../CSS/offer.css";
 import img1 from "../../../assets/Comm_offer/cost.jpeg";
-import img2 from "../../../assets/Comm_offer/evaluation.jpeg";
 import img3 from "../../../assets/Comm_offer/cropped-Detailed.jpeg";
+import img2 from "../../../assets/Comm_offer/evaluation.jpeg";
+import logo from "../../../assets/Comm_offer/slnko.png";
 import img4 from "../../../assets/Comm_offer/testing.jpeg";
+import "../CSS/offer.css";
 
 const Page4 = () => {
   return (
@@ -16,9 +16,10 @@ const Page4 = () => {
           // height: "100%",
           display: "flex",
           justifyContent: "center",
+          marginTop: "10px",
           alignItems: "center",
           "@media print": {
-            width: "100%",
+            width: "84%",
             height: "100%",
             overflow: "hidden",
             margin: "0",
@@ -44,12 +45,17 @@ const Page4 = () => {
               width: "100%",
               alignItems: "flex-end",
               gap: 2,
-              marginTop: "2%",
+              paddingTop: "20px",
+              "@media print": {
+                padding: "5px",
+                marginTop: "10px",
+              },
             }}
           >
             <img
-              width={"220px"}
-              height={"110px"}
+              width={"350px"}
+              height={"200px"}
+              className="logo-img1"
               alt="logo"
               src={logo}
               loading="lazy"
@@ -57,35 +63,35 @@ const Page4 = () => {
 
             <hr
               style={{
-                width: "60%",
-                color: "blue",
-                borderTop: "2px solid #0f4C7f",
-                margin: "19px 0",
+                width: "50%",
+                borderTop: "3px solid #0f4C7f", // Keeps the line visible
+                margin: "40px 0",
+                boxShadow: "none !important", // Force removal of any shadow
+                background: "transparent !important", // Ensure no background color
+                border: "none !important", // Ensure no border shadow
+                // Remove any outline if applied
               }}
+              className="hr-line"
             />
           </Box>
-          <br />
-          <br />
-          <br />
-       
+
           <Box
             sx={{
               width: "100%",
               height: "40vh",
               display: "flex",
-              justifyContent: "center",
+              justifyContent: "space-evenly",
               alignItems: "center",
               padding: "10px",
+              marginLeft: "10px",
               "@media print": {
-                height: "24vh",
-                WebkitPrintColorAdjust: "exact",
-                printColorAdjust: "exact",
+                height: "26vh",
               },
             }}
           >
             <Box
               sx={{
-                width: "33%",
+                width: "33.33%",
                 backgroundColor: "#0f4C7f",
                 display: "flex",
                 justifyContent: "center",
@@ -101,7 +107,7 @@ const Page4 = () => {
                 fontWeight={"bolder"}
                 sx={{
                   "@media print": {
-                    fontSize: "3.4rem",
+                    fontSize: "4.6rem",
                   },
                 }}
               >
@@ -113,7 +119,7 @@ const Page4 = () => {
                 fontWeight={"bolder"}
                 sx={{
                   "@media print": {
-                    fontSize: "3.4rem",
+                    fontSize: "4.6rem",
                   },
                 }}
               >
@@ -125,7 +131,7 @@ const Page4 = () => {
                 fontWeight={"bolder"}
                 sx={{
                   "@media print": {
-                    fontSize: "3.4rem",
+                    fontSize: "4.6rem",
                   },
                 }}
               >
@@ -151,7 +157,7 @@ const Page4 = () => {
                 textAlign={"justify"}
                 sx={{
                   "@media print": {
-                    fontSize: "1.3rem",
+                    fontSize: "2rem",
                     padding: "30px 10px",
                   },
                 }}
@@ -173,7 +179,7 @@ const Page4 = () => {
               alignItems: "center",
               textUnderlineOffset: "8px",
               "@media print": {
-                marginTop: "30px",
+                marginTop: "60px",
               },
             }}
           >
@@ -184,7 +190,7 @@ const Page4 = () => {
               sx={{
                 textDecoration: "underline 3px rgb(243, 182, 39)",
                 "@media print": {
-                  fontSize: "2.2rem",
+                  fontSize: "3.4rem",
                 },
               }}
             >
@@ -197,8 +203,7 @@ const Page4 = () => {
                 textAlign: "center",
                 marginTop: "20px",
                 "@media print": {
-                  fontSize: "1.5rem",
-                  marginTop: "14px",
+                  fontSize: "2rem",
                 },
               }}
             >
@@ -215,7 +220,7 @@ const Page4 = () => {
               alignItems: "center",
               marginTop: "20px",
               "@media print": {
-                marginTop: "35px",
+                marginTop: "40px",
               },
             }}
           >
@@ -236,9 +241,7 @@ const Page4 = () => {
                   borderRadius: "100em 100em 0em 0em",
                   backgroundColor: "#F0EFEF",
                   "@media print": {
-                    WebkitPrintColorAdjust: "exact",
-                    printColorAdjust: "exact",
-                    height: "420px",
+                    height: "550px",
                   },
                 }}
               >
@@ -273,11 +276,15 @@ const Page4 = () => {
                 </ul>
               </Box>
             </Box>
+
             <Box
               sx={{
                 width: "100%",
                 height: "100%",
                 padding: "0 5px",
+                // "@media print": {
+                //   marginTop: "40px",
+                // },
               }}
             >
               <Box
@@ -290,9 +297,7 @@ const Page4 = () => {
                   borderRadius: "100em 100em 0em 0em",
                   backgroundColor: "#F0EFEF",
                   "@media print": {
-                    WebkitPrintColorAdjust: "exact",
-                    printColorAdjust: "exact",
-                    height: "420px",
+                    height: "550px",
                   },
                 }}
               >
@@ -348,9 +353,7 @@ const Page4 = () => {
                   borderRadius: "100em 100em 0em 0em",
                   backgroundColor: "#F0EFEF",
                   "@media print": {
-                    WebkitPrintColorAdjust: "exact",
-                    printColorAdjust: "exact",
-                    height: "420px",
+                    height: "550px",
                   },
                 }}
               >
@@ -402,9 +405,7 @@ const Page4 = () => {
                   borderRadius: "100em 100em 0em 0em",
                   backgroundColor: "#F0EFEF",
                   "@media print": {
-                    WebkitPrintColorAdjust: "exact",
-                    printColorAdjust: "exact",
-                    height: "420px",
+                    height: "550px",
                   },
                 }}
               >

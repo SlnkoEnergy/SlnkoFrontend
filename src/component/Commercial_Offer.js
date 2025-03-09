@@ -77,20 +77,76 @@ function Offer() {
     </>
   );
 
+  // useEffect(() => {
+  //   const fetchPaymentsAndProjects = async () => {
+  //     setLoading(true);
+  //     try {
+  //       const commResponse = await Axios.get("/get-comm-offer");
+  //       const newCommOffr = commResponse.data;
+
+  //       setCommRate((prevCommRate) => {
+  //         if (JSON.stringify(prevCommRate) !== JSON.stringify(newCommOffr)) {
+  //           console.log("Commercial Offer updated:", newCommOffr);
+  //           return newCommOffr;
+  //         }
+  //         return prevCommRate;
+  //       });
+  //     } catch (error) {
+  //       console.error("Error fetching data:", error);
+  //       setError(
+  //         <span
+  //           style={{
+  //             display: "flex",
+  //             alignItems: "center",
+  //             gap: "5px",
+  //             color: "red",
+  //             justifyContent: "center",
+  //             flexDirection: "column",
+  //             padding: "20px",
+  //           }}
+  //         >
+  //           <PermScanWifiIcon />
+  //           <Typography
+  //             fontStyle={"italic"}
+  //             fontWeight={"600"}
+  //             sx={{ color: "#0a6bcc" }}
+  //           >
+  //             Hang Tight! Internet Connection will be back soon..
+  //           </Typography>
+  //         </span>
+  //       );
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchPaymentsAndProjects();
+  // }, []);
+
   useEffect(() => {
-    const fetchPaymentsAndProjects = async () => {
+    const fetchCommAndBdRate = async () => {
       setLoading(true);
       try {
-        const commResponse = await Axios.get("/get-comm-offer");
-        const newCommOffr = commResponse.data;
+        // Fetch commercial offer and BD rate
+        const [commResponse, bdRateResponse] = await Promise.all([
+          Axios.get("/get-comm-offer"),
+          Axios.get("/get-comm-bd-rate"),
+        ]);
 
+        const newCommRate = commResponse.data;
+        const bdRateData = bdRateResponse.data;
+
+        // Update commercial offer data only if different
         setCommRate((prevCommRate) => {
-          if (JSON.stringify(prevCommRate) !== JSON.stringify(newCommOffr)) {
-            console.log("Commercial Offer updated:", newCommOffr);
-            return newCommOffr;
+          if (JSON.stringify(prevCommRate) !== JSON.stringify(newCommRate)) {
+            console.log("Commercial Offer updated:", newCommRate);
+            return newCommRate;
           }
           return prevCommRate;
         });
+
+        // Store BD Rate Data
+        setBdRateData(bdRateData);
       } catch (error) {
         console.error("Error fetching data:", error);
         setError(
@@ -111,7 +167,7 @@ function Offer() {
               fontWeight={"600"}
               sx={{ color: "#0a6bcc" }}
             >
-              Hang Tight! Internet Connection will be back soon..
+              Sit Back! Internet Connection will be back soon..
             </Typography>
           </span>
         );
@@ -120,8 +176,26 @@ function Offer() {
       }
     };
 
-    fetchPaymentsAndProjects();
+    fetchCommAndBdRate();
   }, []);
+
+  useEffect(() => {
+    if (commRate.length > 0) {
+      const mergedData = commRate.map((offer) => {
+        // Find matching BD rate by offer_id
+        const matchingBdRate = bdRateData.find(
+          (bd) => bd.offer_id === offer.offer_id
+        );
+
+        return {
+          ...offer,
+          slnkoCharges: matchingBdRate ? matchingBdRate.slnko_charges : 0, // Default to 0 if no match
+        };
+      });
+
+      setMergedData(mergedData);
+    }
+  }, [commRate, bdRateData]);
 
   const RowMenu = ({ currentPage, offer_id }) => {
     // console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
@@ -535,7 +609,7 @@ function Offer() {
     setSearchQuery(query.toLowerCase());
   };
 
-  const filteredAndSortedData = commRate
+  const filteredAndSortedData = mergedData
     .filter((project) => {
       const matchesSearchQuery = [
         "offer_id",
@@ -879,7 +953,7 @@ function Offer() {
                         textAlign: "center",
                       }}
                     >
-                      {Number(offer.rate).toLocaleString("en-IN")}
+                      {offer.slnkoCharges.toLocaleString("en-IN")}
                     </Box>
                     <Box
                       component="td"

@@ -3,7 +3,7 @@ import Typography from "@mui/joy/Typography";
 import React from "react";
 import logo from "../../../assets/Comm_offer//white_logo.png";
 import logo1 from "../../../assets/Comm_offer/2(1).jpg";
-import logo2 from "../../../assets/Comm_offer/2(2).jpg";
+import logo2 from "../../../assets/Comm_offer/2(2).JPG";
 import "../CSS/offer.css";
 
 const Page2 = () => {
@@ -13,13 +13,13 @@ const Page2 = () => {
         width: "100%",
         height: "130vh",
         display: "flex",
-        marginTop: "10px",
         justifyContent: "center",
         alignItems: "center",
+        marginTop: "10px",
         "@media print": {
-          width: "100%",
+          width: "84%",
           height: "100%",
-          marginTop: "30px",
+          // marginTop: "10px",
         },
       }}
     >
@@ -32,7 +32,7 @@ const Page2 = () => {
           position: "relative",
           "@media print": {
             width: "100%",
-            height: "100%",
+            height: "98vh",
             boxShadow: "none",
           },
         }}
@@ -43,22 +43,18 @@ const Page2 = () => {
             width: "30%",
             height: "100%",
             backgroundColor: "#1A5D90",
-            "@media print": {
-              WebkitPrintColorAdjust: "exact",
-              printColorAdjust: "exact",
-            },
           }}
         >
-          <Box sx={{ textAlign: "center", position: "absolute", zIndex: 2 }}>
-            <img
-              alt="logo"
-              src={logo}
-              style={{ width: "300px", height: "300px", marginLeft: "10px" }}
-              className="logo-img"
-              loading="lazy"
-            />
+          <Box sx={{ position: "absolute", zIndex: 2 }}>
+            <img alt="logo" src={logo} className="logo-img" loading="lazy" />
           </Box>
-          <Box>
+          <Box
+            sx={{
+              "@media print": {
+                gap: 2,
+              },
+            }}
+          >
             <Typography
               sx={{
                 transform: "rotate(90deg)",
@@ -69,7 +65,8 @@ const Page2 = () => {
                 marginTop: "145px",
                 opacity: "0.3",
                 "@media print": {
-                  marginTop: "80px",
+                  marginTop: "90px",
+                  fontSize: "10.5rem",
                 },
               }}
               textColor={"#56A4DA"}
@@ -86,6 +83,10 @@ const Page2 = () => {
                 marginTop: "330px",
                 fontWeight: "bold",
                 opacity: "0.3",
+                "@media print": {
+                  fontSize: "10.5rem",
+                  marginTop: "430px",
+                },
               }}
               textColor={"#56A4DA"}
               variant="h1"
@@ -134,7 +135,7 @@ const Page2 = () => {
                 sx={{
                   "@media print": {
                     fontWeight: "500",
-                    fontSize: "1.3rem",
+                    fontSize: "1.6rem",
                   },
                 }}
                 marginBottom="1rem"
@@ -198,7 +199,7 @@ const Page2 = () => {
           marginTop: "50px",
           "@media print": {
             top: "138%",
-            left: "35.1%",
+            left: "33.8%",
           },
         }}
       >
@@ -209,8 +210,8 @@ const Page2 = () => {
             fontWeight: 100,
             color: "white !important",
             "@media print": {
-              maxWidth: "450px",
-              fontSize: "48px",
+              maxWidth: "480px",
+              fontSize: "54px",
               color: "white !important",
             },
           }}

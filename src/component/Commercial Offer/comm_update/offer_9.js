@@ -30,13 +30,14 @@ const Page9 = () => {
     transformer: "",
     column_type: "",
   });
-    const [bdRate, setBdRate] = useState({
-        // spv_modules: "",
-        // module_mounting_structure: "",
-        // transmission_line: "",
-        slnko_charges: "",
-        // submitted_by_BD: "",
-      });
+
+  const [bdRate, setBdRate] = useState({
+    spv_modules: "",
+    module_mounting_structure: "",
+    transmission_line: "",
+    slnko_charges: "",
+    submitted_by_BD: "",
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -49,65 +50,69 @@ const Page9 = () => {
           return;
         }
 
-        const [response, answer] = await Promise.all([
+        console.log("Fetching data for Offer ID:", offerRate);
+
+        const [offerResponse, bdResponse] = await Promise.all([
           Axios.get("/get-comm-offer"),
           Axios.get("/get-comm-bd-rate"),
         ]);
-  
-        const fetchedData = response.data;
-        const fetchedBdData = answer.data;
 
-        const offerFetchData = fetchedData.find((item) => item.offer_id === offerRate);
-        const fetchRatebd = fetchedBdData.find((item) => item.offer_id === offerRate);
+        console.log("Fetched Offer Data:", offerResponse.data);
+        console.log("Fetched BD Rate Data:", bdResponse.data);
 
-        // const { data: commercialOffers } = await Axios.get("/get-comm-offer");
-        // console.log("API Response:", commercialOffers);
+        const matchedOffer = offerResponse.data.find(
+          (item) => item.offer_id === offerRate
+        );
+        const matchedBdRate = bdResponse.data.find(
+          (item) => item.offer_id === offerRate
+        );
 
-        // const matchedOffer = commercialOffers.find(
-        //   (item) => item.offer_id === offerRate
-        // );
-
-        if (offerFetchData) {
+        if (matchedOffer) {
           setOfferData({
-            offer_id: offerFetchData.offer_id ?? "",
-            client_name: offerFetchData.client_name ?? "",
-            village: offerFetchData.village ?? "",
-            district: offerFetchData.district ?? "",
-            state: offerFetchData.state ?? "",
-            pincode: offerFetchData.pincode ?? "",
-            ac_capacity: offerFetchData.ac_capacity ?? "",
-            dc_overloading: offerFetchData.dc_overloading ?? "",
-            dc_capacity: offerFetchData.dc_capacity ?? "",
-            scheme: offerFetchData.scheme ?? "",
-            component: offerFetchData.component ?? "",
-            rate: offerFetchData.rate ?? "",
-            timeline: offerFetchData.timeline ?? "",
-            prepared_by: offerFetchData.prepared_by ?? "",
-            module_type: offerFetchData.module_type ?? "",
-            module_capacity: offerFetchData.module_capacity ?? "",
-            inverter_capacity: offerFetchData.inverter_capacity ?? "",
-            evacuation_voltage: offerFetchData.evacuation_voltage ?? "",
-            module_orientation: offerFetchData.module_orientation ?? "",
-            transmission_length: offerFetchData.transmission_length ?? "",
-            transformer: offerFetchData.transformer ?? "",
-            column_type: offerFetchData.column_type ?? "",
+            offer_id: matchedOffer.offer_id ?? "",
+            client_name: matchedOffer.client_name ?? "",
+            village: matchedOffer.village ?? "",
+            district: matchedOffer.district ?? "",
+            state: matchedOffer.state ?? "",
+            pincode: matchedOffer.pincode ?? "",
+            ac_capacity: matchedOffer.ac_capacity ?? "",
+            dc_overloading: matchedOffer.dc_overloading ?? "",
+            dc_capacity: matchedOffer.dc_capacity ?? "",
+            scheme: matchedOffer.scheme ?? "",
+            component: matchedOffer.component ?? "",
+            rate: matchedOffer.rate ?? "",
+            timeline: matchedOffer.timeline ?? "",
+            prepared_by: matchedOffer.prepared_by ?? "",
+            module_type: matchedOffer.module_type ?? "",
+            module_capacity: matchedOffer.module_capacity ?? "",
+            inverter_capacity: matchedOffer.inverter_capacity ?? "",
+            evacuation_voltage: matchedOffer.evacuation_voltage ?? "",
+            module_orientation: matchedOffer.module_orientation ?? "",
+            transmission_length: matchedOffer.transmission_length ?? "",
+            transformer: matchedOffer.transformer ?? "",
+            column_type: matchedOffer.column_type ?? "",
           });
+          console.log("Updated Offer Data:", matchedOffer);
         } else {
-          console.error("No matching offer found.");
+          console.warn("No matching offer found for Offer ID:", offerRate);
           toast.error("No matching offer found.");
         }
-        if (fetchRatebd) {
+
+        if (matchedBdRate) {
           setBdRate({
-            // offer_id: fetchRatebd.offer_id || "",
-            // spv_modules: fetchRatebd.spv_modules || "",
-            // module_mounting_structure: fetchRatebd.module_mounting_structure || "",
-            // transmission_line: fetchRatebd.transmission_line || "",
-            slnko_charges: fetchRatebd.slnko_charges || "",
-            // submitted_by_BD: fetchRatebd.submitted_by_BD || "",
+            spv_modules: matchedBdRate.spv_modules ?? "",
+            module_mounting_structure:
+              matchedBdRate.module_mounting_structure ?? "",
+            transmission_line: matchedBdRate.transmission_line ?? "",
+            slnko_charges: matchedBdRate.slnko_charges ?? "",
+            submitted_by_BD: matchedBdRate.submitted_by_BD ?? "",
           });
-          console.log("Set BD Rate Data:", fetchRatebd);
+          console.log("Updated BD Rate Data:", matchedBdRate);
         } else {
-          console.warn("No matching BD Rate data found for offer_id:", offerRate);
+          console.warn(
+            "No matching BD Rate data found for Offer ID:",
+            offerRate
+          );
         }
       } catch (error) {
         console.error("Error fetching commercial offer data:", error);
@@ -126,9 +131,10 @@ const Page9 = () => {
           // height: "100%",
           display: "flex",
           justifyContent: "center",
+          marginTop: "10px",
           alignItems: "center",
           "@media print": {
-            width: "100%",
+            width: "84%",
             height: "100%",
             overflow: "hidden",
             margin: "0",
@@ -160,11 +166,10 @@ const Page9 = () => {
             "@media print": {
               width: "100%",
               height: "98vh",
-              //  marginTop: "5%",
             },
           }}
         >
-        <Box
+          <Box
             sx={{
               display: "flex",
               width: "100%",
@@ -174,8 +179,9 @@ const Page9 = () => {
             }}
           >
             <img
-              width={"220px"}
-              height={"110px"}
+              width={"350px"}
+              height={"200px"}
+              className="logo-img1"
               alt="logo"
               src={logo}
               loading="lazy"
@@ -183,11 +189,15 @@ const Page9 = () => {
 
             <hr
               style={{
-                width: "60%",
-                color: "blue",
-                borderTop: "2px solid #0f4C7f",
-                margin: "19px 0",
+                width: "50%",
+                borderTop: "3px solid #0f4C7f", // Keeps the line visible
+                margin: "40px 0",
+                boxShadow: "none !important", // Force removal of any shadow
+                background: "transparent !important", // Ensure no background color
+                border: "none !important", // Ensure no border shadow
+                // Remove any outline if applied
               }}
+              className="hr-line"
             />
           </Box>
 
@@ -198,7 +208,7 @@ const Page9 = () => {
               alignItems: "center",
               margin: "60px 0",
               "@media print": {
-                margin: "30px 0",
+                margin: "60px 30px 0 0",
               },
             }}
           >
@@ -207,7 +217,7 @@ const Page9 = () => {
                 textDecoration: "underline 2px rgb(243, 182, 39)",
                 textUnderlineOffset: "8px",
                 "@media print": {
-                  fontSize: "2rem",
+                  fontSize: "2.8rem",
                 },
               }}
               textColor={"#56A4DA"}
@@ -221,6 +231,9 @@ const Page9 = () => {
           <Box
             sx={{
               margin: "20px 10px",
+              "@media print": {
+                marginTop: "50px",
+              },
             }}
           >
             <Typography
@@ -230,7 +243,7 @@ const Page9 = () => {
               fontFamily={"serif"}
               sx={{
                 "@media print": {
-                  fontSize: "1.5rem",
+                  fontSize: "2.2rem",
                 },
               }}
             >
@@ -240,16 +253,15 @@ const Page9 = () => {
             <Sheet
               sx={{
                 width: "100%",
+                background: "white",
               }}
             >
               <Table className="table-header-page9">
                 <thead>
                   <tr>
                     <th>Description</th>
-                    <th>
-                      Capacity
-                    </th>
-                    <th > UoM</th>
+                    <th>Capacity</th>
+                    <th> UoM</th>
                     <th>Rate</th>
                   </tr>
                 </thead>
@@ -259,7 +271,10 @@ const Page9 = () => {
                       Engineering, Procurement, Construction and Management
                       Services as per above scope of work
                     </td>
-                    <td>{offerData.ac_capacity} MW AC / {offerData.dc_capacity} MW DC</td>
+                    <td>
+                      {offerData.ac_capacity} MW AC / {offerData.dc_capacity} MW
+                      DC
+                    </td>
                     <td>INR</td>
                     <td>{bdRate.slnko_charges}/- Wp</td>
                   </tr>
@@ -268,24 +283,21 @@ const Page9 = () => {
             </Sheet>
 
             <Box>
-              <ul style={{textAlign:"justify", "@media_print" :{
-                      fontSize:"1.3rem !important"
-                    }}}>
+              <ul style={{ textAlign: "justify" }}>
                 <li
                   style={{
                     fontFamily: "serif",
                     fontSize: "1.3rem",
                     margin: "20px 0",
-                   
                   }}
-                  // className="ul-item"
+                  className="ul-item-page9"
                 >
                   We have considered {offerData.timeline} weeks to complete site
                   execution work, if any delay in site execution additional
                   charges to be disscussed and finalized again.
                 </li>
                 <li
-                  // className="ul-item"
+                  className="ul-item-page9"
                   style={{ fontFamily: "serif", fontSize: "1.3rem" }}
                 >
                   GST @18% is Additional as actual.
@@ -298,7 +310,7 @@ const Page9 = () => {
                 marginTop: "60px",
                 marginBottom: "20px",
                 "@media print": {
-                  marginTop: "40px",
+                  marginTop: "60px",
                 },
               }}
             >
@@ -308,7 +320,7 @@ const Page9 = () => {
                   fontFamily: "serif",
                   fontWeight: "600",
                   "@media print": {
-                    fontSize: "1.5rem",
+                    fontSize: "2.2rem",
                   },
                 }}
               >
@@ -319,15 +331,14 @@ const Page9 = () => {
             <Sheet
               sx={{
                 width: "100%",
+                background: "white",
               }}
             >
               <Table className="table-header-page9">
                 <thead>
                   <tr>
                     <th>Description</th>
-                    <th>
-                      Payment Percentage
-                    </th>
+                    <th>Payment Percentage</th>
                   </tr>
                 </thead>
                 <tbody>

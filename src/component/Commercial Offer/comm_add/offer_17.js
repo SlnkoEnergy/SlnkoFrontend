@@ -1,39 +1,37 @@
 import { Box, Grid, Typography } from "@mui/joy";
 import React from "react";
-import logo from "../../../assets/slnko_blue_logo.png";
-import "../CSS/offer.css";
 import img1 from "../../../assets/Comm_offer/1.jpeg";
 import img2 from "../../../assets/Comm_offer/2.jpeg";
 import img3 from "../../../assets/Comm_offer/3.jpeg";
-import img4 from "../../../assets/Comm_offer/hisar.png";
 import img5 from "../../../assets/Comm_offer/5.jpeg";
 import img6 from "../../../assets/Comm_offer/6.jpeg";
 import img7 from "../../../assets/Comm_offer/7.jpeg";
+import img4 from "../../../assets/Comm_offer/hisar.png";
+import logo from "../../../assets/slnko_blue_logo.png";
+import "../CSS/offer.css";
 
-
-const Page17= () => {
-  
+const Page17 = () => {
   return (
     <>
       <Grid
         sx={{
           width: "100%",
-          // height: "100%",
+          height: "180vh",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
+          marginTop: "10px",
           "@media print": {
-            width: "210mm",
-            height: "297mm",
+            width: "84%",
+            height: "100%",
             overflow: "hidden",
             margin: "0",
             padding: "0",
             pageBreakInside: "avoid",
           },
-          paddingLeft: "40px",
         }}
       >
-          {/* <Box
+        {/* <Box
                   sx={{
                     position: "absolute",
                     left: "60%",
@@ -49,16 +47,16 @@ const Page17= () => {
                   }}
                 ></Box> */}
         <Grid
-                  sx={{
-                    width: "60%",
-                    height: "100%",
-                    border: "2px solid #0f4C7f",
-                    "@media print": {
-                      width: "210mm",
-                      height: "297mm",
-                    },
-                  }}
-                >
+          sx={{
+            width: "60%",
+            height: "100%",
+            border: "2px solid #0f4C7f",
+            "@media print": {
+              width: "100%",
+              height: "98vh",
+            },
+          }}
+        >
           <Box
             sx={{
               display: "flex",
@@ -69,8 +67,9 @@ const Page17= () => {
             }}
           >
             <img
-              width={"220px"}
-              height={"110px"}
+              width={"350px"}
+              height={"200px"}
+              className="logo-img1"
               alt="logo"
               src={logo}
               loading="lazy"
@@ -78,11 +77,15 @@ const Page17= () => {
 
             <hr
               style={{
-                width: "60%",
-                color: "blue",
-                borderTop: "2px solid #0f4C7f",
-                margin: "19px 0",
+                width: "50%",
+                borderTop: "3px solid #0f4C7f", // Keeps the line visible
+                margin: "40px 0",
+                boxShadow: "none !important", // Force removal of any shadow
+                background: "transparent !important", // Ensure no background color
+                border: "none !important", // Ensure no border shadow
+                // Remove any outline if applied
               }}
+              className="hr-line"
             />
           </Box>
 
@@ -90,6 +93,9 @@ const Page17= () => {
             sx={{
               width: "100%",
               padding: "40px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
             }}
           >
             <Typography
@@ -98,7 +104,7 @@ const Page17= () => {
                 textUnderlineOffset: "8px",
               }}
               textColor={"#56A4DA"}
-              fontSize={"1.5rem"}
+              fontSize={"2.8rem"}
               fontFamily={"serif"}
               fontWeight={"bold"}
             >
@@ -111,9 +117,10 @@ const Page17= () => {
           <Box
             sx={{
               position: "relative",
-              width: 300, // Adjust as needed
-              height: 250, // Adjust as needed
-              top: 5,
+              width: 350, // Adjust as needed
+              height: 300, // Adjust as needed
+              top: 10,
+              left: 70,
               "@media print": {
                 printColorAdjust: "exact",
               },
@@ -148,7 +155,6 @@ const Page17= () => {
 
             {/* Inner Box (Image Layer) */}
             <Box
-            
               sx={{
                 width: "90%", // Slightly smaller to fit inside the border
                 height: "90%",
@@ -160,7 +166,6 @@ const Page17= () => {
                 backgroundImage: `url(${img1})`, // Replace with your image
                 backgroundSize: "cover",
                 backgroundPosition: "center",
-                
               }}
             />
           </Box>
@@ -168,10 +173,10 @@ const Page17= () => {
           <Box
             sx={{
               position: "relative",
-              width: 300, // Adjust as needed
-              height: 250,
-
-              top: -13,
+              width: 350, // Adjust as needed
+              height: 300,
+              top: -6,
+              left: 70,
             }}
           >
             {/* Outer Box (Shadow Layer) */}
@@ -221,10 +226,11 @@ const Page17= () => {
           <Box
             sx={{
               position: "relative",
-              width: 300, // Adjust as needed
-              height: 250,
+              width: 350, // Adjust as needed
+              height: 300,
 
-              top: -28,
+              top: -34,
+              left: 70,
             }}
           >
             {/* Outer Box (Shadow Layer) */}
@@ -275,10 +281,10 @@ const Page17= () => {
           <Box
             sx={{
               position: "relative",
-              width: 300, // Adjust as needed
-              height: 250,
-              left: 210,
-              top: -628,
+              width: 350, // Adjust as needed
+              height: 300,
+              left: 317,
+              top: -748,
             }}
           >
             {/* Outer Box (Shadow Layer) */}
@@ -330,10 +336,10 @@ const Page17= () => {
           <Box
             sx={{
               position: "relative",
-              width: 300, // Adjust as needed
-              height: 250,
-              left: 210,
-              top: -648,
+              width: 350, // Adjust as needed
+              height: 300,
+              left: 315,
+              top: -775,
             }}
           >
             {/* Outer Box (Shadow Layer) */}
@@ -385,10 +391,10 @@ const Page17= () => {
           <Box
             sx={{
               position: "relative",
-              width: 300, // Adjust as needed
-              height: 250,
-              left: 420,
-              top: -1012,
+              width: 350, // Adjust as needed
+              height: 300,
+              left: 560,
+              top: -1211,
             }}
           >
             {/* Outer Box (Shadow Layer) */}
@@ -440,10 +446,10 @@ const Page17= () => {
           <Box
             sx={{
               position: "relative",
-              width: 300, // Adjust as needed
-              height: 250,
-              left: 420,
-              top: -1032,
+              width: 350, // Adjust as needed
+              height: 300,
+              left: 558,
+              top: -1232,
             }}
           >
             {/* Outer Box (Shadow Layer) */}
@@ -493,15 +499,15 @@ const Page17= () => {
           <Box
             sx={{
               position: "relative",
-              top: -1140,
-              left: -100,
+              top: -1360,
+              left: -90,
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
               flexDirection: "column",
               "@media print": {
-                top: -1140,
-                left: -30,
+                top: -1360,
+                left: -38,
               },
             }}
           >
@@ -538,10 +544,10 @@ const Page17= () => {
             sx={{
               position: "relative",
               top: -950,
-              left: 95,
+              left: 220,
               "@media print": {
-                top: -1005,
-                left: 95,
+                top: -1070,
+                left: 220,
               },
             }}
           >
@@ -558,11 +564,11 @@ const Page17= () => {
           <Box
             sx={{
               position: "relative",
-              top: -1840,
-              left: 445,
+              top: -2170,
+              left: 685,
               "@media print": {
-                top: -1840,
-                left: 445,
+                top: -2170,
+                left: 685,
               },
             }}
           >
@@ -573,7 +579,7 @@ const Page17= () => {
               fontFamily={"montserrat"}
               sx={{
                 "@media print": {
-                  fontSize: "1.7rem",
+                  fontSize: "2.2rem",
                 },
               }}
             >
@@ -584,12 +590,8 @@ const Page17= () => {
           <Box
             sx={{
               position: "relative",
-              top: -1845,
-              left: 395,
-              "@media print": {
-                top: -1840,
-                left: 405,
-              },
+              top: -2175,
+              left: 660,
             }}
           >
             <Typography
@@ -599,7 +601,7 @@ const Page17= () => {
               fontFamily={"montserrat"}
               sx={{
                 "@media print": {
-                  fontSize: "1.7rem",
+                  fontSize: "2.2rem",
                 },
               }}
             >

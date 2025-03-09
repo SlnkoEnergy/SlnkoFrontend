@@ -1,20 +1,20 @@
 import { Box, Grid, Typography } from "@mui/joy";
 import React from "react";
-import logo from "../../../assets/slnko_blue_logo.png";
-import "../CSS/offer.css";
 import img1 from "../../../assets/Comm_offer/client_logo/1.png";
 import img2 from "../../../assets/Comm_offer/client_logo/2.png";
 import img3 from "../../../assets/Comm_offer/client_logo/3.png";
 import img4 from "../../../assets/Comm_offer/client_logo/4.png";
 import img5 from "../../../assets/Comm_offer/client_logo/5.png";
 import img6 from "../../../assets/Comm_offer/client_logo/6.png";
+import logo from "../../../assets/slnko_blue_logo.png";
+import "../CSS/offer.css";
 
-import img7 from "../../../assets/Comm_offer/client_logo/7.png";
-import img8 from "../../../assets/Comm_offer/client_logo/8.png";
-import img9 from "../../../assets/Comm_offer/client_logo/9.png";
 import img10 from "../../../assets/Comm_offer/client_logo/10.png";
 import img11 from "../../../assets/Comm_offer/client_logo/12.png";
 import img12 from "../../../assets/Comm_offer/client_logo/13.png";
+import img7 from "../../../assets/Comm_offer/client_logo/7.png";
+import img8 from "../../../assets/Comm_offer/client_logo/8.png";
+import img9 from "../../../assets/Comm_offer/client_logo/9.png";
 
 import img13 from "../../../assets/Comm_offer/client_logo/13.png";
 import img14 from "../../../assets/Comm_offer/client_logo/14.png";
@@ -47,9 +47,10 @@ const Page18 = () => {
           // height: "100%",
           display: "flex",
           justifyContent: "center",
+          marginTop: "10px",
           alignItems: "center",
           "@media print": {
-            width: "100%",
+            width: "84%",
             height: "100%",
             overflow: "hidden",
             margin: "0",
@@ -67,11 +68,9 @@ const Page18 = () => {
             width: "20%",
             zIndex: -1,
             "@media print": {
-              height: "100% !important",
+              height: "98vh !important",
               left: "67.59%",
               width: "40%",
-              WebkitPrintColorAdjust: "exact",
-              printColorAdjust: "exact",
             },
             "&::before": {
               content: '""',
@@ -97,15 +96,16 @@ const Page18 = () => {
               fontWeight: "bold",
               opacity: "0.7",
               "@media print": {
-                marginTop: "385px",
-                fontSize: "5.5rem",
+                marginTop: "565px !important",
+                fontSize: "8.5rem",
                 marginRight: "50px",
+                letterSpacing: "12px",
                 opacity: 0.7,
               },
             }}
             textColor={"white"}
-            fontSize={"7rem"}
-            marginTop={"515px"}
+            fontSize={"8.5rem"}
+            marginTop={"545px"}
           >
             YOJANA
           </Typography>
@@ -113,18 +113,20 @@ const Page18 = () => {
           <Typography
             sx={{
               transform: "rotate(-90deg)",
-              marginTop: "320px",
+              marginTop: "400px",
               letterSpacing: "10px",
               fontWeight: "bold",
               opacity: "0.7",
               "@media print": {
-                fontSize: "5.5rem",
+                fontSize: "8.5rem",
                 marginRight: "50px",
+                letterSpacing: "12px",
+
                 opacity: 0.7,
               },
             }}
             textColor={"white"}
-            fontSize={"7rem"}
+            fontSize={"8.5rem"}
           >
             KUSUM{" "}
           </Typography>
@@ -135,12 +137,12 @@ const Page18 = () => {
             height: "100%",
             border: "2px solid #0f4C7f",
             "@media print": {
-              width: "210mm",
-              height: "297mm",
+              width: "100%",
+              height: "98vh",
             },
           }}
         >
-        <Box
+          <Box
             sx={{
               display: "flex",
               width: "100%",
@@ -150,8 +152,9 @@ const Page18 = () => {
             }}
           >
             <img
-              width={"220px"}
-              height={"110px"}
+              width={"350px"}
+              height={"200px"}
+              className="logo-img1"
               alt="logo"
               src={logo}
               loading="lazy"
@@ -159,11 +162,15 @@ const Page18 = () => {
 
             <hr
               style={{
-                width: "60%",
-                color: "blue",
-                borderTop: "2px solid #0f4C7f",
-                margin: "19px 0",
+                width: "50%",
+                borderTop: "3px solid #0f4C7f", // Keeps the line visible
+                margin: "40px 0",
+                boxShadow: "none !important", // Force removal of any shadow
+                background: "transparent !important", // Ensure no background color
+                border: "none !important", // Ensure no border shadow
+                // Remove any outline if applied
               }}
+              className="hr-line"
             />
           </Box>
 
@@ -182,7 +189,7 @@ const Page18 = () => {
                 textDecoration: "underline 2px rgb(243, 182, 39)",
                 textUnderlineOffset: "8px",
                 "@media print": {
-                  fontSize: "2rem",
+                  fontSize: "2.5rem",
                 },
               }}
               fontWeight={"bolder"}
@@ -211,12 +218,48 @@ const Page18 = () => {
               }}
               className="box-img"
             >
-              <img height={"100px"} width={"100px"} alt="img1" src={img1}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img2" src={img2}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img3" src={img3}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img4" src={img4}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img5" src={img5}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img6" src={img6}  loading="lazy"/>
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img1"
+                src={img1}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img2"
+                src={img2}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img3"
+                src={img3}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img4"
+                src={img4}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img5"
+                src={img5}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img6"
+                src={img6}
+                loading="lazy"
+              />
             </Box>
             <Box
               sx={{
@@ -225,12 +268,48 @@ const Page18 = () => {
               }}
               className="box-img"
             >
-              <img height={"100px"} width={"100px"} alt="img7" src={img7}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img8" src={img8}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img9" src={img9}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img10" src={img10}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img11" src={img11}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img12" src={img12}  loading="lazy"/>
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img7"
+                src={img7}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img8"
+                src={img8}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img9"
+                src={img9}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img10"
+                src={img10}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img11"
+                src={img11}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img12"
+                src={img12}
+                loading="lazy"
+              />
             </Box>
             <Box
               sx={{
@@ -239,12 +318,48 @@ const Page18 = () => {
               }}
               className="box-img"
             >
-              <img height={"100px"} width={"100px"} alt="img13" src={img13}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img14" src={img14}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img15" src={img15}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img16" src={img16}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img17" src={img17}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img18" src={img18}  loading="lazy"/>
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img13"
+                src={img13}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img14"
+                src={img14}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img15"
+                src={img15}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img16"
+                src={img16}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img17"
+                src={img17}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img18"
+                src={img18}
+                loading="lazy"
+              />
             </Box>
             <Box
               sx={{
@@ -253,12 +368,48 @@ const Page18 = () => {
               }}
               className="box-img"
             >
-              <img height={"100px"} width={"100px"} alt="img19" src={img19}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img20" src={img20}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img21" src={img21}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img22" src={img22}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img23" src={img23}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img24" src={img24}  loading="lazy"/>
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img19"
+                src={img19}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img20"
+                src={img20}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img21"
+                src={img21}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img22"
+                src={img22}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img23"
+                src={img23}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img24"
+                src={img24}
+                loading="lazy"
+              />
             </Box>
 
             <Box
@@ -268,11 +419,41 @@ const Page18 = () => {
               }}
               className="box-img"
             >
-              <img height={"100px"} width={"100px"} alt="img25" src={img25}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img26" src={img26}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img27" src={img27}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img28" src={img28}  loading="lazy"/>
-              <img height={"100px"} width={"100px"} alt="img29" src={img29}  loading="lazy"/>
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img25"
+                src={img25}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img26"
+                src={img26}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img27"
+                src={img27}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img28"
+                src={img28}
+                loading="lazy"
+              />
+              <img
+                height={"100px"}
+                width={"100px"}
+                alt="img29"
+                src={img29}
+                loading="lazy"
+              />
             </Box>
           </Box>
 
@@ -285,6 +466,9 @@ const Page18 = () => {
               alignItems: "center",
               margin: "60px 0",
               padding: "0 30px",
+              "@media print": {
+                marginTop: "200px",
+              },
             }}
           >
             <Typography
@@ -293,7 +477,7 @@ const Page18 = () => {
               textColor={"#56A4DA"}
               sx={{
                 "@media print": {
-                  fontSize: "2rem",
+                  fontSize: "2.4rem",
                 },
               }}
             >
@@ -305,7 +489,7 @@ const Page18 = () => {
               textColor={"#56A4DA"}
               sx={{
                 "@media print": {
-                  fontSize: "2rem",
+                  fontSize: "2.4rem",
                 },
               }}
             >
@@ -331,7 +515,7 @@ const Page18 = () => {
               textColor={"black"}
               sx={{
                 "@media print": {
-                  fontSize: "1.5rem",
+                  fontSize: "1.7rem",
                 },
               }}
             >
@@ -343,7 +527,7 @@ const Page18 = () => {
               textColor={"black"}
               sx={{
                 "@media print": {
-                  fontSize: "1.5rem",
+                  fontSize: "1.7rem",
                 },
               }}
             >
@@ -355,7 +539,7 @@ const Page18 = () => {
               textColor={"black"}
               sx={{
                 "@media print": {
-                  fontSize: "1.5rem",
+                  fontSize: "1.7rem",
                 },
               }}
             >

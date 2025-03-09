@@ -1,9 +1,9 @@
 import { Box, Grid, Sheet, Table, Typography } from "@mui/joy";
 import React, { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 import logo from "../../../assets/slnko_blue_logo.png";
 import Axios from "../../../utils/Axios";
 import "../CSS/offer.css";
-import { toast } from "react-toastify";
 
 const Reference = () => {
   const [offerData, setOfferData] = useState({
@@ -87,39 +87,43 @@ const Reference = () => {
       try {
         const offerRate = localStorage.getItem("offer_rate");
         console.log("Fetched offer_id from localStorage page10:", offerRate);
-  
+
         if (!offerRate) {
           console.error("Offer ID not found in localStorage");
           toast.error("Offer ID is missing!");
           return;
         }
-  
+
         const [response, result, answer] = await Promise.all([
           Axios.get("/get-comm-offer"),
           Axios.get("/get-comm-scm-rate"),
           Axios.get("/get-comm-bd-rate"),
         ]);
-  
+
         const fetchedData = response.data;
         const fetchedScmData = result.data[0];
         const fetchedBdData = answer.data;
-  
+
         console.log("Fetched Offer Data:", fetchedData);
         console.log("Fetched SCM Rate Data:", fetchedScmData);
         console.log("Fetched BD Rate Data:", fetchedBdData);
-  
-        const offerFetchData = fetchedData.find((item) => item.offer_id === offerRate);
-        const fetchRatebd = fetchedBdData.find((item) => item.offer_id === offerRate);
-  
+
+        const offerFetchData = fetchedData.find(
+          (item) => item.offer_id === offerRate
+        );
+        const fetchRatebd = fetchedBdData.find(
+          (item) => item.offer_id === offerRate
+        );
+
         console.log("Matched Offer Data:", offerFetchData);
         console.log("Matched BD Rate Data:", fetchRatebd);
-  
+
         if (!offerFetchData) {
           console.error("No matching offer data found");
           toast.error("No matching offer data found!");
           return;
         }
-  
+
         setOfferData({
           offer_id: offerFetchData.offer_id || "",
           client_name: offerFetchData.client_name || "",
@@ -144,20 +148,22 @@ const Reference = () => {
           transformer: offerFetchData.transformer || "",
           column_type: offerFetchData.column_type || "",
         });
-  
+
         console.log("Set Offer Data:", offerFetchData);
-  
+
         setscmData({
           spv_modules_555: fetchedScmData.spv_modules_555 || "",
           spv_modules_580: fetchedScmData.spv_modules_580 || "",
           spv_modules_550: fetchedScmData.spv_modules_550 || "",
           spv_modules_585: fetchedScmData.spv_modules_585 || "",
           solar_inverter: fetchedScmData.solar_inverter || "",
-          module_mounting_structure_scm: fetchedScmData.module_mounting_structure || "",
+          module_mounting_structure_scm:
+            fetchedScmData.module_mounting_structure || "",
           mounting_hardware: fetchedScmData.mounting_hardware || "",
           dc_cable: fetchedScmData.dc_cable || "",
           ac_cable_inverter_accb: fetchedScmData.ac_cable_inverter_accb || "",
-          ac_cable_accb_transformer: fetchedScmData.ac_cable_accb_transformer || "",
+          ac_cable_accb_transformer:
+            fetchedScmData.ac_cable_accb_transformer || "",
           ac_ht_cable_11KV: fetchedScmData.ac_ht_cable_11KV || "",
           ac_ht_cable_33KV: fetchedScmData.ac_ht_cable_33KV || "",
           earthing_station: fetchedScmData.earthing_station || "",
@@ -182,37 +188,41 @@ const Reference = () => {
           vcb_kiosk: fetchedScmData.vcb_kiosk || "",
           slnko_charges_scm: fetchedScmData.slnko_charges_scm || "",
           installation_commissioing: {
-            labour_works: fetchedScmData.installation_commissioing?.labour_works || "",
-            machinery: fetchedScmData.installation_commissioing?.machinery || "",
-            civil_material: fetchedScmData.installation_commissioing?.civil_material || "",
+            labour_works:
+              fetchedScmData.installation_commissioing?.labour_works || "",
+            machinery:
+              fetchedScmData.installation_commissioing?.machinery || "",
+            civil_material:
+              fetchedScmData.installation_commissioing?.civil_material || "",
           },
         });
-  
+
         console.log("Set SCM Data:", fetchedScmData);
-  
+
         if (fetchRatebd) {
           setBdRate({
             // offer_id: fetchRatebd.offer_id || "",
             spv_modules: fetchRatebd.spv_modules || "",
-            module_mounting_structure: fetchRatebd.module_mounting_structure || "",
+            module_mounting_structure:
+              fetchRatebd.module_mounting_structure || "",
             transmission_line: fetchRatebd.transmission_line || "",
             slnko_charges: fetchRatebd.slnko_charges || "",
             submitted_by_BD: fetchRatebd.submitted_by_BD || "",
           });
           console.log("Set BD Rate Data:", fetchRatebd);
         } else {
-          console.warn("No matching BD Rate data found for offer_id:", offerRate);
+          console.warn(
+            "No matching BD Rate data found for offer_id:",
+            offerRate
+          );
         }
-  
       } catch (error) {
         console.error("Error fetching commercial offer data:", error);
       }
     };
-  
+
     fetchData();
   }, []);
-  
-  
 
   const getSpecification = (module_capacity) => {
     // Use the module_capacity value directly for specification logic
@@ -251,11 +261,11 @@ const Reference = () => {
 
   // ***for 3rd row***
   const InternalQuantity3 =
-  offerData.module_orientation === "Portrait"
-    ? 23 * 1000 * offerData.dc_capacity
-    : offerData.module_orientation === "Landscape"
-      ? 29 * 1000 * offerData.dc_capacity
-      : 33 * 1000 * offerData.dc_capacity;
+    offerData.module_orientation === "Portrait"
+      ? 23 * 1000 * offerData.dc_capacity
+      : offerData.module_orientation === "Landscape"
+        ? 29 * 1000 * offerData.dc_capacity
+        : 33 * 1000 * offerData.dc_capacity;
 
   // ***for 5th row***
   const InternalQuantity5 = offerData.dc_capacity * 7000;
@@ -300,10 +310,11 @@ const Reference = () => {
           // height: "100%",
           display: "flex",
           justifyContent: "center",
+          marginTop: "10px",
           alignItems: "center",
           "@media print": {
-            width: "210mm",
-            height: "297mm",
+            width: "84%",
+            height: "100%",
             overflow: "hidden",
             margin: "0",
             padding: "0",
@@ -318,10 +329,9 @@ const Reference = () => {
             // marginTop: "5%",
             border: "2px solid #0f4C7f",
             "@media print": {
-              width: "210mm",
-              height: "297mm",
+              width: "100%",
+              height: "98vh",
               // border: "2px solid #0f4C7f",
-              marginTop: "5%",
             },
           }}
         >
@@ -335,8 +345,9 @@ const Reference = () => {
             }}
           >
             <img
-              width={"220px"}
-              height={"110px"}
+              width={"350px"}
+              height={"200px"}
+              className="logo-img1"
               alt="logo"
               src={logo}
               loading="lazy"
@@ -344,18 +355,21 @@ const Reference = () => {
 
             <hr
               style={{
-                width: "60%",
-                color: "blue",
-                borderTop: "2px solid #0f4C7f",
-                margin: "19px 0",
+                width: "50%",
+                borderTop: "3px solid #0f4C7f", // Keeps the line visible
+                margin: "40px 0",
+                boxShadow: "none !important", // Force removal of any shadow
+                background: "transparent !important", // Ensure no background color
+                border: "none !important", // Ensure no border shadow
+                // Remove any outline if applied
               }}
+              className="hr-line"
             />
           </Box>
+
           <Box
             sx={{
               width: "100%",
-              height: "100%",
-              marginTop: "20px",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
@@ -387,221 +401,202 @@ const Reference = () => {
               Material List
             </Typography>
           </Box>
-          <Box
+          <Sheet
             sx={{
               width: "100%",
-              height: "100%",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              margin: "auto",
-              "@media-print": {
-                width: "100%",
-              },
+              padding: "7px 10px",
+              background: "white",
             }}
           >
-            <Sheet
-              sx={{
-                width: "99.5%",
-                height: "100%",
-                backgroundColor: "white",
-                margin: "10px",
-                display: "flex",
-                alignItems: "center",
-                flexDirection: "row",
-                justifyContent: "center",
-              }}
-            >
-              <Table className="table-header">
-                <thead>
-                  <tr>
-                    <th>S.NO.</th>
-                    <th>ITEM NAME</th>
-                    <th >RATING</th>
-                    <th>SPECIFICATION</th>
-                    <th>UoM</th>
-                    {/* <th>Qty (Int.)</th> */}
-                    <th>Qty</th>
-                    <th>Tentative Mac</th>
-                    <th>Category</th>
-                    {/* <th>Rate</th>
+            <Table className="table-header">
+              <thead>
+                <tr>
+                  <th>S.NO.</th>
+                  <th>ITEM NAME</th>
+                  <th>RATING</th>
+                  <th>SPECIFICATION</th>
+                  <th>UoM</th>
+                  {/* <th>Qty (Int.)</th> */}
+                  <th>Qty</th>
+                  <th>Tentative Mac</th>
+                  <th>Category</th>
+                  {/* <th>Rate</th>
                          <th>Rate UoM</th>
                          <th>Total Value</th>
                          <th>GST</th>
                          <th>GST Value</th>
                          <th>Total with GST</th> */}
-                  </tr>
-                </thead>
-                <tbody>
-                  {/* First row (SPV Modules) - Dynamic */}
-                  <tr>
-                    <td>1.</td>
-                    <td>SPV Modules</td>
-                    <td>{offerData.module_capacity} Wp</td>
-                    <td>{getSpecification(offerData.module_capacity)}</td>
+                </tr>
+              </thead>
+              <tbody>
+                {/* First row (SPV Modules) - Dynamic */}
+                <tr>
+                  <td>1.</td>
+                  <td>SPV Modules</td>
+                  <td>{offerData.module_capacity} Wp</td>
+                  <td>{getSpecification(offerData.module_capacity)}</td>
 
-                    <td>Nos.</td>
-                    {/* <td>{internalQuantity1}</td> */}
-                    <td>{PrintQuantity1}</td>
-                    <td>TIER 01 Domestic</td>
-                    <td>Solar Module</td>
-                    {/* <td>{bdRate.spv_modules}</td>
+                  <td>Nos.</td>
+                  {/* <td>{internalQuantity1}</td> */}
+                  <td>{PrintQuantity1}</td>
+                  <td>TIER 01 Domestic</td>
+                  <td>Solar Module</td>
+                  {/* <td>{bdRate.spv_modules}</td>
                          <td>INR/Wp</td>
                          <td>{Math.round(TotalVal1)}</td>
                          <td>12%</td>
                          <td>{Math.round((TotalVal1 * 12) / 100)}</td>
                          <td>{Math.round((TotalVal1 * 12) / 100 + TotalVal1)}</td> */}
-                  </tr>
+                </tr>
 
-                  <tr>
-                    <td>2.</td>
-                    <td>Solar Inverter</td>
-                    <td>{offerData.inverter_capacity} Wp</td>
-                    <td>
-                      Grid-tied String Inverter, Three Phase, 50 Hz Inverter
-                      output shall be at 800V, & IGBT/MOSFET Microprocessor,
-                      Efficiency-98% or above. 5 years warranty shall be
-                      provided by Manufacturer.
-                    </td>
-                    <td>Nos.</td>
-                    {/* <td>{internalQuantity2}</td> */}
-                    <td>{internalQuantity2}</td>
-                    <td>Sungrow/Wattpower/Equivalent</td>
-                    <td>Solar Inverter & Datalogger</td>
-                    {/* <td>{scmData.solar_inverter}</td>
+                <tr>
+                  <td>2.</td>
+                  <td>Solar Inverter</td>
+                  <td>{offerData.inverter_capacity} Wp</td>
+                  <td>
+                    Grid-tied String Inverter, Three Phase, 50 Hz Inverter
+                    output shall be at 800V, & IGBT/MOSFET Microprocessor,
+                    Efficiency-98% or above. 5 years warranty shall be provided
+                    by Manufacturer.
+                  </td>
+                  <td>Nos.</td>
+                  {/* <td>{internalQuantity2}</td> */}
+                  <td>{internalQuantity2}</td>
+                  <td>Sungrow/Wattpower/Equivalent</td>
+                  <td>Solar Inverter & Datalogger</td>
+                  {/* <td>{scmData.solar_inverter}</td>
                          <td>INR/Nos.</td>
                          <td>{Math.round(TotalVal2)}</td>
                          <td>12%</td>
                          <td>{Math.round(TotalVal2*12/100)}</td>
                          <td>{Math.round(TotalVal2*12/100+TotalVal2)}</td> */}
-                  </tr>
+                </tr>
 
-                  <tr>
-                    <td>3.</td>
-                    <td>Module Mounting Structure</td>
-                    <td>{mountingStructure(offerData.module_orientation)}</td>
-                    <td>
-                      MMS Shall be designed for wind speed as per IS 875 Part 3
-                      and optimum tilt angle. Galvalume (AZ-150-550MPA) shall
-                      conform to IS 15961, Column (YS-250) shall conform to IS
-                      2062 & HDG shall conform to IS 4759.1996 and . Exact
-                      Sections shall be decided at the time of detailed
-                      engineering. Depth of pile foundation shall be decided
-                      after soil tests.
-                    </td>
-                    <td>Kg</td>
-                    {/* <td>{Math.round(InternalQuantity3)}</td> */}
-                    <td>{Math.round(InternalQuantity3)}</td>
-                    <td>JSW/TATA</td>
-                    <td>MMS With Fasteners</td>
-                    {/* <td>{bdRate.module_mounting_structure}</td>
+                <tr>
+                  <td>3.</td>
+                  <td>Module Mounting Structure</td>
+                  <td>{mountingStructure(offerData.module_orientation)}</td>
+                  <td>
+                    MMS Shall be designed for wind speed as per IS 875 Part 3
+                    and optimum tilt angle. Galvalume (AZ-150-550MPA) shall
+                    conform to IS 15961, Column (YS-250) shall conform to IS
+                    2062 & HDG shall conform to IS 4759.1996 and . Exact
+                    Sections shall be decided at the time of detailed
+                    engineering. Depth of pile foundation shall be decided after
+                    soil tests.
+                  </td>
+                  <td>Kg</td>
+                  {/* <td>{Math.round(InternalQuantity3)}</td> */}
+                  <td>{Math.round(InternalQuantity3)}</td>
+                  <td>JSW/TATA</td>
+                  <td>MMS With Fasteners</td>
+                  {/* <td>{bdRate.module_mounting_structure}</td>
                          <td>INR/Kg</td>
                          <td>{Math.round(TotalVal3)}</td>
                          <td>18%</td>
                          <td>{Math.round((TotalVal3 * 18) / 100)}</td>
                          <td>{Math.round((TotalVal3 * 18) / 100 + TotalVal3)}</td> */}
-                  </tr>
+                </tr>
 
-                  <tr>
-                    <td>4.</td>
-                    <td>Module Mounting & MMS Hardware</td>
-                    <td>SS304, HDG Grade 8.8</td>
-                    <td>
-                      SS304 for Module to Purlin Mounting & HDG Grade 8.8 for
-                      all other connections
-                    </td>
-                    <td>Set</td>
-                    {/* <td>1</td> */}
-                    <td>1</td>
-                    <td>Reputed</td>
-                    <td>MMS With Fasteners</td>
-                    {/* <td>{scmData.mounting_hardware}</td>
+                <tr>
+                  <td>4.</td>
+                  <td>Module Mounting & MMS Hardware</td>
+                  <td>SS304, HDG Grade 8.8</td>
+                  <td>
+                    SS304 for Module to Purlin Mounting & HDG Grade 8.8 for all
+                    other connections
+                  </td>
+                  <td>Set</td>
+                  {/* <td>1</td> */}
+                  <td>1</td>
+                  <td>Reputed</td>
+                  <td>MMS With Fasteners</td>
+                  {/* <td>{scmData.mounting_hardware}</td>
                          <td>INR/Wp</td>
                          <td>{Math.round(TotalVal4)}</td>
                          <td>18%</td>
                          <td>{Math.round((TotalVal4 * 18) / 100)}</td>
                          <td>{Math.round((TotalVal4 * 18) / 100 + TotalVal4)}</td> */}
-                  </tr>
+                </tr>
 
-                  <tr>
-                    <td>5.</td>
-                    <td>DC Cable (Solar Module to Inverter)</td>
-                    <td>
-                      1C x 4 sqmm Cu flexible copper conductor solar DC cable
-                      (Red & Black)
-                    </td>
-                    <td>
-                      Flexible copper conductor solar DC cable, Fine wire
-                      strands of annealed tinned copper, Rated 1.5 kV DC,
-                      Electron Beam Cross Linked Co-polymer(XLPO) Halogen Free
-                      Insulation and outer sheath, Black color and Red Colour,
-                      DC cables complying to EN50618, TUV 2PFG 1169 for service
-                      life expectency of 25 years. Flame retardent, UV resistent
-                    </td>
-                    <td>m</td>
-                    {/* <td>{Math.round(InternalQuantity5)}</td> */}
-                    <td>{Math.round(InternalQuantity5)}</td>
-                    <td>Apar/Polycab/Equivalent</td>
-                    <td>Cables</td>
-                    {/* <td>{scmData.dc_cable}</td>
+                <tr>
+                  <td>5.</td>
+                  <td>DC Cable (Solar Module to Inverter)</td>
+                  <td>
+                    1C x 4 sqmm Cu flexible copper conductor solar DC cable (Red
+                    & Black)
+                  </td>
+                  <td>
+                    Flexible copper conductor solar DC cable, Fine wire strands
+                    of annealed tinned copper, Rated 1.5 kV DC, Electron Beam
+                    Cross Linked Co-polymer(XLPO) Halogen Free Insulation and
+                    outer sheath, Black color and Red Colour, DC cables
+                    complying to EN50618, TUV 2PFG 1169 for service life
+                    expectency of 25 years. Flame retardent, UV resistent
+                  </td>
+                  <td>m</td>
+                  {/* <td>{Math.round(InternalQuantity5)}</td> */}
+                  <td>{Math.round(InternalQuantity5)}</td>
+                  <td>Apar/Polycab/Equivalent</td>
+                  <td>Cables</td>
+                  {/* <td>{scmData.dc_cable}</td>
                          <td>INR/m</td>
                          <td>{Math.round(TotalVal5)}</td>
                          <td>18%</td>
                          <td>{Math.round((TotalVal5 * 18) / 100)}</td>
                          <td>{Math.round((TotalVal5 * 18) / 100 + TotalVal5)}</td> */}
-                  </tr>
+                </tr>
 
-                  <tr>
-                    <td>6.</td>
-                    <td>AC Cable (Inverter to ACCB) </td>
-                    <td>1.9/3.3 kV,3C,300Sqmm Al</td>
-                    <td>
-                      Aluminium, FRLS with galvanized steel armouring minimum
-                      area of coverage 90% , XLPE insulated compliant to IS:
-                      7098, with distinct extruded XLPE inner sheath of black
-                      color as per IS 5831. If armoured, Galvanized Steel
-                      armouring to be used with minumum 90% area of coverage.
-                    </td>
-                    <td>m</td>
-                    {/* <td>{InternalQuantity6}</td> */}
-                    <td>{InternalQuantity6}</td>
-                    <td>Polycab/Equivalent</td>
-                    <td>Cables</td>
-                    {/* <td>{scmData.ac_cable_inverter_accb}</td>
+                <tr>
+                  <td>6.</td>
+                  <td>AC Cable (Inverter to ACCB) </td>
+                  <td>1.9/3.3 kV,3C,300Sqmm Al</td>
+                  <td>
+                    Aluminium, FRLS with galvanized steel armouring minimum area
+                    of coverage 90% , XLPE insulated compliant to IS: 7098, with
+                    distinct extruded XLPE inner sheath of black color as per IS
+                    5831. If armoured, Galvanized Steel armouring to be used
+                    with minumum 90% area of coverage.
+                  </td>
+                  <td>m</td>
+                  {/* <td>{InternalQuantity6}</td> */}
+                  <td>{InternalQuantity6}</td>
+                  <td>Polycab/Equivalent</td>
+                  <td>Cables</td>
+                  {/* <td>{scmData.ac_cable_inverter_accb}</td>
                          <td>INR/m</td>
                          <td>{Math.round(TotalVal6)}</td>
                          <td>18%</td>
                          <td>{Math.round((TotalVal6 * 18) / 100)}</td>
                          <td>{Math.round((TotalVal6 * 18) / 100 + TotalVal6)}</td> */}
-                  </tr>
+                </tr>
 
-                  <tr>
-                    <td>7.</td>
-                    <td>AC Cable (ACCB to Transformer)</td>
-                    <td>1.9/3.3 kV,3C,300Sqmm Al</td>
-                    <td>
-                      Aluminium, FRLS with galvanized steel armouring minimum
-                      area of coverage 90% , XLPE insulated compliant to IS:
-                      7098, with distinct extruded XLPE inner sheath of black
-                      color as per IS 5831. If armoured, Galvanized Steel
-                      armouring to be used with minumum 90% area of coverage.
-                    </td>
-                    <td>m</td>
-                    {/* <td>{InternalQuantity7}</td> */}
-                    <td>{InternalQuantity7}</td>
-                    <td>Polycab/Equivalent</td>
-                    <td>Cables</td>
-                    {/* <td>{scmData.ac_cable_accb_transformer}</td>
+                <tr>
+                  <td>7.</td>
+                  <td>AC Cable (ACCB to Transformer)</td>
+                  <td>1.9/3.3 kV,3C,300Sqmm Al</td>
+                  <td>
+                    Aluminium, FRLS with galvanized steel armouring minimum area
+                    of coverage 90% , XLPE insulated compliant to IS: 7098, with
+                    distinct extruded XLPE inner sheath of black color as per IS
+                    5831. If armoured, Galvanized Steel armouring to be used
+                    with minumum 90% area of coverage.
+                  </td>
+                  <td>m</td>
+                  {/* <td>{InternalQuantity7}</td> */}
+                  <td>{InternalQuantity7}</td>
+                  <td>Polycab/Equivalent</td>
+                  <td>Cables</td>
+                  {/* <td>{scmData.ac_cable_accb_transformer}</td>
                          <td>INR/m</td>
                          <td>{Math.round(TotalVal7)}</td>
                          <td>18%</td>
                          <td>{Math.round((TotalVal7 * 18) / 100)}</td>
                          <td>{Math.round((TotalVal7 * 18) / 100 + TotalVal7)}</td> */}
-                  </tr>
-                </tbody>
-              </Table>
-            </Sheet>
-          </Box>
+                </tr>
+              </tbody>
+            </Table>
+          </Sheet>
         </Grid>
       </Grid>
     </>

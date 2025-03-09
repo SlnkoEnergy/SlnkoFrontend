@@ -4,7 +4,6 @@ import logo from "../../../assets/Comm_offer/slnko.png";
 import "../CSS/offer.css";
 // import img1 from "../../assets/Comm_offer/ImgP08.jpeg";
 
-
 const Page8 = () => {
   return (
     <>
@@ -14,10 +13,11 @@ const Page8 = () => {
           // height: "100%",
           display: "flex",
           justifyContent: "center",
+          marginTop: "10px",
           alignItems: "center",
           "@media print": {
-            width: "210mm",
-            height: "297mm",
+            width: "84%",
+            height: "100%",
             overflow: "hidden",
             margin: "0",
             padding: "0",
@@ -32,12 +32,12 @@ const Page8 = () => {
             border: "2px solid #0f4C7f",
             padding: "10px",
             "@media print": {
-              width: "210mm",
-              height: "297mm",
+              width: "100%",
+              height: "98vh",
             },
           }}
         >
-         <Box
+          <Box
             sx={{
               display: "flex",
               width: "100%",
@@ -47,8 +47,9 @@ const Page8 = () => {
             }}
           >
             <img
-              width={"220px"}
-              height={"110px"}
+              width={"350px"}
+              height={"200px"}
+              className="logo-img1"
               alt="logo"
               src={logo}
               loading="lazy"
@@ -56,11 +57,15 @@ const Page8 = () => {
 
             <hr
               style={{
-                width: "60%",
-                color: "blue",
-                borderTop: "2px solid #0f4C7f",
-                margin: "19px 0",
+                width: "50%",
+                borderTop: "3px solid #0f4C7f", // Keeps the line visible
+                margin: "40px 0",
+                boxShadow: "none !important", // Force removal of any shadow
+                background: "transparent !important", // Ensure no background color
+                border: "none !important", // Ensure no border shadow
+                // Remove any outline if applied
               }}
+              className="hr-line"
             />
           </Box>
 
@@ -85,14 +90,14 @@ const Page8 = () => {
                 }}
                 fontWeight={"600"}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.5rem" } }}
+                sx={{ "@media print": { fontSize: "1.9rem" } }}
               >
                 2. Vendor Management:
               </Typography>
             </Box>
             <Box
               sx={{
-                textAlign:"justify",
+                textAlign: "justify",
                 // width: {
                 //   xs: "95%",
                 //   sm: "80%",
@@ -100,7 +105,7 @@ const Page8 = () => {
                 //   lg: "90%",
                 //   xl: "90%",
                 // },
-                width:"100%",
+                width: "100%",
                 // backgroundColor: "#F1EFEF",
                 padding: "10px 15px",
                 "@media print": {
@@ -118,7 +123,7 @@ const Page8 = () => {
                 }}
                 fontWeight={500}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.75rem" } }}
               >
                 a) We will be providing best negotiated market price and vendors
                 suggestion basis our extensive market research to ensure the
@@ -134,7 +139,7 @@ const Page8 = () => {
                 }}
                 fontWeight={500}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.75rem" } }}
               >
                 b) This will be completely transparent; all orders will be
                 issued post approval from client. If any recommendation from
@@ -150,7 +155,7 @@ const Page8 = () => {
                 }}
                 fontWeight={"bold"}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.75rem" } }}
               >
                 c) All the payments shall be made, from developer to SLNKO which
                 shall be transparently paid to respective vendors.
@@ -165,7 +170,7 @@ const Page8 = () => {
                 }}
                 fontWeight={500}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.75rem" } }}
               >
                 d) Vendors’ follow-up to ensure delivery at site as per
                 schedule.
@@ -180,7 +185,7 @@ const Page8 = () => {
                 }}
                 fontWeight={500}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.75rem" } }}
               >
                 e) Evaluation of all technical documents received from vendors
               </Typography>
@@ -195,17 +200,22 @@ const Page8 = () => {
                 }}
                 fontWeight={500}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.75rem" } }}
               >
-                f) <strong>PDI(Pre-Dispatch Inspection)</strong> for customized Fabricated/Manufactured material and report
-                generation for the same to maintain the quality standards.
+                f) <strong>PDI(Pre-Dispatch Inspection)</strong> for customized
+                Fabricated/Manufactured material and report generation for the
+                same to maintain the quality standards.
               </Typography>
             </Box>
 
-            <Box sx={{ padding: "10px" , "@media print":{
-              marginTop:"30px"
-            }
-               }}>
+            <Box
+              sx={{
+                padding: "10px",
+                "@media print": {
+                  marginTop: "30px",
+                },
+              }}
+            >
               <Typography
                 fontSize={{
                   xs: "1.2rem",
@@ -216,14 +226,14 @@ const Page8 = () => {
                 }}
                 fontFamily={"serif"}
                 fontWeight={"600"}
-                sx={{ "@media print": { fontSize: "1.5rem" } }}
+                sx={{ "@media print": { fontSize: "1.9rem" } }}
               >
                 3. Site Management:
               </Typography>
             </Box>
             <Box
               sx={{
-                textAlign:"justify",
+                textAlign: "justify",
                 // width: {
                 //   xs: "95%",
                 //   sm: "80%",
@@ -231,8 +241,8 @@ const Page8 = () => {
                 //   lg: "90%",
                 //   xl: "90%",
                 // },
-                width:"100%",
-                
+                width: "100%",
+
                 // backgroundColor: "#F1EFEF",
                 padding: "10px 15px",
                 "@media print": {
@@ -250,7 +260,7 @@ const Page8 = () => {
                 }}
                 fontWeight={500}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.75rem" } }}
               >
                 a) Slnko’s services are limited to inside boundary wall of
                 project site only, any additional shall be discussed.
@@ -265,7 +275,7 @@ const Page8 = () => {
                 }}
                 fontWeight={500}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.75rem" } }}
               >
                 b) We will be deputing site supervisor on site to ensure
                 installation as per design and project schedule mutually agreed.
@@ -280,7 +290,7 @@ const Page8 = () => {
                 }}
                 fontWeight={500}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.75rem" } }}
               >
                 c) Scheduled visit of Engineering Team/Senior Authority.
               </Typography>
@@ -294,7 +304,7 @@ const Page8 = () => {
                 }}
                 fontWeight={500}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.75rem" } }}
               >
                 d) Daily work report/progress and project update to the client
                 through using SAAS ProTrac.
@@ -309,15 +319,20 @@ const Page8 = () => {
                 }}
                 fontWeight={500}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.75rem" } }}
               >
                 e) Escalation of any issues arise at site.
               </Typography>
             </Box>
 
-            <Box sx={{ padding: "10px", "@media print":{
-              marginTop:"30px"
-            } }}>
+            <Box
+              sx={{
+                padding: "10px",
+                "@media print": {
+                  marginTop: "30px",
+                },
+              }}
+            >
               <Typography
                 fontSize={{
                   xs: "1.2rem",
@@ -328,14 +343,14 @@ const Page8 = () => {
                 }}
                 fontWeight={"600"}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.5rem" } }}
+                sx={{ "@media print": { fontSize: "1.9rem" } }}
               >
                 4. Liasoning:
               </Typography>
             </Box>
             <Box
               sx={{
-                textAlign:"justify",
+                textAlign: "justify",
                 // width: {
                 //   xs: "95%",
                 //   sm: "80%",
@@ -343,8 +358,8 @@ const Page8 = () => {
                 //   lg: "90%",
                 //   xl: "90%",
                 // },
-                width:"100%",
-               
+                width: "100%",
+
                 // backgroundColor: "#F1EFEF",
                 padding: "10px 15px",
                 "@media print": {
@@ -362,7 +377,7 @@ const Page8 = () => {
                 }}
                 fontWeight={500}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.75rem" } }}
               >
                 a) All DISCOM liasoning shall be in the scope of SLNKO.
               </Typography>
@@ -376,7 +391,7 @@ const Page8 = () => {
                 }}
                 fontWeight={500}
                 fontFamily={"serif"}
-                sx={{ "@media print": { fontSize: "1.2rem" } }}
+                sx={{ "@media print": { fontSize: "1.75rem" } }}
               >
                 b) All the Banks and CEIG liasoning shall be in scope of SLNKO.
               </Typography>

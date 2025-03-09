@@ -60,8 +60,12 @@ const Page9 = () => {
         console.log("Fetched Offer Data:", offerResponse.data);
         console.log("Fetched BD Rate Data:", bdResponse.data);
 
-        const matchedOffer = offerResponse.data.find((item) => item.offer_id === offerRate);
-        const matchedBdRate = bdResponse.data.find((item) => item.offer_id === offerRate);
+        const matchedOffer = offerResponse.data.find(
+          (item) => item.offer_id === offerRate
+        );
+        const matchedBdRate = bdResponse.data.find(
+          (item) => item.offer_id === offerRate
+        );
 
         if (matchedOffer) {
           setOfferData({
@@ -97,14 +101,18 @@ const Page9 = () => {
         if (matchedBdRate) {
           setBdRate({
             spv_modules: matchedBdRate.spv_modules ?? "",
-            module_mounting_structure: matchedBdRate.module_mounting_structure ?? "",
+            module_mounting_structure:
+              matchedBdRate.module_mounting_structure ?? "",
             transmission_line: matchedBdRate.transmission_line ?? "",
             slnko_charges: matchedBdRate.slnko_charges ?? "",
             submitted_by_BD: matchedBdRate.submitted_by_BD ?? "",
           });
           console.log("Updated BD Rate Data:", matchedBdRate);
         } else {
-          console.warn("No matching BD Rate data found for Offer ID:", offerRate);
+          console.warn(
+            "No matching BD Rate data found for Offer ID:",
+            offerRate
+          );
         }
       } catch (error) {
         console.error("Error fetching commercial offer data:", error);
@@ -113,7 +121,7 @@ const Page9 = () => {
     };
 
     fetchData();
-  }, []); 
+  }, []);
 
   return (
     <>
@@ -123,10 +131,11 @@ const Page9 = () => {
           // height: "100%",
           display: "flex",
           justifyContent: "center",
+          marginTop: "10px",
           alignItems: "center",
           "@media print": {
-            width: "210mm",
-            height: "297mm",
+            width: "84%",
+            height: "100%",
             overflow: "hidden",
             margin: "0",
             padding: "0",
@@ -155,12 +164,12 @@ const Page9 = () => {
             height: "100%",
             border: "2px solid #0f4C7f",
             "@media print": {
-              width: "210mm",
-              height: "297mm",
+              width: "100%",
+              height: "98vh",
             },
           }}
         >
-        <Box
+          <Box
             sx={{
               display: "flex",
               width: "100%",
@@ -170,8 +179,9 @@ const Page9 = () => {
             }}
           >
             <img
-              width={"220px"}
-              height={"110px"}
+              width={"350px"}
+              height={"200px"}
+              className="logo-img1"
               alt="logo"
               src={logo}
               loading="lazy"
@@ -179,11 +189,15 @@ const Page9 = () => {
 
             <hr
               style={{
-                width: "60%",
-                color: "blue",
-                borderTop: "2px solid #0f4C7f",
-                margin: "19px 0",
+                width: "50%",
+                borderTop: "3px solid #0f4C7f", // Keeps the line visible
+                margin: "40px 0",
+                boxShadow: "none !important", // Force removal of any shadow
+                background: "transparent !important", // Ensure no background color
+                border: "none !important", // Ensure no border shadow
+                // Remove any outline if applied
               }}
+              className="hr-line"
             />
           </Box>
 
@@ -194,7 +208,7 @@ const Page9 = () => {
               alignItems: "center",
               margin: "60px 0",
               "@media print": {
-                margin: "30px 0",
+                margin: "60px 30px 0 0",
               },
             }}
           >
@@ -203,7 +217,7 @@ const Page9 = () => {
                 textDecoration: "underline 2px rgb(243, 182, 39)",
                 textUnderlineOffset: "8px",
                 "@media print": {
-                  fontSize: "2rem",
+                  fontSize: "2.8rem",
                 },
               }}
               textColor={"#56A4DA"}
@@ -217,6 +231,9 @@ const Page9 = () => {
           <Box
             sx={{
               margin: "20px 10px",
+              "@media print": {
+                marginTop: "50px",
+              },
             }}
           >
             <Typography
@@ -226,7 +243,7 @@ const Page9 = () => {
               fontFamily={"serif"}
               sx={{
                 "@media print": {
-                  fontSize: "1.5rem",
+                  fontSize: "2.2rem",
                 },
               }}
             >
@@ -236,16 +253,15 @@ const Page9 = () => {
             <Sheet
               sx={{
                 width: "100%",
+                background: "white",
               }}
             >
               <Table className="table-header-page9">
                 <thead>
                   <tr>
                     <th>Description</th>
-                    <th>
-                      Capacity
-                    </th>
-                    <th > UoM</th>
+                    <th>Capacity</th>
+                    <th> UoM</th>
                     <th>Rate</th>
                   </tr>
                 </thead>
@@ -255,7 +271,10 @@ const Page9 = () => {
                       Engineering, Procurement, Construction and Management
                       Services as per above scope of work
                     </td>
-                    <td>{offerData.ac_capacity} MW AC / {offerData.dc_capacity} MW DC</td>
+                    <td>
+                      {offerData.ac_capacity} MW AC / {offerData.dc_capacity} MW
+                      DC
+                    </td>
                     <td>INR</td>
                     <td>{bdRate.slnko_charges}/- Wp</td>
                   </tr>
@@ -264,24 +283,21 @@ const Page9 = () => {
             </Sheet>
 
             <Box>
-              <ul style={{textAlign:"justify", "@media_print" :{
-                      fontSize:"1.3rem !important"
-                    }}}>
+              <ul style={{ textAlign: "justify" }}>
                 <li
                   style={{
                     fontFamily: "serif",
                     fontSize: "1.3rem",
                     margin: "20px 0",
-                   
                   }}
-                  // className="ul-item"
+                  className="ul-item-page9"
                 >
                   We have considered {offerData.timeline} weeks to complete site
                   execution work, if any delay in site execution additional
                   charges to be disscussed and finalized again.
                 </li>
                 <li
-                  // className="ul-item"
+                  className="ul-item-page9"
                   style={{ fontFamily: "serif", fontSize: "1.3rem" }}
                 >
                   GST @18% is Additional as actual.
@@ -294,7 +310,7 @@ const Page9 = () => {
                 marginTop: "60px",
                 marginBottom: "20px",
                 "@media print": {
-                  marginTop: "40px",
+                  marginTop: "60px",
                 },
               }}
             >
@@ -304,7 +320,7 @@ const Page9 = () => {
                   fontFamily: "serif",
                   fontWeight: "600",
                   "@media print": {
-                    fontSize: "1.5rem",
+                    fontSize: "2.2rem",
                   },
                 }}
               >
@@ -315,15 +331,14 @@ const Page9 = () => {
             <Sheet
               sx={{
                 width: "100%",
+                background: "white",
               }}
             >
               <Table className="table-header-page9">
                 <thead>
                   <tr>
                     <th>Description</th>
-                    <th>
-                      Payment Percentage
-                    </th>
+                    <th>Payment Percentage</th>
                   </tr>
                 </thead>
                 <tbody>

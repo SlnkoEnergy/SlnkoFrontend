@@ -1,10 +1,10 @@
 import { Box, Grid, Typography } from "@mui/joy";
 import React from "react";
 import logo from "../../../assets/Comm_offer/3(1).jpeg";
-import Logo from "../../../assets/Comm_offer/white_logo.png";
 import img1 from "../../../assets/Comm_offer/cropped-Detailed_2.jpeg";
-import img2 from "../../../assets/Comm_offer/vendor_manage.jpeg";
 import img3 from "../../../assets/Comm_offer/ImgP03_04.png";
+import img2 from "../../../assets/Comm_offer/vendor_manage.jpeg";
+import Logo from "../../../assets/Comm_offer/white_logo.png";
 import "../CSS/offer.css";
 const Page3 = () => {
   return (
@@ -16,15 +16,13 @@ const Page3 = () => {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          marginTop: "100px",
-          marginBottom: "100px",
+          marginTop: "10px",
+          // marginBottom: "100px",
           "@media print": {
-            width: "100%",
+            width: "84%",
             height: "100%",
-            overflow: "hidden",
-            margin: "0",
-            padding: "0",
-            pageBreakInside: "avoid",
+            marginTop: "40px",
+            marginBottom: "0px",
           },
         }}
       >
@@ -36,7 +34,6 @@ const Page3 = () => {
             "@media print": {
               width: "100%",
               height: "98vh",
-              boxShadow: "none",
             },
           }}
         >
@@ -124,11 +121,12 @@ const Page3 = () => {
                   // fontWeight={"bold"}
                   fontFamily={"serif"}
                   textAlign={"justify"}
-                  
                   sx={{
-                    paddingRight:"20px",
+                    paddingRight: "20px",
                     "@media print": {
-                      fontSize: "1.2rem !important",
+                      fontSize: "1.8rem !important",
+                      marginTop: "10px",
+                      maxWidth: "600px",
                     },
                   }}
                 >
@@ -147,8 +145,11 @@ const Page3 = () => {
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-evenly",
-              gap: 8,
+              gap: 10,
               marginTop: "40px",
+              "@media print": {
+                gap: 14,
+              },
             }}
           >
             <Box
@@ -173,7 +174,7 @@ const Page3 = () => {
                   maxWidth={"33.33%"}
                   sx={{
                     "@media print": {
-                      fontSize: "1.5rem",
+                      fontSize: "1.6rem",
                     },
                   }}
                 >
@@ -216,9 +217,9 @@ const Page3 = () => {
                   fontFamily={"serif"}
                   textAlign={"justify"}
                   sx={{
-                    paddingRight:"20px",
+                    paddingRight: "20px",
                     "@media print": {
-                      fontSize: "1.02rem",
+                      fontSize: "1.6rem",
                     },
                   }}
                 >
@@ -269,15 +270,15 @@ const Page3 = () => {
                   src={img2}
                   loading="lazy"
                 />
-               <Typography
+                <Typography
                   textColor={"#0f4C7f"}
                   fontSize={"22px"}
                   fontFamily={"serif"}
                   textAlign={"justify"}
                   sx={{
-                    paddingLeft:"20px",
+                    paddingLeft: "20px",
                     "@media print": {
-                      fontSize: "1.02rem",
+                      fontSize: "1.6rem",
                     },
                   }}
                 >
@@ -299,7 +300,7 @@ const Page3 = () => {
                   maxWidth={"33.33%"}
                   sx={{
                     "@media print": {
-                      fontSize: "1.5rem",
+                      fontSize: "1.6rem",
                     },
                   }}
                 >
@@ -330,7 +331,7 @@ const Page3 = () => {
                   maxWidth={"33.33%"}
                   sx={{
                     "@media print": {
-                      fontSize: "1.5rem",
+                      fontSize: "1.6rem",
                     },
                   }}
                 >
@@ -367,15 +368,15 @@ const Page3 = () => {
                   loading="lazy"
                 />
 
-<Typography
+                <Typography
                   textColor={"#0f4C7f"}
                   fontSize={"22px"}
                   fontFamily={"serif"}
                   textAlign={"justify"}
                   sx={{
-                    paddingRight:"20px",
+                    paddingRight: "20px",
                     "@media print": {
-                      fontSize: "1.02rem",
+                      fontSize: "1.6rem",
                     },
                   }}
                 >

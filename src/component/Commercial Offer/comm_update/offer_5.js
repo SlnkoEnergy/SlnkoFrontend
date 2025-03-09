@@ -1,9 +1,9 @@
 import { Box, Grid, Typography } from "@mui/joy";
 import React, { useEffect, useState } from "react";
-import logo from "../../../assets/Comm_offer/slnko.png";
-import "../CSS/offer.css";
-import Axios from "../../../utils/Axios";
 import { toast } from "react-toastify";
+import logo from "../../../assets/Comm_offer/slnko.png";
+import Axios from "../../../utils/Axios";
+import "../CSS/offer.css";
 
 const Page5 = () => {
   const [offerData, setOfferData] = useState({
@@ -21,7 +21,8 @@ const Page5 = () => {
     rate: "",
     timeline: "",
     prepared_by: "",
-    mob_number:"",
+    comment: "",
+    mob_number: "",
     module_type: "",
     module_capacity: "",
     inverter_capacity: "",
@@ -29,33 +30,32 @@ const Page5 = () => {
     module_orientation: "",
     transmission_length: "",
     transformer: "",
-    column_type: ""
+    column_type: "",
   });
-
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-       
         const offerRate = localStorage.getItem("offer_summary");
 
         if (!offerRate) {
-          console.error("Offer ID not found in localStorage");
+          console.error("Offer ID not found in localStorage or is null.");
           toast.error("Offer ID is missing!");
           return;
         }
 
-        
+        console.log("Fetched Offer ID from localStorage:", offerRate);
+
         const { data: commercialOffers } = await Axios.get("/get-comm-offer");
         console.log("API Response:", commercialOffers);
 
-     
         const matchedOffer = commercialOffers.find(
           (item) => item.offer_id === offerRate
         );
 
         if (matchedOffer) {
-         
+          console.log("Matched Offer Found:", matchedOffer);
+
           setOfferData({
             offer_id: matchedOffer.offer_id ?? "",
             client_name: matchedOffer.client_name ?? "",
@@ -72,6 +72,7 @@ const Page5 = () => {
             timeline: matchedOffer.timeline ?? "",
             prepared_by: matchedOffer.prepared_by ?? "",
             mob_number: matchedOffer.mob_number ?? "",
+            comment: matchedOffer.comment ?? "",
             module_type: matchedOffer.module_type ?? "",
             module_capacity: matchedOffer.module_capacity ?? "",
             inverter_capacity: matchedOffer.inverter_capacity ?? "",
@@ -82,10 +83,9 @@ const Page5 = () => {
             column_type: matchedOffer.column_type ?? "",
           });
         } else {
-          console.error("No matching offer found.");
+          console.warn("No matching offer found for Offer ID:", offerRate);
           toast.error("No matching offer found.");
         }
-
       } catch (error) {
         console.error("Error fetching commercial offer data:", error);
         toast.error("Failed to fetch offer data. Please try again later.");
@@ -94,19 +94,19 @@ const Page5 = () => {
 
     fetchData();
   }, []);
-  
 
   return (
     <>
- <Grid
+      <Grid
         sx={{
           width: "100%",
           // height: "100%",
           display: "flex",
           justifyContent: "center",
+          marginTop: "10px",
           alignItems: "center",
           "@media print": {
-            width: "100%",
+            width: "84%",
             height: "100%",
             overflow: "hidden",
             margin: "0",
@@ -141,7 +141,6 @@ const Page5 = () => {
             },
           }}
         >
-          
           <Box
             sx={{
               display: "flex",
@@ -152,8 +151,9 @@ const Page5 = () => {
             }}
           >
             <img
-              width={"220px"}
-              height={"110px"}
+              width={"350px"}
+              height={"200px"}
+              className="logo-img1"
               alt="logo"
               src={logo}
               loading="lazy"
@@ -161,13 +161,18 @@ const Page5 = () => {
 
             <hr
               style={{
-                width: "60%",
-                color: "blue",
-                borderTop: "2px solid #0f4C7f",
-                margin: "19px 0",
+                width: "50%",
+                borderTop: "3px solid #0f4C7f", // Keeps the line visible
+                margin: "40px 0",
+                boxShadow: "none !important", // Force removal of any shadow
+                background: "transparent !important", // Ensure no background color
+                border: "none !important", // Ensure no border shadow
+                // Remove any outline if applied
               }}
+              className="hr-line"
             />
           </Box>
+          <br />
           <Box
             sx={{
               width: "100%",
@@ -180,9 +185,9 @@ const Page5 = () => {
               sx={{
                 textDecoration: "underline 3px rgb(243, 182, 39)",
                 textUnderlineOffset: "8px",
-                '@media print':{
-                  fontSize:'2rem'
-                }
+                "@media print": {
+                  fontSize: "2.5rem",
+                },
               }}
               textColor={"#56A4DA"}
               fontWeight={"bold"}
@@ -209,10 +214,10 @@ const Page5 = () => {
                 fontFamily={"serif"}
                 fontWeight={"400"}
                 sx={{
-                '@media print':{
-                  fontSize:'1.5rem'
-                }
-              }}
+                  "@media print": {
+                    fontSize: "2.2rem",
+                  },
+                }}
               >
                 To
               </Typography>
@@ -223,9 +228,9 @@ const Page5 = () => {
                 fontFamily={"serif"}
                 fontWeight={"400"}
                 sx={{
-                  '@media print':{
-                  fontSize:'1.5rem'
-                }
+                  "@media print": {
+                    fontSize: "2.2rem",
+                  },
                 }}
               >
                 {offerData.client_name}
@@ -237,12 +242,13 @@ const Page5 = () => {
                 fontFamily={"serif"}
                 fontWeight={"400"}
                 sx={{
-                  '@media print':{
-                  fontSize:'1.5rem'
-                }
+                  "@media print": {
+                    fontSize: "2.2rem",
+                  },
                 }}
               >
-                {offerData.village}, {offerData.district}, {offerData.state} {offerData.pincode}
+                {offerData.village}, {offerData.district}, {offerData.state}{" "}
+                {offerData.pincode}
               </Typography>
             </Box>
             <br />
@@ -252,16 +258,16 @@ const Page5 = () => {
                 fontSize={"1.8rem"}
                 fontFamily={"serif"}
                 fontWeight={"400"}
-
                 sx={{
-                  '@media print':{
-                  fontSize:'1.5rem'
-                }
+                  "@media print": {
+                    fontSize: "2.2rem",
+                  },
                 }}
               >
                 <span style={{ fontWeight: "bold" }}>Subject:</span> EPCM
-                Services for {offerData.ac_capacity} MW AC / {offerData.dc_capacity} MW DC Ground Mount {offerData.scheme} Solar Project
-                Component {offerData.component}
+                Services for {offerData.ac_capacity} MW AC /{" "}
+                {offerData.dc_capacity} MW DC Ground Mount {offerData.scheme}{" "}
+                Solar Project Component {offerData.component}
               </Typography>
             </Box>
             <br />
@@ -273,9 +279,9 @@ const Page5 = () => {
                 fontWeight={"400"}
                 textAlign={"justify"}
                 sx={{
-                  '@media print':{
-                  fontSize:'1.5rem'
-                }
+                  "@media print": {
+                    fontSize: "2.2rem",
+                  },
                 }}
               >
                 We are pleased to submit our commercial offer for the
@@ -288,60 +294,60 @@ const Page5 = () => {
             <br />
             <br />
             <Box>
-            <Typography
+              <Typography
                 fontSize={"1.8rem"}
                 fontFamily={"serif"}
                 fontWeight={"400"}
                 textAlign={"justify"}
                 sx={{
-                  '@media print':{
-                  fontSize:'1.5rem'
-                }
+                  "@media print": {
+                    fontSize: "2.2rem",
+                  },
                 }}
               >
-              We are looking forward to having a long and fruitful association with your esteemed organization through this project.
-
+                We are looking forward to having a long and fruitful association
+                with your esteemed organization through this project.
               </Typography>
             </Box>
             <br />
             <br />
 
             <Box>
-            <Typography
+              <Typography
                 fontSize={"1.8rem"}
                 fontFamily={"serif"}
                 fontWeight={"400"}
                 sx={{
-                  '@media print':{
-                  fontSize:'1.5rem'
-                }
+                  "@media print": {
+                    fontSize: "2.2rem",
+                  },
                 }}
-              >Thanking you! <br /> {offerData.prepared_by}
-              <br />
-              {offerData.mob_number || "979279XXX "}
+              >
+                Thanking you! <br /> {offerData.prepared_by}
+                <br />
+                {offerData.mob_number || "979279XXX "}
               </Typography>
             </Box>
 
             <Box
-            sx={{
-              display:'flex',
-              justifyContent:'center',
-              alignItems:'center',
-              position:"relative",
-              marginTop:'24%',
-              '@media print':{
-                marginTop:'18%'
-              }
-            }}
-            >
-            <hr
-              style={{
-                width: "80%",
-                color: "blue",
-                borderTop: "2px solid goldenrod",
-                
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                position: "relative",
+                marginTop: "24%",
+                "@media print": {
+                  marginTop: "16%",
+                },
               }}
-            />
+            >
+              <hr
+                style={{
+                  width: "80%",
+                  color: "blue",
+                  borderTop: "2px solid goldenrod",
+                }}
+              />
             </Box>
           </Box>
         </Grid>

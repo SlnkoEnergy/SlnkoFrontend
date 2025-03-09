@@ -1,0 +1,222 @@
+@media print {
+
+  * {
+    -webkit-print-color-adjust: exact !important; /* Ensures colors are printed */
+    print-color-adjust: exact !important;
+  }
+
+  /* .Table-Head{
+    display: none;
+  }
+
+  .Table-Body{
+    display: none;
+  } */
+
+.logo-img {
+  margin-left: 20px !important;
+  margin-right: 0 !important;
+  width: 250px !important;
+  height: 250px !important;
+}
+.print-img {
+  width: 200px !important;
+  height: 200px;
+}
+
+.logo-img1 {
+  width: 300px;
+  height: 180px;
+}
+.logo-img2 {
+  width: 170px;
+  height: 110px;
+}
+.print-img1 {
+  width: 180px !important;
+  height: 180px !important;
+  margin-bottom: 32px;
+}
+.ul-item {
+  font-size: 1.3rem !important;
+}
+.ul-item-page9 {
+  font-size: 2rem !important;
+}
+.hr-line {
+  margin: 30px 0 !important;
+  width: 60% !important;
+  
+}
+.hr-line1 {
+  margin-top: 150px !important;
+  width: 40% !important;
+}
+.hr-line2 {
+  margin: 14px 0 !important;
+  width: 60% !important;
+  border-top: 2px solid #0f4c7f;
+}
+
+.hr-line3{
+  margin: 20px 0 !important;
+  width: 60% !important;
+}
+.table-header th{
+  font-size: 1.1rem !important;
+}
+.table-header td{
+  font-size: 0.905rem !important;
+}
+.table-header1 th {
+  font-size: 1.7rem !important;
+}
+
+.table-header1 td {
+  font-size: 1.65rem !important;
+}
+
+.table-header-page9 th{
+  font-size: 1.8rem !important;
+}
+
+.table-header-page9 td{
+  font-size: 1.7rem !important;
+}
+
+.table-header-Summary th{
+  font-size: 1.5rem !important;
+}
+
+.table-header-Summary td{
+  font-size: 1.4rem !important;
+}
+
+.box-img img{
+  height: 110px;
+  width: 110px;
+}
+
+}
+
+/* styles.css */
+
+.table-header {
+width: 100%;
+border-collapse: collapse !important; /* Ensures proper table structure */
+table-layout: auto;
+border: 1px solid #dee2e6 !important;
+}
+
+.table-header th {
+vertical-align: middle !important; /* Corrected */
+font-size: 1rem ;
+font-weight: bold;
+background-color: #0f4c7f !important;
+color: #FFF !important;
+font-family: serif !important;
+text-align: center !important;
+border: 1px solid #dee2e6 !important; /* Ensures text is centered */
+}
+
+.table-header td {
+vertical-align: middle !important; /* Corrected */
+font-size: 0.8rem ;
+font-family: sans-serif !important;
+text-align: center !important;
+border: 1px solid #dee2e6 !important; /* Ensures text is centered */
+}
+
+/* Styling of table other than reference and civil work table */
+
+.table-header1 {
+width: 100%;
+border-collapse: collapse; /* Ensures proper table structure */
+table-layout: auto;
+border: 1px solid #dee2e6 !important;
+margin-top: 5px;
+}
+
+.table-header1 th {
+vertical-align: middle !important; /* Corrected */
+font-size: 1.2rem ;
+font-weight: 700;
+background-color: #0f4c7f !important;
+color: #ffffff !important;
+font-family: serif !important;
+text-align: left !important;
+border: 1px solid #dee2e6 !important; /* Ensures text is centered */
+text-transform: uppercase;
+}
+
+.table-header1 td {
+vertical-align: middle !important; /* Corrected */
+font-size: 1.2rem;
+font-family: serif !important;
+text-align: left;
+border: 1px solid #dee2e6 !important; /* Ensures text is centered */
+font-weight: 500;
+padding: 1% !important;
+}
+
+/* Styling of Commercial offer page 9 */
+
+.table-header-page9 {
+width: 100%;
+border-collapse: collapse; /* Ensures proper table structure */
+table-layout: auto;
+border: 1px solid #dee2e6 !important;
+margin-top: 5px;
+}
+
+.table-header-page9 th {
+vertical-align: middle !important; /* Corrected */
+font-size: 1.2rem;
+font-weight: 700;
+background-color: #0f4c7f !important;
+color: #ffffff !important;
+font-family: serif !important;
+text-align: left !important;
+border: 1px solid #dee2e6 !important; /* Ensures text is centered */
+text-transform: uppercase;
+padding: 12px !important;
+}
+
+.table-header-page9 td {
+vertical-align: middle !important; /* Corrected */
+font-size: 1.2rem;
+font-family: serif !important;
+text-align: left !important;
+border: 1px solid #dee2e6 !important; /* Ensures text is centered */
+font-weight: 500;
+padding: 12px !important;
+}
+
+/* CSS For Summary Page */
+
+.table-header-Summary {
+width: 100%;
+border-collapse: collapse !important;
+table-layout: auto;
+border: 1px solid #dee2e6 !important;
+}
+
+.table-header-Summary th {
+vertical-align: middle !important; /* Corrected */
+font-size: 1rem;
+font-weight: bold;
+background-color: #0f4c7f;
+color: #fff ;
+font-family: serif ;
+text-align: center !important;
+border: 1px solid #dee2e6 !important; /* Ensures text is centered */
+}
+
+.table-header-Summary td {
+vertical-align: middle !important; /* Corrected */
+font-size: 0.8rem ;
+font-family: sans-serif !important;
+text-align: center !important;
+border: 1px solid #dee2e6 !important; /* Ensures text is centered */
+}
+
