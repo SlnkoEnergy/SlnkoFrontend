@@ -358,23 +358,68 @@ function PaymentRequestForm() {
               <Typography level="body2" fontWeight="bold">
     Projects: 
     </Typography>
-      <Select
-          name="p_id"
-          value={formData.p_id? {label: getFormData.projectIDs.find((project) => project.p_id === formData.p_id)?.code,
-          value: formData.p_id,
-        }: null}
-  onChange={(e) =>handleChange({
+    {/* <Select
+  name="p_id"
+  value={formData.p_id
+    ? {
+        label: getFormData.projectIDs.find((project) => project.p_id === formData.p_id)?.code,
+        value: formData.p_id,
+      }
+    : null
+  }
+  onChange={(e) =>
+    handleChange({
       target: {
         name: "p_id",
         value: e?.value,
       },
-    })}
+    })
+  }
   options={getFormData.projectIDs.map((project) => ({
     label: project.code,
     value: project.p_id,
   }))}
   placeholder="Select Project"
-/>           
+  isDisabled={formData.pay_type === "Payment Against PO" && formData.po_number} // Disable when both conditions are met
+/> */}
+
+       {formData.pay_type === "Payment Against PO" && formData.po_number ? (
+    // Readonly Input when Payment Against PO is selected
+    <Input
+      name="p_id"
+      value={
+        getFormData.projectIDs.find((project) => project.p_id === formData.p_id)?.code || ""
+      }
+      placeholder="Project Code"
+      readOnly
+    />
+  ) : (
+    // Select dropdown for other payment types
+    <Select
+      name="p_id"
+      value={
+        formData.p_id
+          ? {
+              label: getFormData.projectIDs.find((project) => project.p_id === formData.p_id)?.code,
+              value: formData.p_id,
+            }
+          : null
+      }
+      onChange={(e) =>
+        handleChange({
+          target: {
+            name: "p_id",
+            value: e?.value,
+          },
+        })
+      }
+      options={getFormData.projectIDs.map((project) => ({
+        label: project.code,
+        value: project.p_id,
+      }))}
+      placeholder="Select Project"
+    />
+  )}   
 {/* <Input
                   name="projectID"
                   value={formData.projectID || ""}
@@ -396,12 +441,13 @@ function PaymentRequestForm() {
                   onChange={handleChange}
                   placeholder="Project Name"
                   required
+                  readOnly
                 />
               </Grid>
 
               <Grid xs={12} sm={6}>
               <Typography level="body2" fontWeight="bold">
-      Client Name
+      Client Name 
     </Typography>
                 <Input
                   name="customer"
@@ -409,6 +455,7 @@ function PaymentRequestForm() {
                   onChange={handleChange}
                   placeholder="Client Name"
                   required
+                  readOnly
                 />
               </Grid>
 
@@ -421,6 +468,7 @@ function PaymentRequestForm() {
                   value={formData.p_group || ""}
                   onChange={handleChange}
                   placeholder="Group Name"
+                  readOnly
                   
                 />
               </Grid>

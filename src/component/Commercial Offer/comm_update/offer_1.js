@@ -5,7 +5,7 @@ import Typography from "@mui/joy/Typography";
 import React from "react";
 import logo4 from "../../../assets/Comm_offer/email_icon (2).png";
 import logo5 from "../../../assets/Comm_offer/linkedin.png";
-import logo2 from "../../../assets/Comm_offer/pag1_back2.jpg";
+import logo2 from "../../../assets/Comm_offer/pag1_back1.png";
 import logo from "../../../assets/Comm_offer/page1_logo.png";
 import logo3 from "../../../assets/Comm_offer/phone_icon (2).png";
 import logo1 from "../../../assets/Comm_offer/White Slnko Logo .png";

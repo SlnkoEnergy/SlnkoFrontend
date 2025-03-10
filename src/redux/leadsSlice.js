@@ -8,12 +8,19 @@ export const leadsApi = createApi({
     getLeads: builder.query({
       query: () => "get-all-bd-lead",
       providesTags: ["Lead"],
-      
+    }),
+    addLeads: builder.mutation({
+      query: (newLead) => ({
+        url: "create-bd-lead",
+        method: "POST",
+        body: newLead,
+      }),
+      invalidatesTags: ["Lead"],
     }),
   }),
 });
 
 export const { 
-  useGetLeadsQuery, 
+  useGetLeadsQuery,
+  useAddLeadsMutation
 } = leadsApi;
-

@@ -122,7 +122,7 @@ function InitialLeads() {
               <Button
                 color="primary"
                 size="sm"
-                onClick={() => navigate("/initial_leads")}
+                onClick={() => navigate("/add_lead")}
               >
                 Add New Leads +
               </Button>

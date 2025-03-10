@@ -1,12 +1,12 @@
 import { Box, Grid, Typography } from "@mui/joy";
 import React from "react";
 import img1 from "../../../assets/Comm_offer/1.jpeg";
-import img2 from "../../../assets/Comm_offer/2.jpeg";
+import img2 from "../../../assets/Comm_offer/luna.png";
 import img3 from "../../../assets/Comm_offer/3.jpeg";
 import img5 from "../../../assets/Comm_offer/5.jpeg";
 import img6 from "../../../assets/Comm_offer/6.jpeg";
 import img7 from "../../../assets/Comm_offer/7.jpeg";
-import img4 from "../../../assets/Comm_offer/hisar.png";
+import img4 from "../../../assets/Comm_offer/haryana.png";
 import logo from "../../../assets/slnko_blue_logo.png";
 import "../CSS/offer.css";
 

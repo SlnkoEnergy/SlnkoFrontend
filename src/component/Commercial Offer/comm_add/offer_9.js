@@ -262,7 +262,7 @@ const Page9 = () => {
                     <th>Description</th>
                     <th>Capacity</th>
                     <th> UoM</th>
-                    <th>Rate</th>
+                    <th>Fees</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -276,7 +276,7 @@ const Page9 = () => {
                       DC
                     </td>
                     <td>INR</td>
-                    <td>{bdRate.slnko_charges}/- Wp</td>
+                    <td>₹{bdRate.slnko_charges}/-</td>
                   </tr>
                 </tbody>
               </Table>

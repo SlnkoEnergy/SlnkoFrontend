@@ -39,11 +39,13 @@ import ListReference from "../pages/BD/Comm_/offer_ref";
 import ListReference2 from "../pages/BD/Comm_/offer_ref_edit";
 import ListReference3 from "../pages/BD/Comm_/offer_previw";
 import Costing_form from "../pages/BD/Costing_form";
+import Add_Lead from "../pages/BD/Leads/create_Leads";
+
 
 function index() {
   return (
     <Routes>
-      {/*============ Pages ==========*/}
+  {/*============ Pages ==========*/}
 
       {/*---------dashboard -------- */}
       <Route path="/" element={<Login />} />
@@ -346,7 +348,16 @@ function index() {
           </PrivateRoute>
         }
       />
+      <Route
+        path="/add_lead"
+        element={
+          <PrivateRoute>
+            <Add_Lead />
+          </PrivateRoute>
+        }
+      />
     </Routes>
+    
     
   );
 }

@@ -368,6 +368,10 @@ const Page6 = () => {
               width: "100%",
               backgroundColor: "white",
               marginTop: "-18px",
+              "@media print": {
+    
+                marginTop:"-45px !important"
+              },
             }}
           >
             <Table
@@ -375,6 +379,7 @@ const Page6 = () => {
               style={{
                 "@media print": {
                   fontSize: "1.2rem",
+               
                 },
               }}
             >

@@ -23,11 +23,12 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 // import Axios from "../utils/Axios";
 import {useGetLeadsQuery} from "../redux/leadsSlice";
+import NoData from "../assets/alert-bell.svg";
 
 const StandByRequest = () => {
   const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true);
   // const [error, setError] = useState(null);
   // const [states, setStates] = useState([]);
   // const [customers, setCustomers] = useState([]);
@@ -38,15 +39,17 @@ const StandByRequest = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [selectedDate, setSelectedDate] = useState("");
   const [mergedData, setMergedData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const {data: getLead = [], isLoading, error} = useGetLeadsQuery();
+  const {data: getLead = [], loading, error} = useGetLeadsQuery();
 
 
   console.log("getLead :", getLead);
   
+  const leads = useMemo(() => getLead?.Data ?? [], [getLead?.Data]);
 
   // useEffect(() => {
   //   const fetchTableData = async () => {
@@ -100,42 +103,61 @@ const StandByRequest = () => {
   //   }
   // }, [payments, projects]);
 
-  // const renderFilters = () => (
-  //   <>
-  //     <FormControl size="sm">
-  //       <FormLabel>State</FormLabel>
-  //       <Select
-  //         size="sm"
-  //         placeholder="Filter by state"
-  //         // value={stateFilter}
-  //         // onChange={(e) => setStateFilter(e.target.value)}
-  //       >
-  //         <Option value="">All</Option>
-  //         {/* {states.map((state, index) => (
-  //           <Option key={index} value={state}>
-  //             {state}
-  //           </Option>
-  //         ))} */}
-  //       </Select>
-  //     </FormControl>
-  //     <FormControl size="sm">
-  //       <FormLabel>Customer</FormLabel>
-  //       <Select
-  //         size="sm"
-  //         placeholder="Filter by customer"
-  //         // value={customerFilter}
-  //         // onChange={(e) => setCustomerFilter(e.target.value)}
-  //       >
-  //         <Option value="">All</Option>
-  //         {/* {customers.map((customer, index) => (
-  //           <Option key={index} value={customer}>
-  //             {customer}
-  //           </Option>
-  //         ))} */}
-  //       </Select>
-  //     </FormControl>
-  //   </>
-  // );
+  const renderFilters = () => (
+    <>
+      <FormControl size="sm">
+        <FormLabel>Date</FormLabel>
+        <Input
+          type="date"
+          value={selectedDate}
+          onChange={handleDateFilter}
+          style={{ width: "200px" }}
+        />
+      </FormControl>
+      {/* <FormControl size="sm">
+        <FormLabel>Status</FormLabel>
+        <Select
+          size="sm"
+          placeholder="Status"
+          value={statusFilter}
+          onChange={(e) => {
+            const selectedValue = e.target.value;
+            console.log("Selected State:", selectedValue);
+            setStatusFilter(selectedValue);
+          }}
+        >
+          <Option value="">All</Option>
+          {statuses.map((status, index) => (
+            <Option key={index} value={status}>
+              {status}
+            </Option>
+          ))}
+        </Select>
+      </FormControl> */}
+      {/* <FormControl size="sm">
+        <FormLabel>Vendor</FormLabel>
+        <Select
+          size="sm"
+          placeholder="Filter by Vendors"
+          value={vendorFilter}
+          onChange={(e) => {
+            const selectedValue = e.target.value;
+            console.log("Selected State:", selectedValue);
+            setVendorFilter(selectedValue);
+          }}
+        >
+          <Option value="">All</Option>
+          {vendors.map((vendor, index) => (
+            <Option key={index} value={vendor}>
+              {vendor}
+            </Option>
+          ))}
+        </Select>
+      </FormControl> */}
+    </>
+  );
+
+
   const handleSelectAll = (event) => {
     if (event.target.checked) {
       setSelected(paginatedPayments.map((row) => row.id));
@@ -189,19 +211,25 @@ const StandByRequest = () => {
     );
   };
 
-  const handleSearch = (query) => {
-    setSearchQuery(query.toLowerCase());
-  };
+   const [FilteredData, setFilteredData] = useState([]);
 
-   const leads = useMemo(() => Array.isArray(getLead?.data) ? getLead.data : [], [getLead]);
+   const handleSearch = (query) => {
+    const lowerCaseQuery = query.toLowerCase();
+    setSearchQuery(lowerCaseQuery);
+    applyFilters(lowerCaseQuery, selectedDate); // Pass the updated search query
+  };
+ 
+
+
+ 
+  const applyFilters = (query = searchQuery, dateValue = selectedDate) => {
   const filteredAndSortedData = leads
     .filter((payment) => {
       const matchesSearchQuery = [
-        "pay_id",
-        "vendor",
-        "approved",
-        "projectCustomer",
-        "paid_for",
+        "id",
+        "c_name",
+        "state",
+        "mobile"
       ].some((key) => payment[key]?.toLowerCase().includes(searchQuery));
 
       // const matchesDateFilter =
@@ -220,18 +248,24 @@ const StandByRequest = () => {
       return matchesSearchQuery;
     })
     .sort((a, b) => {
-      if (a.pay_id?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.pay_id?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.paid_for?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.paid_for?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.projectCustomer?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.projectCustomer?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.vendor?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.vendor?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.approved?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.approved?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.id?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.id?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.c_name?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.c_name?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.state?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.state?.toLowerCase().includes(searchQuery)) return 1;
       return 0;
     });
+    setFilteredData(filteredAndSortedData);
+  };
+
+   // Handle date filter input and apply combined filters
+   const handleDateFilter = (event) => {
+    const dateValue = event.target.value;
+    setSelectedDate(dateValue);
+    applyFilters(searchQuery, dateValue);
+  };
+
 
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
@@ -268,7 +302,7 @@ const StandByRequest = () => {
     setCurrentPage(page);
   }, [searchParams]);
 
-  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
+  const totalPages = Math.ceil(FilteredData.length / itemsPerPage);
 
   const formatDate = (dateString) => {
     if (!dateString) {
@@ -285,7 +319,7 @@ const StandByRequest = () => {
       .replace(/ /g, "/");
   };
 
-  const paginatedPayments = filteredAndSortedData.slice(
+  const paginatedPayments = FilteredData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -372,7 +406,7 @@ const StandByRequest = () => {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {/* {renderFilters()} */}
+        {renderFilters()}
       </Box>
 
       {/* Table */}
@@ -428,10 +462,10 @@ const StandByRequest = () => {
                   "Scheme",
                   "Capacity",
                   "Substation Distance",
-                  "Comments",
-                  "FollowUp Date",
+                  // "Comments",
+                  // "FollowUp Date",
                   "Creation Date",
-                  "Status",
+                  "Action",
                   "",
                 ].map((header, index) => (
                   <Box
@@ -502,7 +536,7 @@ const StandByRequest = () => {
                         textAlign: "center",
                       }}
                     >
-                      {lead.vendor}
+                      {lead.mobile}
                     </Box>
                     <Box
                       component="td"
@@ -512,7 +546,7 @@ const StandByRequest = () => {
                         textAlign: "center",
                       }}
                     >
-                      {lead.projectCustomer || "-"}
+                      {`${lead.village}, ${lead.district}, ${lead.state}`}
                     </Box>
                     <Box
                       component="td"
@@ -522,7 +556,7 @@ const StandByRequest = () => {
                         textAlign: "center",
                       }}
                     >
-                      {lead.amt_for_customer}
+                      {lead.scheme}
                     </Box>
                     {/* <Box
                       component="td"
@@ -561,7 +595,37 @@ const StandByRequest = () => {
                         textAlign: "center",
                       }}
                     >
-                      {lead.utr || "-"}
+                      {lead.capacity|| "-"}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {lead.distance|| "-"}
+                    </Box>
+                    {/* <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {lead.followup|| "-"}
+                    </Box> */}
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {lead.entry_date|| "-"}
                     </Box>
                     <Box
                       component="td"
@@ -572,9 +636,9 @@ const StandByRequest = () => {
                       }}
                     >
                       <RowMenu
-                        currentPage={currentPage}
-                        pay_id={lead.pay_id}
-                        p_id={lead.p_id}
+                        // currentPage={currentPage}
+                        // pay_id={lead.pay_id}
+                        // p_id={lead.p_id}
                       />
                     </Box>
                   </Box>
@@ -583,14 +647,25 @@ const StandByRequest = () => {
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={9}
+                    colSpan={15}
                     sx={{
                       padding: "8px",
                       textAlign: "center",
                       fontStyle: "italic",
                     }}
                   >
-                    No data available
+                   <Box sx={{
+                      fontStyle: "italic",
+                      display:"flex",
+                      flexDirection:"column",
+                      alignItems:"center",
+                      justifyContent:"center"
+                    }}>
+                      <img src = {NoData} alt="No data Image" style={{width:"50px", height:'50px'}}/>
+                    <Typography fontStyle={"italic"}>
+                      No Leads available
+                      </Typography>
+                      </Box>
                   </Box>
                 </Box>
               )}
