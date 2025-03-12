@@ -32,7 +32,7 @@ import ForgotPassword from "../pages/Users/auth/ForgotPassword";
 import Login from "../pages/Users/auth/Login";
 import EditUser from "../pages/Users/EditUser";
 // import { BalanceProvider } from "../store/Context/Balance_Context";
-import Initial_Leads from "../pages/BD/Leads/Initial_Leads";
+import Initial_Leads from "../pages/BD/Leads/Initial/Initial_Leads_Tab";
 import PrivateRoute from "./PrivateRoute";
 import CommercialRateOffer from "../pages/BD/OfferRate";
 import ListReference from "../pages/BD/Comm_/offer_ref";
@@ -40,6 +40,9 @@ import ListReference2 from "../pages/BD/Comm_/offer_ref_edit";
 import ListReference3 from "../pages/BD/Comm_/offer_previw";
 import Costing_form from "../pages/BD/Costing_form";
 import Add_Lead from "../pages/BD/Leads/create_Leads";
+import Edit_Initial from "../pages/BD/Leads/Initial/Forms/initial_edit";
+import Dashboardz from "../pages/Dashboards";
+import Sum_Initial_Leads from "../pages/BD/Leads/Initial/Forms/initial_Summary";
 
 
 function index() {
@@ -49,6 +52,15 @@ function index() {
 
       {/*---------dashboard -------- */}
       <Route path="/" element={<Login />} />
+      <Route
+        path="dashboard"
+        element={
+          <PrivateRoute>
+            <Dashboardz />
+          </PrivateRoute>
+        }
+      />
+
 
       {/*------ User---------- */}
       <Route path="/login" element={<Login />} />
@@ -353,6 +365,22 @@ function index() {
         element={
           <PrivateRoute>
             <Add_Lead />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/edit_initial"
+        element={
+          <PrivateRoute>
+            <Edit_Initial />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/initial_Summary"
+        element={
+          <PrivateRoute>
+            <Sum_Initial_Leads />
           </PrivateRoute>
         }
       />

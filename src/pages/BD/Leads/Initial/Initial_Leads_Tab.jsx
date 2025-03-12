@@ -9,12 +9,12 @@ import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
 // import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import Lead_Initial from "../../../component/Initial_Lead";
-import Sidebar from "../../../component/Partials/Sidebar";
-import Lead_Warm from "../../../component/Warm_Lead";
+import Lead_Initial from "../../../../component/Initial_Lead";
+import Sidebar from "../../../../component/Partials/Sidebar";
+import Lead_Warm from "../../../../component/Warm_Lead";
 
 import { useNavigate } from "react-router-dom";
-import Header from "../../../component/Partials/Header";
+import Header from "../../../../component/Partials/Header";
 
 function InitialLeads() {
   const navigate = useNavigate();

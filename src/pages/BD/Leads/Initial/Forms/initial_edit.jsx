@@ -8,12 +8,12 @@ import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 
-import Sidebar from "../../../component/Partials/Sidebar";
-import Header from "../../../component/Partials/Header";
+import Sidebar from "../../../../../component/Partials/Sidebar";
+import Header from "../../../../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
-import CreateLead from "../../../component/Forms/Create_lead";
+import EditInitial from "../../../../../component/Forms/initial_edit";
 
-function Add_Lead() {
+function Edit_Initial_Leads() {
   const navigate = useNavigate();
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -81,13 +81,13 @@ function Add_Lead() {
                 sx={{ fontSize: 12, fontWeight: 500 }}
                 onClick={() => navigate("/all-project")}
               >
-                Leads
+                Initial Leads
               </Link>
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Create Leads
+                Edit Initial Leads
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -102,7 +102,7 @@ function Add_Lead() {
               justifyContent: "space-between",
             }}
           >
-            <CreateLead />
+            <EditInitial />
           </Box>
 
           {/* <OrderTable /> */}
@@ -112,4 +112,4 @@ function Add_Lead() {
     </CssVarsProvider>
   );
 }
-export default Add_Lead;
+export default Edit_Initial_Leads;

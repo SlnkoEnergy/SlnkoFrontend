@@ -9,6 +9,10 @@ export const leadsApi = createApi({
       query: () => "get-all-bd-lead",
       providesTags: ["Lead"],
     }),
+    getInitialLeads: builder.query({
+      query: () => "get-all-inital-bd-lead",
+      providesTags: ["Lead"],
+    }),
     addLeads: builder.mutation({
       query: (newLead) => ({
         url: "create-bd-lead",
@@ -17,10 +21,21 @@ export const leadsApi = createApi({
       }),
       invalidatesTags: ["Lead"],
     }),
+    updateLeads: builder.mutation({
+      query: ({ _id, updatedLead }) => ({
+        url: `edit-initial-bd-lead/${_id}`,
+        method: "PUT",
+        body: updatedLead,
+      }),
+      invalidatesTags: ["Lead"],
+    }),
+
   }),
 });
 
 export const { 
   useGetLeadsQuery,
-  useAddLeadsMutation
+  useAddLeadsMutation,
+  useUpdateLeadsMutation,
+  useGetInitialLeadsQuery
 } = leadsApi;

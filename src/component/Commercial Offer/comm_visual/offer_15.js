@@ -1183,7 +1183,7 @@ const Summary = () => {
                         color: "black",
                       }}
                     >
-                      {offerData.dc_capacity} kWp DC
+                      {offerData.dc_capacity} MWp DC
                     </th>
                   </tr>
 

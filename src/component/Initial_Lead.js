@@ -1,5 +1,6 @@
 import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { Player } from "@lottiefiles/react-lottie-player";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
@@ -19,24 +20,22 @@ import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
+import FollowTheSignsIcon from '@mui/icons-material/FollowTheSigns';
+import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
+import ManageHistoryIcon from '@mui/icons-material/ManageHistory';
+import NextPlanIcon from '@mui/icons-material/NextPlan';
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import animationData from "../assets/Lotties/animation-loading.json";
 // import Axios from "../utils/Axios";
-import {useGetLeadsQuery} from "../redux/leadsSlice";
+import { useGetLeadsQuery } from "../redux/leadsSlice";
 import NoData from "../assets/alert-bell.svg";
 
 const StandByRequest = () => {
   const navigate = useNavigate();
-  const [payments, setPayments] = useState([]);
-  // const [loading, setLoading] = useState(true);
-  // const [error, setError] = useState(null);
-  // const [states, setStates] = useState([]);
-  // const [customers, setCustomers] = useState([]);
-  // const [stateFilter, setStateFilter] = useState("");
-  // const [customerFilter, setCustomerFilter] = useState("");
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
   const [projects, setProjects] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
@@ -44,64 +43,8 @@ const StandByRequest = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const {data: getLead = [], loading, error} = useGetLeadsQuery();
-
-
-  console.log("getLead :", getLead);
-  
+  const { data: getLead = [], isLoading, error } = useGetLeadsQuery();
   const leads = useMemo(() => getLead?.Data ?? [], [getLead?.Data]);
-
-  // useEffect(() => {
-  //   const fetchTableData = async () => {
-  //     try {
-  //       const [paymentResponse, projectResponse] = await Promise.all([
-  //         Axios.get("/hold-pay-summary-IT"),
-  //         Axios.get("/get-all-projecT-IT"),
-  //       ]);
-  //       setPayments(paymentResponse.data.data);
-  //       console.log("Payment Data are:", paymentResponse.data.data);
-
-  //       setProjects(projectResponse.data.data);
-  //       console.log("Project Data are:", projectResponse.data.data);
-
-  //       // const uniqueStates = [
-  //       //   ...new Set(paymentsData.map((payment) => payment.state)),
-  //       // ].filter(Boolean);
-
-  //       // const uniqueCustomers = [
-  //       //   ...new Set(paymentsData.map((payment) => payment.customer)),
-  //       // ].filter(Boolean);
-
-  //       // setStates(uniqueStates);
-  //       // setCustomers(uniqueCustomers);
-  //     } catch (err) {
-  //       console.error("API Error:", err);
-  //       setError("Failed to fetch table data.");
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   fetchTableData();
-  // }, []);
-
-  // useEffect(() => {
-  //   if (payments.length > 0 && projects.length > 0) {
-  //     const merged = payments.map((payment) => {
-  //       const matchingProject = projects.find(
-  //         (project) => Number(project.p_id) === Number(payment.p_id)
-  //       );
-  //       return {
-  //         ...payment,
-  //         // projectCode: matchingProject?.code || "-",
-  //         // projectName: matchingProject?.name || "-",
-  //         projectCustomer: matchingProject?.customer || "-",
-  //         // projectGroup: matchingProject?.p_group || "-",
-  //       };
-  //     });
-  //     setMergedData(merged);
-  //   }
-  // }, [payments, projects]);
 
   const renderFilters = () => (
     <>
@@ -114,53 +57,12 @@ const StandByRequest = () => {
           style={{ width: "200px" }}
         />
       </FormControl>
-      {/* <FormControl size="sm">
-        <FormLabel>Status</FormLabel>
-        <Select
-          size="sm"
-          placeholder="Status"
-          value={statusFilter}
-          onChange={(e) => {
-            const selectedValue = e.target.value;
-            console.log("Selected State:", selectedValue);
-            setStatusFilter(selectedValue);
-          }}
-        >
-          <Option value="">All</Option>
-          {statuses.map((status, index) => (
-            <Option key={index} value={status}>
-              {status}
-            </Option>
-          ))}
-        </Select>
-      </FormControl> */}
-      {/* <FormControl size="sm">
-        <FormLabel>Vendor</FormLabel>
-        <Select
-          size="sm"
-          placeholder="Filter by Vendors"
-          value={vendorFilter}
-          onChange={(e) => {
-            const selectedValue = e.target.value;
-            console.log("Selected State:", selectedValue);
-            setVendorFilter(selectedValue);
-          }}
-        >
-          <Option value="">All</Option>
-          {vendors.map((vendor, index) => (
-            <Option key={index} value={vendor}>
-              {vendor}
-            </Option>
-          ))}
-        </Select>
-      </FormControl> */}
     </>
   );
 
-
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelected(paginatedPayments.map((row) => row.id));
+      setSelected(paginatedData.map((row) => row.id));
     } else {
       setSelected([]);
     }
@@ -175,7 +77,8 @@ const StandByRequest = () => {
     );
   };
 
-  const RowMenu = ({ currentPage, pay_id, p_id }) => {
+  const RowMenu = ({ currentPage, id }) => {
+    // console.log(currentPage, id);
     return (
       <Dropdown>
         <MenuButton
@@ -191,15 +94,71 @@ const StandByRequest = () => {
             color="primary"
             onClick={() => {
               const page = currentPage;
-              const payId = String(pay_id);
-              const projectID = Number(p_id);
-              localStorage.setItem("standby_summary", payId);
-              localStorage.setItem("p_id", projectID);
-              navigate(`/standby_Request?page=${page}&pay_id=${payId}`);
+              const leadId = String(id);
+              // const projectID = Number(p_id);
+              localStorage.setItem("edit_initial", leadId);
+              // localStorage.setItem("p_id", projectID);
+              navigate(`/edit_initial?page=${page}&id=${leadId}`);
             }}
           >
             <ContentPasteGoIcon />
-            <Typography>StandBy summary</Typography>
+            <Typography>Edit Info</Typography>
+          </MenuItem>
+          <MenuItem
+            color="primary"
+            onClick={() => {
+              const page = currentPage;
+              const leadId = String(id);
+              // const projectID = Number(p_id);
+              localStorage.setItem("stage_next", leadId);
+              // localStorage.setItem("p_id", projectID);
+              navigate(`/standby_Request?page=${page}&${leadId}`);
+            }}
+          >
+            <NextPlanIcon />
+            <Typography>Next Stage</Typography>
+          </MenuItem>
+          <MenuItem
+            color="primary"
+            onClick={() => {
+              const page = currentPage;
+              const leadId = String(id);
+              // const projectID = Number(p_id);
+              localStorage.setItem("followup_history", leadId);
+              // localStorage.setItem("p_id", projectID);
+              navigate(`/standby_Request?page=${page}&${leadId}`);
+            }}
+          >
+            <ManageHistoryIcon />
+            <Typography>Followup History</Typography>
+          </MenuItem>
+          <MenuItem
+            color="primary"
+            onClick={() => {
+              const page = currentPage;
+              const leadId1 = String(id);
+              // const projectID = Number(p_id);
+              localStorage.setItem("next_followup", leadId1);
+              // localStorage.setItem("p_id", projectID);
+              navigate(`/standby_Request?page=${page}&${leadId1}`);
+            }}
+          >
+            <FollowTheSignsIcon />
+            <Typography>Next Followup</Typography>
+          </MenuItem>
+          <MenuItem
+            color="primary"
+            onClick={() => {
+              const page = currentPage;
+              const leadId = String(id);
+              // const projectID = Number(p_id);
+              localStorage.setItem("view_details", leadId);
+              // localStorage.setItem("p_id", projectID);
+              navigate(`/initial_Summary?page=${page}&id=${leadId}`);
+            }}
+          >
+            <RemoveRedEyeIcon />
+            <Typography>View Details</Typography>
           </MenuItem>
           <Divider sx={{ backgroundColor: "lightblue" }} />
           <MenuItem color="danger">
@@ -211,72 +170,39 @@ const StandByRequest = () => {
     );
   };
 
-   const [FilteredData, setFilteredData] = useState([]);
-
-   const handleSearch = (query) => {
-    const lowerCaseQuery = query.toLowerCase();
-    setSearchQuery(lowerCaseQuery);
-    applyFilters(lowerCaseQuery, selectedDate); // Pass the updated search query
-  };
- 
-
-
- 
-  const applyFilters = (query = searchQuery, dateValue = selectedDate) => {
-  const filteredAndSortedData = leads
-    .filter((payment) => {
-      const matchesSearchQuery = [
-        "id",
-        "c_name",
-        "state",
-        "mobile"
-      ].some((key) => payment[key]?.toLowerCase().includes(searchQuery));
-
-      // const matchesDateFilter =
-      //   !dateFilter ||
-      //   new Date(payment.date).toLocaleDateString() ===
-      //     new Date(dateFilter).toLocaleDateString();
-
-      // const matchesStatusFilter =
-      //   !statusFilter || payment.approved === statusFilter;
-      // console.log("MatchVendors are: ", matchesStatusFilter);
-
-      // const matchesVendorFilter =
-      //   !vendorFilter || payment.vendor === vendorFilter;
-      // console.log("MatchVendors are: ", matchesVendorFilter);
-
-      return matchesSearchQuery;
-    })
-    .sort((a, b) => {
-      if (a.id?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.id?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.c_name?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.c_name?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.state?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.state?.toLowerCase().includes(searchQuery)) return 1;
-      return 0;
-    });
-    setFilteredData(filteredAndSortedData);
+  const formatDate = (dateString) => {
+    if (!dateString) return ""; // Return empty if date is null or undefined
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? "" : date.toISOString().split("T")[0]; // Validate date before formatting
   };
 
-   // Handle date filter input and apply combined filters
-   const handleDateFilter = (event) => {
-    const dateValue = event.target.value;
-    setSelectedDate(dateValue);
-    applyFilters(searchQuery, dateValue);
+  const handleSearch = (e) => {
+    setSearchQuery(e.target.value.toLowerCase());
   };
 
+  const handleDateFilter = (e) => {
+    setSelectedDate(e.target.value);
+  };
+
+  const filteredData = useMemo(() => {
+    return leads
+      .filter((lead) => {
+        const matchesQuery = ["id", "c_name", "mobile","state"].some((key) =>
+          lead[key]?.toLowerCase().includes(searchQuery)
+        );
+        const matchesDate = selectedDate
+          ? formatDate(lead.entry_date) === selectedDate
+          : true;
+        return matchesQuery && matchesDate;
+      })
+      .sort((a, b) => a.id.localeCompare(b.id));
+  }, [leads, searchQuery, selectedDate]);
 
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
 
-    if (currentPage > 2) {
-      pages.push(1);
-    }
-
-    if (currentPage > 3) {
-      pages.push("...");
-    }
+    if (currentPage > 2) pages.push(1);
+    if (currentPage > 3) pages.push("...");
 
     for (
       let i = Math.max(1, currentPage - 1);
@@ -286,13 +212,8 @@ const StandByRequest = () => {
       pages.push(i);
     }
 
-    if (currentPage < totalPages - 2) {
-      pages.push("...");
-    }
-
-    if (currentPage < totalPages - 1) {
-      pages.push(totalPages);
-    }
+    if (currentPage < totalPages - 2) pages.push("...");
+    if (currentPage < totalPages - 1) pages.push(totalPages);
 
     return pages;
   };
@@ -302,84 +223,23 @@ const StandByRequest = () => {
     setCurrentPage(page);
   }, [searchParams]);
 
-  const totalPages = Math.ceil(FilteredData.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
-  const formatDate = (dateString) => {
-    if (!dateString) {
-      return "-";
-    }
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-      console.warn(`Invalid date value: "${dateString}"`);
-      return "-";
-    }
-    const options = { day: "2-digit", month: "short", year: "numeric" };
-    return new Intl.DateTimeFormat("en-GB", options)
-      .format(date)
-      .replace(/ /g, "/");
+  const paginatedData = useMemo(() => {
+    return filteredData.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+  }, [filteredData, currentPage, itemsPerPage]);
+
+  const handlePageChange = (newPage) => {
+    const page = Math.max(1, Math.min(newPage, totalPages));
+    setCurrentPage(page);
+    setSearchParams({ page });
   };
-
-  const paginatedPayments = FilteredData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  const paymentsWithFormattedDate = paginatedPayments.map((payment) => ({
-    ...payment,
-    formattedDate: formatDate(payment.dbt_date),
-  }));
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
-
-  // if (loading) {
-  //   return <Typography>Loading...</Typography>;
-  // }
-
-  // if (error) {
-  //   return <Typography color="danger">{error}</Typography>;
-  // }
 
   return (
     <>
-      {/* Mobile Filters */}
-      {/* <Sheet
-        className="SearchAndFilters-mobile"
-        sx={{ display: { xs: "flex", sm: "none" }, my: 1, gap: 1 }}
-      >
-        <Input
-          size="sm"
-          placeholder="Search"
-          startDecorator={<SearchIcon />}
-          sx={{ flexGrow: 1 }}
-        />
-        <IconButton
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          onClick={() => setOpen(true)}
-        >
-          <FilterAltIcon />
-        </IconButton>
-        <Modal open={open} onClose={() => setOpen(false)}>
-          <ModalDialog aria-labelledby="filter-modal" layout="fullscreen">
-            <ModalClose />
-            <Typography id="filter-modal" level="h2">
-              Filters
-            </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Sheet sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {renderFilters()}
-              <Button color="primary" onClick={() => setOpen(false)}>
-                Submit
-              </Button>
-            </Sheet>
-          </ModalDialog>
-        </Modal>
-      </Sheet> */}
-
       {/* Tablet and Up Filters */}
       <Box
         className="SearchAndFilters-tabletUp"
@@ -401,9 +261,10 @@ const StandByRequest = () => {
           <Input
             size="sm"
             startDecorator={<SearchIcon />}
-            placeholder="Search by Project ID, Customer, or Name"
+            type="text"
+            placeholder="Search by ID, Name, State, Mobile..."
             value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
+            onChange={handleSearch}
           />
         </FormControl>
         {renderFilters()}
@@ -424,17 +285,29 @@ const StandByRequest = () => {
           maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
-        {error ? (
-          <Typography color="danger" textAlign="center">
-            {error}
-          </Typography>
-        ) : loading ? (
-          <Typography textAlign="center">Loading...</Typography>
+        {isLoading ? (
+          <Box
+            display="flex"
+            flexDirection="column"
+            justifyContent="center"
+            alignItems="center"
+            height="100px"
+          >
+            <Player
+              autoplay
+              loop
+              src={animationData}
+              style={{ height: 100, width: 100 }}
+            />
+          </Box>
+        ) : error ? (
+          <p>Error loading data</p>
         ) : (
           <Box
             component="table"
             sx={{ width: "100%", borderCollapse: "collapse" }}
           >
+          
             <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
               <Box component="tr">
                 <Box
@@ -446,27 +319,24 @@ const StandByRequest = () => {
                   }}
                 >
                   <Checkbox
-  size="sm"
-  checked={selected.length === getLead.length}
-  onChange={handleSelectAll}
-  indeterminate={
-    selected.length > 0 && selected.length < getLead.length
-  }
-/>
+                    size="sm"
+                    checked={selected.length === getLead.length}
+                    onChange={handleSelectAll}
+                    indeterminate={
+                      selected.length > 0 && selected.length < getLead.length
+                    }
+                  />
                 </Box>
                 {[
                   "Lead Id",
                   "Customer",
                   "Mobile",
-                  "Location",
+                  "State",
                   "Scheme",
                   "Capacity",
                   "Substation Distance",
-                  // "Comments",
-                  // "FollowUp Date",
                   "Creation Date",
                   "Action",
-                  "",
                 ].map((header, index) => (
                   <Box
                     component="th"
@@ -483,9 +353,11 @@ const StandByRequest = () => {
                 ))}
               </Box>
             </Box>
+
+         {/*****pagination ****/}
             <Box component="tbody">
-              {paymentsWithFormattedDate.length > 0 ? (
-                paymentsWithFormattedDate.map((lead, index) => (
+              {paginatedData.length > 0 ? (
+                paginatedData.map((lead, index) => (
                   <Box
                     component="tr"
                     key={index}
@@ -493,6 +365,7 @@ const StandByRequest = () => {
                       "&:hover": { backgroundColor: "neutral.plainHoverBg" },
                     }}
                   >
+                 
                     <Box
                       component="td"
                       sx={{
@@ -508,85 +381,33 @@ const StandByRequest = () => {
                         onChange={() => handleRowSelect(lead._id)}
                       />
                     </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {lead.id}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {lead.c_name}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {lead.mobile}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {`${lead.village}, ${lead.district}, ${lead.state}`}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {lead.scheme}
-                    </Box>
-                    {/* <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <Chip
-                        variant="soft"
-                        size="sm"
-                        startDecorator={
-                          {
-                            Approved: <CheckRoundedIcon />,
-                            Pending: <AutorenewRoundedIcon />,
-                            Rejected: <BlockIcon />,
-                          }[payment.approved]
-                        }
-                        color={
-                          {
-                            Approved: "success",
-                            Pending: "neutral",
-                            Rejected: "danger",
-                          }[payment.approved]
-                        }
+
+                    
+                    {[
+                      lead.id,
+                      lead.c_name,
+                      lead.mobile,
+                      // `${lead.village}, ${lead.district}, ${lead.state}`,
+                      lead.state,
+                      lead.scheme,
+                      lead.capacity || "-",
+                      lead.distance || "-",
+                      lead.entry_date || "-",
+                    ].map((data, idx) => (
+                      <Box
+                        component="td"
+                        key={idx}
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
                       >
-                        {payment.approved}
-                      </Chip>
-                    </Box> */}
+                        {data}
+                      </Box>
+                    ))}
+
+                    {/* Actions */}
                     <Box
                       component="td"
                       sx={{
@@ -595,51 +416,7 @@ const StandByRequest = () => {
                         textAlign: "center",
                       }}
                     >
-                      {lead.capacity|| "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {lead.distance|| "-"}
-                    </Box>
-                    {/* <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {lead.followup|| "-"}
-                    </Box> */}
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {lead.entry_date|| "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <RowMenu
-                        // currentPage={currentPage}
-                        // pay_id={lead.pay_id}
-                        // p_id={lead.p_id}
-                      />
+                      <RowMenu currentPage={currentPage} id={lead.id}/>
                     </Box>
                   </Box>
                 ))
@@ -647,25 +424,31 @@ const StandByRequest = () => {
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={15}
+                    colSpan={9}
                     sx={{
                       padding: "8px",
                       textAlign: "center",
                       fontStyle: "italic",
                     }}
                   >
-                   <Box sx={{
-                      fontStyle: "italic",
-                      display:"flex",
-                      flexDirection:"column",
-                      alignItems:"center",
-                      justifyContent:"center"
-                    }}>
-                      <img src = {NoData} alt="No data Image" style={{width:"50px", height:'50px'}}/>
-                    <Typography fontStyle={"italic"}>
-                      No Leads available
+                    <Box
+                      sx={{
+                        fontStyle: "italic",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <img
+                        src={NoData}
+                        alt="No data"
+                        style={{ width: "50px", height: "50px" }}
+                      />
+                      <Typography fontStyle={"italic"}>
+                        No Leads available
                       </Typography>
-                      </Box>
+                    </Box>
                   </Box>
                 </Box>
               )}
@@ -681,7 +464,6 @@ const StandByRequest = () => {
           pt: 2,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
-          // display: { xs: "none", md: "flex" },
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
@@ -698,7 +480,12 @@ const StandByRequest = () => {
         >
           Previous
         </Button>
-
+        <Box>
+          Showing {paginatedData.length} of {filteredData.length} results
+        </Box>
+        {/* <Typography>
+          Page {currentPage} of {totalPages || 1}
+        </Typography> */}
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
@@ -720,20 +507,6 @@ const StandByRequest = () => {
             )
           )}
         </Box>
-        {/* <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
-    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-      <IconButton
-        key={page}
-        size="sm"
-        variant={page === currentPage ? "contained" : "outlined"}
-        color="neutral"
-        onClick={() => handlePageChange(page)}
-      >
-        {page}
-      </IconButton>
-    ))}
-  </Box> */}
-
         <Button
           size="sm"
           variant="outlined"

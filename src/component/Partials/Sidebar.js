@@ -175,7 +175,7 @@ function Sidebar() {
               <ListItemButton>
                 <HomeRoundedIcon />
                 <ListItemContent>
-                  <Typography level="title-sm" onClick={() => navigate("#")}>
+                  <Typography level="title-sm" onClick={() => navigate("/dashboard")}>
                     Dashboard
                   </Typography>
                 </ListItemContent>

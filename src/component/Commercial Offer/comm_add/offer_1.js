@@ -277,7 +277,7 @@ const Page1 = () => {
                 <Divider
                   sx={{ width: "50%", alignSelf: "center", marginY: 2 }}
                 />
-                <Typography>+91 8062358958</Typography>
+                <Typography>+91 6202528672</Typography>
               </Box>
 
               <Box
