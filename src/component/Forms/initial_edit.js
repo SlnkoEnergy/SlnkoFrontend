@@ -14,14 +14,14 @@ import {
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import {useGetInitialLeadsQuery, useUpdateLeadsMutation } from "../../redux/leadsSlice";
+import {useGetInitialLeadsQuery, useGetLeadsQuery, useUpdateLeadsMutation } from "../../redux/leadsSlice";
 
 const Create_lead = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const [updateLead, { isLoading: isUpdating }] = useUpdateLeadsMutation();
-  const { data: getLead, isLoading, error } = useGetInitialLeadsQuery();
+  const { data: getLead, isLoading, error } = useGetLeadsQuery();
   const [user, setUser] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -64,15 +64,13 @@ const Create_lead = () => {
   }, []);
 
   useEffect(() => {
-    if (!getLead) {
-      console.error("Error: getLead data is undefined or null.", getLead);
-      return;
-    }
+    // if (!getLead) {
+    //   console.error("Error: getLead data is undefined or null.", getLead);
+    //   return;
+    // }
   
-    // Ensure getLead is an array or extract data from getLead.data
-    const getLeadArray = Array.isArray(getLead) ? getLead : getLead?.data || [];
-  
-    console.log("Fetched Leads Array:", getLeadArray);
+    // Extract data properly (handles cases where data might be nested)
+    const getLeadArray = Array.isArray(getLead) ? getLead : getLead?.Data || [];
   
     if (!Array.isArray(getLeadArray)) {
       console.error("Error: Extracted getLead data is not an array.", getLeadArray);
@@ -82,8 +80,6 @@ const Create_lead = () => {
     // Retrieve Lead ID from localStorage
     const LeadId = localStorage.getItem("edit_initial");
   
-    console.log("Retrieved LeadId from localStorage:", LeadId);
-  
     if (!LeadId) {
       console.error("Invalid Lead ID retrieved from localStorage.");
       return;
@@ -92,36 +88,58 @@ const Create_lead = () => {
     // Find the matching lead using string comparison
     const selectedLead = getLeadArray.find((item) => String(item.id) === LeadId);
   
-    if (selectedLead) {
-      console.log("Matching Lead Found:", selectedLead);
-  
-      setFormData({
-        ...selectedLead, // Fill form data with existing lead details
-        c_name: selectedLead.c_name || "",
-        company: selectedLead.company || "",
-        email: selectedLead.email || "",
-        group: selectedLead.group || "",
-        reffered_by: selectedLead.reffered_by || "",
-        source: selectedLead.source || "",
-        mobile: selectedLead.mobile || "",
-        alt_mobile: selectedLead.alt_mobile || "",
-        village: selectedLead.village || "",
-        district: selectedLead.district || "",
-        state: selectedLead.state || "",
-        scheme: selectedLead.scheme || "",
-        capacity: selectedLead.capacity || "",
-        distance: selectedLead.distance || "",
-        tarrif: selectedLead.tarrif || "",
-        land: selectedLead.land || { land_type: "", available_land: "" },
-        entry_date: selectedLead.entry_date || "",
-        interest: selectedLead.interest || "",
-        comment: selectedLead.comment || "",
-        submitted_by: selectedLead.submitted_by || ""
-      });
-    } else {
-      console.error(`No matching lead found for ID: ${LeadId}`);
+    if (!selectedLead) {
+      // console.error(`No matching lead found for ID: ${LeadId}`);
+      return;
     }
+  
+  
+    const formatDateToYYYYMMDD = (dateString) => {
+      if (!dateString) return "";
+    
+      const parts = dateString.split("-");
+      
+      if (parts.length !== 3) return dateString;
+    
+      if (parts[0].length === 4) {
+        // Already in YYYY-MM-DD format
+        return dateString;
+      } else if (parts[2].length === 4) {
+        
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+    
+      return dateString; // Return unchanged if format is unknown
+    };
+    
+  
+    console.log("Matching Lead Found:", selectedLead);
+  
+    setFormData({
+      ...selectedLead,
+      c_name: selectedLead.c_name || "",
+      company: selectedLead.company || "",
+      email: selectedLead.email || "",
+      group: selectedLead.group || "",
+      reffered_by: selectedLead.reffered_by || "",
+      source: selectedLead.source || "",
+      mobile: selectedLead.mobile || "",
+      alt_mobile: selectedLead.alt_mobile || "",
+      village: selectedLead.village || "",
+      district: selectedLead.district || "",
+      state: selectedLead.state || "",
+      scheme: selectedLead.scheme || "",
+      capacity: selectedLead.capacity || "",
+      distance: selectedLead.distance || "",
+      tarrif: selectedLead.tarrif || "",
+      land: selectedLead.land || { land_type: "", available_land: "" },
+      entry_date: formatDateToYYYYMMDD(selectedLead.entry_date) || "",
+      interest: selectedLead.interest || "",
+      comment: selectedLead.comment || "",
+      submitted_by: selectedLead.submitted_by || ""
+    });
   }, [getLead]);
+  
   
   
   
@@ -145,14 +163,14 @@ const Create_lead = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData || !formData.id) {
+    if (!formData || !formData._id) {
       toast.error("Lead ID is missing. Cannot update project.");
       return;
     }
 
     try {
       await updateLead({
-        id: formData.id,
+        _id: formData._id,
         updatedLead: formData,
       }).unwrap();
 
@@ -184,7 +202,7 @@ const Create_lead = () => {
             <FormLabel>Customer Name</FormLabel>
             <Input
               name="c_name"
-              value={formData.c_name}
+              value={formData.c_name || ""}
               onChange={handleChange}
               required
               fullWidth
@@ -194,7 +212,7 @@ const Create_lead = () => {
             <FormLabel>Company Name</FormLabel>
             <Input
               name="company"
-              value={formData.company}
+              value={formData.company || ""}
               onChange={handleChange}
               required
               
@@ -205,7 +223,7 @@ const Create_lead = () => {
             <Input
               name="email"
               type="email"
-              value={formData.email}
+              value={formData.email || ""}
               onChange={handleChange}
               required
               
@@ -216,7 +234,7 @@ const Create_lead = () => {
             <Input
               name="mobile"
               type="tel"
-              value={formData.mobile}
+              value={formData.mobile || ""}
               onChange={handleChange}
               required
               
@@ -227,7 +245,7 @@ const Create_lead = () => {
             <Input
               name="alt_mobile"
               type="tel"
-              value={formData.alt_mobile}
+              value={formData.alt_mobile || "-"}
               onChange={handleChange}
               
             />
@@ -236,7 +254,7 @@ const Create_lead = () => {
             <FormLabel>Village Name</FormLabel>
             <Input
               name="village"
-              value={formData.village}
+              value={formData.village || ""}
               onChange={handleChange}
               
             />
@@ -245,7 +263,7 @@ const Create_lead = () => {
             <FormLabel>District Name</FormLabel>
             <Input
               name="district"
-              value={formData.district}
+              value={formData.district || ""}
               onChange={handleChange}
               
             />
@@ -254,7 +272,7 @@ const Create_lead = () => {
             <FormLabel>Select State</FormLabel>
             <Select
               name="state"
-              value={formData.state}
+              value={formData.state || ""}
               onChange={(e, newValue) =>
                 setFormData({ ...formData, state: newValue })
               }
@@ -272,7 +290,7 @@ const Create_lead = () => {
             <FormLabel>Capacity</FormLabel>
             <Input
               name="capacity"
-              value={formData.capacity}
+              value={formData.capacity || ""}
               onChange={handleChange}
               
             />
@@ -281,7 +299,7 @@ const Create_lead = () => {
             <FormLabel>Sub Station Distance (KM)</FormLabel>
             <Input
               name="distance"
-              value={formData.distance}
+              value={formData.distance || ""}
               onChange={handleChange}
               
             />
@@ -290,7 +308,7 @@ const Create_lead = () => {
             <FormLabel>Tariff (Per Unit)</FormLabel>
             <Input
               name="tarrif"
-              value={formData.tarrif}
+              value={formData.tarrif || ""}
               onChange={handleChange}
               
             />
@@ -299,7 +317,7 @@ const Create_lead = () => {
             <FormLabel>Available Land</FormLabel>
             <Input
               name="available_land"
-              value={formData.land.available_land}
+              value={formData.land.available_land || ""} 
               onChange={handleChange}
               
             />
@@ -309,7 +327,7 @@ const Create_lead = () => {
             <Input
               name="entry_date"
               type="date"
-              value={formData.entry_date}
+              value={formData.entry_date || ""}
               onChange={handleChange}
               
             />
@@ -318,7 +336,7 @@ const Create_lead = () => {
             <FormLabel>Scheme</FormLabel>
             <Select
               name="scheme"
-              value={formData.scheme}
+              value={formData.scheme || ""}
               onChange={(e, newValue) =>
                 setFormData({ ...formData, scheme: newValue })
               }
@@ -336,7 +354,7 @@ const Create_lead = () => {
             <FormLabel>Land Type</FormLabel>
             <Select
               name="land_type"
-              value={formData.land.land_type}
+              value={formData.land.land_type || ""}
               onChange={(e, newValue) =>
                 setFormData((prev) => ({
                   ...prev,
@@ -357,7 +375,7 @@ const Create_lead = () => {
             <FormLabel>Interest</FormLabel>
             <Select
               name="interest"
-              value={formData.interest}
+              value={formData.interest || ""}
               onChange={(e, newValue) =>
                 setFormData({ ...formData, interest: newValue })
               }

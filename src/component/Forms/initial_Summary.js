@@ -35,7 +35,7 @@ const Initial_Summary = () => {
     capacity: "",
     distance: "",
     tarrif: "",
-    land: { land_type: "", available_land: "" },
+    land: "",
     entry_date: "",
     interest: "",
     comment: "",
@@ -65,16 +65,86 @@ const Initial_Summary = () => {
   const lead = getLeadArray.find(lead => String(lead.id) === LeadId);
   console.log("Matched Lead:", lead);
 
-  useEffect(() => {
-    if (lead) {
-      setFormData(lead);
-      console.log("Updated formData with lead details:", lead);
+ useEffect(() => {
+    // if (!getLead) {
+    //   console.error("Error: getLead data is undefined or null.", getLead);
+    //   return;
+    // }
+  
+    // Extract data properly (handles cases where data might be nested)
+    const getLeadArray = Array.isArray(getLead) ? getLead : getLead?.Data || [];
+  
+    if (!Array.isArray(getLeadArray)) {
+      console.error("Error: Extracted getLead data is not an array.", getLeadArray);
+      return;
     }
-  }, [lead]);
+  
+    // Retrieve Lead ID from localStorage
+    const LeadId = localStorage.getItem("view_details");
+  
+    if (!LeadId) {
+      console.error("Invalid Lead ID retrieved from localStorage.");
+      return;
+    }
+  
+    // Find the matching lead using string comparison
+    const selectedLead = getLeadArray.find((item) => String(item.id) === LeadId);
+  
+    if (!selectedLead) {
+      // console.error(`No matching lead found for ID: ${LeadId}`);
+      return;
+    }
+  
+    // Function to format date to YYYY-MM-DD
+    const formatDateToYYYYMMDD = (dateString) => {
+      if (!dateString) return "";
+    
+      const parts = dateString.split("-");
+      
+      if (parts.length !== 3) return dateString; // Invalid format, return as is
+    
+      if (parts[0].length === 4) {
+        // Already in YYYY-MM-DD format
+        return dateString;
+      } else if (parts[2].length === 4) {
+        // Convert from DD-MM-YYYY to YYYY-MM-DD
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+    
+      return dateString; // Return unchanged if format is unknown
+    };
+    
+  
+    console.log("Matching Lead Found:", selectedLead);
+  
+    setFormData({
+      ...selectedLead,
+      c_name: selectedLead.c_name || "",
+      company: selectedLead.company || "",
+      email: selectedLead.email || "",
+      group: selectedLead.group || "",
+      reffered_by: selectedLead.reffered_by || "",
+      source: selectedLead.source || "",
+      mobile: selectedLead.mobile || "",
+      alt_mobile: selectedLead.alt_mobile || "",
+      village: selectedLead.village || "",
+      district: selectedLead.district || "",
+      state: selectedLead.state || "",
+      scheme: selectedLead.scheme || "",
+      capacity: selectedLead.capacity || "",
+      distance: selectedLead.distance || "",
+      tarrif: selectedLead.tarrif || "",
+      land: selectedLead.land || "N/A",
+      entry_date: formatDateToYYYYMMDD(selectedLead.entry_date) || "",
+      interest: selectedLead.interest || "",
+      comment: selectedLead.comment || "",
+      submitted_by: selectedLead.submitted_by || ""
+    });
+  }, [getLead]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    console.log(`Field changed: ${name}, New Value: ${value}`);
+    // console.log(`Field changed: ${name}, New Value: ${value}`);
     
     setFormData((prev) => {
       if (name === "available_land") {
@@ -229,7 +299,7 @@ const Initial_Summary = () => {
               <FormLabel>Available Land</FormLabel>
               <Input
                 name="available_land"
-                value={formData.land.available_land}
+                value={formData.land || "NA"}
                 onChange={handleChange}
                 
               />
@@ -262,7 +332,7 @@ const Initial_Summary = () => {
                 ))}
               </Select>
             </Grid>
-            <Grid xs={12} sm={6}>
+            {/* <Grid xs={12} sm={6}>
               <FormLabel>Land Type</FormLabel>
               <Select
                 name="land_type"
@@ -282,8 +352,17 @@ const Initial_Summary = () => {
                   </Option>
                 ))}
               </Select>
-            </Grid>
+            </Grid> */}
             <Grid xs={12} sm={6}>
+              <FormLabel>Interest</FormLabel>
+              <Input
+                name="interest"
+                value={formData.interest}
+                onChange={handleChange}
+                
+              />
+            </Grid>
+            {/* <Grid xs={12} sm={6}>
               <FormLabel>Interest</FormLabel>
               <Select
                 name="interest"
@@ -300,8 +379,8 @@ const Initial_Summary = () => {
                   </Option>
                 ))}
               </Select>
-            </Grid>
-            <Grid xs={12}>
+            </Grid> */}
+            <Grid xs={6}>
               <FormLabel>Comments</FormLabel>
               <Input
                 name="comment"
@@ -314,9 +393,9 @@ const Initial_Summary = () => {
             </Grid>
             <Grid xs={12}>
               <Box textAlign="center" sx={{ mt: 3 }}>
-                <Button type="submit" variant="solid" loading={isLoading}>
+                {/* <Button type="submit" variant="solid" loading={isLoading}>
                   Update
-                </Button>
+                </Button> */}
                 <Button
                   variant="soft"
                   color="neutral"
