@@ -310,6 +310,7 @@ const FormOffer = () => {
             >
               <Option value="A">A</Option>
               <Option value="C">C</Option>
+              <Option value="C2">C(2)</Option>
             </Select>
           </FormControl>
         </Grid>

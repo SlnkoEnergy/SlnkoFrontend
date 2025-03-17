@@ -267,7 +267,7 @@ const Page5 = () => {
                 <span style={{ fontWeight: "bold" }}>Subject:</span> EPCM
                 Services for {offerData.ac_capacity} MW AC /{" "}
                 {offerData.dc_capacity} MW DC Ground Mount {offerData.scheme}{" "}
-                Solar Project Component {offerData.component}
+                Solar Project Component {offerData.component}.
               </Typography>
             </Box>
             <br />

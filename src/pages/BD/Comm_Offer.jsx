@@ -141,7 +141,10 @@ function Comm_Offer() {
                 user?.name === "Ketan Kumar Jha" ||
                 user?.name === "Vibhav Upadhyay" ||
                 user?.name === "Shantanu Sameer" ||
-                user?.name === "Arnav Shahi") && (
+                user?.name === "Arnav Shahi" ||
+                user?.name === "Shambhavi Gupta" ||
+                user?.name === "Geeta" ||
+                user?.name === "Anudeep Kumar") && (
                 <Button
                   color="primary"
                   size="sm"

@@ -135,10 +135,7 @@ const Create_lead = () => {
         capacity: "",
         distance: "",
         tarrif: "",
-        land: {
-          available_land: "",
-          land_type: "",
-        },
+        land: { available_land: "", land_type: ""},
         entry_date: "",
         interest: "",
         comment: "",

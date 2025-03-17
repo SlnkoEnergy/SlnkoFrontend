@@ -193,7 +193,7 @@ function PaymentRequestForm() {
     const poValue = parseFloat(selectedPo.po_value ?? "0");
   
     const totalAdvancePaid = getFormData.pays
-    .filter((pay) => pay.po_number === selectedPo.po_number && pay.approved === "Approved")
+    .filter((pay) => pay.po_number === selectedPo.po_number && pay.approved === "Approved" && pay.acc_match === "matched")
     .reduce((sum, pay) => sum + parseFloat(pay.amount_paid ?? "0"), 0); 
     
     const po_balance = poValue - totalAdvancePaid;

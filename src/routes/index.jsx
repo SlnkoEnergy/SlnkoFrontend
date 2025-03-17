@@ -43,6 +43,7 @@ import Add_Lead from "../pages/BD/Leads/create_Leads";
 import Edit_Initial from "../pages/BD/Leads/Initial/Forms/initial_edit";
 import Dashboardz from "../pages/Dashboards";
 import Sum_Initial_Leads from "../pages/BD/Leads/Initial/Forms/initial_Summary";
+import CheckboxModal from "../pages/BD/Leads/Initial/Forms/InitialToFollowup";
 
 
 function index() {
@@ -381,6 +382,16 @@ function index() {
         element={
           <PrivateRoute>
             <Sum_Initial_Leads />
+          </PrivateRoute>
+        }
+      />
+
+      {/***************All Stages *************/}
+      <Route
+        path="/initial_followup"
+        element={
+          <PrivateRoute>
+            <CheckboxModal />
           </PrivateRoute>
         }
       />

@@ -1,12 +1,8 @@
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import PrintIcon from "@mui/icons-material/Print";
-import DownloadIcon from "@mui/icons-material/Download";
 import { Button } from "@mui/joy";
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { saveAs } from "file-saver";
-import PizZip from "pizzip";
-import Docxtemplater from "docxtemplater";
 
 import Offer1 from "../comm_update/offer_1";
 import Offer10 from "../comm_update/offer_10";
@@ -38,31 +34,6 @@ const Comm_Entire = () => {
     navigate("/comm_offer");
   };
 
-  const handleDownloadWord = () => {
-    const content = document.getElementById("printable-content").innerHTML;
-
-    // Convert HTML to plain text (basic formatting)
-    const textContent = content
-      .replace(/<br\s*\/?>/g, "\n") // Convert <br> to new lines
-      .replace(/<\/p>/g, "\n") // Convert paragraphs to new lines
-      .replace(/<\/?[^>]+(>|$)/g, ""); // Remove all HTML tags
-
-    // Initialize Pizzip and Docxtemplater
-    const zip = new PizZip();
-    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
-
-    doc.loadZip(zip);
-    doc.setData({ text: textContent });
-
-    try {
-      doc.render();
-      const output = doc.getZip().generate({ type: "blob" });
-      saveAs(output, "Comm_Entire.docx");
-    } catch (error) {
-      console.error("Error generating DOCX:", error);
-    }
-  };
-
   return (
     <div>
       {/* Printable Content */}
@@ -87,7 +58,7 @@ const Comm_Entire = () => {
         <Offer18 />
       </div>
 
-      {/* Print Button */}
+      {/* Back and Print Buttons */}
       <Button
         onClick={handlePrint}
         color="danger"
@@ -107,7 +78,6 @@ const Comm_Entire = () => {
         <PrintIcon sx={{ fontSize: 36 }} />
       </Button>
 
-      {/* Back Button */}
       <Button
         onClick={handleBack}
         color="neutral"
@@ -125,26 +95,6 @@ const Comm_Entire = () => {
         className="no-print"
       >
         <ArrowBackIcon sx={{ fontSize: 36 }} />
-      </Button>
-
-      {/* Download as Word Button */}
-      <Button
-        onClick={handleDownloadWord}
-        color="success"
-        variant="solid"
-        sx={{
-          position: "fixed",
-          bottom: 16,
-          right: 96,
-          borderRadius: "50%",
-          width: 64,
-          height: 64,
-          boxShadow: 3,
-          "&:hover": { backgroundColor: "success.dark" },
-        }}
-        className="no-print"
-      >
-        <DownloadIcon sx={{ fontSize: 36 }} />
       </Button>
 
       <style>

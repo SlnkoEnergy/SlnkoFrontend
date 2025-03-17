@@ -13,15 +13,18 @@ import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
 import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
+import DeleteIcon from "@mui/icons-material/Delete";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
+import Divider from "@mui/joy/Divider";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
 import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
+import { toast } from "react-toastify";
 import Tooltip from "@mui/joy/Tooltip";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
@@ -182,14 +185,13 @@ function Offer() {
   useEffect(() => {
     if (commRate.length > 0) {
       const mergedData = commRate.map((offer) => {
-        // Find matching BD rate by offer_id
         const matchingBdRate = bdRateData.find(
           (bd) => bd.offer_id === offer.offer_id
         );
 
         return {
           ...offer,
-          slnkoCharges: matchingBdRate ? matchingBdRate.slnko_charges : 0, // Default to 0 if no match
+          slnkoCharges: matchingBdRate ? matchingBdRate.slnko_charges : 0,
         };
       });
 
@@ -235,7 +237,10 @@ function Offer() {
             user?.name === "Ketan Kumar Jha" ||
             user?.name === "Vibhav Upadhyay" ||
             user?.name === "Shantanu Sameer" ||
-            user?.name === "Arnav Shahi") && (
+            user?.name === "Arnav Shahi" ||
+            user?.name === "Shambhavi Gupta" ||
+            user?.name === "Geeta" ||
+            user?.name === "Anudeep Kumar") && (
             <Menu size="sm" sx={{ minWidth: 140 }}>
               <MenuItem
                 color="primary"
@@ -261,11 +266,17 @@ function Offer() {
                 <HistoryIcon />
                 <Typography>Offer History</Typography>
               </MenuItem>
-              {/* <Divider sx={{ backgroundColor: "lightblue" }} />
-            <MenuItem color="danger">
-            <DeleteIcon />
-            <Typography>Delete</Typography>
-            </MenuItem> */}
+              <Divider sx={{ backgroundColor: "lightblue" }} />
+              {(user?.name === "IT Team" || user?.name === "admin") && (
+                <MenuItem
+                  color="danger"
+                  disabled={selected.length === 0}
+                  onClick={handleDelete}
+                >
+                  <DeleteIcon />
+                  <Typography>Delete</Typography>
+                </MenuItem>
+              )}
             </Menu>
           )}
         </Dropdown>
@@ -300,7 +311,10 @@ function Offer() {
         user?.name === "Ketan Kumar Jha" ||
         user?.name === "Vibhav Upadhyay" ||
         user?.name === "Shantanu Sameer" ||
-        user?.name === "Arnav Shahi" ? (
+        user?.name === "Arnav Shahi" ||
+        user?.name === "Shambhavi Gupta" ||
+        user?.name === "Geeta" ||
+        user?.name === "Anudeep Kumar" ? (
           <Tooltip title="Add" arrow>
             <IconButton
               size="small"
@@ -340,270 +354,37 @@ function Offer() {
           </Tooltip>
         )}
       </>
-      //   <Tooltip title="Add" arrow>
-      //     {(user?.name === "IT Team" ||
-      //           user?.name === "admin" ||
-      //           user?.name === "BD Team") && (
-
-      //   <IconButton
-      //     size="small"
-      //     sx={{
-      //       backgroundColor: "skyblue",
-      //       color: "white",
-      //       "&:hover": {
-      //         backgroundColor: "#45a049",
-      //       },
-      //       borderRadius: "50%",
-      //       padding: "4px",
-      //     }}
-      //     onClick={() =>{
-      //       const page = currentPage;
-      //       const offerId = String(offer_id);
-      //       localStorage.setItem("offer_rate", offerId);
-      //       // localStorage.setItem("p_id", projectID);
-      //       navigate(`/offer_rate?page=${page}&offer_id=${offerId}`);
-      //     }}
-      //   >
-      //     <AddIcon fontSize="small" />
-
-      //   </IconButton>
-      //  )}
-
-      // </Tooltip>
     );
   };
 
-  // useEffect(() => {
-  //   if (payments.length > 0 && projects.length > 0) {
-  //     const merged = payments.map((payment) => {
-  //       const matchingProject = projects.find(
-  //         (project) => Number(project.p_id) === Number(payment.p_id)
-  //       );
-  //       return {
-  //         ...payment,
-  //         projectCode: matchingProject?.code || "-",
-  //         projectName: matchingProject?.name || "-",
-  //         // projectCustomer: matchingProject?.customer || "-",
-  //         // projectGroup: matchingProject?.p_group || "-",
-  //       };
-  //     });
+  const handleDelete = async () => {
+    if (selected.length === 0) {
+      toast.error("No offers selected for deletion.");
+      return;
+    }
 
-  //     setMergedData(merged);
-  //   }
-  // }, [payments, projects]);
+    try {
+      setLoading(true);
+      setError("");
 
-  // const RowMenu = ({ currentPage, pay_id, p_id }) => {
-  //   // console.log("currentPage:", currentPage, "pay_id:", pay_id, "p_id:", p_id);
-  //   return (
-  //     <>
-  //       <Dropdown>
-  //         <MenuButton
-  //           slots={{ root: IconButton }}
-  //           slotProps={{
-  //             root: { variant: "plain", color: "neutral", size: "sm" },
-  //           }}
-  //         >
-  //           <MoreHorizRoundedIcon />
-  //         </MenuButton>
-  //         <Menu size="sm" sx={{ minWidth: 100 }}>
-  //           <MenuItem
-  //             color="primary"
-  //             onClick={() => {
-  //               const page = currentPage;
-  //               const payId = String(pay_id);
-  //               const projectID = Number(p_id);
-  //               localStorage.setItem("pay_summary", payId);
-  //               localStorage.setItem("p_id", projectID);
-  //               navigate(`/pay_summary?page=${page}&pay_id=${payId}`);
-  //             }}
-  //           >
-  //             <ContentPasteGoIcon />
-  //             <Typography>Pay summary</Typography>
-  //           </MenuItem>
+      for (const _id of selected) {
+        await Axios.delete(`/delete-offer/${_id}`);
 
-  //           {/* <MenuItem
-  //             color="primary"
-  //             onClick={() => navigate("/standby_records")}
-  //           >
-  //             <ContentPasteGoIcon />
-  //             <Typography>Pending payments</Typography>
-  //           </MenuItem> */}
-  //           <Divider sx={{ backgroundColor: "lightblue" }} />
-  //           <MenuItem color="danger">
-  //             <DeleteIcon />
-  //             <Typography>Delete</Typography>
-  //           </MenuItem>
-  //         </Menu>
-  //       </Dropdown>
-  //     </>
-  //   );
-  // };
-  // const UTRRow = ({ paymentId, onAccountMatchSuccess }) => {
-  //   const [utr, setUtr] = useState("");
-  //   const [error, setError] = useState(null);
-  //   const [isSubmitting, setIsSubmitting] = useState(false);
-  //   const [isUtrSubmitted, setIsUtrSubmitted] = useState(false);
-  //   const { enqueueSnackbar } = useSnackbar();
+        setCommRate((prev) => prev.filter((item) => item._id !== _id));
+        setBdRateData((prev) => prev.filter((item) => item.offer_id !== _id));
+        setMergedData((prev) => prev.filter((item) => item.offer_id !== _id));
+      }
 
-  // const [user, setUser] = useState(null);
-  //        useEffect(() => {
-  //       const userData = getUserData();
-  //       setUser(userData);
-  //     }, []);
-
-  //     const getUserData = () => {
-  //       const userData = localStorage.getItem("userDetails");
-  //       if (userData) {
-  //         return JSON.parse(userData);
-  //       }
-  //       return null;
-  //     };
-
-  //   const handleUtrSubmit = async () => {
-
-  //     if (!utr) {
-  //       enqueueSnackbar("Please enter a valid UTR.", { variant: "warning" });
-  //       return;
-  //     }
-
-  //     setIsSubmitting(true); // Set loading state
-
-  //     try {
-  //       console.log("Submitting UTR...");
-  //       const utrResponse = await Axios.put("/utr-update", {
-  //         pay_id: paymentId,
-  //         utr: utr,
-  //       });
-
-  //       console.log("UTR Response:", utrResponse);
-
-  //       if (utrResponse.status === 200 && utrResponse.data) {
-  //         enqueueSnackbar("UTR submitted successfully!", { variant: "success" });
-  //         setIsUtrSubmitted(true);
-
-  //         // Fetch PO details
-  //         console.log("Fetching PO details...");
-  //         const poResponse = await Axios.get("/get-pay-summary");
-  //         console.log("PO Summary Response:", poResponse.data);
-
-  //         // Match PO and perform debit operation
-  //         const matchedPo = poResponse.data.data.find((po) => po.pay_id === paymentId);
-  //         if (matchedPo) {
-  //           console.log("Matched PO data:", matchedPo);
-
-  //           const debitResponse = await Axios.post("/debit-money", {
-  //             p_id: matchedPo.p_id,
-  //             p_group: matchedPo.p_group || "",
-  //             pay_type: matchedPo.pay_type || "",
-  //             amount_paid: matchedPo.amount_paid || "",
-  //             amt_for_customer: matchedPo.amt_for_customer || "",
-  //             dbt_date: matchedPo.dbt_date || "",
-  //             paid_for: matchedPo.paid_for || "",
-  //             vendor: matchedPo.vendor || "",
-  //             po_number: matchedPo.po_number || "",
-  //             utr: matchedPo.utr || "",
-  //             submitted_by: user?.name,
-  //           });
-
-  //           if (debitResponse.status === 200) {
-  //             enqueueSnackbar("Money debited successfully!", { variant: "success" });
-  //             console.log("Money debited successfully:", debitResponse.data);
-
-  //             // Call the parent callback if provided
-  //             if (onAccountMatchSuccess) {
-  //               onAccountMatchSuccess(utr);
-  //             }
-  //           } else {
-  //             enqueueSnackbar("Failed to debit money. Please try again.", { variant: "error" });
-  //           }
-  //         } else {
-  //           enqueueSnackbar("Matching PO not found.", { variant: "error" });
-  //         }
-  //       } else {
-  //         enqueueSnackbar("Failed to submit UTR. Please try again.", { variant: "error" });
-  //       }
-  //     } catch (error) {
-  //       console.error("Error during UTR submission:", error);
-  //       enqueueSnackbar("Something went wrong. Please try again.", { variant: "error" });
-  //     } finally {
-  //       setIsSubmitting(false);
-  //     }
-  //   };
-
-  //   return (
-  //     <div style={{ marginTop: "1rem" }}>
-  //       {!isUtrSubmitted ? (
-  //         <form
-  //           onSubmit={(e) => {
-  //             e.preventDefault();
-  //             handleUtrSubmit();
-  //           }}
-  //         >
-  //           <input
-  //             type="text"
-  //             placeholder="Enter UTR"
-  //             value={utr}
-  //             onChange={(e) => setUtr(e.target.value)}
-  //             disabled={isSubmitting}
-  //             style={{
-  //               width: "100%",
-  //               padding: "0.5rem",
-  //               marginBottom: "0.5rem",
-  //               border: "1px solid #ccc",
-  //             }}
-  //             required
-  //           />
-  //           <Button
-  //             type="submit"
-  //             disabled={isSubmitting || !utr}
-  //             sx={{
-  //               width: "100%",
-  //               padding: "0.5rem",
-  //               backgroundColor: "#28a745",
-  //               color: "white",
-  //               cursor: isSubmitting ? "not-allowed" : "pointer",
-  //             }}
-  //           >
-  //             {isSubmitting ? "Submitting..." : "Submit UTR"}
-  //           </Button>
-  //         </form>
-  //       ) : (
-  //         <div style={{ marginTop: "1rem" }}>
-  //           <p>UTR: {utr}</p>
-  //           <Button
-  //             sx={{
-  //               width: "100%",
-  //               padding: "0.5rem",
-  //               backgroundColor: "gray",
-  //               color: "white",
-  //             }}
-  //             disabled
-  //           >
-  //             Submitted
-  //           </Button>
-  //         </div>
-  //       )}
-  //     </div>
-  //   );
-  // };
-
-  // const handleAccountMatchSuccess = (utr) => {
-  //   console.log("UTR submission was successful:", utr);
-  // };
-
-  // /** Match Logic ***/
-  // const MatchRow = ({ payment }) => (
-  //   <Chip
-  //     variant="soft"
-  //     size="sm"
-  //     startDecorator={
-  //       payment.acc_match === "matched" ? <CheckRoundedIcon /> : <BlockIcon />
-  //     }
-  //     color={payment.acc_match === "matched" ? "success" : "danger"}
-  //   >
-  //     {payment.acc_match === "matched" ? payment.acc_match : "match"}
-  //   </Chip>
-  // );
+      toast.success("Deleted successfully.");
+      setSelected([]);
+    } catch (err) {
+      console.error("Error deleting offers:", err);
+      setError(err.response?.data?.msg || "Failed to delete selected offers.");
+      toast.error("Failed to delete selected offers.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
@@ -617,10 +398,6 @@ function Offer() {
         "state",
         "prepared_by",
       ].some((key) => project[key]?.toLowerCase().includes(searchQuery));
-
-      // const matchesVendorFilter =
-      //   !vendorFilter || project.vendor === vendorFilter;
-      // console.log("MatchVendors are: ", matchesVendorFilter);
 
       return matchesSearchQuery;
     })
@@ -639,17 +416,15 @@ function Offer() {
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelected(commRate.map((row) => row.id));
+      setSelected(commRate.map((row) => row._id));
     } else {
       setSelected([]);
     }
   };
 
-  const handleRowSelect = (id, isSelected) => {
-    setSelected((prevSelected) =>
-      isSelected
-        ? [...prevSelected, id]
-        : prevSelected.filter((item) => item !== id)
+  const handleRowSelect = (_id) => {
+    setSelected((prev) =>
+      prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
     );
   };
   const generatePageNumbers = (currentPage, totalPages) => {
@@ -821,9 +596,7 @@ function Offer() {
                   <Checkbox
                     size="sm"
                     checked={selected.length === paginatedPayments.length}
-                    onChange={(event) =>
-                      handleRowSelect("all", event.target.checked)
-                    }
+                    onChange={handleSelectAll}
                     indeterminate={
                       selected.length > 0 &&
                       selected.length < paginatedPayments.length
@@ -878,9 +651,9 @@ function Offer() {
                     >
                       <Checkbox
                         size="sm"
-                        checked={selected.includes(offer.offer_id)}
+                        checked={selected.includes(offer._id)}
                         onChange={(event) =>
-                          handleRowSelect(offer.offer_id, event.target.checked)
+                          handleRowSelect(offer._id, event.target.checked)
                         }
                       />
                     </Box>

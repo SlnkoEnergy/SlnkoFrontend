@@ -20,7 +20,7 @@ function InitialLeads() {
   const navigate = useNavigate();
   const [selectedLead, setSelectedLead] = useState("Initial");
 
-  const leadOptions = ["Initial", "Warm", "Follow Up", "Won", "Dead"];
+  const leadOptions = ["Initial", "Follow Up", "Warm", "Won", "Dead"];
 
   const renderLeadComponent = () => {
     switch (selectedLead) {

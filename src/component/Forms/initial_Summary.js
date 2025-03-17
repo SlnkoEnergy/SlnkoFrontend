@@ -14,11 +14,11 @@ import {
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { useGetLeadsQuery } from "../../redux/leadsSlice";
+import { useGetInitialLeadsQuery, useGetLeadsQuery } from "../../redux/leadsSlice";
 
 const Initial_Summary = () => {
   const navigate = useNavigate();
-  const { data: getLead, isLoading, error } = useGetLeadsQuery();
+  const { data: getLead, isLoading, error } = useGetInitialLeadsQuery();
 
   console.log("Fetched lead data:", getLead);
 
@@ -52,7 +52,7 @@ const Initial_Summary = () => {
     "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
   ];
 
-  const getLeadArray = Array.isArray(getLead) ? getLead : getLead?.Data || [];
+  const getLeadArray = Array.isArray(getLead) ? getLead : getLead?.data || [];
   console.log("Processed Leads Array:", getLeadArray);
 
   const LeadId = localStorage.getItem("view_details");
@@ -72,7 +72,7 @@ const Initial_Summary = () => {
     // }
   
     // Extract data properly (handles cases where data might be nested)
-    const getLeadArray = Array.isArray(getLead) ? getLead : getLead?.Data || [];
+    const getLeadArray = Array.isArray(getLead) ? getLead : getLead?.data || [];
   
     if (!Array.isArray(getLeadArray)) {
       console.error("Error: Extracted getLead data is not an array.", getLeadArray);
@@ -186,7 +186,7 @@ const Initial_Summary = () => {
                 name="c_name"
                 value={formData.c_name}
                 onChange={handleChange}
-                required
+                readOnly
                 fullWidth
               />
             </Grid>
@@ -196,7 +196,7 @@ const Initial_Summary = () => {
                 name="company"
                 value={formData.company}
                 onChange={handleChange}
-                required
+                readOnly
                 
               />
             </Grid>
@@ -207,7 +207,7 @@ const Initial_Summary = () => {
                 type="email"
                 value={formData.email}
                 onChange={handleChange}
-                required
+                readOnly
                 
               />
             </Grid>
@@ -218,7 +218,7 @@ const Initial_Summary = () => {
                 type="tel"
                 value={formData.mobile}
                 onChange={handleChange}
-                required
+                readOnly
                 
               />
             </Grid>
@@ -227,8 +227,9 @@ const Initial_Summary = () => {
               <Input
                 name="alt_mobile"
                 type="tel"
-                value={formData.alt_mobile}
+                value={formData.alt_mobile || "-"}
                 onChange={handleChange}
+                readOnly
                 
               />
             </Grid>
@@ -238,7 +239,7 @@ const Initial_Summary = () => {
                 name="village"
                 value={formData.village}
                 onChange={handleChange}
-                
+                readOnly
               />
             </Grid>
             <Grid xs={12} sm={6}>
@@ -247,18 +248,25 @@ const Initial_Summary = () => {
                 name="district"
                 value={formData.district}
                 onChange={handleChange}
-                
+                readOnly
               />
             </Grid>
             <Grid xs={12} sm={6}>
               <FormLabel>Select State</FormLabel>
-              <Select
+              <Input
+                name="state"
+                value={formData.state}
+                onChange={handleChange}
+                readOnly
+                
+              />
+              {/* <Select
                 name="state"
                 value={formData.state}
                 onChange={(e, newValue) =>
                   setFormData({ ...formData, state: newValue })
                 }
-                required
+                readOnly
                 
               >
                 {statesOfIndia.map((option) => (
@@ -266,7 +274,7 @@ const Initial_Summary = () => {
                     {option}
                   </Option>
                 ))}
-              </Select>
+              </Select> */}
             </Grid>
             <Grid xs={12} sm={6}>
               <FormLabel>Capacity</FormLabel>
@@ -274,6 +282,7 @@ const Initial_Summary = () => {
                 name="capacity"
                 value={formData.capacity}
                 onChange={handleChange}
+                readOnly
                 
               />
             </Grid>
@@ -283,6 +292,7 @@ const Initial_Summary = () => {
                 name="distance"
                 value={formData.distance}
                 onChange={handleChange}
+                readOnly
                 
               />
             </Grid>
@@ -292,6 +302,7 @@ const Initial_Summary = () => {
                 name="tarrif"
                 value={formData.tarrif}
                 onChange={handleChange}
+                readOnly
                 
               />
             </Grid>
@@ -301,6 +312,7 @@ const Initial_Summary = () => {
                 name="available_land"
                 value={formData.land || "NA"}
                 onChange={handleChange}
+                readOnly
                 
               />
             </Grid>
@@ -311,18 +323,19 @@ const Initial_Summary = () => {
                 type="date"
                 value={formData.entry_date}
                 onChange={handleChange}
+                readOnly
                 
               />
             </Grid>
             <Grid xs={12} sm={6}>
               <FormLabel>Scheme</FormLabel>
-              <Select
+              {/* <Select
                 name="scheme"
                 value={formData.scheme}
                 onChange={(e, newValue) =>
                   setFormData({ ...formData, scheme: newValue })
                 }
-                required
+                readOnly
                 
               >
                 {["KUSUM A", "KUSUM C", "Other"].map((option) => (
@@ -330,7 +343,14 @@ const Initial_Summary = () => {
                     {option}
                   </Option>
                 ))}
-              </Select>
+              </Select> */}
+              <Input
+                name="scheme"
+                value={formData.scheme || "-"}
+                onChange={handleChange}
+                readOnly
+                
+              />
             </Grid>
             {/* <Grid xs={12} sm={6}>
               <FormLabel>Land Type</FormLabel>
@@ -359,6 +379,7 @@ const Initial_Summary = () => {
                 name="interest"
                 value={formData.interest}
                 onChange={handleChange}
+                readOnly
                 
               />
             </Grid>
@@ -389,6 +410,7 @@ const Initial_Summary = () => {
                 
                 multiline="true"
                 rows={4}
+                readOnly
               />
             </Grid>
             <Grid xs={12}>

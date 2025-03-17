@@ -28,7 +28,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../assets/Lotties/animation-loading.json";
 // import Axios from "../utils/Axios";
-import { useGetLeadsQuery } from "../redux/leadsSlice";
+import { useGetInitialLeadsQuery, useGetLeadsQuery } from "../redux/leadsSlice";
 import NoData from "../assets/alert-bell.svg";
 
 const StandByRequest = () => {
@@ -43,8 +43,8 @@ const StandByRequest = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const { data: getLead = [], isLoading, error } = useGetLeadsQuery();
-  const leads = useMemo(() => getLead?.Data ?? [], [getLead?.Data]);
+  const { data: getLead = [], isLoading, error } = useGetInitialLeadsQuery();
+  const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
 
   const renderFilters = () => (
     <>
@@ -110,9 +110,10 @@ const StandByRequest = () => {
               const page = currentPage;
               const leadId = String(id);
               // const projectID = Number(p_id);
+              setOpen(true)
               localStorage.setItem("stage_next", leadId);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/standby_Request?page=${page}&${leadId}`);
+              navigate(`/initial_followup?page=${page}&${leadId}`);
             }}
           >
             <NextPlanIcon />
@@ -195,7 +196,7 @@ const StandByRequest = () => {
           : true;
         return matchesQuery && matchesDate;
       })
-      .sort((a, b) => a.id.localeCompare(b.id));
+      .sort((a, b) => b.id.localeCompare(a.id));
   }, [leads, searchQuery, selectedDate]);
 
   const generatePageNumbers = (currentPage, totalPages) => {

@@ -21,33 +21,9 @@ const Create_lead = () => {
   const dispatch = useDispatch();
 
   const [updateLead, { isLoading: isUpdating }] = useUpdateLeadsMutation();
-  const { data: getLead, isLoading, error } = useGetLeadsQuery();
+  const { data: getLead, isLoading, error } = useGetInitialLeadsQuery();
   const [user, setUser] = useState(null);
-
-  const [formData, setFormData] = useState({
-    id:"",
-    c_name: "",
-    company: "",
-    email: "",
-    group: "",
-    reffered_by: "",
-    source: "",
-    mobile: "",
-    alt_mobile: "",
-    village: "",
-    district: "",
-    state: "",
-    scheme: "",
-    capacity: "",
-    distance: "",
-    tarrif: "",
-    land: { land_type: "", available_land: "" },
-    entry_date: "",
-    interest: "",
-    comment: "",
-    submitted_by: ""
-  });
-
+  const [formData, setFormData] = useState({}); // ✅ Initialize as an empty object
   const statesOfIndia = [
     "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
     "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
@@ -55,7 +31,6 @@ const Create_lead = () => {
     "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim",
     "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
   ];
-
   useEffect(() => {
     const storedUser = localStorage.getItem("userDetails");
     if (storedUser) {
@@ -64,95 +39,57 @@ const Create_lead = () => {
   }, []);
 
   useEffect(() => {
-    // if (!getLead) {
-    //   console.error("Error: getLead data is undefined or null.", getLead);
-    //   return;
-    // }
-  
-    // Extract data properly (handles cases where data might be nested)
-    const getLeadArray = Array.isArray(getLead) ? getLead : getLead?.Data || [];
-  
-    if (!Array.isArray(getLeadArray)) {
-      console.error("Error: Extracted getLead data is not an array.", getLeadArray);
+    if (!getLead) {
+      console.error("Error: getLead data is undefined or null.");
       return;
     }
-  
-    // Retrieve Lead ID from localStorage
+
+    const getLeadArray = Array.isArray(getLead) ? getLead : getLead?.data || [];
+
+    if (!Array.isArray(getLeadArray)) {
+      console.error("Error: Extracted getLead data is not an array.");
+      return;
+    }
+
     const LeadId = localStorage.getItem("edit_initial");
-  
+
     if (!LeadId) {
       console.error("Invalid Lead ID retrieved from localStorage.");
       return;
     }
-  
-    // Find the matching lead using string comparison
+
     const selectedLead = getLeadArray.find((item) => String(item.id) === LeadId);
-  
+
     if (!selectedLead) {
-      // console.error(`No matching lead found for ID: ${LeadId}`);
+      console.error(`No matching Lead found for ID: ${LeadId}`);
       return;
     }
-  
-  
+
     const formatDateToYYYYMMDD = (dateString) => {
       if (!dateString) return "";
-    
       const parts = dateString.split("-");
-      
       if (parts.length !== 3) return dateString;
-    
-      if (parts[0].length === 4) {
-        // Already in YYYY-MM-DD format
-        return dateString;
-      } else if (parts[2].length === 4) {
-        
-        return `${parts[2]}-${parts[1]}-${parts[0]}`;
-      }
-    
-      return dateString; // Return unchanged if format is unknown
+      return parts[0].length === 4 ? dateString : `${parts[2]}-${parts[1]}-${parts[0]}`;
     };
-    
-  
+
     console.log("Matching Lead Found:", selectedLead);
-  
-    setFormData({
+
+    setFormData((prev) => ({
+      ...prev,
       ...selectedLead,
-      c_name: selectedLead.c_name || "",
-      company: selectedLead.company || "",
-      email: selectedLead.email || "",
-      group: selectedLead.group || "",
-      reffered_by: selectedLead.reffered_by || "",
-      source: selectedLead.source || "",
-      mobile: selectedLead.mobile || "",
-      alt_mobile: selectedLead.alt_mobile || "",
-      village: selectedLead.village || "",
-      district: selectedLead.district || "",
-      state: selectedLead.state || "",
-      scheme: selectedLead.scheme || "",
-      capacity: selectedLead.capacity || "",
-      distance: selectedLead.distance || "",
-      tarrif: selectedLead.tarrif || "",
-      land: selectedLead.land || { land_type: "", available_land: "" },
       entry_date: formatDateToYYYYMMDD(selectedLead.entry_date) || "",
-      interest: selectedLead.interest || "",
-      comment: selectedLead.comment || "",
-      submitted_by: selectedLead.submitted_by || ""
-    });
+    }));
   }, [getLead]);
-  
-  
-  
-  
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
+  
     if (name.includes(".")) {
       const [parent, child] = name.split(".");
       setFormData((prev) => ({
         ...prev,
         [parent]: {
-          ...prev[parent],
+          ...(prev[parent] || {}),
           [child]: value,
         },
       }));
@@ -160,6 +97,7 @@ const Create_lead = () => {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -167,19 +105,30 @@ const Create_lead = () => {
       toast.error("Lead ID is missing. Cannot update project.");
       return;
     }
-
+  
     try {
-      await updateLead({
+      const response = await updateLead({
         _id: formData._id,
         updatedLead: formData,
       }).unwrap();
-
-      toast.success("Lead updated successfully.");
+  
+      console.log("API Response from updateLead:", response); // ✅ Debug API response
+  
+      if (response?.data) {
+        setFormData(response.data); // ✅ Update formData with new data
+      } else {
+        console.warn("No updated data received from API");
+      }
+  
+      toast.success(response.msg || "Lead updated successfully.");
       navigate("/leads");
     } catch (err) {
+      console.error("Update Error:", err);
       toast.error("Oops! Something went wrong.");
     }
   };
+  
+  
 
   return (
     <Sheet
@@ -314,20 +263,21 @@ const Create_lead = () => {
             />
           </Grid>
           <Grid xs={12} sm={6}>
-            <FormLabel>Available Land</FormLabel>
+            <FormLabel>Available Land (with Types)</FormLabel>
             <Input
-              name="available_land"
-              value={formData.land.available_land || ""} 
-              onChange={handleChange}
-              
-            />
+  type="text"
+  name="land"
+  value={typeof formData.land === "object" ? JSON.stringify(formData.land) : formData.land || ""}
+  onChange={handleChange}
+/>
+
           </Grid>
           <Grid xs={12} sm={6}>
             <FormLabel>Follow-up Date</FormLabel>
             <Input
               name="entry_date"
               type="date"
-              value={formData.entry_date || ""}
+              value={formData.entry_date || "-"}
               onChange={handleChange}
               
             />
@@ -350,7 +300,7 @@ const Create_lead = () => {
               ))}
             </Select>
           </Grid>
-          <Grid xs={12} sm={6}>
+          {/* <Grid xs={12} sm={6}>
             <FormLabel>Land Type</FormLabel>
             <Select
               name="land_type"
@@ -370,7 +320,7 @@ const Create_lead = () => {
                 </Option>
               ))}
             </Select>
-          </Grid>
+          </Grid> */}
           <Grid xs={12} sm={6}>
             <FormLabel>Interest</FormLabel>
             <Select
@@ -389,7 +339,7 @@ const Create_lead = () => {
               ))}
             </Select>
           </Grid>
-          <Grid xs={12}>
+          <Grid xs={12} sm={6}>
             <FormLabel>Comments</FormLabel>
             <Input
               name="comment"

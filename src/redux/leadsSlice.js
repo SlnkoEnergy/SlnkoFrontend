@@ -21,6 +21,40 @@ export const leadsApi = createApi({
       }),
       invalidatesTags: ["Lead"],
     }),
+
+    addInitialtoFollowup: builder.mutation({
+      query: (newFolloup) => ({
+        url: "initial-to-followup",
+        method: "POST",
+        body: newFolloup,
+      }),
+      invalidatesTags: ["Lead"],
+    }),
+    addInitialtoWarmup: builder.mutation({
+      query: (newWarmup) => ({
+        url: "inital-to-warmup",
+        method: "POST",
+        body: newWarmup,
+      }),
+      invalidatesTags: ["Lead"],
+    }),
+    addInitialtoDead: builder.mutation({
+      query: (newDead) => ({
+        url: "inital-to-dead",
+        method: "POST",
+        body: newDead,
+      }),
+      invalidatesTags: ["Lead"],
+    }),
+    addInitialtoWon: builder.mutation({
+      query: (newWon) => ({
+        url: "initial-to-won",
+        method: "POST",
+        body: newWon,
+      }),
+      invalidatesTags: ["Lead"],
+    }),
+
     updateLeads: builder.mutation({
       query: ({ _id, updatedLead }) => ({
         url: `edit-initial-bd-lead/${_id}`,
@@ -37,5 +71,9 @@ export const {
   useGetLeadsQuery,
   useAddLeadsMutation,
   useUpdateLeadsMutation,
-  useGetInitialLeadsQuery
+  useGetInitialLeadsQuery,
+  useAddInitialtoDeadMutation,
+  useAddInitialtoWarmupMutation,
+  useAddInitialtoFollowupMutation,
+  useAddInitialtoWonMutation
 } = leadsApi;
