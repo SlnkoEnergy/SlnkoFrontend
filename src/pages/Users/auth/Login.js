@@ -94,7 +94,7 @@ const Login = () => {
       localStorage.setItem("authToken", user.token || "dummyToken");
       localStorage.setItem("authTokenExpiration", expirationTime);
 
-      navigate("/all-project");
+      navigate("/dashboard");
     } catch (error) {
       const errorMessage = error.response
         ? error.response.data.message

@@ -660,7 +660,8 @@ function Sidebar() {
           user?.name === "Arnav Shahi" ||
           user?.name === "Shambhavi Gupta" ||
           user?.name === "Geeta" ||
-          user?.name === "Anudeep Kumar" ? (
+          user?.name === "Anudeep Kumar" ||
+          user?.name === "Ashish Jha" ? (
           <ListItem nested>
             <Toggler
               renderToggle={({ open, setOpen }) => (

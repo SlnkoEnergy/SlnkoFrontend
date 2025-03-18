@@ -240,7 +240,8 @@ function Offer() {
             user?.name === "Arnav Shahi" ||
             user?.name === "Shambhavi Gupta" ||
             user?.name === "Geeta" ||
-            user?.name === "Anudeep Kumar") && (
+            user?.name === "Anudeep Kumar" ||
+            user?.name === "Ashish Jha") && (
             <Menu size="sm" sx={{ minWidth: 140 }}>
               <MenuItem
                 color="primary"
@@ -314,7 +315,8 @@ function Offer() {
         user?.name === "Arnav Shahi" ||
         user?.name === "Shambhavi Gupta" ||
         user?.name === "Geeta" ||
-        user?.name === "Anudeep Kumar" ? (
+        user?.name === "Anudeep Kumar" ||
+        user?.name === "Ashish Jha" ? (
           <Tooltip title="Add" arrow>
             <IconButton
               size="small"

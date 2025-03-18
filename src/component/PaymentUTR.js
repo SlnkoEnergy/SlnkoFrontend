@@ -673,7 +673,7 @@ function UTRPayment() {
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={9}
+                    colSpan={10}
                     sx={{
                       padding: "8px",
                       textAlign: "center",

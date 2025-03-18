@@ -26,10 +26,10 @@ import ManageHistoryIcon from '@mui/icons-material/ManageHistory';
 import NextPlanIcon from '@mui/icons-material/NextPlan';
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import animationData from "../assets/Lotties/animation-loading.json";
+import animationData from "../../assets/Lotties/animation-loading.json";
 // import Axios from "../utils/Axios";
-import { useGetInitialLeadsQuery, useGetLeadsQuery } from "../redux/leadsSlice";
-import NoData from "../assets/alert-bell.svg";
+import { useGetInitialLeadsQuery, useGetWonLeadsQuery } from "../../redux/leadsSlice";
+import NoData from "../../assets/alert-bell.svg";
 
 const StandByRequest = () => {
   const navigate = useNavigate();
@@ -43,7 +43,7 @@ const StandByRequest = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const { data: getLead = [], isLoading, error } = useGetInitialLeadsQuery();
+  const { data: getLead = [], isLoading, error } = useGetWonLeadsQuery();
   const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
 
   const renderFilters = () => (

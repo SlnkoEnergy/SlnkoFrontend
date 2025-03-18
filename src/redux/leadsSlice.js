@@ -13,6 +13,23 @@ export const leadsApi = createApi({
       query: () => "get-all-inital-bd-lead",
       providesTags: ["Lead"],
     }),
+
+    getWonLeads: builder.query({
+      query: () => "get-all-won-lead",
+      providesTags: ["Lead"],
+    }),
+
+    getFollowupLeads: builder.query({
+      query: () => "get-all-followup-lead",
+      providesTags: ["Lead"],
+    }),
+
+    getDeadLeads: builder.query({
+      query: () => "get-all-dead-lead",
+      providesTags: ["Lead"],
+    }),
+
+
     addLeads: builder.mutation({
       query: (newLead) => ({
         url: "create-bd-lead",
@@ -75,5 +92,8 @@ export const {
   useAddInitialtoDeadMutation,
   useAddInitialtoWarmupMutation,
   useAddInitialtoFollowupMutation,
-  useAddInitialtoWonMutation
+  useAddInitialtoWonMutation,
+  useGetDeadLeadsQuery,
+  useGetFollowupLeadsQuery,
+  useGetWonLeadsQuery,
 } = leadsApi;

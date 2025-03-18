@@ -43,7 +43,7 @@ function Dashboardz() {
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: {md:"4%", lg:"0%"} }}
+              sx={{ pl: 0, marginTop: {md:"5%", lg:"0%"} }}
             >
               {/* <Link
                 underline="none"
@@ -74,8 +74,8 @@ function Dashboardz() {
               flexDirection: { xs: 'column', sm: 'row' },
               alignItems: { xs: 'start', sm: 'center' },
               flexWrap: 'wrap',
-              justifyContent: 'space-between',
-              marginLeft:{xl:"40%", lg:"35%"}
+              justifyContent: 'center',
+              marginLeft:{xl:"0%", lg:"20%"}
             }}
           >
            <Dashboard />

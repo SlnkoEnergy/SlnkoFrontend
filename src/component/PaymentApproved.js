@@ -654,7 +654,7 @@ function PaymentRequest() {
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={7}
+                    colSpan={9}
                     sx={{
                       padding: "8px",
                       textAlign: "center",
