@@ -45,6 +45,24 @@ const FormOffer = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [submitTrigger, setSubmitTrigger] = useState(false);
+    const [user, setUser] = useState(null);
+  
+    useEffect(() => {
+      const userData = getUserData();
+      if (userData && userData.name) {
+        setFormData((prev) => ({
+          ...prev,
+          prepared_by: userData.name,
+        }));
+      }
+      setUser(userData);
+    }, []);
+  
+    const getUserData = () => {
+      const userData = localStorage.getItem("userDetails");
+      console.log("offer form:", userData);
+      return userData ? JSON.parse(userData) : null;
+    };
 
   // Handle form submission
   const handleSubmit = async (e) => {
@@ -60,34 +78,17 @@ const FormOffer = () => {
         if (response.data.data && response.data.data._id) {
           console.log("Generated _id:", response.data.data._id);
         }
-        // setMessage("Offer created successfully!");
+      
         toast.success("Offer created successfully!");
         navigate("/comm_offer");
-        // Reset the form
-        setFormData({
-          offer_id: "",
-          client_name: "",
-          village: "",
-          district: "",
-          state: "",
-          pincode: "",
-          ac_capacity: "",
-          dc_overloading: "",
-          dc_capacity: "",
-          scheme: "",
-          component: "",
-          rate: "",
-          timeline: "",
-          prepared_by: "",
-          module_type: "",
-          module_capacity: "",
-          inverter_capacity: "",
-          evacuation_voltage: "",
-          module_orientation: "",
-          transmission_length: "",
-          transformer: "",
-          // column_type: "",
-        });
+       
+        setFormData((prev) => ({
+          ...Object.keys(prev).reduce((acc, key) => {
+            acc[key] = "";
+            return acc;
+          }, {}),
+          prepared_by: prev.prepared_by,
+        }));
       } else {
         console.error("Unexpected response status:", response.status);
         // setMessage("Failed to create offer. Try again.");
@@ -115,17 +116,17 @@ const FormOffer = () => {
 
   const handleChange = (e, newValue) => {
     if (e && e.target) {
-      // Handles text input fields
+ 
       const { name, value } = e.target;
       setFormData((prev) => ({
         ...prev,
         [name]: value,
       }));
     } else if (newValue !== undefined) {
-      // Handles MUI Select components (pass name explicitly)
+  
       setFormData((prev) => ({
         ...prev,
-        [e]: newValue, // Ensure 'e' is the name of the field
+        [e]: newValue,
       }));
     }
   };
@@ -402,8 +403,8 @@ const FormOffer = () => {
                 type="number"
                 name={field.name}
                 placeholder={`Enter ${field.label}`}
-                value={formData[field.name] || ""} // Bind the value from state
-                onChange={handleChange} // Ensure changes are captured in state
+                value={formData[field.name] || ""}
+                onChange={handleChange}
               />
             </FormControl>
           </Grid>
@@ -494,9 +495,10 @@ const FormOffer = () => {
             <Input
               type="text"
               name="prepared_by"
-              value={formData.prepared_by}
+              value={formData.prepared_by || "-"}
               onChange={handleChange}
               placeholder="Prepared By"
+              readOnly
             />
           </FormControl>
         </Grid>

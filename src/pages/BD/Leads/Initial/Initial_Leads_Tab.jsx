@@ -127,6 +127,9 @@ function LeadPage({ navigate, selectedLead, setSelectedLead, leadOptions, render
               justifyContent: "center",
             }}
           >
+            <Button color="primary" size="sm" onClick={() => navigate("/dash_task")}>
+              Task Dashboard
+            </Button>
             <Button color="primary" size="sm" onClick={() => navigate("/add_lead")}>
               Add New Leads +
             </Button>

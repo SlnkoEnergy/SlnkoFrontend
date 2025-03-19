@@ -23,7 +23,7 @@ const Create_lead = () => {
   const [updateLead, { isLoading: isUpdating }] = useUpdateLeadsMutation();
   const { data: getLead, isLoading, error } = useGetInitialLeadsQuery();
   const [user, setUser] = useState(null);
-  const [formData, setFormData] = useState({}); // ✅ Initialize as an empty object
+  const [formData, setFormData] = useState({});
   const statesOfIndia = [
     "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
     "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",

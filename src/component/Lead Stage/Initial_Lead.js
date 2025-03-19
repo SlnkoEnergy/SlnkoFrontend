@@ -4,6 +4,7 @@ import { Player } from "@lottiefiles/react-lottie-player";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
@@ -20,7 +21,7 @@ import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
-import FollowTheSignsIcon from '@mui/icons-material/FollowTheSigns';
+// import FollowTheSignsIcon from '@mui/icons-material/FollowTheSigns';
 import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
 import ManageHistoryIcon from '@mui/icons-material/ManageHistory';
 import NextPlanIcon from '@mui/icons-material/NextPlan';
@@ -42,9 +43,29 @@ const StandByRequest = () => {
   const [mergedData, setMergedData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
+  const [user, setUser] = useState(null);
 
   const { data: getLead = [], isLoading, error } = useGetInitialLeadsQuery();
   const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("userDetails");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+      // console.log("User Loaded:", JSON.parse(storedUser)); 
+    }
+  }, []);
+  
+  // useEffect(() => {
+  //   console.log("Raw Leads Data:", leads);
+  // }, [leads]);
+
+  // useEffect(() => {
+  //   console.log("API Response:", getLead);
+  // }, [getLead]);
+  
+  
+  
 
   const renderFilters = () => (
     <>
@@ -137,15 +158,15 @@ const StandByRequest = () => {
             color="primary"
             onClick={() => {
               const page = currentPage;
-              const leadId1 = String(id);
+              const leadId = String(id);
               // const projectID = Number(p_id);
-              localStorage.setItem("next_followup", leadId1);
+              localStorage.setItem("add_task", leadId);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/standby_Request?page=${page}&${leadId1}`);
+              navigate(`/add_task?page=${page}&${leadId}`);
             }}
           >
-            <FollowTheSignsIcon />
-            <Typography>Next Followup</Typography>
+            <AddCircleOutlineIcon />
+            <Typography>Add Task</Typography>
           </MenuItem>
           <MenuItem
             color="primary"
@@ -172,9 +193,9 @@ const StandByRequest = () => {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return ""; // Return empty if date is null or undefined
+    if (!dateString) return "";
     const date = new Date(dateString);
-    return isNaN(date.getTime()) ? "" : date.toISOString().split("T")[0]; // Validate date before formatting
+    return isNaN(date.getTime()) ? "" : date.toISOString().split("T")[0];
   };
 
   const handleSearch = (e) => {
@@ -186,19 +207,43 @@ const StandByRequest = () => {
   };
 
   const filteredData = useMemo(() => {
+    if (!user || !user.name) return [];
+  
     return leads
       .filter((lead) => {
-        const matchesQuery = ["id", "c_name", "mobile","state"].some((key) =>
-          lead[key]?.toLowerCase().includes(searchQuery)
+        const submittedBy = lead.submitted_by?.trim() || "unassigned"; 
+        const userName = user.name.trim();
+        const userRole = user.role?.toLowerCase();
+  
+
+        const isAdmin = userRole === "admin" || userRole === "superadmin";
+        const matchesUser = isAdmin || submittedBy === userName;
+  
+        const matchesQuery = ["id", "c_name", "mobile", "state"].some(
+          (key) => lead[key]?.toLowerCase().includes(searchQuery)
         );
         const matchesDate = selectedDate
           ? formatDate(lead.entry_date) === selectedDate
           : true;
-        return matchesQuery && matchesDate;
+  
+        // console.log("🔍 Checking:", submittedBy, "vs", userName, " | Role:", userRole);
+        // console.log("✅ Matches:", { matchesUser, matchesQuery, matchesDate });
+  
+        return matchesUser && matchesQuery && matchesDate;
       })
       .sort((a, b) => b.id.localeCompare(a.id));
-  }, [leads, searchQuery, selectedDate]);
-
+  }, [leads, searchQuery, selectedDate, user]);
+  
+  
+  
+  
+  
+  
+  useEffect(() => {
+    console.log("Filtered Data:", filteredData);
+  }, [filteredData]);
+  
+  
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
 
@@ -227,17 +272,29 @@ const StandByRequest = () => {
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
   const paginatedData = useMemo(() => {
-    return filteredData.slice(
-      (currentPage - 1) * itemsPerPage,
-      currentPage * itemsPerPage
-    );
+    if (filteredData.length === 0) return [];
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
+    return filteredData.slice(startIndex, endIndex);
   }, [filteredData, currentPage, itemsPerPage]);
+  
+  
 
   const handlePageChange = (newPage) => {
+    if (totalPages === 0) return;
+    
     const page = Math.max(1, Math.min(newPage, totalPages));
-    setCurrentPage(page);
-    setSearchParams({ page });
+    
+    if (page !== currentPage) {
+      setCurrentPage(page);
+      setSearchParams((prevParams) => {
+        const newParams = new URLSearchParams(prevParams);
+        newParams.set("page", page);
+        return newParams;
+      });
+    }
   };
+  
 
   return (
     <>

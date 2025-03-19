@@ -28,7 +28,7 @@ import { toast } from "react-toastify";
 import Tooltip from "@mui/joy/Tooltip";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
 import animationData from "../assets/Lotties/animation-loading.json";
@@ -54,6 +54,7 @@ function Offer() {
   const [commRate, setCommRate] = useState([]);
   const [isUtrSubmitted, setIsUtrSubmitted] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [user, setUser] = useState(null);
 
   const renderFilters = () => (
     <>
@@ -198,6 +199,14 @@ function Offer() {
       setMergedData(mergedData);
     }
   }, [commRate, bdRateData]);
+
+    useEffect(() => {
+      const storedUser = localStorage.getItem("userDetails");
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+        // console.log("User Loaded:", JSON.parse(storedUser)); 
+      }
+    }, []);
 
   const RowMenu = ({ currentPage, offer_id }) => {
     // console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
@@ -392,29 +401,33 @@ function Offer() {
     setSearchQuery(query.toLowerCase());
   };
 
-  const filteredAndSortedData = mergedData
-    .filter((project) => {
-      const matchesSearchQuery = [
-        "offer_id",
-        "client_name",
-        "state",
-        "prepared_by",
-      ].some((key) => project[key]?.toLowerCase().includes(searchQuery));
-
-      return matchesSearchQuery;
-    })
-
-    .sort((a, b) => {
-      if (a.offer_id?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.offer_id?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.client_name?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.client_name?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.state?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.state?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.prepared_by?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.prepared_by?.toLowerCase().includes(searchQuery)) return 1;
-      return 0;
-    });
+  const filteredAndSortedData = useMemo(() => {
+    if (!user || !user.name) return [];
+  
+    return mergedData
+      .filter((project) => {
+        const preparedBy = project.prepared_by?.trim().toLowerCase() || "unassigned";
+        const userName = user.name.trim().toLowerCase();
+        const userRole = user.role?.toLowerCase();
+  
+      
+        const isAdmin = userRole === "admin" || userRole === "superadmin";
+        const matchesUser = isAdmin || preparedBy === userName;
+  
+        const matchesSearchQuery = ["offer_id", "client_name", "state", "prepared_by"]
+          .some((key) => project[key]?.toLowerCase().includes(searchQuery));
+  
+        return matchesUser && matchesSearchQuery;
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0);
+        const dateB = new Date(b.createdAt || 0);
+  
+        return dateB - dateA;
+      });
+  }, [mergedData, searchQuery, user]);
+  
+  
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {

@@ -44,6 +44,8 @@ import Edit_Initial from "../pages/BD/Leads/Initial/Forms/initial_edit";
 import Dashboardz from "../pages/Dashboards";
 import Sum_Initial_Leads from "../pages/BD/Leads/Initial/Forms/initial_Summary";
 import CheckboxModal from "../pages/BD/Leads/Initial/Forms/InitialToFollowup";
+import Add_Task from "../pages/BD/AddTask";
+import Task_Dashboards from "../pages/BD/DashTask";
 
 
 function index() {
@@ -382,6 +384,22 @@ function index() {
         element={
           <PrivateRoute>
             <Sum_Initial_Leads />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/add_task"
+        element={
+          <PrivateRoute>
+            <Add_Task />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/dash_task"
+        element={
+          <PrivateRoute>
+            <Task_Dashboards />
           </PrivateRoute>
         }
       />

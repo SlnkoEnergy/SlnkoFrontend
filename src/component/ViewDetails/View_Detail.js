@@ -243,12 +243,12 @@ const Customer_Payment_Summary = () => {
     0
   );
 
-  const [selectedAdjustments, setSelectedAdjustments] = useState([]);
+  // const [selectedAdjustments, setSelectedAdjustments] = useState([]);
 
-  const totalAdjustment = adjustmentHistory.reduce(
-    (sum, item) => sum + item.value,
-    0
-  );
+  // const totalAdjustment = adjustmentHistory.reduce(
+  //   (sum, item) => sum + item.value,
+  //   0
+  // );
 
   const handleSearchDebit = (event) => {
     const searchValue = event.target.value.toLowerCase();
@@ -264,75 +264,7 @@ const Customer_Payment_Summary = () => {
     // console.log("Search Data are:", filteredD);
   };
 
-  // const handleSelectAll = (event) => {
-  //   if (event.target.checked) {
-  //     setSelectedCredits(creditHistory.map((item) => item.id));
-  //   } else {
-  //     setSelectedCredits([]);
-  //   }
-  // };
 
-  // const handleSelectAllDebits = (event) => {
-  //   if (event.target.checked) {
-  //     setSelectedDebits(filteredDebits.map((item) => item.id));
-  //   } else {
-  //     setSelectedDebits([]);
-  //   }
-  // };
-
-  // const handleDelete = () => {
-  //   // Logic to delete selected items
-  //   // console.log("Deleting selected adjustments", selectedAdjustments);
-  // };
-
-  // const handleCheckboxChange = (id) => {
-  //   setSelectedCredits((prev) =>
-  //     prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-  //   );
-  // };
-
-  // const handleDebitCheckboxChange = (id) => {
-  //   setSelectedDebits((prev) =>
-  //     prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-  //   );
-  // };
-
-  // const handleSelectAllAdjustments = (event) => {
-  //   if (event.target.checked) {
-  //     setSelectedAdjustments(adjustmentHistory.map((item) => item.id));
-  //   } else {
-  //     setSelectedAdjustments([]);
-  //   }
-  // };
-
-  // const handleAdjustmentCheckboxChange = (id) => {
-  //   setSelectedAdjustments((prev) =>
-  //     prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-  //   );
-  // };
-
-  // const handleClientCheckboxChange = (poNumber) => {
-  //   if (selectedClients.includes(poNumber)) {
-  //     setSelectedClients(
-  //       selectedClients.filter((client) => client !== poNumber)
-  //     );
-  //   } else {
-  //     setSelectedClients([...selectedClients, poNumber]);
-  //   }
-  // };
-  // const handleSelectAllClient = () => {
-  //   if (selectedClients.length === filteredClients.length) {
-  //     setSelectedClients([]);
-  //   } else {
-  //     setSelectedClients(filteredClients.map((client) => client.po_number));
-  //   }
-  // };
-
-  // const handleDeleteSelectedClient = () => {
-  //   // Your delete logic here. For now, we just log the selected clients.
-  //   // console.log("Deleting selected clients with PO numbers:", selectedClients);
-  //   setSelectedClients([]);
-  // };
 
   const handleClientSearch = (event) => {
     const searchValue = event.target.value.toLowerCase();
@@ -613,13 +545,13 @@ const Customer_Payment_Summary = () => {
               .reduce((sum, pay) => sum + Number(pay.amount_paid || 0), 0);
 
             // Find the matching bill for this PO
-            const matchingBill = billData.find(
-              (bill) => bill.po_number === po.po_number
-            );
+            const totalBilledValue = billData
+            .filter((bill) => bill.po_number === po.po_number)
+            .reduce((sum, bill) => sum + Number(bill.bill_value || 0), 0);
 
             return {
               ...po,
-              billedValue: matchingBill?.bill_value || 0,
+              billedValue: totalBilledValue || 0,
               // AdvancePaid: matchingPay?.amount_paid || 0,
               totalAdvancePaid: totalAdvancePaid || 0,
             };
@@ -1440,84 +1372,6 @@ const Customer_Payment_Summary = () => {
         </Sheet>
       </Box>
 
-      {/*Adjustment History Section */}
-      {/* <Typography variant="h5" fontFamily="Playfair Display" fontWeight={600} mt={4} mb={2}>
-  Adjustment History
-</Typography>
-<Divider style={{ borderWidth: '2px', marginBottom: '20px' }} /> */}
-
-      {/* <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-  <Button
-    variant="contained"
-    color="error"
-    disabled={selectedAdjustments.length === 0}
-    onClick={handleDelete}
-  >
-    Delete Selected
-  </Button>
-</Box> */}
-
-      {/* <div style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden' }}>
-
-  <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 2fr 1fr 1fr 1fr', backgroundColor: '#f5f5f5', padding: '10px' }}>
-    <div>Adjustment Date</div>
-    <div>Adjusted From</div>
-    <div>Adjusted For</div>
-    <div>Credit (₹)</div>
-    <div>Debit (₹)</div>
-    <div>Select</div>
-  </div>
-
-
-  <div>
-    {adjustmentHistory.map((row) => (
-      <div
-        key={row.id}
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 2fr 2fr 1fr 1fr 1fr',
-          padding: '10px',
-          borderBottom: '1px solid #ddd',
-        }}
-      >
-        <div>
-          {new Date(row.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-        </div>
-        <div>{row.adjusted_from}</div>
-        <div>{row.adjusted_for}</div>
-        <div>{row.value > 0 ? `₹ ${row.value.toLocaleString('en-IN')}` : ''}</div>
-        <div>{row.value < 0 ? `₹ ${Math.abs(row.value).toLocaleString('en-IN')}` : ''}</div>
-        <div>
-          <Checkbox
-            color="primary"
-            checked={selectedAdjustments.includes(row.id)}
-            onChange={() => handleAdjustmentCheckboxChange(row.id)}
-          />
-        </div>
-      </div>
-    ))}
-  </div>
-
-  <div
-    style={{
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr',
-      padding: '10px',
-      backgroundColor: '#f5f5f5',
-      fontWeight: 'bold',
-      borderTop: '2px solid #ddd',
-    }}
-  >
-    <div/>
-    <div/>
-    <div/>
-    <div/>
-    <div/>
-    <div style={{ color: 'green' }}>
-      Total Adjustment: ₹ {totalAdjustment.toLocaleString('en-IN')}
-    </div>
-  </div>
-</div> */}
 
       {/* Client History Section */}
       <Box>
@@ -1618,6 +1472,7 @@ const Customer_Payment_Summary = () => {
               {filteredClients.map((client) => {
                 const po_value = client.po_value || 0;
                 const amountPaid = client.totalAdvancePaid || 0;
+                // const billedValue = client.totalBilled || 0;
                 const billedValue = client.billedValue || 0;
 
                 return (
