@@ -18,6 +18,10 @@ export const leadsApi = createApi({
       query: () => "get-all-won-lead",
       providesTags: ["Lead"],
     }),
+    getWarmLeads: builder.query({
+      query: () => "get-all-warm",
+      providesTags: ["Lead"],
+    }),
 
     getFollowupLeads: builder.query({
       query: () => "get-all-followup-lead",
@@ -40,10 +44,10 @@ export const leadsApi = createApi({
     }),
 
     addInitialtoFollowup: builder.mutation({
-      query: (newFolloup) => ({
+      query: (newFollowup) => ({
         url: "initial-to-followup",
         method: "POST",
-        body: newFolloup,
+        body: newFollowup,
       }),
       invalidatesTags: ["Lead"],
     }),
@@ -81,6 +85,31 @@ export const leadsApi = createApi({
       invalidatesTags: ["Lead"],
     }),
 
+    updateInitial: builder.mutation({
+      query: (newInitial) => ({
+        url: "update-inital",
+        method: "PUT",
+        body: newInitial,
+      }),
+      invalidatesTags: ["Lead"],
+    }),
+    updateFollowup: builder.mutation({
+      query: (newFollowup2) => ({
+        url: "update-followup",
+        method: "PUT",
+        body: newFollowup2,
+      }),
+      invalidatesTags: ["Lead"],
+    }), 
+    updateWarm: builder.mutation({
+      query: (newWarm) => ({
+        url: "update-warm",
+        method: "PUT",
+        body: newWarm,
+      }),
+      invalidatesTags: ["Lead"],
+    }),
+
   }),
 });
 
@@ -90,9 +119,13 @@ export const {
   useUpdateLeadsMutation,
   useGetInitialLeadsQuery,
   useAddInitialtoDeadMutation,
+  useGetWarmLeadsQuery,
   useAddInitialtoWarmupMutation,
-  useAddInitialtoFollowupMutation,
+  useUpdateInitialMutation,
+  useUpdateFollowupMutation,
+  useUpdateWarmMutation,
   useAddInitialtoWonMutation,
+  useAddInitialtoFollowupMutation,
   useGetDeadLeadsQuery,
   useGetFollowupLeadsQuery,
   useGetWonLeadsQuery,

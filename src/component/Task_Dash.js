@@ -22,7 +22,7 @@ import {
   Stack,
 } from "@mui/joy";
 import { CheckCircle, AccessTime, Person, Phone } from "@mui/icons-material";
-// import Pagination from "@mui/material/Pagination";
+import {Pagination} from "@mui/material";
 import logo from "../assets/cheer-up.png";
 
 
@@ -615,12 +615,12 @@ const TaskDashboard = () => {
                 </Box>
               )}
               <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-                {/* <Pagination
+                <Pagination
                   count={totalPagesPast}
                   page={currentPagePast}
                   onChange={handlePageChangePast}
                   siblingCount={1}
-                /> */}
+                />
               </Box>
             </Box>
           </TabPanel>
@@ -689,12 +689,12 @@ const TaskDashboard = () => {
               <Typography level="body-lg">No tasks for today.</Typography>
             )}
             <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-              {/* <Pagination
+              <Pagination
                 count={totalPagesToday}
                 page={currentPageToday}
                 onChange={handlePageChangeToday}
                 siblingCount={1}
-              /> */}
+              />
             </Box>
           </TabPanel>
 
@@ -762,13 +762,13 @@ const TaskDashboard = () => {
               <Typography level="body-lg">No tasks for tomorrow.</Typography>
             )}
             <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-              {/* <Pagination
+              <Pagination
                 count={totalPagesTomorrow}
                 page={currentPageTomorrow}
                 onChange={handlePageChangeTomorrow}
                 siblingCount={1}
                 boundaryCount={1}
-              /> */}
+              />
             </Box>
           </TabPanel>
           {/* Future Tab */}
@@ -856,12 +856,12 @@ const TaskDashboard = () => {
                 </Box>
               )}
               <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-                {/* <Pagination
+                <Pagination
                   count={totalPagesFuture}
                   page={currentPageFuture}
                   onChange={handlePageChangeFuture}
                   siblingCount={1}
-                /> */}
+                />
               </Box>
             </Box>
           </TabPanel>

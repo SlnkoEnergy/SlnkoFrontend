@@ -28,7 +28,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../../assets/Lotties/animation-loading.json";
 // import Axios from "../utils/Axios";
-import { useGetInitialLeadsQuery, useGetLeadsQuery } from "../../redux/leadsSlice";
+import { useGetWarmLeadsQuery } from "../../redux/leadsSlice";
 import NoData from "../../assets/alert-bell.svg";
 
 const StandByRequest = () => {
@@ -43,7 +43,7 @@ const StandByRequest = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const { data: getLead = [], isLoading, error } = useGetInitialLeadsQuery();
+  const { data: getLead = [], isLoading, error } = useGetWarmLeadsQuery();
   const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
 
   const renderFilters = () => (
@@ -196,7 +196,12 @@ const StandByRequest = () => {
           : true;
         return matchesQuery && matchesDate;
       })
-      .sort((a, b) => b.id.localeCompare(a.id));
+      .sort((a, b) => {
+        if (!a.id) return 1;
+        if (!b.id) return -1;
+        return String(b.id).localeCompare(String(a.id));
+      });
+      
   }, [leads, searchQuery, selectedDate]);
 
   const generatePageNumbers = (currentPage, totalPages) => {

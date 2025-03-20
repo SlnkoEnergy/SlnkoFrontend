@@ -1009,23 +1009,23 @@ const Summary = () => {
 
   const Total_Cost_Basic = Math.round(
     Final_Total_Plant_Cost / offerData.dc_capacity / 1000 / 1000
-  );
+  ).toFixed(2);
   const Total_Cost_GST = Math.round(
     Final_Total_GST_Plant_Cost / offerData.dc_capacity / 1000 / 1000
-  );
+  ).toFixed(2);
   const Total_Cost_with_GST = Math.round(
     Final_Total_with_GST_Plant_Cost / offerData.dc_capacity / 1000 / 1000
-  );
+  ).toFixed(2);
 
   const Without_module_INR_wp_Basic = Math.round(
     Cost_Without_Module / offerData.dc_capacity / 1000 / 1000
-  );
+  ).toFixed(2);
   const Without_module_INR_wp_GST = Math.round(
     Cost_Without_Module_GST / offerData.dc_capacity / 1000 / 1000
-  );
+  ).toFixed(2);
   const Without_Module__INR_wp_with_GST = Math.round(
     Cost_Without_Module_with_GST / offerData.dc_capacity / 1000 / 1000
-  );
+  ).toFixed(2);
 
   return (
     <>
@@ -1528,7 +1528,9 @@ const Summary = () => {
                   sx={{ "@media print": { fontSize: "1.2rem" } }}
                   fontWeight="bold"
                 >
-                  {bdRate.transmission_line === "0"
+                  {Number(
+                      offerData.transmission_length * bdRate.transmission_line
+                    ).toLocaleString()  === "0"
                     ? "8. Transmission Line"
                     : ""}
                 </Typography>

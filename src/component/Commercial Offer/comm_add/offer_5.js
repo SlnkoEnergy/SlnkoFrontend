@@ -247,7 +247,7 @@ const Page5 = () => {
                   },
                 }}
               >
-                {offerData.village}, {offerData.district}, {offerData.state}{" "}
+                {offerData.village} {offerData.district}, {offerData.state}{" "}
                 {offerData.pincode}
               </Typography>
             </Box>

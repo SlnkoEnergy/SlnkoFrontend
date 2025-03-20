@@ -22,6 +22,7 @@ import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
 import Option from "@mui/joy/Option";
+import EditNoteIcon from '@mui/icons-material/EditNote';
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import { toast } from "react-toastify";
@@ -252,6 +253,19 @@ function Offer() {
             user?.name === "Anudeep Kumar" ||
             user?.name === "Ashish Jha") && (
             <Menu size="sm" sx={{ minWidth: 140 }}>
+               <MenuItem
+                color="primary"
+                onClick={() => {
+                  const page = currentPage;
+                  const offerId = String(offer_id);
+                  localStorage.setItem("offer_edit", offerId);
+                  // localStorage.setItem("p_id", projectID);
+                  navigate(`/edit_offer?page=${page}&offer_id=${offerId}`);
+                }}
+              >
+                <ContentPasteGoIcon />
+                <Typography>Edit Offer</Typography>
+              </MenuItem>
               <MenuItem
                 color="primary"
                 onClick={() => {
@@ -262,8 +276,8 @@ function Offer() {
                   navigate(`/offer_summary?page=${page}&offer_id=${offerId}`);
                 }}
               >
-                <ContentPasteGoIcon />
-                <Typography>Edit Offer</Typography>
+                <EditNoteIcon />
+                <Typography>Edit BD Rate</Typography>
               </MenuItem>
               <MenuItem
                 onClick={() => {

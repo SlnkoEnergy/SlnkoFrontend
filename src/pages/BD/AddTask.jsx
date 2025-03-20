@@ -71,10 +71,10 @@ function Add_Task() {
               display: 'flex',
               mb: 1,
               gap: 1,
-              flexDirection: { xs: 'column', sm: 'row' },
-              alignItems: { xs: 'start', sm: 'center' },
+              // flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: 'center',
               flexWrap: 'wrap',
-              justifyContent: 'space-between',
+              justifyContent: 'center',
             }}
           >
            <TaskComponent />

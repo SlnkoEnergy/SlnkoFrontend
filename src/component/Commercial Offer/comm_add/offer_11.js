@@ -776,7 +776,7 @@ const Reference2 = () => {
                   </td>
                   <td>m</td>
                   {/* <td>{internalQuantity17}</td> */}
-                  <td>{internalQuantity17}</td>
+                  <td>{Math.round(internalQuantity17)}</td>
                   <td>Reputed</td>
                   <td>Other Balance of Material</td>
                   {/* <td>{scmData.earthing_strips}</td>

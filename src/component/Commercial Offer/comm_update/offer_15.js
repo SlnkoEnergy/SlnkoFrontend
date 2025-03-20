@@ -1482,7 +1482,9 @@ const Summary = () => {
                   sx={{ "@media print": { fontSize: "1.2rem" } }}
                   fontWeight="bold"
                 >
-                  {bdRate.transmission_line === "0" ? "8. Transmission Line" : ""}
+                  {Number(
+                      offerData.transmission_length * bdRate.transmission_line
+                    ).toLocaleString() === "0" ? "8. Transmission Line" : ""}
                 </Typography>
               </Box>
             </Box>

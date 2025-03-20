@@ -46,6 +46,8 @@ import Sum_Initial_Leads from "../pages/BD/Leads/Initial/Forms/initial_Summary";
 import CheckboxModal from "../pages/BD/Leads/Initial/Forms/InitialToFollowup";
 import Add_Task from "../pages/BD/AddTask";
 import Task_Dashboards from "../pages/BD/DashTask";
+import HandSheet from "../pages/BD/Leads/HandOver";
+import Offer_edit from "../pages/BD/Comm_/EditOffer";
 
 
 function index() {
@@ -400,6 +402,22 @@ function index() {
         element={
           <PrivateRoute>
             <Task_Dashboards />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/hand_over"
+        element={
+          <PrivateRoute>
+            <HandSheet />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/edit_offer"
+        element={
+          <PrivateRoute>
+            <Offer_edit />
           </PrivateRoute>
         }
       />

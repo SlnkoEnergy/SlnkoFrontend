@@ -698,7 +698,7 @@ function Sidebar() {
               </List>
             </Toggler>
           </ListItem>
-        ) : user?.department === "account" && user?.name === "Deepti Mittal" ? (
+        ) : user?.department === "account" && user?.name === "Sujan Maharjan" ? (
           <List
             size="sm"
             sx={{
@@ -791,7 +791,7 @@ function Sidebar() {
                     </ListItemButton>
                   </ListItem>
                   <ListItem>
-                    <ListItemButton onClick={() => navigate("vendor_bill")}>
+                    <ListItemButton onClick={() => navigate("/vendor_bill")}>
                       Vendor Bill
                     </ListItemButton>
                   </ListItem>

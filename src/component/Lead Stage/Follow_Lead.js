@@ -196,7 +196,12 @@ const StandByRequest = () => {
           : true;
         return matchesQuery && matchesDate;
       })
-      .sort((a, b) => b.id.localeCompare(a.id));
+      .sort((a, b) => {
+        if (!a.id) return 1; // Move entries with missing IDs to the end
+        if (!b.id) return -1;
+        return String(b.id).localeCompare(String(a.id));
+      });
+      
   }, [leads, searchQuery, selectedDate]);
 
   const generatePageNumbers = (currentPage, totalPages) => {

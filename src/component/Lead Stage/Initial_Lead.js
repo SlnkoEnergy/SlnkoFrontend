@@ -231,7 +231,12 @@ const StandByRequest = () => {
   
         return matchesUser && matchesQuery && matchesDate;
       })
-      .sort((a, b) => b.id.localeCompare(a.id));
+      .sort((a, b) => {
+        if (!a.id) return 1; // Move entries with missing IDs to the end
+        if (!b.id) return -1;
+        return String(a.id).localeCompare(String(b.id));
+      });
+      
   }, [leads, searchQuery, selectedDate, user]);
   
   

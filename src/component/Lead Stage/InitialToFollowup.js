@@ -18,6 +18,8 @@ import {
   useAddInitialtoFollowupMutation,
   useAddInitialtoWarmupMutation,
   useAddInitialtoWonMutation,
+  useUpdateInitialMutation,
+  useUpdateInitialtoFollowupMutation,
 } from "../../redux/leadsSlice";
 
 const CheckboxModal = () => {
@@ -32,10 +34,10 @@ const CheckboxModal = () => {
   const [otherRemarks, setOtherRemarks] = useState("");
 
 
-  const [InitialToFollowup] = useAddInitialtoFollowupMutation();
-  const [InitialToWarmup] = useAddInitialtoWarmupMutation();
-  const [InitialToWon] = useAddInitialtoWonMutation();
-  const [InitialToDead] = useAddInitialtoDeadMutation();
+  const [updateLead, { isLoading: isUpdating }] = useUpdateInitialMutation();
+  // const [InitialToWarmup] = useAddInitialtoWarmupMutation();
+  // const [InitialToWon] = useAddInitialtoWonMutation();
+  // const [InitialToDead] = useAddInitialtoDeadMutation();
 
   
   const [LeadId, setLeadId] = useState(
@@ -65,39 +67,29 @@ const CheckboxModal = () => {
   };
 
   const handleSubmit = async () => {
-    let submitMutation = null;
-
-    if (selectedRadio === "loi") {
-      submitMutation = InitialToFollowup;
-    } else if (selectedOptions["loa"] || selectedOptions["ppa"]) {
-      submitMutation = InitialToWarmup;
-    } else if (selectedRadio === "token_money") {
-      submitMutation = InitialToWon;
-    } else if (selectedRadio === "Others") {
-      submitMutation = InitialToDead;
+    if (!LeadId) {
+      console.error("No valid Lead ID available.");
+      return;
     }
-
-    if (submitMutation) {
-      try {
-        const response = await submitMutation({
-          id: LeadId,
-          loi: selectedRadio === "loi" ? "Yes" : "No",
-          loa: selectedOptions["loa"] ? "Yes" : "No",
-          ppa: selectedOptions["ppa"] ? "Yes" : "No",
-          token_money: selectedRadio === "token_money" ? "Yes" : "No",
-          other_remarks: selectedRadio === "Others" ? otherRemarks : "",
-        }).unwrap();
-
-        console.log("Success:", response);
-        setOpen(false);
-        navigate("/leads");
-      } catch (error) {
-        console.error("Error submitting:", error);
-      }
-    } else {
-      console.warn("No selection made");
+  
+    try {
+      const response = await updateLead({
+        id: LeadId,
+        loi: selectedRadio === "loi" ? "Yes" : "No",
+        loa: selectedOptions["loa"] ? "Yes" : "No",
+        ppa: selectedOptions["ppa"] ? "Yes" : "No",
+        token_money: selectedRadio === "token_money" ? "Yes" : "No",
+        other_remarks: selectedRadio === "Others" ? otherRemarks : "",
+      }).unwrap();
+  
+      console.log("Update successful:", response);
+      setOpen(false);
+      navigate("/leads");
+    } catch (error) {
+      console.error("Error updating lead:", error);
     }
   };
+  
 
   return (
     <Modal open={open} onClose={() => setOpen(false)}>

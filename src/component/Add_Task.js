@@ -17,14 +17,16 @@ import {
   Chip,
 } from "@mui/joy";
 import plus from "../assets/plus 1.png";
+import { useNavigate } from "react-router-dom";
 
-const TaskComponent = () => {
+const FormComponent = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    col1: "",
-    col2: "",
-    col3: "",
-    col4: [],
-    col5: "",
+    name: "",
+    date: "",
+    reference: "",
+    by_whom: [],
+    comment: "",
   });
 
   const [bdMembers, setBdMembers] = useState([]);
@@ -32,8 +34,22 @@ const TaskComponent = () => {
   useEffect(() => {
     const fetchBdMembers = async () => {
       try {
-        const response = await axios.get("/api/bd-members");
-        setBdMembers(response.data.map((member) => member.name));
+        const response = await axios.get(
+          "https://api.slnkoprotrac.com/v1/get-all-user-IT"
+        );
+        console.log("API Response:", response.data);
+
+        const users = Array.isArray(response.data?.data)
+          ? response.data.data
+          : [];
+
+        const filteredMembers = users.filter(
+          (user) => user.department === "BD"
+        );
+
+        setBdMembers(
+          filteredMembers.map((member) => ({ label: member.name, id: member._id }))
+        );
       } catch (error) {
         console.error("Error fetching BD members:", error);
       }
@@ -46,10 +62,34 @@ const TaskComponent = () => {
     setFormData((prevData) => ({ ...prevData, [field]: value }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Form Data Submitted:", formData);
+  const handleByWhomChange = (_, newValue) => {
+    handleChange("by_whom", newValue.map((member) => member.label));
   };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+  
+    const payload = {
+      ...formData,
+      by_whom: formData.by_whom.map((label) => ({
+        label,
+        id: bdMembers.find((member) => member.label === label)?.id || null,
+      })),
+    };
+  
+    console.log("Payload to be submitted:", payload);
+  
+    try {
+      const response = await axios.post(
+        "https://api.slnkoprotrac.com/v1/add-task",
+        payload
+      );
+      console.log("Form Data Submitted Successfully:", response.data);
+    } catch (error) {
+      console.error("Error submitting form data:", error.response?.data || error);
+    }
+  };
+  
 
   return (
     <Grid
@@ -58,7 +98,8 @@ const TaskComponent = () => {
         justifyContent: "center",
         alignItems: "center",
         flexDirection: "column",
-        height: "100vh",
+        height: "100%",
+        mt:{md:"5%", xs:"20%"}
       }}
     >
       <Box
@@ -92,9 +133,9 @@ const TaskComponent = () => {
         sx={{
           p: 3,
           borderRadius: "30px",
-          maxWidth: { xs: "100%", sm: 400 },
+          // maxWidth: { xs: "100%", sm: 400 },
           mx: "auto",
-          width: "100%",
+          width: {md:"50vw",sm:"50vw"},
           boxShadow: "lg",
         }}
       >
@@ -105,8 +146,8 @@ const TaskComponent = () => {
               <Input
                 fullWidth
                 placeholder="Customer Name"
-                value={formData.col1}
-                onChange={(e) => handleChange("col1", e.target.value)}
+                value={formData.name}
+                onChange={(e) => handleChange("name", e.target.value)}
                 sx={{ borderRadius: "8px" }}
               />
             </FormControl>
@@ -116,8 +157,8 @@ const TaskComponent = () => {
                 fullWidth
                 type="date"
                 placeholder="Next FollowUp"
-                value={formData.col2}
-                onChange={(e) => handleChange("col2", e.target.value)}
+                value={formData.date}
+                onChange={(e) => handleChange("date", e.target.value)}
                 sx={{ borderRadius: "8px" }}
                 slotProps={{
                   input: {
@@ -130,8 +171,8 @@ const TaskComponent = () => {
             <FormControl>
               <FormLabel>Reference</FormLabel>
               <Select
-                value={formData.col3}
-                onChange={(e, newValue) => handleChange("col3", newValue)}
+                value={formData.reference}
+                onChange={(e, newValue) => handleChange("reference", newValue)}
                 sx={{ borderRadius: "8px" }}
               >
                 <Option value="By call">By Call</Option>
@@ -142,33 +183,27 @@ const TaskComponent = () => {
             <FormControl>
               <FormLabel>By Whom</FormLabel>
               <Autocomplete
-                multiple
-                options={bdMembers}
-                value={formData.col4 || []}
-                onChange={(_, newValue) => handleChange("col4", newValue)}
-                renderInput={(params) => (
-                  <Input {...params} placeholder="Select BD Members" />
-                )}
-                renderTags={(value, getTagProps) =>
-                  value.map((option, index) => (
-                    <Chip key={option} label={option} {...getTagProps({ index })} />
-                  ))
-                }
-              />
+  multiple
+  options={bdMembers}
+  getOptionLabel={(option) => option.label}
+  isOptionEqualToValue={(option, value) => option.id === value.id}
+  value={bdMembers.filter((member) => 
+    formData.by_whom.includes(member.label)
+  )}
+  onChange={handleByWhomChange}
+  renderInput={(params) => (
+    <Input
+      {...params}
+      placeholder="Select BD Members"
+      sx={{ minHeight: "40px", overflowY: "auto" }}
+    />
+  )}
+/>
+
             </FormControl>
 
-            <Stack flexDirection="row" justifyContent="space-between">
-              <Button
-                sx={{
-                  borderRadius: "8px",
-                  background: "#f5f5f5",
-                  color: "black",
-                  border: "1px solid #ddd",
-                  "&:hover": { background: "#d6d6d6" },
-                }}
-              >
-                Back
-              </Button>
+            <Stack flexDirection="row" justifyContent="center">
+               
               <Button
                 type="submit"
                 sx={{
@@ -179,6 +214,19 @@ const TaskComponent = () => {
                 }}
               >
                 Submit
+              </Button>&nbsp;&nbsp;
+              <Button
+              onClick={(() => navigate("/leads"))}
+                sx={{
+                  borderRadius: "8px",
+                  background: "#f5f5f5",
+                  color: "black",
+                  border: "1px solid #ddd",
+                  "&:hover": { background: "#d6d6d6" },
+                  
+                }}
+              >
+                Back
               </Button>
             </Stack>
           </Stack>
@@ -188,4 +236,4 @@ const TaskComponent = () => {
   );
 };
 
-export default TaskComponent;
+export default FormComponent;

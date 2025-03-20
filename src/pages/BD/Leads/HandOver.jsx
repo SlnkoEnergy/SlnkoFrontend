@@ -8,11 +8,11 @@ import Link from '@mui/joy/Link';
 import Typography from '@mui/joy/Typography';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 
-import Sidebar from '../../component/Partials/Sidebar';
-import Header from '../../component/Partials/Header';
-import TaskDashboard from '../../component/Task_Dash';
+import Sidebar from '../../../component/Partials/Sidebar';
+import Header from '../../../component/Partials/Header';
+import HandoverSheetForm from '../../../component/Lead Stage/Hand_Over';
 
-function Task_Dashboards() {
+function HandSheet() {
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -62,7 +62,7 @@ function Task_Dashboards() {
                 Leads
               </Link>
               <Typography color="primary" sx={{ fontWeight: 500, fontSize: 12 }}>
-                Task Dashboard
+                HandOver Sheet Form
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -71,13 +71,13 @@ function Task_Dashboards() {
               display: 'flex',
               mb: 1,
               gap: 1,
-              // flexDirection: { xs: 'column', sm: 'row' },
-              alignItems: 'center',
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'start', sm: 'center' },
               flexWrap: 'wrap',
-              justifyContent: 'center',
+              justifyContent: 'space-between',
             }}
           >
-           <TaskDashboard />
+           <HandoverSheetForm />
            
           </Box>
           
@@ -89,4 +89,4 @@ function Task_Dashboards() {
     </CssVarsProvider>
   );
 }
-export default Task_Dashboards;
+export default HandSheet;
