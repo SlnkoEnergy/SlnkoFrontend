@@ -13,8 +13,8 @@ import Lead_Initial from "../../../../component/Lead Stage/Initial_Lead";
 import Sidebar from "../../../../component/Partials/Sidebar";
 import Lead_Warm from "../../../../component/Lead Stage/Warm_Lead";
 import Lead_FollowUp from "../../../../component/Lead Stage/Follow_Lead";
-import Lead_Won from "../../../../component/Lead Stage/Follow_Lead";
-import Lead_Dead from "../../../../component/Lead Stage/Follow_Lead";
+import Lead_Won from "../../../../component/Lead Stage/Won_Lead";
+import Lead_Dead from "../../../../component/Lead Stage/Dead_Lead";
 import { useNavigate } from "react-router-dom";
 import Header from "../../../../component/Partials/Header";
 

@@ -640,7 +640,7 @@ function Offer() {
                   "Scheme",
                   "Component",
                   "Latest Rate",
-                  "Add Costing",
+                  "Add BD Rate",
                   "Prepared By",
                   "View More",
                   // "Validation",

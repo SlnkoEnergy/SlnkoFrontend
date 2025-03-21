@@ -11,9 +11,9 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import Sidebar from "../../../../../component/Partials/Sidebar";
 import Header from "../../../../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
-import InitialFollowup from "../../../../../component/Lead Stage/InitialToFollowup";
+import CheckboxModal4 from "../../../../../component/Lead Stage/DeadToAll";
 
-function Sum_Initial_Leads() {
+function Sum_Dead_Leads() {
   const navigate = useNavigate();
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -104,7 +104,7 @@ function Sum_Initial_Leads() {
               ml:5
             }}
           >
-            <InitialFollowup />
+            <CheckboxModal4 />
           </Box>
 
           {/* <OrderTable /> */}
@@ -114,4 +114,4 @@ function Sum_Initial_Leads() {
     </CssVarsProvider>
   );
 }
-export default Sum_Initial_Leads;
+export default Sum_Dead_Leads;

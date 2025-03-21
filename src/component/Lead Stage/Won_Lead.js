@@ -20,6 +20,7 @@ import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
+import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import FollowTheSignsIcon from '@mui/icons-material/FollowTheSigns';
 import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
 import ManageHistoryIcon from '@mui/icons-material/ManageHistory';
@@ -90,7 +91,7 @@ const StandByRequest = () => {
           <MoreHorizRoundedIcon />
         </MenuButton>
         <Menu size="sm" sx={{ minWidth: 140 }}>
-          <MenuItem
+          {/* <MenuItem
             color="primary"
             onClick={() => {
               const page = currentPage;
@@ -103,8 +104,8 @@ const StandByRequest = () => {
           >
             <ContentPasteGoIcon />
             <Typography>Edit Info</Typography>
-          </MenuItem>
-          <MenuItem
+          </MenuItem> */}
+          {/* <MenuItem
             color="primary"
             onClick={() => {
               const page = currentPage;
@@ -118,8 +119,8 @@ const StandByRequest = () => {
           >
             <NextPlanIcon />
             <Typography>Next Stage</Typography>
-          </MenuItem>
-          <MenuItem
+          </MenuItem> */}
+          {/* <MenuItem
             color="primary"
             onClick={() => {
               const page = currentPage;
@@ -146,7 +147,7 @@ const StandByRequest = () => {
           >
             <FollowTheSignsIcon />
             <Typography>Next Followup</Typography>
-          </MenuItem>
+          </MenuItem> */}
           <MenuItem
             color="primary"
             onClick={() => {
@@ -161,11 +162,11 @@ const StandByRequest = () => {
             <RemoveRedEyeIcon />
             <Typography>View Details</Typography>
           </MenuItem>
-          <Divider sx={{ backgroundColor: "lightblue" }} />
+          {/* <Divider sx={{ backgroundColor: "lightblue" }} />
           <MenuItem color="danger">
             <DeleteIcon />
             <Typography>Delete</Typography>
-          </MenuItem>
+          </MenuItem> */}
         </Menu>
       </Dropdown>
     );
@@ -307,7 +308,13 @@ const StandByRequest = () => {
             />
           </Box>
         ) : error ? (
-          <p>Error loading data</p>
+          <span style={{ display: "flex", alignItems: "center", gap: "5px", color: "red", justifyContent:"center", flexDirection:"column" , padding: "20px"}}>
+          <PermScanWifiIcon />
+          <Typography fontStyle={"italic"} fontWeight={"600"} sx={{color:"#0a6bcc"}} >
+          Hang tight! Internet Connection will be back soon..
+          </Typography>
+          
+        </span>
         ) : (
           <Box
             component="table"
@@ -452,7 +459,7 @@ const StandByRequest = () => {
                         style={{ width: "50px", height: "50px" }}
                       />
                       <Typography fontStyle={"italic"}>
-                        No Leads available
+                        No Won Leads available
                       </Typography>
                     </Box>
                   </Box>

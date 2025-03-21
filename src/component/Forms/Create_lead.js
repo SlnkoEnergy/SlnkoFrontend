@@ -338,7 +338,7 @@ const Create_lead = () => {
                 />
 </Grid>
           <Grid xs={12} sm={6}>
-            <FormLabel>Follow-up Date</FormLabel>
+            <FormLabel>Creation Date</FormLabel>
             <Input
               name="entry_date"
               type="date"
@@ -381,7 +381,7 @@ const Create_lead = () => {
                   sx={{ width: "100%" }}
                 />
 </Grid>
-          <Grid xs={12} sm={6}>
+          {/* <Grid xs={12} sm={6}>
             <FormLabel>Interest</FormLabel>
             <Select
               name="interest"
@@ -397,8 +397,8 @@ const Create_lead = () => {
                 </Option>
               ))}
             </Select>
-          </Grid>
-          <Grid xs={12} sm={12}>
+          </Grid> */}
+          <Grid xs={12} sm={6}>
             <FormLabel>Comments</FormLabel>
             <Input
               name="comment"

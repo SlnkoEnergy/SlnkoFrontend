@@ -5,6 +5,7 @@ import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import SearchIcon from "@mui/icons-material/Search";
+import StarsIcon from '@mui/icons-material/Stars';
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
@@ -22,6 +23,7 @@ import Typography from "@mui/joy/Typography";
 import * as React from "react";
 import FollowTheSignsIcon from '@mui/icons-material/FollowTheSigns';
 import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
+import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import ManageHistoryIcon from '@mui/icons-material/ManageHistory';
 import NextPlanIcon from '@mui/icons-material/NextPlan';
 import { useEffect, useState, useMemo } from "react";
@@ -45,6 +47,9 @@ const StandByRequest = () => {
 
   const { data: getLead = [], isLoading, error } = useGetDeadLeadsQuery();
   const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
+
+  console.log(leads);
+  
 
   const renderFilters = () => (
     <>
@@ -90,7 +95,7 @@ const StandByRequest = () => {
           <MoreHorizRoundedIcon />
         </MenuButton>
         <Menu size="sm" sx={{ minWidth: 140 }}>
-          <MenuItem
+          {/* <MenuItem
             color="primary"
             onClick={() => {
               const page = currentPage;
@@ -103,7 +108,7 @@ const StandByRequest = () => {
           >
             <ContentPasteGoIcon />
             <Typography>Edit Info</Typography>
-          </MenuItem>
+          </MenuItem> */}
           <MenuItem
             color="primary"
             onClick={() => {
@@ -111,15 +116,15 @@ const StandByRequest = () => {
               const leadId = String(id);
               // const projectID = Number(p_id);
               setOpen(true)
-              localStorage.setItem("stage_next", leadId);
+              localStorage.setItem("stage_next3", leadId);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/initial_followup?page=${page}&${leadId}`);
+              navigate(`/dead_to_initial?page=${page}&${leadId}`);
             }}
           >
-            <NextPlanIcon />
-            <Typography>Next Stage</Typography>
+            <StarsIcon />
+            <Typography>Revived Lead</Typography>
           </MenuItem>
-          <MenuItem
+          {/* <MenuItem
             color="primary"
             onClick={() => {
               const page = currentPage;
@@ -146,7 +151,7 @@ const StandByRequest = () => {
           >
             <FollowTheSignsIcon />
             <Typography>Next Followup</Typography>
-          </MenuItem>
+          </MenuItem> */}
           <MenuItem
             color="primary"
             onClick={() => {
@@ -307,7 +312,13 @@ const StandByRequest = () => {
             />
           </Box>
         ) : error ? (
-          <p>Error loading data</p>
+          <span style={{ display: "flex", alignItems: "center", gap: "5px", color: "red", justifyContent:"center", flexDirection:"column" , padding: "20px"}}>
+          <PermScanWifiIcon />
+          <Typography fontStyle={"italic"} fontWeight={"600"} sx={{color:"#0a6bcc"}} >
+          Hang tight! Internet Connection will be back soon..
+          </Typography>
+          
+        </span>
         ) : (
           <Box
             component="table"
@@ -342,6 +353,7 @@ const StandByRequest = () => {
                   "Capacity",
                   "Substation Distance",
                   "Creation Date",
+                  "Status",
                   "Action",
                 ].map((header, index) => (
                   <Box
@@ -399,6 +411,7 @@ const StandByRequest = () => {
                       lead.capacity || "-",
                       lead.distance || "-",
                       lead.entry_date || "-",
+                      lead.status || "-"
                     ].map((data, idx) => (
                       <Box
                         component="td"
@@ -430,7 +443,7 @@ const StandByRequest = () => {
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={9}
+                    colSpan={10}
                     sx={{
                       padding: "8px",
                       textAlign: "center",
@@ -452,7 +465,7 @@ const StandByRequest = () => {
                         style={{ width: "50px", height: "50px" }}
                       />
                       <Typography fontStyle={"italic"}>
-                        No Leads available
+                        No Dead Leads available
                       </Typography>
                     </Box>
                   </Box>

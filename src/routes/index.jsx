@@ -43,7 +43,10 @@ import Add_Lead from "../pages/BD/Leads/create_Leads";
 import Edit_Initial from "../pages/BD/Leads/Initial/Forms/initial_edit";
 import Dashboardz from "../pages/Dashboards";
 import Sum_Initial_Leads from "../pages/BD/Leads/Initial/Forms/initial_Summary";
-import CheckboxModal from "../pages/BD/Leads/Initial/Forms/InitialToFollowup";
+import CheckboxModal from "../pages/BD/Leads/Initial/Forms/InitialToAll";
+import CheckboxModal2 from "../pages/BD/Leads/Followup/Forms/FollowupToAll";
+import CheckboxModal3 from "../pages/BD/Leads/Warm/Forms/WarmToAll";
+import CheckboxModal4 from "../pages/BD/Leads/Dead/Forms/DeadToAll";
 import Add_Task from "../pages/BD/AddTask";
 import Task_Dashboards from "../pages/BD/DashTask";
 import HandSheet from "../pages/BD/Leads/HandOver";
@@ -424,13 +427,38 @@ function index() {
 
       {/***************All Stages *************/}
       <Route
-        path="/initial_followup"
+        path="/initial_to_all"
         element={
           <PrivateRoute>
             <CheckboxModal />
           </PrivateRoute>
         }
       />
+      <Route
+        path="/followup_to_all"
+        element={
+          <PrivateRoute>
+            <CheckboxModal2 />
+          </PrivateRoute>
+        }
+      />
+       <Route
+        path="/warm_to_all"
+        element={
+          <PrivateRoute>
+            <CheckboxModal3 />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/dead_to_initial"
+        element={
+          <PrivateRoute>
+            <CheckboxModal4 />
+          </PrivateRoute>
+        }
+      />
+      
     </Routes>
     
     

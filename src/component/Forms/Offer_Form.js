@@ -153,16 +153,8 @@ const FormOffer = () => {
   }, [formData.ac_capacity, formData.dc_overloading]);
 
   return (
-    <Box
-      sx={{
-        maxWidth: 800,
-        mx: "auto",
-        p: 3,
-        borderRadius: "md",
-        boxShadow: "lg",
-        bgcolor: "background.paper",
-      }}
-    >
+    <Box sx={{ maxWidth: { xs: "100%", sm: 800 }, width: "100%", mx: "auto", p: 3 }}>
+
       <Typography
         level="h3"
         mb={2}
@@ -172,7 +164,7 @@ const FormOffer = () => {
       </Typography>
       <Grid container spacing={2}>
         {/* Client Name */}
-        <Grid xs={12} sm={12}>
+        <Grid item xs={12} sm={12}>
           <FormControl>
             <FormLabel>Client Name</FormLabel>
             <Input

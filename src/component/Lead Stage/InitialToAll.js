@@ -11,7 +11,9 @@ import {
   Input,
   Radio,
   RadioGroup,
+  CircularProgress,
 } from "@mui/joy";
+import { useSnackbar } from "notistack";
 import { useNavigate } from "react-router-dom";
 import {
   useAddInitialtoDeadMutation,
@@ -19,8 +21,8 @@ import {
   useAddInitialtoWarmupMutation,
   useAddInitialtoWonMutation,
   useUpdateInitialMutation,
-  useUpdateInitialtoFollowupMutation,
 } from "../../redux/leadsSlice";
+import { toast } from "react-toastify";
 
 const CheckboxModal = () => {
   const navigate = useNavigate();
@@ -35,9 +37,10 @@ const CheckboxModal = () => {
 
 
   const [updateLead, { isLoading: isUpdating }] = useUpdateInitialMutation();
-  // const [InitialToWarmup] = useAddInitialtoWarmupMutation();
-  // const [InitialToWon] = useAddInitialtoWonMutation();
-  // const [InitialToDead] = useAddInitialtoDeadMutation();
+  const [InitialToFollowup] = useAddInitialtoFollowupMutation();
+  const [InitialToWarmup] = useAddInitialtoWarmupMutation();
+  const [InitialToWon] = useAddInitialtoWonMutation();
+  const [InitialToDead] = useAddInitialtoDeadMutation();
 
   
   const [LeadId, setLeadId] = useState(
@@ -66,13 +69,31 @@ const CheckboxModal = () => {
     }
   };
 
+  const { enqueueSnackbar } = useSnackbar();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+
   const handleSubmit = async () => {
     if (!LeadId) {
-      console.error("No valid Lead ID available.");
+      enqueueSnackbar("No valid Lead ID available.", { variant: "error" });
+      return;
+    }
+  
+   
+    if (
+      (selectedRadio === "loi" || selectedRadio === "token_money" || selectedRadio === "Others") &&
+      (selectedOptions.loa || selectedOptions.ppa)
+    ) {
+      enqueueSnackbar("You are choosing the wrong field combination! Please Refresh it.", {
+        variant: "warning",
+      });
       return;
     }
   
     try {
+      setIsSubmitting(true); 
+  
+   
       const response = await updateLead({
         id: LeadId,
         loi: selectedRadio === "loi" ? "Yes" : "No",
@@ -82,13 +103,52 @@ const CheckboxModal = () => {
         other_remarks: selectedRadio === "Others" ? otherRemarks : "",
       }).unwrap();
   
-      console.log("Update successful:", response);
-      setOpen(false);
-      navigate("/leads");
+      const updatedId = response?.data?.id;
+      if (!updatedId) {
+        enqueueSnackbar("Warning: Response does not contain an ID.", {
+          variant: "warning",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+  
+      enqueueSnackbar("Consignment Accepted!", { variant: "success" });
+  
+      let postResponse;
+      
+    
+      if (selectedRadio === "loi") {
+        postResponse = await InitialToFollowup({ id: updatedId }).unwrap();
+        enqueueSnackbar("Lead moved from Initial to Followup!", { variant: "success" });
+      } else if (selectedRadio === "token_money") {
+        postResponse = await InitialToWon({ id: updatedId }).unwrap();
+        enqueueSnackbar("Lead moved from Initial to Won!", { variant: "success" });
+      } else if (selectedRadio === "Others") {
+        postResponse = await InitialToDead({ id: updatedId }).unwrap();
+        enqueueSnackbar("Lead moved from Initial to Dead!", { variant: "success" });
+      } else if (selectedOptions.loa && selectedOptions.ppa) {
+        postResponse = await InitialToWarmup({ id: updatedId }).unwrap();
+        enqueueSnackbar("Lead moved from Initial to Warm!", { variant: "success" });
+      }
+  
+    
+      if (postResponse) {
+        setTimeout(() => {
+          navigate("/leads");
+        }, 1000);
+      }
     } catch (error) {
-      console.error("Error updating lead:", error);
+      console.error("rror updating or posting lead:", error);
+      enqueueSnackbar("Error processing request", { variant: "error" });
+    } finally {
+      setIsSubmitting(false); 
     }
   };
+  
+  
+  
+  
+  
   
 
   return (
@@ -98,7 +158,7 @@ const CheckboxModal = () => {
           Select Options as per your Requirements
         </Typography>
         <FormControl>
-          <FormLabel>Choose One:</FormLabel>
+          <FormLabel>Choose Consignment:</FormLabel>
           <RadioGroup
             value={selectedRadio}
             onChange={(e) => handleRadioChange(e.target.value)}
@@ -133,9 +193,16 @@ const CheckboxModal = () => {
           <Button variant="plain" onClick={() => navigate("/leads")}>
             Cancel
           </Button>
-          <Button variant="solid" onClick={handleSubmit}>
-            Submit
-          </Button>
+          <Button
+  variant="contained"
+  color="primary"
+  onClick={handleSubmit}
+  disabled={isSubmitting}
+>
+  {isSubmitting ? "Processing..." : "Submit"}
+</Button>
+
+
         </Stack>
       </ModalDialog>
     </Modal>
