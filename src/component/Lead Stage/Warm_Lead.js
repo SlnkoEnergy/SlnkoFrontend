@@ -98,13 +98,13 @@ const StandByRequest = () => {
               const page = currentPage;
               const leadId = String(id);
               // const projectID = Number(p_id);
-              localStorage.setItem("edit_initial", leadId);
+              localStorage.setItem("edit_warm", leadId);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/edit_initial?page=${page}&id=${leadId}`);
+              navigate(`/edit_warm?page=${page}&id=${leadId}`);
             }}
           >
             <ContentPasteGoIcon />
-            <Typography>Edit Info</Typography>
+            <Typography>Edit Warm</Typography>
           </MenuItem>
           <MenuItem
             color="primary"
@@ -155,13 +155,13 @@ const StandByRequest = () => {
               const page = currentPage;
               const leadId = String(id);
               // const projectID = Number(p_id);
-              localStorage.setItem("view_details", leadId);
+              localStorage.setItem("view_warm", leadId);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/initial_Summary?page=${page}&id=${leadId}`);
+              navigate(`/warm_Summary?page=${page}&id=${leadId}`);
             }}
           >
             <RemoveRedEyeIcon />
-            <Typography>View Details</Typography>
+            <Typography>Warm Summary</Typography>
           </MenuItem>
           {/* <Divider sx={{ backgroundColor: "lightblue" }} />
           <MenuItem color="danger">

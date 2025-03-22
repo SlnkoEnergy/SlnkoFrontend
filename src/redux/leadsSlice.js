@@ -167,6 +167,22 @@ export const leadsApi = createApi({
       }),
       invalidatesTags: ["Lead"],
     }),
+    updateFollowupLeads: builder.mutation({
+      query: ({ _id, updatedLead }) => ({
+        url: `edit-followup/${_id}`,
+        method: "PUT",
+        body: updatedLead,
+      }),
+      invalidatesTags: ["Lead"],
+    }),
+    updateWARMupLeads: builder.mutation({
+      query: ({ _id, updatedLead }) => ({
+        url: `edit-warm/${_id}`,
+        method: "PUT",
+        body: updatedLead,
+      }),
+      invalidatesTags: ["Lead"],
+    }),
 
     updateInitial: builder.mutation({
       query: (newInitial) => ({
@@ -204,6 +220,8 @@ export const {
   useGetWarmLeadsQuery,
   useAddInitialtoWarmupMutation,
   useUpdateInitialMutation,
+  useUpdateFollowupLeadsMutation,
+  useUpdateWARMupLeadsMutation,
   useUpdateFollowupMutation,
   useUpdateWarmMutation,
   useAddInitialtoWonMutation,

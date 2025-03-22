@@ -120,7 +120,7 @@ const CheckboxModal2 = () => {
       } else if (selectedRadio === "Others") {
         postResponse = await FollowupToDead({ id: updatedId }).unwrap();
         enqueueSnackbar("Lead moved from Followup to Dead!", { variant: "success" });
-      } else if (selectedOptions.loa && selectedOptions.ppa) {
+      } else if (selectedOptions.loa || selectedOptions.ppa) {
         postResponse = await FollowupToWarmup({ id: updatedId }).unwrap();
         enqueueSnackbar("Lead moved from Followup to Warm!", { variant: "success" });
       }

@@ -126,7 +126,7 @@ const CheckboxModal = () => {
       } else if (selectedRadio === "Others") {
         postResponse = await InitialToDead({ id: updatedId }).unwrap();
         enqueueSnackbar("Lead moved from Initial to Dead!", { variant: "success" });
-      } else if (selectedOptions.loa && selectedOptions.ppa) {
+      } else if (selectedOptions.loa || selectedOptions.ppa) {
         postResponse = await InitialToWarmup({ id: updatedId }).unwrap();
         enqueueSnackbar("Lead moved from Initial to Warm!", { variant: "success" });
       }

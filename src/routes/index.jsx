@@ -40,7 +40,6 @@ import ListReference2 from "../pages/BD/Comm_/offer_ref_edit";
 import ListReference3 from "../pages/BD/Comm_/offer_previw";
 import Costing_form from "../pages/BD/Costing_form";
 import Add_Lead from "../pages/BD/Leads/create_Leads";
-import Edit_Initial from "../pages/BD/Leads/Initial/Forms/initial_edit";
 import Dashboardz from "../pages/Dashboards";
 import Sum_Initial_Leads from "../pages/BD/Leads/Initial/Forms/initial_Summary";
 import CheckboxModal from "../pages/BD/Leads/Initial/Forms/InitialToAll";
@@ -51,6 +50,14 @@ import Add_Task from "../pages/BD/AddTask";
 import Task_Dashboards from "../pages/BD/DashTask";
 import HandSheet from "../pages/BD/Leads/HandOver";
 import Offer_edit from "../pages/BD/Comm_/EditOffer";
+import Edit_Followup_Leads from "../pages/BD/Leads/Followup/Forms/follow_edit";
+import Edit_Initial_Leads from "../pages/BD/Leads/Initial/Forms/initial_edit";
+import Edit_Warm_Leads from "../pages/BD/Leads/Warm/Forms/warm_edit";
+import FollowUpSummary from "../pages/BD/Leads/Followup/Forms/follow_Summary";
+import WarmUpSummary from "../pages/BD/Leads/Warm/Forms/warm_Summary";
+import WONSummary from "../pages/BD/Leads/Won/Forms/won_Summary";
+import DEADSummary from "../pages/BD/Leads/Dead/Forms/dead_Summary";
+
 
 
 function index() {
@@ -380,7 +387,23 @@ function index() {
         path="/edit_initial"
         element={
           <PrivateRoute>
-            <Edit_Initial />
+            <Edit_Initial_Leads />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/edit_followup"
+        element={
+          <PrivateRoute>
+            <Edit_Followup_Leads />
+          </PrivateRoute>
+        }
+      />
+       <Route
+        path="/edit_warm"
+        element={
+          <PrivateRoute>
+            <Edit_Warm_Leads />
           </PrivateRoute>
         }
       />
@@ -389,6 +412,38 @@ function index() {
         element={
           <PrivateRoute>
             <Sum_Initial_Leads />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/followup_Summary"
+        element={
+          <PrivateRoute>
+            <FollowUpSummary />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/warm_Summary"
+        element={
+          <PrivateRoute>
+            <WarmUpSummary />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/won_Summary"
+        element={
+          <PrivateRoute>
+            <WONSummary />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/dead_Summary"
+        element={
+          <PrivateRoute>
+            <DEADSummary />
           </PrivateRoute>
         }
       />

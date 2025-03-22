@@ -42,12 +42,24 @@ function InitialLeads() {
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
-      <LeadPage navigate={navigate} selectedLead={selectedLead} setSelectedLead={setSelectedLead} leadOptions={leadOptions} renderLeadComponent={renderLeadComponent} />
+      <LeadPage
+        navigate={navigate}
+        selectedLead={selectedLead}
+        setSelectedLead={setSelectedLead}
+        leadOptions={leadOptions}
+        renderLeadComponent={renderLeadComponent}
+      />
     </CssVarsProvider>
   );
 }
 
-function LeadPage({ navigate, selectedLead, setSelectedLead, leadOptions, renderLeadComponent }) {
+function LeadPage({
+  navigate,
+  selectedLead,
+  setSelectedLead,
+  leadOptions,
+  renderLeadComponent,
+}) {
   const { mode } = useColorScheme();
 
   return (
@@ -127,10 +139,27 @@ function LeadPage({ navigate, selectedLead, setSelectedLead, leadOptions, render
               justifyContent: "center",
             }}
           >
-            <Button color="primary" size="sm" onClick={() => navigate("/dash_task")}>
+            {selectedLead === "Won" && (
+              <Button
+                color="primary"
+                size="sm"
+                onClick={() => navigate("/hand_over")}
+              >
+                Hand Over Sheet
+              </Button>
+            )}
+            <Button
+              color="primary"
+              size="sm"
+              onClick={() => navigate("/dash_task")}
+            >
               Task Dashboard
             </Button>
-            <Button color="primary" size="sm" onClick={() => navigate("/add_lead")}>
+            <Button
+              color="primary"
+              size="sm"
+              onClick={() => navigate("/add_lead")}
+            >
               Add New Leads +
             </Button>
           </Box>
@@ -167,8 +196,8 @@ function LeadPage({ navigate, selectedLead, setSelectedLead, leadOptions, render
                       ? "#007bff"
                       : "#86c3ff"
                     : selectedLead === item
-                    ? "#007bff"
-                    : "black",
+                      ? "#007bff"
+                      : "black",
                 transition: "all 0.3s ease-in-out",
                 borderRadius: "8px",
                 "&:hover": {
@@ -194,4 +223,3 @@ function LeadPage({ navigate, selectedLead, setSelectedLead, leadOptions, render
 }
 
 export default InitialLeads;
-

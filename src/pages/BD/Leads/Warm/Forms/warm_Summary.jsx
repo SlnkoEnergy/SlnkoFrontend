@@ -11,9 +11,10 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import Sidebar from "../../../../../component/Partials/Sidebar";
 import Header from "../../../../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
-import Initial_Summary from "../../../../../component/Forms/initial_Summary";
+import Followup_Summary from "../../../../../component/Forms/followup_Summary";
+import WarmUp_Summary from "../../../../../component/Forms/warm_Summary";
 
-function Sum_Initial_Leads() {
+function WarmUpSummary() {
   const navigate = useNavigate();
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -81,13 +82,13 @@ function Sum_Initial_Leads() {
                 sx={{ fontSize: 12, fontWeight: 500 }}
                 onClick={() => navigate("/all-project")}
               >
-                Initial Leads
+                Warm Leads
               </Link>
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-              Initial Leads Summary
+                Warm Leads Summary
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -102,7 +103,7 @@ function Sum_Initial_Leads() {
               justifyContent: "space-between",
             }}
           >
-            <Initial_Summary />
+            <WarmUp_Summary />
           </Box>
 
           {/* <OrderTable /> */}
@@ -112,4 +113,4 @@ function Sum_Initial_Leads() {
     </CssVarsProvider>
   );
 }
-export default Sum_Initial_Leads;
+export default WarmUpSummary;

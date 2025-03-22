@@ -11,9 +11,9 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import Sidebar from "../../../../../component/Partials/Sidebar";
 import Header from "../../../../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
-import Initial_Summary from "../../../../../component/Forms/initial_Summary";
+import Dead_Summary from "../../../../../component/Forms/dead_summary";
 
-function Sum_Initial_Leads() {
+function DEADSummary() {
   const navigate = useNavigate();
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -81,13 +81,13 @@ function Sum_Initial_Leads() {
                 sx={{ fontSize: 12, fontWeight: 500 }}
                 onClick={() => navigate("/all-project")}
               >
-                Initial Leads
+                Dead Leads
               </Link>
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-              Initial Leads Summary
+                Dead Leads Summary
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -102,7 +102,7 @@ function Sum_Initial_Leads() {
               justifyContent: "space-between",
             }}
           >
-            <Initial_Summary />
+            <Dead_Summary />
           </Box>
 
           {/* <OrderTable /> */}
@@ -112,4 +112,4 @@ function Sum_Initial_Leads() {
     </CssVarsProvider>
   );
 }
-export default Sum_Initial_Leads;
+export default DEADSummary;

@@ -92,9 +92,9 @@ const CheckboxModal3 = () => {
    
       const response = await updateLead({
         id: LeadId,
-        // loi: selectedRadio === "loi" ? "Yes" : "No",
-        loa: selectedOptions["loa"] ? "Yes" : "No",
-        ppa: selectedOptions["ppa"] ? "Yes" : "No",
+        loi: selectedRadio === "loi" ? "Yes" : "No",
+        // loa: selectedOptions["loa"] ? "Yes" : "No",
+        // ppa: selectedOptions["ppa"] ? "Yes" : "No",
         token_money: selectedRadio === "token_money" ? "Yes" : "No",
         other_remarks: selectedRadio === "Others" ? otherRemarks : "",
       }).unwrap();
@@ -123,7 +123,7 @@ const CheckboxModal3 = () => {
       } else if (selectedRadio === "Others") {
         postResponse = await WarmupToDead({ id: updatedId }).unwrap();
         enqueueSnackbar("Lead moved from Warm to Dead!", { variant: "success" });
-      } else if (selectedOptions.loa && selectedOptions.ppa) {
+      } else if (selectedRadio === "loi") {
         postResponse = await WarmupToFollowup({ id: updatedId }).unwrap();
         enqueueSnackbar("Lead moved from Warm to Followup!", { variant: "success" });
       }
@@ -160,7 +160,7 @@ const CheckboxModal3 = () => {
             value={selectedRadio}
             onChange={(e) => handleRadioChange(e.target.value)}
           >
-            {/* <Radio value="loi" label="LOI" /> */}
+            <Radio value="loi" label="LOI" />
             <Radio value="token_money" label="Token Money" />
             <Radio value="Others" label="Others" />
           </RadioGroup>
@@ -174,7 +174,7 @@ const CheckboxModal3 = () => {
           )}
 
           {/* Checkboxes for LOA and PPA */}
-          <FormLabel>Additional Options:</FormLabel>
+          {/* <FormLabel>Additional Options:</FormLabel>
           <Stack spacing={1}>
             {["loa", "ppa"].map((option) => (
               <Checkbox
@@ -184,7 +184,7 @@ const CheckboxModal3 = () => {
                 onChange={() => handleCheckboxChange(option)}
               />
             ))}
-          </Stack>
+          </Stack> */}
         </FormControl>
         <Stack direction="row" justifyContent="flex-end" spacing={2} mt={2}>
           <Button variant="plain" onClick={() => navigate("/leads")}>

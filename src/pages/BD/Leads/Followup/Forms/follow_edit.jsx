@@ -11,9 +11,9 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import Sidebar from "../../../../../component/Partials/Sidebar";
 import Header from "../../../../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
-import Initial_Summary from "../../../../../component/Forms/initial_Summary";
+import FollowEdit_lead from "../../../../../component/Forms/followup_edit";
 
-function Sum_Initial_Leads() {
+function Edit_Followup_Leads() {
   const navigate = useNavigate();
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -25,7 +25,7 @@ function Sum_Initial_Leads() {
           component="main"
           className="MainContent"
           sx={{
-            // px: { xs: 2, md: 6 },
+            // px: { xs: 2, md: 6 },s
             // pt: {
             //   xs: 'calc(12px + var(--Header-height))',
             //   sm: 'calc(12px + var(--Header-height))',
@@ -81,13 +81,13 @@ function Sum_Initial_Leads() {
                 sx={{ fontSize: 12, fontWeight: 500 }}
                 onClick={() => navigate("/all-project")}
               >
-                Initial Leads
+                Followup Leads
               </Link>
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-              Initial Leads Summary
+                Edit Followup Leads
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -102,7 +102,7 @@ function Sum_Initial_Leads() {
               justifyContent: "space-between",
             }}
           >
-            <Initial_Summary />
+            <FollowEdit_lead />
           </Box>
 
           {/* <OrderTable /> */}
@@ -112,4 +112,4 @@ function Sum_Initial_Leads() {
     </CssVarsProvider>
   );
 }
-export default Sum_Initial_Leads;
+export default Edit_Followup_Leads;

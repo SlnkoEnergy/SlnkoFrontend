@@ -5,7 +5,7 @@ import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import SearchIcon from "@mui/icons-material/Search";
-import StarsIcon from '@mui/icons-material/Stars';
+import StarsIcon from "@mui/icons-material/Stars";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
@@ -21,17 +21,28 @@ import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
-import FollowTheSignsIcon from '@mui/icons-material/FollowTheSigns';
-import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
+import FollowTheSignsIcon from "@mui/icons-material/FollowTheSigns";
+import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
 import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
-import ManageHistoryIcon from '@mui/icons-material/ManageHistory';
-import NextPlanIcon from '@mui/icons-material/NextPlan';
+import ManageHistoryIcon from "@mui/icons-material/ManageHistory";
+import NextPlanIcon from "@mui/icons-material/NextPlan";
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../../assets/Lotties/animation-loading.json";
+import { motion } from "framer-motion";
+import { CheckIcon, ChevronRightIcon, StarIcon } from "@heroicons/react/24/solid";
+
+
 // import Axios from "../utils/Axios";
-import { useGetDeadLeadsQuery, useGetInitialLeadsQuery, useGetLeadsQuery } from "../../redux/leadsSlice";
+import {
+  useAddDeadtoFollowupMutation,
+  useAddDeadtoInitialMutation,
+  useAddDeadtoWarmupMutation,
+  useGetDeadLeadsQuery,
+} from "../../redux/leadsSlice";
 import NoData from "../../assets/alert-bell.svg";
+import { Chip } from "@mui/joy";
+import { useSnackbar } from "notistack";
 
 const StandByRequest = () => {
   const navigate = useNavigate();
@@ -48,39 +59,117 @@ const StandByRequest = () => {
   const { data: getLead = [], isLoading, error } = useGetDeadLeadsQuery();
   const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
 
-  console.log(leads);
+    const [DeadToFollowup] = useAddDeadtoFollowupMutation();
+    const [DeadToWarmup] = useAddDeadtoWarmupMutation();
+    const [DeadToInitial] = useAddDeadtoInitialMutation();
+
+  // console.log(leads);
+  const { enqueueSnackbar } = useSnackbar();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const handleSubmit = async () => {
+    const LeadId = localStorage.getItem("stage_next3"); // Retrieve LeadId from localStorage
   
-
-  const renderFilters = () => (
-    <>
-      <FormControl size="sm">
-        <FormLabel>Date</FormLabel>
-        <Input
-          type="date"
-          value={selectedDate}
-          onChange={handleDateFilter}
-          style={{ width: "200px" }}
-        />
-      </FormControl>
-    </>
-  );
-
-  const handleSelectAll = (event) => {
-    if (event.target.checked) {
-      setSelected(paginatedData.map((row) => row.id));
-    } else {
-      setSelected([]);
+    if (!LeadId) {
+      enqueueSnackbar("No valid Lead ID available.", { variant: "error" });
+      return;
+    }
+  
+    console.log("LeadId:", LeadId);
+  
+    try {
+      setIsSubmitting(true);
+  
+      // Fetch lead data (assuming leads is available in context/state)
+      const deadData = leads.find((lead) => lead.id === LeadId);
+  
+      if (!deadData) {
+        enqueueSnackbar("Lead data not found!", { variant: "error" });
+        return;
+      }
+  
+      let postResponse;
+  
+      // **Move to DeadToFollowup**
+      if (deadData.loi === "Yes" && deadData.loa !== "Yes" && deadData.ppa !== "Yes") {
+        console.log("Moving to DeadToFollowup");
+        postResponse = await DeadToFollowup({ id: LeadId }).unwrap();
+        enqueueSnackbar("Lead moved from Dead to Followup!", { variant: "success" });
+      }
+      // **Move to DeadToWarmup**
+      else if (deadData.loa === "Yes" || deadData.ppa === "Yes") {
+        console.log("Moving to DeadToWarmup");
+        postResponse = await DeadToWarmup({ id: LeadId }).unwrap();
+        enqueueSnackbar("Lead moved from Dead to Warm!", { variant: "success" });
+      }
+     
+      else if (!(deadData.loi === "Yes" && deadData.ppa === "Yes" && deadData.loa === "Yes")) {
+        console.log("Moving to DeadToInitial");
+        postResponse = await DeadToInitial({ id: LeadId }).unwrap();
+        enqueueSnackbar("Lead moved from Dead to Initial!", { variant: "success" });
+      } 
+      else {
+        enqueueSnackbar("Invalid selection. Cannot move lead.", { variant: "error" });
+        setIsSubmitting(false);
+        return;
+      }
+  
+      // Navigate after success
+      if (postResponse) {
+        setTimeout(() => {
+          navigate("/leads");
+        }, 1000);
+      }
+    } catch (error) {
+      console.error("Error processing request:", error);
+      enqueueSnackbar(error?.data?.message || "Error processing request", { variant: "error" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
-
-  const handleRowSelect = (id, isSelected) => {
-    // console.log("currentPage:", currentPage, "pay_id:", pay_id, "p_id:", p_id);
-    setSelected((prevSelected) =>
-      isSelected
-        ? [...prevSelected, id]
-        : prevSelected.filter((item) => item !== id)
+  
+  const RevivedMenu = ({ id }) => {
+    const [revived, setRevived] = useState(false);
+  
+    const handleRevivedClick = () => {
+      const leadId = String(id);
+      localStorage.setItem("stage_next3", leadId);
+  
+      setTimeout(() => {
+        handleSubmit();
+        setRevived(true);
+      }, 300);
+    };
+  
+    return (
+      <motion.button
+      onClick={handleRevivedClick}
+      style={{
+        padding: "12px 24px",
+        fontSize: "16px",
+        fontWeight: "bold",
+        color: "#fff",
+        borderRadius: "999px",
+        background: revived ? "#22c55e" : "lightblue",
+        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+        border: "none",
+        cursor: "pointer",
+        outline: "none",
+        transition: "all 0.3s ease-in-out",
+      }}
+      whileHover={{
+        background: "linear-gradient(to right, #6366f1, #9333ea)",
+        scale: 1.1,
+        boxShadow: "0px 0px 15px rgba(99, 102, 241, 0.8)",
+      }}
+      whileTap={{ scale: 0.9 }}
+    >
+        Revived 🎉
+      </motion.button>
     );
   };
+  
+
+  
 
   const RowMenu = ({ currentPage, id }) => {
     // console.log(currentPage, id);
@@ -109,21 +198,22 @@ const StandByRequest = () => {
             <ContentPasteGoIcon />
             <Typography>Edit Info</Typography>
           </MenuItem> */}
-          <MenuItem
+          {/* <MenuItem
             color="primary"
             onClick={() => {
               const page = currentPage;
               const leadId = String(id);
               // const projectID = Number(p_id);
-              setOpen(true)
+              setOpen(true);
               localStorage.setItem("stage_next3", leadId);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/dead_to_initial?page=${page}&${leadId}`);
+              // navigate(`/dead_to_initial?page=${page}&${leadId}`);
             }}
           >
-            <StarsIcon />
-            <Typography>Revived Lead</Typography>
-          </MenuItem>
+               <StarsIcon />
+               <Button onClick={() => setTimeout(handleSubmit, 100)}>Revived Lead</Button>
+           
+          </MenuItem> */}
           {/* <MenuItem
             color="primary"
             onClick={() => {
@@ -158,13 +248,13 @@ const StandByRequest = () => {
               const page = currentPage;
               const leadId = String(id);
               // const projectID = Number(p_id);
-              localStorage.setItem("view_details", leadId);
+              localStorage.setItem("view_dead", leadId);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/initial_Summary?page=${page}&id=${leadId}`);
+              navigate(`/dead_Summary?page=${page}&id=${leadId}`);
             }}
           >
             <RemoveRedEyeIcon />
-            <Typography>View Details</Typography>
+            <Typography>View Summary</Typography>
           </MenuItem>
           <Divider sx={{ backgroundColor: "lightblue" }} />
           <MenuItem color="danger">
@@ -176,10 +266,43 @@ const StandByRequest = () => {
     );
   };
 
+  const renderFilters = () => (
+    <>
+      <FormControl size="sm">
+        <FormLabel>Date</FormLabel>
+        <Input
+          type="date"
+          value={selectedDate}
+          onChange={handleDateFilter}
+          style={{ width: "200px" }}
+        />
+      </FormControl>
+    </>
+  );
+
+  const handleSelectAll = (event) => {
+    if (event.target.checked) {
+      setSelected(paginatedData.map((row) => row.id));
+    } else {
+      setSelected([]);
+    }
+  };
+
+  const handleRowSelect = (id, isSelected) => {
+    // console.log("currentPage:", currentPage, "pay_id:", pay_id, "p_id:", p_id);
+    setSelected((prevSelected) =>
+      isSelected
+        ? [...prevSelected, id]
+        : prevSelected.filter((item) => item !== id)
+    );
+  };
+
+
+
   const formatDate = (dateString) => {
-    if (!dateString) return ""; // Return empty if date is null or undefined
+    if (!dateString) return "";
     const date = new Date(dateString);
-    return isNaN(date.getTime()) ? "" : date.toISOString().split("T")[0]; // Validate date before formatting
+    return isNaN(date.getTime()) ? "" : date.toISOString().split("T")[0];
   };
 
   const handleSearch = (e) => {
@@ -193,7 +316,7 @@ const StandByRequest = () => {
   const filteredData = useMemo(() => {
     return leads
       .filter((lead) => {
-        const matchesQuery = ["id", "c_name", "mobile","state"].some((key) =>
+        const matchesQuery = ["id", "c_name", "mobile", "state"].some((key) =>
           lead[key]?.toLowerCase().includes(searchQuery)
         );
         const matchesDate = selectedDate
@@ -206,7 +329,6 @@ const StandByRequest = () => {
         if (!b.id) return -1;
         return String(b.id).localeCompare(String(a.id));
       });
-      
   }, [leads, searchQuery, selectedDate]);
 
   const generatePageNumbers = (currentPage, totalPages) => {
@@ -312,19 +434,31 @@ const StandByRequest = () => {
             />
           </Box>
         ) : error ? (
-          <span style={{ display: "flex", alignItems: "center", gap: "5px", color: "red", justifyContent:"center", flexDirection:"column" , padding: "20px"}}>
-          <PermScanWifiIcon />
-          <Typography fontStyle={"italic"} fontWeight={"600"} sx={{color:"#0a6bcc"}} >
-          Hang tight! Internet Connection will be back soon..
-          </Typography>
-          
-        </span>
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              color: "red",
+              justifyContent: "center",
+              flexDirection: "column",
+              padding: "20px",
+            }}
+          >
+            <PermScanWifiIcon />
+            <Typography
+              fontStyle={"italic"}
+              fontWeight={"600"}
+              sx={{ color: "#0a6bcc" }}
+            >
+              Hang tight! Internet Connection will be back soon..
+            </Typography>
+          </span>
         ) : (
           <Box
             component="table"
             sx={{ width: "100%", borderCollapse: "collapse" }}
           >
-          
             <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
               <Box component="tr">
                 <Box
@@ -353,8 +487,9 @@ const StandByRequest = () => {
                   "Capacity",
                   "Substation Distance",
                   "Creation Date",
-                  "Status",
+                  "Revive Lead",
                   "Action",
+                  
                 ].map((header, index) => (
                   <Box
                     component="th"
@@ -372,7 +507,6 @@ const StandByRequest = () => {
               </Box>
             </Box>
 
-         {/*****pagination ****/}
             <Box component="tbody">
               {paginatedData.length > 0 ? (
                 paginatedData.map((lead, index) => (
@@ -383,7 +517,7 @@ const StandByRequest = () => {
                       "&:hover": { backgroundColor: "neutral.plainHoverBg" },
                     }}
                   >
-                 
+                    {/* Checkbox Column */}
                     <Box
                       component="td"
                       sx={{
@@ -400,18 +534,17 @@ const StandByRequest = () => {
                       />
                     </Box>
 
-                    
+                    {/* Data Columns */}
                     {[
                       lead.id,
                       lead.c_name,
                       lead.mobile,
-                      // `${lead.village}, ${lead.district}, ${lead.state}`,
                       lead.state,
                       lead.scheme,
                       lead.capacity || "-",
                       lead.distance || "-",
                       lead.entry_date || "-",
-                      lead.status || "-"
+                      
                     ].map((data, idx) => (
                       <Box
                         component="td"
@@ -426,7 +559,7 @@ const StandByRequest = () => {
                       </Box>
                     ))}
 
-                    {/* Actions */}
+                    {/* Actions Column */}
                     <Box
                       component="td"
                       sx={{
@@ -435,8 +568,19 @@ const StandByRequest = () => {
                         textAlign: "center",
                       }}
                     >
-                      <RowMenu currentPage={currentPage} id={lead.id}/>
+                      <RevivedMenu currentPage={currentPage} id={lead.id} />
                     </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      <RowMenu currentPage={currentPage} id={lead.id} />
+                    </Box>
+                   
                   </Box>
                 ))
               ) : (

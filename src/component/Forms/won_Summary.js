@@ -14,11 +14,11 @@ import {
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { useGetInitialLeadsQuery, useGetLeadsQuery } from "../../redux/leadsSlice";
+import { useGetInitialLeadsQuery, useGetLeadsQuery, useGetWarmLeadsQuery, useGetWonLeadsQuery } from "../../redux/leadsSlice";
 
-const Initial_Summary = () => {
+const Wonup_Summary = () => {
   const navigate = useNavigate();
-  const { data: getLead, isLoading, error } = useGetInitialLeadsQuery();
+  const { data: getLead, isLoading, error } = useGetWonLeadsQuery();
 
   console.log("Fetched lead data:", getLead);
 
@@ -55,7 +55,7 @@ const Initial_Summary = () => {
   const getLeadArray = Array.isArray(getLead) ? getLead : getLead?.data || [];
   console.log("Processed Leads Array:", getLeadArray);
 
-  const LeadId = localStorage.getItem("view_details");
+  const LeadId = localStorage.getItem("view_won");
   console.log("Retrieved LeadId from localStorage:", LeadId);
 
   if (!LeadId) {
@@ -80,7 +80,7 @@ const Initial_Summary = () => {
     }
   
     // Retrieve Lead ID from localStorage
-    const LeadId = localStorage.getItem("view_details");
+    const LeadId = localStorage.getItem("view_won");
   
     if (!LeadId) {
       console.error("Invalid Lead ID retrieved from localStorage.");
@@ -176,7 +176,7 @@ const Initial_Summary = () => {
         }}
       >
         <Typography level="h3" mb={4} textAlign="center" fontWeight="bold">
-        Initial Lead Summary
+        Won Lead Summary
         </Typography>
         <form>
           <Grid container spacing={3}>
@@ -434,4 +434,4 @@ const Initial_Summary = () => {
   );
 };
 
-export default Initial_Summary;
+export default Wonup_Summary;

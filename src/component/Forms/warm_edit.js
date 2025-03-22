@@ -14,14 +14,14 @@ import {
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import {useGetInitialLeadsQuery, useGetLeadsQuery, useUpdateLeadsMutation } from "../../redux/leadsSlice";
+import {useGetFollowupLeadsQuery, useGetInitialLeadsQuery, useGetLeadsQuery, useGetWarmLeadsQuery, useUpdateFollowupLeadsMutation, useUpdateLeadsMutation, useUpdateWARMupLeadsMutation } from "../../redux/leadsSlice";
 
-const Create_lead = () => {
+const WarmEdit_lead = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const [updateLead, { isLoading: isUpdating }] = useUpdateLeadsMutation();
-  const { data: getLead, isLoading, error } = useGetInitialLeadsQuery();
+  const [updateLead, { isLoading: isUpdating }] = useUpdateWARMupLeadsMutation();
+  const { data: getLead, isLoading, error } = useGetWarmLeadsQuery();
   const [user, setUser] = useState(null);
   const [formData, setFormData] = useState({});
   const statesOfIndia = [
@@ -51,7 +51,7 @@ const Create_lead = () => {
       return;
     }
 
-    const LeadId = localStorage.getItem("edit_initial");
+    const LeadId = localStorage.getItem("edit_warm");
 
     if (!LeadId) {
       console.error("Invalid Lead ID retrieved from localStorage.");
@@ -112,15 +112,15 @@ const Create_lead = () => {
         updatedLead: formData,
       }).unwrap();
   
-      console.log("API Response from updateLead:", response); // ✅ Debug API response
+      console.log("API Response from updateLead:", response);
   
       if (response?.data) {
-        setFormData(response.data); // ✅ Update formData with new data
+        setFormData(response.data);
       } else {
         console.warn("No updated data received from API");
       }
   
-      toast.success(response.msg || "Lead updated successfully.");
+      toast.success(response.msg || "Warm Lead updated successfully.");
       navigate("/leads");
     } catch (err) {
       console.error("Update Error:", err);
@@ -143,7 +143,7 @@ const Create_lead = () => {
       }}
     >
       <Typography level="h3" mb={4} textAlign="center" fontWeight="bold">
-       Update Initial Lead
+       Update Warm Lead
       </Typography>
       <form onSubmit={handleSubmit}>
         <Grid container spacing={3}>
@@ -371,4 +371,4 @@ const Create_lead = () => {
   );
 };
 
-export default Create_lead;
+export default WarmEdit_lead;

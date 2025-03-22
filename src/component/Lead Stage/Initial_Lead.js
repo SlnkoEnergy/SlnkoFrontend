@@ -175,13 +175,13 @@ const StandByRequest = () => {
               const page = currentPage;
               const leadId = String(id);
               // const projectID = Number(p_id);
-              localStorage.setItem("view_details", leadId);
+              localStorage.setItem("view_initial", leadId);
               // localStorage.setItem("p_id", projectID);
               navigate(`/initial_Summary?page=${page}&id=${leadId}`);
             }}
           >
             <RemoveRedEyeIcon />
-            <Typography>View Details</Typography>
+            <Typography>Initial Summary</Typography>
           </MenuItem>
           {/* <Divider sx={{ backgroundColor: "lightblue" }} />
           <MenuItem color="danger">
