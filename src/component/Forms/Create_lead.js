@@ -51,6 +51,13 @@ const Create_lead = () => {
     comment: "",
     submitted_by: "",
   });
+  const sourceOptions = {
+    "Referred by": ["Directors", "Clients", "Team members", "E-mail"],
+    "Social Media": ["Whatsapp", "Instagram","LinkedIn"],
+    "Marketing": ["Youtube", "Advertisements"],
+    "IVR/My Operator": [],
+    "Others": []
+  };
   const statesOfIndia = [
     "Andhra Pradesh",
     "Arunachal Pradesh",
@@ -196,40 +203,18 @@ const Create_lead = () => {
             />
           </Grid>
 
-          <Grid xs={12} sm={formData.source === "Referred By" ? 6 : 6}>
-            <FormLabel>Source</FormLabel>
-            <Select
-              name="source"
-              value={formData.source}
-              onChange={(e, newValue) =>
-                setFormData({ ...formData, source: newValue })
-              }
-              required
-            >
-              {["Linkedin", "Youtube", "Whatsapp", "Referred By"].map(
-                (option) => (
-                  <Option key={option} value={option}>
-                    {option}
-                  </Option>
-                )
-              )}
+          <Grid xs={12} sm={6}><FormLabel>Source</FormLabel>
+            <Select name="source" value={formData.source} onChange={(e, newValue) => setFormData({ ...formData, source: newValue, reffered_by: "" })} required fullWidth>
+              {Object.keys(sourceOptions).map(option => <Option key={option} value={option}>{option}</Option>)}
             </Select>
           </Grid>
-
-          {formData.source === "Referred By" && (
-            <Grid xs={12} sm={12}>
-              <FormLabel>Referred By </FormLabel>
-              <Input
-                placeholder="Enter referrer's name"
-                name="reffered_by"
-                value={formData.reffered_by || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, reffered_by: e.target.value })
-                }
-                required
-                fullWidth
-                sx={{ mt: 2 }}
-              />
+          
+          
+          {formData.source && sourceOptions[formData.source].length > 0 && (
+            <Grid xs={12} sm={6}><FormLabel>Sub Source</FormLabel>
+              <Select name="reffered_by" value={formData.reffered_by} onChange={(e, newValue) => setFormData({ ...formData, reffered_by: newValue })} required fullWidth>
+                {sourceOptions[formData.source].map(option => <Option key={option} value={option}>{option}</Option>)}
+              </Select>
             </Grid>
           )}
 

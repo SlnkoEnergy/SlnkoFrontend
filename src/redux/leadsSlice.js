@@ -208,6 +208,25 @@ export const leadsApi = createApi({
       }),
       invalidatesTags: ["Lead"],
     }),
+
+    /*-- HandOver Sheet */
+    getModuleMaster: builder.query({
+      query: () => "get-module-master",
+      providesTags: ["Lead"],
+    }),
+    getMasterInverter: builder.query({
+      query: () => "get-master-inverter",
+      providesTags: ["Lead"],
+    }),
+    addHandOver: builder.mutation({
+      query: (newHandOver) => ({
+        url: "create-hand-over-sheet",
+        method: "POST",
+        body: newHandOver,
+      }),
+      invalidatesTags: ["Lead"],
+    }),
+    
   }),
 });
 
@@ -238,4 +257,7 @@ export const {
   useAddWarmuptoDeadMutation,
   useAddWarmuptoFollowupMutation,
   useAddWarmuptoWonMutation,
+  useAddHandOverMutation,
+  useGetMasterInverterQuery,
+  useGetModuleMasterQuery
 } = leadsApi;

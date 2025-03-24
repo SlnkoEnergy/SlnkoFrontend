@@ -129,7 +129,7 @@ const StandByRequest = () => {
               // const projectID = Number(p_id);
               localStorage.setItem("followup_history", leadId);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/standby_Request?page=${page}&${leadId}`);
+              navigate(`/follow_up_history?page=${page}&${leadId}`);
             }}
           >
             <ManageHistoryIcon />
@@ -141,7 +141,7 @@ const StandByRequest = () => {
               const page = currentPage;
               const leadId = String(id);
               // const projectID = Number(p_id);
-              localStorage.setItem("add_task_warm", leadId);
+              localStorage.setItem("add_task", leadId);
               // localStorage.setItem("p_id", projectID);
               navigate(`/add_task?page=${page}&${leadId}`);
             }}

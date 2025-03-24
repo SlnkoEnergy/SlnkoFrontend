@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import {
   Accordion,
@@ -17,6 +17,11 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import {
+  useAddHandOverMutation,
+  useGetMasterInverterQuery,
+  useGetModuleMasterQuery,
+} from "../../redux/leadsSlice";
 
 const HandoverSheetForm = () => {
   const navigate = useNavigate();
@@ -43,8 +48,8 @@ const HandoverSheetForm = () => {
       module_make_capacity: "",
       module_make: "",
       module_capacity: "",
-      module_tye: "",
-      modeule_model_no: "",
+      module_type: "",
+      module_model_no: "",
       evacuation_voltage: "",
       inverter_make_capacity: "",
       inverter_make: "",
@@ -83,87 +88,146 @@ const HandoverSheetForm = () => {
   const [inverterSizeOptions, setInverterSizeOptions] = useState([]);
   const [inverterModelOptions, setInverterModelOptions] = useState([]);
   const [inverterTypeOptions, setInverterTypeOptions] = useState([]);
+  const [user, setUser] = useState(null);
+
+  const { data: getModuleMaster = [] } = useGetModuleMasterQuery();
+  const ModuleMaster = useMemo(
+    () => getModuleMaster?.data ?? [],
+    [getModuleMaster?.data]
+  );
+
+  console.log(ModuleMaster);
+
+  const { data: getMasterInverter = [] } = useGetMasterInverterQuery();
+  const MasterInverter = useMemo(
+    () => getMasterInverter?.data ?? [],
+    [getMasterInverter?.data]
+  );
+
+  console.log(MasterInverter);
+
+  const [HandOverSheet] = useAddHandOverMutation();
 
   useEffect(() => {
-    const fetchMasterData = async () => {
-      try {
-        const response = await axios.get(
-          "https://api.slnkoprotrac.com/v1/get-module-master"
-        );
+    if (ModuleMaster.length > 0) {
+      setModuleMakeOptions([
+        ...new Set(ModuleMaster.map((item) => item.make).filter(Boolean)),
+      ]);
+      setModuleTypeOptions([
+        ...new Set(ModuleMaster.map((item) => item.type).filter(Boolean)),
+      ]);
+      setModuleModelOptions([
+        ...new Set(ModuleMaster.map((item) => item.model).filter(Boolean)),
+      ]);
+      setModuleCapacityOptions([
+        ...new Set(ModuleMaster.map((item) => item.power).filter(Boolean)),
+      ]);
+    }
 
-        console.log("Full API Response:", response.data);
+    if (MasterInverter.length > 0) {
+      setInverterMakeOptions([
+        ...new Set(
+          MasterInverter.map((item) => item.inveter_make).filter(Boolean)
+        ),
+      ]);
+      setInverterSizeOptions([
+        ...new Set(
+          MasterInverter.map((item) => item.inveter_size).filter(Boolean)
+        ),
+      ]);
+      setInverterModelOptions([
+        ...new Set(
+          MasterInverter.map((item) => item.inveter_model).filter(Boolean)
+        ),
+      ]);
+      setInverterTypeOptions([
+        ...new Set(
+          MasterInverter.map((item) => item.inveter_type).filter(Boolean)
+        ),
+      ]);
+    }
+  }, [ModuleMaster, MasterInverter]);
 
-        // Ensure response.data is an object and contains an array key
-        const moduleData = Array.isArray(response.data.data)
-          ? response.data.data
-          : [];
+  // useEffect(() => {
+  //   const fetchMasterData = async () => {
+  //     try {
+  //       const response = await axios.get(s
+  //         "https://api.slnkoprotrac.com/v1/get-module-master"
+  //       );
 
-        console.log("Extracted Module Data:", moduleData);
+  //       console.log("Full API Response:", response.data);
 
-        const Inverterresponse = await axios.get(
-          "https://api.slnkoprotrac.com/v1/get-master-inverter"
-        );
+  //       // Ensure response.data is an object and contains an array key
+  //       const ModuleMaster = Array.isArray(response.data.data)
+  //         ? response.data.data
+  //         : [];
 
-        console.log("Full API Response:", Inverterresponse.data);
+  //       console.log("Extracted Module Data:", ModuleMaster);
 
-        // Ensure response.data is an object and contains an array key
-        const InverterData = Array.isArray(Inverterresponse.data.data)
-          ? Inverterresponse.data.data
-          : [];
+  //       const Inverterresponse = await axios.get(
+  //         "https://api.slnkoprotrac.com/v1/get-master-inverter"
+  //       );
 
-        console.log("Extracted Inverter Data:", InverterData);
+  //       console.log("Full API Response:", Inverterresponse.data);
 
-        // Extract unique values for Module
-        const makeOptions = [
-          ...new Set(moduleData.map((item) => item.make).filter(Boolean)),
-        ];
-        const typeOptions = [
-          ...new Set(moduleData.map((item) => item.type).filter(Boolean)),
-        ];
-        const modelOptions = [
-          ...new Set(moduleData.map((item) => item.model).filter(Boolean)),
-        ];
-        const capacityOptions = [
-          ...new Set(moduleData.map((item) => item.power).filter(Boolean)),
-        ];
+  //       // Ensure response.data is an object and contains an array key
+  //       const MasterInverter = Array.isArray(Inverterresponse.data.data)
+  //         ? Inverterresponse.data.data
+  //         : [];
 
-        setModuleMakeOptions(makeOptions);
-        setModuleTypeOptions(typeOptions);
-        setModuleModelOptions(modelOptions);
-        setModuleCapacityOptions(capacityOptions);
+  //       console.log("Extracted Inverter Data:", MasterInverter);
 
-        // Extract unique values for Inverter
-        const inverterMake = [
-          ...new Set(
-            InverterData.map((item) => item.inveter_make).filter(Boolean)
-          ),
-        ];
-        const inverterSize = [
-          ...new Set(
-            InverterData.map((item) => item.inveter_size).filter(Boolean)
-          ),
-        ];
-        const inverterModel = [
-          ...new Set(
-            InverterData.map((item) => item.inveter_model).filter(Boolean)
-          ),
-        ];
-        const inverterType = [
-          ...new Set(
-            InverterData.map((item) => item.inveter_type).filter(Boolean)
-          ),
-        ];
+  //       // Extract unique values for Module
+  //       const makeOptions = [
+  //         ...new Set(ModuleMaster.map((item) => item.make).filter(Boolean)),
+  //       ];
+  //       const typeOptions =
+  //         ...new Set(ModuleMaster.map((item) => item.type).filter(Boolean)),
+  //       ];
+  //       const modelOptions = [
+  //         ...new Set(ModuleMaster.map((item) => item.model).filter(Boolean)),
+  //       ];
+  //       const capacityOptions = [
+  //         ...new Set(ModuleMaster.map((item) => item.power).filter(Boolean)),
+  //       ];
 
-        setInverterMakeOptions(inverterMake);
-        setInverterSizeOptions(inverterSize);
-        setInverterModelOptions(inverterModel);
-        setInverterTypeOptions(inverterType);
-      } catch (error) {
-        console.error("Error fetching master data:", error);
-      }
-    };
-    fetchMasterData();
-  }, []);
+  //       setModuleMakeOptions(makeOptions);
+  //       setModuleTypeOptions(typeOptions);
+  //       setModuleModelOptions(modelOptions);
+  //       setModuleCapacityOptions(capacityOptions);
+
+  //       // Extract unique values for Inverter
+  //       const inverterMake = [
+  //         ...new Set(
+  //           MasterInverter.map((item) => item.inveter_make).filter(Boolean)
+  //         ),
+  //       ];
+  //       const inverterSize = [
+  //         ...new Set(
+  //           MasterInverter.map((item) => item.inveter_size).filter(Boolean)
+  //         ),
+  //       ];
+  //       const inverterModel = [
+  //         ...new Set(
+  //           MasterInverter.map((item) => item.inveter_model).filter(Boolean)
+  //         ),
+  //       ];
+  //       const inverterType = [
+  //         ...new Set(
+  //           MasterInverter.map((item) => item.inveter_type).filter(Boolean)
+  //         ),
+  //       ];
+
+  //       setInverterMakeOptions(inverterMake);
+  //       setInverterSizeOptions(inverterSize);
+  //       setInverterModelOptions(inverterModel);
+  //       setInverterTypeOptions(inverterType);
+  //     } catch (error) {
+  //       console.error("Error fetching master data:", error);
+  //     }
+  //   };
+  //   fetchMasterData();
+  // }, []);
 
   const handleExpand = (panel) => {
     setExpanded(expanded === panel ? null : panel);
@@ -179,18 +243,43 @@ const HandoverSheetForm = () => {
     }));
   };
 
+  useEffect(() => {
+    const userData = getUserData();
+    if (userData && userData.name) {
+      setFormData((prev) => ({
+        ...prev,
+        attached_details: {
+          ...prev.attached_details,
+          submitted_by_BD: userData.name,
+        },
+      }));
+    }
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    return userData ? JSON.parse(userData) : null;
+  };
+
   const handleSubmit = async () => {
     try {
-      const response = await axios.post(
-        "https://api.slnkoprotrac.com/v1/create-hand-over-sheet",
-        formData
-      );
-      console.log("Form submitted successfully:", response.data);
+      const uploadData = {
+        ...formData,
+        attached_details: {
+          ...formData.attached_details,
+          submitted_by_BD:
+            formData.attached_details.submitted_by_BD || user?.name || "", // Ensure it's set
+        },
+      };
+
+      const response = await HandOverSheet(uploadData).unwrap();
+      console.log("Form submitted successfully:", response);
       toast.success("Form submitted successfully");
-      navigate("/leads")
+      navigate("/leads");
     } catch (error) {
       console.error("Error submitting form:", error);
-      alert("Submission failed");
+      toast.error("Submission failed");
     }
   };
 
@@ -604,119 +693,139 @@ const HandoverSheetForm = () => {
                       <Option value="NA">NA</Option>
                     </Select>
                   </Grid>
-                  {formData["project_detail"]?.["module_make_capacity"] ===
+                  {formData?.project_detail?.module_make_capacity ===
                     "Slnko" && (
                     <>
-                      <Grid item xs={12} sm={6}>
-                        <Typography level="body1">Module Make</Typography>
-                        <Select
-                          fullWidth
-                          value={
-                            formData["project_detail"]?.["module_make"] || ""
-                          }
-                          onChange={(e, newValue) =>
-                            handleChange(
-                              "project_detail",
-                              "module_make",
-                              newValue
-                            )
-                          }
-                        >
-                          {moduleMakeOptions.length > 0 ? (
-                            moduleMakeOptions.map((make, index) => (
-                              <Option key={index} value={make}>
-                                {make}
-                              </Option>
-                            ))
-                          ) : (
-                            <Option disabled>No options available</Option>
-                          )}
-                        </Select>
-                      </Grid>
+                      {/* Module Make & Capacity */}
+                      {[
+                        "superadmin",
+                        "admin",
+                        "executive",
+                        "visitor",
+                        "sales",
+                      ].includes(user?.role) && (
+                        <>
+                          <Grid item xs={12} sm={6}>
+                            <Typography level="body1">Module Make</Typography>
+                            <Select
+                              fullWidth
+                              value={
+                                formData?.project_detail?.module_make || ""
+                              }
+                              onChange={(_, newValue) =>
+                                handleChange(
+                                  "project_detail",
+                                  "module_make",
+                                  newValue
+                                )
+                              }
+                            >
+                              {moduleMakeOptions.length > 0 ? (
+                                moduleMakeOptions.map((make, index) => (
+                                  <Option key={index} value={make}>
+                                    {make}
+                                  </Option>
+                                ))
+                              ) : (
+                                <Option disabled>No options available</Option>
+                              )}
+                            </Select>
+                          </Grid>
 
-                      <Grid item xs={12} sm={6}>
-                        <Typography level="body1">Module Type</Typography>
-                        <Select
-                          fullWidth
-                          value={
-                            formData["project_detail"]?.["module_type"] || ""
-                          }
-                          onChange={(e, newValue) =>
-                            handleChange(
-                              "project_detail",
-                              "module_type",
-                              newValue
-                            )
-                          }
-                        >
-                          {moduleTypeOptions.length > 0 ? (
-                            moduleTypeOptions.map((type, index) => (
-                              <Option key={index} value={type}>
-                                {type}
-                              </Option>
-                            ))
-                          ) : (
-                            <Option disabled>No options available</Option>
-                          )}
-                        </Select>
-                      </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <Typography level="body1">
+                              Module Capacity
+                            </Typography>
+                            <Select
+                              fullWidth
+                              value={
+                                formData?.project_detail?.module_capacity || ""
+                              }
+                              onChange={(_, newValue) =>
+                                handleChange(
+                                  "project_detail",
+                                  "module_capacity",
+                                  newValue
+                                )
+                              }
+                            >
+                              {moduleCapacityOptions.length > 0 ? (
+                                moduleCapacityOptions.map((capacity, index) => (
+                                  <Option key={index} value={capacity}>
+                                    {capacity}
+                                  </Option>
+                                ))
+                              ) : (
+                                <Option disabled>No options available</Option>
+                              )}
+                              <Option value="TBD">TBD</Option>
+                            </Select>
+                          </Grid>
+                        </>
+                      )}
 
-                      <Grid item xs={12} sm={6}>
-                        <Typography level="body1">Module Model No</Typography>
-                        <Select
-                          fullWidth
-                          value={
-                            formData["project_detail"]?.["module_model_no"] ||
-                            ""
-                          }
-                          onChange={(e, newValue) =>
-                            handleChange(
-                              "project_detail",
-                              "module_model_no",
-                              newValue
-                            )
-                          }
-                        >
-                          {moduleModelOptions.length > 0 ? (
-                            moduleModelOptions.map((model, index) => (
-                              <Option key={index} value={model}>
-                                {model}
-                              </Option>
-                            ))
-                          ) : (
-                            <Option disabled>No options available</Option>
-                          )}
-                        </Select>
-                      </Grid>
+                      {/* Module Model No & Type */}
+                      {["superadmin", "admin", "executive", "visitor"].includes(
+                        user?.role
+                      ) && (
+                        <>
+                          <Grid item xs={12} sm={6}>
+                            <Typography level="body1">
+                              Module Model No
+                            </Typography>
+                            <Select
+                              fullWidth
+                              value={
+                                formData?.project_detail?.module_model_no || ""
+                              }
+                              onChange={(_, newValue) =>
+                                handleChange(
+                                  "project_detail",
+                                  "module_model_no",
+                                  newValue
+                                )
+                              }
+                            >
+                              {moduleModelOptions.length > 0 ? (
+                                moduleModelOptions.map((model, index) => (
+                                  <Option key={index} value={model}>
+                                    {model}
+                                  </Option>
+                                ))
+                              ) : (
+                                <Option disabled>No options available</Option>
+                              )}
+                            </Select>
+                          </Grid>
 
-                      <Grid item xs={12} sm={6}>
-                        <Typography level="body1">Module Capacity</Typography>
-                        <Select
-                          fullWidth
-                          value={
-                            formData["project_detail"]?.["module_capacity"] ||
-                            ""
-                          }
-                          onChange={(e, newValue) =>
-                            handleChange(
-                              "project_detail",
-                              "module_capacity",
-                              newValue
-                            )
-                          }
-                        >
-                          {moduleCapacityOptions.length > 0 ? (
-                            moduleCapacityOptions.map((capacity, index) => (
-                              <Option key={index} value={capacity}>
-                                {capacity}
-                              </Option>
-                            ))
-                          ) : (
-                            <Option disabled>No options available</Option>
-                          )}
-                          <Option value="TBD">TBD</Option>
-                        </Select>
-                      </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <Typography level="body1">Module Type</Typography>
+                            <Select
+                              fullWidth
+                              value={
+                                formData?.project_detail?.module_type || ""
+                              }
+                              onChange={(_, newValue) =>
+                                handleChange(
+                                  "project_detail",
+                                  "module_type",
+                                  newValue
+                                )
+                              }
+                            >
+                              {moduleTypeOptions.length > 0 ? (
+                                moduleTypeOptions.map((type, index) => (
+                                  <Option key={index} value={type}>
+                                    {type}
+                                  </Option>
+                                ))
+                              ) : (
+                                <Option disabled>No options available</Option>
+                              )}
+                            </Select>
+                          </Grid>
+                        </>
+                      )}
                     </>
                   )}
 
@@ -776,104 +885,126 @@ const HandoverSheetForm = () => {
                   {formData["project_detail"]?.["inverter_make_capacity"] ===
                     "Slnko" && (
                     <>
-                      <Grid item xs={12} sm={6}>
-                        <Typography level="body1">Inverter Make</Typography>
-                        <Select
-                          fullWidth
-                          value={
-                            formData["project_detail"]?.["inverter_make"] || ""
-                          }
-                          onChange={(e, newValue) =>
-                            handleChange(
-                              "project_detail",
-                              "inverter_make",
-                              newValue
-                            )
-                          }
-                        >
-                          {inverterMakeOptions.map((option) => (
-                            <Option key={option} value={option}>
-                              {option}
-                            </Option>
-                          ))}
-                        </Select>
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <Typography level="body1">Inverter Size</Typography>
-                        <Select
-                          fullWidth
-                          value={
-                            formData["project_detail"]?.["inverter_size"] || ""
-                          }
-                          onChange={(e, newValue) =>
-                            handleChange(
-                              "project_detail",
-                              "inverter_size",
-                              newValue
-                            )
-                          }
-                        >
-                          {inverterSizeOptions.map((size) => (
-                            <Option key={size} value={size}>
-                              {size}
-                            </Option>
-                          ))}
-                        </Select>
-                      </Grid>
-
-                      <Grid item xs={12} sm={6}>
-                        <Typography level="body1">Inverter Model No</Typography>
-                        <Select
-                          fullWidth
-                          value={
-                            formData["project_detail"]?.["inverter_model_no"] ||
-                            ""
-                          }
-                          onChange={(e, newValue) =>
-                            handleChange(
-                              "project_detail",
-                              "inverter_model_no",
-                              newValue
-                            )
-                          }
-                        >
-                          {inverterModelOptions.map((model) => (
-                            <Option key={model} value={model}>
-                              {model}
-                            </Option>
-                          ))}
-                        </Select>
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <Typography level="body1">Inverter Type</Typography>
-                        <Select
-                          fullWidth
-                          value={
-                            formData["project_detail"]?.["inverter_type"] || ""
-                          }
-                          onChange={(e, newValue) =>
-                            handleChange(
-                              "project_detail",
-                              "inverter_type",
-                              newValue
-                            )
-                          }
-                        >
-                          {inverterTypeOptions.length > 0 ? (
-                            inverterTypeOptions.map((type, index) => (
-                              <Option key={index} value={type}>
-                                {type}
-                              </Option>
-                            ))
-                          ) : (
-                            <Option disabled>No options available</Option>
-                          )}
-                          <Option value="TBD">TBD</Option>{" "}
-                          {/* ✅ Added "TBD" as an option */}
-                        </Select>
-                      </Grid>
+                      {[
+                        "superadmin",
+                        "admin",
+                        "executive",
+                        "visitor",
+                        "sales",
+                      ].includes(user?.role) && (
+                        <>
+                          <Grid item xs={12} sm={6}>
+                            <Typography level="body1">Inverter Make</Typography>
+                            <Select
+                              fullWidth
+                              value={
+                                formData["project_detail"]?.["inverter_make"] ||
+                                ""
+                              }
+                              onChange={(e, newValue) =>
+                                handleChange(
+                                  "project_detail",
+                                  "inverter_make",
+                                  newValue
+                                )
+                              }
+                            >
+                              {inverterMakeOptions.map((option) => (
+                                <Option key={option} value={option}>
+                                  {option}
+                                </Option>
+                              ))}
+                            </Select>
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <Typography level="body1">Inverter Type</Typography>
+                            <Select
+                              fullWidth
+                              value={
+                                formData["project_detail"]?.["inverter_type"] ||
+                                ""
+                              }
+                              onChange={(e, newValue) =>
+                                handleChange(
+                                  "project_detail",
+                                  "inverter_type",
+                                  newValue
+                                )
+                              }
+                            >
+                              {inverterTypeOptions.length > 0 ? (
+                                inverterTypeOptions.map((type, index) => (
+                                  <Option key={index} value={type}>
+                                    {type}
+                                  </Option>
+                                ))
+                              ) : (
+                                <Option disabled>No options available</Option>
+                              )}
+                              <Option value="TBD">TBD</Option>{" "}
+                              {/* ✅ Added "TBD" as an option */}
+                            </Select>
+                          </Grid>
+                        </>
+                      )}
+                      {["superadmin", "admin", "executive", "visitor"].includes(
+                        user?.role
+                      ) && (
+                        <>
+                          <Grid item xs={12} sm={6}>
+                            <Typography level="body1">
+                              Inverter Model No
+                            </Typography>
+                            <Select
+                              fullWidth
+                              value={
+                                formData["project_detail"]?.[
+                                  "inverter_model_no"
+                                ] || ""
+                              }
+                              onChange={(e, newValue) =>
+                                handleChange(
+                                  "project_detail",
+                                  "inverter_model_no",
+                                  newValue
+                                )
+                              }
+                            >
+                              {inverterModelOptions.map((model) => (
+                                <Option key={model} value={model}>
+                                  {model}
+                                </Option>
+                              ))}
+                            </Select>
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <Typography level="body1">Inverter Size</Typography>
+                            <Select
+                              fullWidth
+                              value={
+                                formData["project_detail"]?.["inverter_size"] ||
+                                ""
+                              }
+                              onChange={(e, newValue) =>
+                                handleChange(
+                                  "project_detail",
+                                  "inverter_size",
+                                  newValue
+                                )
+                              }
+                            >
+                              {inverterSizeOptions.map((size) => (
+                                <Option key={size} value={size}>
+                                  {size}
+                                </Option>
+                              ))}
+                            </Select>
+                          </Grid>
+                        </>
+                      )}
                     </>
                   )}
+                  
                   <Grid item xs={12} sm={6}>
                     <Typography
                       level="body1"
@@ -1133,6 +1264,7 @@ const HandoverSheetForm = () => {
                           newValue
                         )
                       }
+                      required
                     >
                       <Option value="CAM">CAM</Option>
                     </Select>
@@ -1143,7 +1275,7 @@ const HandoverSheetForm = () => {
                     </Typography>
                     <Input
                       value={formData.attached_details.cam_member_name}
-                      placeholder="Overloading"
+                      placeholder="CAM Member Name"
                       onChange={(e) =>
                         handleChange(
                           "attached_details",
@@ -1159,7 +1291,7 @@ const HandoverSheetForm = () => {
                     </Typography>
                     <Input
                       value={formData.attached_details.loa_number}
-                      placeholder="Overloading"
+                      placeholder="LOA Number"
                       onChange={(e) =>
                         handleChange(
                           "attached_details",
@@ -1167,6 +1299,7 @@ const HandoverSheetForm = () => {
                           e.target.value
                         )
                       }
+                      required
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1175,7 +1308,7 @@ const HandoverSheetForm = () => {
                     </Typography>
                     <Input
                       value={formData.attached_details.ppa_number}
-                      placeholder="Overloading"
+                      placeholder="PPA Number"
                       onChange={(e) =>
                         handleChange(
                           "attached_details",
@@ -1183,6 +1316,7 @@ const HandoverSheetForm = () => {
                           e.target.value
                         )
                       }
+                      required
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1191,7 +1325,7 @@ const HandoverSheetForm = () => {
                     </Typography>
                     <Input
                       value={formData.attached_details.submitted_by_BD}
-                      placeholder="Overloading"
+                      // placeholder="Overloading"
                       onChange={(e) =>
                         handleChange(
                           "attached_details",
@@ -1199,6 +1333,7 @@ const HandoverSheetForm = () => {
                           e.target.value
                         )
                       }
+                      readOnly
                     />
                   </Grid>
                 </>
@@ -1238,12 +1373,11 @@ const HandoverSheetForm = () => {
       <Grid container spacing={2} sx={{ marginTop: 2 }}>
         <Grid item xs={6}>
           <Button
-            onClick={(() => navigate("/leads"))}
+            onClick={() => navigate("/leads")}
             variant="solid"
             color="neutral"
             fullWidth
             sx={{ padding: 1.5, fontSize: "1rem", fontWeight: "bold" }}
-            
           >
             Back
           </Button>

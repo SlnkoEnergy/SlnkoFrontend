@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import {
   Sheet,
@@ -18,78 +18,147 @@ import {
 } from "@mui/joy";
 import plus from "../assets/plus 1.png";
 import { useNavigate } from "react-router-dom";
+import { useAddTasksMutation } from "../redux/tasksSlice";
+import { useGetLoginsQuery } from "../redux/loginSlice";
+import { toast } from "react-toastify";
 
 const FormComponent = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
+    id:"",
     name: "",
     date: "",
     reference: "",
-    by_whom: [],
+    by_whom: "",
     comment: "",
   });
 
-  const [bdMembers, setBdMembers] = useState([]);
+  // const [bdMembers, setBdMembers] = useState([]);
 
-  useEffect(() => {
-    const fetchBdMembers = async () => {
-      try {
-        const response = await axios.get(
-          "https://api.slnkoprotrac.com/v1/get-all-user-IT"
-        );
-        console.log("API Response:", response.data);
+  const [ADDTask, {isLoading}] = useAddTasksMutation();
+  const { data: usersData = [], isLoading: isFetchingUsers } = useGetLoginsQuery();
 
-        const users = Array.isArray(response.data?.data)
-          ? response.data.data
-          : [];
+  const bdMembers = useMemo(() => {
+    return (usersData?.data || [])
+      .filter((user) => user.department === "BD")
+      .map((member) => ({ label: member.name, id: member._id }));
+  }, [usersData]);
 
-        const filteredMembers = users.filter(
-          (user) => user.department === "BD"
-        );
-
-        setBdMembers(
-          filteredMembers.map((member) => ({ label: member.name, id: member._id }))
-        );
-      } catch (error) {
-        console.error("Error fetching BD members:", error);
+    const [user, setUser] = useState(null);
+  
+    useEffect(() => {
+      const userSessionData = getUserData();
+      if (userSessionData && userSessionData.name) {
+        setUser(userSessionData);
       }
+    }, []);
+  
+    const getUserData = () => {
+      const userSessionData = localStorage.getItem("userDetails");
+      return userSessionData ? JSON.parse(userSessionData) : null;
     };
+  // useEffect(() => {
+  //   const fetchBdMembers = async () => {
+  //     try {
+  //       const response = await axios.get(
+  //         "https://api.slnkoprotrac.com/v1/get-all-user-IT"
+  //       );
+  //       console.log("API Response:", response.data);
 
-    fetchBdMembers();
-  }, []);
+  //       const users = Array.isArray(response.data?.data)
+  //         ? response.data.data
+  //         : [];
+
+  //       const filteredMembers = users.filter(
+  //         (user) => user.department === "BD"
+  //       );
+
+  //       setBdMembers(
+  //         filteredMembers.map((member) => ({ label: member.name, id: member._id }))
+  //       );
+  //     } catch (error) {
+  //       console.error("Error fetching BD members:", error);
+  //     }
+  //   };
+
+  //   fetchBdMembers();
+  // }, []);
 
   const handleChange = (field, value) => {
     setFormData((prevData) => ({ ...prevData, [field]: value }));
+
+ 
+    if (field === "reference" && value === "By Call" && user?.name) {
+      setFormData((prevData) => ({ ...prevData, by_whom: user.name }));
+    } else if (field === "reference" && value === "By Meeting") {
+      setFormData((prevData) => ({ ...prevData, by_whom: "" }));
+    }
   };
 
-  const handleByWhomChange = (_, newValue) => {
-    handleChange("by_whom", newValue.map((member) => member.label));
+  const handleByWhomChange = (_, newValue = []) => {
+    const formattedValue = newValue.map((member) => member.label).join(", ");
+    setFormData((prevData) => ({ ...prevData, by_whom: formattedValue }));
   };
 
+  const LeadId = localStorage.getItem("add_task");
+  if (!LeadId) {
+    console.error("Invalid Lead ID retrieved from localStorage.");
+    return;
+  }
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  
+  //   const payload = {
+  //     ...formData,
+  //     by_whom: formData.by_whom.map((label) => ({
+  //       label,
+  //       id: bdMembers.find((member) => member.label === label)?.id || null,
+  //     })),
+  //   };
+  
+  //   console.log("Payload to be submitted:", payload);
+  
+  //   try {
+  //     const response = await axios.post(
+  //       "https://api.slnkoprotrac.com/v1/add-task",
+  //       payload
+  //     );
+  //     console.log("Form Data Submitted Successfully:", response.data);
+  //   } catch (error) {
+  //     console.error("Error submitting form data:", error.response?.data || error);
+  //   }
+  // };
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
   
-    const payload = {
-      ...formData,
-      by_whom: formData.by_whom.map((label) => ({
-        label,
-        id: bdMembers.find((member) => member.label === label)?.id || null,
-      })),
-    };
-  
-    console.log("Payload to be submitted:", payload);
-  
-    try {
-      const response = await axios.post(
-        "https://api.slnkoprotrac.com/v1/add-task",
-        payload
-      );
-      console.log("Form Data Submitted Successfully:", response.data);
-    } catch (error) {
-      console.error("Error submitting form data:", error.response?.data || error);
+    if (!formData.by_whom) {
+      console.error("Error: 'by_whom' field is required.");
+      return;
     }
+  
+    
+    setFormData((prevData) => {
+      const updatedFormData = { ...prevData, id: LeadId };
+  
+      console.log("Final Payload:", updatedFormData);
+  
+      ADDTask(updatedFormData)
+        .unwrap()
+        .then(() => {
+          toast.success("Task Added Successfully.");
+          navigate("/leads");
+        })
+        .catch((error) => {
+          console.error("Error submitting form data:", error?.data || error);
+        });
+  
+      return updatedFormData;
+    });
   };
   
+  
+
 
   return (
     <Grid
@@ -170,17 +239,13 @@ const FormComponent = () => {
 
             <FormControl>
               <FormLabel>Reference</FormLabel>
-              <Select
-                value={formData.reference}
-                onChange={(e, newValue) => handleChange("reference", newValue)}
-                sx={{ borderRadius: "8px" }}
-              >
-                <Option value="By call">By Call</Option>
-                <Option value="By meeting">By Meeting</Option>
+              <Select value={formData.reference} placeholder= "Select References" onChange={(e, newValue) => handleChange("reference", newValue)} sx={{ borderRadius: "8px" }}>
+                <Option value="By Call">By Call</Option>
+                <Option value="By Meeting">By Meeting</Option>
               </Select>
             </FormControl>
 
-            <FormControl>
+            {/* <FormControl>
               <FormLabel>By Whom</FormLabel>
               <Autocomplete
   multiple
@@ -200,7 +265,27 @@ const FormComponent = () => {
   )}
 />
 
-            </FormControl>
+            </FormControl> */}
+            {formData.reference === "By Call" ? (
+              <FormControl>
+                <FormLabel>By Whom</FormLabel>
+                <Input fullWidth value={formData.by_whom} disabled sx={{ borderRadius: "8px", backgroundColor: "#f0f0f0" }} />
+              </FormControl>
+            ) : formData.reference === "By Meeting" ? (
+              <FormControl>
+                <FormLabel>By Whom</FormLabel>
+                <Autocomplete
+                  multiple
+                  options={bdMembers}
+                  getOptionLabel={(option) => option.label}
+                  isOptionEqualToValue={(option, value) => option.id === value.id}
+                  value={bdMembers.filter((member) => formData.by_whom.includes(member.label))}
+                  onChange={handleByWhomChange}
+                  renderInput={(params) => <Input {...params} placeholder="Select BD Members" sx={{ minHeight: "40px", overflowY: "auto" }} />}
+                />
+              </FormControl>
+            ) : null}
+            
 
             <Stack flexDirection="row" justifyContent="center">
                
@@ -211,9 +296,11 @@ const FormComponent = () => {
                   background: "#1976d2",
                   color: "white",
                   "&:hover": { background: "#1565c0" },
+                  
                 }}
+                disabled={isLoading || isFetchingUsers}
               >
-                Submit
+                 {isLoading || isFetchingUsers ? "Submitting..." : "Submit"}
               </Button>&nbsp;&nbsp;
               <Button
               onClick={(() => navigate("/leads"))}

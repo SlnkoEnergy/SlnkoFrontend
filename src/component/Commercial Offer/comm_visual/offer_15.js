@@ -1016,6 +1016,7 @@ const Summary = () => {
   const Total_Cost_with_GST = Math.round(
     Final_Total_with_GST_Plant_Cost / offerData.dc_capacity / 1000 / 1000
   ).toFixed(2);
+  
 
   const Without_module_INR_wp_Basic = Math.round(
     Cost_Without_Module / offerData.dc_capacity / 1000 / 1000
@@ -1026,6 +1027,50 @@ const Summary = () => {
   const Without_Module__INR_wp_with_GST = Math.round(
     Cost_Without_Module_with_GST / offerData.dc_capacity / 1000 / 1000
   ).toFixed(2);
+
+  const Solar_Module_Basic_value_per_Wp = Math.floor((TotalVal1 / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+
+  const Total_Basic_Solar_Datalogger_Per_Wp = Math.floor((Total_Basic_Solar_Datalogger / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+
+  const Total_Basic_MMS_Fastner_Per_Wp = Math.floor((Total_Basic_MMS_Fastner / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+
+  const Total_Basic_Cables_Per_Wp = Math.floor((Total_Basic_Cables / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+
+  const Total_Basic_Electrical_Equipment_Per_Wp = Math.floor((Total_Basic_Electrical_Equipment / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+
+  const Total_Basic_Other_Material_Per_Wp = Math.floor((Total_Basic_Other_Material / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+
+  const Total_Basic_Installation_Charges_Per_Wp = Math.floor((Total_Basic_Installation_Charges / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+
+  const Slnko_Service_Charge_Per_Wp = Math.floor((TotalVal32 / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+
+  const Total_Plant_Cost_1_Per_Wp = Math.floor((Total_Plant_Cost_1 / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+
+  const Total_Basic_GSS_Equipment_Per_Wp = Math.floor((Total_Basic_GSS_Equipment / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+
+  const Transmission_Line_Per_Wp = Math.floor(((offerData.transmission_length * bdRate.transmission_line) / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+
+  const Total_Basic_GSS_Cost_Per_Wp = Math.floor((Total_Basic_GSS_Cost / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+
+  const Final_Total_Plant_Cost_Per_Wp = Math.floor((Final_Total_Plant_Cost / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+
+  const Cost_Without_Module_Per_Wp = Math.floor((Cost_Without_Module / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+
+  const Total_Cost_Basic_Per_Wp = ((Total_Cost_Basic / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+
+  console.log("Total_Cost_Basic_Per_Wp: ",Total_Cost_Basic_Per_Wp);
+  
+
+  const Without_module_INR_wp_Basic_Per_Wp = ((Without_module_INR_wp_Basic / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+
+  console.log("Without_module_INR_wp_Basic_Per_Wp :", Without_module_INR_wp_Basic_Per_Wp);
+  
+
+  const Total_Basic_Transportatiom_Insurance_Per_Wp = Math
+  .floor((Total_Basic_Transportatiom_Insurance / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+
+
+
 
   return (
     <>
@@ -1065,7 +1110,7 @@ const Summary = () => {
             //  border: "2px solid #0f4C7f",
             "@media print": {
               width: "100%",
-              height: "100%",
+              height: "100vh",
             },
           }}
         >
@@ -1147,7 +1192,7 @@ const Summary = () => {
 
                   <tr>
                     <th
-                      colSpan={4}
+                      colSpan={5}
                       style={{
                         fontWeight: "bold",
                         fontFamily: "serif",
@@ -1173,7 +1218,7 @@ const Summary = () => {
                       Capacity
                     </th>
                     <th
-                      colSpan={3}
+                      colSpan={4}
                       style={{
                         fontWeight: "500",
                         fontFamily: "sans-serif !important",
@@ -1191,6 +1236,7 @@ const Summary = () => {
                   <th>Basic Value</th>
                   <th>GST Value</th>
                   <th>Total With GST Value</th>
+                  <th>Basic Value Per Wp</th>
                 </thead>
 
                 <tbody>
@@ -1205,6 +1251,7 @@ const Summary = () => {
                         (TotalVal1 * 12) / 100 + TotalVal1
                       ).toLocaleString()}
                     </td>
+                    <td>{Solar_Module_Basic_value_per_Wp}</td>
                   </tr>
 
                   <tr>
@@ -1218,6 +1265,7 @@ const Summary = () => {
                     <td>
                       {Number(Total_with_GST_Solar_Datalogger).toLocaleString()}
                     </td>
+                    <td>{Total_Basic_Solar_Datalogger_Per_Wp}</td>
                   </tr>
 
                   <tr>
@@ -1227,6 +1275,7 @@ const Summary = () => {
                     <td>
                       {Number(Total_with_GST_MMS_Fastner).toLocaleString()}
                     </td>
+                    <td>{Total_Basic_MMS_Fastner_Per_Wp}</td>
                   </tr>
 
                   <tr>
@@ -1234,6 +1283,7 @@ const Summary = () => {
                     <td>{Number(Total_Basic_Cables).toLocaleString()}</td>
                     <td>{Number(Total_GST_Cables).toLocaleString()}</td>
                     <td>{Number(Total_with_GST_Cables).toLocaleString()}</td>
+                    <td>{Total_Basic_Cables_Per_Wp}</td>
                   </tr>
 
                   <tr>
@@ -1254,6 +1304,7 @@ const Summary = () => {
                         Total_with_GST_Electrical_Equipment
                       ).toLocaleString()}
                     </td>
+                    <td>{Total_Basic_Electrical_Equipment_Per_Wp}</td>
                   </tr>
 
                   <tr>
@@ -1265,6 +1316,7 @@ const Summary = () => {
                     <td>
                       {Number(Total_with_Gst_Other_Material).toLocaleString()}
                     </td>
+                    <td>{Total_Basic_Other_Material_Per_Wp}</td>
                   </tr>
 
                   <tr>
@@ -1285,6 +1337,7 @@ const Summary = () => {
                         Total_with_GST_Installation_Charges
                       ).toLocaleString()}
                     </td>
+                    <td>{Total_Basic_Installation_Charges_Per_Wp}</td>
                   </tr>
 
                   <tr>
@@ -1304,6 +1357,7 @@ const Summary = () => {
                         Total_with_GST_Transportatiom_Insurance
                       ).toLocaleString()}
                     </td>
+                    <td>{Total_Basic_Transportatiom_Insurance_Per_Wp}</td>
                   </tr>
                   <tr>
                     <td>SLnko Service Charges</td>
@@ -1312,6 +1366,7 @@ const Summary = () => {
                     <td>
                       {((TotalVal32 * 18) / 100 + TotalVal32).toLocaleString()}
                     </td>
+                    <td>{Slnko_Service_Charge_Per_Wp}</td>
                   </tr>
 
                   <tr>
@@ -1329,11 +1384,12 @@ const Summary = () => {
                     <td style={{ backgroundColor: "#FFF2CC" }}>
                       {Number(Total_Plant_Cost_with_GST_1).toLocaleString()}
                     </td>
+                    <td style={{ backgroundColor: "#FFF2CC" }}>{Total_Plant_Cost_1_Per_Wp}</td>
                   </tr>
 
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={5}
                       style={{
                         fontWeight: "bold",
                         fontFamily: "sans-serif",
@@ -1354,6 +1410,7 @@ const Summary = () => {
                     <td>
                       {Number(Totalwith_GST_GSS_Equipment).toLocaleString()}
                     </td>
+                    <td>{Total_Basic_GSS_Equipment_Per_Wp}</td>
                   </tr>
 
                   <tr>
@@ -1383,6 +1440,7 @@ const Summary = () => {
                             offerData.transmission_length
                       ).toLocaleString()}
                     </td>
+                    <td>{Transmission_Line_Per_Wp}</td>
                   </tr>
 
                   <tr
@@ -1392,6 +1450,7 @@ const Summary = () => {
                     <td>{Number(Total_Basic_GSS_Cost).toLocaleString()}</td>
                     <td>{Number(Total_GST_GSS_Cost).toLocaleString()}</td>
                     <td>{Number(Total_with_GST_Cost).toLocaleString()}</td>
+                    <td>{Total_Basic_GSS_Cost_Per_Wp}</td>
                   </tr>
 
                   <tr
@@ -1410,6 +1469,7 @@ const Summary = () => {
                     <td>
                       {Number(Final_Total_with_GST_Plant_Cost).toLocaleString()}
                     </td>
+                    <td>{Final_Total_Plant_Cost_Per_Wp}</td>
                   </tr>
 
                   <tr
@@ -1426,6 +1486,7 @@ const Summary = () => {
                     <td>
                       {Number(Cost_Without_Module_with_GST).toLocaleString()}
                     </td>
+                    <td>{Cost_Without_Module_Per_Wp}</td>
                   </tr>
 
                   <tr>
@@ -1433,6 +1494,8 @@ const Summary = () => {
                     <td>{Total_Cost_Basic}</td>
                     <td>{Total_Cost_GST}</td>
                     <td>{Total_Cost_with_GST}</td>
+                    {/* <td>{Total_Cost_Basic_Per_Wp}</td> */}
+                    <td>-</td>
                   </tr>
 
                   <tr>
@@ -1440,6 +1503,8 @@ const Summary = () => {
                     <td>{Without_module_INR_wp_Basic}</td>
                     <td>{Without_module_INR_wp_GST}</td>
                     <td>{Without_Module__INR_wp_with_GST}</td>
+                    {/* <td>{Without_module_INR_wp_Basic_Per_Wp}</td> */}
+                    <td>-</td>
                   </tr>
                 </tbody>
               </Table>
