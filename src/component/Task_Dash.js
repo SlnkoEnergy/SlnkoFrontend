@@ -1,32 +1,35 @@
-import React, { useState } from "react";
+import { AccessTime, CheckCircle, Person, Phone } from "@mui/icons-material";
 import {
-  Tabs,
-  TabList,
-  Tab,
-  TabPanel,
+  Box,
+  Button,
   Card,
   CardContent,
-  Typography,
-  Chip,
-  Box,
-  Grid,
-  Sheet,
   Checkbox,
+  Chip,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
   Modal,
   ModalDialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Textarea,
+  Sheet,
   Stack,
+  Tab,
+  TabList,
+  TabPanel,
+  Tabs,
+  Textarea,
+  Typography,
 } from "@mui/joy";
-import { CheckCircle, AccessTime, Person, Phone } from "@mui/icons-material";
-import logo from "../assets/cheer-up.png";
-import { useGetEntireLeadsQuery, useGetInitialLeadsQuery, useUpdateTaskCommentMutation } from "../redux/leadsSlice";
-import { useGetTasksQuery } from "../redux/tasksSlice";
 import { isBefore, isToday, isTomorrow, parseISO } from "date-fns";
+import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import logo from "../assets/cheer-up.png";
+import {
+  useGetEntireLeadsQuery,
+  useUpdateTaskCommentMutation,
+} from "../redux/leadsSlice";
+import { useGetTasksQuery } from "../redux/tasksSlice";
 
 const TaskDashboard = () => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -38,7 +41,13 @@ const TaskDashboard = () => {
   const [currentPageTomorrow, setCurrentPageTomorrow] = useState(1);
   const [currentPageFuture, setCurrentPageFuture] = useState(1);
   const [open, setOpen] = useState(false);
-  const tasksperpage = 5;
+  const tasksperpage = 3;
+  const [currentPages, setCurrentPages] = useState({
+    past: 1,
+    today: 1,
+    tomorrow: 1,
+    future: 1,
+  });
 
   const CustomPagination = ({
     totalPages,
@@ -80,13 +89,15 @@ const TaskDashboard = () => {
     );
   };
 
+  // customer details modal form
+
   const { data: getLead = [] } = useGetEntireLeadsQuery();
   const { data: getTask = [] } = useGetTasksQuery();
   const [updateTask] = useUpdateTaskCommentMutation();
-  
+
   const getTaskArray = Array.isArray(getTask) ? getTask : getTask?.data || [];
   // console.log("Processed Task Array:", getTaskArray);
-  
+
   // const getLeadArray = Array.isArray(getLead) ? getLead : getLead?.lead || [];
   // console.log("Processed Leads Array:", getLeadArray);
 
@@ -98,41 +109,49 @@ const TaskDashboard = () => {
     ...(getLead?.lead?.deaddata || []),
   ];
   // console.log("Processed Leads Array:", getLeadArray);
-  
+
   // Match tasks to their corresponding leads
   const matchedTasks = getTaskArray.filter((task) =>
     getLeadArray.some((lead) => String(task.id) === String(lead.id))
   );
   // console.log("Matched Tasks:", matchedTasks);
-  
+
   const categorizedTasks = {
     past: [],
     today: [],
     tomorrow: [],
     future: [],
   };
-  
+
   // Categorize tasks based on date
   matchedTasks.forEach((task) => {
     if (!task.date) return;
-  
+
     const taskDate = parseISO(task.date);
     const now = new Date();
-  
-    const associatedLead = getLeadArray.find((lead) => String(lead.id) === String(task.id));
-  
+
+    const associatedLead = getLeadArray.find(
+      (lead) => String(lead.id) === String(task.id)
+    );
+
     if (!associatedLead) return;
-  
+
     const taskEntry = {
-      _id:task._id,
-      id:task.id,
+      _id: task._id,
+      id: task.id,
       name: associatedLead.c_name || "Unknown",
       company: associatedLead.company || "N/A",
+      group_name: associatedLead.group_name || "N/A",
+      district: associatedLead.district || "Unknown",
+      state: associatedLead.state || "Unknown",
+      village: associatedLead.village || "Unknown",
+      phone: associatedLead.phone || "N/A",
+      email: associatedLead.email || "N/A",
       location: `${associatedLead.district || "Unknown"}, ${associatedLead.state || "Unknown"}`,
       type: task.reference,
       icon: task.reference === "By Call" ? <Phone /> : <Person />,
     };
-  
+
     if (isBefore(taskDate, now) && !isToday(taskDate)) {
       categorizedTasks.past.push(taskEntry);
     } else if (isToday(taskDate)) {
@@ -143,101 +162,110 @@ const TaskDashboard = () => {
       categorizedTasks.future.push(taskEntry);
     }
   });
-  
+
   // console.log("Categorized Tasks:", categorizedTasks);
 
-  // Pagination Variables for Past
-  const IndexoflastTaskPast = currentPagePast * tasksperpage;
-  const IndexoffirstTaskPast = IndexoflastTaskPast - tasksperpage;
-  const currentTasksPast = categorizedTasks.past.slice(
-    IndexoffirstTaskPast,
-    IndexoflastTaskPast
-  );
-  const totalPagesPast = Math.ceil(categorizedTasks.past.length / tasksperpage);
+  const tasksWithComments = getTaskArray.filter((task) => task.comment);
+  const tasksWithoutComments = getTaskArray.filter((task) => !task.comment);
 
-  // Pagination Variables for Today
-  const IndexoflastTaskToday = currentPageToday * tasksperpage;
-  const IndexoffirstTaskToday = IndexoflastTaskToday - tasksperpage;
-  const currentTasksToday = categorizedTasks.today.slice(
-    IndexoffirstTaskToday,
-    IndexoflastTaskToday
-  );
-  const totalPagesToday = Math.ceil(
-    categorizedTasks.today.length / tasksperpage
-  );
-
-  // Pagination Variables for Tomorrow
-  const IndexoflastTaskTomorrow = currentPageTomorrow * tasksperpage;
-  const IndexoffirstTaskTomorrow = IndexoflastTaskTomorrow - tasksperpage;
-  const currentTasksTomorrow = categorizedTasks.tomorrow.slice(
-    IndexoffirstTaskTomorrow,
-    IndexoflastTaskTomorrow
-  );
-  const totalPagesTomorrow = Math.ceil(
-    categorizedTasks.tomorrow.length / tasksperpage
-  );
-
-  // Pagination Variables for Future
-  const IndexoflastTaskFuture = currentPageFuture * tasksperpage;
-  const IndexoffirstTaskFuture = IndexoflastTaskFuture - tasksperpage;
-  const currentTasksFuture = categorizedTasks.future.slice(
-    IndexoffirstTaskFuture,
-    IndexoflastTaskFuture
-  );
-  const totalPagesFuture = Math.ceil(
-    categorizedTasks.future.length / tasksperpage
-  );
+  const [disabledCards, setDisabledCards] = useState(() => {
+    const savedState = localStorage.getItem("disabledCards");
+    return savedState ? JSON.parse(savedState) : {};
+  });
 
   const handleCheckboxChange = (task, event) => {
-    console.log("Selected Task Object:", task); // Check if _id is present
-  
     if (event.target.checked) {
       setSelectedTask({
         ...task,
-        _id: task._id, // Ensure _id is stored correctly
-        id: task.id,   // Keep id for reference
+        _id: task._id,
+        id: task.id,
       });
-  
+
       setOpenDialog(true);
     } else {
       setSelectedTask(null);
+      setOpenDialog(false);
     }
   };
-  
-  
-  
 
   const handleSubmit = async () => {
     if (!selectedTask || !selectedTask._id) {
-      console.error("❌ No task selected or _id is missing!", selectedTask);
+      console.error("No task selected or _id is missing!", selectedTask);
       toast.error("No task selected or _id is missing!");
       return;
     }
-  
-    console.log("✅ Submitting Task Update for _id:", selectedTask._id);
-  
+
     try {
       const updateData = {
-        _id: selectedTask._id, // MongoDB ID
+        _id: selectedTask._id,
         comment: comment,
       };
-  
-      console.log("🚀 Updating Task with Data:", updateData);
-  
+
       await updateTask(updateData).unwrap();
       toast.success("Comment updated successfully");
-  
+
+      // Mark the task as completed after submission
+      const updatedDisabledCards = {
+        ...disabledCards,
+        [selectedTask._id]: true,
+      };
+
+      setDisabledCards(updatedDisabledCards);
+      localStorage.setItem(
+        "disabledCards",
+        JSON.stringify(updatedDisabledCards)
+      );
+
+      // Mark the task as completed and add to completedTasks
+      setCompletedTasks((prev) => ({
+        ...prev,
+        [selectedTask._id]: true,
+      }));
+
       setOpenDialog(false);
       setComment("");
     } catch (error) {
-      console.error("❌ Error updating comment:", error);
+      console.error("Error updating comment:", error);
       toast.error("Failed to update comment");
     }
   };
-  
-  
-  
-  
+
+  const [completedTasks, setCompletedTasks] = useState(() => {
+    const savedCompletedTasks = localStorage.getItem("completedTasks");
+    return savedCompletedTasks ? JSON.parse(savedCompletedTasks) : {};
+  });
+
+  useEffect(() => {
+    localStorage.setItem("completedTasks", JSON.stringify(completedTasks));
+  }, [completedTasks]);
+
+  const getPaginatedTasks = (tasks, currentPage) => {
+    const startIndex = (currentPage - 1) * tasksperpage;
+    const endIndex = startIndex + tasksperpage;
+    return {
+      tasks: tasks.slice(startIndex, endIndex),
+      totalPages: Math.ceil(tasks.length / tasksperpage),
+    };
+  };
+
+  const handlePageChange = (category, value) => {
+    setCurrentPages((prev) => ({
+      ...prev,
+      [category]: value,
+    }));
+  };
+
+  const { tasks: currentTasksPast, totalPages: totalPagesPast } =
+    getPaginatedTasks(categorizedTasks.past, currentPages.past);
+
+  const { tasks: currentTasksToday, totalPages: totalPagesToday } =
+    getPaginatedTasks(categorizedTasks.today, currentPages.today);
+
+  const { tasks: currentTasksTomorrow, totalPages: totalPagesTomorrow } =
+    getPaginatedTasks(categorizedTasks.tomorrow, currentPages.tomorrow);
+
+  const { tasks: currentTasksFuture, totalPages: totalPagesFuture } =
+    getPaginatedTasks(categorizedTasks.future, currentPages.future);
 
   const getCurrentDate = () => {
     const options = {
@@ -275,26 +303,6 @@ const TaskDashboard = () => {
     date.setDate(date.getDate() + 2);
 
     return date.toLocaleDateString("en-US", options);
-  };
-
-  // Handle Function for Past Pagination
-  const handlePageChangePast = (e, value) => {
-    setCurrentPagePast(value);
-  };
-
-  // Handle Function for Today Pagination
-  const handlePageChangeToday = (e, value) => {
-    setCurrentPageToday(value);
-  };
-
-  // Handle Function for Tomorrow Pagination
-  const handlePageChangeTomorrow = (e, value) => {
-    setCurrentPageTomorrow(value);
-  };
-
-  // Handle Function for Future Pagination
-  const handlePageChangeFuture = (e, value) => {
-    setCurrentPageFuture(value);
   };
 
   return (
@@ -342,7 +350,7 @@ const TaskDashboard = () => {
             <Tab sx={{ flex: 1, textAlign: "left", fontSize: "1.1rem" }}>
               Past
             </Tab>
-            <Tab sx={{ flex: 1, textAlign: "center", fontSize: "1.1rem" }} >
+            <Tab sx={{ flex: 1, textAlign: "center", fontSize: "1.1rem" }}>
               Today's Task
             </Tab>
             <Tab sx={{ flex: 1, textAlign: "right", fontSize: "1.1rem" }}>
@@ -368,16 +376,17 @@ const TaskDashboard = () => {
                   variant="soft"
                   size="lg"
                 >
-                  20
+                  {tasksWithComments.length || 0}
                 </Chip>
                 <Chip
                   startDecorator={<AccessTime color="warning" />}
                   variant="soft"
                   size="lg"
                 >
-                  10
+                  {tasksWithoutComments.length || 0}
                 </Chip>
               </Box>
+
               {categorizedTasks.past.length > 0 ? (
                 currentTasksPast.map((task, index) => (
                   <Card
@@ -446,10 +455,9 @@ const TaskDashboard = () => {
               )}
               <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
                 <CustomPagination
-                  count={totalPagesPast}
-                  page={currentPagePast}
-                  onChange={handlePageChangePast}
-                  // siblingCount={1}
+                  totalPages={totalPagesPast}
+                  currentPage={currentPages.past}
+                  onPageChange={(e, value) => handlePageChange("past", value)}
                 />
               </Box>
             </Box>
@@ -476,12 +484,22 @@ const TaskDashboard = () => {
                     p: 2,
                     width: "90%",
                     mx: "auto",
+                    backgroundColor: disabledCards[task._id]
+                      ? "#f5f5f5"
+                      : "#fff",
+                    pointerEvents: disabledCards[task._id] ? "none" : "auto",
+                    opacity: disabledCards[task._id] ? 0.6 : 1,
                   }}
                 >
                   <CardContent>
                     <Grid container spacing={2} alignItems="center">
                       <Grid xs={7}>
-                        <Typography level="h4" color="primary">
+                        <Typography
+                          level="h4"
+                          color={
+                            disabledCards[task._id] ? "neutral" : "primary"
+                          }
+                        >
                           {task.name}
                         </Typography>
                         <Typography level="body-lg">{task.company}</Typography>
@@ -498,18 +516,40 @@ const TaskDashboard = () => {
                         gap={1}
                       >
                         <Checkbox
-                        
+                          checked={completedTasks[task._id] || false}
                           onChange={(e) => handleCheckboxChange(task, e)}
+                          disabled={disabledCards[task._id]}
+                          sx={{
+                            "&.Mui-checked": {
+                              color: "white",
+                              backgroundColor: "#4caf50", // Green background on check
+                              borderRadius: "50%", // Optional rounded checkbox
+                              transition: "background-color 0.3s ease-in-out",
+                            },
+                            "&.Mui-disabled": {
+                              backgroundColor: "#f5f5f5",
+                              pointerEvents: "none",
+                            },
+                          }}
                         />
+
                         <Chip
                           startDecorator={task.icon}
                           variant="outlined"
                           size="lg"
                         >
-                        {task.type}
+                          {task.type}
                         </Chip>
-                        <Button variant="plain" onClick={() => setOpen(true)}>
-                          <Typography>...</Typography>
+                        <Button
+                          variant="plain"
+                          onClick={() =>
+                            !disabledCards[task._id] && setOpen(true)
+                          }
+                          disabled={disabledCards[task._id]}
+                        >
+                          <Typography>
+                            {disabledCards[task._id] ? "Comment Added" : "..."}
+                          </Typography>
                         </Button>
                       </Grid>
                     </Grid>
@@ -519,12 +559,12 @@ const TaskDashboard = () => {
             ) : (
               <Typography level="body-lg">No tasks for today.</Typography>
             )}
+
             <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
               <CustomPagination
-                count={totalPagesToday}
-                page={currentPageToday}
-                onChange={handlePageChangeToday}
-                // siblingCount={1}
+                totalPages={totalPagesToday}
+                currentPage={currentPages.today}
+                onPageChange={(e, value) => handlePageChange("today", value)}
               />
             </Box>
           </TabPanel>
@@ -579,7 +619,7 @@ const TaskDashboard = () => {
                           variant="outlined"
                           size="lg"
                         >
-                        {task.type}
+                          {task.type}
                         </Chip>
                         <Button variant="plain" onClick={() => setOpen(true)}>
                           <Typography>...</Typography>
@@ -594,11 +634,9 @@ const TaskDashboard = () => {
             )}
             <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
               <CustomPagination
-                count={totalPagesTomorrow}
-                page={currentPageTomorrow}
-                onChange={handlePageChangeTomorrow}
-                siblingCount={1}
-                boundaryCount={1}
+                totalPages={totalPagesTomorrow}
+                currentPage={currentPages.tomorrow}
+                onPageChange={(e, value) => handlePageChange("tomorrow", value)}
               />
             </Box>
           </TabPanel>
@@ -688,10 +726,9 @@ const TaskDashboard = () => {
               )}
               <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
                 <CustomPagination
-                  count={totalPagesFuture}
-                  page={currentPageFuture}
-                  onChange={handlePageChangeFuture}
-                  // siblingCount={1}
+                  totalPages={totalPagesFuture}
+                  currentPage={currentPages.future}
+                  onPageChange={(e, value) => handlePageChange("future", value)}
                 />
               </Box>
             </Box>
@@ -728,7 +765,7 @@ const TaskDashboard = () => {
               variant="soft"
               onClick={() => {
                 // console.log("View Customer Details")
-              } }
+              }}
             >
               View Customer Details
             </Button>
@@ -736,10 +773,7 @@ const TaskDashboard = () => {
               variant="soft"
               onClick={() => {
                 // console.log("View Follow-ups History")
-              }
-                
-
-              }
+              }}
             >
               View History
             </Button>

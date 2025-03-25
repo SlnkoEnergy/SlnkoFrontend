@@ -3,7 +3,7 @@ import Typography from "@mui/joy/Typography";
 import React from "react";
 import logo from "../../../assets/Comm_offer//white_logo.png";
 import logo1 from "../../../assets/Comm_offer/2(1).jpg";
-import logo2 from "../../../assets/Comm_offer/2(2).jpg";
+import logo2 from "../../../assets/Comm_offer/2(2).JPG";
 import "../CSS/offer.css";
 
 const Page2 = () => {
