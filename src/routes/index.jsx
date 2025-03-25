@@ -46,7 +46,9 @@ import CheckboxModal from "../pages/BD/Leads/Initial/Forms/InitialToAll";
 import CheckboxModal2 from "../pages/BD/Leads/Followup/Forms/FollowupToAll";
 import CheckboxModal3 from "../pages/BD/Leads/Warm/Forms/WarmToAll";
 import CheckboxModal4 from "../pages/BD/Leads/Dead/Forms/DeadToAll";
-import Add_Task from "../pages/BD/AddTask";
+import Add_Task_Initial from "../pages/BD/Leads/Initial/Forms/InitialTask";
+import Add_Task_Followup from "../pages/BD/Leads/Followup/Forms/FollowupTask";
+import Add_Task_Warm from "../pages/BD/Leads/Warm/Forms/WarmTask";
 import Task_Dashboards from "../pages/BD/DashTask";
 import HandSheet from "../pages/BD/Leads/HandOver";
 import Offer_edit from "../pages/BD/Comm_/EditOffer";
@@ -449,10 +451,26 @@ function index() {
         }
       />
       <Route
-        path="/add_task"
+        path="/add_task_initial"
         element={
           <PrivateRoute>
-            <Add_Task />
+            <Add_Task_Initial />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/add_task_followup"
+        element={
+          <PrivateRoute>
+            <Add_Task_Followup />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/add_task_warm"
+        element={
+          <PrivateRoute>
+            <Add_Task_Warm />
           </PrivateRoute>
         }
       />

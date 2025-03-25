@@ -139,7 +139,7 @@ function LeadPage({
               justifyContent: "center",
             }}
           >
-            {selectedLead === "Won" && (
+            {/* {selectedLead === "Won" && (
               <Button
                 color="primary"
                 size="sm"
@@ -147,7 +147,7 @@ function LeadPage({
               >
                 Hand Over Sheet
               </Button>
-            )}
+            )} */}
             <Button
               color="primary"
               size="sm"

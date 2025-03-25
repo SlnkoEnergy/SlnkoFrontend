@@ -27,6 +27,7 @@ const HandoverSheetForm = () => {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(null);
   const [formData, setFormData] = useState({
+    id:"",
     customer_details: {
       project_id: "",
       project_name: "",
@@ -148,86 +149,6 @@ const HandoverSheetForm = () => {
     }
   }, [ModuleMaster, MasterInverter]);
 
-  // useEffect(() => {
-  //   const fetchMasterData = async () => {
-  //     try {
-  //       const response = await axios.get(s
-  //         "https://api.slnkoprotrac.com/v1/get-module-master"
-  //       );
-
-  //       console.log("Full API Response:", response.data);
-
-  //       // Ensure response.data is an object and contains an array key
-  //       const ModuleMaster = Array.isArray(response.data.data)
-  //         ? response.data.data
-  //         : [];
-
-  //       console.log("Extracted Module Data:", ModuleMaster);
-
-  //       const Inverterresponse = await axios.get(
-  //         "https://api.slnkoprotrac.com/v1/get-master-inverter"
-  //       );
-
-  //       console.log("Full API Response:", Inverterresponse.data);
-
-  //       // Ensure response.data is an object and contains an array key
-  //       const MasterInverter = Array.isArray(Inverterresponse.data.data)
-  //         ? Inverterresponse.data.data
-  //         : [];
-
-  //       console.log("Extracted Inverter Data:", MasterInverter);
-
-  //       // Extract unique values for Module
-  //       const makeOptions = [
-  //         ...new Set(ModuleMaster.map((item) => item.make).filter(Boolean)),
-  //       ];
-  //       const typeOptions =
-  //         ...new Set(ModuleMaster.map((item) => item.type).filter(Boolean)),
-  //       ];
-  //       const modelOptions = [
-  //         ...new Set(ModuleMaster.map((item) => item.model).filter(Boolean)),
-  //       ];
-  //       const capacityOptions = [
-  //         ...new Set(ModuleMaster.map((item) => item.power).filter(Boolean)),
-  //       ];
-
-  //       setModuleMakeOptions(makeOptions);
-  //       setModuleTypeOptions(typeOptions);
-  //       setModuleModelOptions(modelOptions);
-  //       setModuleCapacityOptions(capacityOptions);
-
-  //       // Extract unique values for Inverter
-  //       const inverterMake = [
-  //         ...new Set(
-  //           MasterInverter.map((item) => item.inveter_make).filter(Boolean)
-  //         ),
-  //       ];
-  //       const inverterSize = [
-  //         ...new Set(
-  //           MasterInverter.map((item) => item.inveter_size).filter(Boolean)
-  //         ),
-  //       ];
-  //       const inverterModel = [
-  //         ...new Set(
-  //           MasterInverter.map((item) => item.inveter_model).filter(Boolean)
-  //         ),
-  //       ];
-  //       const inverterType = [
-  //         ...new Set(
-  //           MasterInverter.map((item) => item.inveter_type).filter(Boolean)
-  //         ),
-  //       ];
-
-  //       setInverterMakeOptions(inverterMake);
-  //       setInverterSizeOptions(inverterSize);
-  //       setInverterModelOptions(inverterModel);
-  //       setInverterTypeOptions(inverterType);
-  //     } catch (error) {
-  //       console.error("Error fetching master data:", error);
-  //     }
-  //   };
-  //   fetchMasterData();
-  // }, []);
 
   const handleExpand = (panel) => {
     setExpanded(expanded === panel ? null : panel);
@@ -257,31 +178,44 @@ const HandoverSheetForm = () => {
     setUser(userData);
   }, []);
 
+
+
   const getUserData = () => {
     const userData = localStorage.getItem("userDetails");
     return userData ? JSON.parse(userData) : null;
   };
+const LeadId = localStorage.getItem("hand_Over");
 
-  const handleSubmit = async () => {
-    try {
-      const uploadData = {
-        ...formData,
-        attached_details: {
-          ...formData.attached_details,
-          submitted_by_BD:
-            formData.attached_details.submitted_by_BD || user?.name || "", // Ensure it's set
-        },
-      };
-
-      const response = await HandOverSheet(uploadData).unwrap();
-      console.log("Form submitted successfully:", response);
-      toast.success("Form submitted successfully");
-      navigate("/leads");
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      toast.error("Submission failed");
+const handleSubmit = async () => {
+  try {
+    if (!LeadId) {
+      toast.error("Lead ID is missing!");
+      return;
     }
-  };
+
+    setFormData((prev) => ({
+      ...prev,
+      id: LeadId,
+      attached_details: {
+        ...prev.attached_details,
+        submitted_by_BD: prev.attached_details.submitted_by_BD || user?.name || "", 
+      },
+    }));
+
+    const uploadData = {
+      ...formData,
+      id: LeadId, 
+    };
+
+    const response = await HandOverSheet(uploadData).unwrap();
+    toast.success("Form submitted successfully");
+    navigate("/leads");
+  } catch (error) {
+    console.error("Error submitting form:", error);
+    toast.error("Submission failed");
+  }
+};
+
 
   const sections = [
     {

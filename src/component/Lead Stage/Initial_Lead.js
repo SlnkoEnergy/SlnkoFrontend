@@ -161,9 +161,9 @@ const StandByRequest = () => {
               const page = currentPage;
               const leadId = String(id);
               // const projectID = Number(p_id);
-              localStorage.setItem("add_task", leadId);
+              localStorage.setItem("add_task_initial", leadId);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/add_task?page=${page}&${leadId}`);
+              navigate(`/add_task_initial?page=${page}&${leadId}`);
             }}
           >
             <AddCircleOutlineIcon />

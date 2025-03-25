@@ -16,13 +16,14 @@ import {
   Autocomplete,
   Chip,
 } from "@mui/joy";
-import plus from "../assets/plus 1.png";
+import plus from "../../assets/plus 1.png";
 import { useNavigate } from "react-router-dom";
-import { useAddTasksMutation } from "../redux/tasksSlice";
-import { useGetLoginsQuery } from "../redux/loginSlice";
+import { useAddTasksMutation } from "../../redux/tasksSlice";
+import { useGetLoginsQuery } from "../../redux/loginSlice";
 import { toast } from "react-toastify";
+import { useGetFollowupLeadsQuery } from "../../redux/leadsSlice";
 
-const FormComponent = () => {
+const FormComponent2 = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     id:"",
@@ -37,6 +38,10 @@ const FormComponent = () => {
 
   const [ADDTask, {isLoading}] = useAddTasksMutation();
   const { data: usersData = [], isLoading: isFetchingUsers } = useGetLoginsQuery();
+    const {data: getLead = []} = useGetFollowupLeadsQuery();
+  
+    const getLeadArray = Array.isArray(getLead) ? getLead : getLead?.data || [];
+    console.log("Processed Leads Array:", getLeadArray);
 
   const bdMembers = useMemo(() => {
     return (usersData?.data || [])
@@ -47,115 +52,70 @@ const FormComponent = () => {
     const [user, setUser] = useState(null);
   
     useEffect(() => {
-      const userSessionData = getUserData();
-      if (userSessionData && userSessionData.name) {
-        setUser(userSessionData);
-      }
-    }, []);
-  
-    const getUserData = () => {
-      const userSessionData = localStorage.getItem("userDetails");
-      return userSessionData ? JSON.parse(userSessionData) : null;
-    };
-  // useEffect(() => {
-  //   const fetchBdMembers = async () => {
-  //     try {
-  //       const response = await axios.get(
-  //         "https://api.slnkoprotrac.com/v1/get-all-user-IT"
-  //       );
-  //       console.log("API Response:", response.data);
-
-  //       const users = Array.isArray(response.data?.data)
-  //         ? response.data.data
-  //         : [];
-
-  //       const filteredMembers = users.filter(
-  //         (user) => user.department === "BD"
-  //       );
-
-  //       setBdMembers(
-  //         filteredMembers.map((member) => ({ label: member.name, id: member._id }))
-  //       );
-  //     } catch (error) {
-  //       console.error("Error fetching BD members:", error);
-  //     }
-  //   };
-
-  //   fetchBdMembers();
-  // }, []);
-
-  const handleChange = (field, value) => {
-    setFormData((prevData) => ({ ...prevData, [field]: value }));
-
- 
-    if (field === "reference" && value === "By Call" && user?.name) {
-      setFormData((prevData) => ({ ...prevData, by_whom: user.name }));
-    } else if (field === "reference" && value === "By Meeting") {
-      setFormData((prevData) => ({ ...prevData, by_whom: "" }));
-    }
-  };
-
-  const handleByWhomChange = (_, newValue = []) => {
-    const formattedValue = newValue.map((member) => member.label).join(", ");
-    setFormData((prevData) => ({ ...prevData, by_whom: formattedValue }));
-  };
-
-  const LeadId = localStorage.getItem("add_task");
-  if (!LeadId) {
-    console.error("Invalid Lead ID retrieved from localStorage.");
-    return;
-  }
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  
-  //   const payload = {
-  //     ...formData,
-  //     by_whom: formData.by_whom.map((label) => ({
-  //       label,
-  //       id: bdMembers.find((member) => member.label === label)?.id || null,
-  //     })),
-  //   };
-  
-  //   console.log("Payload to be submitted:", payload);
-  
-  //   try {
-  //     const response = await axios.post(
-  //       "https://api.slnkoprotrac.com/v1/add-task",
-  //       payload
-  //     );
-  //     console.log("Form Data Submitted Successfully:", response.data);
-  //   } catch (error) {
-  //     console.error("Error submitting form data:", error.response?.data || error);
-  //   }
-  // };
-  
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-  
-    if (!formData.by_whom) {
-      console.error("Error: 'by_whom' field is required.");
-      return;
-    }
-  
-    
-    setFormData((prevData) => {
-      const updatedFormData = { ...prevData, id: LeadId };
-  
-      console.log("Final Payload:", updatedFormData);
-  
-      ADDTask(updatedFormData)
-        .unwrap()
-        .then(() => {
-          toast.success("Task Added Successfully.");
-          navigate("/leads");
-        })
-        .catch((error) => {
-          console.error("Error submitting form data:", error?.data || error);
-        });
-  
-      return updatedFormData;
-    });
-  };
+         const userSessionData = getUserData();
+         if (userSessionData && userSessionData.name) {
+           setUser(userSessionData);
+         }
+       }, []);
+       
+       const getUserData = () => {
+         const userSessionData = localStorage.getItem("userDetails");
+         return userSessionData ? JSON.parse(userSessionData) : null;
+       };
+       
+       // Retrieve LeadId safely
+       const LeadId = localStorage.getItem("add_task_followup");
+       
+       useEffect(() => {
+         if (LeadId && getLeadArray.length > 0) {
+           const matchedLead = getLeadArray.find((lead) => lead.id === LeadId);
+           if (matchedLead) {
+             setFormData((prevData) => ({
+               ...prevData,
+               name: matchedLead.c_name || "",
+             }));
+           }
+         }
+       }, [LeadId, getLeadArray]);
+       
+       const handleChange = (field, value) => {
+         setFormData((prevData) => ({ ...prevData, [field]: value }));
+       
+         if (field === "reference") {
+           if (value === "By Call" && user?.name) {
+             setFormData((prevData) => ({ ...prevData, by_whom: user.name }));
+           } else if (value === "By Meeting") {
+             setFormData((prevData) => ({ ...prevData, by_whom: "" }));
+           }
+         }
+       };
+       
+       const handleByWhomChange = (_, newValue = []) => {
+         const formattedValue = newValue.map((member) => member.label).join(", ");
+         setFormData((prevData) => ({ ...prevData, by_whom: formattedValue }));
+       };
+       
+       const handleSubmit = async (e) => {
+         e.preventDefault();
+       
+         if (!formData.by_whom) {
+           console.error("Error: 'by_whom' field is required.");
+           return;
+         }
+       
+         const updatedFormData = { ...formData, id: LeadId };
+       
+         console.log("Final Payload:", updatedFormData);
+       
+         try {
+           await ADDTask(updatedFormData).unwrap();
+           localStorage.removeItem("add_task_followup");
+           toast.success("Task Added Successfully.");
+           navigate("/leads");
+         } catch (error) {
+           console.error("Error submitting form data:", error?.data || error);
+         }
+       };
   
   
 
@@ -215,9 +175,10 @@ const FormComponent = () => {
               <Input
                 fullWidth
                 placeholder="Customer Name"
-                value={formData.name}
+                value={formData.name || "-"}
                 onChange={(e) => handleChange("name", e.target.value)}
                 sx={{ borderRadius: "8px" }}
+                readOnly
               />
             </FormControl>
             <FormControl>
@@ -303,7 +264,10 @@ const FormComponent = () => {
                  {isLoading || isFetchingUsers ? "Submitting..." : "Submit"}
               </Button>&nbsp;&nbsp;
               <Button
-              onClick={(() => navigate("/leads"))}
+              onClick={(() => {
+                localStorage.removeItem("add_task_followup");
+                 navigate("/leads")
+              })}
                 sx={{
                   borderRadius: "8px",
                   background: "#f5f5f5",
@@ -323,4 +287,4 @@ const FormComponent = () => {
   );
 };
 
-export default FormComponent;
+export default FormComponent2;

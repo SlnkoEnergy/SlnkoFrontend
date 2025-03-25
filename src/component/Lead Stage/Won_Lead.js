@@ -133,21 +133,21 @@ const StandByRequest = () => {
           >
             <ManageHistoryIcon />
             <Typography>Followup History</Typography>
-          </MenuItem>
+          </MenuItem> */}
           <MenuItem
             color="primary"
             onClick={() => {
               const page = currentPage;
               const leadId1 = String(id);
               // const projectID = Number(p_id);
-              localStorage.setItem("next_followup", leadId1);
+              localStorage.setItem("hand_Over", leadId1);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/standby_Request?page=${page}&${leadId1}`);
+              navigate(`/hand_over?page=${page}&${leadId1}`);
             }}
           >
             <FollowTheSignsIcon />
-            <Typography>Next Followup</Typography>
-          </MenuItem> */}
+            <Typography>HandOver Sheet</Typography>
+          </MenuItem>
           <MenuItem
             color="primary"
             onClick={() => {

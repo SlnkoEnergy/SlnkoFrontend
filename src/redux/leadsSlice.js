@@ -9,6 +9,10 @@ export const leadsApi = createApi({
       query: () => "get-all-bd-lead",
       providesTags: ["Lead"],
     }),
+    getEntireLeads: builder.query({
+      query: () => "get-all-lead",
+      providesTags: ["Lead"],
+    }),
     getInitialLeads: builder.query({
       query: () => "get-all-inital-bd-lead",
       providesTags: ["Lead"],
@@ -209,6 +213,18 @@ export const leadsApi = createApi({
       invalidatesTags: ["Lead"],
     }),
 
+    updateTaskComment: builder.mutation({
+      query: ({ _id, comment }) => ({
+        url: `edit-comment/${_id}`, // Ensure id is used correctly
+        method: "PUT",
+        body: { comment }, // Send the comment inside an object
+      }),
+      invalidatesTags: ["Lead"],
+    }),
+    
+
+
+
     /*-- HandOver Sheet */
     getModuleMaster: builder.query({
       query: () => "get-module-master",
@@ -232,6 +248,7 @@ export const leadsApi = createApi({
 
 export const {
   useGetLeadsQuery,
+  useGetEntireLeadsQuery,
   useAddLeadsMutation,
   useUpdateLeadsMutation,
   useGetInitialLeadsQuery,
@@ -243,6 +260,7 @@ export const {
   useUpdateWARMupLeadsMutation,
   useUpdateFollowupMutation,
   useUpdateWarmMutation,
+  useUpdateTaskCommentMutation,
   useAddInitialtoWonMutation,
   useAddInitialtoFollowupMutation,
   useGetDeadLeadsQuery,
