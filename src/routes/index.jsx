@@ -59,7 +59,7 @@ import FollowUpSummary from "../pages/BD/Leads/Followup/Forms/follow_Summary";
 import WarmUpSummary from "../pages/BD/Leads/Warm/Forms/warm_Summary";
 import WONSummary from "../pages/BD/Leads/Won/Forms/won_Summary";
 import DEADSummary from "../pages/BD/Leads/Dead/Forms/dead_Summary";
-import Follow_History from "../pages/BD/Followup";
+import Follow_History from "../pages/BD/Lead_History";
 
 
 
@@ -499,7 +499,7 @@ function index() {
         }
       />
       <Route
-        path="/follow_up_history"
+        path="/view_history"
         element={
           <PrivateRoute>
             <Follow_History />

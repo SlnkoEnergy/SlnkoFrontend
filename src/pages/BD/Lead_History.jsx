@@ -16,7 +16,7 @@ import Sidebar from '../../component/Partials/Sidebar';
 // import OrderList from '../../component/OrderList';
 import Header from '../../component/Partials/Header';
 import BDHistory from '../../component/BD_History';
-import FollowUpHistory from '../../component/Followup_History';
+import FollowUpHistory from '../../component/LeadsView_History';
 
 function Follow_History() {
      

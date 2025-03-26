@@ -147,13 +147,13 @@ const StandByRequest = () => {
               const page = currentPage;
               const leadId = String(id);
               // const projectID = Number(p_id);
-              localStorage.setItem("followup_history", leadId);
+              localStorage.setItem("view_history", leadId);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/follow_up_history?page=${page}&${leadId}`);
+              navigate(`/view_history?page=${page}&${leadId}`);
             }}
           >
             <ManageHistoryIcon />
-            <Typography>Followup History</Typography>
+            <Typography>View History</Typography>
           </MenuItem>
           <MenuItem
             color="primary"

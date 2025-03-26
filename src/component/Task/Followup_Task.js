@@ -32,6 +32,7 @@ const FormComponent2 = () => {
     reference: "",
     by_whom: "",
     comment: "",
+    submitted_by:""
   });
 
   // const [bdMembers, setBdMembers] = useState([]);
@@ -103,7 +104,13 @@ const FormComponent2 = () => {
            return;
          }
        
-         const updatedFormData = { ...formData, id: LeadId };
+         const submittedBy = user?.name || ""; 
+
+         const updatedFormData = { 
+           ...formData, 
+           id: LeadId, 
+           submitted_by: submittedBy  // Ensuring submitted_by is set properly
+         };
        
          console.log("Final Payload:", updatedFormData);
        

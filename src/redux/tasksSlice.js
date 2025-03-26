@@ -18,11 +18,17 @@ export const tasksApi = createApi({
       }),
       invalidatesTags: ["Task"],
     }),
+    getTasksHistory: builder.query({
+      query: () => "get-task-history",
+      providesTags: ["Task"],
+      
+    }),
   }),
 });
 
-export const { 
+export const {
   useGetTasksQuery,
-  useAddTasksMutation
+  useAddTasksMutation,
+  useGetTasksHistoryQuery
 } = tasksApi;
 

@@ -1,5 +1,6 @@
 import { AccessTime, CheckCircle, Person, Phone } from "@mui/icons-material";
 import {
+  Autocomplete,
   Box,
   Button,
   Card,
@@ -9,9 +10,13 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormLabel,
   Grid,
+  Input,
   Modal,
   ModalDialog,
+  Option,
+  Select,
   Sheet,
   Stack,
   Tab,
@@ -19,22 +24,27 @@ import {
   TabPanel,
   Tabs,
   Textarea,
+  Divider,
+  Table,
   Typography,
 } from "@mui/joy";
 import { isBefore, isToday, isTomorrow, parseISO } from "date-fns";
 import React, { useEffect, useState } from "react";
+import Img1 from "../assets/follow_up_history.png";
 import { toast } from "react-toastify";
 import logo from "../assets/cheer-up.png";
 import {
   useGetEntireLeadsQuery,
   useUpdateTaskCommentMutation,
 } from "../redux/leadsSlice";
-import { useGetTasksQuery } from "../redux/tasksSlice";
+import { useGetTasksHistoryQuery, useGetTasksQuery } from "../redux/tasksSlice";
+import { useGetLoginsQuery } from "../redux/loginSlice";
 
 const TaskDashboard = () => {
   const [selectedTab, setSelectedTab] = useState(0);
   const [openDialog, setOpenDialog] = useState(false);
-  const [selectedTask, setSelectedTask] = useState(null);
+  const [selectedTask, setSelectedTask] = useState({});
+
   const [comment, setComment] = useState("");
   const [currentPagePast, setCurrentPagePast] = useState(1);
   const [currentPageToday, setCurrentPageToday] = useState(1);
@@ -88,12 +98,51 @@ const TaskDashboard = () => {
       </Box>
     );
   };
+  const statesOfIndia = [
+    "Andhra Pradesh",
+    "Arunachal Pradesh",
+    "Assam",
+    "Bihar",
+    "Chhattisgarh",
+    "Goa",
+    "Gujarat",
+    "Haryana",
+    "Himachal Pradesh",
+    "Jharkhand",
+    "Karnataka",
+    "Kerala",
+    "Madhya Pradesh",
+    "Maharashtra",
+    "Manipur",
+    "Meghalaya",
+    "Mizoram",
+    "Nagaland",
+    "Odisha",
+    "Punjab",
+    "Rajasthan",
+    "Sikkim",
+    "Tamil Nadu",
+    "Telangana",
+    "Tripura",
+    "Uttar Pradesh",
+    "Uttarakhand",
+    "West Bengal",
+  ];
 
-  // customer details modal form
+  const sourceOptions = {
+    "Referred by": ["Directors", "Clients", "Team members", "E-mail"],
+    "Social Media": ["Whatsapp", "Instagram", "LinkedIn"],
+    Marketing: ["Youtube", "Advertisements"],
+    "IVR/My Operator": [],
+    Others: [],
+  };
+  const landTypes = ["Leased", "Owned"];
 
   const { data: getLead = [] } = useGetEntireLeadsQuery();
   const { data: getTask = [] } = useGetTasksQuery();
   const [updateTask] = useUpdateTaskCommentMutation();
+     const { data: getTaskHistory = [] } = useGetTasksHistoryQuery();
+      const { data: usersData = [], isLoading: isFetchingUsers } = useGetLoginsQuery();
 
   const getTaskArray = Array.isArray(getTask) ? getTask : getTask?.data || [];
   // console.log("Processed Task Array:", getTaskArray);
@@ -109,13 +158,23 @@ const TaskDashboard = () => {
     ...(getLead?.lead?.deaddata || []),
   ];
   // console.log("Processed Leads Array:", getLeadArray);
+  const getTaskHistoryArray = Array.isArray(getTaskHistory) ? getTaskHistory : getTaskHistory?.data || [];
+  console.log(getTaskHistoryArray);
+  
+  const getuserArray = Array.isArray(usersData) ? usersData : usersData?.data?.data || [];
 
+  console.log(getuserArray);
+  
   // Match tasks to their corresponding leads
   const matchedTasks = getTaskArray.filter((task) =>
     getLeadArray.some((lead) => String(task.id) === String(lead.id))
   );
   // console.log("Matched Tasks:", matchedTasks);
+  const matchedTaskHistory = getTaskHistoryArray.filter((taskHistory) =>
+    getLeadArray.some((lead) => String(taskHistory.id) === String(lead.id))
+  );
 
+  console.log("Matched Task History:", matchedTaskHistory);
   const categorizedTasks = {
     past: [],
     today: [],
@@ -123,7 +182,6 @@ const TaskDashboard = () => {
     future: [],
   };
 
-  // Categorize tasks based on date
   matchedTasks.forEach((task) => {
     if (!task.date) return;
 
@@ -134,20 +192,49 @@ const TaskDashboard = () => {
       (lead) => String(lead.id) === String(task.id)
     );
 
+    const formatDateToYYYYMMDD = (dateString) => {
+      if (!dateString) return "";
+
+      const parts = dateString.split("-");
+
+      if (parts.length !== 3) return dateString;
+
+      if (parts[0].length === 4) {
+        // Already in YYYY-MM-DD format
+        return dateString;
+      } else if (parts[2].length === 4) {
+        // Convert from DD-MM-YYYY to YYYY-MM-DD
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+
+      return dateString;
+    };
+
     if (!associatedLead) return;
 
     const taskEntry = {
       _id: task._id,
       id: task.id,
       name: associatedLead.c_name || "Unknown",
-      company: associatedLead.company || "N/A",
-      group_name: associatedLead.group_name || "N/A",
-      district: associatedLead.district || "Unknown",
-      state: associatedLead.state || "Unknown",
-      village: associatedLead.village || "Unknown",
-      phone: associatedLead.phone || "N/A",
-      email: associatedLead.email || "N/A",
-      location: `${associatedLead.district || "Unknown"}, ${associatedLead.state || "Unknown"}`,
+      company: associatedLead.company || "",
+      email: associatedLead.email || "",
+      group: associatedLead.group || "",
+      reffered_by: associatedLead.reffered_by || "",
+      source: associatedLead.source || "",
+      mobile: associatedLead.mobile || "",
+      alt_mobile: associatedLead.alt_mobile || "",
+      village: associatedLead.village || "",
+      district: associatedLead.district || "",
+      state: associatedLead.state || "",
+      scheme: associatedLead.scheme || "",
+      capacity: associatedLead.capacity || "",
+      distance: associatedLead.distance || "",
+      tarrif: associatedLead.tarrif || "",
+      land: associatedLead.land || "N/A",
+      entry_date: formatDateToYYYYMMDD(associatedLead.entry_date) || "",
+      interest: associatedLead.interest || "",
+      comment: associatedLead.comment || "",
+      submitted_by: associatedLead.submitted_by || "",
       type: task.reference,
       icon: task.reference === "By Call" ? <Phone /> : <Person />,
     };
@@ -172,6 +259,24 @@ const TaskDashboard = () => {
     const savedState = localStorage.getItem("disabledCards");
     return savedState ? JSON.parse(savedState) : {};
   });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    // console.log(`Field changed: ${name}, New Value: ${value}`);
+
+    setSelectedTask((prev) => {
+      if (name === "available_land") {
+        return {
+          ...prev,
+          land: {
+            ...prev.land,
+            available_land: value || "",
+          },
+        };
+      }
+      return { ...prev, [name]: value };
+    });
+  };
 
   const handleCheckboxChange = (task, event) => {
     if (event.target.checked) {
@@ -204,7 +309,6 @@ const TaskDashboard = () => {
       await updateTask(updateData).unwrap();
       toast.success("Comment updated successfully");
 
-      // Mark the task as completed after submission
       const updatedDisabledCards = {
         ...disabledCards,
         [selectedTask._id]: true,
@@ -216,7 +320,6 @@ const TaskDashboard = () => {
         JSON.stringify(updatedDisabledCards)
       );
 
-      // Mark the task as completed and add to completedTasks
       setCompletedTasks((prev) => ({
         ...prev,
         [selectedTask._id]: true,
@@ -303,6 +406,20 @@ const TaskDashboard = () => {
     date.setDate(date.getDate() + 2);
 
     return date.toLocaleDateString("en-US", options);
+  };
+
+  // const [selectedTask, setSelectedTask] = useState(null);
+  const [openModal, setOpenModal] = useState(false);
+
+  const handleOpenModal = (task) => {
+    if (!task) return; // Prevent setting null
+    setSelectedTask(task);
+    setOpenModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+    setTimeout(() => setSelectedTask(null), 300); // Delay clearing to prevent errors
   };
 
   return (
@@ -405,14 +522,233 @@ const TaskDashboard = () => {
                     <CardContent>
                       <Grid container spacing={2} alignItems="center">
                         <Grid xs={7}>
-                          <Typography level="h4" color="primary">
+                          <Typography
+                            level="h4"
+                            color="primary"
+                            onClick={() => handleOpenModal(task)}
+                            style={{ cursor: "pointer" }}
+                          >
                             {task.name}
                           </Typography>
+                          <Modal open={openModal} onClose={handleCloseModal}>
+                          <Box
+                            sx={{
+                              p: 4,
+                              bgcolor: "background.surface",
+                              borderRadius: "md",
+                              maxWidth: 600,
+                              mx: "auto",
+                              mt:10
+                            }}
+                          >
+                            <Grid container spacing={2}>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Customer Name</FormLabel>
+                                <Input
+                                  name="name"
+                                  value={selectedTask?.name ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Company Name</FormLabel>
+                                <Input
+                                  name="company"
+                                  value={selectedTask?.company ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Group Name</FormLabel>
+                                <Input
+                                  name="group"
+                                  value={selectedTask?.group ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Source</FormLabel>
+                                <Select
+                                  name="source"
+                                  value={selectedTask?.source ?? ""}
+                                  onChange={(e, newValue) =>
+                                    setSelectedTask({
+                                      ...selectedTask,
+                                      source: newValue,
+                                      reffered_by: "",
+                                    })
+                                  }
+                                  fullWidth
+                                >
+                                  {Object.keys(sourceOptions).map((option) => (
+                                    <Option key={option} value={option}>
+                                      {option}
+                                    </Option>
+                                  ))}
+                                </Select>
+                              </Grid>
+                              {selectedTask?.source &&
+                                sourceOptions[selectedTask.source]?.length >
+                                  0 && (
+                                  <Grid xs={12} sm={6}>
+                                    <FormLabel>Sub Source</FormLabel>
+                                    <Select
+                                      name="reffered_by"
+                                      value={selectedTask?.reffered_by ?? ""}
+                                      readOnly
+                                      fullWidth
+                                    >
+                                      {sourceOptions[selectedTask.source].map(
+                                        (option) => (
+                                          <Option key={option} value={option}>
+                                            {option}
+                                          </Option>
+                                        )
+                                      )}
+                                    </Select>
+                                  </Grid>
+                                )}
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Email ID</FormLabel>
+                                <Input
+                                  name="email"
+                                  type="email"
+                                  value={selectedTask?.email ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Mobile Number</FormLabel>
+                                <Input
+                                  name="mobile"
+                                  type="tel"
+                                  value={selectedTask?.mobile ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Location</FormLabel>
+                                <Input
+                                  name="location"
+                                  value={`${selectedTask?.village ?? ""}, ${selectedTask?.district ?? ""}, ${selectedTask?.state ?? ""}`}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Capacity</FormLabel>
+                                <Input
+                                  name="capacity"
+                                  value={selectedTask?.capacity ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Sub Station Distance (KM)</FormLabel>
+                                <Input
+                                  name="distance"
+                                  value={selectedTask?.distance ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Tariff (Per Unit)</FormLabel>
+                                <Input
+                                  name="tarrif"
+                                  value={selectedTask?.tarrif ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Available Land</FormLabel>
+                                <Input
+                                  name="available_land"
+                                  value={
+                                    selectedTask?.land?.available_land ?? ""
+                                  }
+                                  type="number"
+                                  fullWidth
+                                  variant="soft"
+                                  readOnly
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Creation Date</FormLabel>
+                                <Input
+                                  name="entry_date"
+                                  type="date"
+                                  value={selectedTask?.entry_date ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Scheme</FormLabel>
+                                <Select
+                                  name="scheme"
+                                  value={selectedTask?.scheme ?? ""}
+                                  readOnly
+                                >
+                                  {["KUSUM A", "KUSUM C", "Other"].map(
+                                    (option) => (
+                                      <Option key={option} value={option}>
+                                        {option}
+                                      </Option>
+                                    )
+                                  )}
+                                </Select>
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Land Types</FormLabel>
+                                <Autocomplete
+                                  options={landTypes}
+                                  value={selectedTask?.land?.land_type ?? null}
+                                  readOnly
+                                  getOptionLabel={(option) => option}
+                                  renderInput={(params) => (
+                                    <Input
+                                      {...params}
+                                      placeholder="Land Type"
+                                      variant="soft"
+                                      required
+                                    />
+                                  )}
+                                  isOptionEqualToValue={(option, value) =>
+                                    option === value
+                                  }
+                                  sx={{ width: "100%" }}
+                                />
+                              </Grid>
+                              <Grid xs={12}>
+                                <FormLabel>Comments</FormLabel>
+                                <Input
+                                  name="comment"
+                                  value={selectedTask?.comment ?? ""}
+                                  multiline
+                                  rows={4}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                            </Grid>
+                            <Box textAlign="center" sx={{ mt: 2 }}>
+                              <Button onClick={handleCloseModal}>Close</Button>
+                            </Box>
+                          </Box>
+                        </Modal>
                           <Typography level="body-lg">
                             {task.company}
                           </Typography>
                           <Typography level="body-md" color="neutral">
-                            {task.location}
+                            {`${task?.district ?? ""}, ${task?.state ?? ""}`}
                           </Typography>
                         </Grid>
                         <Grid
@@ -496,15 +832,233 @@ const TaskDashboard = () => {
                       <Grid xs={7}>
                         <Typography
                           level="h4"
+                          onClick={() => handleOpenModal(task)}
+                          style={{ cursor: "pointer" }}
                           color={
                             disabledCards[task._id] ? "neutral" : "primary"
                           }
                         >
                           {task.name}
                         </Typography>
+
+                        <Modal open={openModal} onClose={handleCloseModal}>
+                          <Box
+                            sx={{
+                              p: 4,
+                              bgcolor: "background.surface",
+                              borderRadius: "md",
+                              maxWidth: 600,
+                              mx: "auto",
+                              mt:10
+                            }}
+                          >
+                            <Grid container spacing={2}>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Customer Name</FormLabel>
+                                <Input
+                                  name="name"
+                                  value={selectedTask?.name ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Company Name</FormLabel>
+                                <Input
+                                  name="company"
+                                  value={selectedTask?.company ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Group Name</FormLabel>
+                                <Input
+                                  name="group"
+                                  value={selectedTask?.group ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Source</FormLabel>
+                                <Select
+                                  name="source"
+                                  value={selectedTask?.source ?? ""}
+                                  onChange={(e, newValue) =>
+                                    setSelectedTask({
+                                      ...selectedTask,
+                                      source: newValue,
+                                      reffered_by: "",
+                                    })
+                                  }
+                                  fullWidth
+                                >
+                                  {Object.keys(sourceOptions).map((option) => (
+                                    <Option key={option} value={option}>
+                                      {option}
+                                    </Option>
+                                  ))}
+                                </Select>
+                              </Grid>
+                              {selectedTask?.source &&
+                                sourceOptions[selectedTask.source]?.length >
+                                  0 && (
+                                  <Grid xs={12} sm={6}>
+                                    <FormLabel>Sub Source</FormLabel>
+                                    <Select
+                                      name="reffered_by"
+                                      value={selectedTask?.reffered_by ?? ""}
+                                      readOnly
+                                      fullWidth
+                                    >
+                                      {sourceOptions[selectedTask.source].map(
+                                        (option) => (
+                                          <Option key={option} value={option}>
+                                            {option}
+                                          </Option>
+                                        )
+                                      )}
+                                    </Select>
+                                  </Grid>
+                                )}
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Email ID</FormLabel>
+                                <Input
+                                  name="email"
+                                  type="email"
+                                  value={selectedTask?.email ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Mobile Number</FormLabel>
+                                <Input
+                                  name="mobile"
+                                  type="tel"
+                                  value={selectedTask?.mobile ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Location</FormLabel>
+                                <Input
+                                  name="location"
+                                  value={`${selectedTask?.village ?? ""}, ${selectedTask?.district ?? ""}, ${selectedTask?.state ?? ""}`}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Capacity</FormLabel>
+                                <Input
+                                  name="capacity"
+                                  value={selectedTask?.capacity ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Sub Station Distance (KM)</FormLabel>
+                                <Input
+                                  name="distance"
+                                  value={selectedTask?.distance ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Tariff (Per Unit)</FormLabel>
+                                <Input
+                                  name="tarrif"
+                                  value={selectedTask?.tarrif ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Available Land</FormLabel>
+                                <Input
+                                  name="available_land"
+                                  value={
+                                    selectedTask?.land?.available_land ?? ""
+                                  }
+                                  type="number"
+                                  fullWidth
+                                  variant="soft"
+                                  readOnly
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Creation Date</FormLabel>
+                                <Input
+                                  name="entry_date"
+                                  type="date"
+                                  value={selectedTask?.entry_date ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Scheme</FormLabel>
+                                <Select
+                                  name="scheme"
+                                  value={selectedTask?.scheme ?? ""}
+                                  readOnly
+                                >
+                                  {["KUSUM A", "KUSUM C", "Other"].map(
+                                    (option) => (
+                                      <Option key={option} value={option}>
+                                        {option}
+                                      </Option>
+                                    )
+                                  )}
+                                </Select>
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Land Types</FormLabel>
+                                <Autocomplete
+                                  options={landTypes}
+                                  value={selectedTask?.land?.land_type ?? null}
+                                  readOnly
+                                  getOptionLabel={(option) => option}
+                                  renderInput={(params) => (
+                                    <Input
+                                      {...params}
+                                      placeholder="Land Type"
+                                      variant="soft"
+                                      required
+                                    />
+                                  )}
+                                  isOptionEqualToValue={(option, value) =>
+                                    option === value
+                                  }
+                                  sx={{ width: "100%" }}
+                                />
+                              </Grid>
+                              <Grid xs={12}>
+                                <FormLabel>Comments</FormLabel>
+                                <Input
+                                  name="comment"
+                                  value={selectedTask?.comment ?? ""}
+                                  multiline
+                                  rows={4}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                            </Grid>
+                            <Box textAlign="center" sx={{ mt: 2 }}>
+                              <Button onClick={handleCloseModal}>Close</Button>
+                            </Box>
+                          </Box>
+                        </Modal>
+
                         <Typography level="body-lg">{task.company}</Typography>
                         <Typography level="body-md" color="neutral">
-                          {task.location}
+                        {`${task?.district ?? ""}, ${task?.state ?? ""}`}
                         </Typography>
                       </Grid>
                       <Grid
@@ -522,8 +1076,8 @@ const TaskDashboard = () => {
                           sx={{
                             "&.Mui-checked": {
                               color: "white",
-                              backgroundColor: "#4caf50", // Green background on check
-                              borderRadius: "50%", // Optional rounded checkbox
+                              backgroundColor: "#4caf50",
+                              borderRadius: "50%",
                               transition: "background-color 0.3s ease-in-out",
                             },
                             "&.Mui-disabled": {
@@ -595,12 +1149,226 @@ const TaskDashboard = () => {
                   <CardContent>
                     <Grid container spacing={2} alignItems="center">
                       <Grid xs={7}>
-                        <Typography level="h4" color="primary">
+                        <Typography level="h4" color="primary" onClick={() => handleOpenModal(task)} style={{ cursor: "pointer" }}>
                           {task.name}
                         </Typography>
+                        <Modal open={openModal} onClose={handleCloseModal}>
+                          <Box
+                            sx={{
+                              p: 4,
+                              bgcolor: "background.surface",
+                              borderRadius: "md",
+                              maxWidth: 600,
+                              mx: "auto",
+                              mt:10
+                            }}
+                          >
+                            <Grid container spacing={2}>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Customer Name</FormLabel>
+                                <Input
+                                  name="name"
+                                  value={selectedTask?.name ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Company Name</FormLabel>
+                                <Input
+                                  name="company"
+                                  value={selectedTask?.company ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Group Name</FormLabel>
+                                <Input
+                                  name="group"
+                                  value={selectedTask?.group ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Source</FormLabel>
+                                <Select
+                                  name="source"
+                                  value={selectedTask?.source ?? ""}
+                                  onChange={(e, newValue) =>
+                                    setSelectedTask({
+                                      ...selectedTask,
+                                      source: newValue,
+                                      reffered_by: "",
+                                    })
+                                  }
+                                  fullWidth
+                                >
+                                  {Object.keys(sourceOptions).map((option) => (
+                                    <Option key={option} value={option}>
+                                      {option}
+                                    </Option>
+                                  ))}
+                                </Select>
+                              </Grid>
+                              {selectedTask?.source &&
+                                sourceOptions[selectedTask.source]?.length >
+                                  0 && (
+                                  <Grid xs={12} sm={6}>
+                                    <FormLabel>Sub Source</FormLabel>
+                                    <Select
+                                      name="reffered_by"
+                                      value={selectedTask?.reffered_by ?? ""}
+                                      readOnly
+                                      fullWidth
+                                    >
+                                      {sourceOptions[selectedTask.source].map(
+                                        (option) => (
+                                          <Option key={option} value={option}>
+                                            {option}
+                                          </Option>
+                                        )
+                                      )}
+                                    </Select>
+                                  </Grid>
+                                )}
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Email ID</FormLabel>
+                                <Input
+                                  name="email"
+                                  type="email"
+                                  value={selectedTask?.email ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Mobile Number</FormLabel>
+                                <Input
+                                  name="mobile"
+                                  type="tel"
+                                  value={selectedTask?.mobile ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Location</FormLabel>
+                                <Input
+                                  name="location"
+                                  value={`${selectedTask?.village ?? ""}, ${selectedTask?.district ?? ""}, ${selectedTask?.state ?? ""}`}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Capacity</FormLabel>
+                                <Input
+                                  name="capacity"
+                                  value={selectedTask?.capacity ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Sub Station Distance (KM)</FormLabel>
+                                <Input
+                                  name="distance"
+                                  value={selectedTask?.distance ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Tariff (Per Unit)</FormLabel>
+                                <Input
+                                  name="tarrif"
+                                  value={selectedTask?.tarrif ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Available Land</FormLabel>
+                                <Input
+                                  name="available_land"
+                                  value={
+                                    selectedTask?.land?.available_land ?? ""
+                                  }
+                                  type="number"
+                                  fullWidth
+                                  variant="soft"
+                                  readOnly
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Creation Date</FormLabel>
+                                <Input
+                                  name="entry_date"
+                                  type="date"
+                                  value={selectedTask?.entry_date ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Scheme</FormLabel>
+                                <Select
+                                  name="scheme"
+                                  value={selectedTask?.scheme ?? ""}
+                                  readOnly
+                                >
+                                  {["KUSUM A", "KUSUM C", "Other"].map(
+                                    (option) => (
+                                      <Option key={option} value={option}>
+                                        {option}
+                                      </Option>
+                                    )
+                                  )}
+                                </Select>
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Land Types</FormLabel>
+                                <Autocomplete
+                                  options={landTypes}
+                                  value={selectedTask?.land?.land_type ?? null}
+                                  readOnly
+                                  getOptionLabel={(option) => option}
+                                  renderInput={(params) => (
+                                    <Input
+                                      {...params}
+                                      placeholder="Land Type"
+                                      variant="soft"
+                                      required
+                                    />
+                                  )}
+                                  isOptionEqualToValue={(option, value) =>
+                                    option === value
+                                  }
+                                  sx={{ width: "100%" }}
+                                />
+                              </Grid>
+                              <Grid xs={12}>
+                                <FormLabel>Comments</FormLabel>
+                                <Input
+                                  name="comment"
+                                  value={selectedTask?.comment ?? ""}
+                                  multiline
+                                  rows={4}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                            </Grid>
+                            <Box textAlign="center" sx={{ mt: 2 }}>
+                              <Button onClick={handleCloseModal}>Close</Button>
+                            </Box>
+                          </Box>
+                        </Modal>
                         <Typography level="body-lg">{task.company}</Typography>
                         <Typography level="body-md" color="neutral">
-                          {task.location}
+                        {`${task?.district ?? ""}, ${task?.state ?? ""}`}
                         </Typography>
                       </Grid>
                       <Grid
@@ -674,14 +1442,228 @@ const TaskDashboard = () => {
                     <CardContent>
                       <Grid container spacing={2} alignItems="center">
                         <Grid xs={7}>
-                          <Typography level="h4" color="primary">
+                          <Typography level="h4" color="primary" onClick={() => handleOpenModal(task)} style={{ cursor: "pointer" }}>
                             {task.name}
                           </Typography>
+                          <Modal open={openModal} onClose={handleCloseModal}>
+                          <Box
+                            sx={{
+                              p: 4,
+                              bgcolor: "background.surface",
+                              borderRadius: "md",
+                              maxWidth: 600,
+                              mx: "auto",
+                              mt:10
+                            }}
+                          >
+                            <Grid container spacing={2}>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Customer Name</FormLabel>
+                                <Input
+                                  name="name"
+                                  value={selectedTask?.name ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Company Name</FormLabel>
+                                <Input
+                                  name="company"
+                                  value={selectedTask?.company ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Group Name</FormLabel>
+                                <Input
+                                  name="group"
+                                  value={selectedTask?.group ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Source</FormLabel>
+                                <Select
+                                  name="source"
+                                  value={selectedTask?.source ?? ""}
+                                  onChange={(e, newValue) =>
+                                    setSelectedTask({
+                                      ...selectedTask,
+                                      source: newValue,
+                                      reffered_by: "",
+                                    })
+                                  }
+                                  fullWidth
+                                >
+                                  {Object.keys(sourceOptions).map((option) => (
+                                    <Option key={option} value={option}>
+                                      {option}
+                                    </Option>
+                                  ))}
+                                </Select>
+                              </Grid>
+                              {selectedTask?.source &&
+                                sourceOptions[selectedTask.source]?.length >
+                                  0 && (
+                                  <Grid xs={12} sm={6}>
+                                    <FormLabel>Sub Source</FormLabel>
+                                    <Select
+                                      name="reffered_by"
+                                      value={selectedTask?.reffered_by ?? ""}
+                                      readOnly
+                                      fullWidth
+                                    >
+                                      {sourceOptions[selectedTask.source].map(
+                                        (option) => (
+                                          <Option key={option} value={option}>
+                                            {option}
+                                          </Option>
+                                        )
+                                      )}
+                                    </Select>
+                                  </Grid>
+                                )}
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Email ID</FormLabel>
+                                <Input
+                                  name="email"
+                                  type="email"
+                                  value={selectedTask?.email ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Mobile Number</FormLabel>
+                                <Input
+                                  name="mobile"
+                                  type="tel"
+                                  value={selectedTask?.mobile ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Location</FormLabel>
+                                <Input
+                                  name="location"
+                                  value={`${selectedTask?.village ?? ""}, ${selectedTask?.district ?? ""}, ${selectedTask?.state ?? ""}`}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Capacity</FormLabel>
+                                <Input
+                                  name="capacity"
+                                  value={selectedTask?.capacity ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Sub Station Distance (KM)</FormLabel>
+                                <Input
+                                  name="distance"
+                                  value={selectedTask?.distance ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Tariff (Per Unit)</FormLabel>
+                                <Input
+                                  name="tarrif"
+                                  value={selectedTask?.tarrif ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Available Land</FormLabel>
+                                <Input
+                                  name="available_land"
+                                  value={
+                                    selectedTask?.land?.available_land ?? ""
+                                  }
+                                  type="number"
+                                  fullWidth
+                                  variant="soft"
+                                  readOnly
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Creation Date</FormLabel>
+                                <Input
+                                  name="entry_date"
+                                  type="date"
+                                  value={selectedTask?.entry_date ?? ""}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Scheme</FormLabel>
+                                <Select
+                                  name="scheme"
+                                  value={selectedTask?.scheme ?? ""}
+                                  readOnly
+                                >
+                                  {["KUSUM A", "KUSUM C", "Other"].map(
+                                    (option) => (
+                                      <Option key={option} value={option}>
+                                        {option}
+                                      </Option>
+                                    )
+                                  )}
+                                </Select>
+                              </Grid>
+                              <Grid xs={12} sm={6}>
+                                <FormLabel>Land Types</FormLabel>
+                                <Autocomplete
+                                  options={landTypes}
+                                  value={selectedTask?.land?.land_type ?? null}
+                                  readOnly
+                                  getOptionLabel={(option) => option}
+                                  renderInput={(params) => (
+                                    <Input
+                                      {...params}
+                                      placeholder="Land Type"
+                                      variant="soft"
+                                      required
+                                    />
+                                  )}
+                                  isOptionEqualToValue={(option, value) =>
+                                    option === value
+                                  }
+                                  sx={{ width: "100%" }}
+                                />
+                              </Grid>
+                              <Grid xs={12}>
+                                <FormLabel>Comments</FormLabel>
+                                <Input
+                                  name="comment"
+                                  value={selectedTask?.comment ?? ""}
+                                  multiline
+                                  rows={4}
+                                  readOnly
+                                  fullWidth
+                                />
+                              </Grid>
+                            </Grid>
+                            <Box textAlign="center" sx={{ mt: 2 }}>
+                              <Button onClick={handleCloseModal}>Close</Button>
+                            </Box>
+                          </Box>
+                        </Modal>
                           <Typography level="body-lg">
                             {task.company}
                           </Typography>
                           <Typography level="body-md" color="neutral">
-                            {task.location}
+                          {`${task?.district ?? ""}, ${task?.state ?? ""}`}
                           </Typography>
                         </Grid>
                         <Grid
@@ -761,19 +1743,21 @@ const TaskDashboard = () => {
       <Modal open={open} onClose={() => setOpen(false)}>
         <ModalDialog>
           <Stack spacing={2} mt={1}>
-            <Button
+            {/* <Button
               variant="soft"
               onClick={() => {
                 // console.log("View Customer Details")
               }}
             >
               View Customer Details
-            </Button>
+            </Button> */}
             <Button
               variant="soft"
-              onClick={() => {
+            
                 // console.log("View Follow-ups History")
-              }}
+                onClick={() => handleOpenModal(task)} style={{ cursor: "pointer" }}
+                
+             
             >
               View History
             </Button>
@@ -786,6 +1770,121 @@ const TaskDashboard = () => {
           >
             Close
           </Button>
+        </ModalDialog>
+      </Modal>
+
+      <Modal open={openModal} onClose={handleCloseModal}>
+        <ModalDialog
+          size="lg"
+          sx={{ maxWidth: 900, p: 3, borderRadius: "12px" }}
+        >
+          <Box textAlign="center" mb={3}>
+            <img src={Img1} alt="Follow Up" style={{ width: 60 }} />
+            <Typography
+              level="h2"
+              sx={{ color: "#D78827", fontWeight: "bold" }}
+            >
+              View History
+            </Typography>
+          </Box>
+
+          {selectedTask ? (
+            <Sheet
+              variant="soft"
+              sx={{
+                p: 3,
+                mb: 2,
+                backgroundColor: "#e3f2fd",
+                borderRadius: "12px",
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 1.5,
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: "1.2rem",
+                  fontWeight: "bold",
+                  color: "#1976D2",
+                }}
+              >
+                Client Information
+              </Typography>
+              <Divider />
+              <Typography sx={{ fontSize: "1.1rem", color: "#333" }}>
+                <strong>Client Name:</strong> {selectedTask?.c_name || "N/A"}{" "}
+                &nbsp;| &nbsp;&nbsp;
+                <strong>POC:</strong> {selectedTask?.company || "N/A"} &nbsp;|
+                &nbsp;&nbsp;
+                <strong>Company:</strong> {selectedTask?.company || "N/A"}{" "}
+                &nbsp;| &nbsp;&nbsp;
+                <strong>Location:</strong> {selectedTask?.state || "N/A"}
+              </Typography>
+            </Sheet>
+          ) : (
+            <Typography textAlign="center" color="error">
+              No lead data found.
+            </Typography>
+          )}
+
+          <Sheet
+            variant="outlined"
+            sx={{ borderRadius: "12px", overflow: "hidden" }}
+          >
+            <Table
+              borderAxis="both"
+              size="lg"
+              sx={{
+                "& th": {
+                  backgroundColor: "#f0f0f0",
+                  fontWeight: "bold",
+                  fontSize: "1.1rem",
+                },
+                "& td": { fontSize: "1rem" },
+              }}
+            >
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Reference</th>
+                  <th>By Whom</th>
+                  <th>Comments</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTasks.length > 0 ? (
+                  filteredTasks.map((row, index) => (
+                    <tr key={index}>
+                      <td>{row.date || "N/A"}</td>
+                      <td>{row.reference || "N/A"}</td>
+                      <td>{row.by_whom || "N/A"}</td>
+                      <td>{row.comment || "N/A"}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan="4"
+                      style={{
+                        textAlign: "center",
+                        padding: "10px",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      No task history available.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </Table>
+          </Sheet>
+
+          <Box textAlign="center" mt={3}>
+            <Button variant="solid" color="primary" onClick={handleCloseModal}>
+              Close
+            </Button>
+          </Box>
         </ModalDialog>
       </Modal>
     </Box>
