@@ -1,6 +1,5 @@
 import { AccessTime, CheckCircle, Person, Phone } from "@mui/icons-material";
 import {
-  Autocomplete,
   Box,
   Button,
   Card,
@@ -10,16 +9,13 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormLabel,
+  Divider,
   Grid,
-  Input,
   Modal,
   ModalDialog,
-  Option,
-  Select,
   Sheet,
-  Stack,
   Tab,
+  Table,
   TabList,
   TabPanel,
   Tabs,
@@ -30,6 +26,7 @@ import { isBefore, isToday, isTomorrow, parseISO } from "date-fns";
 import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import logo from "../assets/cheer-up.png";
+import Img1 from "../assets/follow_up_history.png";
 import {
   useGetEntireLeadsQuery,
   useUpdateTaskCommentMutation,
@@ -169,7 +166,6 @@ const TaskDashboard = () => {
 
   console.log(getuserArray);
 
-
   // Match tasks to their corresponding leads
   const matchedTasks = getTaskArray.filter((task) =>
     getLeadArray.some((lead) => String(task.id) === String(lead.id))
@@ -201,115 +197,136 @@ const TaskDashboard = () => {
     future: [],
   };
 
-  
+  const userNames = Array.isArray(user?.name)
+    ? user.name.map((name) => name.toLowerCase())
+    : [user?.name?.toLowerCase()];
+
   matchedTasks
-  .filter((task) => {
-    if (!task.by_whom || !user?.name) return false;
+    .filter((task) => {
+      if (!task.by_whom || !user?.name) return false;
 
-    // Allow IT Team and Admin to see all tasks
-    if (user.name === "IT Team" || user.name === "admin") return true;
+      // Allow IT Team and Admin to see all tasks
+      if (user.name === "IT Team" || user.name === "admin") return true;
 
-    // Convert `by_whom` into a trimmed, lowercase array
-    const assignedUsers = task.by_whom
-      .split(",")
-      .map((name) => name.trim().toLowerCase());
+      // Convert `by_whom` into a trimmed, lowercase array
+      const assignedUsers = task.by_whom
+        .split(",")
+        .map((name) => name.trim().toLowerCase());
 
-    // Ensure `user.name` is treated as an array and converted to lowercase
-    const userNames = Array.isArray(user.name)
-      ? user.name.map((name) => name.toLowerCase())
-      : [user.name.toLowerCase()];
+      // Ensure `user.name` is treated as an array and converted to lowercase
+      // const userNames = Array.isArray(user.name)
+      //   ? user.name.map((name) => name.toLowerCase())
+      //   : [user.name.toLowerCase()];
 
-    // Check if any userNames exist in assignedUsers
-    return userNames.some((name) => assignedUsers.includes(name));
-  })
-  .forEach((task) => {
-    if (!task.date) {
-      console.warn("❌ Task missing date:", task);
-      return;
+      // Check if any userNames exist in assignedUsers
+      return userNames.some((name) => assignedUsers.includes(name));
+    })
+    .forEach((task) => {
+      if (!task.date) {
+        console.warn("❌ Task missing date:", task);
+        return;
+      }
+
+      const canCheck =
+        task.submitted_by?.toLowerCase() === user?.name?.toLowerCase();
+
+      const taskDate = parseISO(task.date);
+      const now = new Date();
+
+      const associatedLead = getLeadArray.find(
+        (lead) => String(lead.id) === String(task.id)
+      );
+
+      const associatedTask = getTaskHistoryArray.find(
+        (taskHistory) => String(taskHistory.id) === String(task.id)
+      );
+
+      if (!associatedLead) return;
+
+      const taskEntry = {
+        _id: task._id,
+        id: task.id,
+        date: task.date || "",
+        name: associatedLead.c_name || "Unknown",
+        company: associatedLead.company || "",
+        group: associatedLead.group || "",
+        mobile: associatedLead.mobile || "",
+        district: associatedLead.district || "",
+        state: associatedLead.state || "",
+        scheme: associatedLead.scheme || "",
+        capacity: associatedLead.capacity || "",
+        type: task.reference || "",
+        by_whom: task.by_whom || "",
+        icon: task.reference === "By Call" ? <Phone /> : <Person />,
+        reference: associatedTask?.reference || "",
+        comment: associatedTask?.comment || "",
+        assigned_user: user?.name || "Unknown User",
+        canCheck: canCheck,
+        submitted_by: task.submitted_by || "",
+      };
+
+      // ✅ Ensure categorizedTasks updates correctly
+      if (isBefore(taskDate, now) && !isToday(taskDate)) {
+        console.log("📌 Categorized as: PAST");
+        categorizedTasks.past.push(taskEntry);
+      } else if (isToday(taskDate)) {
+        console.log("📌 Categorized as: TODAY");
+        categorizedTasks.today.push(taskEntry);
+      } else if (isTomorrow(taskDate)) {
+        console.log("📌 Categorized as: TOMORROW");
+        categorizedTasks.tomorrow.push(taskEntry);
+      } else {
+        console.log("📌 Categorized as: FUTURE");
+        categorizedTasks.future.push(taskEntry);
+      }
+    });
+
+  // const tasksWithComments = getTaskArray.filter((task) => task.comment);
+  // const tasksWithoutComments = getTaskArray.filter((task) => !task.comment);
+
+  // Check if user is IT Team or Admin
+  const isAdminOrITTeam =
+    userNames.includes("it team") || userNames.includes("admin");
+
+  // ✅ Get all tasks if user is IT Team or Admin
+  const allTasks = isAdminOrITTeam
+    ? getTaskArray
+    : getTaskArray.filter((task) => {
+        const assignedUsers = task.by_whom
+          ?.split(",")
+          .map((name) => name.trim().toLowerCase());
+        return userNames.some((name) => assignedUsers?.includes(name));
+      });
+
+  // ✅ Correct comments for tasks without comments without mutating the original array
+  const updatedTasks = allTasks.map((task) => {
+    if (!task.comment) {
+      const assignedUsers = task.by_whom
+        ?.split(",")
+        .map((name) => name.trim().toLowerCase());
+
+      return {
+        ...task,
+        comment: assignedUsers?.length
+          ? `Assigned to ${task.by_whom.trim()}. Comment pending.`
+          : "No assigned user or comment.",
+      };
     }
-
-    const canCheck =
-    user.name === "IT Team" ||
-    user.name === "admin" ||
-    task.id === user.name; 
-    const taskDate = parseISO(task.date);
-    const now = new Date();
-
-    const associatedLead = getLeadArray.find(
-      (lead) => String(lead.id) === String(task.id)
-    );
-
-    const associatedTask = getTaskHistoryArray.find(
-      (taskHistory) => String(taskHistory.id) === String(task.id)
-    );
-
-    if (!associatedLead) return;
-
-    const taskEntry = {
-      _id: task._id,
-      id: task.id,
-      date: task.date || "",
-      name: associatedLead.c_name || "Unknown",
-      company: associatedLead.company || "",
-      group: associatedLead.group || "",
-      mobile: associatedLead.mobile || "",
-      district: associatedLead.district || "",
-      state: associatedLead.state || "",
-      scheme: associatedLead.scheme || "",
-      capacity: associatedLead.capacity || "",
-      type: task.reference || "",
-      by_whom: task.by_whom || "",
-      icon: task.reference === "By Call" ? <Phone /> : <Person />,
-      reference: associatedTask?.reference || "",
-      comment: associatedTask?.comment || "",
-      assigned_user: user?.name || "Unknown User",
-    };
-
-    // ✅ Ensure categorizedTasks updates correctly
-    if (isBefore(taskDate, now) && !isToday(taskDate)) {
-      console.log("📌 Categorized as: PAST");
-      categorizedTasks.past.push(taskEntry);
-    } else if (isToday(taskDate)) {
-      console.log("📌 Categorized as: TODAY");
-      categorizedTasks.today.push(taskEntry);
-    } else if (isTomorrow(taskDate)) {
-      console.log("📌 Categorized as: TOMORROW");
-      categorizedTasks.tomorrow.push(taskEntry);
-    } else {
-      console.log("📌 Categorized as: FUTURE");
-      categorizedTasks.future.push(taskEntry);
-    }
+    return task;
   });
 
-
-
-
-
-  const tasksWithComments = getTaskArray.filter((task) => task.comment);
-  const tasksWithoutComments = getTaskArray.filter((task) => !task.comment);
+  // ✅ Split tasks into tasks with and without comments
+  const tasksWithComments = updatedTasks.filter(
+    (task) => task.comment && task.comment !== "No assigned user or comment."
+  );
+  const tasksWithoutComments = updatedTasks.filter(
+    (task) => task.comment === "No assigned user or comment."
+  );
 
   const [disabledCards, setDisabledCards] = useState(() => {
     const savedState = localStorage.getItem("disabledCards");
     return savedState ? JSON.parse(savedState) : {};
   });
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    // console.log(`Field changed: ${name}, New Value: ${value}`);
-
-    setSelectedTask((prev) => {
-      if (name === "available_land") {
-        return {
-          ...prev,
-          land: {
-            ...prev.land,
-            available_land: value || "",
-          },
-        };
-      }
-      return { ...prev, [name]: value };
-    });
-  };
 
   const handleCheckboxChange = (task, event) => {
     const isChecked = event.target.checked;
@@ -537,56 +554,71 @@ const TaskDashboard = () => {
           >
             <Box>
               <Box display="flex" justifyContent="center" gap={2} mb={3}>
+                {/* ✅ Tasks with comments */}
                 <Chip
                   startDecorator={<CheckCircle color="success" />}
                   variant="soft"
                   size="lg"
+                  sx={{
+                    backgroundColor: "#e8f5e9", // Light green for success
+                    color: "#388e3c", // Dark green text
+                  }}
                 >
-                  {tasksWithComments.length || 0}
+                  {tasksWithComments.length || 0}{" "}
+                  {tasksWithComments.length === 1 ? "Meeting" : "Meetings"}{" "}
+                  Added
                 </Chip>
+
+                {/* ⏰ Tasks without comments */}
                 <Chip
                   startDecorator={<AccessTime color="warning" />}
                   variant="soft"
                   size="lg"
+                  sx={{
+                    backgroundColor: "#fff8e1", // Light yellow for warning
+                    color: "#f57c00", // Orange text
+                  }}
                 >
-                  {tasksWithoutComments.length || 0}
+                  {tasksWithoutComments.length || 0}{" "}
+                  {tasksWithoutComments.length === 1
+                    ? "Pending Meeting"
+                    : "Pending Meetings"}
                 </Chip>
               </Box>
 
               {categorizedTasks.past.length > 0 ? (
-               currentTasksPast
-               .filter((task) => {
-                 if (!task.by_whom || !user?.name) return false; // Ensure both exist
-             
-                 // Normalize `by_whom` list to an array of trimmed, lowercase names
-                 const assignedUsers = task.by_whom
-                   .split(",")
-                   .map((name) => name.trim().toLowerCase());
-             
-                 // Ensure user.name is an array and lowercase
-                 const userNames = Array.isArray(user.name)
-                   ? user.name.map((name) => name.toLowerCase())
-                   : [user.name.toLowerCase()];
-             
-                 // Allow "IT Team" or "admin" to see all tasks
-                 const isMatched =
-                   userNames.includes("it team") || 
-                   userNames.includes("admin") || 
-                   userNames.some((name) => assignedUsers.includes(name));
-             
-                 // Debugging logs
-                 console.log("----------- DEBUG LOG -----------");
-                 console.log("Task ID:", task.id || "N/A");
-                 console.log("Task By Whom (Original):", task.by_whom);
-                 console.log("Processed Assigned Users:", assignedUsers);
-                 console.log("Logged-in User Names:", userNames);
-                 console.log("Match Found:", isMatched);
-                 console.log("---------------------------------");
-             
-                 return isMatched;
-               })
-               .map((task, index) => (
-              
+                currentTasksPast
+                  .filter((task) => {
+                    if (!task.by_whom || !user?.name) return false; // Ensure both exist
+
+                    // Normalize `by_whom` list to an array of trimmed, lowercase names
+                    const assignedUsers = task.by_whom
+                      .split(",")
+                      .map((name) => name.trim().toLowerCase());
+
+                    // Ensure user.name is an array and lowercase
+                    const userNames = Array.isArray(user.name)
+                      ? user.name.map((name) => name.toLowerCase())
+                      : [user.name.toLowerCase()];
+
+                    // Allow "IT Team" or "admin" to see all tasks
+                    const isMatched =
+                      userNames.includes("it team") ||
+                      userNames.includes("admin") ||
+                      userNames.some((name) => assignedUsers.includes(name));
+
+                    // Debugging logs
+                    console.log("----------- DEBUG LOG -----------");
+                    console.log("Task ID:", task.id || "N/A");
+                    console.log("Task By Whom (Original):", task.by_whom);
+                    console.log("Processed Assigned Users:", assignedUsers);
+                    console.log("Logged-in User Names:", userNames);
+                    console.log("Match Found:", isMatched);
+                    console.log("---------------------------------");
+
+                    return isMatched;
+                  })
+                  .map((task, index) => (
                     <Card
                       key={index}
                       sx={{
@@ -694,120 +726,127 @@ const TaskDashboard = () => {
             </Typography>
             {categorizedTasks.today.length > 0 ? (
               currentTasksToday
-              .filter((task) => {
-                if (!task.by_whom || !user?.name) return false; // Ensure both exist
-            
-                // Normalize `by_whom` list to an array of trimmed, lowercase names
-                const assignedUsers = task.by_whom
-                  .split(",")
-                  .map((name) => name.trim().toLowerCase());
-            
-                // Ensure user.name is an array and lowercase
-                const userNames = Array.isArray(user.name)
-                  ? user.name.map((name) => name.toLowerCase())
-                  : [user.name.toLowerCase()];
-            
-                // Allow "IT Team" or "admin" to see all tasks
-                const isMatched =
-                  userNames.includes("it team") || 
-                  userNames.includes("admin") || 
-                  userNames.some((name) => assignedUsers.includes(name));
-            
-                // Debugging logs
-                console.log("----------- DEBUG LOG -----------");
-                console.log("Task ID:", task.id || "N/A");
-                console.log("Task By Whom (Original):", task.by_whom);
-                console.log("Processed Assigned Users:", assignedUsers);
-                console.log("Logged-in User Names:", userNames);
-                console.log("Match Found:", isMatched);
-                console.log("---------------------------------");
-            
-                return isMatched;
-              })
-              .map((task, index) => (
-                <Card
-                  key={index}
-                  sx={{
-                    mb: 3,
-                    borderRadius: 6,
-                    boxShadow: "xl",
-                    border: "1px solid #bbb",
-                    p: 2,
-                    width: "90%",
-                    mx: "auto",
-                    backgroundColor: disabledCards[task._id]
-                      ? "#f5f5f5"
-                      : "#fff",
-                    pointerEvents: disabledCards[task._id] ? "none" : "auto",
-                    // opacity: disabledCards[task._id] ? 0.6 : 1,
-                  }}
-                >
-                  <CardContent>
-                    <Grid container spacing={2} alignItems="center">
-                      <Grid xs={7}>
-                        <Typography
-                          level="h4"
-                          onClick={() => handleOpenModal(task)}
-                          style={{ cursor: "pointer", pointerEvents: "auto" }} // Ensures clicking is enabled
-                          color={
-                            disabledCards[task._id] ? "neutral" : "primary"
-                          }
-                        >
-                          {task.name}
-                        </Typography>
+                .filter((task) => {
+                  if (!task.by_whom || !user?.name) return false; // Ensure both exist
 
-                        <Typography level="body-lg">{task.company}</Typography>
-                        <Typography level="body-md" color="neutral">
-                          {`${task?.district ?? ""}, ${task?.state ?? ""}`}
-                          {`${task?.district ?? ""}, ${task?.state ?? ""}`}
-                        </Typography>
-                      </Grid>
-                      <Grid
-                        xs={5}
-                        display="flex"
-                        alignItems="center"
-                        justifyContent="flex-end"
-                        flexDirection={"column"}
-                        gap={1}
-                      >
-                        <Checkbox
-                          checked={completedTasks[task._id] || false}
-                          onChange={(e) => handleCheckboxChange(task, e)}
-                          disabled={!task.canCheck} 
-                          sx={{
-                            "&.Mui-checked": {
-                              color: "white",
-                              backgroundColor: "#4caf50",
-                              borderRadius: "50%",
-                              transition: "background-color 0.3s ease-in-out",
-                            },
-                           
-                          }}
-                        />
+                  // Normalize `by_whom` list to an array of trimmed, lowercase names
+                  const assignedUsers = task.by_whom
+                    .split(",")
+                    .map((name) => name.trim().toLowerCase());
 
-                        <Chip
-                          startDecorator={task.icon}
-                          variant="outlined"
-                          size="lg"
-                        >
-                          {task.type}
-                        </Chip>
-                        <Button
-                          variant="plain"
-                          onClick={() =>
-                            !disabledCards[task._id] && setOpen(true)
-                          }
-                          disabled={disabledCards[task._id]}
-                        >
-                          <Typography>
-                            {disabledCards[task._id] ? "Comment Added" : "..."}
+                  // Ensure user.name is an array and lowercase
+                  const userNames = Array.isArray(user.name)
+                    ? user.name.map((name) => name.toLowerCase())
+                    : [user.name.toLowerCase()];
+
+                  // Allow "IT Team" or "admin" to see all tasks
+                  const isMatched =
+                    userNames.includes("it team") ||
+                    userNames.includes("admin") ||
+                    userNames.some((name) => assignedUsers.includes(name));
+
+                  // Debugging logs
+                  console.log("----------- DEBUG LOG -----------");
+                  console.log("Task ID:", task.id || "N/A");
+                  console.log("Task By Whom (Original):", task.by_whom);
+                  console.log("Processed Assigned Users:", assignedUsers);
+                  console.log("Logged-in User Names:", userNames);
+                  console.log("Match Found:", isMatched);
+                  console.log("---------------------------------");
+
+                  return isMatched;
+                })
+                .map((task, index) => (
+                  <Card
+                    key={index}
+                    sx={{
+                      mb: 3,
+                      borderRadius: 6,
+                      boxShadow: "xl",
+                      border: "1px solid #bbb",
+                      p: 2,
+                      width: "90%",
+                      mx: "auto",
+                      backgroundColor: disabledCards[task._id]
+                        ? "#f5f5f5"
+                        : "#fff",
+                      pointerEvents: disabledCards[task._id] ? "none" : "auto",
+                      // opacity: disabledCards[task._id] ? 0.6 : 1,
+                    }}
+                  >
+                    <CardContent>
+                      <Grid container spacing={2} alignItems="center">
+                        <Grid xs={7}>
+                          <Typography
+                            level="h4"
+                            onClick={() => handleOpenModal(task)}
+                            style={{ cursor: "pointer", pointerEvents: "auto" }} // Ensures clicking is enabled
+                            color={
+                              disabledCards[task._id] ? "neutral" : "primary"
+                            }
+                          >
+                            {task.name}
                           </Typography>
-                        </Button>
+
+                          <Typography level="body-lg">
+                            {task.company}
+                          </Typography>
+                          <Typography level="body-md" color="neutral">
+                            {`${task?.district ?? ""}, ${task?.state ?? ""}`}
+                          </Typography>
+                        </Grid>
+                        <Grid
+                          xs={5}
+                          display="flex"
+                          alignItems="center"
+                          justifyContent="flex-end"
+                          flexDirection={"column"}
+                          gap={1}
+                        >
+                          {(user?.name === "IT Team" ||
+                            user?.name === "admin" ||
+                            user?.name?.toLowerCase() ===
+                              task?.submitted_by?.toLowerCase()) && (
+                            <Checkbox
+                              checked={completedTasks[task._id] || false}
+                              onChange={(e) => handleCheckboxChange(task, e)}
+                              sx={{
+                                "&.Mui-checked": {
+                                  color: "white",
+                                  backgroundColor: "#4caf50",
+                                  borderRadius: "50%",
+                                  transition:
+                                    "background-color 0.3s ease-in-out",
+                                },
+                              }}
+                            />
+                          )}
+
+                          <Chip
+                            startDecorator={task.icon}
+                            variant="outlined"
+                            size="lg"
+                          >
+                            {task.type}
+                          </Chip>
+                          <Button
+                            variant="plain"
+                            onClick={() =>
+                              !disabledCards[task._id] && setOpen(true)
+                            }
+                            disabled={disabledCards[task._id]}
+                          >
+                            <Typography>
+                              {disabledCards[task._id]
+                                ? "Comment Added"
+                                : "..."}
+                            </Typography>
+                          </Button>
+                        </Grid>
                       </Grid>
-                    </Grid>
-                  </CardContent>
-                </Card>
-              ))
+                    </CardContent>
+                  </Card>
+                ))
             ) : (
               <Typography level="body-lg">No tasks for today.</Typography>
             )}
@@ -831,99 +870,94 @@ const TaskDashboard = () => {
               {getTomorrowDate()}
             </Typography>
             {categorizedTasks.tomorrow.length > 0 ? (
-             currentTasksTomorrow
-             .filter((task) => {
-               if (!task.by_whom || !user?.name) return false; // Ensure both exist
-           
-               // Normalize `by_whom` list to an array of trimmed, lowercase names
-               const assignedUsers = task.by_whom
-                 .split(",")
-                 .map((name) => name.trim().toLowerCase());
-           
-               // Ensure user.name is an array and lowercase
-               const userNames = Array.isArray(user.name)
-                 ? user.name.map((name) => name.toLowerCase())
-                 : [user.name.toLowerCase()];
-           
-               // Allow "IT Team" or "admin" to see all tasks
-               const isMatched =
-                 userNames.includes("it team") || 
-                 userNames.includes("admin") || 
-                 userNames.some((name) => assignedUsers.includes(name));
-           
-               // Debugging logs
-               console.log("----------- DEBUG LOG -----------");
-               console.log("Task ID:", task.id || "N/A");
-               console.log("Task By Whom (Original):", task.by_whom);
-               console.log("Processed Assigned Users:", assignedUsers);
-               console.log("Logged-in User Names:", userNames);
-               console.log("Match Found:", isMatched);
-               console.log("---------------------------------");
-           
-               return isMatched;
-             })
-             .map((task, index) => (
-                <Card
-                  key={index}
-                  sx={{
-                    mb: 3,
-                    borderRadius: 6,
-                    boxShadow: "xl",
-                    border: "1px solid #bbb",
-                    p: 2,
-                    width: "90%",
-                    mx: "auto",
-                  }}
-                >
-                  <CardContent>
-                    <Grid container spacing={2} alignItems="center">
-                      <Grid xs={7}>
-                        <Typography
-                          level="h4"
-                          color="primary"
-                          onClick={() => handleOpenModal(task)}
-                          style={{ cursor: "pointer" }}
+              currentTasksTomorrow
+                .filter((task) => {
+                  if (!task.by_whom || !user?.name) return false; // Ensure both exist
+
+                  // Normalize `by_whom` list to an array of trimmed, lowercase names
+                  const assignedUsers = task.by_whom
+                    .split(",")
+                    .map((name) => name.trim().toLowerCase());
+
+                  // Ensure user.name is an array and lowercase
+                  const userNames = Array.isArray(user.name)
+                    ? user.name.map((name) => name.toLowerCase())
+                    : [user.name.toLowerCase()];
+
+                  // Allow "IT Team" or "admin" to see all tasks
+                  const isMatched =
+                    userNames.includes("it team") ||
+                    userNames.includes("admin") ||
+                    userNames.some((name) => assignedUsers.includes(name));
+
+                  // Debugging logs
+                  console.log("----------- DEBUG LOG -----------");
+                  console.log("Task ID:", task.id || "N/A");
+                  console.log("Task By Whom (Original):", task.by_whom);
+                  console.log("Processed Assigned Users:", assignedUsers);
+                  console.log("Logged-in User Names:", userNames);
+                  console.log("Match Found:", isMatched);
+                  console.log("---------------------------------");
+
+                  return isMatched;
+                })
+                .map((task, index) => (
+                  <Card
+                    key={index}
+                    sx={{
+                      mb: 3,
+                      borderRadius: 6,
+                      boxShadow: "xl",
+                      border: "1px solid #bbb",
+                      p: 2,
+                      width: "90%",
+                      mx: "auto",
+                    }}
+                  >
+                    <CardContent>
+                      <Grid container spacing={2} alignItems="center">
+                        <Grid xs={7}>
+                          <Typography
+                            level="h4"
+                            color="primary"
+                            onClick={() => handleOpenModal(task)}
+                            style={{ cursor: "pointer" }}
+                          >
+                            {task.name}
+                          </Typography>
+                          <Typography level="body-lg">
+                            {task.company}
+                          </Typography>
+                          <Typography level="body-md" color="neutral">
+                            {`${task?.district ?? ""}, ${task?.state ?? ""}`}
+                          </Typography>
+                        </Grid>
+                        <Grid
+                          xs={5}
+                          display="flex"
+                          alignItems="center"
+                          justifyContent="flex-end"
+                          flexDirection={"column"}
+                          gap={1}
                         >
-                        <Typography
-                          level="h4"
-                          color="primary"
-                          onClick={() => handleOpenModal(task)}
-                          style={{ cursor: "pointer" }}
-                        >
-                          {task.name}
-                        </Typography>
-                        <Typography level="body-lg">{task.company}</Typography>
-                        <Typography level="body-md" color="neutral">
-                          {`${task?.district ?? ""}, ${task?.state ?? ""}`}
-                          {`${task?.district ?? ""}, ${task?.state ?? ""}`}
-                        </Typography>
+                          <Typography level="body-md" textColor="green">
+                            {getTomorrowDate()}
+                          </Typography>
+                          <Chip
+                            startDecorator={task.icon}
+                            variant="outlined"
+                            size="lg"
+                          >
+                            {task.type}
+                          </Chip>
+                          <Button variant="plain" onClick={() => setOpen(true)}>
+                            <Typography>...</Typography>
+                          </Button>
+                        </Grid>
                       </Grid>
-                      <Grid
-                        xs={5}
-                        display="flex"
-                        alignItems="center"
-                        justifyContent="flex-end"
-                        flexDirection={"column"}
-                        gap={1}
-                      >
-                        <Typography level="body-md" textColor="green">
-                          {getTomorrowDate()}
-                        </Typography>
-                        <Chip
-                          startDecorator={task.icon}
-                          variant="outlined"
-                          size="lg"
-                        >
-                          {task.type}
-                        </Chip>
-                        <Button variant="plain" onClick={() => setOpen(true)}>
-                          <Typography>...</Typography>
-                        </Button>
-                      </Grid>
-                    </Grid>
-                  </CardContent>
-                </Card>
-              ))
+                    </CardContent>
+                  </Card>
+                ))
             ) : (
               <Typography level="body-lg">No tasks for tomorrow.</Typography>
             )}
@@ -952,69 +986,63 @@ const TaskDashboard = () => {
                 <Typography level="h4">Upcoming Task</Typography>
               </Box>
               {categorizedTasks.future.length > 0 ? (
-               currentTasksFuture
-               .filter((task) => {
-                 if (!task.by_whom || !user?.name) return false; // Ensure both exist
-             
-                 // Normalize `by_whom` list to an array of trimmed, lowercase names
-                 const assignedUsers = task.by_whom
-                   .split(",")
-                   .map((name) => name.trim().toLowerCase());
-             
-                 // Ensure user.name is an array and lowercase
-                 const userNames = Array.isArray(user.name)
-                   ? user.name.map((name) => name.toLowerCase())
-                   : [user.name.toLowerCase()];
-             
-                 // Allow "IT Team" or "admin" to see all tasks
-                 const isMatched =
-                   userNames.includes("it team") || 
-                   userNames.includes("admin") || 
-                   userNames.some((name) => assignedUsers.includes(name));
-             
-                 // Debugging logs
-                 console.log("----------- DEBUG LOG -----------");
-                 console.log("Task ID:", task.id || "N/A");
-                 console.log("Task By Whom (Original):", task.by_whom);
-                 console.log("Processed Assigned Users:", assignedUsers);
-                 console.log("Logged-in User Names:", userNames);
-                 console.log("Match Found:", isMatched);
-                 console.log("---------------------------------");
-             
-                 return isMatched;
-               })
-               .map((task, index) => (
-                  <Card
-                    key={index}
-                    sx={{
-                      mb: 3,
-                      borderLeft: "6px solid blue",
-                      borderRadius: 6,
-                      boxShadow: "xl",
-                      border: "1px solid #bbb",
-                      p: 2,
-                      width: "90%",
-                      mx: "auto",
-                    }}
-                  >
-                    <CardContent>
-                      <Grid container spacing={2} alignItems="center">
-                        <Grid xs={7}>
-                          <Typography
-                            level="h4"
-                            color="primary"
-                            onClick={() => handleOpenModal(task)}
-                            style={{ cursor: "pointer" }}
-                          >
-                          <Typography
-                            level="h4"
-                            color="primary"
-                            onClick={() => handleOpenModal(task)}
-                            style={{ cursor: "pointer" }}
-                          >
-                            {task.name}
-                          </Typography>
-                          {/* <Modal open={openModal} onClose={handleCloseModal}>
+                currentTasksFuture
+                  .filter((task) => {
+                    if (!task.by_whom || !user?.name) return false; // Ensure both exist
+
+                    // Normalize `by_whom` list to an array of trimmed, lowercase names
+                    const assignedUsers = task.by_whom
+                      .split(",")
+                      .map((name) => name.trim().toLowerCase());
+
+                    // Ensure user.name is an array and lowercase
+                    const userNames = Array.isArray(user.name)
+                      ? user.name.map((name) => name.toLowerCase())
+                      : [user.name.toLowerCase()];
+
+                    // Allow "IT Team" or "admin" to see all tasks
+                    const isMatched =
+                      userNames.includes("it team") ||
+                      userNames.includes("admin") ||
+                      userNames.some((name) => assignedUsers.includes(name));
+
+                    // Debugging logs
+                    console.log("----------- DEBUG LOG -----------");
+                    console.log("Task ID:", task.id || "N/A");
+                    console.log("Task By Whom (Original):", task.by_whom);
+                    console.log("Processed Assigned Users:", assignedUsers);
+                    console.log("Logged-in User Names:", userNames);
+                    console.log("Match Found:", isMatched);
+                    console.log("---------------------------------");
+
+                    return isMatched;
+                  })
+                  .map((task, index) => (
+                    <Card
+                      key={index}
+                      sx={{
+                        mb: 3,
+                        borderLeft: "6px solid blue",
+                        borderRadius: 6,
+                        boxShadow: "xl",
+                        border: "1px solid #bbb",
+                        p: 2,
+                        width: "90%",
+                        mx: "auto",
+                      }}
+                    >
+                      <CardContent>
+                        <Grid container spacing={2} alignItems="center">
+                          <Grid xs={7}>
+                            <Typography
+                              level="h4"
+                              color="primary"
+                              onClick={() => handleOpenModal(task)}
+                              style={{ cursor: "pointer" }}
+                            >
+                              {task.name}
+                            </Typography>
+                            {/* <Modal open={openModal} onClose={handleCloseModal}>
                             <Box
                               sx={{
                                 p: 4,
@@ -1236,40 +1264,42 @@ const TaskDashboard = () => {
                               </Box>
                             </Box>
                           </Modal> */}
-                          <Typography level="body-lg">
-                            {task.company}
-                          </Typography>
-                          <Typography level="body-md" color="neutral">
-                            {`${task?.district ?? ""}, ${task?.state ?? ""}`}
-                            {`${task?.district ?? ""}, ${task?.state ?? ""}`}
-                          </Typography>
-                        </Grid>
-                        <Grid
-                          xs={5}
-                          display="flex"
-                          flexDirection="column"
-                          alignItems="center"
-                          justifyContent="flex-end"
-                          gap={1}
-                        >
-                          <Typography level="body-md" textColor="green">
-                            {getDayAfterTomorrowDate()}
-                          </Typography>
-                          <Chip
-                            startDecorator={task.icon}
-                            variant="outlined"
-                            size="lg"
+                            <Typography level="body-lg">
+                              {task.company}
+                            </Typography>
+                            <Typography level="body-md" color="neutral">
+                              {`${task?.district ?? ""}, ${task?.state ?? ""}`}
+                            </Typography>
+                          </Grid>
+                          <Grid
+                            xs={5}
+                            display="flex"
+                            flexDirection="column"
+                            alignItems="center"
+                            justifyContent="flex-end"
+                            gap={1}
                           >
-                            {task.type}
-                          </Chip>
-                          <Button variant="plain" onClick={() => setOpen(true)}>
-                            <Typography>...</Typography>
-                          </Button>
+                            <Typography level="body-md" textColor="green">
+                              {getDayAfterTomorrowDate()}
+                            </Typography>
+                            <Chip
+                              startDecorator={task.icon}
+                              variant="outlined"
+                              size="lg"
+                            >
+                              {task.type}
+                            </Chip>
+                            <Button
+                              variant="plain"
+                              onClick={() => setOpen(true)}
+                            >
+                              <Typography>...</Typography>
+                            </Button>
+                          </Grid>
                         </Grid>
-                      </Grid>
-                    </CardContent>
-                  </Card>
-                ))
+                      </CardContent>
+                    </Card>
+                  ))
               ) : (
                 <Box
                   sx={{

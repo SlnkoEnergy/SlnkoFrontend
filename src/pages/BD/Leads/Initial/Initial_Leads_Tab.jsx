@@ -9,14 +9,14 @@ import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
 // import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import Lead_Initial from "../../../../component/Lead Stage/Initial_Lead";
-import Sidebar from "../../../../component/Partials/Sidebar";
-import Lead_Warm from "../../../../component/Lead Stage/Warm_Lead";
-import Lead_FollowUp from "../../../../component/Lead Stage/Follow_Lead";
-import Lead_Won from "../../../../component/Lead Stage/Won_Lead";
-import Lead_Dead from "../../../../component/Lead Stage/Dead_Lead";
 import { useNavigate } from "react-router-dom";
+import Lead_Dead from "../../../../component/Lead Stage/Dead_Lead";
+import Lead_FollowUp from "../../../../component/Lead Stage/Follow_Lead";
+import Lead_Initial from "../../../../component/Lead Stage/Initial_Lead";
+import Lead_Warm from "../../../../component/Lead Stage/Warm_Lead";
+import Lead_Won from "../../../../component/Lead Stage/Won_Lead";
 import Header from "../../../../component/Partials/Header";
+import Sidebar from "../../../../component/Partials/Sidebar";
 
 function InitialLeads() {
   const navigate = useNavigate();
@@ -139,15 +139,17 @@ function LeadPage({
               justifyContent: "center",
             }}
           >
-          {(selectedLead === "Won" || selectedLead === "Follow Up" || selectedLead === "Warm") && (
-  <Button
-    color="primary"
-    size="sm"
-    onClick={() => navigate("/comm_offer")}
-  >
-    Commercial Offer
-  </Button>
-)}
+            {(selectedLead === "Won" ||
+              selectedLead === "Follow Up" ||
+              selectedLead === "Warm") && (
+              <Button
+                color="primary"
+                size="sm"
+                onClick={() => navigate("/comm_offer")}
+              >
+                Commercial Offer
+              </Button>
+            )}
 
             <Button
               color="primary"
@@ -156,13 +158,15 @@ function LeadPage({
             >
               Task Dashboard
             </Button>
-            <Button
-              color="primary"
-              size="sm"
-              onClick={() => navigate("/add_lead")}
-            >
-              Add New Leads +
-            </Button>
+            {selectedLead === "Initial" && (
+              <Button
+                color="primary"
+                size="sm"
+                onClick={() => navigate("/add_lead")}
+              >
+                Add New Leads +
+              </Button>
+            )}
           </Box>
         </Box>
 
