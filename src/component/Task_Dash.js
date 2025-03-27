@@ -24,21 +24,18 @@ import {
   TabPanel,
   Tabs,
   Textarea,
-  Divider,
-  Table,
   Typography,
 } from "@mui/joy";
 import { isBefore, isToday, isTomorrow, parseISO } from "date-fns";
 import React, { useEffect, useState } from "react";
-import Img1 from "../assets/follow_up_history.png";
 import { toast } from "react-toastify";
 import logo from "../assets/cheer-up.png";
 import {
   useGetEntireLeadsQuery,
   useUpdateTaskCommentMutation,
 } from "../redux/leadsSlice";
-import { useGetTasksHistoryQuery, useGetTasksQuery } from "../redux/tasksSlice";
 import { useGetLoginsQuery } from "../redux/loginSlice";
+import { useGetTasksHistoryQuery, useGetTasksQuery } from "../redux/tasksSlice";
 
 const TaskDashboard = () => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -171,6 +168,7 @@ const TaskDashboard = () => {
     : usersData?.data?.data || [];
 
   console.log(getuserArray);
+
 
   // Match tasks to their corresponding leads
   const matchedTasks = getTaskArray.filter((task) =>
@@ -761,6 +759,7 @@ const TaskDashboard = () => {
                         <Typography level="body-lg">{task.company}</Typography>
                         <Typography level="body-md" color="neutral">
                           {`${task?.district ?? ""}, ${task?.state ?? ""}`}
+                          {`${task?.district ?? ""}, ${task?.state ?? ""}`}
                         </Typography>
                       </Grid>
                       <Grid
@@ -885,10 +884,17 @@ const TaskDashboard = () => {
                           onClick={() => handleOpenModal(task)}
                           style={{ cursor: "pointer" }}
                         >
+                        <Typography
+                          level="h4"
+                          color="primary"
+                          onClick={() => handleOpenModal(task)}
+                          style={{ cursor: "pointer" }}
+                        >
                           {task.name}
                         </Typography>
                         <Typography level="body-lg">{task.company}</Typography>
                         <Typography level="body-md" color="neutral">
+                          {`${task?.district ?? ""}, ${task?.state ?? ""}`}
                           {`${task?.district ?? ""}, ${task?.state ?? ""}`}
                         </Typography>
                       </Grid>
@@ -994,6 +1000,12 @@ const TaskDashboard = () => {
                     <CardContent>
                       <Grid container spacing={2} alignItems="center">
                         <Grid xs={7}>
+                          <Typography
+                            level="h4"
+                            color="primary"
+                            onClick={() => handleOpenModal(task)}
+                            style={{ cursor: "pointer" }}
+                          >
                           <Typography
                             level="h4"
                             color="primary"
@@ -1228,6 +1240,7 @@ const TaskDashboard = () => {
                             {task.company}
                           </Typography>
                           <Typography level="body-md" color="neutral">
+                            {`${task?.district ?? ""}, ${task?.state ?? ""}`}
                             {`${task?.district ?? ""}, ${task?.state ?? ""}`}
                           </Typography>
                         </Grid>
