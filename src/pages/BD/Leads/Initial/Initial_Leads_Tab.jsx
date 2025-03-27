@@ -139,15 +139,16 @@ function LeadPage({
               justifyContent: "center",
             }}
           >
-            {/* {selectedLead === "Won" && (
-              <Button
-                color="primary"
-                size="sm"
-                onClick={() => navigate("/hand_over")}
-              >
-                Hand Over Sheet
-              </Button>
-            )} */}
+          {(selectedLead === "Won" || selectedLead === "Follow Up" || selectedLead === "Warm") && (
+  <Button
+    color="primary"
+    size="sm"
+    onClick={() => navigate("/comm_offer")}
+  >
+    Commercial Offer
+  </Button>
+)}
+
             <Button
               color="primary"
               size="sm"

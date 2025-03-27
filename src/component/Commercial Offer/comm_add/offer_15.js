@@ -1440,7 +1440,7 @@ const Summary = () => {
                            <td>
                              {Number(Final_Total_with_GST_Plant_Cost).toLocaleString()}
                            </td>
-                           <td>{Final_Total_Plant_Cost_Per_Wp}</td>
+                           <td>{Total_Cost_Basic}</td>
                          </tr>
        
                          <tr
@@ -1457,7 +1457,7 @@ const Summary = () => {
                            <td>
                              {Number(Cost_Without_Module_with_GST).toLocaleString()}
                            </td>
-                           <td>{Cost_Without_Module_Per_Wp}</td>
+                           <td>{Without_module_INR_wp_Basic}</td>
                          </tr>
        
                          <tr>

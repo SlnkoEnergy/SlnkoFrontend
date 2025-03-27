@@ -218,7 +218,7 @@ const Rate_Offer = () => {
           </Grid>
          
           <Grid md={6} sm={12}>
-            <FormLabel>Transmission Line (INR/km)</FormLabel>
+            <FormLabel>Rate of Transmission Line (INR/km)</FormLabel>
             <Input
               type="number"
               name="transmission_line"
