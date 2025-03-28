@@ -213,13 +213,7 @@ const TaskDashboard = () => {
         .split(",")
         .map((name) => name.trim().toLowerCase());
 
-      // Ensure `user.name` is treated as an array and converted to lowercase
-      // const userNames = Array.isArray(user.name)
-      //   ? user.name.map((name) => name.toLowerCase())
-      //   : [user.name.toLowerCase()];
-
-      // Check if any userNames exist in assignedUsers
-      return userNames.some((name) => assignedUsers.includes(name));
+      return assignedUsers.includes(user.name.toLowerCase());
     })
     .forEach((task) => {
       if (!task.date) {
@@ -237,7 +231,7 @@ const TaskDashboard = () => {
         (lead) => String(lead.id) === String(task.id)
       );
 
-      const associatedTask = getTaskHistoryArray.find(
+      const associatedTaskHistory = getTaskHistoryArray.filter(
         (taskHistory) => String(taskHistory.id) === String(task.id)
       );
 
@@ -258,25 +252,27 @@ const TaskDashboard = () => {
         type: task.reference || "",
         by_whom: task.by_whom || "",
         icon: task.reference === "By Call" ? <Phone /> : <Person />,
-        reference: associatedTask?.reference || "",
-        comment: associatedTask?.comment || "",
         assigned_user: user?.name || "Unknown User",
         canCheck: canCheck,
         submitted_by: task.submitted_by || "",
+
+        // ✅ Store full task history array
+        history: associatedTaskHistory.map((history) => ({
+          date: history.date || "N/A",
+          reference: history.reference || "N/A",
+          by_whom: history.by_whom || "N/A",
+          comment: history.comment || "N/A",
+        })),
       };
 
-      // ✅ Ensure categorizedTasks updates correctly
+      // ✅ Categorize tasks correctly
       if (isBefore(taskDate, now) && !isToday(taskDate)) {
-        console.log("📌 Categorized as: PAST");
         categorizedTasks.past.push(taskEntry);
       } else if (isToday(taskDate)) {
-        console.log("📌 Categorized as: TODAY");
         categorizedTasks.today.push(taskEntry);
       } else if (isTomorrow(taskDate)) {
-        console.log("📌 Categorized as: TOMORROW");
         categorizedTasks.tomorrow.push(taskEntry);
       } else {
-        console.log("📌 Categorized as: FUTURE");
         categorizedTasks.future.push(taskEntry);
       }
     });
@@ -1481,13 +1477,15 @@ const TaskDashboard = () => {
                       Loading history...
                     </td>
                   </tr>
-                ) : selectedTask ? (
-                  <tr>
-                    <td>{selectedTask?.date || "N/A"}</td>
-                    <td>{selectedTask?.reference || "N/A"}</td>
-                    <td>{selectedTask?.by_whom || "N/A"}</td>
-                    <td>{selectedTask?.comment || "N/A"}</td>
-                  </tr>
+                ) : selectedTask?.history?.length > 0 ? (
+                  selectedTask.history.map((entry, index) => (
+                    <tr key={index}>
+                      <td>{entry.date}</td>
+                      <td>{entry.reference}</td>
+                      <td>{entry.by_whom}</td>
+                      <td>{entry.comment}</td>
+                    </tr>
+                  ))
                 ) : (
                   <tr>
                     <td

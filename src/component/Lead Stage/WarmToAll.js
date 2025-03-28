@@ -160,7 +160,7 @@ const CheckboxModal3 = () => {
             value={selectedRadio}
             onChange={(e) => handleRadioChange(e.target.value)}
           >
-            <Radio value="loi" label="LOI" />
+            <Radio value="loi" label="Follow-up Once More" />
             <Radio value="token_money" label="Token Money" />
             <Radio value="Others" label="Others" />
           </RadioGroup>
