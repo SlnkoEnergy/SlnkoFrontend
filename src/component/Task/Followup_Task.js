@@ -223,6 +223,19 @@ const FormComponent2 = () => {
             </FormControl>
 
             {/* <FormControl>
+                          <FormLabel>Task Description</FormLabel>
+                          <Input
+                            fullWidth
+                            placeholder="Task Description"
+                            type="text"
+                            value={formData.comment}
+                            onChange={(e) => handleChange("comment", e.target.value)}
+                            sx={{ borderRadius: "8px" }}
+                            
+                          />
+                        </FormControl> */}
+
+            {/* <FormControl>
               <FormLabel>By Whom</FormLabel>
               <Autocomplete
   multiple
@@ -252,6 +265,17 @@ const FormComponent2 = () => {
       disabled
       sx={{ borderRadius: "8px", backgroundColor: "#f0f0f0" }}
     />
+       <FormLabel sx={{marginTop:"1%"}}>Task Description</FormLabel>
+                          <Input
+                            fullWidth
+                            placeholder="Task Description"
+                            type="text"
+                            value={formData.comment}
+                            onChange={(e) => handleChange("comment", e.target.value)}
+                            sx={{ borderRadius: "8px" }}
+                            required
+                            
+                          />
   </FormControl>
 ) : formData.reference === "By Meeting" ? (
   <FormControl>
@@ -285,6 +309,16 @@ const FormComponent2 = () => {
         />
       )}
     />
+    <FormLabel sx={{marginTop:"1%"}}>Task Description</FormLabel>
+                          <Input
+                            fullWidth
+                            placeholder="Task Description"
+                            type="text"
+                            value={formData.comment}
+                            onChange={(e) => handleChange("comment", e.target.value)}
+                            sx={{ borderRadius: "8px" }}
+                            required
+                          />
   </FormControl>
 ) : null}
 

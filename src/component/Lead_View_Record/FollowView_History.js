@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Table, Sheet, Typography, Box, Divider } from '@mui/joy';
-import Img1 from "../assets/follow_up_history.png";
-import { useGetEntireLeadsQuery } from '../redux/leadsSlice';
-import { useGetTasksHistoryQuery } from '../redux/tasksSlice';
-import { useGetLoginsQuery } from '../redux/loginSlice';
+import Img1 from "../../assets/follow_up_history.png";
+import { useGetEntireLeadsQuery } from '../../redux/leadsSlice';
+import { useGetTasksHistoryQuery } from '../../redux/tasksSlice';
+import { useGetLoginsQuery } from '../../redux/loginSlice';
 
-const FollowUpHistory = () => {
+const FollowupLeadsHistory = () => {
     const { data: getLead = {} } = useGetEntireLeadsQuery();
     const { data: getTask = [] } = useGetTasksHistoryQuery();
     const { data: usersData = [], isLoading: isFetchingUsers } = useGetLoginsQuery();
@@ -20,7 +20,7 @@ const FollowUpHistory = () => {
         ...(getLead?.lead?.deaddata || []),
     ], [getLead]);
 
-    const LeadId = localStorage.getItem("view_history");
+    const LeadId = localStorage.getItem("view_follow_history");
     
     const lead = getLeadArray.find(lead => String(lead.id) === LeadId) || null;
     const filteredTasks = getTaskArray.filter(task => String(task.id) === LeadId);
@@ -69,7 +69,7 @@ const FollowUpHistory = () => {
                     <Divider />
                     <Typography sx={{ fontSize: '1.1rem', color: '#333' }}>
     <strong>Client Name:</strong> {lead.c_name || "N/A"} &nbsp;| &nbsp;&nbsp; 
-    <strong>POC:</strong> {user?.name || "N/A"} &nbsp;| &nbsp;&nbsp;  {/* Updated this line */}
+    <strong>POC:</strong> {user?.name || "N/A"} &nbsp;| &nbsp;&nbsp;
     <strong>Company:</strong> {lead.company || "N/A"} &nbsp;| &nbsp;&nbsp; 
     <strong>Location:</strong> {lead.state || "N/A"}
 </Typography>
@@ -92,10 +92,11 @@ const FollowUpHistory = () => {
                 >
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Reference</th>
-                            <th>By Whom</th>
-                            <th>Comments</th>
+                        <th>Date</th>
+                  <th>Reference</th>
+                  <th>By Whom</th>
+                  <th>Feedback</th>
+                  <th>submitted_by</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -106,6 +107,7 @@ const FollowUpHistory = () => {
                                     <td>{row.reference || "N/A"}</td>
                                     <td>{row.by_whom || "N/A"}</td>
                                     <td>{row.comment || "N/A"}</td>
+                                    <td>{row.submitted_by || "N/A"}</td>
                                 </tr>
                             ))
                         ) : (
@@ -122,4 +124,4 @@ const FollowUpHistory = () => {
     );
 };
 
-export default FollowUpHistory;
+export default FollowupLeadsHistory;

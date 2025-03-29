@@ -193,7 +193,6 @@ const Create_lead = () => {
               name="c_name"
               value={formData.c_name}
               onChange={handleChange}
-              required
               fullWidth
             />
           </Grid>
@@ -203,7 +202,7 @@ const Create_lead = () => {
               name="company"
               value={formData.company}
               onChange={handleChange}
-              required
+              
             />
           </Grid>
           <Grid xs={12} sm={6}>
@@ -212,8 +211,8 @@ const Create_lead = () => {
               name="group"
               value={formData.group}
               onChange={handleChange}
-              s
-              required
+              
+              
             />
           </Grid>
 
@@ -225,7 +224,7 @@ const Create_lead = () => {
                           onChange={(e, newValue) =>
                             setFormData({ ...formData, source: newValue, reffered_by: "" })
                           }
-                          required
+                          
                           fullWidth
                         >
                           {Object.keys(sourceOptions).map((option) => (
@@ -245,7 +244,7 @@ const Create_lead = () => {
                 onChange={(e, newValue) =>
                   setFormData({ ...formData, reffered_by: newValue })
                 }
-                required
+                
                 fullWidth
               >
                 {sourceOptions[formData.source].map((option) => (
@@ -264,7 +263,7 @@ const Create_lead = () => {
               type="email"
               value={formData.email}
               onChange={handleChange}
-              required
+              
             />
           </Grid>
           <Grid xs={12} sm={6}>
@@ -310,7 +309,7 @@ const Create_lead = () => {
               onChange={(e, newValue) =>
                 setFormData({ ...formData, state: newValue })
               }
-              required
+              
             >
               {statesOfIndia.map((option) => (
                 <Option key={option} value={option}>
@@ -398,7 +397,7 @@ const Create_lead = () => {
     }))
   }
   getOptionLabel={(option) => option} // Ensure proper display
-  renderInput={(params) => <Input {...params} placeholder="Land Type" variant="soft" required />}
+  renderInput={(params) => <Input {...params} placeholder="Land Type" variant="soft" />}
   isOptionEqualToValue={(option, value) => option === value} // Ensure correct selection matching
   sx={{ width: "100%" }}
 />

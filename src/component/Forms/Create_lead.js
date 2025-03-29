@@ -174,7 +174,7 @@ const Create_lead = () => {
       <form onSubmit={handleSubmit}>
         <Grid container spacing={3}>
           <Grid xs={12} sm={6}>
-            <FormLabel>Customer Name</FormLabel>
+            <FormLabel>Customer Name<strong style={{color:"red"}}>*</strong></FormLabel>
             <Input
               name="c_name"
               value={formData.c_name}
@@ -189,7 +189,7 @@ const Create_lead = () => {
               name="company"
               value={formData.company}
               onChange={handleChange}
-              required
+              
             />
           </Grid>
           <Grid xs={12} sm={6}>
@@ -198,12 +198,10 @@ const Create_lead = () => {
               name="group"
               value={formData.group}
               onChange={handleChange}
-              s
-              required
             />
           </Grid>
 
-          <Grid xs={12} sm={6}><FormLabel>Source</FormLabel>
+          <Grid xs={12} sm={6}><FormLabel>Source<strong style={{color:"red"}}>*</strong></FormLabel>
             <Select name="source" value={formData.source} onChange={(e, newValue) => setFormData({ ...formData, source: newValue, reffered_by: "" })} required fullWidth>
               {Object.keys(sourceOptions).map(option => <Option key={option} value={option}>{option}</Option>)}
             </Select>
@@ -211,7 +209,7 @@ const Create_lead = () => {
           
           
           {formData.source && sourceOptions[formData.source].length > 0 && (
-            <Grid xs={12} sm={6}><FormLabel>Sub Source</FormLabel>
+            <Grid xs={12} sm={6}><FormLabel>Sub Source<strong style={{color:"red"}}>*</strong></FormLabel>
               <Select name="reffered_by" value={formData.reffered_by} onChange={(e, newValue) => setFormData({ ...formData, reffered_by: newValue })} required fullWidth>
                 {sourceOptions[formData.source].map(option => <Option key={option} value={option}>{option}</Option>)}
               </Select>
@@ -225,11 +223,11 @@ const Create_lead = () => {
               type="email"
               value={formData.email}
               onChange={handleChange}
-              required
+              
             />
           </Grid>
           <Grid xs={12} sm={6}>
-            <FormLabel>Mobile Number</FormLabel>
+            <FormLabel>Mobile Number<strong style={{color:"red"}}>*</strong></FormLabel>
             <Input
               name="mobile"
               type="tel"
@@ -248,23 +246,25 @@ const Create_lead = () => {
             />
           </Grid>
           <Grid xs={12} sm={6}>
-            <FormLabel>Village Name</FormLabel>
+            <FormLabel>Village Name<strong style={{color:"red"}}>*</strong></FormLabel>
             <Input
               name="village"
               value={formData.village}
               onChange={handleChange}
+              required
             />
           </Grid>
           <Grid xs={12} sm={6}>
-            <FormLabel>District Name</FormLabel>
+            <FormLabel>District Name<strong style={{color:"red"}}>*</strong></FormLabel>
             <Input
               name="district"
               value={formData.district}
               onChange={handleChange}
+              required
             />
           </Grid>
           <Grid xs={12} sm={6}>
-            <FormLabel>Select State</FormLabel>
+            <FormLabel>Select State<strong style={{color:"red"}}>*</strong></FormLabel>
             <Select
               name="state"
               value={formData.state}
@@ -281,11 +281,12 @@ const Create_lead = () => {
             </Select>
           </Grid>
           <Grid xs={12} sm={6}>
-            <FormLabel>Capacity</FormLabel>
+            <FormLabel>Capacity<strong style={{color:"red"}}>*</strong></FormLabel>
             <Input
               name="capacity"
               value={formData.capacity}
               onChange={handleChange}
+              required
             />
           </Grid>
           <Grid xs={12} sm={6}>
@@ -305,7 +306,7 @@ const Create_lead = () => {
             />
           </Grid>
           <Grid xs={12} sm={6}>
-  <FormLabel>Available Land</FormLabel>
+  <FormLabel>Available Land<strong style={{color:"red"}}>*</strong></FormLabel>
 <Input
                  
                   name="available_land"
@@ -323,12 +324,13 @@ const Create_lead = () => {
                 />
 </Grid>
           <Grid xs={12} sm={6}>
-            <FormLabel>Creation Date</FormLabel>
+            <FormLabel>Creation Date<strong style={{color:"red"}}>*</strong></FormLabel>
             <Input
               name="entry_date"
               type="date"
               value={formData.entry_date}
               onChange={handleChange}
+              required
             />
           </Grid>
           <Grid xs={12} sm={6}>
@@ -339,7 +341,6 @@ const Create_lead = () => {
               onChange={(e, newValue) =>
                 setFormData({ ...formData, scheme: newValue })
               }
-              required
             >
               {["KUSUM A", "KUSUM C", "Other"].map((option) => (
                 <Option key={option} value={option}>
@@ -362,7 +363,6 @@ const Create_lead = () => {
                   placeholder="Land Type"
                   isOptionEqualToValue={(option, value) => option === value}
                   variant="soft"
-                  required
                   sx={{ width: "100%" }}
                 />
 </Grid>
@@ -380,17 +380,19 @@ const Create_lead = () => {
                 <Option key={option} value={option}>
                   {option}
                 </Option>
+                
               ))}
             </Select>
           </Grid> */}
           <Grid xs={12} sm={6}>
-            <FormLabel>Comments</FormLabel>
+            <FormLabel>Comments<strong style={{color:"red"}}>*</strong></FormLabel>
             <Input
               name="comment"
               value={formData.comment}
               onChange={handleChange}
               multiline="true"
               rows={4}
+              required
             />
           </Grid>
           <Grid xs={12}>

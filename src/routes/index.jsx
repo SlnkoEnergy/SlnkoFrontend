@@ -59,7 +59,9 @@ import FollowUpSummary from "../pages/BD/Leads/Followup/Forms/follow_Summary";
 import WarmUpSummary from "../pages/BD/Leads/Warm/Forms/warm_Summary";
 import WONSummary from "../pages/BD/Leads/Won/Forms/won_Summary";
 import DEADSummary from "../pages/BD/Leads/Dead/Forms/dead_Summary";
-import Follow_History from "../pages/BD/Lead_History";
+import Follow_History from "../pages/BD/Leads/Followup/Followup_History";
+import Initial_History from "../pages/BD/Leads/Initial/Initial_History";
+import Warm_History from "../pages/BD/Leads/Warm/Warm_History";
 
 
 
@@ -499,10 +501,26 @@ function index() {
         }
       />
       <Route
-        path="/view_history"
+        path="/initial_records"
+        element={
+          <PrivateRoute>
+            <Initial_History />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/followup_records"
         element={
           <PrivateRoute>
             <Follow_History />
+          </PrivateRoute>
+        }
+      />
+       <Route
+        path="/warm_records"
+        element={
+          <PrivateRoute>
+            <Warm_History />
           </PrivateRoute>
         }
       />

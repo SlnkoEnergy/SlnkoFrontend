@@ -11,14 +11,13 @@ import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
 
-import Sidebar from '../../component/Partials/Sidebar';
+import Sidebar from '../../../../component/Partials/Sidebar';
 // import OrderTable from '../../component/OrderTable';
 // import OrderList from '../../component/OrderList';
-import Header from '../../component/Partials/Header';
-import BDHistory from '../../component/BD_History';
-import FollowUpHistory from '../../component/LeadsView_History';
+import Header from '../../../../component/Partials/Header';
+import WarmLeadsHistory from '../../../../component/Lead_View_Record/WarmView_History';
 
-function Follow_History() {
+function Warm_History() {
      
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -78,7 +77,7 @@ function Follow_History() {
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                FollowUp History
+                Warm History
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -95,7 +94,7 @@ function Follow_History() {
             }}
           >
             <Typography level="h2" component="h1">
-            FollowUp History
+            Warm Records
             </Typography>
             <Box
               sx={{
@@ -125,7 +124,7 @@ function Follow_History() {
               </Button> */}
             </Box>
           </Box>
-          <FollowUpHistory />
+          <WarmLeadsHistory />
           {/* <OrderTable /> */}
           {/* <OrderList /> */}
         </Box>
@@ -133,4 +132,4 @@ function Follow_History() {
     </CssVarsProvider>
   );
 }
-export default Follow_History;
+export default Warm_History;

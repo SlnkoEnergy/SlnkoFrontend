@@ -224,6 +224,7 @@ const FormComponent = () => {
               </Select>
             </FormControl>
 
+
             {/* <FormControl>
               <FormLabel>By Whom</FormLabel>
               <Autocomplete
@@ -245,50 +246,71 @@ const FormComponent = () => {
 />
 
             </FormControl> */}
-            {formData.reference === "By Call" ? (
-  <FormControl>
-    <FormLabel>By Whom</FormLabel>
-    <Input
-      fullWidth
-      value={formData.by_whom}
-      disabled
-      sx={{ borderRadius: "8px", backgroundColor: "#f0f0f0" }}
-    />
-  </FormControl>
-) : formData.reference === "By Meeting" ? (
-  <FormControl>
-    <FormLabel>By Whom</FormLabel>
-    <Autocomplete
-      multiple
-      options={bdMembers}
-      getOptionLabel={(option) => option.label}
-      isOptionEqualToValue={(option, value) => option.id === value.id}
-      value={bdMembers.filter((member) => formData.by_whom.includes(member.label))}
-      onChange={handleByWhomChange}
-      disableCloseOnSelect
-      renderOption={(props, option, { selected }) => (
-        <li {...props} key={option.id} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "5px" }}>
-          <Checkbox
-            checked={selected}
-            sx={{
-              color: selected ? "#007FFF" : "#B0BEC5", // Default gray, blue when selected
-              "&.Mui-checked": { color: "#007FFF" }, // Active color
-              "&:hover": { backgroundColor: "rgba(0, 127, 255, 0.1)" }, // Subtle hover effect
-            }}
-          />
-          {option.label}
-        </li>
-      )}
-      renderInput={(params) => (
-        <Input
-          {...params}
-          placeholder="Select BD Members"
-          sx={{ minHeight: "40px", overflowY: "auto", borderRadius: "8px" }}
-        />
-      )}
-    />
-  </FormControl>
-) : null}
+             {formData.reference === "By Call" ? (
+              <FormControl>
+                <FormLabel>By Whom</FormLabel>
+                <Input
+                  fullWidth
+                  value={formData.by_whom}
+                  disabled
+                  sx={{ borderRadius: "8px", backgroundColor: "#f0f0f0" }}
+                />
+                   <FormLabel sx={{marginTop:"1%"}}>Task Description</FormLabel>
+                                      <Input
+                                        fullWidth
+                                        placeholder="Task Description"
+                                        type="text"
+                                        value={formData.comment}
+                                        onChange={(e) => handleChange("comment", e.target.value)}
+                                        sx={{ borderRadius: "8px" }}
+                                        required
+                                        
+                                      />
+              </FormControl>
+            ) : formData.reference === "By Meeting" ? (
+              <FormControl>
+                <FormLabel>By Whom</FormLabel>
+                <Autocomplete
+                  multiple
+                  options={bdMembers}
+                  getOptionLabel={(option) => option.label}
+                  isOptionEqualToValue={(option, value) => option.id === value.id}
+                  value={bdMembers.filter((member) => formData.by_whom.includes(member.label))}
+                  onChange={handleByWhomChange}
+                  disableCloseOnSelect
+                  renderOption={(props, option, { selected }) => (
+                    <li {...props} key={option.id} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "5px" }}>
+                      <Checkbox
+                        checked={selected}
+                        sx={{
+                          color: selected ? "#007FFF" : "#B0BEC5", // Default gray, blue when selected
+                          "&.Mui-checked": { color: "#007FFF" }, // Active color
+                          "&:hover": { backgroundColor: "rgba(0, 127, 255, 0.1)" }, // Subtle hover effect
+                        }}
+                      />
+                      {option.label}
+                    </li>
+                  )}
+                  renderInput={(params) => (
+                    <Input
+                      {...params}
+                      placeholder="Select BD Members"
+                      sx={{ minHeight: "40px", overflowY: "auto", borderRadius: "8px" }}
+                    />
+                  )}
+                />
+                <FormLabel sx={{marginTop:"1%"}}>Task Description</FormLabel>
+                                      <Input
+                                        fullWidth
+                                        placeholder="Task Description"
+                                        type="text"
+                                        value={formData.comment}
+                                        onChange={(e) => handleChange("comment", e.target.value)}
+                                        sx={{ borderRadius: "8px" }}
+                                        required
+                                      />
+              </FormControl>
+            ) : null}
 
 
             

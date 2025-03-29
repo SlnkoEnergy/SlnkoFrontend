@@ -174,7 +174,7 @@ const FollowEdit_lead = () => {
                 name="company"
                 value={formData.company}
                 onChange={handleChange}
-                required
+                
               />
             </Grid>
             <Grid xs={12} sm={6}>
@@ -184,7 +184,7 @@ const FollowEdit_lead = () => {
                 value={formData.group}
                 onChange={handleChange}
                 s
-                required
+                
               />
             </Grid>
   
@@ -196,7 +196,7 @@ const FollowEdit_lead = () => {
                 onChange={(e, newValue) =>
                   setFormData({ ...formData, source: newValue, reffered_by: "" })
                 }
-                required
+                
                 fullWidth
               >
                 {Object.keys(sourceOptions).map((option) => (
@@ -216,7 +216,7 @@ const FollowEdit_lead = () => {
                   onChange={(e, newValue) =>
                     setFormData({ ...formData, reffered_by: newValue })
                   }
-                  required
+                  
                   fullWidth
                 >
                   {sourceOptions[formData.source].map((option) => (
@@ -235,7 +235,7 @@ const FollowEdit_lead = () => {
                 type="email"
                 value={formData.email}
                 onChange={handleChange}
-                required
+                
               />
             </Grid>
             <Grid xs={12} sm={6}>
@@ -281,7 +281,7 @@ const FollowEdit_lead = () => {
                 onChange={(e, newValue) =>
                   setFormData({ ...formData, state: newValue })
                 }
-                required
+                
               >
                 {statesOfIndia.map((option) => (
                   <Option key={option} value={option}>
@@ -328,7 +328,7 @@ const FollowEdit_lead = () => {
                 type="number"
                 fullWidth
                 variant="soft"
-                required
+                
               />
             </Grid>
             <Grid xs={12} sm={6}>
@@ -348,7 +348,7 @@ const FollowEdit_lead = () => {
                 onChange={(e, newValue) =>
                   setFormData({ ...formData, scheme: newValue })
                 }
-                required
+                
               >
                 {["KUSUM A", "KUSUM C", "Other"].map((option) => (
                   <Option key={option} value={option}>
@@ -369,7 +369,7 @@ const FollowEdit_lead = () => {
     }))
   }
   getOptionLabel={(option) => option} // Ensure proper display
-  renderInput={(params) => <Input {...params} placeholder="Land Type" variant="soft" required />}
+  renderInput={(params) => <Input {...params} placeholder="Land Type" variant="soft" />}
   isOptionEqualToValue={(option, value) => option === value} // Ensure correct selection matching
   sx={{ width: "100%" }}
 />
@@ -400,6 +400,7 @@ const FollowEdit_lead = () => {
                 onChange={handleChange}
                 multiline="true"
                 rows={4}
+                required
               />
             </Grid>
             <Grid xs={12}>

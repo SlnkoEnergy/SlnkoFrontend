@@ -127,9 +127,9 @@ const StandByRequest = () => {
               const page = currentPage;
               const leadId = String(id);
               // const projectID = Number(p_id);
-              localStorage.setItem("view_history", leadId);
+              localStorage.setItem("view_warm_history", leadId);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/view_history?page=${page}&${leadId}`);
+              navigate(`/warm_records?page=${page}&${leadId}`);
             }}
           >
             <ManageHistoryIcon />
