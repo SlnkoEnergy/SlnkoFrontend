@@ -1,6 +1,6 @@
 import { AccessTime, CheckCircle, Person, Phone } from "@mui/icons-material";
 import {
-  Badge,
+  Autocomplete,
   Box,
   Button,
   Card,
@@ -11,10 +11,16 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
+  FormControl,
+  FormLabel,
   Grid,
+  Input,
   Modal,
   ModalDialog,
+  Option,
+  Select,
   Sheet,
+  Stack,
   Tab,
   Table,
   TabList,
@@ -24,7 +30,8 @@ import {
   Typography,
 } from "@mui/joy";
 import { isBefore, isToday, isTomorrow, parseISO } from "date-fns";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import logo from "../assets/cheer-up.png";
 import Img1 from "../assets/follow_up_history.png";
@@ -33,9 +40,14 @@ import {
   useUpdateTaskCommentMutation,
 } from "../redux/leadsSlice";
 import { useGetLoginsQuery } from "../redux/loginSlice";
-import { useGetTasksHistoryQuery, useGetTasksQuery } from "../redux/tasksSlice";
+import {
+  useAddTasksMutation,
+  useGetTasksHistoryQuery,
+  useGetTasksQuery,
+} from "../redux/tasksSlice";
 
 const TaskDashboard = () => {
+  const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState(0);
   const [openDialog, setOpenDialog] = useState(false);
   // const [selectedTask, setSelectedTask] = useState({});
@@ -56,84 +68,36 @@ const TaskDashboard = () => {
     future: 1,
   });
 
-  const CustomPagination = ({
-    totalPages,
-    currentPage,
-    onPageChange = () => {},
-  }) => {
+  const PaginationComponent = ({ currentPage, totalPages, onPageChange }) => {
+    const pageNumbers = generatePageNumbers(currentPage, totalPages);
+
     return (
-      <Box
-        display="flex"
-        gap={1}
-        justifyContent="center"
-        alignItems="center"
-        mt={2}
-      >
-        <Button
-          disabled={currentPage === 1}
-          onClick={() => onPageChange(null, currentPage - 1)}
-        >
-          Prev
-        </Button>
-
-        {[...Array(totalPages)].map((_, index) => (
-          <Button
-            key={index + 1}
-            variant={currentPage === index + 1 ? "solid" : "outlined"}
-            onClick={() => onPageChange(null, index + 1)}
-          >
-            {index + 1}
-          </Button>
-        ))}
-
-        <Button
-          disabled={currentPage === totalPages}
-          onClick={() => onPageChange(null, currentPage + 1)}
-        >
-          Next
-        </Button>
+      <Box display="flex" justifyContent="center" gap={1} mt={2}>
+        {pageNumbers.map((number, index) =>
+          number === "..." ? (
+            <span key={index} style={{ padding: "6px 12px" }}>
+              ...
+            </span>
+          ) : (
+            <button
+              key={index}
+              onClick={() => onPageChange(number)}
+              style={{
+                padding: "6px 12px",
+                backgroundColor: number === currentPage ? "#4caf50" : "#f1f1f1",
+                color: number === currentPage ? "#fff" : "#333",
+                borderRadius: "4px",
+                border: "1px solid #ccc",
+                cursor: "pointer",
+              }}
+            >
+              {number}
+            </button>
+          )
+        )}
       </Box>
     );
   };
-  const statesOfIndia = [
-    "Andhra Pradesh",
-    "Arunachal Pradesh",
-    "Assam",
-    "Bihar",
-    "Chhattisgarh",
-    "Goa",
-    "Gujarat",
-    "Haryana",
-    "Himachal Pradesh",
-    "Jharkhand",
-    "Karnataka",
-    "Kerala",
-    "Madhya Pradesh",
-    "Maharashtra",
-    "Manipur",
-    "Meghalaya",
-    "Mizoram",
-    "Nagaland",
-    "Odisha",
-    "Punjab",
-    "Rajasthan",
-    "Sikkim",
-    "Tamil Nadu",
-    "Telangana",
-    "Tripura",
-    "Uttar Pradesh",
-    "Uttarakhand",
-    "West Bengal",
-  ];
-
-  const sourceOptions = {
-    "Referred by": ["Directors", "Clients", "Team members", "E-mail"],
-    "Social Media": ["Whatsapp", "Instagram", "LinkedIn"],
-    Marketing: ["Youtube", "Advertisements"],
-    "IVR/My Operator": [],
-    Others: [],
-  };
-  const landTypes = ["Leased", "Owned"];
 
   const { data: getLead = [] } = useGetEntireLeadsQuery();
   const { data: getTask = [] } = useGetTasksQuery();
@@ -141,6 +105,7 @@ const TaskDashboard = () => {
   const { data: getTaskHistory = [], isLoading } = useGetTasksHistoryQuery();
   const { data: usersData = [], isLoading: isFetchingUsers } =
     useGetLoginsQuery();
+  const [ADDTask] = useAddTasksMutation();
 
   const getTaskArray = Array.isArray(getTask) ? getTask : getTask?.data || [];
   // console.log("Processed Task Array:", getTaskArray);
@@ -276,12 +241,16 @@ const TaskDashboard = () => {
 
       // ✅ Categorize tasks correctly
       if (isBefore(taskDate, now) && !isToday(taskDate)) {
+        console.log("📅 Categorized as: Past");
         categorizedTasks.past.push(taskEntry);
       } else if (isToday(taskDate)) {
+        console.log("📅 Categorized as: Today");
         categorizedTasks.today.push(taskEntry);
       } else if (isTomorrow(taskDate)) {
+        console.log("📅 Categorized as: Tomorrow");
         categorizedTasks.tomorrow.push(taskEntry);
       } else {
+        console.log("📅 Categorized as: Future");
         categorizedTasks.future.push(taskEntry);
       }
     });
@@ -333,33 +302,6 @@ const TaskDashboard = () => {
     return savedState ? JSON.parse(savedState) : {};
   });
 
-  const handleCheckboxChange = (task, event) => {
-    const isChecked = event.target.checked;
-
-    if (isChecked) {
-      setSelectedTask({
-        ...task,
-        _id: task._id,
-        id: task.id,
-      });
-      setOpenDialog(true);
-    } else {
-      setSelectedTask(null);
-
-      setOpenDialog(false);
-    }
-
-    // Save completed state
-    setCompletedTasks((prev) => {
-      const updatedTasks = { ...prev, [task._id]: isChecked };
-
-      // Persist in localStorage
-      localStorage.setItem("completedTasks", JSON.stringify(updatedTasks));
-
-      return updatedTasks;
-    });
-  };
-
   const handleSubmit = async () => {
     if (!selectedTask || !selectedTask._id) {
       console.error("No task selected or _id is missing!", selectedTask);
@@ -376,6 +318,7 @@ const TaskDashboard = () => {
       await updateTask(updateData).unwrap();
       toast.success("Comment updated successfully");
 
+      // ✅ Mark the card as disabled after submitting
       const updatedDisabledCards = {
         ...disabledCards,
         [selectedTask._id]: true,
@@ -387,6 +330,7 @@ const TaskDashboard = () => {
         JSON.stringify(updatedDisabledCards)
       );
 
+      // ✅ Update completedTasks to ensure it's stored properly
       setCompletedTasks((prev) => ({
         ...prev,
         [selectedTask._id]: true,
@@ -401,23 +345,104 @@ const TaskDashboard = () => {
   };
 
   const [completedTasks, setCompletedTasks] = useState(() => {
-    const savedCompletedTasks = localStorage.getItem("completedTasks");
-    return savedCompletedTasks ? JSON.parse(savedCompletedTasks) : {};
+    try {
+      const storedTasks = localStorage.getItem("completedTasks");
+      return storedTasks ? JSON.parse(storedTasks) : {};
+    } catch (error) {
+      console.error("Error loading completed tasks:", error);
+      return {};
+    }
   });
 
-  useEffect(() => {
-    localStorage.setItem("completedTasks", JSON.stringify(completedTasks));
-  }, [completedTasks]);
+  const handleCheckboxChange = (task, event) => {
+    const isChecked = event.target.checked;
 
-  const getPaginatedTasks = (tasks, currentPage) => {
-    const startIndex = (currentPage - 1) * tasksperpage;
-    const endIndex = startIndex + tasksperpage;
+    // ✅ Update completedTasks & persist to localStorage
+    setCompletedTasks((prev) => {
+      const updatedTasks = { ...prev, [task._id]: isChecked };
+      localStorage.setItem("completedTasks", JSON.stringify(updatedTasks)); // Save to localStorage
+      return updatedTasks;
+    });
+
+    // ✅ Open/Close Dialog as needed
+    if (isChecked) {
+      setSelectedTask({
+        ...task,
+        _id: task._id,
+        id: task.id,
+      });
+      setOpenDialog(true);
+    } else {
+      setSelectedTask(null);
+      setOpenDialog(false);
+    }
+  };
+  const tasksPerPage = 3;
+  // ✅ New function to slice tasks correctly
+  const getPaginatedData = (tasks, currentPage) => {
+    const startIndex = (currentPage - 1) * tasksPerPage;
+    const endIndex = startIndex + tasksPerPage;
+
     return {
       tasks: tasks.slice(startIndex, endIndex),
-      totalPages: Math.ceil(tasks.length / tasksperpage),
+      totalPages: Math.ceil(tasks.length / tasksPerPage),
     };
   };
 
+  // useEffect(() => {
+  //   localStorage.setItem("completedTasks", JSON.stringify(completedTasks));
+  // }, [completedTasks]);
+
+  // ✅ Function to generate pagination numbers
+  const generatePageNumbers = (currentPage, totalPages) => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5; // Max number of pages to show between ellipses
+
+    // Always show first page
+    pageNumbers.push(1);
+
+    if (totalPages <= maxVisiblePages) {
+      // ✅ Show all pages if less than maxVisiblePages
+      for (let i = 2; i <= totalPages - 1; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      // ✅ Add ellipses before pages if currentPage > 3
+      if (currentPage > 3) {
+        pageNumbers.push("...");
+      }
+
+      // ✅ Add pages before and after current page dynamically
+      let startPage = Math.max(2, currentPage - 1);
+      let endPage = Math.min(totalPages - 1, currentPage + 1);
+
+      if (currentPage === 1) {
+        endPage = 3;
+      } else if (currentPage === totalPages) {
+        startPage = totalPages - 2;
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        if (i > 1 && i < totalPages) {
+          pageNumbers.push(i);
+        }
+      }
+
+      // ✅ Add ellipses after pages if currentPage < totalPages - 2
+      if (currentPage < totalPages - 2) {
+        pageNumbers.push("...");
+      }
+    }
+
+    // ✅ Always show last page if totalPages > 1
+    if (totalPages > 1) {
+      pageNumbers.push(totalPages);
+    }
+
+    return pageNumbers;
+  };
+
+  // Pagination handlers
   const handlePageChange = (category, value) => {
     setCurrentPages((prev) => ({
       ...prev,
@@ -426,16 +451,16 @@ const TaskDashboard = () => {
   };
 
   const { tasks: currentTasksPast, totalPages: totalPagesPast } =
-    getPaginatedTasks(categorizedTasks.past, currentPages.past);
+    getPaginatedData(categorizedTasks.past, currentPages.past);
 
   const { tasks: currentTasksToday, totalPages: totalPagesToday } =
-    getPaginatedTasks(categorizedTasks.today, currentPages.today);
+    getPaginatedData(categorizedTasks.today, currentPages.today);
 
   const { tasks: currentTasksTomorrow, totalPages: totalPagesTomorrow } =
-    getPaginatedTasks(categorizedTasks.tomorrow, currentPages.tomorrow);
+    getPaginatedData(categorizedTasks.tomorrow, currentPages.tomorrow);
 
   const { tasks: currentTasksFuture, totalPages: totalPagesFuture } =
-    getPaginatedTasks(categorizedTasks.future, currentPages.future);
+    getPaginatedData(categorizedTasks.future, currentPages.future);
 
   const getCurrentDate = () => {
     const options = {
@@ -469,8 +494,8 @@ const TaskDashboard = () => {
       day: "numeric",
     };
 
-    const date = new Date();
-    date.setDate(date.getDate() + 2);
+    // ✅ Use UTC to prevent timezone issues
+    const date = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
 
     return date.toLocaleDateString("en-US", options);
   };
@@ -483,7 +508,7 @@ const TaskDashboard = () => {
 
     setSelectedTask(task);
     setOpenModal(true);
-    console.log("Selected Task:", task);
+    console.log("📚 Selected Task:", task);
   };
 
   const handleCloseModal = () => {
@@ -494,75 +519,107 @@ const TaskDashboard = () => {
   };
 
   const [formData, setFormData] = useState({
-      id:"",
-      name: "",
-      date: "",
-      reference: "",
-      by_whom: "",
-      comment: "",
-      submitted_by:""
-    });
-  
-  
-  
-  
+    id: "",
+    name: "",
+    date: "",
+    reference: "",
+    by_whom: "",
+    comment: "",
+    submitted_by: "",
+  });
 
-  
+  const handleChange = (field, value) => {
+    setFormData((prevData) => ({ ...prevData, [field]: value }));
 
-      
-      const handleChange = (field, value) => {
-        setFormData((prevData) => ({ ...prevData, [field]: value }));
-      
-        if (field === "reference") {
-          if (value === "By Call" && user?.name) {
-            setFormData((prevData) => ({ ...prevData, by_whom: user.name }));
-          } else if (value === "By Meeting" && user?.name) {
-            setFormData((prevData) => ({ ...prevData, by_whom: user.name }));
-          } else {
-            setFormData((prevData) => ({ ...prevData, by_whom: "" }));
-          }
-        }
-      };
-      
-      
-      const handleByWhomChange = (_, newValue = []) => {
-        if (formData.reference === "By Meeting" && user?.name) {
-          // Ensure the user's name is always present
-          const updatedValue = [{ label: user.name, id: "user" }, ...newValue.filter((member) => member.label !== user.name)];
-          setFormData((prevData) => ({ ...prevData, by_whom: updatedValue.map((member) => member.label).join(", ") }));
-        } else {
-          setFormData((prevData) => ({ ...prevData, by_whom: newValue.map((member) => member.label).join(", ") }));
-        }
-      };
-      
-      // cahnge it later
-      const handleSubmitTask = async (e) => {
-        e.preventDefault();
-      
-        if (!formData.by_whom) {
-          console.error("Error: 'by_whom' field is required.");
-          return;
-        }
-      
-        const submittedBy = user?.name || ""; 
-  
-    const updatedFormData = { 
-      ...formData, 
-      id: LeadId, 
-      submitted_by: submittedBy  // Ensuring submitted_by is set properly
-    };
-      
-        console.log("Final Payload:", updatedFormData);
-      
-        try {
-          await ADDTask(updatedFormData).unwrap();
-          localStorage.removeItem("add_task_initial");
-          toast.success("Task Added Successfully.");
-          navigate("/leads");
-        } catch (error) {
-          console.error("Error submitting form data:", error?.data || error);
-        }
-      };
+    if (field === "reference") {
+      if (value === "By Call" && user?.name) {
+        setFormData((prevData) => ({ ...prevData, by_whom: user.name }));
+      } else if (value === "By Meeting" && user?.name) {
+        setFormData((prevData) => ({ ...prevData, by_whom: user.name }));
+      } else {
+        setFormData((prevData) => ({ ...prevData, by_whom: "" }));
+      }
+    }
+  };
+
+  const handleByWhomChange = (_, newValue = []) => {
+    if (formData.reference === "By Meeting" && user?.name) {
+      // Ensure the user's name is always present
+      const updatedValue = [
+        { label: user.name, id: "user" },
+        ...newValue.filter((member) => member.label !== user.name),
+      ];
+      setFormData((prevData) => ({
+        ...prevData,
+        by_whom: updatedValue.map((member) => member.label).join(", "),
+      }));
+    } else {
+      setFormData((prevData) => ({
+        ...prevData,
+        by_whom: newValue.map((member) => member.label).join(", "),
+      }));
+    }
+  };
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmitTask = async (e) => {
+    e.preventDefault();
+
+    try {
+      const newTask = await ADDTask(formData).unwrap();
+      toast.success("🎉 Task added successfully!");
+
+      // ✅ Close modal after success
+      handleCloseAddTaskModal(); // ✅ This closes the modal
+    } catch (error) {
+      console.error("❌ Error adding task:", error?.data || error);
+      toast.error("Failed to add task.");
+    }
+  };
+
+  const [openAddTaskModal, setOpenAddTaskModal] = useState(false);
+
+  const handleOpenAddTaskModal = (task = null) => {
+    if (task) {
+      // Prefill task if editing
+      setFormData({
+        id: task.id || "",
+        name: task.name || "",
+        date: task.date || "",
+        reference: task.reference || "",
+        comment: task.comment || "",
+        by_whom: task.by_whom || "",
+      });
+    } else {
+      // Reset to blank form for new task
+      setFormData({
+        id: "",
+        name: "",
+        date: "",
+        reference: "",
+        comment: "",
+        by_whom: "",
+      });
+    }
+    setOpenAddTaskModal(true);
+    // console.log("Open Add Task Modal", task ? "Editing Task" : "New Task");
+  };
+
+  // ✅ Close Add Task Modal and Reset Form
+  const handleCloseAddTaskModal = () => {
+    setOpenAddTaskModal(false);
+    setTimeout(() => {
+      setFormData({
+        id: "",
+        name: "",
+        date: "",
+        reference: "",
+        comment: "",
+        by_whom: "",
+      }); // ✅ Correct reset
+    }, 300);
+  };
 
   return (
     <Box
@@ -782,10 +839,10 @@ const TaskDashboard = () => {
                 </Box>
               )}
               <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-                <CustomPagination
-                  totalPages={totalPagesPast}
+                <PaginationComponent
                   currentPage={currentPages.past}
-                  onPageChange={(e, value) => handlePageChange("past", value)}
+                  totalPages={totalPagesPast}
+                  onPageChange={(page) => handlePageChange("past", page)}
                 />
               </Box>
             </Box>
@@ -832,6 +889,11 @@ const TaskDashboard = () => {
 
                   return isMatched;
                 })
+                .sort((a, b) => {
+                  const dateA = new Date(a.updatedAt || a.date);
+                  const dateB = new Date(b.updatedAt || b.date);
+                  return dateB - dateA;
+                })
                 .map((task, index) => (
                   <Card
                     key={index}
@@ -843,11 +905,13 @@ const TaskDashboard = () => {
                       p: 2,
                       width: "100%",
                       mx: "auto",
-                      backgroundColor: disabledCards[task._id]
-                        ? "#f5f5f5"
-                        : "#fff",
+                      backgroundColor: task.success ? "#d4edda" : "#ffffff", // ✅ Light green if success
+                      border: task.success
+                        ? "1px solid #c3e6cb"
+                        : "1px solid #e0e0e0",
+                      transition: "background-color 0.3s ease-in-out",
+                      opacity: disabledCards[task._id] ? 0.6 : 1, // 🔥 Dim card if disabled
                       pointerEvents: disabledCards[task._id] ? "none" : "auto",
-                      // opacity: disabledCards[task._id] ? 0.6 : 1,
                     }}
                   >
                     <CardContent>
@@ -866,11 +930,12 @@ const TaskDashboard = () => {
                                 backgroundColor: "#155724", // Dark green on hover
                                 color: "#ffffff", // White text for contrast
                               },
+                              pointerEvents: "auto",
                             }}
                           >
                             <Button
                               variant="plain"
-                              onClick={() => handleOpenModal(task)}
+                              onClick={() => handleOpenAddTaskModal(task)}
                               sx={{
                                 padding: 0,
                                 minWidth: "auto",
@@ -880,7 +945,10 @@ const TaskDashboard = () => {
                               <Typography>Reschedule +</Typography>
                             </Button>
                           </Chip>
-                          <Modal open={openModal} onClose={handleCloseModal}>
+                          <Modal
+                            open={openAddTaskModal}
+                            onClose={handleCloseAddTaskModal}
+                          >
                             <Grid
                               sx={{
                                 display: "flex",
@@ -900,7 +968,7 @@ const TaskDashboard = () => {
                                   gap: 2,
                                 }}
                               >
-                                <img alt="add" src={plus} />
+                                {/* <img alt="add" src={plus} /> */}
                                 <Typography
                                   level="h4"
                                   sx={{
@@ -929,7 +997,7 @@ const TaskDashboard = () => {
                                   boxShadow: "lg",
                                 }}
                               >
-                                <form onSubmit={handleSubmit}>
+                                <form onSubmit={handleSubmitTask}>
                                   <Stack spacing={2} sx={{ width: "100%" }}>
                                     <FormControl>
                                       <FormLabel>Customer Name</FormLabel>
@@ -1103,35 +1171,35 @@ const TaskDashboard = () => {
                                     >
                                       <Button
                                         type="submit"
+                                        disabled={isSubmitting}
                                         sx={{
                                           borderRadius: "8px",
-                                          background: "#1976d2",
+                                          background: isSubmitting
+                                            ? "#9e9e9e"
+                                            : "#1976d2", // Gray when disabled
                                           color: "white",
-                                          "&:hover": { background: "#1565c0" },
+                                          "&:hover": {
+                                            background: isSubmitting
+                                              ? "#9e9e9e"
+                                              : "#1565c0",
+                                          },
                                         }}
-                                        disabled={isLoading || isFetchingUsers}
                                       >
-                                        {isLoading || isFetchingUsers
+                                        {isSubmitting
                                           ? "Submitting..."
                                           : "Submit"}
                                       </Button>
                                       &nbsp;&nbsp;
                                       <Button
-                                        onClick={() => {
-                                          localStorage.removeItem(
-                                            "add_task_initial"
-                                          );
-                                          navigate("/leads");
-                                        }}
+                                        onClick={handleCloseAddTaskModal}
                                         sx={{
                                           borderRadius: "8px",
-                                          background: "#f5f5f5",
-                                          color: "black",
-                                          border: "1px solid #ddd",
-                                          "&:hover": { background: "#d6d6d6" },
+                                          background: "#f44336",
+                                          color: "white",
+                                          "&:hover": { background: "#d32f2f" },
                                         }}
                                       >
-                                        Back
+                                        Close
                                       </Button>
                                     </Stack>
                                   </Stack>
@@ -1170,6 +1238,11 @@ const TaskDashboard = () => {
                             startDecorator={task.icon}
                             variant="outlined"
                             size="lg"
+                            sx={{
+                              pointerEvents: disabledCards[task._id]
+                                ? "none"
+                                : "auto", // 🔥 Disable other actions
+                            }}
                           >
                             {task.type}
                           </Chip>
@@ -1188,6 +1261,7 @@ const TaskDashboard = () => {
                                   transition:
                                     "background-color 0.3s ease-in-out",
                                 },
+                                pointerEvents: "auto",
                               }}
                             />
                           )}
@@ -1197,7 +1271,12 @@ const TaskDashboard = () => {
                             onClick={() =>
                               !disabledCards[task._id] && setOpen(true)
                             }
-                            disabled={disabledCards[task._id]}
+                            disabled={disabledCards[task._id]} // Disable button after comment
+                            sx={{
+                              pointerEvents: disabledCards[task._id]
+                                ? "none"
+                                : "auto", // Disable interaction
+                            }}
                           >
                             <Typography>
                               {disabledCards[task._id]
@@ -1218,10 +1297,10 @@ const TaskDashboard = () => {
             )}
 
             <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-              <CustomPagination
-                totalPages={totalPagesToday}
+              <PaginationComponent
                 currentPage={currentPages.today}
-                onPageChange={(e, value) => handlePageChange("today", value)}
+                totalPages={totalPagesToday}
+                onPageChange={(page) => handlePageChange("today", page)}
               />
             </Box>
           </TabPanel>
@@ -1328,10 +1407,10 @@ const TaskDashboard = () => {
               <Typography level="body-lg">No tasks for tomorrow.</Typography>
             )}
             <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-              <CustomPagination
-                totalPages={totalPagesTomorrow}
+              <PaginationComponent
                 currentPage={currentPages.tomorrow}
-                onPageChange={(e, value) => handlePageChange("tomorrow", value)}
+                totalPages={totalPagesTomorrow}
+                onPageChange={(page) => handlePageChange("tomorrow", page)}
               />
             </Box>
           </TabPanel>
@@ -1681,10 +1760,10 @@ const TaskDashboard = () => {
                 </Box>
               )}
               <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-                <CustomPagination
-                  totalPages={totalPagesFuture}
+                <PaginationComponent
                   currentPage={currentPages.future}
-                  onPageChange={(e, value) => handlePageChange("future", value)}
+                  totalPages={totalPagesFuture}
+                  onPageChange={(page) => handlePageChange("future", page)}
                 />
               </Box>
             </Box>

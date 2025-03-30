@@ -1127,7 +1127,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={9}
+                    colSpan={12}
                     sx={{
                       padding: "8px",
                       textAlign: "center",
