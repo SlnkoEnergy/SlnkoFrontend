@@ -347,7 +347,17 @@ const TaskDashboard = () => {
   const [completedTasks, setCompletedTasks] = useState(() => {
     try {
       const storedTasks = localStorage.getItem("completedTasks");
-      return storedTasks ? JSON.parse(storedTasks) : {};
+      const parsedTasks = storedTasks ? JSON.parse(storedTasks) : {};
+
+      // ✅ Auto-mark tasks with comments as completed
+      const initialCompletedTasks = updatedTasks.reduce((acc, task) => {
+        if (task.comment && task.comment !== "No assigned user or comment.") {
+          acc[task._id] = true; // Pre-check task if it has a comment
+        }
+        return acc;
+      }, parsedTasks);
+
+      return initialCompletedTasks;
     } catch (error) {
       console.error("Error loading completed tasks:", error);
       return {};
@@ -355,7 +365,7 @@ const TaskDashboard = () => {
   });
 
   const handleCheckboxChange = (task, event) => {
-    const isChecked = event.target.checked;
+    const isChecked = event.target.checked || !!task.comment; // ✅ Auto-check if task has comment
 
     // ✅ Update completedTasks & persist to localStorage
     setCompletedTasks((prev) => {
@@ -365,7 +375,7 @@ const TaskDashboard = () => {
     });
 
     // ✅ Open/Close Dialog as needed
-    if (isChecked) {
+    if (isChecked && !task.comment) {
       setSelectedTask({
         ...task,
         _id: task._id,
@@ -377,6 +387,7 @@ const TaskDashboard = () => {
       setOpenDialog(false);
     }
   };
+
   const tasksPerPage = 3;
   // ✅ New function to slice tasks correctly
   const getPaginatedData = (tasks, currentPage) => {
@@ -489,7 +500,7 @@ const TaskDashboard = () => {
   // const getDayAfterTomorrowDate = (daysAhead = 2) => {
   //   const date = new Date();
   //   date.setDate(date.getDate() + daysAhead); // Add dynamic days
-  
+
   //   return date.toLocaleDateString("en-US", {
   //     weekday: "long",
   //     year: "numeric",
@@ -506,7 +517,6 @@ const TaskDashboard = () => {
   //     day: "numeric",
   //   };
 
-   
   //   const date = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
 
   //   return date.toLocaleDateString("en-US", options);
@@ -514,23 +524,21 @@ const TaskDashboard = () => {
 
   const formatTaskDate = (taskDate) => {
     if (!taskDate) return "Invalid Date";
-  
+
     const date = new Date(taskDate);
-  
+
     if (isNaN(date.getTime())) {
       // console.error("❌ Invalid Date:", taskDate);
       return "Invalid Date";
     }
-  
+
     return date.toLocaleDateString("en-US", {
-      weekday: "long", 
-      month: "short",   
-      day: "numeric",   
-      year: "numeric",  
+      weekday: "long",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
   };
-  
-  
 
   // const [selectedTask, setSelectedTask] = useState(null);
   const [openModal, setOpenModal] = useState(false);
@@ -557,7 +565,7 @@ const TaskDashboard = () => {
     reference: "",
     by_whom: "",
     comment: "",
-    task_detail:"",
+    task_detail: "",
     submitted_by: "",
   });
 
@@ -1284,7 +1292,9 @@ const TaskDashboard = () => {
                             user?.name?.toLowerCase() ===
                               task?.submitted_by?.toLowerCase()) && (
                             <Checkbox
-                              checked={completedTasks[task._id] || false}
+                              checked={
+                                !!completedTasks[task._id] || !!task.comment
+                              }
                               onChange={(e) => handleCheckboxChange(task, e)}
                               disabled={completedTasks[task._id]}
                               sx={{

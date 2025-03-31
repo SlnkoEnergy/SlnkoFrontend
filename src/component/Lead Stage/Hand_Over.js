@@ -1,22 +1,20 @@
-import React, { useState, useEffect, useMemo } from "react";
-import axios from "axios";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
   Accordion,
-  AccordionSummary,
   AccordionDetails,
-  Typography,
+  AccordionSummary,
+  Button,
   Grid,
   Input,
-  Button,
-  MenuItem,
-  Sheet,
-  Select,
   Option,
+  Select,
+  Sheet,
+  Typography,
 } from "@mui/joy";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
 import {
   useAddHandOverMutation,
   useGetMasterInverterQuery,
@@ -27,7 +25,7 @@ const HandoverSheetForm = () => {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(null);
   const [formData, setFormData] = useState({
-    id:"",
+    id: "",
     customer_details: {
       project_id: "",
       project_name: "",
@@ -149,7 +147,6 @@ const HandoverSheetForm = () => {
     }
   }, [ModuleMaster, MasterInverter]);
 
-
   const handleExpand = (panel) => {
     setExpanded(expanded === panel ? null : panel);
   };
@@ -178,42 +175,38 @@ const HandoverSheetForm = () => {
     setUser(userData);
   }, []);
 
-
-
   const getUserData = () => {
     const userData = localStorage.getItem("userDetails");
     return userData ? JSON.parse(userData) : null;
   };
-const LeadId = localStorage.getItem("hand_Over");
+  const LeadId = localStorage.getItem("hand_Over");
 
-const handleSubmit = async () => {
-  try {
-    if (!LeadId) {
-      toast.error("Lead ID is missing!");
-      return;
+  const handleSubmit = async () => {
+    try {
+      if (!LeadId) {
+        toast.error("Lead ID is missing!");
+        return;
+      }
+
+      const updatedFormData = {
+        ...formData,
+        id: LeadId,
+        attached_details: {
+          ...formData.attached_details,
+          submitted_by_BD:
+            formData.attached_details.submitted_by_BD || user?.name || "",
+        },
+      };
+
+      const response = await HandOverSheet(updatedFormData).unwrap();
+      toast.success("Form submitted successfully");
+      localStorage.setItem("HandOver_Lead", LeadId);
+      navigate("/get_hand_over");
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast.error("Submission failed");
     }
-
-    const updatedFormData = {
-      ...formData,
-      id: LeadId, 
-      attached_details: {
-        ...formData.attached_details,
-        submitted_by_BD: formData.attached_details.submitted_by_BD || user?.name || "", 
-      },
-    };
-
-    const response = await HandOverSheet(updatedFormData).unwrap();
-    toast.success("Form submitted successfully");
-
-    // Navigate to the specific handover page for the submitted LeadId
-    navigate(`/get_hand_over/${LeadId}`);
-  } catch (error) {
-    console.error("Error submitting form:", error);
-    toast.error("Submission failed");
-  }
-};
-
-
+  };
 
   const sections = [
     {
@@ -936,7 +929,7 @@ const handleSubmit = async () => {
                       )}
                     </>
                   )}
-                  
+
                   <Grid item xs={12} sm={6}>
                     <Typography
                       level="body1"

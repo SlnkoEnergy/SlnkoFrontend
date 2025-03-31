@@ -1,14 +1,14 @@
-import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
-import DeleteIcon from "@mui/icons-material/Delete";
 import { Player } from "@lottiefiles/react-lottie-player";
+import FollowTheSignsIcon from "@mui/icons-material/FollowTheSigns";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
+import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
+import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
-import Divider from "@mui/joy/Divider";
 import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
@@ -20,17 +20,15 @@ import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
-import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
-import FollowTheSignsIcon from '@mui/icons-material/FollowTheSigns';
-import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
-import ManageHistoryIcon from '@mui/icons-material/ManageHistory';
-import NextPlanIcon from '@mui/icons-material/NextPlan';
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../../assets/Lotties/animation-loading.json";
 // import Axios from "../utils/Axios";
-import { useGetHandOverQuery, useGetInitialLeadsQuery, useGetWonLeadsQuery } from "../../redux/leadsSlice";
 import NoData from "../../assets/alert-bell.svg";
+import {
+  useGetHandOverQuery,
+  useGetWonLeadsQuery,
+} from "../../redux/leadsSlice";
 
 const StandByRequest = () => {
   const navigate = useNavigate();
@@ -49,15 +47,15 @@ const StandByRequest = () => {
 
   const { data: getHandOverSheet = [] } = useGetHandOverQuery();
   const HandOverSheet = useMemo(
-    () => getHandOverSheet?.Data ?? [], 
+    () => getHandOverSheet?.Data ?? [],
     [getHandOverSheet]
   );
-  
 
   const status_handOver = (leadId) => {
-    const matchedHandOver = HandOverSheet.find(sheet => sheet.id === leadId);
-    return matchedHandOver ? matchedHandOver.
-    status_of_handoversheet : "Not Found";
+    const matchedHandOver = HandOverSheet.find((sheet) => sheet.id === leadId);
+    return matchedHandOver
+      ? matchedHandOver.status_of_handoversheet
+      : "Not Found";
   };
 
   const renderFilters = () => (
@@ -202,7 +200,7 @@ const StandByRequest = () => {
   const filteredData = useMemo(() => {
     return leads
       .filter((lead) => {
-        const matchesQuery = ["id", "c_name", "mobile","state"].some((key) =>
+        const matchesQuery = ["id", "c_name", "mobile", "state"].some((key) =>
           lead[key]?.toLowerCase().includes(searchQuery)
         );
         const matchesDate = selectedDate
@@ -215,7 +213,6 @@ const StandByRequest = () => {
         if (!b.id) return -1;
         return String(b.id).localeCompare(String(a.id));
       });
-      
   }, [leads, searchQuery, selectedDate]);
 
   const generatePageNumbers = (currentPage, totalPages) => {
@@ -321,19 +318,31 @@ const StandByRequest = () => {
             />
           </Box>
         ) : error ? (
-          <span style={{ display: "flex", alignItems: "center", gap: "5px", color: "red", justifyContent:"center", flexDirection:"column" , padding: "20px"}}>
-          <PermScanWifiIcon />
-          <Typography fontStyle={"italic"} fontWeight={"600"} sx={{color:"#0a6bcc"}} >
-          Hang tight! Internet Connection will be back soon..
-          </Typography>
-          
-        </span>
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              color: "red",
+              justifyContent: "center",
+              flexDirection: "column",
+              padding: "20px",
+            }}
+          >
+            <PermScanWifiIcon />
+            <Typography
+              fontStyle={"italic"}
+              fontWeight={"600"}
+              sx={{ color: "#0a6bcc" }}
+            >
+              Hang tight! Internet Connection will be back soon..
+            </Typography>
+          </span>
         ) : (
           <Box
             component="table"
             sx={{ width: "100%", borderCollapse: "collapse" }}
           >
-          
             <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
               <Box component="tr">
                 <Box
@@ -362,7 +371,7 @@ const StandByRequest = () => {
                   "Capacity",
                   "Substation Distance",
                   "Creation Date",
-                  "Status",
+                  "HandOver Status",
                   "Action",
                 ].map((header, index) => (
                   <Box
@@ -381,7 +390,7 @@ const StandByRequest = () => {
               </Box>
             </Box>
 
-         {/*****pagination ****/}
+            {/*****pagination ****/}
             <Box component="tbody">
               {paginatedData.length > 0 ? (
                 paginatedData.map((lead, index) => (
@@ -392,7 +401,6 @@ const StandByRequest = () => {
                       "&:hover": { backgroundColor: "neutral.plainHoverBg" },
                     }}
                   >
-                 
                     <Box
                       component="td"
                       sx={{
@@ -409,7 +417,6 @@ const StandByRequest = () => {
                       />
                     </Box>
 
-                    
                     {[
                       lead.id,
                       lead.c_name,
@@ -420,8 +427,7 @@ const StandByRequest = () => {
                       lead.capacity || "-",
                       lead.distance || "-",
                       lead.entry_date || "-",
-                      status_handOver(lead.id)
-                       || "-"
+                      status_handOver(lead.id) || "-",
                     ].map((data, idx) => (
                       <Box
                         component="td"
@@ -445,7 +451,7 @@ const StandByRequest = () => {
                         textAlign: "center",
                       }}
                     >
-                      <RowMenu currentPage={currentPage} id={lead.id}/>
+                      <RowMenu currentPage={currentPage} id={lead.id} />
                     </Box>
                   </Box>
                 ))

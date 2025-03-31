@@ -1,22 +1,23 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
   Accordion,
-  AccordionSummary,
   AccordionDetails,
-  Typography,
+  AccordionSummary,
+  Button,
   Grid,
   Input,
-  Button,
-  MenuItem,
-  Sheet,
-  Select,
   Option,
+  Select,
+  Sheet,
+  Typography,
 } from "@mui/joy";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import React, { useEffect, useMemo, useState } from "react";
 import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
-import { useGetHandOverQuery, useGetMasterInverterQuery, useGetModuleMasterQuery } from "../../redux/leadsSlice";
-import { useMemo } from "react";
+import {
+  useGetHandOverQuery,
+  useGetMasterInverterQuery,
+  useGetModuleMasterQuery,
+} from "../../redux/leadsSlice";
 
 const GetHandoverSheetForm = ({ onBack }) => {
   const [expanded, setExpanded] = useState(null);
@@ -35,7 +36,7 @@ const GetHandoverSheetForm = ({ onBack }) => {
       type_business: "",
       tender_name: "",
       discom_name: "",
-      design_date: "",
+      design_date: "", // If using Date in MongoDB, handle conversion properly
     },
     project_detail: {
       project_type: "",
@@ -56,7 +57,7 @@ const GetHandoverSheetForm = ({ onBack }) => {
       purchase_supply_net_meter: "",
       liaisoning_net_metering: "",
       ceig_ceg: "",
-      project_completion_date: "",
+      project_completion_date: "", // Handle date if necessary
       proposed_dc_capacity: "",
       transmission_line: "",
       substation_name: "",
@@ -73,19 +74,21 @@ const GetHandoverSheetForm = ({ onBack }) => {
       ppa_number: "",
       submitted_by_BD: "",
     },
-    
   });
-  const [moduleMakeOptions, setModuleMakeOptions] = useState([]);
-const [moduleTypeOptions, setModuleTypeOptions] = useState([]);
-const [moduleModelOptions, setModuleModelOptions] = useState([]);
-const [moduleCapacityOptions, setModuleCapacityOptions] = useState([]);
-const [inverterMakeOptions, setInverterMakeOptions] = useState([]);
-const [inverterSizeOptions, setInverterSizeOptions] = useState([]);
-const [inverterModelOptions, setInverterModelOptions] = useState([]);
-const [inverterTypeOptions, setInverterTypeOptions] = useState([]);
-// const [handoverId, setHandoverId] = useState(null);
-const [user, setUser] = useState(null);
 
+  const [moduleMakeOptions, setModuleMakeOptions] = useState([]);
+  const [moduleTypeOptions, setModuleTypeOptions] = useState([]);
+  const [moduleModelOptions, setModuleModelOptions] = useState([]);
+  const [moduleCapacityOptions, setModuleCapacityOptions] = useState([]);
+  const [inverterMakeOptions, setInverterMakeOptions] = useState([]);
+  const [inverterSizeOptions, setInverterSizeOptions] = useState([]);
+  const [inverterModelOptions, setInverterModelOptions] = useState([]);
+  const [inverterTypeOptions, setInverterTypeOptions] = useState([]);
+  // const [handoverId, setHandoverId] = useState(null);
+  const handlePrint = () => {
+    window.print();
+  };
+  const [user, setUser] = useState(null);
 
   const { data: getModuleMaster = [] } = useGetModuleMasterQuery();
   const ModuleMaster = useMemo(
@@ -103,98 +106,95 @@ const [user, setUser] = useState(null);
 
   console.log(MasterInverter);
 
-    useEffect(() => {
-      if (ModuleMaster.length > 0) {
-        setModuleMakeOptions([
-          ...new Set(ModuleMaster.map((item) => item.make).filter(Boolean)),
-        ]);
-        setModuleTypeOptions([
-          ...new Set(ModuleMaster.map((item) => item.type).filter(Boolean)),
-        ]);
-        setModuleModelOptions([
-          ...new Set(ModuleMaster.map((item) => item.model).filter(Boolean)),
-        ]);
-        setModuleCapacityOptions([
-          ...new Set(ModuleMaster.map((item) => item.power).filter(Boolean)),
-        ]);
-      }
-  
-      if (MasterInverter.length > 0) {
-        setInverterMakeOptions([
-          ...new Set(
-            MasterInverter.map((item) => item.inveter_make).filter(Boolean)
-          ),
-        ]);
-        setInverterSizeOptions([
-          ...new Set(
-            MasterInverter.map((item) => item.inveter_size).filter(Boolean)
-          ),
-        ]);
-        setInverterModelOptions([
-          ...new Set(
-            MasterInverter.map((item) => item.inveter_model).filter(Boolean)
-          ),
-        ]);
-        setInverterTypeOptions([
-          ...new Set(
-            MasterInverter.map((item) => item.inveter_type).filter(Boolean)
-          ),
-        ]);
-      }
-    }, [ModuleMaster, MasterInverter]);
+  useEffect(() => {
+    if (ModuleMaster.length > 0) {
+      setModuleMakeOptions([
+        ...new Set(ModuleMaster.map((item) => item.make).filter(Boolean)),
+      ]);
+      setModuleTypeOptions([
+        ...new Set(ModuleMaster.map((item) => item.type).filter(Boolean)),
+      ]);
+      setModuleModelOptions([
+        ...new Set(ModuleMaster.map((item) => item.model).filter(Boolean)),
+      ]);
+      setModuleCapacityOptions([
+        ...new Set(ModuleMaster.map((item) => item.power).filter(Boolean)),
+      ]);
+    }
 
+    if (MasterInverter.length > 0) {
+      setInverterMakeOptions([
+        ...new Set(
+          MasterInverter.map((item) => item.inveter_make).filter(Boolean)
+        ),
+      ]);
+      setInverterSizeOptions([
+        ...new Set(
+          MasterInverter.map((item) => item.inveter_size).filter(Boolean)
+        ),
+      ]);
+      setInverterModelOptions([
+        ...new Set(
+          MasterInverter.map((item) => item.inveter_model).filter(Boolean)
+        ),
+      ]);
+      setInverterTypeOptions([
+        ...new Set(
+          MasterInverter.map((item) => item.inveter_type).filter(Boolean)
+        ),
+      ]);
+    }
+  }, [ModuleMaster, MasterInverter]);
 
-// useEffect(() => {
-//   const fetchMasterData = async () => {
-//     try {
-//       const response = await axios.get("https://api.slnkoprotrac.com/v1/get-module-master");
+  // useEffect(() => {
+  //   const fetchMasterData = async () => {
+  //     try {
+  //       const response = await axios.get("https://api.slnkoprotrac.com/v1/get-module-master");
 
-//       // console.log("Module Master Response:", response.data);
+  //       // console.log("Module Master Response:", response.data);
 
-//       // Ensure response.data is an object and contains an array key
-//       const moduleData = Array.isArray(response.data.data) ? response.data.data : [];
+  //       // Ensure response.data is an object and contains an array key
+  //       const moduleData = Array.isArray(response.data.data) ? response.data.data : [];
 
-//       // console.log("Extracted Module Master Data:", moduleData);
+  //       // console.log("Extracted Module Master Data:", moduleData);
 
+  //       const Inverterresponse = await axios.get("https://api.slnkoprotrac.com/v1/get-master-inverter");
 
-//       const Inverterresponse = await axios.get("https://api.slnkoprotrac.com/v1/get-master-inverter");
+  //       // console.log("Inverter Master Response:", Inverterresponse.data);
 
-//       // console.log("Inverter Master Response:", Inverterresponse.data);
+  //       // Ensure response.data is an object and contains an array key
+  //       const InverterData = Array.isArray(Inverterresponse.data.data) ? Inverterresponse.data.data : [];
 
-//       // Ensure response.data is an object and contains an array key
-//       const InverterData = Array.isArray(Inverterresponse.data.data) ? Inverterresponse.data.data : [];
+  //       // console.log("Extracted Inverter Master Data:", InverterData);
 
-//       // console.log("Extracted Inverter Master Data:", InverterData);
+  //       // Extract unique values for Module
+  //       const makeOptions = [...new Set(moduleData.map((item) => item.make).filter(Boolean))];
+  //       const typeOptions = [...new Set(moduleData.map((item) => item.type).filter(Boolean))];
+  //       const modelOptions = [...new Set(moduleData.map((item) => item.model).filter(Boolean))];
+  //       const capacityOptions = [...new Set(moduleData.map((item) => item.power).filter(Boolean))];
 
+  //       setModuleMakeOptions(makeOptions);
+  //       setModuleTypeOptions(typeOptions);
+  //       setModuleModelOptions(modelOptions);
+  //       setModuleCapacityOptions(capacityOptions);
 
-//       // Extract unique values for Module
-//       const makeOptions = [...new Set(moduleData.map((item) => item.make).filter(Boolean))];
-//       const typeOptions = [...new Set(moduleData.map((item) => item.type).filter(Boolean))];
-//       const modelOptions = [...new Set(moduleData.map((item) => item.model).filter(Boolean))];
-//       const capacityOptions = [...new Set(moduleData.map((item) => item.power).filter(Boolean))];
+  //       // Extract unique values for Inverter
+  //       const inverterMake = [...new Set(InverterData.map((item) => item.inveter_make).filter(Boolean))];
+  //       const inverterSize = [...new Set(InverterData.map((item) => item.inveter_size).filter(Boolean))];
+  //       const inverterModel = [...new Set(InverterData.map((item) => item.inveter_model).filter(Boolean))];
+  //       const inverterType = [...new Set(InverterData.map((item) => item.inveter_type).filter(Boolean))];
 
-//       setModuleMakeOptions(makeOptions);
-//       setModuleTypeOptions(typeOptions);
-//       setModuleModelOptions(modelOptions);
-//       setModuleCapacityOptions(capacityOptions);
+  //       setInverterMakeOptions(inverterMake);
+  //       setInverterSizeOptions(inverterSize);
+  //       setInverterModelOptions(inverterModel);
+  //       setInverterTypeOptions(inverterType);
 
-//       // Extract unique values for Inverter
-//       const inverterMake = [...new Set(InverterData.map((item) => item.inveter_make).filter(Boolean))];
-//       const inverterSize = [...new Set(InverterData.map((item) => item.inveter_size).filter(Boolean))];
-//       const inverterModel = [...new Set(InverterData.map((item) => item.inveter_model).filter(Boolean))];
-//       const inverterType = [...new Set(InverterData.map((item) => item.inveter_type).filter(Boolean))];
-
-//       setInverterMakeOptions(inverterMake);
-//       setInverterSizeOptions(inverterSize);
-//       setInverterModelOptions(inverterModel);
-//       setInverterTypeOptions(inverterType);
-
-//     } catch (error) {
-//       console.error("Error fetching master data:", error);
-//     }
-//   };
-//   fetchMasterData();
-// }, []);
+  //     } catch (error) {
+  //       console.error("Error fetching master data:", error);
+  //     }
+  //   };
+  //   fetchMasterData();
+  // }, []);
   const handleExpand = (panel) => {
     setExpanded(expanded === panel ? null : panel);
   };
@@ -223,108 +223,132 @@ const [user, setUser] = useState(null);
     setUser(userData);
   }, []);
 
-
-
   const getUserData = () => {
     const userData = localStorage.getItem("userDetails");
     return userData ? JSON.parse(userData) : null;
   };
-const LeadId = localStorage.getItem("hand_Over");
+  const LeadId = localStorage.getItem("HandOver_Lead");
+  const { data: getHandOverSheet = [] } = useGetHandOverQuery();
+  const HandOverSheet = useMemo(
+    () => getHandOverSheet?.Data ?? [],
+    [getHandOverSheet]
+  );
 
-const { data: getHandOverSheet = [] } = useGetHandOverQuery();
-const HandOverSheet = useMemo(
-  () => getHandOverSheet?.Data ?? [], 
-  [getHandOverSheet]
-);
+  console.log("HandOverSheet", HandOverSheet);
 
-const handoverData = HandOverSheet.find((item) => item.handover_id == LeadId);
+  const handoverData = HandOverSheet.find((item) => item.id === LeadId);
 
-useEffect(() => {
-  if (!handoverData) {
-    console.warn("No matching handover data found.");
-    return;
-  }
+  console.log("✅ Found handoverData:", handoverData);
 
-  console.log("Extracted Data Before State Update:", JSON.stringify(handoverData, null, 2));
+  // 🎯 Populate Data from Handover if Available
+  useEffect(() => {
+    if (!handoverData) {
+      console.warn("⚠️ No matching handover data found.");
+      return;
+    }
 
-  setFormData((prev) => {
-    const projectDetail = handoverData.project_detail || {};
-    const attachedDetails = handoverData.attached_details || {};
-
-    return {
+    setFormData((prev) => ({
       ...prev,
-      customer_details: { ...prev.customer_details, ...handoverData.customer_details },
-      order_details: { ...prev.order_details, ...handoverData.order_details },
+      customer_details: {
+        project_id: handoverData?.customer_details?.project_id || "",
+        project_name: handoverData?.customer_details?.project_name || "",
+        epc_developer: handoverData?.customer_details?.epc_developer || "",
+        site_address_pincode:
+          handoverData?.customer_details?.site_address_pincode || "",
+        site_google_coordinates:
+          handoverData?.customer_details?.site_google_coordinates || "",
+        contact_no: handoverData?.customer_details?.contact_no || "",
+        gst_no: handoverData?.customer_details?.gst_no || "",
+        billing_address: handoverData?.customer_details?.billing_address || "",
+      },
+      order_details: {
+        type_business: handoverData?.order_details?.type_business || "",
+        tender_name: handoverData?.order_details?.tender_name || "",
+        discom_name: handoverData?.order_details?.discom_name || "",
+        design_date: handoverData?.order_details?.design_date || "",
+      },
       project_detail: {
-        project_type: projectDetail.project_type || "",
-        module_make_capacity: projectDetail.module_make_capacity || "",
-        module_make: projectDetail.module_make || "",
-        module_capacity: projectDetail.module_capacity || "",
-        module_type: projectDetail.module_type || "",
-        module_model_no: projectDetail.module_model_no || "",
-        evacuation_voltage: projectDetail.evacuation_voltage || "",
-        inverter_make_capacity: projectDetail.inverter_make_capacity || "",
-        inverter_make: projectDetail.inverter_make || "",
-        inverter_type: projectDetail.inverter_type || "",
-        inverter_size: projectDetail.inverter_size || "",
-        inverter_model_no: projectDetail.inverter_model_no || "",
-        work_by_slnko: projectDetail.work_by_slnko || "",
-        topography_survey: projectDetail.topography_survey || "",
-        soil_test: projectDetail.soil_test || "",
-        purchase_supply_net_meter: projectDetail.purchase_supply_net_meter || "",
-        liaisoning_net_metering: projectDetail.liaisoning_net_metering || "",
-        ceig_ceg: projectDetail.ceig_ceg || "",
-        project_completion_date: projectDetail.project_completion_date || "",
-        proposed_dc_capacity: projectDetail.proposed_dc_capacity || "",
-        transmission_line: projectDetail.transmission_line || "",
-        substation_name: projectDetail.substation_name || "",
-        overloading: projectDetail.overloading || "",
+        project_type: handoverData?.project_detail?.project_type || "",
+        module_make_capacity:
+          handoverData?.project_detail?.module_make_capacity || "",
+        module_make: handoverData?.project_detail?.module_make || "",
+        module_capacity: handoverData?.project_detail?.module_capacity || "",
+        module_type: handoverData?.project_detail?.module_type || "",
+        module_model_no: handoverData?.project_detail?.module_model_no || "",
+        evacuation_voltage:
+          handoverData?.project_detail?.evacuation_voltage || "",
+        inverter_make_capacity:
+          handoverData?.project_detail?.inverter_make_capacity || "",
+        inverter_make: handoverData?.project_detail?.inverter_make || "",
+        inverter_type: handoverData?.project_detail?.inverter_type || "",
+        inverter_size: handoverData?.project_detail?.inverter_size || "",
+        inverter_model_no:
+          handoverData?.project_detail?.inverter_model_no || "",
+        work_by_slnko: handoverData?.project_detail?.work_by_slnko || "",
+        topography_survey:
+          handoverData?.project_detail?.topography_survey || "",
+        soil_test: handoverData?.project_detail?.soil_test || "",
+        purchase_supply_net_meter:
+          handoverData?.project_detail?.purchase_supply_net_meter || "",
+        liaisoning_net_metering:
+          handoverData?.project_detail?.liaisoning_net_metering || "",
+        ceig_ceg: handoverData?.project_detail?.ceig_ceg || "",
+        project_completion_date:
+          handoverData?.project_detail?.project_completion_date || "",
+        proposed_dc_capacity:
+          handoverData?.project_detail?.proposed_dc_capacity || "",
+        transmission_line:
+          handoverData?.project_detail?.transmission_line || "",
+        substation_name: handoverData?.project_detail?.substation_name || "",
+        overloading: handoverData?.project_detail?.overloading || "",
       },
-      commercial_details: { ...prev.commercial_details, ...handoverData.commercial_details },
+      commercial_details: {
+        type: handoverData?.commercial_details?.type || "",
+        subsidy_amount: handoverData?.commercial_details?.subsidy_amount || "",
+      },
       attached_details: {
-        ...prev.attached_details,
-        ...attachedDetails,
-        taken_over_by: attachedDetails.taken_over_by || "",
+        taken_over_by: handoverData?.attached_details?.taken_over_by || "",
+        cam_member_name: handoverData?.attached_details?.cam_member_name || "",
+        loa_number: handoverData?.attached_details?.loa_number || "",
+        ppa_number: handoverData?.attached_details?.ppa_number || "",
+        submitted_by_BD: handoverData?.attached_details?.submitted_by_BD || "",
       },
-    };
-  });
-}, [handoverData]);
+    }));
+  }, [handoverData]);
 
+  // console.log("📝 Updated formData:", formData);
+  // console.log("📦 order_details:", handoverData?.order_details);
+  // console.log("📦 project_detail:", handoverData?.project_detail);
 
+  // ✅ Debugging: Log State Updates to Ensure Data is Set Correctly
+  // useEffect(() => {
+  //   console.log("Updated Form Data in State:", formData);
+  // }, [formData]);
 
+  //   const handleExpand = (panel) => {
+  //     setExpanded(expanded === panel ? null : panel);
+  //   };
 
-// ✅ Debugging: Log State Updates to Ensure Data is Set Correctly
-// useEffect(() => {
-//   console.log("Updated Form Data in State:", formData);
-// }, [formData]);
+  //   const handleChange = (section, field, value) => {
+  //     setFormData((prev) => ({
+  //       ...prev,
+  //       [section]: {
+  //         ...prev[section],
+  //         [field]: value,
+  //       },
+  //     }));
+  //   };
 
+  //   const handleSubmit = async (e) => {
+  //     e.preventDefault();
+  //     try {
+  //       await axios.put(`https://api.slnkoprotrac.com/v1/edit-hand-over-sheet/67e2744c5c891bb412838925`, formData);
 
-//   const handleExpand = (panel) => {
-//     setExpanded(expanded === panel ? null : panel);
-//   };
-
-//   const handleChange = (section, field, value) => {
-//     setFormData((prev) => ({
-//       ...prev,
-//       [section]: {
-//         ...prev[section],
-//         [field]: value,
-//       },
-//     }));
-//   };
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     try {
-//       await axios.put(`https://api.slnkoprotrac.com/v1/edit-hand-over-sheet/67e2744c5c891bb412838925`, formData);
-
-
-//         alert('Handover Sheet updated successfully');
-//     } catch (error) {
-//         console.error('Error updating data:', error);
-//     }
-// };
-
+  //         alert('Handover Sheet updated successfully');
+  //     } catch (error) {
+  //         console.error('Error updating data:', error);
+  //     }
+  // };
 
   const sections = [
     {
@@ -406,7 +430,7 @@ useEffect(() => {
                     <Input
                       fullWidth
                       placeholder="Project ID"
-                      value={formData.customer_details.project_id}
+                      value={formData?.customer_details?.project_id || ""}
                       onChange={(e) =>
                         handleChange(
                           "customer_details",
@@ -414,6 +438,7 @@ useEffect(() => {
                           e.target.value
                         )
                       }
+                      readOnly
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -434,6 +459,7 @@ useEffect(() => {
                           e.target.value
                         )
                       }
+                      readOnly
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -474,6 +500,7 @@ useEffect(() => {
                           e.target.value
                         )
                       }
+                      readOnly
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -494,6 +521,7 @@ useEffect(() => {
                           e.target.value
                         )
                       }
+                      readOnly
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -514,6 +542,7 @@ useEffect(() => {
                           e.target.value
                         )
                       }
+                      readOnly
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -534,6 +563,7 @@ useEffect(() => {
                           e.target.value
                         )
                       }
+                      readOnly
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -554,6 +584,7 @@ useEffect(() => {
                           e.target.value
                         )
                       }
+                      readOnly
                     />
                   </Grid>
                 </>
@@ -571,10 +602,16 @@ useEffect(() => {
                     <Select
                       fullWidth
                       placeholder="Select Type of Business"
-                      value={formData.order_details.type_business || ""}
-                      onChange={(e, newValue) =>
-                        handleChange("order_details", "type_business", newValue)
-                      }
+                      value={formData?.order_details?.type_business ?? ""} // ✅ Ensure value is correctly passed
+                      onChange={(e, newValue) => {
+                        console.log("🔄 Updating type_business to:", newValue);
+                        handleChange(
+                          "order_details",
+                          "type_business",
+                          newValue
+                        );
+                      }}
+                      disabled={true}
                       sx={{
                         fontSize: "1rem",
                         backgroundColor: "#fff",
@@ -593,7 +630,7 @@ useEffect(() => {
                       Tender Name
                     </Typography>
                     <Input
-                      value={formData.order_details.tender_name}
+                      value={formData?.order_details?.tender_name}
                       onChange={(e) =>
                         handleChange(
                           "order_details",
@@ -601,6 +638,7 @@ useEffect(() => {
                           e.target.value
                         )
                       }
+                      readOnly
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -608,7 +646,7 @@ useEffect(() => {
                       DISCOM Name
                     </Typography>
                     <Input
-                      value={formData.order_details.discom_name}
+                      value={formData?.order_details?.discom_name}
                       onChange={(e) =>
                         handleChange(
                           "order_details",
@@ -616,6 +654,7 @@ useEffect(() => {
                           e.target.value
                         )
                       }
+                      readOnly
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -624,7 +663,7 @@ useEffect(() => {
                     </Typography>
                     <Input
                       type="date"
-                      value={formData.order_details.design_date}
+                      value={formData?.order_details?.design_date}
                       onChange={(e) =>
                         handleChange(
                           "order_details",
@@ -632,6 +671,7 @@ useEffect(() => {
                           e.target.value
                         )
                       }
+                      readOnly
                     />
                   </Grid>
                 </>
@@ -653,6 +693,7 @@ useEffect(() => {
                       onChange={(e, newValue) =>
                         handleChange("commercial_details", "type", newValue)
                       }
+                      disabled={true}
                       sx={{
                         fontSize: "1rem",
                         backgroundColor: "#fff",
@@ -680,6 +721,7 @@ useEffect(() => {
                           e.target.value
                         )
                       }
+                      readOnly
                     />
                   </Grid>
                 </>
@@ -702,6 +744,7 @@ useEffect(() => {
                       onChange={(e, newValue) =>
                         handleChange("project_detail", "project_type", newValue)
                       }
+                      disabled={true}
                     >
                       <Option value="On-Grid">On-Grid</Option>
                       <Option value="Off-Grid">Off-Grid</Option>
@@ -730,6 +773,7 @@ useEffect(() => {
                           newValue
                         )
                       }
+                      disabled={true}
                     >
                       <Option value="Slnko">Slnko</Option>
                       <Option value="Client">Client</Option>
@@ -753,16 +797,17 @@ useEffect(() => {
                               newValue
                             )
                           }
+                          disabled={true}
                         >
                           {moduleMakeOptions.length > 0 ? (
-              moduleMakeOptions.map((make, index) => (
-                <Option key={index} value={make}>
-                  {make}
-                </Option>
-              ))
-            ) : (
-              <Option disabled>No options available</Option>
-            )}
+                            moduleMakeOptions.map((make, index) => (
+                              <Option key={index} value={make}>
+                                {make}
+                              </Option>
+                            ))
+                          ) : (
+                            <Option disabled>No options available</Option>
+                          )}
                         </Select>
                       </Grid>
 
@@ -780,16 +825,17 @@ useEffect(() => {
                               newValue
                             )
                           }
+                          disabled={true}
                         >
                           {moduleTypeOptions.length > 0 ? (
-              moduleTypeOptions.map((type, index) => (
-                <Option key={index} value={type}>
-                  {type}
-                </Option>
-              ))
-            ) : (
-              <Option disabled>No options available</Option>
-            )}
+                            moduleTypeOptions.map((type, index) => (
+                              <Option key={index} value={type}>
+                                {type}
+                              </Option>
+                            ))
+                          ) : (
+                            <Option disabled>No options available</Option>
+                          )}
                         </Select>
                       </Grid>
 
@@ -808,40 +854,49 @@ useEffect(() => {
                               newValue
                             )
                           }
+                          disabled={true}
                         >
                           {moduleModelOptions.length > 0 ? (
-              moduleModelOptions.map((model, index) => (
-                <Option key={index} value={model}>
-                  {model}
-                </Option>
-              ))
-            ) : (
-              <Option disabled>No options available</Option>
-            )}
+                            moduleModelOptions.map((model, index) => (
+                              <Option key={index} value={model}>
+                                {model}
+                              </Option>
+                            ))
+                          ) : (
+                            <Option disabled>No options available</Option>
+                          )}
                         </Select>
                       </Grid>
 
                       <Grid item xs={12} sm={6}>
-      <Typography level="body1">Module Capacity</Typography>
-      <Select
-        fullWidth
-        value={formData["project_detail"]?.["module_capacity"] || ""}
-        onChange={(e, newValue) =>
-          handleChange("project_detail", "module_capacity", newValue)
-        }
-      >
-        {moduleCapacityOptions.length > 0 ? (
-          moduleCapacityOptions.map((capacity, index) => (
-            <Option key={index} value={capacity}>
-              {capacity}
-            </Option>
-          ))
-        ) : (
-          <Option disabled>No options available</Option>
-        )}
-        <Option value="TBD">TBD</Option>
-      </Select>
-    </Grid>
+                        <Typography level="body1">Module Capacity</Typography>
+                        <Select
+                          fullWidth
+                          value={
+                            formData["project_detail"]?.["module_capacity"] ||
+                            ""
+                          }
+                          onChange={(e, newValue) =>
+                            handleChange(
+                              "project_detail",
+                              "module_capacity",
+                              newValue
+                            )
+                          }
+                          disabled={true}
+                        >
+                          {moduleCapacityOptions.length > 0 ? (
+                            moduleCapacityOptions.map((capacity, index) => (
+                              <Option key={index} value={capacity}>
+                                {capacity}
+                              </Option>
+                            ))
+                          ) : (
+                            <Option disabled>No options available</Option>
+                          )}
+                          <Option value="TBD">TBD</Option>
+                        </Select>
+                      </Grid>
                     </>
                   )}
 
@@ -865,6 +920,7 @@ useEffect(() => {
                           newValue
                         )
                       }
+                      disabled={true}
                     >
                       <Option value="11 KV">11 KV</Option>
                       <Option value="33 KV">33 KV</Option>
@@ -892,6 +948,7 @@ useEffect(() => {
                           newValue
                         )
                       }
+                      disabled={true}
                     >
                       <Option value="Slnko">Slnko</Option>
                       <Option value="Client">Client</Option>
@@ -915,6 +972,7 @@ useEffect(() => {
                               newValue
                             )
                           }
+                          disabled={true}
                         >
                           {inverterMakeOptions.map((option) => (
                             <Option key={option} value={option}>
@@ -937,6 +995,7 @@ useEffect(() => {
                               newValue
                             )
                           }
+                          disabled={true}
                         >
                           {inverterSizeOptions.map((size) => (
                             <Option key={size} value={size}>
@@ -961,6 +1020,7 @@ useEffect(() => {
                               newValue
                             )
                           }
+                          disabled={true}
                         >
                           {inverterModelOptions.map((model) => (
                             <Option key={model} value={model}>
@@ -970,27 +1030,34 @@ useEffect(() => {
                         </Select>
                       </Grid>
                       <Grid item xs={12} sm={6}>
-  <Typography level="body1">Inverter Type</Typography>
-  <Select
-    fullWidth
-    value={formData["project_detail"]?.["inverter_type"] || ""}
-    onChange={(e, newValue) =>
-      handleChange("project_detail", "inverter_type", newValue)
-    }
-  >
-    {inverterTypeOptions.length > 0 ? (
-      inverterTypeOptions.map((type, index) => (
-        <Option key={index} value={type}>
-          {type}
-        </Option>
-      ))
-    ) : (
-      <Option disabled>No options available</Option>
-    )}
-    <Option value="TBD">TBD</Option> {/* ✅ Added "TBD" as an option */}
-  </Select>
-</Grid>
-
+                        <Typography level="body1">Inverter Type</Typography>
+                        <Select
+                          fullWidth
+                          value={
+                            formData["project_detail"]?.["inverter_type"] || ""
+                          }
+                          onChange={(e, newValue) =>
+                            handleChange(
+                              "project_detail",
+                              "inverter_type",
+                              newValue
+                            )
+                          }
+                          disabled={true}
+                        >
+                          {inverterTypeOptions.length > 0 ? (
+                            inverterTypeOptions.map((type, index) => (
+                              <Option key={index} value={type}>
+                                {type}
+                              </Option>
+                            ))
+                          ) : (
+                            <Option disabled>No options available</Option>
+                          )}
+                          <Option value="TBD">TBD</Option>{" "}
+                          {/* ✅ Added "TBD" as an option */}
+                        </Select>
+                      </Grid>
                     </>
                   )}
                   <Grid item xs={12} sm={6}>
@@ -1013,6 +1080,7 @@ useEffect(() => {
                           newValue
                         )
                       }
+                      disabled={true}
                     >
                       <Option value="Eng">Eng</Option>
                       <Option value="EP">EP</Option>
@@ -1041,6 +1109,7 @@ useEffect(() => {
                           newValue
                         )
                       }
+                      disabled={true}
                     >
                       <Option value="Yes">Yes</Option>
                       <Option value="No">No</Option>
@@ -1060,6 +1129,7 @@ useEffect(() => {
                       onChange={(e, newValue) =>
                         handleChange("project_detail", "soil_test", newValue)
                       }
+                      disabled={true}
                     >
                       <Option value="Yes">Yes</Option>
                       <Option value="No">No</Option>
@@ -1087,6 +1157,7 @@ useEffect(() => {
                           newValue
                         )
                       }
+                      disabled={true}
                     >
                       <Option value="Yes">Yes</Option>
                       <Option value="No">No</Option>
@@ -1114,6 +1185,7 @@ useEffect(() => {
                           newValue
                         )
                       }
+                      disabled={true}
                     >
                       <Option value="Yes">Yes</Option>
                       <Option value="No">No</Option>
@@ -1133,6 +1205,7 @@ useEffect(() => {
                       onChange={(e, newValue) =>
                         handleChange("project_detail", "ceig_ceg", newValue)
                       }
+                      disabled={true}
                     >
                       <Option value="Yes">Yes</Option>
                       <Option value="No">No</Option>
@@ -1160,6 +1233,7 @@ useEffect(() => {
                           e.target.value
                         )
                       }
+                      readOnly
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1176,6 +1250,7 @@ useEffect(() => {
                           e.target.value
                         )
                       }
+                      readOnly
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1192,6 +1267,7 @@ useEffect(() => {
                           e.target.value
                         )
                       }
+                      readOnly
                     />
                   </Grid>
 
@@ -1209,6 +1285,7 @@ useEffect(() => {
                           e.target.value
                         )
                       }
+                      readOnly
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1225,6 +1302,7 @@ useEffect(() => {
                           e.target.value
                         )
                       }
+                      readOnly
                     />
                   </Grid>
                 </>
@@ -1252,6 +1330,7 @@ useEffect(() => {
                           newValue
                         )
                       }
+                      disabled={true}
                     >
                       <Option value="CAM">CAM</Option>
                     </Select>
@@ -1270,6 +1349,7 @@ useEffect(() => {
                           e.target.value
                         )
                       }
+                      readOnly
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1286,6 +1366,7 @@ useEffect(() => {
                           e.target.value
                         )
                       }
+                      readOnly
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1302,6 +1383,7 @@ useEffect(() => {
                           e.target.value
                         )
                       }
+                      readOnly
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1318,6 +1400,7 @@ useEffect(() => {
                           e.target.value
                         )
                       }
+                      readOnly
                     />
                   </Grid>
                 </>
@@ -1345,6 +1428,7 @@ useEffect(() => {
                       backgroundColor: "#fff",
                       borderRadius: "md",
                     }}
+                    readOnly
                   />
                 </Grid>
               ))}
@@ -1354,28 +1438,24 @@ useEffect(() => {
       ))}
 
       {/* Buttons */}
-      <Grid container spacing={2} sx={{ marginTop: 2 }}>
-        <Grid item xs={6}>
+      <Grid container justifyContent="center" sx={{ marginTop: 2 }}>
+        <Grid item xs={6} sm={4} md={3}>
           <Button
-            onClick={onBack}
-            variant="solid"
-            color="neutral"
-            fullWidth
-            sx={{ padding: 1.5, fontSize: "1rem", fontWeight: "bold" }}
-          >
-            Back
-          </Button>
-        </Grid>
-        <Grid item xs={6}>
-          {/* <Button
-            onClick={handleSubmit}
+            onClick={handlePrint} // 👈 Replace with your print function
             variant="solid"
             color="primary"
             fullWidth
-            sx={{ padding: 1.5, fontSize: "1rem", fontWeight: "bold" }}
+            sx={{
+              padding: 1.5,
+              fontSize: "1rem",
+              fontWeight: "bold",
+              "@media print": {
+                display: "none",
+              },
+            }}
           >
-            Submit
-          </Button> */}
+            Print
+          </Button>
         </Grid>
       </Grid>
     </Sheet>
