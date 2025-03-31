@@ -234,6 +234,10 @@ export const leadsApi = createApi({
       query: () => "get-master-inverter",
       providesTags: ["Lead"],
     }),
+    getHandOver: builder.query({
+      query: () => "get-all-handover-sheet",
+      providesTags: ["Lead"],
+    }),
     addHandOver: builder.mutation({
       query: (newHandOver) => ({
         url: "create-hand-over-sheet",
@@ -277,5 +281,6 @@ export const {
   useAddWarmuptoWonMutation,
   useAddHandOverMutation,
   useGetMasterInverterQuery,
-  useGetModuleMasterQuery
+  useGetModuleMasterQuery,
+  useGetHandOverQuery
 } = leadsApi;

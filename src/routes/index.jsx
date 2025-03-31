@@ -62,6 +62,7 @@ import DEADSummary from "../pages/BD/Leads/Dead/Forms/dead_Summary";
 import Follow_History from "../pages/BD/Leads/Followup/Followup_History";
 import Initial_History from "../pages/BD/Leads/Initial/Initial_History";
 import Warm_History from "../pages/BD/Leads/Warm/Warm_History";
+import GetHandSheet from "../pages/BD/Leads/getHand_Over";
 
 
 
@@ -489,6 +490,14 @@ function index() {
         element={
           <PrivateRoute>
             <HandSheet />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/get_hand_over"
+        element={
+          <PrivateRoute>
+            <GetHandSheet />
           </PrivateRoute>
         }
       />

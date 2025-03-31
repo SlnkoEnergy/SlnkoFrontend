@@ -33,6 +33,7 @@ const FormComponent = () => {
     reference: "",
     by_whom: "",
     comment: "",
+    task_detail:"",
     submitted_by:""
   });
 

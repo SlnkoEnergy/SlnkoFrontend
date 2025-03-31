@@ -138,7 +138,7 @@ const CheckboxModal = () => {
         }, 1000);
       }
     } catch (error) {
-      console.error("rror updating or posting lead:", error);
+      console.error("error updating or posting lead:", error);
       enqueueSnackbar("Error processing request", { variant: "error" });
     } finally {
       setIsSubmitting(false); 

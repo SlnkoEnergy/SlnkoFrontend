@@ -28,13 +28,14 @@ import { CheckBox } from "@mui/icons-material";
 const FormComponent3 = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    id: "",
+    id:"",
     name: "",
     date: "",
     reference: "",
     by_whom: "",
     comment: "",
-    submitted_by: "",
+    task_detail:"",
+    submitted_by:""
   });
 
   // const [bdMembers, setBdMembers] = useState([]);

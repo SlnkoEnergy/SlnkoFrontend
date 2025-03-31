@@ -486,19 +486,51 @@ const TaskDashboard = () => {
     return date.toLocaleDateString("en-US", options);
   };
 
-  const getDayAfterTomorrowDate = () => {
-    const options = {
-      weekday: "long",
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    };
+  // const getDayAfterTomorrowDate = (daysAhead = 2) => {
+  //   const date = new Date();
+  //   date.setDate(date.getDate() + daysAhead); // Add dynamic days
+  
+  //   return date.toLocaleDateString("en-US", {
+  //     weekday: "long",
+  //     year: "numeric",
+  //     month: "short",
+  //     day: "numeric",
+  //   });
+  // };
 
-    // ✅ Use UTC to prevent timezone issues
-    const date = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+  // const getDayAfterTomorrowDate = () => {
+  //   const options = {
+  //     weekday: "long",
+  //     year: "numeric",
+  //     month: "short",
+  //     day: "numeric",
+  //   };
 
-    return date.toLocaleDateString("en-US", options);
+   
+  //   const date = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+
+  //   return date.toLocaleDateString("en-US", options);
+  // };
+
+  const formatTaskDate = (taskDate) => {
+    if (!taskDate) return "Invalid Date";
+  
+    const date = new Date(taskDate);
+  
+    if (isNaN(date.getTime())) {
+      // console.error("❌ Invalid Date:", taskDate);
+      return "Invalid Date";
+    }
+  
+    return date.toLocaleDateString("en-US", {
+      weekday: "long", 
+      month: "short",   
+      day: "numeric",   
+      year: "numeric",  
+    });
   };
+  
+  
 
   // const [selectedTask, setSelectedTask] = useState(null);
   const [openModal, setOpenModal] = useState(false);
@@ -525,6 +557,7 @@ const TaskDashboard = () => {
     reference: "",
     by_whom: "",
     comment: "",
+    task_detail:"",
     submitted_by: "",
   });
 
@@ -588,7 +621,7 @@ const TaskDashboard = () => {
         name: task.name || "",
         date: task.date || "",
         reference: task.reference || "",
-        comment: task.comment || "",
+        task_detail: task.task_detail || "",
         by_whom: task.by_whom || "",
       });
     } else {
@@ -598,7 +631,7 @@ const TaskDashboard = () => {
         name: "",
         date: "",
         reference: "",
-        comment: "",
+        task_detail: "",
         by_whom: "",
       });
     }
@@ -615,7 +648,7 @@ const TaskDashboard = () => {
         name: "",
         date: "",
         reference: "",
-        comment: "",
+        task_detail: "",
         by_whom: "",
       }); // ✅ Correct reset
     }, 300);
@@ -910,7 +943,7 @@ const TaskDashboard = () => {
                         ? "1px solid #c3e6cb"
                         : "1px solid #e0e0e0",
                       transition: "background-color 0.3s ease-in-out",
-                      opacity: disabledCards[task._id] ? 0.6 : 1, // 🔥 Dim card if disabled
+                      // opacity: disabledCards[task._id] ? 0.6 : 1,
                       pointerEvents: disabledCards[task._id] ? "none" : "auto",
                     }}
                   >
@@ -1069,10 +1102,10 @@ const TaskDashboard = () => {
                                           fullWidth
                                           placeholder="Task Description"
                                           type="text"
-                                          value={formData.comment}
+                                          value={formData.task_detail}
                                           onChange={(e) =>
                                             handleChange(
-                                              "comment",
+                                              "task_detail",
                                               e.target.value
                                             )
                                           }
@@ -1152,10 +1185,10 @@ const TaskDashboard = () => {
                                           fullWidth
                                           placeholder="Task Description"
                                           type="text"
-                                          value={formData.comment}
+                                          value={formData.task_detail}
                                           onChange={(e) =>
                                             handleChange(
-                                              "comment",
+                                              "task_detail",
                                               e.target.value
                                             )
                                           }
@@ -1253,6 +1286,7 @@ const TaskDashboard = () => {
                             <Checkbox
                               checked={completedTasks[task._id] || false}
                               onChange={(e) => handleCheckboxChange(task, e)}
+                              disabled={completedTasks[task._id]}
                               sx={{
                                 "&.Mui-checked": {
                                   color: "white",
@@ -1725,7 +1759,8 @@ const TaskDashboard = () => {
                             gap={1}
                           >
                             <Typography level="body-md" textColor="green">
-                              {getDayAfterTomorrowDate()}
+                              {/* {getDayAfterTomorrowDate(taskDate)} */}
+                              {formatTaskDate(task.date)}
                             </Typography>
                             <Chip
                               startDecorator={task.icon}

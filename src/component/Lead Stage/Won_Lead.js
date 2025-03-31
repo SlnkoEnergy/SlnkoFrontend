@@ -29,7 +29,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../../assets/Lotties/animation-loading.json";
 // import Axios from "../utils/Axios";
-import { useGetInitialLeadsQuery, useGetWonLeadsQuery } from "../../redux/leadsSlice";
+import { useGetHandOverQuery, useGetInitialLeadsQuery, useGetWonLeadsQuery } from "../../redux/leadsSlice";
 import NoData from "../../assets/alert-bell.svg";
 
 const StandByRequest = () => {
@@ -46,6 +46,19 @@ const StandByRequest = () => {
 
   const { data: getLead = [], isLoading, error } = useGetWonLeadsQuery();
   const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
+
+  const { data: getHandOverSheet = [] } = useGetHandOverQuery();
+  const HandOverSheet = useMemo(
+    () => getHandOverSheet?.Data ?? [], 
+    [getHandOverSheet]
+  );
+  
+
+  const status_handOver = (leadId) => {
+    const matchedHandOver = HandOverSheet.find(sheet => sheet.id === leadId);
+    return matchedHandOver ? matchedHandOver.
+    status_of_handoversheet : "Not Found";
+  };
 
   const renderFilters = () => (
     <>
@@ -349,6 +362,7 @@ const StandByRequest = () => {
                   "Capacity",
                   "Substation Distance",
                   "Creation Date",
+                  "Status",
                   "Action",
                 ].map((header, index) => (
                   <Box
@@ -406,6 +420,8 @@ const StandByRequest = () => {
                       lead.capacity || "-",
                       lead.distance || "-",
                       lead.entry_date || "-",
+                      status_handOver(lead.id)
+                       || "-"
                     ].map((data, idx) => (
                       <Box
                         component="td"
