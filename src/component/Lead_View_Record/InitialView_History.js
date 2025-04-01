@@ -96,6 +96,7 @@ const InitialLeadsHistory = () => {
       reference: "",
       by_whom: "",
       task_detail: "",
+      submitted_by:""
     });
   
     // Handle Input Changes
@@ -113,8 +114,21 @@ const InitialLeadsHistory = () => {
     // Handle Task Submission
     const handleSubmitTask = async (e) => {
       e.preventDefault();
+      if (!formData.by_whom) {
+        console.error("Error: 'by_whom' field is required.");
+        return;
+      }
+    
+      const submittedBy = user?.name || ""; 
+
+  const updatedFormData = { 
+    ...formData, 
+    id: LeadId, 
+    submitted_by: submittedBy
+  };
+
       try {
-        await ADDTask(formData).unwrap();
+        await ADDTask(updatedFormData).unwrap();
         toast.success("🎉 Task added successfully!");
         handleCloseAddTaskModal();
       } catch (error) {
@@ -565,7 +579,7 @@ const isAnyCheckboxChecked = Object.values(selectedOptions).some((val) => val);
           <Typography sx={{ fontSize: "1.1rem", color: "#333" }}>
             <strong>Client Name:</strong> {lead.c_name || "N/A"} &nbsp;|
             &nbsp;&nbsp;
-            <strong>POC:</strong> {user?.name || "N/A"} &nbsp;| &nbsp;&nbsp;
+            <strong>POC:</strong>  {lead.submitted_by || "N/A"} &nbsp;| &nbsp;&nbsp;
             <strong>Company:</strong> {lead.company || "N/A"} &nbsp;|
             &nbsp;&nbsp;
             <strong>Location:</strong> {lead.state || "N/A"}
@@ -583,7 +597,7 @@ const isAnyCheckboxChecked = Object.values(selectedOptions).some((val) => val);
       >
         <Table
           borderAxis="both"
-          size="lg"
+          size="md"
           sx={{
             "& th": {
               backgroundColor: "#f0f0f0",

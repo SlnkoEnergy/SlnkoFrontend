@@ -131,8 +131,20 @@ const FollowupLeadsHistory = () => {
   // Handle Task Submission
   const handleSubmitTask = async (e) => {
     e.preventDefault();
+    if (!formData.by_whom) {
+      console.error("Error: 'by_whom' field is required.");
+      return;
+    }
+  
+    const submittedBy = user?.name || ""; 
+
+const updatedFormData = { 
+  ...formData, 
+  id: LeadId, 
+  submitted_by: submittedBy  // Ensuring submitted_by is set properly
+};
     try {
-      await ADDTask(formData).unwrap();
+      await ADDTask(updatedFormData).unwrap();
       toast.success("🎉 Task added successfully!");
       handleCloseAddTaskModal();
     } catch (error) {
@@ -604,7 +616,7 @@ const FollowupLeadsHistory = () => {
           <Typography sx={{ fontSize: "1.1rem", color: "#333" }}>
             <strong>Client Name:</strong> {lead.c_name || "N/A"} &nbsp;|
             &nbsp;&nbsp;
-            <strong>POC:</strong> {user?.name || "N/A"} &nbsp;| &nbsp;&nbsp;
+            <strong>POC:</strong> {lead.submitted_by || "N/A"} &nbsp;| &nbsp;&nbsp;
             <strong>Company:</strong> {lead.company || "N/A"} &nbsp;|
             &nbsp;&nbsp;
             <strong>Location:</strong> {lead.state || "N/A"}
@@ -622,7 +634,7 @@ const FollowupLeadsHistory = () => {
       >
         <Table
           borderAxis="both"
-          size="lg"
+          size="md"
           sx={{
             "& th": {
               backgroundColor: "#f0f0f0",

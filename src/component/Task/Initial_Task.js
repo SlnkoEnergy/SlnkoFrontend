@@ -261,8 +261,8 @@ const FormComponent = () => {
                                         fullWidth
                                         placeholder="Task Description"
                                         type="text"
-                                        value={formData.comment}
-                                        onChange={(e) => handleChange("comment", e.target.value)}
+                                        value={formData.task_detail}
+                                        onChange={(e) => handleChange("task_detail", e.target.value)}
                                         sx={{ borderRadius: "8px" }}
                                         required
                                         
@@ -305,8 +305,8 @@ const FormComponent = () => {
                                         fullWidth
                                         placeholder="Task Description"
                                         type="text"
-                                        value={formData.comment}
-                                        onChange={(e) => handleChange("comment", e.target.value)}
+                                        value={formData.task_detail}
+                                        onChange={(e) => handleChange("task_detail", e.target.value)}
                                         sx={{ borderRadius: "8px" }}
                                         required
                                       />

@@ -30,21 +30,27 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../../assets/Lotties/animation-loading.json";
 // import Axios from "../utils/Axios";
-import { useGetInitialLeadsQuery, useGetLeadsQuery } from "../../redux/leadsSlice";
+import { useGetInitialLeadsQuery} from "../../redux/leadsSlice";
 import NoData from "../../assets/alert-bell.svg";
 
 const StandByRequest = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const itemsPerPage = 10;
   const [selected, setSelected] = useState([]);
   const [projects, setProjects] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
   const [mergedData, setMergedData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
+  const [filteredData, setFilteredData] = useState([]);
   const [user, setUser] = useState(null);
+  const [cachedData, setCachedData] = useState(() => {
+    // Try to load cached data from localStorage
+    const cached = localStorage.getItem("paginatedData");
+    return cached ? JSON.parse(cached) : [];
+  });
 
   const { data: getLead = [], isLoading, error } = useGetInitialLeadsQuery();
   const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
@@ -193,104 +199,129 @@ const StandByRequest = () => {
     );
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    return isNaN(date.getTime()) ? "" : date.toISOString().split("T")[0];
-  };
+  // const cacheKey = `leadsPage-${currentPage}`;
 
+  // useEffect(() => {
+  //   const cachedData = sessionStorage.getItem(cacheKey);
+  //   if (cachedData) {
+  //     setPaginatedData(JSON.parse(cachedData)); // Load cached data
+  //   }
+  // }, [cacheKey]);
+
+
+  const formatDate = (date) => { 
+    if (!date) return new Date();
+    const [day, month, year] = date.split('-');
+    return new Date(`${year}-${month}-${day}`);
+  };
+  
   const handleSearch = (e) => {
     setSearchQuery(e.target.value.toLowerCase());
   };
-
+  
   const handleDateFilter = (e) => {
     setSelectedDate(e.target.value);
   };
+  
+  // const filterData = useMemo(() => {
+  //   if (!user || !user.name) return [];
+  
+  //   return leads
+  //     .filter((lead) => {
+  //       const submittedBy = lead.submitted_by?.trim() || "unassigned"; 
+  //       const userName = user.name.trim();
+  //       const userRole = user.role?.toLowerCase();
+  
+  //       const isAdmin = userRole === "admin" || userRole === "superadmin";
+  //       const matchesUser = isAdmin || submittedBy === userName;
+  
+  //       const matchesQuery = ["id", "c_name", "mobile", "state"].some(
+  //         (key) => lead[key]?.toLowerCase().includes(searchQuery)
+  //       );
+  
+  //       const matchesDate = selectedDate
+  //         ? formatDate(lead.entry_date).toLocaleDateString() === formatDate(selectedDate).toLocaleDateString()
+  //         : true;
+  
+  //       return matchesUser && matchesQuery && matchesDate;
+  //     })
+  //     .sort((a, b) => {
+  //       const dateA = formatDate(a.entry_date || a.createdAt);
+  //       const dateB = formatDate(b.entry_date || b.createdAt);
+  
+  //       if (isNaN(dateA.getTime())) return 1;
+  //       if (isNaN(dateB.getTime())) return -1;
+  
+  //       return dateB - dateA;
+  //     });
+  // }, [leads, searchQuery, selectedDate, user]);
 
-  const filteredData = useMemo(() => {
+  const filterData = useMemo(() => {
     if (!user || !user.name) return [];
   
     return leads
       .filter((lead) => {
-        const submittedBy = lead.submitted_by?.trim() || "unassigned"; 
-        const userName = user.name.trim();
-        const userRole = user.role?.toLowerCase();
-  
-
-        const isAdmin = userRole === "admin" || userRole === "superadmin";
-        const matchesUser = isAdmin || submittedBy === userName;
-  
         const matchesQuery = ["id", "c_name", "mobile", "state"].some(
           (key) => lead[key]?.toLowerCase().includes(searchQuery)
         );
+  
         const matchesDate = selectedDate
-          ? formatDate(lead.entry_date) === selectedDate
+          ? formatDate(lead.entry_date).toLocaleDateString() === formatDate(selectedDate).toLocaleDateString()
           : true;
   
-        // console.log("🔍 Checking:", submittedBy, "vs", userName, " | Role:", userRole);
-        // console.log("✅ Matches:", { matchesUser, matchesQuery, matchesDate });
-  
-        return matchesUser && matchesQuery && matchesDate;
+        return matchesQuery && matchesDate;
       })
       .sort((a, b) => {
-        if (!a.id) return 1; // Move entries with missing IDs to the end
-        if (!b.id) return -1;
-        return String(a.id).localeCompare(String(b.id));
+        const dateA = formatDate(a.entry_date || a.createdAt);
+        const dateB = formatDate(b.entry_date || b.createdAt);
+  
+        if (isNaN(dateA.getTime())) return 1;
+        if (isNaN(dateB.getTime())) return -1;
+  
+        return dateB - dateA;
       });
-      
   }, [leads, searchQuery, selectedDate, user]);
   
   
-  
-  
-  
-  
-  useEffect(() => {
-    console.log("Filtered Data:", filteredData);
-  }, [filteredData]);
-  
-  
-  const generatePageNumbers = (currentPage, totalPages) => {
-    const pages = [];
-
-    if (currentPage > 2) pages.push(1);
-    if (currentPage > 3) pages.push("...");
-
-    for (
-      let i = Math.max(1, currentPage - 1);
-      i <= Math.min(totalPages, currentPage + 1);
-      i++
-    ) {
-      pages.push(i);
-    }
-
-    if (currentPage < totalPages - 2) pages.push("...");
-    if (currentPage < totalPages - 1) pages.push(totalPages);
-
-    return pages;
-  };
-
-  useEffect(() => {
-    const page = parseInt(searchParams.get("page")) || 1;
-    setCurrentPage(page);
-  }, [searchParams]);
-
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-
-  const paginatedData = useMemo(() => {
-    if (filteredData.length === 0) return [];
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
+  const getPaginatedData = (page) => {
+    const startIndex = (page - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
     return filteredData.slice(startIndex, endIndex);
-  }, [filteredData, currentPage, itemsPerPage]);
+  };
   
+  // Cache data in localStorage
+  const cacheData = (data) => {
+    localStorage.setItem("paginatedData", JSON.stringify(data));
+  };
   
-
+  // Update filterData and paginatedData
+  useEffect(() => {
+    const data = filterData;
+    setFilteredData(data);
+  
+    // Cache filtered data in localStorage for future use
+    cacheData(data);
+  }, [filterData]);
+  
+  useEffect(() => {
+    const cached = localStorage.getItem("paginatedData");
+    if (cached) {
+      setCachedData(JSON.parse(cached));
+    }
+  }, []);
+  
+  // Paginated data based on currentPage and filtered data
+  const paginatedData = useMemo(() => {
+    return getPaginatedData(currentPage);
+  }, [filteredData, currentPage]);
+  
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  
   const handlePageChange = (newPage) => {
     if (totalPages === 0) return;
-    
+  
     const page = Math.max(1, Math.min(newPage, totalPages));
-    
+  
     if (page !== currentPage) {
       setCurrentPage(page);
       setSearchParams((prevParams) => {
@@ -300,6 +331,31 @@ const StandByRequest = () => {
       });
     }
   };
+  
+  useEffect(() => {
+    const page = parseInt(searchParams.get("page")) || 1;
+    setCurrentPage(page);
+  }, [searchParams]);
+  
+  const generatePageNumbers = (currentPage, totalPages) => {
+    const pages = [];
+  
+    if (currentPage > 2) pages.push(1);
+    if (currentPage > 3) pages.push("...");
+  
+    for (let i = Math.max(1, currentPage - 1); i <= Math.min(totalPages, currentPage + 1); i++) {
+      pages.push(i);
+    }
+  
+    if (currentPage < totalPages - 2) pages.push("...");
+    if (currentPage < totalPages - 1) pages.push(totalPages);
+  
+    return pages;
+  };
+  
+  useEffect(() => {
+    console.log("Filtered Data:", filteredData);
+  }, [filteredData]);
   
 
   return (
@@ -551,7 +607,7 @@ const StandByRequest = () => {
           Previous
         </Button>
         <Box>
-          Showing {paginatedData.length} of {filteredData.length} results
+          Showing {paginatedData.length} of {filterData.length} results
         </Box>
         {/* <Typography>
           Page {currentPage} of {totalPages || 1}

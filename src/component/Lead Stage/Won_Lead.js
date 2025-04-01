@@ -55,7 +55,7 @@ const StandByRequest = () => {
     const matchedHandOver = HandOverSheet.find((sheet) => sheet.id === leadId);
     return matchedHandOver
       ? matchedHandOver.status_of_handoversheet
-      : "Not Found";
+      : "Not Available";
   };
 
   const renderFilters = () => (

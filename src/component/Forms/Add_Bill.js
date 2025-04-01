@@ -121,34 +121,47 @@ const getUserData = () => {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    const dataToPost = {
-      po_number: formValues.po_number,
-      bill_number: formValues.bill_number,
-      bill_date: formValues.bill_date,
-      bill_value: formValues.bill_value,
-      bill_type: formValues.bill_type,
-      submitted_by: user?.name,
-      approved_by:"",
-    };
-
-    try {
-      const response = await Axios.post("/add-bilL-IT", dataToPost);
-      if (response.status === 400 && response.data.message === "Bill Number already used!") {
-        toast.warning("Bill number already exists!");
-        return;
-      }
-      // console.log("Data posted successfully:", response.data);
-      toast.success("Bill added Successfully !!");
-      const po = localStorage.removeItem("po_no");
-      navigate("/purchase-order");
-      
-    } catch (error) {
-      console.error("Error posting data:", error);
-    }
+  const dataToPost = {
+    po_number: formValues.po_number,
+    bill_number: formValues.bill_number,
+    bill_date: formValues.bill_date,
+    bill_value: formValues.bill_value,
+    bill_type: formValues.bill_type,
+    submitted_by: user?.name,
+    approved_by: "",
   };
+
+  try {
+    const response = await Axios.post("/add-bilL-IT", dataToPost);
+    
+    // Check if the response indicates that the bill number already exists
+    if (response.status === 400 && response.data.message === "Bill Number already used!") {
+      toast.warning("Bill number already exists!");
+      return;
+    }
+
+    // If successful, show a success message
+    toast.success("Bill added successfully!");
+    localStorage.removeItem("po_no");
+    navigate("/purchase-order");
+
+  } catch (error) {
+    console.error("Error posting data:", error);
+
+    // Check if the error has a response and the expected error message
+    if (error.response && error.response.data && error.response.data.message === "Bill Number already used!") {
+      toast.warning("Bill number already exists!");
+    } else {
+      // Handle any other errors
+      toast.error("An error occurred while adding the bill.");
+    }
+  }
+};
+
+  
 
   return (
     <Box

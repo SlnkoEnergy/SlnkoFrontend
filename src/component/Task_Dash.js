@@ -45,6 +45,7 @@ import {
   useGetTasksHistoryQuery,
   useGetTasksQuery,
 } from "../redux/tasksSlice";
+import { color } from "framer-motion";
 
 const TaskDashboard = () => {
   const navigate = useNavigate();
@@ -67,6 +68,14 @@ const TaskDashboard = () => {
     tomorrow: 1,
     future: 1,
   });
+  const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  
+  setTimeout(() => {
+    setLoading(false); 
+  }, 1000);
+}, []);
 
   const PaginationComponent = ({ currentPage, totalPages, onPageChange }) => {
     const pageNumbers = generatePageNumbers(currentPage, totalPages);
@@ -214,6 +223,7 @@ const TaskDashboard = () => {
         id: task.id,
         date: task.date || "",
         comment: task.comment || "",
+        task_detail: task.task_detail || "",
         name: associatedLead.c_name || "Unknown",
         company: associatedLead.company || "",
         group: associatedLead.group || "",
@@ -318,7 +328,12 @@ const TaskDashboard = () => {
       await updateTask(updateData).unwrap();
       toast.success("Comment updated successfully");
 
-      // ✅ Mark the card as disabled after submitting
+      navigate("/dash_task");
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+
       const updatedDisabledCards = {
         ...disabledCards,
         [selectedTask._id]: true,
@@ -330,7 +345,6 @@ const TaskDashboard = () => {
         JSON.stringify(updatedDisabledCards)
       );
 
-      // ✅ Update completedTasks to ensure it's stored properly
       setCompletedTasks((prev) => ({
         ...prev,
         [selectedTask._id]: true,
@@ -349,13 +363,21 @@ const TaskDashboard = () => {
       const storedTasks = localStorage.getItem("completedTasks");
       const parsedTasks = storedTasks ? JSON.parse(storedTasks) : {};
 
-      // ✅ Auto-mark tasks with comments as completed
-      const initialCompletedTasks = updatedTasks.reduce((acc, task) => {
-        if (task.comment && task.comment !== "No assigned user or comment.") {
-          acc[task._id] = true; // Pre-check task if it has a comment
-        }
-        return acc;
-      }, parsedTasks);
+      // Ensure tasks with history comments are always marked as completed
+      const initialCompletedTasks = updatedTasks.reduce(
+        (acc, task) => {
+          const historyComments = getTaskHistoryArray.filter(
+            (history) =>
+              String(history.id) === String(task.id) && history.comment
+          );
+
+          if (historyComments.length > 0) {
+            acc[task._id] = true;
+          }
+          return acc;
+        },
+        { ...parsedTasks }
+      );
 
       return initialCompletedTasks;
     } catch (error) {
@@ -364,23 +386,14 @@ const TaskDashboard = () => {
     }
   });
 
+  const isTaskCompleted = (task) => {
+    return task.comment && task.comment !== "No assigned user or comment.";
+  };
+
+  // Handle checkbox change event
   const handleCheckboxChange = (task, event) => {
-    const isChecked = event.target.checked || !!task.comment; // ✅ Auto-check if task has comment
-
-    // ✅ Update completedTasks & persist to localStorage
-    setCompletedTasks((prev) => {
-      const updatedTasks = { ...prev, [task._id]: isChecked };
-      localStorage.setItem("completedTasks", JSON.stringify(updatedTasks)); // Save to localStorage
-      return updatedTasks;
-    });
-
-    // ✅ Open/Close Dialog as needed
-    if (isChecked && !task.comment) {
-      setSelectedTask({
-        ...task,
-        _id: task._id,
-        id: task.id,
-      });
+    if (!isTaskCompleted(task)) {
+      setSelectedTask({ ...task, _id: task._id, id: task.id });
       setOpenDialog(true);
     } else {
       setSelectedTask(null);
@@ -389,7 +402,6 @@ const TaskDashboard = () => {
   };
 
   const tasksPerPage = 3;
-  // ✅ New function to slice tasks correctly
   const getPaginatedData = (tasks, currentPage) => {
     const startIndex = (currentPage - 1) * tasksPerPage;
     const endIndex = startIndex + tasksPerPage;
@@ -398,6 +410,21 @@ const TaskDashboard = () => {
       tasks: tasks.slice(startIndex, endIndex),
       totalPages: Math.ceil(tasks.length / tasksPerPage),
     };
+  };
+
+  const handleDialogCancel = () => {
+    if (selectedTask) {
+      setCompletedTasks((prev) => {
+        const updatedTasks = { ...prev };
+        delete updatedTasks[selectedTask._id]; // Remove the task from completedTasks
+        localStorage.setItem("completedTasks", JSON.stringify(updatedTasks));
+        return updatedTasks;
+      });
+    }
+
+    setSelectedTask(null);
+    setComment(""); // Clear the comment field
+    setOpenDialog(false);
   };
 
   // useEffect(() => {
@@ -631,6 +658,7 @@ const TaskDashboard = () => {
         reference: task.reference || "",
         task_detail: task.task_detail || "",
         by_whom: task.by_whom || "",
+        submitted_by: user.name || "",
       });
     } else {
       // Reset to blank form for new task
@@ -641,6 +669,7 @@ const TaskDashboard = () => {
         reference: "",
         task_detail: "",
         by_whom: "",
+        submitted_by: "",
       });
     }
     setOpenAddTaskModal(true);
@@ -658,7 +687,8 @@ const TaskDashboard = () => {
         reference: "",
         task_detail: "",
         by_whom: "",
-      }); // ✅ Correct reset
+        submitted_by: user.name,
+      });
     }, 300);
   };
 
@@ -842,7 +872,11 @@ const TaskDashboard = () => {
                             gap={2}
                           >
                             <Checkbox
-                              checked={!!completedTasks[task._id]}
+                              checked={isTaskCompleted(task)} // Checkbox will be ticked if task has a comment
+                              onChange={(event) =>
+                                handleCheckboxChange(task, event)
+                              }
+                              //  disabled={isTaskCompleted(task)}
                               disabled={true}
                               sx={{
                                 color: task.comment ? "green" : "red",
@@ -859,9 +893,25 @@ const TaskDashboard = () => {
                             >
                               {task.type}
                             </Chip>
-                            {/* <Button variant="plain" onClick={() => setOpen(true)}>
-                            <Typography>...</Typography>
-                          </Button> */}
+                            <Button
+                              variant="plain"
+                              onClick={() => setOpen(true)}
+                            >
+                              <Typography>...</Typography>
+                            </Button>
+                            <Modal open={open} onClose={() => setOpen(false)}>
+                              <ModalDialog>
+                                <Typography level="h4">
+                                  Task Description
+                                </Typography>
+                                <Typography>
+                                  {task?.task_detail || "No details available"}
+                                </Typography>
+                                <Button onClick={() => setOpen(false)}>
+                                  Close
+                                </Button>
+                              </ModalDialog>
+                            </Modal>
                           </Grid>
                         </Grid>
                       </CardContent>
@@ -898,7 +948,11 @@ const TaskDashboard = () => {
             <Typography level="body-md" color="neutral">
               {getCurrentDate()}
             </Typography>
-            {categorizedTasks.today.length > 0 ? (
+            {loading ? (
+              <Typography level="body-lg" sx={{ textAlign: "center", mt: 2 }}>
+                ⏳ Wait.. Loading...
+              </Typography>
+            ) : categorizedTasks.today.length > 0 ? (
               currentTasksToday
                 .filter((task) => {
                   if (!task.by_whom || !user?.name) return false; // Ensure both exist
@@ -986,275 +1040,13 @@ const TaskDashboard = () => {
                               <Typography>Reschedule +</Typography>
                             </Button>
                           </Chip>
-                          <Modal
-                            open={openAddTaskModal}
-                            onClose={handleCloseAddTaskModal}
-                          >
-                            <Grid
-                              sx={{
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                flexDirection: "column",
-                                height: "100%",
-                                mt: { md: "5%", xs: "20%" },
-                              }}
-                            >
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  justifyContent: "center",
-                                  alignItems: "center",
-                                  flexDirection: "column",
-                                  gap: 2,
-                                }}
-                              >
-                                {/* <img alt="add" src={plus} /> */}
-                                <Typography
-                                  level="h4"
-                                  sx={{
-                                    mb: 2,
-                                    textAlign: "center",
-                                    textDecoration:
-                                      "underline 2px rgb(243, 182, 39)",
-                                    textUnderlineOffset: "8px",
-                                  }}
-                                >
-                                  Add Task
-                                </Typography>
-                              </Box>
-                              <Box>
-                                <Divider sx={{ width: "50%" }} />
-                              </Box>
-
-                              <Sheet
-                                variant="outlined"
-                                sx={{
-                                  p: 3,
-                                  borderRadius: "30px",
-                                  // maxWidth: { xs: "100%", sm: 400 },
-                                  mx: "auto",
-                                  width: { md: "50vw", sm: "50vw" },
-                                  boxShadow: "lg",
-                                }}
-                              >
-                                <form onSubmit={handleSubmitTask}>
-                                  <Stack spacing={2} sx={{ width: "100%" }}>
-                                    <FormControl>
-                                      <FormLabel>Customer Name</FormLabel>
-                                      <Input
-                                        fullWidth
-                                        placeholder="Customer Name"
-                                        value={formData.name || "-"}
-                                        onChange={(e) =>
-                                          handleChange("name", e.target.value)
-                                        }
-                                        sx={{ borderRadius: "8px" }}
-                                        readOnly
-                                      />
-                                    </FormControl>
-                                    <FormControl>
-                                      <FormLabel>Next FollowUp</FormLabel>
-                                      <Input
-                                        fullWidth
-                                        type="date"
-                                        placeholder="Next FollowUp"
-                                        value={formData.date}
-                                        onChange={(e) =>
-                                          handleChange("date", e.target.value)
-                                        }
-                                        sx={{ borderRadius: "8px" }}
-                                        slotProps={{
-                                          input: {
-                                            min: new Date()
-                                              .toISOString()
-                                              .split("T")[0],
-                                          },
-                                        }}
-                                      />
-                                    </FormControl>
-
-                                    <FormControl>
-                                      <FormLabel>Reference</FormLabel>
-                                      <Select
-                                        value={formData.reference}
-                                        placeholder="Select References"
-                                        onChange={(e, newValue) =>
-                                          handleChange("reference", newValue)
-                                        }
-                                        sx={{ borderRadius: "8px" }}
-                                      >
-                                        <Option value="By Call">By Call</Option>
-                                        <Option value="By Meeting">
-                                          By Meeting
-                                        </Option>
-                                      </Select>
-                                    </FormControl>
-
-                                    {formData.reference === "By Call" ? (
-                                      <FormControl>
-                                        <FormLabel>By Whom</FormLabel>
-                                        <Input
-                                          fullWidth
-                                          value={formData.by_whom}
-                                          disabled
-                                          sx={{
-                                            borderRadius: "8px",
-                                            backgroundColor: "#f0f0f0",
-                                          }}
-                                        />
-                                        <FormLabel sx={{ marginTop: "1%" }}>
-                                          Task Description
-                                        </FormLabel>
-                                        <Input
-                                          fullWidth
-                                          placeholder="Task Description"
-                                          type="text"
-                                          value={formData.task_detail}
-                                          onChange={(e) =>
-                                            handleChange(
-                                              "task_detail",
-                                              e.target.value
-                                            )
-                                          }
-                                          sx={{ borderRadius: "8px" }}
-                                          required
-                                        />
-                                      </FormControl>
-                                    ) : formData.reference === "By Meeting" ? (
-                                      <FormControl>
-                                        <FormLabel>By Whom</FormLabel>
-                                        <Autocomplete
-                                          multiple
-                                          options={bdMembers}
-                                          getOptionLabel={(option) =>
-                                            option.label
-                                          }
-                                          isOptionEqualToValue={(
-                                            option,
-                                            value
-                                          ) => option.id === value.id}
-                                          value={bdMembers.filter((member) =>
-                                            formData.by_whom.includes(
-                                              member.label
-                                            )
-                                          )}
-                                          onChange={handleByWhomChange}
-                                          disableCloseOnSelect
-                                          renderOption={(
-                                            props,
-                                            option,
-                                            { selected }
-                                          ) => (
-                                            <li
-                                              {...props}
-                                              key={option.id}
-                                              style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: "8px",
-                                                padding: "5px",
-                                              }}
-                                            >
-                                              <Checkbox
-                                                checked={selected}
-                                                sx={{
-                                                  color: selected
-                                                    ? "#007FFF"
-                                                    : "#B0BEC5", // Default gray, blue when selected
-                                                  "&.Mui-checked": {
-                                                    color: "#007FFF",
-                                                  }, // Active color
-                                                  "&:hover": {
-                                                    backgroundColor:
-                                                      "rgba(0, 127, 255, 0.1)",
-                                                  }, // Subtle hover effect
-                                                }}
-                                              />
-                                              {option.label}
-                                            </li>
-                                          )}
-                                          renderInput={(params) => (
-                                            <Input
-                                              {...params}
-                                              placeholder="Select BD Members"
-                                              sx={{
-                                                minHeight: "40px",
-                                                overflowY: "auto",
-                                                borderRadius: "8px",
-                                              }}
-                                            />
-                                          )}
-                                        />
-                                        <FormLabel sx={{ marginTop: "1%" }}>
-                                          Task Description
-                                        </FormLabel>
-                                        <Input
-                                          fullWidth
-                                          placeholder="Task Description"
-                                          type="text"
-                                          value={formData.task_detail}
-                                          onChange={(e) =>
-                                            handleChange(
-                                              "task_detail",
-                                              e.target.value
-                                            )
-                                          }
-                                          sx={{ borderRadius: "8px" }}
-                                          required
-                                        />
-                                      </FormControl>
-                                    ) : null}
-
-                                    <Stack
-                                      flexDirection="row"
-                                      justifyContent="center"
-                                    >
-                                      <Button
-                                        type="submit"
-                                        disabled={isSubmitting}
-                                        sx={{
-                                          borderRadius: "8px",
-                                          background: isSubmitting
-                                            ? "#9e9e9e"
-                                            : "#1976d2", // Gray when disabled
-                                          color: "white",
-                                          "&:hover": {
-                                            background: isSubmitting
-                                              ? "#9e9e9e"
-                                              : "#1565c0",
-                                          },
-                                        }}
-                                      >
-                                        {isSubmitting
-                                          ? "Submitting..."
-                                          : "Submit"}
-                                      </Button>
-                                      &nbsp;&nbsp;
-                                      <Button
-                                        onClick={handleCloseAddTaskModal}
-                                        sx={{
-                                          borderRadius: "8px",
-                                          background: "#f44336",
-                                          color: "white",
-                                          "&:hover": { background: "#d32f2f" },
-                                        }}
-                                      >
-                                        Close
-                                      </Button>
-                                    </Stack>
-                                  </Stack>
-                                </form>
-                              </Sheet>
-                            </Grid>
-                          </Modal>
 
                           <Typography
                             level="h4"
                             onClick={() => handleOpenModal(task)}
                             style={{ cursor: "pointer", pointerEvents: "auto" }}
                             color={
-                              disabledCards[task._id] ? "success" : "primary"
+                              disabledCards[task._id] ? "success" : "danger"
                             }
                           >
                             {task.name}
@@ -1282,7 +1074,7 @@ const TaskDashboard = () => {
                             sx={{
                               pointerEvents: disabledCards[task._id]
                                 ? "none"
-                                : "auto", // 🔥 Disable other actions
+                                : "auto",
                             }}
                           >
                             {task.type}
@@ -1292,11 +1084,11 @@ const TaskDashboard = () => {
                             user?.name?.toLowerCase() ===
                               task?.submitted_by?.toLowerCase()) && (
                             <Checkbox
-                              checked={
-                                !!completedTasks[task._id] || !!task.comment
+                              checked={isTaskCompleted(task)} // Checkbox will be ticked if task has a comment
+                              onChange={(event) =>
+                                handleCheckboxChange(task, event)
                               }
-                              onChange={(e) => handleCheckboxChange(task, e)}
-                              disabled={completedTasks[task._id]}
+                              disabled={isTaskCompleted(task)}
                               sx={{
                                 "&.Mui-checked": {
                                   color: "white",
@@ -1312,9 +1104,11 @@ const TaskDashboard = () => {
 
                           <Button
                             variant="plain"
-                            onClick={() =>
-                              !disabledCards[task._id] && setOpen(true)
-                            }
+                            onClick={() => {
+                              if (!disabledCards[task._id]) {
+                                setOpen(true);
+                              }
+                            }}
                             disabled={disabledCards[task._id]} // Disable button after comment
                             sx={{
                               pointerEvents: disabledCards[task._id]
@@ -1328,6 +1122,21 @@ const TaskDashboard = () => {
                                 : "..."}
                             </Typography>
                           </Button>
+
+                          {/* Modal should only open when "..." is clicked */}
+                          <Modal open={open} onClose={() => setOpen(false)}>
+                            <ModalDialog>
+                              <Typography level="h4">
+                                Task Description
+                              </Typography>
+                              <Typography>
+                                {task?.task_detail || "No details available"}
+                              </Typography>
+                              <Button onClick={() => setOpen(false)}>
+                                Close
+                              </Button>
+                            </ModalDialog>
+                          </Modal>
                           {/* <Button variant="plain" onClick={() => setOpen(true)}>
                   <Typography>Add Comment</Typography>
                 </Button> */}
@@ -1339,6 +1148,7 @@ const TaskDashboard = () => {
             ) : (
               <Typography level="body-lg">No tasks for today.</Typography>
             )}
+            
 
             <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
               <PaginationComponent
@@ -1408,9 +1218,11 @@ const TaskDashboard = () => {
                         <Grid xs={7}>
                           <Typography
                             level="h4"
-                            color="primary"
+                            
+                            color="danger"
                             onClick={() => handleOpenModal(task)}
-                            style={{ cursor: "pointer" }}
+                            style={{ cursor: "pointer"}}
+                            
                           >
                             {task.name}
                           </Typography>
@@ -1442,6 +1254,19 @@ const TaskDashboard = () => {
                           <Button variant="plain" onClick={() => setOpen(true)}>
                             <Typography>...</Typography>
                           </Button>
+                          <Modal open={open} onClose={() => setOpen(false)}>
+                            <ModalDialog>
+                              <Typography level="h4">
+                                Task Description
+                              </Typography>
+                              <Typography>
+                                {task?.task_detail || "No details available"}
+                              </Typography>
+                              <Button onClick={() => setOpen(false)}>
+                                Close
+                              </Button>
+                            </ModalDialog>
+                          </Modal>
                         </Grid>
                       </Grid>
                     </CardContent>
@@ -1525,9 +1350,9 @@ const TaskDashboard = () => {
                           <Grid xs={7}>
                             <Typography
                               level="h4"
-                              color="primary"
+                              color="danger"
                               onClick={() => handleOpenModal(task)}
-                              style={{ cursor: "pointer" }}
+                              style={{ cursor: "pointer"}}
                             >
                               {task.name}
                             </Typography>
@@ -1785,6 +1610,19 @@ const TaskDashboard = () => {
                             >
                               <Typography>...</Typography>
                             </Button>
+                            <Modal open={open} onClose={() => setOpen(false)}>
+                              <ModalDialog>
+                                <Typography level="h4">
+                                  Task Descriptions
+                                </Typography>
+                                <Typography>
+                                  {task?.task_detail || "No details available"}
+                                </Typography>
+                                <Button onClick={() => setOpen(false)}>
+                                  Close
+                                </Button>
+                              </ModalDialog>
+                            </Modal>
                           </Grid>
                         </Grid>
                       </CardContent>
@@ -1817,7 +1655,7 @@ const TaskDashboard = () => {
       </Sheet>
 
       {/* Modal for Check Box for comments */}
-      <Modal open={openDialog} onClose={() => setOpenDialog(false)}>
+      <Modal open={openDialog} onClose={handleDialogCancel}>
         <ModalDialog>
           <DialogTitle>Enter Comments</DialogTitle>
           <DialogContent>
@@ -1829,7 +1667,7 @@ const TaskDashboard = () => {
             />
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
+            <Button onClick={handleDialogCancel}>Cancel</Button>
             <Button onClick={handleSubmit} color="primary">
               Submit
             </Button>
@@ -1943,7 +1781,7 @@ const TaskDashboard = () => {
           >
             <Table
               borderAxis="both"
-              size="lg"
+              size="md"
               sx={{
                 "& th": {
                   backgroundColor: "#f0f0f0",
@@ -1951,6 +1789,10 @@ const TaskDashboard = () => {
                   fontSize: "1.1rem",
                 },
                 "& td": { fontSize: "1rem" },
+                // display: "block",
+                maxHeight: "300px", // Set the height for the scrollable area
+                overflowY: "auto", // Enables vertical scrolling
+                width: "100%",
               }}
             >
               <thead>
@@ -2006,6 +1848,230 @@ const TaskDashboard = () => {
             </Button>
           </Box>
         </ModalDialog>
+      </Modal>
+
+      <Modal open={openAddTaskModal} onClose={handleCloseAddTaskModal}>
+        <Grid
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            flexDirection: "column",
+            height: "100%",
+            mt: { md: "5%", xs: "20%" },
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              flexDirection: "column",
+              gap: 2,
+            }}
+          >
+            {/* <img alt="add" src={plus} /> */}
+            <Typography
+              level="h4"
+              sx={{
+                mb: 2,
+                textAlign: "center",
+                textDecoration: "underline 2px rgb(243, 182, 39)",
+                textUnderlineOffset: "8px",
+              }}
+            >
+              Add Task
+            </Typography>
+          </Box>
+          <Box>
+            <Divider sx={{ width: "50%" }} />
+          </Box>
+
+          <Sheet
+            variant="outlined"
+            sx={{
+              p: 3,
+              borderRadius: "30px",
+              // maxWidth: { xs: "100%", sm: 400 },
+              mx: "auto",
+              width: { md: "50vw", sm: "50vw" },
+              boxShadow: "lg",
+            }}
+          >
+            <form onSubmit={handleSubmitTask}>
+              <Stack spacing={2} sx={{ width: "100%" }}>
+                <FormControl>
+                  <FormLabel>Customer Name</FormLabel>
+                  <Input
+                    fullWidth
+                    placeholder="Customer Name"
+                    value={formData.name || "-"}
+                    onChange={(e) => handleChange("name", e.target.value)}
+                    sx={{ borderRadius: "8px" }}
+                    readOnly
+                  />
+                </FormControl>
+                <FormControl>
+                  <FormLabel>Next FollowUp</FormLabel>
+                  <Input
+                    fullWidth
+                    type="date"
+                    placeholder="Next FollowUp"
+                    value={formData.date}
+                    onChange={(e) => handleChange("date", e.target.value)}
+                    sx={{ borderRadius: "8px" }}
+                    slotProps={{
+                      input: {
+                        min: new Date().toISOString().split("T")[0],
+                      },
+                    }}
+                  />
+                </FormControl>
+
+                <FormControl>
+                  <FormLabel>Reference</FormLabel>
+                  <Select
+                    value={formData.reference}
+                    placeholder="Select References"
+                    onChange={(e, newValue) =>
+                      handleChange("reference", newValue)
+                    }
+                    sx={{ borderRadius: "8px" }}
+                  >
+                    <Option value="By Call">By Call</Option>
+                    <Option value="By Meeting">By Meeting</Option>
+                  </Select>
+                </FormControl>
+
+                {formData.reference === "By Call" ? (
+                  <FormControl>
+                    <FormLabel>By Whom</FormLabel>
+                    <Input
+                      fullWidth
+                      value={formData.by_whom}
+                      disabled
+                      sx={{
+                        borderRadius: "8px",
+                        backgroundColor: "#f0f0f0",
+                      }}
+                    />
+                    <FormLabel sx={{ marginTop: "1%" }}>
+                      Task Description
+                    </FormLabel>
+                    <Input
+                      fullWidth
+                      placeholder="Task Description"
+                      type="text"
+                      value={formData.task_detail}
+                      onChange={(e) =>
+                        handleChange("task_detail", e.target.value)
+                      }
+                      sx={{ borderRadius: "8px" }}
+                      required
+                    />
+                  </FormControl>
+                ) : formData.reference === "By Meeting" ? (
+                  <FormControl>
+                    <FormLabel>By Whom</FormLabel>
+                    <Autocomplete
+                      multiple
+                      options={bdMembers}
+                      getOptionLabel={(option) => option.label}
+                      isOptionEqualToValue={(option, value) =>
+                        option.id === value.id
+                      }
+                      value={bdMembers.filter((member) =>
+                        formData.by_whom.includes(member.label)
+                      )}
+                      onChange={handleByWhomChange}
+                      disableCloseOnSelect
+                      renderOption={(props, option, { selected }) => (
+                        <li
+                          {...props}
+                          key={option.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "5px",
+                          }}
+                        >
+                          <Checkbox
+                            checked={selected}
+                            sx={{
+                              color: selected ? "#007FFF" : "#B0BEC5", // Default gray, blue when selected
+                              "&.Mui-checked": {
+                                color: "#007FFF",
+                              }, // Active color
+                              "&:hover": {
+                                backgroundColor: "rgba(0, 127, 255, 0.1)",
+                              }, // Subtle hover effect
+                            }}
+                          />
+                          {option.label}
+                        </li>
+                      )}
+                      renderInput={(params) => (
+                        <Input
+                          {...params}
+                          placeholder="Select BD Members"
+                          sx={{
+                            minHeight: "40px",
+                            overflowY: "auto",
+                            borderRadius: "8px",
+                          }}
+                        />
+                      )}
+                    />
+                    <FormLabel sx={{ marginTop: "1%" }}>
+                      Task Description
+                    </FormLabel>
+                    <Input
+                      fullWidth
+                      placeholder="Task Description"
+                      type="text"
+                      value={formData.task_detail}
+                      onChange={(e) =>
+                        handleChange("task_detail", e.target.value)
+                      }
+                      sx={{ borderRadius: "8px" }}
+                      required
+                    />
+                  </FormControl>
+                ) : null}
+
+                <Stack flexDirection="row" justifyContent="center">
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    sx={{
+                      borderRadius: "8px",
+                      background: isSubmitting ? "#9e9e9e" : "#1976d2",
+                      color: "white",
+                      "&:hover": {
+                        background: isSubmitting ? "#9e9e9e" : "#1565c0",
+                      },
+                    }}
+                  >
+                    {isSubmitting ? "Submitting..." : "Submit"}
+                  </Button>
+                  &nbsp;&nbsp;
+                  <Button
+                    onClick={handleCloseAddTaskModal}
+                    sx={{
+                      borderRadius: "8px",
+                      background: "#f44336",
+                      color: "white",
+                      "&:hover": { background: "#d32f2f" },
+                    }}
+                  >
+                    Close
+                  </Button>
+                </Stack>
+              </Stack>
+            </form>
+          </Sheet>
+        </Grid>
       </Modal>
     </Box>
   );
