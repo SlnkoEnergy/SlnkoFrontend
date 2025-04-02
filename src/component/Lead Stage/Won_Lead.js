@@ -29,6 +29,7 @@ import {
   useGetHandOverQuery,
   useGetWonLeadsQuery,
 } from "../../redux/leadsSlice";
+import { Chip } from "@mui/joy";
 
 const StandByRequest = () => {
   const navigate = useNavigate();
@@ -53,10 +54,15 @@ const StandByRequest = () => {
 
   const status_handOver = (leadId) => {
     const matchedHandOver = HandOverSheet.find((sheet) => sheet.id === leadId);
+    
     return matchedHandOver
-      ? matchedHandOver.status_of_handoversheet
-      : "Not Available";
+      ? {
+          status: matchedHandOver.status_of_handoversheet,
+          submittedBy: matchedHandOver.attached_details?.submitted_by_BD || "Not Available",
+        }
+      : { status: "Not Available", submittedBy: "Not Available" };
   };
+  
 
   const renderFilters = () => (
     <>
@@ -372,6 +378,7 @@ const StandByRequest = () => {
                   "Substation Distance",
                   "Creation Date",
                   "HandOver Status",
+                  "HandOver submission",
                   "Action",
                 ].map((header, index) => (
                   <Box
@@ -427,7 +434,14 @@ const StandByRequest = () => {
                       lead.capacity || "-",
                       lead.distance || "-",
                       lead.entry_date || "-",
-                      status_handOver(lead.id) || "-",
+                      <Chip
+                      variant="soft"
+                      color={status_handOver(lead.id).status === "done" ? "success" : "warning"}
+                      size="sm"
+                    >
+                      {status_handOver(lead.id).status === "done" ? "Completed" : "Pending"}
+                    </Chip>,  
+  status_handOver(lead.id).submittedBy || "-",
                     ].map((data, idx) => (
                       <Box
                         component="td"

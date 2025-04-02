@@ -70,12 +70,11 @@ const TaskDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-  
-  setTimeout(() => {
-    setLoading(false); 
-  }, 1000);
-}, []);
+  useEffect(() => {
+    setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+  }, []);
 
   const PaginationComponent = ({ currentPage, totalPages, onPageChange }) => {
     const pageNumbers = generatePageNumbers(currentPage, totalPages);
@@ -638,8 +637,7 @@ useEffect(() => {
       const newTask = await ADDTask(formData).unwrap();
       toast.success("🎉 Task added successfully!");
 
-      // ✅ Close modal after success
-      handleCloseAddTaskModal(); // ✅ This closes the modal
+      handleCloseAddTaskModal();
     } catch (error) {
       console.error("❌ Error adding task:", error?.data || error);
       toast.error("Failed to add task.");
@@ -895,7 +893,10 @@ useEffect(() => {
                             </Chip>
                             <Button
                               variant="plain"
-                              onClick={() => setOpen(true)}
+                              onClick={() => {
+                                setSelectedTask(task);
+                                setOpen(true);
+                              }}
                             >
                               <Typography>...</Typography>
                             </Button>
@@ -905,7 +906,7 @@ useEffect(() => {
                                   Task Description
                                 </Typography>
                                 <Typography>
-                                  {task?.task_detail || "No details available"}
+                                  {selectedTask?.task_detail || "No details available"}
                                 </Typography>
                                 <Button onClick={() => setOpen(false)}>
                                   Close
@@ -1012,41 +1013,45 @@ useEffect(() => {
                     <CardContent>
                       <Grid container spacing={2} alignItems="center">
                         <Grid xs={7}>
-                          <Chip
-                            variant="soft"
-                            size="lg"
-                            sx={{
-                              backgroundColor: "#d4edda", // Light green default
-                              color: "#155724", // Dark green text
-                              fontWeight: "bold",
-                              transition:
-                                "background-color 0.3s ease-in-out, color 0.3s ease-in-out",
-                              "&:hover": {
-                                backgroundColor: "#155724", // Dark green on hover
-                                color: "#ffffff", // White text for contrast
-                              },
-                              pointerEvents: "auto",
-                            }}
-                          >
-                            <Button
-                              variant="plain"
-                              onClick={() => handleOpenAddTaskModal(task)}
+                          {(user?.name === "IT Team" ||
+                            user?.name === "admin" ||
+                            user?.name?.toLowerCase() ===
+                              task?.submitted_by?.toLowerCase()) && (
+                            <Chip
+                              variant="soft"
+                              size="lg"
                               sx={{
-                                padding: 0,
-                                minWidth: "auto",
-                                color: "inherit",
+                                backgroundColor: "#d4edda", // Light green default
+                                color: "#155724", // Dark green text
+                                fontWeight: "bold",
+                                transition:
+                                  "background-color 0.3s ease-in-out, color 0.3s ease-in-out",
+                                "&:hover": {
+                                  backgroundColor: "#155724", // Dark green on hover
+                                  color: "#ffffff", // White text for contrast
+                                },
+                                pointerEvents: "auto",
                               }}
                             >
-                              <Typography>Reschedule +</Typography>
-                            </Button>
-                          </Chip>
-
+                              <Button
+                                variant="plain"
+                                onClick={() => handleOpenAddTaskModal(task)}
+                                sx={{
+                                  padding: 0,
+                                  minWidth: "auto",
+                                  color: "inherit",
+                                }}
+                              >
+                                <Typography>Reschedule +</Typography>
+                              </Button>
+                            </Chip>
+                          )}
                           <Typography
                             level="h4"
                             onClick={() => handleOpenModal(task)}
                             style={{ cursor: "pointer", pointerEvents: "auto" }}
                             color={
-                              disabledCards[task._id] ? "success" : "danger"
+                              completedTasks[task._id] ? "success" : "primary"
                             }
                           >
                             {task.name}
@@ -1105,9 +1110,8 @@ useEffect(() => {
                           <Button
                             variant="plain"
                             onClick={() => {
-                              if (!disabledCards[task._id]) {
-                                setOpen(true);
-                              }
+                              setSelectedTask(task);
+                              setOpen(true);
                             }}
                             disabled={disabledCards[task._id]} // Disable button after comment
                             sx={{
@@ -1130,7 +1134,7 @@ useEffect(() => {
                                 Task Description
                               </Typography>
                               <Typography>
-                                {task?.task_detail || "No details available"}
+                                {selectedTask?.task_detail || "No details available"}
                               </Typography>
                               <Button onClick={() => setOpen(false)}>
                                 Close
@@ -1148,7 +1152,6 @@ useEffect(() => {
             ) : (
               <Typography level="body-lg">No tasks for today.</Typography>
             )}
-            
 
             <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
               <PaginationComponent
@@ -1218,11 +1221,9 @@ useEffect(() => {
                         <Grid xs={7}>
                           <Typography
                             level="h4"
-                            
                             color="danger"
                             onClick={() => handleOpenModal(task)}
-                            style={{ cursor: "pointer"}}
-                            
+                            style={{ cursor: "pointer" }}
                           >
                             {task.name}
                           </Typography>
@@ -1251,7 +1252,10 @@ useEffect(() => {
                           >
                             {task.type}
                           </Chip>
-                          <Button variant="plain" onClick={() => setOpen(true)}>
+                          <Button variant="plain"   onClick={() => {
+                              setSelectedTask(task);
+                              setOpen(true);
+                            }}>
                             <Typography>...</Typography>
                           </Button>
                           <Modal open={open} onClose={() => setOpen(false)}>
@@ -1260,7 +1264,7 @@ useEffect(() => {
                                 Task Description
                               </Typography>
                               <Typography>
-                                {task?.task_detail || "No details available"}
+                                {selectedTask?.task_detail || "No details available"}
                               </Typography>
                               <Button onClick={() => setOpen(false)}>
                                 Close
@@ -1352,7 +1356,7 @@ useEffect(() => {
                               level="h4"
                               color="danger"
                               onClick={() => handleOpenModal(task)}
-                              style={{ cursor: "pointer"}}
+                              style={{ cursor: "pointer" }}
                             >
                               {task.name}
                             </Typography>
@@ -1606,7 +1610,10 @@ useEffect(() => {
                             </Chip>
                             <Button
                               variant="plain"
-                              onClick={() => setOpen(true)}
+                              onClick={() => {
+                                setSelectedTask(task);
+                                setOpen(true);
+                              }}
                             >
                               <Typography>...</Typography>
                             </Button>
@@ -1616,7 +1623,7 @@ useEffect(() => {
                                   Task Descriptions
                                 </Typography>
                                 <Typography>
-                                  {task?.task_detail || "No details available"}
+                                  {selectedTask?.task_detail || "No details available"}
                                 </Typography>
                                 <Button onClick={() => setOpen(false)}>
                                   Close

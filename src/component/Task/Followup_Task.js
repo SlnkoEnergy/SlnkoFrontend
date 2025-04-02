@@ -128,7 +128,7 @@ const FormComponent2 = () => {
            await ADDTask(updatedFormData).unwrap();
            localStorage.removeItem("add_task_followup");
            toast.success("Task Added Successfully.");
-           navigate("/leads");
+           navigate("/dash_task");
          } catch (error) {
            console.error("Error submitting form data:", error?.data || error);
          }

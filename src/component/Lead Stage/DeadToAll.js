@@ -151,11 +151,12 @@ const CheckboxModal4 = () => {
               placeholder="Enter your custom option"
               value={otherRemarks}
               onChange={(e) => setOtherRemarks(e.target.value)}
+              required
             />
           )}
 
           {/* Checkboxes for LOA and PPA */}
-          <FormLabel>Additional Options:</FormLabel>
+          <FormLabel>LOA & PPA:</FormLabel>
           <Stack spacing={1}>
             {["loa", "ppa"].map((option) => (
               <Checkbox

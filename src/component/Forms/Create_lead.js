@@ -53,10 +53,10 @@ const Create_lead = () => {
   });
   const sourceOptions = {
     "Referred by": ["Directors", "Clients", "Team members", "E-mail"],
-    "Social Media": ["Whatsapp", "Instagram","LinkedIn"],
-    "Marketing": ["Youtube", "Advertisements"],
+    "Social Media": ["Whatsapp", "Instagram", "LinkedIn"],
+    Marketing: ["Youtube", "Advertisements"],
     "IVR/My Operator": [],
-    "Others": []
+    Others: [],
   };
   const statesOfIndia = [
     "Andhra Pradesh",
@@ -106,8 +106,8 @@ const Create_lead = () => {
 
   const formatDateToDDMMYYYY = (dateString) => {
     const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, "0");  // Add leading zero for single-digit days
-    const month = String(date.getMonth() + 1).padStart(2, "0");  // Add leading zero for single-digit months
+    const day = String(date.getDate()).padStart(2, "0"); // Add leading zero for single-digit days
+    const month = String(date.getMonth() + 1).padStart(2, "0"); // Add leading zero for single-digit months
     const year = date.getFullYear();
     return `${day}-${month}-${year}`;
   };
@@ -121,14 +121,13 @@ const Create_lead = () => {
     }
 
     try {
-      
-const formattedDate = formatDateToDDMMYYYY(formData.entry_date);
-    const updatedPayload = {
-      ...formData,
-      submitted_by: user.name,
-      entry_date: formattedDate,
-      land: formData.land
-    };
+      const formattedDate = formatDateToDDMMYYYY(formData.entry_date);
+      const updatedPayload = {
+        ...formData,
+        submitted_by: user.name,
+        entry_date: formattedDate,
+        land: formData.land,
+      };
 
       const response = await newLead(updatedPayload).unwrap();
       console.log(response.data);
@@ -151,7 +150,7 @@ const formattedDate = formatDateToDDMMYYYY(formData.entry_date);
         capacity: "",
         distance: "",
         tarrif: "",
-        land: { available_land: "", land_type: ""},
+        land: { available_land: "", land_type: "" },
         entry_date: "",
         interest: "",
         comment: "",
@@ -183,7 +182,9 @@ const formattedDate = formatDateToDDMMYYYY(formData.entry_date);
       <form onSubmit={handleSubmit}>
         <Grid container spacing={3}>
           <Grid xs={12} sm={6}>
-            <FormLabel>Customer Name<strong style={{color:"red"}}>*</strong></FormLabel>
+            <FormLabel>
+              Customer Name<strong style={{ color: "red" }}>*</strong>
+            </FormLabel>
             <Input
               name="c_name"
               value={formData.c_name}
@@ -198,7 +199,6 @@ const formattedDate = formatDateToDDMMYYYY(formData.entry_date);
               name="company"
               value={formData.company}
               onChange={handleChange}
-              
             />
           </Grid>
           <Grid xs={12} sm={6}>
@@ -210,17 +210,46 @@ const formattedDate = formatDateToDDMMYYYY(formData.entry_date);
             />
           </Grid>
 
-          <Grid xs={12} sm={6}><FormLabel>Source<strong style={{color:"red"}}>*</strong></FormLabel>
-            <Select name="source" value={formData.source} onChange={(e, newValue) => setFormData({ ...formData, source: newValue, reffered_by: "" })} required fullWidth>
-              {Object.keys(sourceOptions).map(option => <Option key={option} value={option}>{option}</Option>)}
+          <Grid xs={12} sm={6}>
+            <FormLabel>
+              Source<strong style={{ color: "red" }}>*</strong>
+            </FormLabel>
+            <Select
+              name="source"
+              value={formData.source}
+              onChange={(e, newValue) =>
+                setFormData({ ...formData, source: newValue, reffered_by: "" })
+              }
+              required
+              fullWidth
+            >
+              {Object.keys(sourceOptions).map((option) => (
+                <Option key={option} value={option}>
+                  {option}
+                </Option>
+              ))}
             </Select>
           </Grid>
-          
-          
+
           {formData.source && sourceOptions[formData.source].length > 0 && (
-            <Grid xs={12} sm={6}><FormLabel>Sub Source<strong style={{color:"red"}}>*</strong></FormLabel>
-              <Select name="reffered_by" value={formData.reffered_by} onChange={(e, newValue) => setFormData({ ...formData, reffered_by: newValue })} required fullWidth>
-                {sourceOptions[formData.source].map(option => <Option key={option} value={option}>{option}</Option>)}
+            <Grid xs={12} sm={6}>
+              <FormLabel>
+                Sub Source<strong style={{ color: "red" }}>*</strong>
+              </FormLabel>
+              <Select
+                name="reffered_by"
+                value={formData.reffered_by}
+                onChange={(e, newValue) =>
+                  setFormData({ ...formData, reffered_by: newValue })
+                }
+                required
+                fullWidth
+              >
+                {sourceOptions[formData.source].map((option) => (
+                  <Option key={option} value={option}>
+                    {option}
+                  </Option>
+                ))}
               </Select>
             </Grid>
           )}
@@ -232,11 +261,12 @@ const formattedDate = formatDateToDDMMYYYY(formData.entry_date);
               type="email"
               value={formData.email}
               onChange={handleChange}
-              
             />
           </Grid>
           <Grid xs={12} sm={6}>
-            <FormLabel>Mobile Number<strong style={{color:"red"}}>*</strong></FormLabel>
+            <FormLabel>
+              Mobile Number<strong style={{ color: "red" }}>*</strong>
+            </FormLabel>
             <Input
               name="mobile"
               type="tel"
@@ -255,7 +285,9 @@ const formattedDate = formatDateToDDMMYYYY(formData.entry_date);
             />
           </Grid>
           <Grid xs={12} sm={6}>
-            <FormLabel>Village Name<strong style={{color:"red"}}>*</strong></FormLabel>
+            <FormLabel>
+              Village Name<strong style={{ color: "red" }}>*</strong>
+            </FormLabel>
             <Input
               name="village"
               value={formData.village}
@@ -264,7 +296,9 @@ const formattedDate = formatDateToDDMMYYYY(formData.entry_date);
             />
           </Grid>
           <Grid xs={12} sm={6}>
-            <FormLabel>District Name<strong style={{color:"red"}}>*</strong></FormLabel>
+            <FormLabel>
+              District Name<strong style={{ color: "red" }}>*</strong>
+            </FormLabel>
             <Input
               name="district"
               value={formData.district}
@@ -273,24 +307,22 @@ const formattedDate = formatDateToDDMMYYYY(formData.entry_date);
             />
           </Grid>
           <Grid xs={12} sm={6}>
-            <FormLabel>Select State<strong style={{color:"red"}}>*</strong></FormLabel>
-            <Select
-              name="state"
+            <FormLabel>
+              Select State<strong style={{ color: "red" }}>*</strong>
+            </FormLabel>
+            <Autocomplete
+              options={statesOfIndia}
               value={formData.state}
-              onChange={(e, newValue) =>
+              onChange={(event, newValue) =>
                 setFormData({ ...formData, state: newValue })
               }
-              required
-            >
-              {statesOfIndia.map((option) => (
-                <Option key={option} value={option}>
-                  {option}
-                </Option>
-              ))}
-            </Select>
+              renderInput={(params) => <TextField {...params} required />}
+            />
           </Grid>
           <Grid xs={12} sm={6}>
-            <FormLabel>Capacity<strong style={{color:"red"}}>*</strong></FormLabel>
+            <FormLabel>
+              Capacity<strong style={{ color: "red" }}>*</strong>
+            </FormLabel>
             <Input
               name="capacity"
               value={formData.capacity}
@@ -315,25 +347,25 @@ const formattedDate = formatDateToDDMMYYYY(formData.entry_date);
             />
           </Grid>
           <Grid xs={12} sm={6}>
-  <FormLabel>Available Land<strong style={{color:"red"}}>*</strong></FormLabel>
-<Input
-                 
-                  name="available_land"
-                  value={formData.land.available_land}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      land: { ...prev.land, available_land: e.target.value },
-                    }))
-                  }
-                  type="number"
-                  fullWidth
-                  variant="soft"
-                  required
-                />
-</Grid>
+            <FormLabel>Available Land(acres)</FormLabel>
+            <Input
+              name="available_land"
+              value={formData.land.available_land}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  land: { ...prev.land, available_land: e.target.value },
+                }))
+              }
+              type="text"
+              fullWidth
+              variant="soft"
+            />
+          </Grid>
           <Grid xs={12} sm={6}>
-            <FormLabel>Creation Date<strong style={{color:"red"}}>*</strong></FormLabel>
+            <FormLabel>
+              Creation Date<strong style={{ color: "red" }}>*</strong>
+            </FormLabel>
             <Input
               name="entry_date"
               type="date"
@@ -351,7 +383,7 @@ const formattedDate = formatDateToDDMMYYYY(formData.entry_date);
                 setFormData({ ...formData, scheme: newValue })
               }
             >
-              {["KUSUM A", "KUSUM C", "Other"].map((option) => (
+              {["KUSUM A", "KUSUM C", "KUSUM C2", "Other"].map((option) => (
                 <Option key={option} value={option}>
                   {option}
                 </Option>
@@ -359,22 +391,22 @@ const formattedDate = formatDateToDDMMYYYY(formData.entry_date);
             </Select>
           </Grid>
           <Grid xs={12} sm={6}>
-  <FormLabel>Land Types</FormLabel>
-  <Autocomplete
-                  options={landTypes}
-                  value={formData.land.land_type || null}
-                  onChange={(e, value) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      land: { ...prev.land, land_type: value },
-                    }))
-                  }
-                  placeholder="Land Type"
-                  isOptionEqualToValue={(option, value) => option === value}
-                  variant="soft"
-                  sx={{ width: "100%" }}
-                />
-</Grid>
+            <FormLabel>Land Types</FormLabel>
+            <Autocomplete
+              options={landTypes}
+              value={formData.land.land_type || null}
+              onChange={(e, value) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  land: { ...prev.land, land_type: value },
+                }))
+              }
+              placeholder="Land Type"
+              isOptionEqualToValue={(option, value) => option === value}
+              variant="soft"
+              sx={{ width: "100%" }}
+            />
+          </Grid>
           {/* <Grid xs={12} sm={6}>
             <FormLabel>Interest</FormLabel>
             <Select
@@ -394,7 +426,9 @@ const formattedDate = formatDateToDDMMYYYY(formData.entry_date);
             </Select>
           </Grid> */}
           <Grid xs={12} sm={6}>
-            <FormLabel>Comments<strong style={{color:"red"}}>*</strong></FormLabel>
+            <FormLabel>
+              Comments<strong style={{ color: "red" }}>*</strong>
+            </FormLabel>
             <Input
               name="comment"
               value={formData.comment}

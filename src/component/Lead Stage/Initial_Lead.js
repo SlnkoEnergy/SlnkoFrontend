@@ -23,15 +23,17 @@ import Typography from "@mui/joy/Typography";
 import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import * as React from "react";
 // import FollowTheSignsIcon from '@mui/icons-material/FollowTheSigns';
-import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
-import ManageHistoryIcon from '@mui/icons-material/ManageHistory';
-import NextPlanIcon from '@mui/icons-material/NextPlan';
+import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
+import ManageHistoryIcon from "@mui/icons-material/ManageHistory";
+import NextPlanIcon from "@mui/icons-material/NextPlan";
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../../assets/Lotties/animation-loading.json";
 // import Axios from "../utils/Axios";
-import { useGetInitialLeadsQuery} from "../../redux/leadsSlice";
+import { useGetInitialLeadsQuery } from "../../redux/leadsSlice";
 import NoData from "../../assets/alert-bell.svg";
+import { Autocomplete, Grid, Modal, Option, Select } from "@mui/joy";
+import { useCallback } from "react";
 
 const StandByRequest = () => {
   const navigate = useNavigate();
@@ -44,25 +46,60 @@ const StandByRequest = () => {
   const [mergedData, setMergedData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
-  const [filteredData, setFilteredData] = useState([]);
-  const [user, setUser] = useState(null);
-  const [cachedData, setCachedData] = useState(() => {
-    // Try to load cached data from localStorage
-    const cached = localStorage.getItem("paginatedData");
-    return cached ? JSON.parse(cached) : [];
-  });
 
-  const { data: getLead = [], isLoading, error } = useGetInitialLeadsQuery();
+  const [user, setUser] = useState(null);
+  const [selectedLead, setSelectedLead] = useState(null);
+
+
+  // const [cachedData, setCachedData] = useState(() => {
+  //   // Try to load cached data from localStorage
+  //   const cached = localStorage.getItem("paginatedData");
+  //   return cached ? JSON.parse(cached) : [];
+  // });
+
+  const {
+    data: getLead = [],
+    isLoading,
+    error,
+  } = useGetInitialLeadsQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
   const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userDetails");
     if (storedUser) {
       setUser(JSON.parse(storedUser));
-      // console.log("User Loaded:", JSON.parse(storedUser)); 
+      // console.log("User Loaded:", JSON.parse(storedUser));
     }
   }, []);
+
+
+
+  const sourceOptions = {
+    "Referred by": ["Directors", "Clients", "Team members", "E-mail"],
+    "Social Media": ["Whatsapp", "Instagram", "LinkedIn"],
+    Marketing: ["Youtube", "Advertisements"],
+    "IVR/My Operator": [],
+    Others: [],
+  };
+  const landTypes = ["Leased", "Owned"];
+
+
+  const [openModal, setOpenModal] = useState(false);
+
+  const handleOpenModal = useCallback((lead) => {
+    setSelectedLead(lead);
+    setOpenModal(true);
+  }, []);
   
+
+  const handleCloseModal = useCallback(() => {
+    setOpenModal(false);
+    setSelectedLead(null);
+  }, []);
+  
+
   // useEffect(() => {
   //   console.log("Raw Leads Data:", leads);
   // }, [leads]);
@@ -70,9 +107,6 @@ const StandByRequest = () => {
   // useEffect(() => {
   //   console.log("API Response:", getLead);
   // }, [getLead]);
-  
-  
-  
 
   const renderFilters = () => (
     <>
@@ -138,7 +172,7 @@ const StandByRequest = () => {
               const page = currentPage;
               const leadId = String(id);
               // const projectID = Number(p_id);
-              setOpen(true)
+              setOpen(true);
               localStorage.setItem("stage_next", leadId);
               // localStorage.setItem("p_id", projectID);
               navigate(`/initial_to_all?page=${page}&${leadId}`);
@@ -208,155 +242,152 @@ const StandByRequest = () => {
   //   }
   // }, [cacheKey]);
 
-
-  const formatDate = (date) => { 
+  const formatDate = (date) => {
     if (!date) return new Date();
-    const [day, month, year] = date.split('-');
+    const [day, month, year] = date.split("-");
     return new Date(`${year}-${month}-${day}`);
   };
-  
+
   const handleSearch = (e) => {
     setSearchQuery(e.target.value.toLowerCase());
   };
-  
+
   const handleDateFilter = (e) => {
     setSelectedDate(e.target.value);
   };
-  
+
   // const filterData = useMemo(() => {
   //   if (!user || !user.name) return [];
-  
+
   //   return leads
   //     .filter((lead) => {
-  //       const submittedBy = lead.submitted_by?.trim() || "unassigned"; 
+  //       const submittedBy = lead.submitted_by?.trim() || "unassigned";
   //       const userName = user.name.trim();
   //       const userRole = user.role?.toLowerCase();
-  
+
   //       const isAdmin = userRole === "admin" || userRole === "superadmin";
   //       const matchesUser = isAdmin || submittedBy === userName;
-  
+
   //       const matchesQuery = ["id", "c_name", "mobile", "state"].some(
   //         (key) => lead[key]?.toLowerCase().includes(searchQuery)
   //       );
-  
+
   //       const matchesDate = selectedDate
   //         ? formatDate(lead.entry_date).toLocaleDateString() === formatDate(selectedDate).toLocaleDateString()
   //         : true;
-  
+
   //       return matchesUser && matchesQuery && matchesDate;
   //     })
   //     .sort((a, b) => {
   //       const dateA = formatDate(a.entry_date || a.createdAt);
   //       const dateB = formatDate(b.entry_date || b.createdAt);
-  
+
   //       if (isNaN(dateA.getTime())) return 1;
   //       if (isNaN(dateB.getTime())) return -1;
-  
+
   //       return dateB - dateA;
   //     });
   // }, [leads, searchQuery, selectedDate, user]);
 
-  const filterData = useMemo(() => {
-    if (!user || !user.name) return [];
-  
+  const filteredData = useMemo(() => {
     return leads
       .filter((lead) => {
-        const matchesQuery = ["id", "c_name", "mobile", "state"].some(
-          (key) => lead[key]?.toLowerCase().includes(searchQuery)
+        const matchesQuery = ["id", "c_name", "mobile", "state"].some((key) =>
+          lead[key]?.toLowerCase().includes(searchQuery)
         );
-  
         const matchesDate = selectedDate
-          ? formatDate(lead.entry_date).toLocaleDateString() === formatDate(selectedDate).toLocaleDateString()
+          ? formatDate(lead.entry_date) === selectedDate
           : true;
-  
         return matchesQuery && matchesDate;
       })
       .sort((a, b) => {
-        const dateA = formatDate(a.entry_date || a.createdAt);
-        const dateB = formatDate(b.entry_date || b.createdAt);
-  
+        const dateA = formatDate(a.entry_date);
+        const dateB = formatDate(b.entry_date);
+
         if (isNaN(dateA.getTime())) return 1;
         if (isNaN(dateB.getTime())) return -1;
-  
+
         return dateB - dateA;
       });
-  }, [leads, searchQuery, selectedDate, user]);
-  
-  
-  const getPaginatedData = (page) => {
-    const startIndex = (page - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return filteredData.slice(startIndex, endIndex);
-  };
-  
+  }, [leads, searchQuery, selectedDate]);
+
+  // const getPaginatedData = (page) => {
+  //   const startIndex = (page - 1) * itemsPerPage;
+  //   const endIndex = startIndex + itemsPerPage;
+  //   return filteredData.slice(startIndex, endIndex);
+  // };
+
+  // const paginatedData = useMemo(() => getPaginatedData(currentPage), [filteredData, currentPage]);
+
   // Cache data in localStorage
-  const cacheData = (data) => {
-    localStorage.setItem("paginatedData", JSON.stringify(data));
-  };
-  
+  // const cacheData = (data) => {
+  //   localStorage.setItem("paginatedData", JSON.stringify(data));
+  // };
+
   // Update filterData and paginatedData
-  useEffect(() => {
-    const data = filterData;
-    setFilteredData(data);
-  
-    // Cache filtered data in localStorage for future use
-    cacheData(data);
-  }, [filterData]);
-  
-  useEffect(() => {
-    const cached = localStorage.getItem("paginatedData");
-    if (cached) {
-      setCachedData(JSON.parse(cached));
-    }
-  }, []);
-  
+  // useEffect(() => {
+  //   const data = filterData;
+  //   setFilteredData(data);
+
+  //   // Cache filtered data in localStorage for future use
+  //   cacheData(data);
+  // }, [filterData]);
+
+  // useEffect(() => {
+  //   const cached = localStorage.getItem("paginatedData");
+  //   if (cached) {
+  //     setCachedData(JSON.parse(cached));
+  //   }
+  // }, []);
+
   // Paginated data based on currentPage and filtered data
-  const paginatedData = useMemo(() => {
-    return getPaginatedData(currentPage);
-  }, [filteredData, currentPage]);
-  
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  
-  const handlePageChange = (newPage) => {
-    if (totalPages === 0) return;
-  
-    const page = Math.max(1, Math.min(newPage, totalPages));
-  
-    if (page !== currentPage) {
-      setCurrentPage(page);
-      setSearchParams((prevParams) => {
-        const newParams = new URLSearchParams(prevParams);
-        newParams.set("page", page);
-        return newParams;
-      });
-    }
-  };
-  
+  // const paginatedData = useMemo(() => {
+  //   return getPaginatedData(currentPage);
+  // }, [filteredData, currentPage]);
+
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
   }, [searchParams]);
-  
+
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+
+  const paginatedData = useMemo(() => {
+    return filteredData.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+  }, [filteredData, currentPage, itemsPerPage]);
+
+  const handlePageChange = (newPage) => {
+    const page = Math.max(1, Math.min(newPage, totalPages));
+    setCurrentPage(page);
+    setSearchParams({ page });
+  };
+
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
-  
+
     if (currentPage > 2) pages.push(1);
     if (currentPage > 3) pages.push("...");
-  
-    for (let i = Math.max(1, currentPage - 1); i <= Math.min(totalPages, currentPage + 1); i++) {
+
+    for (
+      let i = Math.max(1, currentPage - 1);
+      i <= Math.min(totalPages, currentPage + 1);
+      i++
+    ) {
       pages.push(i);
     }
-  
+
     if (currentPage < totalPages - 2) pages.push("...");
     if (currentPage < totalPages - 1) pages.push(totalPages);
-  
+
     return pages;
   };
-  
-  useEffect(() => {
-    console.log("Filtered Data:", filteredData);
-  }, [filteredData]);
-  
+
+  // useEffect(() => {
+  //   console.log("Filtered Data:", filteredData);
+  // }, [filteredData]);
 
   return (
     <>
@@ -421,19 +452,31 @@ const StandByRequest = () => {
             />
           </Box>
         ) : error ? (
-          <span style={{ display: "flex", alignItems: "center", gap: "5px", color: "red", justifyContent:"center", flexDirection:"column" , padding: "20px"}}>
-          <PermScanWifiIcon />
-          <Typography fontStyle={"italic"} fontWeight={"600"} sx={{color:"#0a6bcc"}} >
-          Hang tight! Internet Connection will be back soon..
-          </Typography>
-          
-        </span>
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              color: "red",
+              justifyContent: "center",
+              flexDirection: "column",
+              padding: "20px",
+            }}
+          >
+            <PermScanWifiIcon />
+            <Typography
+              fontStyle={"italic"}
+              fontWeight={"600"}
+              sx={{ color: "#0a6bcc" }}
+            >
+              Hang tight! Internet Connection will be back soon..
+            </Typography>
+          </span>
         ) : (
           <Box
             component="table"
             sx={{ width: "100%", borderCollapse: "collapse" }}
           >
-          
             <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
               <Box component="tr">
                 <Box
@@ -480,7 +523,7 @@ const StandByRequest = () => {
               </Box>
             </Box>
 
-         {/*****pagination ****/}
+          
             <Box component="tbody">
               {paginatedData.length > 0 ? (
                 paginatedData.map((lead, index) => (
@@ -491,7 +534,6 @@ const StandByRequest = () => {
                       "&:hover": { backgroundColor: "neutral.plainHoverBg" },
                     }}
                   >
-                 
                     <Box
                       component="td"
                       sx={{
@@ -508,9 +550,20 @@ const StandByRequest = () => {
                       />
                     </Box>
 
-                    
                     {[
-                      lead.id,
+                       <span
+                       key={lead.id}
+                       onClick={() => handleOpenModal(lead)}
+                       style={{
+                        cursor: "pointer",
+                        color: "black",
+                        textDecoration: "none", // Removes underline
+                        // fontWeight: "bold", // Makes text bold
+                        // textTransform: "uppercase", // Transforms text to uppercase
+                      }}
+                     >
+                       {lead.id}
+                     </span>,
                       lead.c_name,
                       lead.mobile,
                       // `${lead.village}, ${lead.district}, ${lead.state}`,
@@ -542,7 +595,7 @@ const StandByRequest = () => {
                         textAlign: "center",
                       }}
                     >
-                      <RowMenu currentPage={currentPage} id={lead.id}/>
+                      <RowMenu currentPage={currentPage} id={lead.id} />
                     </Box>
                   </Box>
                 ))
@@ -607,7 +660,7 @@ const StandByRequest = () => {
           Previous
         </Button>
         <Box>
-          Showing {paginatedData.length} of {filterData.length} results
+          Showing {paginatedData.length} of {filteredData.length} results
         </Box>
         {/* <Typography>
           Page {currentPage} of {totalPages || 1}
@@ -644,6 +697,208 @@ const StandByRequest = () => {
           Next
         </Button>
       </Box>
+
+      <Modal open={openModal} onClose={handleCloseModal}>
+        <Box
+          sx={{
+            p: 4,
+            bgcolor: "background.surface",
+            borderRadius: "md",
+            maxWidth: 600,
+            mx: "auto",
+            mt: 10,
+          }}
+        >
+          <Grid container spacing={2}>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Customer Name</FormLabel>
+              <Input
+                name="name"
+                value={selectedLead?.c_name ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Company Name</FormLabel>
+              <Input
+                name="company"
+                value={selectedLead?.company ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Group Name</FormLabel>
+              <Input
+                name="group"
+                value={selectedLead?.group ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Source</FormLabel>
+              <Select
+                name="source"
+                value={selectedLead?.source ?? ""}
+                onChange={(e, newValue) =>
+                  setSelectedLead({
+                    ...selectedLead,
+                    source: newValue,
+                    reffered_by: "",
+                  })
+                }
+                fullWidth
+              >
+                {Object.keys(sourceOptions).map((option) => (
+                  <Option key={option} value={option}>
+                    {option}
+                  </Option>
+                ))}
+              </Select>
+            </Grid>
+            {selectedLead?.source &&
+              sourceOptions[selectedLead.source]?.length > 0 && (
+                <Grid xs={12} sm={6}>
+                  <FormLabel>Sub Source</FormLabel>
+                  <Select
+                    name="reffered_by"
+                    value={selectedLead?.reffered_by ?? ""}
+                    readOnly
+                    fullWidth
+                  >
+                    {sourceOptions[selectedLead.source].map((option) => (
+                      <Option key={option} value={option}>
+                        {option}
+                      </Option>
+                    ))}
+                  </Select>
+                </Grid>
+              )}
+            <Grid xs={12} sm={6}>
+              <FormLabel>Email ID</FormLabel>
+              <Input
+                name="email"
+                type="email"
+                value={selectedLead?.email ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Mobile Number</FormLabel>
+              <Input
+                name="mobile"
+                type="tel"
+                value={selectedLead?.mobile ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Location</FormLabel>
+              <Input
+                name="location"
+                value={`${selectedLead?.village ?? ""}, ${selectedLead?.district ?? ""}, ${selectedLead?.state ?? ""}`}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Capacity</FormLabel>
+              <Input
+                name="capacity"
+                value={selectedLead?.capacity ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Sub Station Distance (KM)</FormLabel>
+              <Input
+                name="distance"
+                value={selectedLead?.distance ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Tariff (Per Unit)</FormLabel>
+              <Input
+                name="tarrif"
+                value={selectedLead?.tarrif ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Available Land (acres)</FormLabel>
+              <Input
+                name="available_land"
+                value={selectedLead?.land?.available_land ?? ""}
+                type="text"
+                fullWidth
+                variant="soft"
+                readOnly
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Creation Date</FormLabel>
+              <Input
+                name="entry_date"
+                type="date"
+                value={selectedLead?.entry_date ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Scheme</FormLabel>
+              <Select name="scheme" value={selectedLead?.scheme ?? ""} readOnly>
+                {["KUSUM A", "KUSUM C","KUSUM C2", "Other"].map((option) => (
+                  <Option key={option} value={option}>
+                    {option}
+                  </Option>
+                ))}
+              </Select>
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Land Types</FormLabel>
+              <Autocomplete
+                options={landTypes}
+                value={selectedLead?.land?.land_type ?? null}
+                readOnly
+                getOptionLabel={(option) => option}
+                renderInput={(params) => (
+                  <Input
+                    {...params}
+                    placeholder="Land Type"
+                    variant="soft"
+                    required
+                  />
+                )}
+                isOptionEqualToValue={(option, value) => option === value}
+                sx={{ width: "100%" }}
+              />
+            </Grid>
+            <Grid xs={12}>
+              <FormLabel>Comments</FormLabel>
+              <Input
+                name="comment"
+                value={selectedLead?.comment ?? ""}
+                multiline
+                rows={4}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+          </Grid>
+          <Box textAlign="center" sx={{ mt: 2 }}>
+            <Button onClick={handleCloseModal}>Close</Button>
+          </Box>
+        </Box>
+      </Modal>
     </>
   );
 };

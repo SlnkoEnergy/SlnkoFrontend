@@ -171,7 +171,7 @@ const CheckboxModal2 = () => {
           )}
 
           {/* Checkboxes for LOA and PPA */}
-          <FormLabel>Additional Options:</FormLabel>
+          <FormLabel>LOA & PPA:</FormLabel>
           <Stack spacing={1}>
             {["loa", "ppa"].map((option) => (
               <Checkbox
@@ -179,6 +179,7 @@ const CheckboxModal2 = () => {
                 label={option.toUpperCase()}
                 checked={selectedOptions[option]}
                 onChange={() => handleCheckboxChange(option)}
+                required
               />
             ))}
           </Stack>

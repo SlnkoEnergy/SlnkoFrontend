@@ -130,6 +130,7 @@ const InitialLeadsHistory = () => {
       try {
         await ADDTask(updatedFormData).unwrap();
         toast.success("🎉 Task added successfully!");
+        navigate("/dash_task");
         handleCloseAddTaskModal();
       } catch (error) {
         toast.error("Failed to add task.");
@@ -502,11 +503,12 @@ const isAnyCheckboxChecked = Object.values(selectedOptions).some((val) => val);
                 placeholder="Enter your custom option"
                 value={otherRemarks}
                 onChange={(e) => setOtherRemarks(e.target.value)}
+                required
               />
             )}
 
             {/* Checkboxes for LOA and PPA */}
-            <FormLabel>Additional Options:</FormLabel>
+            <FormLabel>LOA & PPA:</FormLabel>
             <Stack spacing={1}>
               {["loa", "ppa"].map((option) => (
                 <Checkbox

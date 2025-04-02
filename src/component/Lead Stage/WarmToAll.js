@@ -170,6 +170,7 @@ const CheckboxModal3 = () => {
               placeholder="Enter your custom option"
               value={otherRemarks}
               onChange={(e) => setOtherRemarks(e.target.value)}
+                required
             />
           )}
 

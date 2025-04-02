@@ -10,7 +10,8 @@ import {
   Option,
   FormLabel,
   Box,
-  Autocomplete
+  Autocomplete,
+  TextField
 } from "@mui/joy";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
@@ -110,28 +111,43 @@ const WarmEdit_lead = () => {
   };
   
 
-  const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData || !formData._id) {
       toast.error("Lead ID is missing. Cannot update project.");
       return;
     }
   
+    const formatDateToDDMMYYYY = (dateString) => {
+      if (!dateString) return "";
+      const parts = dateString.split("-");
+      if (parts.length !== 3) return dateString;
+      return `${parts[2]}-${parts[1]}-${parts[0]}`; // Convert YYYY-MM-DD to DD-MM-YYYY
+    };
+  
     try {
+      const updatedLeadData = {
+        ...formData,
+        entry_date: formatDateToDDMMYYYY(formData.entry_date), // Convert before sending to API
+      };
+  
       const response = await updateLead({
         _id: formData._id,
-        updatedLead: formData,
+        updatedLead: updatedLeadData,
       }).unwrap();
   
-      console.log("API Response from updateLead:", response);
+      console.log("API Response from updateLead:", response); // ✅ Debug API response
   
       if (response?.data) {
-        setFormData(response.data);
+        setFormData({
+          ...response.data,
+          entry_date: formatDateToDDMMYYYY(response.data.entry_date), // Ensure UI shows DD-MM-YYYY
+        });
       } else {
         console.warn("No updated data received from API");
       }
   
-      toast.success(response.msg || "Warm Lead updated successfully.");
+      toast.success(response.msg || "Lead updated successfully.");
       navigate("/leads");
     } catch (err) {
       console.error("Update Error:", err);
@@ -276,20 +292,14 @@ const WarmEdit_lead = () => {
             </Grid>
             <Grid xs={12} sm={6}>
               <FormLabel>Select State</FormLabel>
-              <Select
-                name="state"
-                value={formData.state}
-                onChange={(e, newValue) =>
-                  setFormData({ ...formData, state: newValue })
-                }
-                
-              >
-                {statesOfIndia.map((option) => (
-                  <Option key={option} value={option}>
-                    {option}
-                  </Option>
-                ))}
-              </Select>
+              <Autocomplete
+              options={statesOfIndia}
+              value={formData.state}
+              onChange={(event, newValue) =>
+                setFormData({ ...formData, state: newValue })
+              }
+              renderInput={(params) => <TextField {...params} required />}
+            />
             </Grid>
             <Grid xs={12} sm={6}>
               <FormLabel>Capacity</FormLabel>
@@ -316,7 +326,7 @@ const WarmEdit_lead = () => {
               />
             </Grid>
             <Grid xs={12} sm={6}>
-              <FormLabel>Available Land</FormLabel>
+              <FormLabel>Available Land(acres)</FormLabel>
               <Input
                 name="available_land"
                 value={formData.land?.available_land ?? ""}
@@ -326,14 +336,14 @@ const WarmEdit_lead = () => {
                     land: { ...prev.land, available_land: e.target.value },
                   }))
                 }
-                type="number"
+                type="text"
                 fullWidth
                 variant="soft"
                 
               />
             </Grid>
             <Grid xs={12} sm={6}>
-              <FormLabel>Creation Date</FormLabel>
+              <FormLabel>Revise Date</FormLabel>
               <Input
                 name="entry_date"
                 type="date"
@@ -351,7 +361,7 @@ const WarmEdit_lead = () => {
                 }
                 
               >
-                {["KUSUM A", "KUSUM C", "Other"].map((option) => (
+                {["KUSUM A", "KUSUM C","KUSUM C2", "Other"].map((option) => (
                   <Option key={option} value={option}>
                     {option}
                   </Option>
