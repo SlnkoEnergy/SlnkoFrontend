@@ -32,6 +32,7 @@ import animationData from "../../assets/Lotties/animation-loading.json";
 // import Axios from "../utils/Axios";
 import { useGetWarmLeadsQuery } from "../../redux/leadsSlice";
 import NoData from "../../assets/alert-bell.svg";
+import { Chip } from "@mui/joy";
 
 const StandByRequest = () => {
   const navigate = useNavigate();
@@ -47,6 +48,25 @@ const StandByRequest = () => {
 
   const { data: getLead = [], isLoading, error } = useGetWarmLeadsQuery();
   const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
+
+    // const LeadStatus = ({ lead }) => {
+    //     const { loi, ppa, loa, other_remarks, token_money } = lead;
+      
+    //     // Determine the initial status
+      
+    //     const isWarmStatus =
+    //     (!loi || loi === "No") &&
+    //     (!ppa || ppa === "Yes" || ppa === "No") &&
+    //     (!loa || loa === "Yes"|| loa === "No") &&
+    //     (!other_remarks || other_remarks === "") &&
+    //     (!token_money || token_money === "No" || token_money === "Yes");
+      
+    //     return (
+    //       <Chip color="neutral" variant="soft" sx={{ backgroundColor: "#FF9800", color: "#000" }}>
+    //      warm
+    //     </Chip>
+    //     );
+    //   };
 
   const renderFilters = () => (
     <>
@@ -350,6 +370,7 @@ const StandByRequest = () => {
                   "Capacity",
                   "Substation Distance",
                   "Creation Date",
+                  // "Lead Status",
                   "Action",
                 ].map((header, index) => (
                   <Box
@@ -407,6 +428,7 @@ const StandByRequest = () => {
                       lead.capacity || "-",
                       lead.distance || "-",
                       lead.entry_date || "-",
+                      // <LeadStatus lead={lead} />,
                     ].map((data, idx) => (
                       <Box
                         component="td"

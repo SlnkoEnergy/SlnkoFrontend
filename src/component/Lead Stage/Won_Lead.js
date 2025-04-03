@@ -46,6 +46,30 @@ const StandByRequest = () => {
   const { data: getLead = [], isLoading, error } = useGetWonLeadsQuery();
   const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
 
+
+  // const LeadStatus = ({ lead }) => {
+  //   const { loi, ppa, loa, other_remarks, token_money } = lead;
+
+  //   // Determine the initial status
+
+  //   const isWarmStatus =
+  //     (!loi || loi === "No" || loi === "Yes") &&
+  //     (!ppa || ppa === "Yes" || ppa === "No") &&
+  //     (!loa || loa === "Yes" || loa === "No") &&
+  //     (!other_remarks || other_remarks === "") &&
+  //     (!token_money || token_money === "Yes");
+
+  //   return (
+  //     <Chip
+  //       color="neutral"
+  //       variant="soft"
+  //       sx={{ backgroundColor: "#C8E6C9", color: "#000" }}
+  //     >
+  //       won
+  //     </Chip>
+  //   );
+  // };
+
   const { data: getHandOverSheet = [] } = useGetHandOverQuery();
   const HandOverSheet = useMemo(
     () => getHandOverSheet?.Data ?? [],
@@ -54,15 +78,16 @@ const StandByRequest = () => {
 
   const status_handOver = (leadId) => {
     const matchedHandOver = HandOverSheet.find((sheet) => sheet.id === leadId);
-    
+
     return matchedHandOver
       ? {
           status: matchedHandOver.status_of_handoversheet,
-          submittedBy: matchedHandOver.attached_details?.submitted_by_BD || "Not Available",
+          submittedBy:
+            matchedHandOver.attached_details?.submitted_by_BD ||
+            "Not Available",
         }
       : { status: "Not Available", submittedBy: "Not Available" };
   };
-  
 
   const renderFilters = () => (
     <>
@@ -377,6 +402,7 @@ const StandByRequest = () => {
                   "Capacity",
                   "Substation Distance",
                   "Creation Date",
+                  // "Lead Status",
                   "HandOver Status",
                   "HandOver submission",
                   "Action",
@@ -434,14 +460,21 @@ const StandByRequest = () => {
                       lead.capacity || "-",
                       lead.distance || "-",
                       lead.entry_date || "-",
+                      // <LeadStatus lead={lead} />,
                       <Chip
-                      variant="soft"
-                      color={status_handOver(lead.id).status === "done" ? "success" : "warning"}
-                      size="sm"
-                    >
-                      {status_handOver(lead.id).status === "done" ? "Completed" : "Pending"}
-                    </Chip>,  
-  status_handOver(lead.id).submittedBy || "-",
+                        variant="soft"
+                        color={
+                          status_handOver(lead.id).status === "done"
+                            ? "success"
+                            : "warning"
+                        }
+                        size="sm"
+                      >
+                        {status_handOver(lead.id).status === "done"
+                          ? "Completed"
+                          : "Pending"}
+                      </Chip>,
+                      status_handOver(lead.id).submittedBy || "-",
                     ].map((data, idx) => (
                       <Box
                         component="td"

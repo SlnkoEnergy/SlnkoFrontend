@@ -15,6 +15,7 @@ import Lead_FollowUp from "../../../../component/Lead Stage/Follow_Lead";
 import Lead_Initial from "../../../../component/Lead Stage/Initial_Lead";
 import Lead_Warm from "../../../../component/Lead Stage/Warm_Lead";
 import Lead_Won from "../../../../component/Lead Stage/Won_Lead";
+import Lead_Overall from "../../../../component/Lead Stage/Overall_Lead";
 import Header from "../../../../component/Partials/Header";
 import Sidebar from "../../../../component/Partials/Sidebar";
 
@@ -22,7 +23,7 @@ function InitialLeads() {
   const navigate = useNavigate();
   const [selectedLead, setSelectedLead] = useState("Initial");
 
-  const leadOptions = ["Initial", "Follow Up", "Warm", "Won", "Dead"];
+  const leadOptions = [,"Initial", "Follow Up", "Warm", "Won", "Dead","OverAll"];
 
   const renderLeadComponent = () => {
     switch (selectedLead) {
@@ -34,10 +35,14 @@ function InitialLeads() {
         return <Lead_Won />;
       case "Dead":
         return <Lead_Dead />;
+         case "OverAll":
+        return <Lead_Overall />;
       default:
         return <Lead_Initial />;
     }
   };
+  
+  
 
   return (
     <CssVarsProvider disableTransitionOnChange>

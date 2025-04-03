@@ -8,14 +8,23 @@ export const leadsApi = createApi({
     getLeads: builder.query({
       query: () => "get-all-bd-lead",
       providesTags: ["Lead"],
+      // keepUnusedDataFor: 120, 
+      // refetchOnMountOrArgChange: true,
+      // pollingInterval: 5000,
     }),
     getEntireLeads: builder.query({
       query: () => "get-all-lead",
       providesTags: ["Lead"],
+      keepUnusedDataFor: 300,
+  refetchOnMountOrArgChange: true,
+  pollingInterval: 5000,
     }),
     getInitialLeads: builder.query({
       query: () => "get-all-inital-bd-lead",
       providesTags: ["Lead"],
+      keepUnusedDataFor: 120, 
+      refetchOnMountOrArgChange: true,
+      pollingInterval: 5000,
     }),
 
     getWonLeads: builder.query({

@@ -30,12 +30,12 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../../assets/Lotties/animation-loading.json";
 // import Axios from "../utils/Axios";
-import { useGetInitialLeadsQuery } from "../../redux/leadsSlice";
+import { useGetEntireLeadsQuery, useGetInitialLeadsQuery } from "../../redux/leadsSlice";
 import NoData from "../../assets/alert-bell.svg";
 import { Autocomplete, Chip, Grid, Modal, Option, Select } from "@mui/joy";
 import { useCallback } from "react";
 
-const StandByRequest = () => {
+const Overall_Leads = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -61,26 +61,85 @@ const StandByRequest = () => {
     data: getLead = [],
     isLoading,
     error,
-  } = useGetInitialLeadsQuery();
-  const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
+  } = useGetEntireLeadsQuery();
 
-  // const LeadStatus = ({ lead }) => {
-  //   const { loi, ppa, loa, other_remarks, token_money } = lead;
+  const leads = [
+    ...(getLead?.lead?.initialdata || []),
+    ...(getLead?.lead?.followupdata || []),
+    ...(getLead?.lead?.warmdata || []),
+    ...(getLead?.lead?.wondata || []),
+    ...(getLead?.lead?.deaddata || []),
+  ];
+
+  console.log("overall leads", leads);
   
-  //   // Determine the initial status
-  //   const isInitialStatus =
-  //     (!loi || loi === "No") &&
-  //     (!ppa || ppa === "No") &&
-  //     (!loa || loa === "No") &&
-  //     (!other_remarks || other_remarks === "") &&
-  //     (!token_money || token_money === "No");
+
+  const LeadStatus = ( lead ) => {
+    const { loi = "", ppa = "", loa = "", other_remarks = "", token_money = "" } = lead || {};
   
-  //   return (
-  //     <Chip color="neutral" variant="soft" sx={{ backgroundColor: "#BBDEFB", color: "#000" }}>
-  //     Initial
-  //   </Chip>
-  //   );
-  // };
+    let status = "Initial";
+let bgColor = "#BBDEFB";
+
+switch (true) {
+  case (loi === "Yes" || loi === "No") &&
+       (ppa === "Yes" || ppa === "No") &&
+       (loa === "Yes" || loa === "No") &&
+       (!other_remarks || other_remarks === "") &&
+       (token_money === "Yes"):
+    status = "Won";  
+    bgColor = "#81C784"; // Light Green
+    break;
+
+  case (loi === "Yes") &&
+       (ppa === "No") &&
+       (loa === "Yes" || loa === "No") &&
+       (!other_remarks || other_remarks === "") &&
+       (token_money === "No" || token_money === "Yes"):
+    status = "Follow Up";
+    bgColor = "#FFD54F"; // Light Yellow
+    break;
+
+  case (loi === "Yes" || loi === "No") &&
+       (ppa === "Yes" || ppa === "No") &&
+       (loa === "Yes" || loa === "No") &&
+       (!other_remarks || other_remarks === "") &&
+       (token_money === "No" || token_money === "Yes"):
+    status = "Warm";
+    bgColor = "#FFAB91"; // Light Orange
+    break;
+
+  case (loi === "Yes" || loi === "No") &&
+       (ppa === "Yes" || ppa === "No") &&
+       (loa === "Yes" || loa === "No") &&
+       (!other_remarks || other_remarks === "") &&
+       (token_money === "Yes" || token_money === "No"):
+    status = "Dead";
+    bgColor = "#E57373"; // Light Red
+    break;
+
+  case (loi === "No") &&
+       (!ppa || ppa === "No") &&
+       (!loa || loa === "No") &&
+       (!other_remarks || other_remarks === "") &&
+       (!token_money || token_money === "No"):
+    status = "Initial";
+    bgColor = "#BBDEFB"; // Light Blue
+    break;
+
+  default:
+    status = "Unknown";
+    bgColor = "#E0E0E0"; // Grey
+    break;
+}
+
+    
+  
+    return (
+      <Chip sx={{ backgroundColor: bgColor, color: "#000" }} variant="soft">
+        {status}
+      </Chip>
+    );
+  };
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userDetails");
@@ -308,13 +367,16 @@ const StandByRequest = () => {
   const filteredData = useMemo(() => {
     return leads
       .filter((lead) => {
+        const status = LeadStatus(lead);
         const matchesQuery = ["id", "c_name", "mobile", "state"].some((key) =>
           lead[key]?.toLowerCase().includes(searchQuery)
         );
+        const matchesStatus = status.includes(searchQuery.toLowerCase());
+
         const matchesDate = selectedDate
           ? formatDate(lead.entry_date) === selectedDate
           : true;
-        return matchesQuery && matchesDate;
+          return (matchesQuery || matchesStatus) && matchesDate;
       })
       .sort((a, b) => {
         const dateA = formatDate(a.entry_date);
@@ -521,7 +583,7 @@ const StandByRequest = () => {
                   "Capacity",
                   "Substation Distance",
                   "Creation Date",
-                  // "Lead Status",
+                  "Lead Status",
                   "Action",
                 ].map((header, index) => (
                   <Box
@@ -589,7 +651,7 @@ const StandByRequest = () => {
                       lead.capacity || "-",
                       lead.distance || "-",
                       lead.entry_date || "-",
-                      // <LeadStatus lead={lead} />,
+                      <LeadStatus lead={lead} />,
                     ].map((data, idx) => (
                       <Box
                         component="td"
@@ -621,7 +683,7 @@ const StandByRequest = () => {
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={9}
+                    colSpan={10}
                     sx={{
                       padding: "8px",
                       textAlign: "center",
@@ -643,7 +705,7 @@ const StandByRequest = () => {
                         style={{ width: "50px", height: "50px" }}
                       />
                       <Typography fontStyle={"italic"}>
-                        No Initial Leads available
+                        No Overall Leads available
                       </Typography>
                     </Box>
                   </Box>
@@ -920,4 +982,4 @@ const StandByRequest = () => {
     </>
   );
 };
-export default StandByRequest;
+export default Overall_Leads;

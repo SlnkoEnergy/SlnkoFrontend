@@ -59,6 +59,29 @@ const StandByRequest = () => {
   const { data: getLead = [], isLoading, error } = useGetDeadLeadsQuery();
   const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
 
+    // const LeadStatus = ({ lead }) => {
+    //   const { loi, ppa, loa, other_remarks, token_money } = lead;
+  
+    //   // Determine the initial status
+  
+    //   const isWarmStatus =
+    //     (!loi || loi === "No" || loi === "Yes") &&
+    //     (!ppa || ppa === "Yes" || ppa === "No") &&
+    //     (!loa || loa === "Yes" || loa === "No") &&
+    //     (!other_remarks || other_remarks === "") &&
+    //     (!token_money || token_money === "Yes" || token_money === "No");
+  
+    //   return (
+    //     <Chip
+    //       color="neutral"
+    //       variant="soft"
+    //       sx={{ backgroundColor: "#d3d3d3", color: "#000" }}
+    //     >
+    //       Dead
+    //     </Chip>
+    //   );
+    // };
+
     const [DeadToFollowup] = useAddDeadtoFollowupMutation();
     const [DeadToWarmup] = useAddDeadtoWarmupMutation();
     const [DeadToInitial] = useAddDeadtoInitialMutation();
@@ -67,7 +90,7 @@ const StandByRequest = () => {
   const { enqueueSnackbar } = useSnackbar();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const handleSubmit = async () => {
-    const LeadId = localStorage.getItem("stage_next3"); // Retrieve LeadId from localStorage
+    const LeadId = localStorage.getItem("stage_next3");
   
     if (!LeadId) {
       enqueueSnackbar("No valid Lead ID available.", { variant: "error" });
@@ -487,6 +510,7 @@ const StandByRequest = () => {
                   "Capacity",
                   "Substation Distance",
                   "Creation Date",
+                  // "Lead Status",
                   "Revive Lead",
                   "Action",
                   
@@ -544,7 +568,7 @@ const StandByRequest = () => {
                       lead.capacity || "-",
                       lead.distance || "-",
                       lead.entry_date || "-",
-                      
+                      // <LeadStatus lead={lead} />,
                     ].map((data, idx) => (
                       <Box
                         component="td"
