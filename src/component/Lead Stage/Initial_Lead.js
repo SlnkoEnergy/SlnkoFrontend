@@ -574,9 +574,8 @@ const StandByRequest = () => {
                        style={{
                         cursor: "pointer",
                         color: "black",
-                        textDecoration: "none", // Removes underline
-                        // fontWeight: "bold", // Makes text bold
-                        // textTransform: "uppercase", // Transforms text to uppercase
+                        textDecoration: "none",
+                      
                       }}
                      >
                        {lead.id}

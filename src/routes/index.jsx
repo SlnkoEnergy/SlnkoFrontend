@@ -8,19 +8,19 @@ import PaymentApproved from "../pages/Accounts/PaymentApproved";
 import Payment_Detail from "../pages/Accounts/PaymentDetail";
 import PaymentRequest from "../pages/Accounts/PaymentRequest";
 import PaySummary from "../pages/Accounts/PaySummary";
-import OfferSummary from "../pages/BD/Offer_Summary";
 import ProjectBalance from "../pages/Accounts/ProjectBalance";
 import StandByRecords from "../pages/Accounts/StandByRecords";
 import StandBy_ReqSummary from "../pages/Accounts/StandByRequest";
 import ViewDetail from "../pages/Accounts/ViewDetail";
 import Offer_Form from "../pages/BD/Add_Offer";
+import BDHistory from "../pages/BD/BDHistory";
 import CommercialOffer from "../pages/BD/Comm_Offer";
+import OfferSummary from "../pages/BD/Offer_Summary";
 import AddProject from "../pages/Projects/Add_Project";
 import AllProjects from "../pages/Projects/AllProject";
 import BillHistory from "../pages/Projects/BillHistory";
 import Edit_Project from "../pages/Projects/Edit_Project";
 import POHistory from "../pages/Projects/PoHistory";
-import BDHistory from "../pages/BD/BDHistory";
 import Add_Bill from "../pages/SCM/AddBill";
 import Add_Purchase from "../pages/SCM/AddPO";
 import Add_Vendor from "../pages/SCM/AddVendor";
@@ -32,44 +32,45 @@ import ForgotPassword from "../pages/Users/auth/ForgotPassword";
 import Login from "../pages/Users/auth/Login";
 import EditUser from "../pages/Users/EditUser";
 // import { BalanceProvider } from "../store/Context/Balance_Context";
-import Initial_Leads from "../pages/BD/Leads/Initial/Initial_Leads_Tab";
-import PrivateRoute from "./PrivateRoute";
-import CommercialRateOffer from "../pages/BD/OfferRate";
+import Offer_edit from "../pages/BD/Comm_/EditOffer";
+import ListReference3 from "../pages/BD/Comm_/offer_previw";
 import ListReference from "../pages/BD/Comm_/offer_ref";
 import ListReference2 from "../pages/BD/Comm_/offer_ref_edit";
-import ListReference3 from "../pages/BD/Comm_/offer_previw";
 import Costing_form from "../pages/BD/Costing_form";
-import Add_Lead from "../pages/BD/Leads/create_Leads";
-import Dashboardz from "../pages/Dashboards";
-import Sum_Initial_Leads from "../pages/BD/Leads/Initial/Forms/initial_Summary";
-import CheckboxModal from "../pages/BD/Leads/Initial/Forms/InitialToAll";
-import CheckboxModal2 from "../pages/BD/Leads/Followup/Forms/FollowupToAll";
-import CheckboxModal3 from "../pages/BD/Leads/Warm/Forms/WarmToAll";
-import CheckboxModal4 from "../pages/BD/Leads/Dead/Forms/DeadToAll";
-import Add_Task_Initial from "../pages/BD/Leads/Initial/Forms/InitialTask";
-import Add_Task_Followup from "../pages/BD/Leads/Followup/Forms/FollowupTask";
-import Add_Task_Warm from "../pages/BD/Leads/Warm/Forms/WarmTask";
 import Task_Dashboards from "../pages/BD/DashTask";
-import HandSheet from "../pages/BD/Leads/HandOver";
-import Offer_edit from "../pages/BD/Comm_/EditOffer";
-import Edit_Followup_Leads from "../pages/BD/Leads/Followup/Forms/follow_edit";
-import Edit_Initial_Leads from "../pages/BD/Leads/Initial/Forms/initial_edit";
-import Edit_Warm_Leads from "../pages/BD/Leads/Warm/Forms/warm_edit";
-import FollowUpSummary from "../pages/BD/Leads/Followup/Forms/follow_Summary";
-import WarmUpSummary from "../pages/BD/Leads/Warm/Forms/warm_Summary";
-import WONSummary from "../pages/BD/Leads/Won/Forms/won_Summary";
+import Add_Lead from "../pages/BD/Leads/create_Leads";
 import DEADSummary from "../pages/BD/Leads/Dead/Forms/dead_Summary";
+import CheckboxModal4 from "../pages/BD/Leads/Dead/Forms/DeadToAll";
 import Follow_History from "../pages/BD/Leads/Followup/Followup_History";
-import Initial_History from "../pages/BD/Leads/Initial/Initial_History";
-import Warm_History from "../pages/BD/Leads/Warm/Warm_History";
+import Edit_Followup_Leads from "../pages/BD/Leads/Followup/Forms/follow_edit";
+import FollowUpSummary from "../pages/BD/Leads/Followup/Forms/follow_Summary";
+import Add_Task_Followup from "../pages/BD/Leads/Followup/Forms/FollowupTask";
+import CheckboxModal2 from "../pages/BD/Leads/Followup/Forms/FollowupToAll";
 import GetHandSheet from "../pages/BD/Leads/getHand_Over";
-
-
+import HandSheet from "../pages/BD/Leads/HandOver";
+import Edit_Initial_Leads from "../pages/BD/Leads/Initial/Forms/initial_edit";
+import Sum_Initial_Leads from "../pages/BD/Leads/Initial/Forms/initial_Summary";
+import Add_Task_Initial from "../pages/BD/Leads/Initial/Forms/InitialTask";
+import CheckboxModal from "../pages/BD/Leads/Initial/Forms/InitialToAll";
+import Initial_History from "../pages/BD/Leads/Initial/Initial_History";
+import Initial_Leads from "../pages/BD/Leads/Initial/Initial_Leads_Tab";
+import Edit_Warm_Leads from "../pages/BD/Leads/Warm/Forms/warm_edit";
+import WarmUpSummary from "../pages/BD/Leads/Warm/Forms/warm_Summary";
+import Add_Task_Warm from "../pages/BD/Leads/Warm/Forms/WarmTask";
+import CheckboxModal3 from "../pages/BD/Leads/Warm/Forms/WarmToAll";
+import Warm_History from "../pages/BD/Leads/Warm/Warm_History";
+import WONSummary from "../pages/BD/Leads/Won/Forms/won_Summary";
+import Add_Task_Won from "../pages/BD/Leads/Won/Forms/WonTask";
+import Sum_Won_Leads from "../pages/BD/Leads/Won/Forms/WonToAll";
+import Won_History from "../pages/BD/Leads/Won/Won_History";
+import CommercialRateOffer from "../pages/BD/OfferRate";
+import Dashboardz from "../pages/Dashboards";
+import PrivateRoute from "./PrivateRoute";
 
 function index() {
   return (
     <Routes>
-  {/*============ Pages ==========*/}
+      {/*============ Pages ==========*/}
 
       {/*---------dashboard -------- */}
       <Route path="/" element={<Login />} />
@@ -81,7 +82,6 @@ function index() {
           </PrivateRoute>
         }
       />
-
 
       {/*------ User---------- */}
       <Route path="/login" element={<Login />} />
@@ -112,23 +112,23 @@ function index() {
           </PrivateRoute>
         }
       />
-       <Route
-  path="/ref_list_add"
-  element={
-    <PrivateRoute>
-      <ListReference />
-    </PrivateRoute>
-  }
-/>
-<Route
-  path="/ref_list_update"
-  element={
-    <PrivateRoute>
-      <ListReference2 />
-    </PrivateRoute>
-  }
-/>
-<Route
+      <Route
+        path="/ref_list_add"
+        element={
+          <PrivateRoute>
+            <ListReference />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/ref_list_update"
+        element={
+          <PrivateRoute>
+            <ListReference2 />
+          </PrivateRoute>
+        }
+      />
+      <Route
         path="/bd_history"
         element={
           <PrivateRoute>
@@ -137,22 +137,22 @@ function index() {
         }
       />
 
-<Route
-  path="/offer_preview"
-  element={
-    <PrivateRoute>
-      <ListReference3 />
-    </PrivateRoute>
-  }
-/>
-<Route
-  path="/leads"
-  element={
-    <PrivateRoute>
-      <Initial_Leads />
-    </PrivateRoute>
-  }
-/>
+      <Route
+        path="/offer_preview"
+        element={
+          <PrivateRoute>
+            <ListReference3 />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/leads"
+        element={
+          <PrivateRoute>
+            <Initial_Leads />
+          </PrivateRoute>
+        }
+      />
       {/*-------Accounting------- */}
       <Route
         path="/project-balance"
@@ -405,7 +405,7 @@ function index() {
           </PrivateRoute>
         }
       />
-       <Route
+      <Route
         path="/edit_warm"
         element={
           <PrivateRoute>
@@ -478,6 +478,14 @@ function index() {
         }
       />
       <Route
+        path="/add_task_won"
+        element={
+          <PrivateRoute>
+            <Add_Task_Won />
+          </PrivateRoute>
+        }
+      />
+      <Route
         path="/dash_task"
         element={
           <PrivateRoute>
@@ -525,11 +533,19 @@ function index() {
           </PrivateRoute>
         }
       />
-       <Route
+      <Route
         path="/warm_records"
         element={
           <PrivateRoute>
             <Warm_History />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/won_records"
+        element={
+          <PrivateRoute>
+            <Won_History />
           </PrivateRoute>
         }
       />
@@ -551,11 +567,19 @@ function index() {
           </PrivateRoute>
         }
       />
-       <Route
+      <Route
         path="/warm_to_all"
         element={
           <PrivateRoute>
             <CheckboxModal3 />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/won_to_all"
+        element={
+          <PrivateRoute>
+            <Sum_Won_Leads />
           </PrivateRoute>
         }
       />
@@ -567,10 +591,7 @@ function index() {
           </PrivateRoute>
         }
       />
-      
     </Routes>
-    
-    
   );
 }
 

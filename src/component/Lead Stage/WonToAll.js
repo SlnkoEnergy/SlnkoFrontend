@@ -1,6 +1,5 @@
 import {
   Button,
-  Checkbox,
   FormControl,
   FormLabel,
   Input,
@@ -15,13 +14,11 @@ import { useSnackbar } from "notistack";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  useAddDeadtoFollowupMutation,
-  useAddDeadtoInitialMutation,
-  useAddDeadtoWarmupMutation,
-  useAddDeadtoWonMutation,
+  useAddWontoDeadMutation,
+  useUpdateWonMutation,
 } from "../../redux/leadsSlice";
 
-const CheckboxModal4 = () => {
+const CheckboxModal5 = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState({
@@ -32,11 +29,8 @@ const CheckboxModal4 = () => {
   const [selectedRadio, setSelectedRadio] = useState("");
   const [otherRemarks, setOtherRemarks] = useState("");
 
-  const [DeadToFollowup] = useAddDeadtoFollowupMutation();
-  const [DeadToWarmup] = useAddDeadtoWarmupMutation();
-  const [DeadToInitial] = useAddDeadtoInitialMutation();
-  const [DeadToWon] = useAddDeadtoWonMutation();
-
+  const [updateLead, { isLoading: isUpdating }] = useUpdateWonMutation();
+  const [WonToDead] = useAddWontoDeadMutation();
   const [LeadId, setLeadId] = useState(
     localStorage.getItem("stage_next3") || null
   );
@@ -72,67 +66,59 @@ const CheckboxModal4 = () => {
       return;
     }
 
-    console.log("LeadId:", LeadId);
-    console.log("Selected Radio:", selectedRadio);
-    console.log("Selected Options:", selectedOptions);
+    if (
+      (selectedRadio === "loi" || selectedRadio === "token_money") &&
+      (selectedOptions.loa || selectedOptions.ppa)
+    ) {
+      enqueueSnackbar(
+        "You are choosing the wrong field combination! Please Refresh it.",
+        {
+          variant: "warning",
+        }
+      );
+      return;
+    }
 
     try {
       setIsSubmitting(true);
 
-      // Extract selected values
-      const loiStatus = selectedRadio === "loi" ? "Yes" : "No";
-      const loaStatus = selectedOptions.loa ? "Yes" : "No";
-      const ppaStatus = selectedOptions.ppa ? "Yes" : "No";
-      const tokenMoneyStatus = selectedRadio === "token_money" ? "Yes" : "No";
+      const response = await updateLead({
+        id: LeadId,
+        // loi: selectedRadio === "loi" ? "Yes" : "No",
+        // loa: selectedOptions["loa"] ? "Yes" : "No",
+        // ppa: selectedOptions["ppa"] ? "Yes" : "No",
+        // token_money: selectedRadio === "token_money" ? "Yes" : "No",
+        other_remarks: selectedRadio === "Others" ? otherRemarks : "",
+      }).unwrap();
+
+      const updatedId = response?.data?.id;
+      if (!updatedId) {
+        enqueueSnackbar("Warning: Response does not contain an ID.", {
+          variant: "warning",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      enqueueSnackbar("Consignment Accepted!", { variant: "success" });
 
       let postResponse;
 
-      // ✅ Handle Dead to Won transition first
-      if (tokenMoneyStatus?.token_money?.trim() === "Yes") {
-        console.log("Moving to DeadToWon");
-        postResponse = await DeadToWon({ id: LeadId }).unwrap();
-        enqueueSnackbar("Lead moved from Dead to Won!", { variant: "success" });
-      }
-      // Move Dead to Followup if only LOI is Yes
-      else if (
-        loiStatus === "Yes" &&
-        loaStatus !== "Yes" &&
-        ppaStatus !== "Yes"
-      ) {
-        console.log("Moving to DeadToFollowup");
-        postResponse = await DeadToFollowup({ id: LeadId }).unwrap();
-        enqueueSnackbar("Lead moved from Dead to Followup!", {
-          variant: "success",
-        });
-      }
-      // Move Dead to Warmup if both LOA and PPA are Yes
-      else if (loaStatus === "Yes" && ppaStatus === "Yes") {
-        console.log("Moving to DeadToWarmup");
-        postResponse = await DeadToWarmup({ id: LeadId }).unwrap();
-        enqueueSnackbar("Lead moved from Dead to Warm!", {
-          variant: "success",
-        });
-      }
-      // Move Dead to Initial if none of the above conditions are met
-      else {
-        console.log("Moving to DeadToInitial");
-        postResponse = await DeadToInitial({ id: LeadId }).unwrap();
-        enqueueSnackbar("Lead moved from Dead to Initial!", {
+      if (selectedRadio === "Others") {
+        postResponse = await WonToDead({ id: updatedId }).unwrap();
+        enqueueSnackbar("Lead moved from Won to Dead!", {
           variant: "success",
         });
       }
 
-      // Navigate after success
       if (postResponse) {
         setTimeout(() => {
           navigate("/leads");
         }, 1000);
       }
     } catch (error) {
-      console.error("Error processing request:", error);
-      enqueueSnackbar(error?.data?.message || "Error processing request", {
-        variant: "error",
-      });
+      console.error("rror updating or posting lead:", error);
+      enqueueSnackbar("Error processing request", { variant: "error" });
     } finally {
       setIsSubmitting(false);
     }
@@ -145,13 +131,13 @@ const CheckboxModal4 = () => {
           Select Options as per your Requirements
         </Typography>
         <FormControl>
-          <FormLabel>Choose One:</FormLabel>
+          <FormLabel>Choose Consignment:</FormLabel>
           <RadioGroup
             value={selectedRadio}
             onChange={(e) => handleRadioChange(e.target.value)}
           >
-            <Radio value="loi" label="LOI" />
-            <Radio value="token_money" label="Token Money" />
+            {/* <Radio value="loi" label="Follow-up Once More" /> */}
+            {/* <Radio value="token_money" label="Token Money" /> */}
             <Radio value="Others" label="Others" />
           </RadioGroup>
 
@@ -165,7 +151,7 @@ const CheckboxModal4 = () => {
           )}
 
           {/* Checkboxes for LOA and PPA */}
-          <FormLabel>LOA & PPA:</FormLabel>
+          {/* <FormLabel>Additional Options:</FormLabel>
           <Stack spacing={1}>
             {["loa", "ppa"].map((option) => (
               <Checkbox
@@ -175,7 +161,7 @@ const CheckboxModal4 = () => {
                 onChange={() => handleCheckboxChange(option)}
               />
             ))}
-          </Stack>
+          </Stack> */}
         </FormControl>
         <Stack direction="row" justifyContent="flex-end" spacing={2} mt={2}>
           <Button variant="plain" onClick={() => navigate("/leads")}>
@@ -195,4 +181,4 @@ const CheckboxModal4 = () => {
   );
 };
 
-export default CheckboxModal4;
+export default CheckboxModal5;

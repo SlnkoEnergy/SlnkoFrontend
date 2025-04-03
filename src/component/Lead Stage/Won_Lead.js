@@ -1,10 +1,9 @@
 import { Player } from "@lottiefiles/react-lottie-player";
-import FollowTheSignsIcon from "@mui/icons-material/FollowTheSigns";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
-import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
@@ -20,16 +19,22 @@ import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
+// import FollowTheSignsIcon from '@mui/icons-material/FollowTheSigns';
+import ManageHistoryIcon from "@mui/icons-material/ManageHistory";
+import NextPlanIcon from "@mui/icons-material/NextPlan";
+import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../../assets/Lotties/animation-loading.json";
 // import Axios from "../utils/Axios";
+import FollowTheSignsIcon from "@mui/icons-material/FollowTheSigns";
+import { Autocomplete, Chip, Grid, Modal, Option, Select } from "@mui/joy";
+import { useCallback } from "react";
 import NoData from "../../assets/alert-bell.svg";
 import {
   useGetHandOverQuery,
   useGetWonLeadsQuery,
 } from "../../redux/leadsSlice";
-import { Chip } from "@mui/joy";
 
 const StandByRequest = () => {
   const navigate = useNavigate();
@@ -42,10 +47,10 @@ const StandByRequest = () => {
   const [mergedData, setMergedData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedLead, setSelectedLead] = useState(null);
 
   const { data: getLead = [], isLoading, error } = useGetWonLeadsQuery();
   const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
-
 
   // const LeadStatus = ({ lead }) => {
   //   const { loi, ppa, loa, other_remarks, token_money } = lead;
@@ -69,6 +74,27 @@ const StandByRequest = () => {
   //     </Chip>
   //   );
   // };
+
+  const sourceOptions = {
+    "Referred by": ["Directors", "Clients", "Team members", "E-mail"],
+    "Social Media": ["Whatsapp", "Instagram", "LinkedIn"],
+    Marketing: ["Youtube", "Advertisements"],
+    "IVR/My Operator": [],
+    Others: [],
+  };
+  const landTypes = ["Leased", "Owned"];
+
+  const [openModal, setOpenModal] = useState(false);
+
+  const handleOpenModal = useCallback((lead) => {
+    setSelectedLead(lead);
+    setOpenModal(true);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setOpenModal(false);
+    setSelectedLead(null);
+  }, []);
 
   const { data: getHandOverSheet = [] } = useGetHandOverQuery();
   const HandOverSheet = useMemo(
@@ -147,35 +173,49 @@ const StandByRequest = () => {
             <ContentPasteGoIcon />
             <Typography>Edit Info</Typography>
           </MenuItem> */}
-          {/* <MenuItem
+          <MenuItem
             color="primary"
             onClick={() => {
               const page = currentPage;
               const leadId = String(id);
               // const projectID = Number(p_id);
-              setOpen(true)
-              localStorage.setItem("stage_next", leadId);
+              setOpen(true);
+              localStorage.setItem("stage_next3", leadId);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/initial_followup?page=${page}&${leadId}`);
+              navigate(`/won_to_all?page=${page}&${leadId}`);
             }}
           >
             <NextPlanIcon />
             <Typography>Next Stage</Typography>
-          </MenuItem> */}
-          {/* <MenuItem
+          </MenuItem>
+          <MenuItem
             color="primary"
             onClick={() => {
               const page = currentPage;
               const leadId = String(id);
               // const projectID = Number(p_id);
-              localStorage.setItem("followup_history", leadId);
+              localStorage.setItem("view_won_history", leadId);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/standby_Request?page=${page}&${leadId}`);
+              navigate(`/won_records?page=${page}&${leadId}`);
             }}
           >
             <ManageHistoryIcon />
-            <Typography>Followup History</Typography>
-          </MenuItem> */}
+            <Typography>View History</Typography>
+          </MenuItem>
+          <MenuItem
+            color="primary"
+            onClick={() => {
+              const page = currentPage;
+              const leadId = String(id);
+              // const projectID = Number(p_id);
+              localStorage.setItem("add_task_won", leadId);
+              // localStorage.setItem("p_id", projectID);
+              navigate(`/add_task_won?page=${page}&${leadId}`);
+            }}
+          >
+            <AddCircleOutlineIcon />
+            <Typography>Add Task</Typography>
+          </MenuItem>
           <MenuItem
             color="primary"
             onClick={() => {
@@ -451,7 +491,17 @@ const StandByRequest = () => {
                     </Box>
 
                     {[
-                      lead.id,
+                      <span
+                        key={lead.id}
+                        onClick={() => handleOpenModal(lead)}
+                        style={{
+                          cursor: "pointer",
+                          color: "black",
+                          textDecoration: "none",
+                        }}
+                      >
+                        {lead.id}
+                      </span>,
                       lead.c_name,
                       lead.mobile,
                       // `${lead.village}, ${lead.district}, ${lead.state}`,
@@ -600,6 +650,208 @@ const StandByRequest = () => {
           Next
         </Button>
       </Box>
+
+      <Modal open={openModal} onClose={handleCloseModal}>
+        <Box
+          sx={{
+            p: 4,
+            bgcolor: "background.surface",
+            borderRadius: "md",
+            maxWidth: 600,
+            mx: "auto",
+            mt: 10,
+          }}
+        >
+          <Grid container spacing={2}>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Customer Name</FormLabel>
+              <Input
+                name="name"
+                value={selectedLead?.c_name ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Company Name</FormLabel>
+              <Input
+                name="company"
+                value={selectedLead?.company ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Group Name</FormLabel>
+              <Input
+                name="group"
+                value={selectedLead?.group ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Source</FormLabel>
+              <Select
+                name="source"
+                value={selectedLead?.source ?? ""}
+                onChange={(e, newValue) =>
+                  setSelectedLead({
+                    ...selectedLead,
+                    source: newValue,
+                    reffered_by: "",
+                  })
+                }
+                fullWidth
+              >
+                {Object.keys(sourceOptions).map((option) => (
+                  <Option key={option} value={option}>
+                    {option}
+                  </Option>
+                ))}
+              </Select>
+            </Grid>
+            {selectedLead?.source &&
+              sourceOptions[selectedLead.source]?.length > 0 && (
+                <Grid xs={12} sm={6}>
+                  <FormLabel>Sub Source</FormLabel>
+                  <Select
+                    name="reffered_by"
+                    value={selectedLead?.reffered_by ?? ""}
+                    readOnly
+                    fullWidth
+                  >
+                    {sourceOptions[selectedLead.source].map((option) => (
+                      <Option key={option} value={option}>
+                        {option}
+                      </Option>
+                    ))}
+                  </Select>
+                </Grid>
+              )}
+            <Grid xs={12} sm={6}>
+              <FormLabel>Email ID</FormLabel>
+              <Input
+                name="email"
+                type="email"
+                value={selectedLead?.email ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Mobile Number</FormLabel>
+              <Input
+                name="mobile"
+                type="tel"
+                value={selectedLead?.mobile ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Location</FormLabel>
+              <Input
+                name="location"
+                value={`${selectedLead?.village ?? ""}, ${selectedLead?.district ?? ""}, ${selectedLead?.state ?? ""}`}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Capacity</FormLabel>
+              <Input
+                name="capacity"
+                value={selectedLead?.capacity ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Sub Station Distance (KM)</FormLabel>
+              <Input
+                name="distance"
+                value={selectedLead?.distance ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Tariff (Per Unit)</FormLabel>
+              <Input
+                name="tarrif"
+                value={selectedLead?.tarrif ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Available Land (acres)</FormLabel>
+              <Input
+                name="available_land"
+                value={selectedLead?.land?.available_land ?? ""}
+                type="text"
+                fullWidth
+                variant="soft"
+                readOnly
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Creation Date</FormLabel>
+              <Input
+                name="entry_date"
+                type="date"
+                value={selectedLead?.entry_date ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Scheme</FormLabel>
+              <Select name="scheme" value={selectedLead?.scheme ?? ""} readOnly>
+                {["KUSUM A", "KUSUM C", "KUSUM C2", "Other"].map((option) => (
+                  <Option key={option} value={option}>
+                    {option}
+                  </Option>
+                ))}
+              </Select>
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Land Types</FormLabel>
+              <Autocomplete
+                options={landTypes}
+                value={selectedLead?.land?.land_type ?? null}
+                readOnly
+                getOptionLabel={(option) => option}
+                renderInput={(params) => (
+                  <Input
+                    {...params}
+                    placeholder="Land Type"
+                    variant="soft"
+                    required
+                  />
+                )}
+                isOptionEqualToValue={(option, value) => option === value}
+                sx={{ width: "100%" }}
+              />
+            </Grid>
+            <Grid xs={12}>
+              <FormLabel>Comments</FormLabel>
+              <Input
+                name="comment"
+                value={selectedLead?.comment ?? ""}
+                multiline
+                rows={4}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+          </Grid>
+          <Box textAlign="center" sx={{ mt: 2 }}>
+            <Button onClick={handleCloseModal}>Close</Button>
+          </Box>
+        </Box>
+      </Modal>
     </>
   );
 };

@@ -8,7 +8,7 @@ export const leadsApi = createApi({
     getLeads: builder.query({
       query: () => "get-all-bd-lead",
       providesTags: ["Lead"],
-      // keepUnusedDataFor: 120, 
+      // keepUnusedDataFor: 120,
       // refetchOnMountOrArgChange: true,
       // pollingInterval: 5000,
     }),
@@ -16,13 +16,13 @@ export const leadsApi = createApi({
       query: () => "get-all-lead",
       providesTags: ["Lead"],
       keepUnusedDataFor: 300,
-  refetchOnMountOrArgChange: true,
-  pollingInterval: 5000,
+      refetchOnMountOrArgChange: true,
+      pollingInterval: 5000,
     }),
     getInitialLeads: builder.query({
       query: () => "get-all-inital-bd-lead",
       providesTags: ["Lead"],
-      keepUnusedDataFor: 120, 
+      keepUnusedDataFor: 120,
       refetchOnMountOrArgChange: true,
       pollingInterval: 5000,
     }),
@@ -143,6 +143,17 @@ export const leadsApi = createApi({
       invalidatesTags: ["Lead"],
     }),
 
+    /*--- Won-to-all ---*/
+
+    addWontoDead: builder.mutation({
+      query: (newDead3) => ({
+        url: "won-to-dead",
+        method: "POST",
+        body: newDead3,
+      }),
+      invalidatesTags: ["Lead"],
+    }),
+
     /*--- dead-to-all ---*/
 
     addDeadtoInitial: builder.mutation({
@@ -166,6 +177,14 @@ export const leadsApi = createApi({
         url: "dead-to-followup",
         method: "POST",
         body: newFollowup3,
+      }),
+      invalidatesTags: ["Lead"],
+    }),
+    addDeadtoWon: builder.mutation({
+      query: (newFollowup4) => ({
+        url: "dead-to-won",
+        method: "POST",
+        body: newFollowup4,
       }),
       invalidatesTags: ["Lead"],
     }),
@@ -221,6 +240,14 @@ export const leadsApi = createApi({
       }),
       invalidatesTags: ["Lead"],
     }),
+    updateWon: builder.mutation({
+      query: (newWon3) => ({
+        url: "update-won",
+        method: "PUT",
+        body: newWon3,
+      }),
+      invalidatesTags: ["Lead"],
+    }),
 
     updateTaskComment: builder.mutation({
       query: ({ _id, comment }) => ({
@@ -230,9 +257,6 @@ export const leadsApi = createApi({
       }),
       invalidatesTags: ["Lead"],
     }),
-    
-
-
 
     /*-- HandOver Sheet */
     getModuleMaster: builder.query({
@@ -255,7 +279,6 @@ export const leadsApi = createApi({
       }),
       invalidatesTags: ["Lead"],
     }),
-    
   }),
 });
 
@@ -273,6 +296,7 @@ export const {
   useUpdateWARMupLeadsMutation,
   useUpdateFollowupMutation,
   useUpdateWarmMutation,
+  useUpdateWonMutation,
   useUpdateTaskCommentMutation,
   useAddInitialtoWonMutation,
   useAddInitialtoFollowupMutation,
@@ -288,8 +312,10 @@ export const {
   useAddWarmuptoDeadMutation,
   useAddWarmuptoFollowupMutation,
   useAddWarmuptoWonMutation,
+  useAddWontoDeadMutation,
+  useAddDeadtoWonMutation,
   useAddHandOverMutation,
   useGetMasterInverterQuery,
   useGetModuleMasterQuery,
-  useGetHandOverQuery
+  useGetHandOverQuery,
 } = leadsApi;

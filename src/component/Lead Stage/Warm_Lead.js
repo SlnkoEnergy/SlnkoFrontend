@@ -1,15 +1,14 @@
-import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
-import DeleteIcon from "@mui/icons-material/Delete";
 import { Player } from "@lottiefiles/react-lottie-player";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
-import Divider from "@mui/joy/Divider";
 import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
@@ -21,18 +20,18 @@ import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
-import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
-import FollowTheSignsIcon from '@mui/icons-material/FollowTheSigns';
-import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
-import ManageHistoryIcon from '@mui/icons-material/ManageHistory';
-import NextPlanIcon from '@mui/icons-material/NextPlan';
-import { useEffect, useState, useMemo } from "react";
+// import FollowTheSignsIcon from '@mui/icons-material/FollowTheSigns';
+import ManageHistoryIcon from "@mui/icons-material/ManageHistory";
+import NextPlanIcon from "@mui/icons-material/NextPlan";
+import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../../assets/Lotties/animation-loading.json";
 // import Axios from "../utils/Axios";
-import { useGetWarmLeadsQuery } from "../../redux/leadsSlice";
+import { Autocomplete, Grid, Modal, Option, Select } from "@mui/joy";
+import { useCallback } from "react";
 import NoData from "../../assets/alert-bell.svg";
-import { Chip } from "@mui/joy";
+import { useGetWarmLeadsQuery } from "../../redux/leadsSlice";
 
 const StandByRequest = () => {
   const navigate = useNavigate();
@@ -45,28 +44,50 @@ const StandByRequest = () => {
   const [mergedData, setMergedData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedLead, setSelectedLead] = useState(null);
 
   const { data: getLead = [], isLoading, error } = useGetWarmLeadsQuery();
   const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
 
-    // const LeadStatus = ({ lead }) => {
-    //     const { loi, ppa, loa, other_remarks, token_money } = lead;
-      
-    //     // Determine the initial status
-      
-    //     const isWarmStatus =
-    //     (!loi || loi === "No") &&
-    //     (!ppa || ppa === "Yes" || ppa === "No") &&
-    //     (!loa || loa === "Yes"|| loa === "No") &&
-    //     (!other_remarks || other_remarks === "") &&
-    //     (!token_money || token_money === "No" || token_money === "Yes");
-      
-    //     return (
-    //       <Chip color="neutral" variant="soft" sx={{ backgroundColor: "#FF9800", color: "#000" }}>
-    //      warm
-    //     </Chip>
-    //     );
-    //   };
+  // const LeadStatus = ({ lead }) => {
+  //     const { loi, ppa, loa, other_remarks, token_money } = lead;
+
+  //     // Determine the initial status
+
+  //     const isWarmStatus =
+  //     (!loi || loi === "No") &&
+  //     (!ppa || ppa === "Yes" || ppa === "No") &&
+  //     (!loa || loa === "Yes"|| loa === "No") &&
+  //     (!other_remarks || other_remarks === "") &&
+  //     (!token_money || token_money === "No" || token_money === "Yes");
+
+  //     return (
+  //       <Chip color="neutral" variant="soft" sx={{ backgroundColor: "#FF9800", color: "#000" }}>
+  //      warm
+  //     </Chip>
+  //     );
+  //   };
+
+  const sourceOptions = {
+    "Referred by": ["Directors", "Clients", "Team members", "E-mail"],
+    "Social Media": ["Whatsapp", "Instagram", "LinkedIn"],
+    Marketing: ["Youtube", "Advertisements"],
+    "IVR/My Operator": [],
+    Others: [],
+  };
+  const landTypes = ["Leased", "Owned"];
+
+  const [openModal, setOpenModal] = useState(false);
+
+  const handleOpenModal = useCallback((lead) => {
+    setSelectedLead(lead);
+    setOpenModal(true);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setOpenModal(false);
+    setSelectedLead(null);
+  }, []);
 
   const renderFilters = () => (
     <>
@@ -132,7 +153,7 @@ const StandByRequest = () => {
               const page = currentPage;
               const leadId = String(id);
               // const projectID = Number(p_id);
-              setOpen(true)
+              setOpen(true);
               localStorage.setItem("stage_next2", leadId);
               // localStorage.setItem("p_id", projectID);
               navigate(`/warm_to_all?page=${page}&${leadId}`);
@@ -210,7 +231,7 @@ const StandByRequest = () => {
   const filteredData = useMemo(() => {
     return leads
       .filter((lead) => {
-        const matchesQuery = ["id", "c_name", "mobile","state"].some((key) =>
+        const matchesQuery = ["id", "c_name", "mobile", "state"].some((key) =>
           lead[key]?.toLowerCase().includes(searchQuery)
         );
         const matchesDate = selectedDate
@@ -223,7 +244,6 @@ const StandByRequest = () => {
         if (!b.id) return -1;
         return String(b.id).localeCompare(String(a.id));
       });
-      
   }, [leads, searchQuery, selectedDate]);
 
   const generatePageNumbers = (currentPage, totalPages) => {
@@ -329,19 +349,31 @@ const StandByRequest = () => {
             />
           </Box>
         ) : error ? (
-          <span style={{ display: "flex", alignItems: "center", gap: "5px", color: "red", justifyContent:"center", flexDirection:"column" , padding: "20px"}}>
-          <PermScanWifiIcon />
-          <Typography fontStyle={"italic"} fontWeight={"600"} sx={{color:"#0a6bcc"}} >
-          Hang tight! Internet Connection will be back soon..
-          </Typography>
-          
-        </span>
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              color: "red",
+              justifyContent: "center",
+              flexDirection: "column",
+              padding: "20px",
+            }}
+          >
+            <PermScanWifiIcon />
+            <Typography
+              fontStyle={"italic"}
+              fontWeight={"600"}
+              sx={{ color: "#0a6bcc" }}
+            >
+              Hang tight! Internet Connection will be back soon..
+            </Typography>
+          </span>
         ) : (
           <Box
             component="table"
             sx={{ width: "100%", borderCollapse: "collapse" }}
           >
-          
             <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
               <Box component="tr">
                 <Box
@@ -389,7 +421,7 @@ const StandByRequest = () => {
               </Box>
             </Box>
 
-         {/*****pagination ****/}
+            {/*****pagination ****/}
             <Box component="tbody">
               {paginatedData.length > 0 ? (
                 paginatedData.map((lead, index) => (
@@ -400,7 +432,6 @@ const StandByRequest = () => {
                       "&:hover": { backgroundColor: "neutral.plainHoverBg" },
                     }}
                   >
-                 
                     <Box
                       component="td"
                       sx={{
@@ -417,9 +448,18 @@ const StandByRequest = () => {
                       />
                     </Box>
 
-                    
                     {[
-                      lead.id,
+                      <span
+                        key={lead.id}
+                        onClick={() => handleOpenModal(lead)}
+                        style={{
+                          cursor: "pointer",
+                          color: "black",
+                          textDecoration: "none",
+                        }}
+                      >
+                        {lead.id}
+                      </span>,
                       lead.c_name,
                       lead.mobile,
                       // `${lead.village}, ${lead.district}, ${lead.state}`,
@@ -452,7 +492,7 @@ const StandByRequest = () => {
                         textAlign: "center",
                       }}
                     >
-                      <RowMenu currentPage={currentPage} id={lead.id}/>
+                      <RowMenu currentPage={currentPage} id={lead.id} />
                     </Box>
                   </Box>
                 ))
@@ -554,6 +594,208 @@ const StandByRequest = () => {
           Next
         </Button>
       </Box>
+
+      <Modal open={openModal} onClose={handleCloseModal}>
+        <Box
+          sx={{
+            p: 4,
+            bgcolor: "background.surface",
+            borderRadius: "md",
+            maxWidth: 600,
+            mx: "auto",
+            mt: 10,
+          }}
+        >
+          <Grid container spacing={2}>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Customer Name</FormLabel>
+              <Input
+                name="name"
+                value={selectedLead?.c_name ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Company Name</FormLabel>
+              <Input
+                name="company"
+                value={selectedLead?.company ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Group Name</FormLabel>
+              <Input
+                name="group"
+                value={selectedLead?.group ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Source</FormLabel>
+              <Select
+                name="source"
+                value={selectedLead?.source ?? ""}
+                onChange={(e, newValue) =>
+                  setSelectedLead({
+                    ...selectedLead,
+                    source: newValue,
+                    reffered_by: "",
+                  })
+                }
+                fullWidth
+              >
+                {Object.keys(sourceOptions).map((option) => (
+                  <Option key={option} value={option}>
+                    {option}
+                  </Option>
+                ))}
+              </Select>
+            </Grid>
+            {selectedLead?.source &&
+              sourceOptions[selectedLead.source]?.length > 0 && (
+                <Grid xs={12} sm={6}>
+                  <FormLabel>Sub Source</FormLabel>
+                  <Select
+                    name="reffered_by"
+                    value={selectedLead?.reffered_by ?? ""}
+                    readOnly
+                    fullWidth
+                  >
+                    {sourceOptions[selectedLead.source].map((option) => (
+                      <Option key={option} value={option}>
+                        {option}
+                      </Option>
+                    ))}
+                  </Select>
+                </Grid>
+              )}
+            <Grid xs={12} sm={6}>
+              <FormLabel>Email ID</FormLabel>
+              <Input
+                name="email"
+                type="email"
+                value={selectedLead?.email ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Mobile Number</FormLabel>
+              <Input
+                name="mobile"
+                type="tel"
+                value={selectedLead?.mobile ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Location</FormLabel>
+              <Input
+                name="location"
+                value={`${selectedLead?.village ?? ""}, ${selectedLead?.district ?? ""}, ${selectedLead?.state ?? ""}`}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Capacity</FormLabel>
+              <Input
+                name="capacity"
+                value={selectedLead?.capacity ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Sub Station Distance (KM)</FormLabel>
+              <Input
+                name="distance"
+                value={selectedLead?.distance ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Tariff (Per Unit)</FormLabel>
+              <Input
+                name="tarrif"
+                value={selectedLead?.tarrif ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Available Land (acres)</FormLabel>
+              <Input
+                name="available_land"
+                value={selectedLead?.land?.available_land ?? ""}
+                type="text"
+                fullWidth
+                variant="soft"
+                readOnly
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Creation Date</FormLabel>
+              <Input
+                name="entry_date"
+                type="date"
+                value={selectedLead?.entry_date ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Scheme</FormLabel>
+              <Select name="scheme" value={selectedLead?.scheme ?? ""} readOnly>
+                {["KUSUM A", "KUSUM C", "KUSUM C2", "Other"].map((option) => (
+                  <Option key={option} value={option}>
+                    {option}
+                  </Option>
+                ))}
+              </Select>
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Land Types</FormLabel>
+              <Autocomplete
+                options={landTypes}
+                value={selectedLead?.land?.land_type ?? null}
+                readOnly
+                getOptionLabel={(option) => option}
+                renderInput={(params) => (
+                  <Input
+                    {...params}
+                    placeholder="Land Type"
+                    variant="soft"
+                    required
+                  />
+                )}
+                isOptionEqualToValue={(option, value) => option === value}
+                sx={{ width: "100%" }}
+              />
+            </Grid>
+            <Grid xs={12}>
+              <FormLabel>Comments</FormLabel>
+              <Input
+                name="comment"
+                value={selectedLead?.comment ?? ""}
+                multiline
+                rows={4}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+          </Grid>
+          <Box textAlign="center" sx={{ mt: 2 }}>
+            <Button onClick={handleCloseModal}>Close</Button>
+          </Box>
+        </Box>
+      </Modal>
     </>
   );
 };

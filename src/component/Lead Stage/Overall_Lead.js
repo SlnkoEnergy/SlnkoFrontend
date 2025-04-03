@@ -1,15 +1,14 @@
-import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
-import DeleteIcon from "@mui/icons-material/Delete";
 import { Player } from "@lottiefiles/react-lottie-player";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
-import Divider from "@mui/joy/Divider";
 import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
@@ -20,20 +19,19 @@ import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import * as React from "react";
 // import FollowTheSignsIcon from '@mui/icons-material/FollowTheSigns';
-import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
 import ManageHistoryIcon from "@mui/icons-material/ManageHistory";
 import NextPlanIcon from "@mui/icons-material/NextPlan";
-import { useEffect, useState, useMemo } from "react";
+import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../../assets/Lotties/animation-loading.json";
 // import Axios from "../utils/Axios";
-import { useGetEntireLeadsQuery, useGetInitialLeadsQuery } from "../../redux/leadsSlice";
-import NoData from "../../assets/alert-bell.svg";
 import { Autocomplete, Chip, Grid, Modal, Option, Select } from "@mui/joy";
 import { useCallback } from "react";
+import NoData from "../../assets/alert-bell.svg";
+import { useGetEntireLeadsQuery } from "../../redux/leadsSlice";
 
 const Overall_Leads = () => {
   const navigate = useNavigate();
@@ -50,18 +48,13 @@ const Overall_Leads = () => {
   const [user, setUser] = useState(null);
   const [selectedLead, setSelectedLead] = useState(null);
 
-
   // const [cachedData, setCachedData] = useState(() => {
   //   // Try to load cached data from localStorage
   //   const cached = localStorage.getItem("paginatedData");
   //   return cached ? JSON.parse(cached) : [];
   // });
 
-  const {
-    data: getLead = [],
-    isLoading,
-    error,
-  } = useGetEntireLeadsQuery();
+  const { data: getLead = [], isLoading, error } = useGetEntireLeadsQuery();
 
   const leads = [
     ...(getLead?.lead?.initialdata || []),
@@ -71,71 +64,87 @@ const Overall_Leads = () => {
     ...(getLead?.lead?.deaddata || []),
   ];
 
-  console.log("overall leads", leads);
-  
+  // console.log("overall leads", leads);
 
-  const LeadStatus = ( lead ) => {
-    const { loi = "", ppa = "", loa = "", other_remarks = "", token_money = "" } = lead || {};
-  
-    let status = "Initial";
-let bgColor = "#BBDEFB";
+  const getLeadStatus = (lead) => {
+    const {
+      loi = "",
+      ppa = "",
+      loa = "",
+      other_remarks = "",
+      token_money = "",
+    } = lead || {};
 
-switch (true) {
-  case (loi === "Yes" || loi === "No") &&
-       (ppa === "Yes" || ppa === "No") &&
-       (loa === "Yes" || loa === "No") &&
-       (!other_remarks || other_remarks === "") &&
-       (token_money === "Yes"):
-    status = "Won";  
-    bgColor = "#81C784"; // Light Green
-    break;
+    if (
+      (loi === "Yes" || loi === "No") &&
+      (ppa === "Yes" || ppa === "No") &&
+      (loa === "Yes" || loa === "No") &&
+      (!other_remarks || other_remarks === "") &&
+      token_money === "Yes"
+    ) {
+      return "Won";
+    }
 
-  case (loi === "Yes") &&
-       (ppa === "No") &&
-       (loa === "Yes" || loa === "No") &&
-       (!other_remarks || other_remarks === "") &&
-       (token_money === "No" || token_money === "Yes"):
-    status = "Follow Up";
-    bgColor = "#FFD54F"; // Light Yellow
-    break;
+    if (
+      loi === "Yes" &&
+      ppa === "No" &&
+      (loa === "Yes" || loa === "No") &&
+      (!other_remarks || other_remarks === "") &&
+      (token_money === "No" || token_money === "Yes")
+    ) {
+      return "Follow Up";
+    }
 
-  case (loi === "Yes" || loi === "No") &&
-       (ppa === "Yes" || ppa === "No") &&
-       (loa === "Yes" || loa === "No") &&
-       (!other_remarks || other_remarks === "") &&
-       (token_money === "No" || token_money === "Yes"):
-    status = "Warm";
-    bgColor = "#FFAB91"; // Light Orange
-    break;
+    if (
+      (loi === "Yes" || loi === "No") &&
+      (ppa === "Yes" || ppa === "No") &&
+      (loa === "Yes" || loa === "No") &&
+      (!other_remarks || other_remarks === "") &&
+      (token_money === "No" || token_money === "Yes")
+    ) {
+      return "Warm";
+    }
 
-  case (loi === "Yes" || loi === "No") &&
-       (ppa === "Yes" || ppa === "No") &&
-       (loa === "Yes" || loa === "No") &&
-       (!other_remarks || other_remarks === "") &&
-       (token_money === "Yes" || token_money === "No"):
-    status = "Dead";
-    bgColor = "#E57373"; // Light Red
-    break;
+    if (
+      (loi === "Yes" || loi === "No") &&
+      (ppa === "Yes" || ppa === "No") &&
+      (loa === "Yes" || loa === "No") &&
+      (!other_remarks || other_remarks === "") &&
+      (token_money === "Yes" || token_money === "No")
+    ) {
+      return "Dead";
+    }
 
-  case (loi === "No") &&
-       (!ppa || ppa === "No") &&
-       (!loa || loa === "No") &&
-       (!other_remarks || other_remarks === "") &&
-       (!token_money || token_money === "No"):
-    status = "Initial";
-    bgColor = "#BBDEFB"; // Light Blue
-    break;
+    if (
+      loi === "No" &&
+      (!ppa || ppa === "No") &&
+      (!loa || loa === "No") &&
+      (!other_remarks || other_remarks === "") &&
+      (!token_money || token_money === "No")
+    ) {
+      return "Initial";
+    }
 
-  default:
-    status = "Unknown";
-    bgColor = "#E0E0E0"; // Grey
-    break;
-}
+    return "Unknown";
+  };
 
-    
-  
+  // Your original LeadStatus function (for UI display)
+  const LeadStatus = (lead) => {
+    const status = getLeadStatus(lead);
+    const statusColors = {
+      Won: "#81C784",
+      "Follow Up": "#FFD54F",
+      Warm: "#FFAB91",
+      Dead: "#E57373",
+      Initial: "#BBDEFB",
+      Unknown: "#E0E0E0",
+    };
+
     return (
-      <Chip sx={{ backgroundColor: bgColor, color: "#000" }} variant="soft">
+      <Chip
+        sx={{ backgroundColor: statusColors[status], color: "#000" }}
+        variant="soft"
+      >
         {status}
       </Chip>
     );
@@ -149,8 +158,6 @@ switch (true) {
     }
   }, []);
 
-
-
   const sourceOptions = {
     "Referred by": ["Directors", "Clients", "Team members", "E-mail"],
     "Social Media": ["Whatsapp", "Instagram", "LinkedIn"],
@@ -160,20 +167,17 @@ switch (true) {
   };
   const landTypes = ["Leased", "Owned"];
 
-
   const [openModal, setOpenModal] = useState(false);
 
   const handleOpenModal = useCallback((lead) => {
     setSelectedLead(lead);
     setOpenModal(true);
   }, []);
-  
 
   const handleCloseModal = useCallback(() => {
     setOpenModal(false);
     setSelectedLead(null);
   }, []);
-  
 
   // useEffect(() => {
   //   console.log("Raw Leads Data:", leads);
@@ -367,20 +371,23 @@ switch (true) {
   const filteredData = useMemo(() => {
     return leads
       .filter((lead) => {
-        const status = LeadStatus(lead);
+        const status = getLeadStatus(lead); // Now status is a string ✅
         const matchesQuery = ["id", "c_name", "mobile", "state"].some((key) =>
-          lead[key]?.toLowerCase().includes(searchQuery)
+          lead[key]?.toLowerCase().includes(searchQuery.toLowerCase())
         );
-        const matchesStatus = status.includes(searchQuery.toLowerCase());
+        const matchesStatus = status
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase()); // No error ✅
 
         const matchesDate = selectedDate
           ? formatDate(lead.entry_date) === selectedDate
           : true;
-          return (matchesQuery || matchesStatus) && matchesDate;
+
+        return (matchesQuery || matchesStatus) && matchesDate;
       })
       .sort((a, b) => {
-        const dateA = formatDate(a.entry_date);
-        const dateB = formatDate(b.entry_date);
+        const dateA = new Date(formatDate(a.entry_date));
+        const dateB = new Date(formatDate(b.entry_date));
 
         if (isNaN(dateA.getTime())) return 1;
         if (isNaN(dateB.getTime())) return -1;
@@ -602,7 +609,6 @@ switch (true) {
               </Box>
             </Box>
 
-          
             <Box component="tbody">
               {paginatedData.length > 0 ? (
                 paginatedData.map((lead, index) => (
@@ -630,19 +636,19 @@ switch (true) {
                     </Box>
 
                     {[
-                       <span
-                       key={lead.id}
-                       onClick={() => handleOpenModal(lead)}
-                       style={{
-                        cursor: "pointer",
-                        color: "black",
-                        textDecoration: "none", // Removes underline
-                        // fontWeight: "bold", // Makes text bold
-                        // textTransform: "uppercase", // Transforms text to uppercase
-                      }}
-                     >
-                       {lead.id}
-                     </span>,
+                      <span
+                        key={lead.id}
+                        onClick={() => handleOpenModal(lead)}
+                        style={{
+                          cursor: "pointer",
+                          color: "black",
+                          textDecoration: "none", // Removes underline
+                          // fontWeight: "bold", // Makes text bold
+                          // textTransform: "uppercase", // Transforms text to uppercase
+                        }}
+                      >
+                        {lead.id}
+                      </span>,
                       lead.c_name,
                       lead.mobile,
                       // `${lead.village}, ${lead.district}, ${lead.state}`,
@@ -936,7 +942,7 @@ switch (true) {
             <Grid xs={12} sm={6}>
               <FormLabel>Scheme</FormLabel>
               <Select name="scheme" value={selectedLead?.scheme ?? ""} readOnly>
-                {["KUSUM A", "KUSUM C","KUSUM C2", "Other"].map((option) => (
+                {["KUSUM A", "KUSUM C", "KUSUM C2", "Other"].map((option) => (
                   <Option key={option} value={option}>
                     {option}
                   </Option>
