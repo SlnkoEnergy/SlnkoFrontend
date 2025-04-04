@@ -272,12 +272,12 @@ const StandByRequest = () => {
     setSelectedDate(e.target.value);
   };
 
-  // const filterData = useMemo(() => {
+  // const filteredData = useMemo(() => {
   //   if (!user || !user.name) return [];
 
   //   return leads
   //     .filter((lead) => {
-  //       const submittedBy = lead.submitted_by?.trim() || "unassigned";
+  //       const submittedBy = lead.submitted_by?.trim() || "";
   //       const userName = user.name.trim();
   //       const userRole = user.role?.toLowerCase();
 
@@ -295,8 +295,8 @@ const StandByRequest = () => {
   //       return matchesUser && matchesQuery && matchesDate;
   //     })
   //     .sort((a, b) => {
-  //       const dateA = formatDate(a.entry_date || a.createdAt);
-  //       const dateB = formatDate(b.entry_date || b.createdAt);
+  //       const dateA = formatDate(a.entry_date);
+  //       const dateB = formatDate(b.entry_date);
 
   //       if (isNaN(dateA.getTime())) return 1;
   //       if (isNaN(dateB.getTime())) return -1;

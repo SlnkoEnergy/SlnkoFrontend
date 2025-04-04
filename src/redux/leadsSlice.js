@@ -225,10 +225,10 @@ export const leadsApi = createApi({
       invalidatesTags: ["Lead"],
     }),
     updateFollowup: builder.mutation({
-      query: (newFollowup2) => ({
+      query: (newFollowup5) => ({
         url: "update-followup",
         method: "PUT",
-        body: newFollowup2,
+        body: newFollowup5,
       }),
       invalidatesTags: ["Lead"],
     }),

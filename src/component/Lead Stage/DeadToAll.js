@@ -83,38 +83,42 @@ const CheckboxModal4 = () => {
       const loiStatus = selectedRadio === "loi" ? "Yes" : "No";
       const loaStatus = selectedOptions.loa ? "Yes" : "No";
       const ppaStatus = selectedOptions.ppa ? "Yes" : "No";
-      const tokenMoneyStatus = selectedRadio === "token_money" ? "Yes" : "No";
+      const tokenMoneySelected =
+        selectedRadio === "token_money" ? "Yes" : "No";
 
       let postResponse;
 
-      // ✅ Handle Dead to Won transition first
-      if (tokenMoneyStatus?.token_money?.trim() === "Yes") {
+      // ✅ Dead to Won
+      if (tokenMoneySelected === "Yes") {
         console.log("Moving to DeadToWon");
         postResponse = await DeadToWon({ id: LeadId }).unwrap();
         enqueueSnackbar("Lead moved from Dead to Won!", { variant: "success" });
-      }
-      // Move Dead to Followup if only LOI is Yes
-      else if (
+
+        // ✅ Dead to Warm-up
+      } else if (
+        tokenMoneySelected !== "Yes" &&
+        (loaStatus === "Yes" || ppaStatus === "Yes")
+      ) {
+        console.log("Moving to DeadToWarmup");
+        postResponse = await DeadToWarmup({ id: LeadId }).unwrap();
+        enqueueSnackbar("Lead moved from Dead to Warm-up!", {
+          variant: "success",
+        });
+
+        // ✅ Dead to Follow-up
+      } else if (
         loiStatus === "Yes" &&
         loaStatus !== "Yes" &&
         ppaStatus !== "Yes"
       ) {
         console.log("Moving to DeadToFollowup");
         postResponse = await DeadToFollowup({ id: LeadId }).unwrap();
-        enqueueSnackbar("Lead moved from Dead to Followup!", {
+        enqueueSnackbar("Lead moved from Dead to Follow-up!", {
           variant: "success",
         });
-      }
-      // Move Dead to Warmup if both LOA and PPA are Yes
-      else if (loaStatus === "Yes" && ppaStatus === "Yes") {
-        console.log("Moving to DeadToWarmup");
-        postResponse = await DeadToWarmup({ id: LeadId }).unwrap();
-        enqueueSnackbar("Lead moved from Dead to Warm!", {
-          variant: "success",
-        });
-      }
-      // Move Dead to Initial if none of the above conditions are met
-      else {
+
+        // ✅ Dead to Initial (fallback)
+      } else {
         console.log("Moving to DeadToInitial");
         postResponse = await DeadToInitial({ id: LeadId }).unwrap();
         enqueueSnackbar("Lead moved from Dead to Initial!", {

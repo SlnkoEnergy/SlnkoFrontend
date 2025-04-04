@@ -57,98 +57,107 @@ const Overall_Leads = () => {
   const { data: getLead = [], isLoading, error } = useGetEntireLeadsQuery();
 
   const leads = [
-    ...(getLead?.lead?.initialdata || []),
-    ...(getLead?.lead?.followupdata || []),
-    ...(getLead?.lead?.warmdata || []),
-    ...(getLead?.lead?.wondata || []),
-    ...(getLead?.lead?.deaddata || []),
+    ...(getLead?.lead?.initialdata?.map((item) => ({
+      ...item,
+      status: "Initial",
+    })) || []),
+    ...(getLead?.lead?.followupdata?.map((item) => ({
+      ...item,
+      status: "Followup",
+    })) || []),
+    ...(getLead?.lead?.warmdata?.map((item) => ({ ...item, status: "Warm" })) ||
+      []),
+    ...(getLead?.lead?.wondata?.map((item) => ({ ...item, status: "Won" })) ||
+      []),
+    ...(getLead?.lead?.deaddata?.map((item) => ({ ...item, status: "Dead" })) ||
+      []),
   ];
 
   // console.log("overall leads", leads);
 
-  const getLeadStatus = (lead) => {
-    const {
-      loi = "",
-      ppa = "",
-      loa = "",
-      other_remarks = "",
-      token_money = "",
-    } = lead || {};
+  // const LeadStatus = ({ lead = {} }) => {
+  //   const {
+  //     loi = "",
+  //     ppa = "",
+  //     loa = "",
+  //     other_remarks = "",
+  //     token_money = ""
+  //   } = lead;
 
-    if (
-      (loi === "Yes" || loi === "No") &&
-      (ppa === "Yes" || ppa === "No") &&
-      (loa === "Yes" || loa === "No") &&
-      (!other_remarks || other_remarks === "") &&
-      token_money === "Yes"
-    ) {
-      return "Won";
-    }
+  //   let status = "Initial";
+  //   let color = "primary";
+  //   let variant = "soft";
 
-    if (
-      loi === "Yes" &&
-      ppa === "No" &&
-      (loa === "Yes" || loa === "No") &&
-      (!other_remarks || other_remarks === "") &&
-      (token_money === "No" || token_money === "Yes")
-    ) {
-      return "Follow Up";
-    }
+  //   // ✅ Won
+  //   if (
+  //     (loi === "Yes" || loi === "No") &&
+  //     (ppa === "Yes" || ppa === "No") &&
+  //     (loa === "Yes" || loa === "No") &&
+  //     token_money === "Yes" &&
+  //     (!other_remarks || other_remarks.trim() === "")
+  //   ) {
+  //     status = "Won";
+  //     color = "success";
+  //   }
+  //   // ✅ Initial
+  //   else if (
+  //     (loi === "No" || loi === "") &&
+  //     (!ppa || ppa === "No") &&
+  //     (!loa || loa === "No") &&
+  //     (!other_remarks || other_remarks.trim() === "") &&
+  //     (!token_money || token_money === "No")
+  //   ) {
+  //     status = "Initial";
+  //     color = "primary";
+  //   }
+  //   // ✅ Warm (allowing other_remarks to be filled or empty)
+  //   else if (
+  //     (loi === "Yes" || loi === "No") &&
+  //     (ppa === "Yes" || ppa === "No") &&
+  //     (loa === "Yes" || loa === "No") &&
+  //     token_money === "No"
+  //   ) {
+  //     status = "Warm";
+  //     color = "warning";
+  //   }
 
-    if (
-      (loi === "Yes" || loi === "No") &&
-      (ppa === "Yes" || ppa === "No") &&
-      (loa === "Yes" || loa === "No") &&
-      (!other_remarks || other_remarks === "") &&
-      (token_money === "No" || token_money === "Yes")
-    ) {
-      return "Warm";
-    }
+  //   // ✅ Follow Up (if loi is "Yes", regardless of token_money, and other_remarks is empty)
+  //   else if (
+  //     loi === "Yes" &&
+  //     (ppa === "Yes" || ppa === "No") &&
+  //     (loa === "Yes" || loa === "No") &&
+  //     (!other_remarks || other_remarks.trim() === "")
+  //   ) {
+  //     status = "Follow Up";
+  //     color = "warning";
+  //   }
+  //   // ✅ Dead (fallback)
+  //   else if (
+  //     (loi === "No" || loi === "Yes") &&
+  //     (ppa === "No" || ppa === "Yes") &&
+  //     (loa === "No" || loa === "Yes") &&
+  //     (token_money === "No" || token_money === "Yes")
+  //   ) {
+  //     status = "Dead";
+  //     color = "danger";
+  //   }
 
-    if (
-      (loi === "Yes" || loi === "No") &&
-      (ppa === "Yes" || ppa === "No") &&
-      (loa === "Yes" || loa === "No") &&
-      (!other_remarks || other_remarks === "") &&
-      (token_money === "Yes" || token_money === "No")
-    ) {
-      return "Dead";
-    }
+  //   // ❓ Unknown fallback
+  //   else {
+  //     status = "Unknown";
+  //     color = "neutral";
+  //   }
 
-    if (
-      loi === "No" &&
-      (!ppa || ppa === "No") &&
-      (!loa || loa === "No") &&
-      (!other_remarks || other_remarks === "") &&
-      (!token_money || token_money === "No")
-    ) {
-      return "Initial";
-    }
-
-    return "Unknown";
-  };
-
-  // Your original LeadStatus function (for UI display)
-  const LeadStatus = (lead) => {
-    const status = getLeadStatus(lead);
-    const statusColors = {
-      Won: "#81C784",
-      "Follow Up": "#FFD54F",
-      Warm: "#FFAB91",
-      Dead: "#E57373",
-      Initial: "#BBDEFB",
-      Unknown: "#E0E0E0",
-    };
-
-    return (
-      <Chip
-        sx={{ backgroundColor: statusColors[status], color: "#000" }}
-        variant="soft"
-      >
-        {status}
-      </Chip>
-    );
-  };
+  //   return (
+  //     <Chip
+  //       variant={variant}
+  //       color={color}
+  //       size="md"
+  //     >
+  //       {status}
+  //     </Chip>
+  //   );
+  // };
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userDetails");
@@ -371,19 +380,19 @@ const Overall_Leads = () => {
   const filteredData = useMemo(() => {
     return leads
       .filter((lead) => {
-        const status = getLeadStatus(lead); // Now status is a string ✅
-        const matchesQuery = ["id", "c_name", "mobile", "state"].some((key) =>
-          lead[key]?.toLowerCase().includes(searchQuery.toLowerCase())
+        // const status = getLeadStatus(lead); // Now status is a string ✅
+        const matchesQuery = ["id", "c_name", "mobile", "state", "status"].some(
+          (key) => lead[key]?.toLowerCase().includes(searchQuery.toLowerCase())
         );
-        const matchesStatus = status
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase()); // No error ✅
+        // const matchesStatus = status
+        //   .toLowerCase()
+        //   .includes(searchQuery.toLowerCase()); // No error ✅
 
         const matchesDate = selectedDate
           ? formatDate(lead.entry_date) === selectedDate
           : true;
 
-        return (matchesQuery || matchesStatus) && matchesDate;
+        return matchesQuery && matchesDate;
       })
       .sort((a, b) => {
         const dateA = new Date(formatDate(a.entry_date));
@@ -498,7 +507,7 @@ const Overall_Leads = () => {
             size="sm"
             startDecorator={<SearchIcon />}
             type="text"
-            placeholder="Search by ID, Name, State, Mobile..."
+            placeholder="Search by ID, Name, Lead Status, State, Mobile..."
             value={searchQuery}
             onChange={handleSearch}
           />
@@ -591,7 +600,7 @@ const Overall_Leads = () => {
                   "Substation Distance",
                   "Creation Date",
                   "Lead Status",
-                  "Action",
+                  // "Action",
                 ].map((header, index) => (
                   <Box
                     component="th"
@@ -657,7 +666,25 @@ const Overall_Leads = () => {
                       lead.capacity || "-",
                       lead.distance || "-",
                       lead.entry_date || "-",
-                      <LeadStatus lead={lead} />,
+                      <Chip
+                        size="sm"
+                        variant="soft"
+                        color={
+                          lead.status === "Initial"
+                            ? "primary"
+                            : lead.status === "Followup"
+                              ? "info"
+                              : lead.status === "Warm"
+                                ? "warning" 
+                                : lead.status === "Won"
+                                  ? "success" 
+                                  : lead.status === "Dead"
+                                    ? "danger" 
+                                    : "neutral"
+                        }
+                      >
+                        {lead.status}
+                      </Chip>,
                     ].map((data, idx) => (
                       <Box
                         component="td"
@@ -673,7 +700,7 @@ const Overall_Leads = () => {
                     ))}
 
                     {/* Actions */}
-                    <Box
+                    {/* <Box
                       component="td"
                       sx={{
                         borderBottom: "1px solid #ddd",
@@ -682,7 +709,7 @@ const Overall_Leads = () => {
                       }}
                     >
                       <RowMenu currentPage={currentPage} id={lead.id} />
-                    </Box>
+                    </Box> */}
                   </Box>
                 ))
               ) : (
