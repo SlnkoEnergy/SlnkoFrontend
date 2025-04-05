@@ -35,49 +35,64 @@ const HandoverSheetForm = () => {
       contact_no: "",
       gst_no: "",
       billing_address: "",
+      gender_of_Loa_holder: "",
+      email: "",
+      pan_no: "",
+      adharNumber_of_loa_holder: "",
+      alt_contact_no: "",
     },
+
     order_details: {
       type_business: "",
       tender_name: "",
       discom_name: "",
       design_date: "",
+      feeder_code: "",
+      feeder_name: "",
+      
     },
-    project_detail: {
-      project_type: "",
-      module_make_capacity: "",
-      module_make: "",
-      module_capacity: "",
-      module_type: "",
-      module_model_no: "",
-      evacuation_voltage: "",
-      inverter_make_capacity: "",
-      inverter_make: "",
-      inverter_type: "",
-      inverter_size: "",
-      inverter_model_no: "",
-      work_by_slnko: "",
-      topography_survey: "",
-      soil_test: "",
-      purchase_supply_net_meter: "",
-      liaisoning_net_metering: "",
-      ceig_ceg: "",
-      project_completion_date: "",
-      proposed_dc_capacity: "",
-      transmission_line: "",
-      substation_name: "",
-      overloading: "",
+
+    project_detail:{
+        project_type:"",
+        module_make_capacity:"",
+        module_make:"",
+        module_capacity:"",
+        module_type:"",
+        module_model_no:"",
+        evacuation_voltage:"",
+        inverter_make_capacity:"",
+        inverter_make:"",
+        inverter_type:"",
+        inverter_size:"",
+        inverter_model_no:"",
+        work_by_slnko:"",
+        topography_survey:"",
+        soil_test:"",
+        purchase_supply_net_meter:"",
+        liaisoning_net_metering:"",
+        ceig_ceg:"",
+        project_completion_date:"",
+        proposed_dc_capacity:"",
+        transmission_line:"",
+        substation_name:"",
+        overloading:"",
+        proposed_ac_capacity:"",
+        agreement_date:"",
     },
+
     commercial_details: {
-      type: "",
-      subsidy_amount: "",
+     type:"",
+     subsidy_amount:"",
     },
+
     attached_details: {
-      taken_over_by: "",
-      cam_member_name: "",
-      loa_number: "",
-      ppa_number: "",
-      submitted_by_BD: "",
-    },
+        taken_over_by:"",
+        cam_member_name:"",
+        loa_number:"",
+        ppa_number:"",
+        submitted_by_BD: "",
+        
+  },
   });
   const [moduleMakeOptions, setModuleMakeOptions] = useState([]);
   const [moduleTypeOptions, setModuleTypeOptions] = useState([]);
@@ -187,7 +202,7 @@ const HandoverSheetForm = () => {
         toast.error("Lead ID is missing!");
         return;
       }
-
+  
       const updatedFormData = {
         ...formData,
         id: LeadId,
@@ -197,16 +212,29 @@ const HandoverSheetForm = () => {
             formData.attached_details.submitted_by_BD || user?.name || "",
         },
       };
-
+  
       const response = await HandOverSheet(updatedFormData).unwrap();
+  
       toast.success("Form submitted successfully");
       localStorage.setItem("HandOver_Lead", LeadId);
       navigate("/get_hand_over");
+  
     } catch (error) {
-      console.error("Error submitting form:", error);
-      toast.error("Submission failed");
+      console.error("Submission error:", error);
+  
+      
+      const errorMessage =
+        error?.data?.message || error?.message || "Submission failed";
+  
+      if (errorMessage.toLowerCase().includes("already handed over")) {
+        toast.error("Already handed over found");
+      } else {
+        toast.error(errorMessage);
+      }
     }
   };
+  
+  
 
   const sections = [
     {
@@ -303,7 +331,7 @@ const HandoverSheetForm = () => {
                       level="body1"
                       sx={{ fontWeight: "bold", marginBottom: 0.5 }}
                     >
-                      Name
+                      Name(As per EB Bill)
                     </Typography>
                     <Input
                       fullWidth
@@ -323,6 +351,47 @@ const HandoverSheetForm = () => {
                       level="body1"
                       sx={{ fontWeight: "bold", marginBottom: 0.5 }}
                     >
+                      Gender of LOA Holder
+                    </Typography>
+                    <Input
+                      fullWidth
+                      placeholder="Gender of LOA Holder"
+                      value={formData.customer_details.gender_of_Loa_holder}
+                      onChange={(e) =>
+                        handleChange(
+                          "customer_details",
+                          "gender_of_Loa_holder",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography
+                      level="body1"
+                      sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                    >
+                      Email
+                    </Typography>
+                    <Input
+                      fullWidth
+                      placeholder="Email"
+                      value={formData.customer_details.email}
+                      onChange={(e) =>
+                        handleChange(
+                          "customer_details",
+                          "email",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </Grid>
+                  
+                  <Grid item xs={12} sm={6}>
+                    <Typography
+                      level="body1"
+                      sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                    >
                       EPC/Developer
                     </Typography>
                     <Input
@@ -333,6 +402,26 @@ const HandoverSheetForm = () => {
                         handleChange(
                           "customer_details",
                           "epc_developer",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography
+                      level="body1"
+                      sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                    >
+                      LOA Holder Aadhar Name
+                    </Typography>
+                    <Input
+                      fullWidth
+                      placeholder="LOA Holder Aadhar Name"
+                      value={formData.customer_details.adharNumber_of_loa_holder}
+                      onChange={(e) =>
+                        handleChange(
+                          "customer_details",
+                          "adharNumber_of_loa_holder",
                           e.target.value
                         )
                       }
@@ -393,6 +482,26 @@ const HandoverSheetForm = () => {
                         handleChange(
                           "customer_details",
                           "contact_no",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography
+                      level="body1"
+                      sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                    >
+                      Alt Contact No.
+                    </Typography>
+                    <Input
+                      fullWidth
+                      placeholder="Alternate Contact No."
+                      value={formData.customer_details.alt_contact_no}
+                      onChange={(e) =>
+                        handleChange(
+                          "customer_details",
+                          "alt_contact_no",
                           e.target.value
                         )
                       }
@@ -480,6 +589,36 @@ const HandoverSheetForm = () => {
                         handleChange(
                           "order_details",
                           "tender_name",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                      Feeder Code
+                    </Typography>
+                    <Input
+                      value={formData.order_details.feeder_code}
+                      onChange={(e) =>
+                        handleChange(
+                          "order_details",
+                          "feeder_code",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                      Feeder Name
+                    </Typography>
+                    <Input
+                      value={formData.order_details.feeder_name}
+                      onChange={(e) =>
+                        handleChange(
+                          "order_details",
+                          "feeder_name",
                           e.target.value
                         )
                       }
@@ -1100,6 +1239,30 @@ const HandoverSheetForm = () => {
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
+                    <Typography
+                      level="body1"
+                      sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                    >
+                      Agreement Date
+                    </Typography>
+                    <Input
+                      fullWidth
+                      type="date"
+                      value={
+                        formData["project_detail"]?.[
+                          "agreement_date"
+                        ] || ""
+                      }
+                      onChange={(e) =>
+                        handleChange(
+                          "project_detail",
+                          "agreement_date",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
                     <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                       Proposed DC Capacity (KWp)
                     </Typography>
@@ -1110,6 +1273,22 @@ const HandoverSheetForm = () => {
                         handleChange(
                           "project_detail",
                           "proposed_dc_capacity",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                      Proposed AC Capacity (KWp)
+                    </Typography>
+                    <Input
+                      value={formData.project_detail.proposed_ac_capacity}
+                      placeholder="Proposed AC Capacity (KWp)"
+                      onChange={(e) =>
+                        handleChange(
+                          "project_detail",
+                          "proposed_ac_capacity",
                           e.target.value
                         )
                       }
