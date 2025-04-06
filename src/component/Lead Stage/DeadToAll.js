@@ -83,8 +83,7 @@ const CheckboxModal4 = () => {
       const loiStatus = selectedRadio === "loi" ? "Yes" : "No";
       const loaStatus = selectedOptions.loa ? "Yes" : "No";
       const ppaStatus = selectedOptions.ppa ? "Yes" : "No";
-      const tokenMoneySelected =
-        selectedRadio === "token_money" ? "Yes" : "No";
+      const tokenMoneySelected = selectedRadio === "token_money" ? "Yes" : "No";
 
       let postResponse;
 
@@ -93,18 +92,15 @@ const CheckboxModal4 = () => {
         console.log("Moving to DeadToWon");
         postResponse = await DeadToWon({ id: LeadId }).unwrap();
         enqueueSnackbar("Lead moved from Dead to Won!", { variant: "success" });
-
+        return;
         // ✅ Dead to Warm-up
-      } else if (
-        tokenMoneySelected !== "Yes" &&
-        (loaStatus === "Yes" || ppaStatus === "Yes")
-      ) {
+      } else if (loaStatus === "Yes" || ppaStatus === "Yes") {
         console.log("Moving to DeadToWarmup");
         postResponse = await DeadToWarmup({ id: LeadId }).unwrap();
         enqueueSnackbar("Lead moved from Dead to Warm-up!", {
           variant: "success",
         });
-
+        return;
         // ✅ Dead to Follow-up
       } else if (
         loiStatus === "Yes" &&

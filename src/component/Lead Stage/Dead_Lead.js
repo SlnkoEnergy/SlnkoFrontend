@@ -34,6 +34,8 @@ import NoData from "../../assets/alert-bell.svg";
 // import Axios from "../utils/Axios";
 import { useSnackbar } from "notistack";
 
+import { forwardRef, useImperativeHandle } from "react";
+import { toast } from "react-toastify";
 import {
   useAddDeadtoFollowupMutation,
   useAddDeadtoInitialMutation,
@@ -41,7 +43,7 @@ import {
   useGetDeadLeadsQuery,
 } from "../../redux/leadsSlice";
 
-const StandByRequest = () => {
+const StandByRequest = forwardRef((props, ref) => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -338,18 +340,18 @@ const StandByRequest = () => {
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelected(paginatedData.map((row) => row.id));
+      // Select all visible (paginated) leads
+      const allIds = paginatedData.map((lead) => lead._id);
+      setSelected(allIds);
     } else {
+      // Unselect all
       setSelected([]);
     }
   };
 
-  const handleRowSelect = (id, isSelected) => {
-    // console.log("currentPage:", currentPage, "pay_id:", pay_id, "p_id:", p_id);
-    setSelected((prevSelected) =>
-      isSelected
-        ? [...prevSelected, id]
-        : prevSelected.filter((item) => item !== id)
+  const handleRowSelect = (_id) => {
+    setSelected((prev) =>
+      prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
     );
   };
 
@@ -424,6 +426,64 @@ const StandByRequest = () => {
     setCurrentPage(page);
     setSearchParams({ page });
   };
+
+  useImperativeHandle(ref, () => ({
+    exportToCSV() {
+      console.log("Exporting data to CSV...");
+
+      const headers = [
+        "Lead Id",
+        "Customer",
+        "Mobile",
+        "State",
+        "Scheme",
+        "Capacity",
+        "Substation Distance",
+        "Creation Date",
+        "Lead Status",
+        "Submitted_ By",
+      ];
+
+      // If selected list has items, use it. Otherwise export all.
+      const exportLeads =
+        selected.length > 0
+          ? leads.filter((lead) => selected.includes(lead._id))
+          : leads;
+
+      if (exportLeads.length === 0) {
+        toast.warning("No leads available to export.");
+        return;
+      }
+
+      const rows = exportLeads.map((lead) => [
+        lead.id,
+        lead.c_name,
+        lead.mobile,
+        lead.state,
+        lead.scheme,
+        lead.capacity || "-",
+        lead.distance || "-",
+        lead.entry_date || "-",
+        lead.status || "",
+        lead.submitted_by || "-",
+      ]);
+
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row) => row.join(",")),
+      ].join("\n");
+
+      const blob = new Blob([csvContent], {
+        type: "text/csv;charset=utf-8;",
+      });
+
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download =
+        selected.length > 0 ? "Selected_Leads.csv" : "Dead_Leads.csv";
+      link.click();
+    },
+  }));
 
   return (
     <>
@@ -525,11 +585,15 @@ const StandByRequest = () => {
                 >
                   <Checkbox
                     size="sm"
-                    checked={selected.length === getLead.length}
-                    onChange={handleSelectAll}
-                    indeterminate={
-                      selected.length > 0 && selected.length < getLead.length
+                    checked={
+                      selected.length === paginatedData.length &&
+                      paginatedData.length > 0
                     }
+                    indeterminate={
+                      selected.length > 0 &&
+                      selected.length < paginatedData.length
+                    }
+                    onChange={handleSelectAll}
                   />
                 </Box>
                 {[
@@ -541,6 +605,7 @@ const StandByRequest = () => {
                   "Capacity",
                   "Substation Distance",
                   "Creation Date",
+                  "Created_By",
                   // "Lead Status",
                   "Revive Lead",
                   "Action",
@@ -608,6 +673,7 @@ const StandByRequest = () => {
                       lead.capacity || "-",
                       lead.distance || "-",
                       lead.entry_date || "-",
+                      lead.submitted_by || "-",
                       // <LeadStatus lead={lead} />,
                     ].map((data, idx) => (
                       <Box
@@ -948,5 +1014,5 @@ const StandByRequest = () => {
       </Modal>
     </>
   );
-};
+});
 export default StandByRequest;

@@ -1,15 +1,14 @@
-import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
-import DeleteIcon from "@mui/icons-material/Delete";
 import { Player } from "@lottiefiles/react-lottie-player";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
-import Divider from "@mui/joy/Divider";
 import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
@@ -20,22 +19,22 @@ import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import * as React from "react";
 // import FollowTheSignsIcon from '@mui/icons-material/FollowTheSigns';
-import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
 import ManageHistoryIcon from "@mui/icons-material/ManageHistory";
 import NextPlanIcon from "@mui/icons-material/NextPlan";
-import { useEffect, useState, useMemo } from "react";
+import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../../assets/Lotties/animation-loading.json";
 // import Axios from "../utils/Axios";
-import { useGetInitialLeadsQuery } from "../../redux/leadsSlice";
+import { Autocomplete, Grid, Modal, Option, Select } from "@mui/joy";
+import { forwardRef, useCallback, useImperativeHandle } from "react";
 import NoData from "../../assets/alert-bell.svg";
-import { Autocomplete, Chip, Grid, Modal, Option, Select } from "@mui/joy";
-import { useCallback } from "react";
+import { useGetInitialLeadsQuery } from "../../redux/leadsSlice";
+import { toast } from "react-toastify";
 
-const StandByRequest = () => {
+const StandByRequest = forwardRef((props, ref) => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -50,23 +49,18 @@ const StandByRequest = () => {
   const [user, setUser] = useState(null);
   const [selectedLead, setSelectedLead] = useState(null);
 
-
   // const [cachedData, setCachedData] = useState(() => {
   //   // Try to load cached data from localStorage
   //   const cached = localStorage.getItem("paginatedData");
   //   return cached ? JSON.parse(cached) : [];
   // });
 
-  const {
-    data: getLead = [],
-    isLoading,
-    error,
-  } = useGetInitialLeadsQuery();
+  const { data: getLead = [], isLoading, error } = useGetInitialLeadsQuery();
   const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
 
   // const LeadStatus = ({ lead }) => {
   //   const { loi, ppa, loa, other_remarks, token_money } = lead;
-  
+
   //   // Determine the initial status
   //   const isInitialStatus =
   //     (!loi || loi === "No") &&
@@ -74,7 +68,7 @@ const StandByRequest = () => {
   //     (!loa || loa === "No") &&
   //     (!other_remarks || other_remarks === "") &&
   //     (!token_money || token_money === "No");
-  
+
   //   return (
   //     <Chip color="neutral" variant="soft" sx={{ backgroundColor: "#BBDEFB", color: "#000" }}>
   //     Initial
@@ -90,8 +84,6 @@ const StandByRequest = () => {
     }
   }, []);
 
-
-
   const sourceOptions = {
     "Referred by": ["Directors", "Clients", "Team members", "E-mail"],
     "Social Media": ["Whatsapp", "Instagram", "LinkedIn"],
@@ -101,20 +93,17 @@ const StandByRequest = () => {
   };
   const landTypes = ["Leased", "Owned"];
 
-
   const [openModal, setOpenModal] = useState(false);
 
   const handleOpenModal = useCallback((lead) => {
     setSelectedLead(lead);
     setOpenModal(true);
   }, []);
-  
 
   const handleCloseModal = useCallback(() => {
     setOpenModal(false);
     setSelectedLead(null);
   }, []);
-  
 
   // useEffect(() => {
   //   console.log("Raw Leads Data:", leads);
@@ -140,18 +129,18 @@ const StandByRequest = () => {
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelected(paginatedData.map((row) => row.id));
+      // Select all visible (paginated) leads
+      const allIds = paginatedData.map((lead) => lead._id);
+      setSelected(allIds);
     } else {
+      // Unselect all
       setSelected([]);
     }
   };
 
-  const handleRowSelect = (id, isSelected) => {
-    // console.log("currentPage:", currentPage, "pay_id:", pay_id, "p_id:", p_id);
-    setSelected((prevSelected) =>
-      isSelected
-        ? [...prevSelected, id]
-        : prevSelected.filter((item) => item !== id)
+  const handleRowSelect = (_id) => {
+    setSelected((prev) =>
+      prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
     );
   };
 
@@ -405,6 +394,64 @@ const StandByRequest = () => {
   //   console.log("Filtered Data:", filteredData);
   // }, [filteredData]);
 
+  useImperativeHandle(ref, () => ({
+    exportToCSV() {
+      console.log("Exporting data to CSV...");
+
+      const headers = [
+        "Lead Id",
+        "Customer",
+        "Mobile",
+        "State",
+        "Scheme",
+        "Capacity",
+        "Substation Distance",
+        "Creation Date",
+        "Lead Status",
+        "Submitted_ By",
+      ];
+
+      // If selected list has items, use it. Otherwise export all.
+      const exportLeads =
+        selected.length > 0
+          ? leads.filter((lead) => selected.includes(lead._id))
+          : leads;
+
+      if (exportLeads.length === 0) {
+        toast.warning("No leads available to export.");
+        return;
+      }
+
+      const rows = exportLeads.map((lead) => [
+        lead.id,
+        lead.c_name,
+        lead.mobile,
+        lead.state,
+        lead.scheme,
+        lead.capacity || "-",
+        lead.distance || "-",
+        lead.entry_date || "-",
+        lead.status || "",
+        lead.submitted_by || "-",
+      ]);
+
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row) => row.join(",")),
+      ].join("\n");
+
+      const blob = new Blob([csvContent], {
+        type: "text/csv;charset=utf-8;",
+      });
+
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download =
+        selected.length > 0 ? "Selected_Leads.csv" : "Initial_Leads.csv";
+      link.click();
+    },
+  }));
+
   return (
     <>
       {/* Tablet and Up Filters */}
@@ -505,11 +552,15 @@ const StandByRequest = () => {
                 >
                   <Checkbox
                     size="sm"
-                    checked={selected.length === getLead.length}
-                    onChange={handleSelectAll}
-                    indeterminate={
-                      selected.length > 0 && selected.length < getLead.length
+                    checked={
+                      selected.length === paginatedData.length &&
+                      paginatedData.length > 0
                     }
+                    indeterminate={
+                      selected.length > 0 &&
+                      selected.length < paginatedData.length
+                    }
+                    onChange={handleSelectAll}
                   />
                 </Box>
                 {[
@@ -522,6 +573,7 @@ const StandByRequest = () => {
                   "Substation Distance",
                   "Creation Date",
                   // "Lead Status",
+                  "Submitted_ By",
                   "Action",
                 ].map((header, index) => (
                   <Box
@@ -540,7 +592,6 @@ const StandByRequest = () => {
               </Box>
             </Box>
 
-          
             <Box component="tbody">
               {paginatedData.length > 0 ? (
                 paginatedData.map((lead, index) => (
@@ -568,18 +619,17 @@ const StandByRequest = () => {
                     </Box>
 
                     {[
-                       <span
-                       key={lead.id}
-                       onClick={() => handleOpenModal(lead)}
-                       style={{
-                        cursor: "pointer",
-                        color: "black",
-                        textDecoration: "none",
-                      
-                      }}
-                     >
-                       {lead.id}
-                     </span>,
+                      <span
+                        key={lead.id}
+                        onClick={() => handleOpenModal(lead)}
+                        style={{
+                          cursor: "pointer",
+                          color: "black",
+                          textDecoration: "none",
+                        }}
+                      >
+                        {lead.id}
+                      </span>,
                       lead.c_name,
                       lead.mobile,
                       // `${lead.village}, ${lead.district}, ${lead.state}`,
@@ -588,6 +638,7 @@ const StandByRequest = () => {
                       lead.capacity || "-",
                       lead.distance || "-",
                       lead.entry_date || "-",
+                      lead.submitted_by || "-",
                       // <LeadStatus lead={lead} />,
                     ].map((data, idx) => (
                       <Box
@@ -873,7 +924,7 @@ const StandByRequest = () => {
             <Grid xs={12} sm={6}>
               <FormLabel>Scheme</FormLabel>
               <Select name="scheme" value={selectedLead?.scheme ?? ""} readOnly>
-                {["KUSUM A", "KUSUM C","KUSUM C2", "Other"].map((option) => (
+                {["KUSUM A", "KUSUM C", "KUSUM C2", "Other"].map((option) => (
                   <Option key={option} value={option}>
                     {option}
                   </Option>
@@ -918,5 +969,5 @@ const StandByRequest = () => {
       </Modal>
     </>
   );
-};
+});
 export default StandByRequest;

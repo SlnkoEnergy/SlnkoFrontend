@@ -181,10 +181,10 @@ export const leadsApi = createApi({
       invalidatesTags: ["Lead"],
     }),
     addDeadtoWon: builder.mutation({
-      query: (newFollowup4) => ({
+      query: (newDead4) => ({
         url: "dead-to-won",
         method: "POST",
-        body: newFollowup4,
+        body: newDead4,
       }),
       invalidatesTags: ["Lead"],
     }),

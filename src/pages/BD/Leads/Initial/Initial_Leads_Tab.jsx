@@ -9,40 +9,54 @@ import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
 // import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
+import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Lead_Dead from "../../../../component/Lead Stage/Dead_Lead";
 import Lead_FollowUp from "../../../../component/Lead Stage/Follow_Lead";
 import Lead_Initial from "../../../../component/Lead Stage/Initial_Lead";
+import Lead_Overall from "../../../../component/Lead Stage/Overall_Lead";
 import Lead_Warm from "../../../../component/Lead Stage/Warm_Lead";
 import Lead_Won from "../../../../component/Lead Stage/Won_Lead";
-import Lead_Overall from "../../../../component/Lead Stage/Overall_Lead";
 import Header from "../../../../component/Partials/Header";
 import Sidebar from "../../../../component/Partials/Sidebar";
 
 function InitialLeads() {
+  const allLeadRef = useRef();
   const navigate = useNavigate();
   const [selectedLead, setSelectedLead] = useState("Initial");
 
-  const leadOptions = [,"Initial", "Follow Up", "Warm", "Won", "Dead","OverAll"];
+  const leadOptions = [
+    "Initial",
+    "Follow Up",
+    "Warm",
+    "Won",
+    "Dead",
+    "OverAll",
+  ];
+
+  const handleExportToCSV = () => {
+    if (allLeadRef.current?.exportToCSV) {
+      allLeadRef.current.exportToCSV();
+    }
+  };
 
   const renderLeadComponent = () => {
     switch (selectedLead) {
       case "Warm":
-        return <Lead_Warm />;
+        return <Lead_Warm ref={allLeadRef} />;
       case "Follow Up":
-        return <Lead_FollowUp />;
+        return <Lead_FollowUp ref={allLeadRef} />;
       case "Won":
-        return <Lead_Won />;
+        return <Lead_Won ref={allLeadRef} />;
       case "Dead":
-        return <Lead_Dead />;
-         case "OverAll":
-        return <Lead_Overall />;
+        return <Lead_Dead ref={allLeadRef} />;
+      case "OverAll":
+        return <Lead_Overall ref={allLeadRef} />;
       default:
-        return <Lead_Initial />;
+        return <Lead_Initial ref={allLeadRef} />;
     }
   };
-  
-  
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -53,6 +67,7 @@ function InitialLeads() {
         setSelectedLead={setSelectedLead}
         leadOptions={leadOptions}
         renderLeadComponent={renderLeadComponent}
+        handleExportToCSV={handleExportToCSV}
       />
     </CssVarsProvider>
   );
@@ -64,6 +79,7 @@ function LeadPage({
   setSelectedLead,
   leadOptions,
   renderLeadComponent,
+  handleExportToCSV,
 }) {
   const { mode } = useColorScheme();
 
@@ -71,6 +87,7 @@ function LeadPage({
     <Box sx={{ display: "flex", minHeight: "100dvh" }}>
       <Header />
       <Sidebar />
+
       <Box
         component="main"
         className="MainContent"
@@ -133,14 +150,13 @@ function LeadPage({
           <Typography level="h2" component="h1">
             {selectedLead} Leads
           </Typography>
+
           <Box
             sx={{
               display: "flex",
-              mb: 1,
               gap: 1,
               flexDirection: { xs: "column", sm: "row" },
               alignItems: { xs: "start", sm: "center" },
-              flexWrap: "wrap",
               justifyContent: "center",
             }}
           >
@@ -163,6 +179,7 @@ function LeadPage({
             >
               Task Dashboard
             </Button>
+
             {selectedLead === "Initial" && (
               <Button
                 color="primary"
@@ -172,10 +189,19 @@ function LeadPage({
                 Add New Leads +
               </Button>
             )}
+
+            <Button
+              color="primary"
+              startDecorator={<DownloadRoundedIcon />}
+              size="sm"
+              onClick={handleExportToCSV}
+            >
+              Export to CSV
+            </Button>
           </Box>
         </Box>
 
-        {/* Lead Options */}
+        {/* Lead Filter Tabs */}
         <Box
           component="ul"
           sx={{
@@ -195,7 +221,6 @@ function LeadPage({
               component="li"
               key={index}
               sx={{
-                position: "relative",
                 padding: "8px 15px",
                 cursor: "pointer",
                 fontWeight: 500,
@@ -208,8 +233,8 @@ function LeadPage({
                     : selectedLead === item
                       ? "#007bff"
                       : "black",
-                transition: "all 0.3s ease-in-out",
                 borderRadius: "8px",
+                transition: "0.3s",
                 "&:hover": {
                   backgroundColor: "#007bff",
                   color: "white",
