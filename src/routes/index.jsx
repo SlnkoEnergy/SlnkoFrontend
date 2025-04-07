@@ -66,6 +66,7 @@ import Won_History from "../pages/BD/Leads/Won/Won_History";
 import CommercialRateOffer from "../pages/BD/OfferRate";
 import Dashboardz from "../pages/Dashboards";
 import PrivateRoute from "./PrivateRoute";
+import Dashboard from "../pages/CAM/DashboardCam";
 
 function index() {
   return (
@@ -261,6 +262,16 @@ function index() {
         element={
           <PrivateRoute>
             <AllProjects />
+          </PrivateRoute>
+        }
+      />
+
+      {/*-------------CAM----------*/}
+      <Route
+        path="/cam_dash"
+        element={
+          <PrivateRoute>
+            <Dashboard />
           </PrivateRoute>
         }
       />

@@ -417,13 +417,13 @@ const StandByRequest = forwardRef((props, ref) => {
               display: "flex",
               alignItems: "center",
               gap: "5px",
-              color: "red",
+              // color: "red",
               justifyContent: "center",
               flexDirection: "column",
               padding: "20px",
             }}
           >
-            <PermScanWifiIcon />
+            <PermScanWifiIcon style={{color:"red", fontSize:"2rem"}} />
             <Typography
               fontStyle={"italic"}
               fontWeight={"600"}

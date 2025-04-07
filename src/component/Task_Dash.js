@@ -240,6 +240,7 @@ const TaskDashboard = () => {
 
         // ✅ Store full task history array
         history: associatedTaskHistory.map((history) => ({
+          id: history.id || "N/A",
           date: history.date || "N/A",
           reference: history.reference || "N/A",
           by_whom: history.by_whom || "N/A",
@@ -254,6 +255,7 @@ const TaskDashboard = () => {
         categorizedTasks.past.push(taskEntry);
       } else if (isToday(taskDate)) {
         console.log("📅 Categorized as: Today");
+        taskEntry.isToday = true; 
         categorizedTasks.today.push(taskEntry);
       } else if (isTomorrow(taskDate)) {
         console.log("📅 Categorized as: Tomorrow");
@@ -264,6 +266,12 @@ const TaskDashboard = () => {
       }
     });
 
+  // const filteredTask = matchedTasks.find(
+  //   (task) => String(task.id) === String(selectedTask?.id)
+  // );
+
+  // console.log("🔍 Filtered Task:", filteredTask);
+
   // const tasksWithComments = getTaskArray.filter((task) => task.comment);
   // const tasksWithoutComments = getTaskArray.filter((task) => !task.comment);
 
@@ -272,6 +280,7 @@ const TaskDashboard = () => {
     userNames.includes("it team") || userNames.includes("admin");
 
   // ✅ Get all tasks if user is IT Team or Admin
+  // Step 1: Filter tasks for normal users; admins/IT see all
   const allTasks = isAdminOrITTeam
     ? getTaskArray
     : getTaskArray.filter((task) => {
@@ -281,9 +290,18 @@ const TaskDashboard = () => {
         return userNames.some((name) => assignedUsers?.includes(name));
       });
 
-  // ✅ Correct comments for tasks without comments without mutating the original array
+  // Step 2: Categorize original tasks based on actual comment values
+  const tasksWithoutComments = allTasks.filter(
+    (task) => !task.comment || task.comment.trim() === ""
+  );
+
+  const tasksWithComments = allTasks.filter(
+    (task) => task.comment && task.comment.trim() !== ""
+  );
+
+  // Step 3: Enhance comments just for UI rendering, without affecting filtering logic
   const updatedTasks = allTasks.map((task) => {
-    if (!task.comment) {
+    if (!task.comment || task.comment.trim() === "") {
       const assignedUsers = task.by_whom
         ?.split(",")
         .map((name) => name.trim().toLowerCase());
@@ -297,14 +315,6 @@ const TaskDashboard = () => {
     }
     return task;
   });
-
-  // ✅ Split tasks into tasks with and without comments
-  const tasksWithComments = updatedTasks.filter(
-    (task) => task.comment && task.comment !== "No assigned user or comment."
-  );
-  const tasksWithoutComments = updatedTasks.filter(
-    (task) => task.comment === "No assigned user or comment."
-  );
 
   const [disabledCards, setDisabledCards] = useState(() => {
     const savedState = localStorage.getItem("disabledCards");
@@ -554,7 +564,7 @@ const TaskDashboard = () => {
     const date = new Date(taskDate);
 
     if (isNaN(date.getTime())) {
-      // console.error("❌ Invalid Date:", taskDate);
+      // console.error("Invalid Date:", taskDate);
       return "Invalid Date";
     }
 
@@ -611,7 +621,6 @@ const TaskDashboard = () => {
 
   const handleByWhomChange = (_, newValue = []) => {
     if (formData.reference === "By Meeting" && user?.name) {
-      // Ensure the user's name is always present
       const updatedValue = [
         { label: user.name, id: "user" },
         ...newValue.filter((member) => member.label !== user.name),
@@ -639,7 +648,7 @@ const TaskDashboard = () => {
 
       handleCloseAddTaskModal();
     } catch (error) {
-      console.error("❌ Error adding task:", error?.data || error);
+      console.error("Error adding task:", error?.data || error);
       toast.error("Failed to add task.");
     }
   };
@@ -768,7 +777,7 @@ const TaskDashboard = () => {
                 >
                   {tasksWithComments.length || 0}{" "}
                   {tasksWithComments.length === 1 ? "Meeting" : "Meetings"}{" "}
-                  Added
+                  Attended
                 </Chip>
 
                 {/* ⏰ Tasks without comments */}
@@ -906,7 +915,8 @@ const TaskDashboard = () => {
                                   Task Description
                                 </Typography>
                                 <Typography>
-                                  {selectedTask?.task_detail || "No details available"}
+                                  {selectedTask?.task_detail ||
+                                    "No details available"}
                                 </Typography>
                                 <Button onClick={() => setOpen(false)}>
                                   Close
@@ -945,6 +955,39 @@ const TaskDashboard = () => {
             value={1}
             sx={{ width: { xs: "90%", sm: "70%", md: "60%", lg: "50%" } }}
           >
+            <Box display="flex" justifyContent="center" gap={2} mb={3}>
+              {/* ✅ Tasks with comments */}
+              <Chip
+                startDecorator={<CheckCircle color="success" />}
+                variant="soft"
+                size="lg"
+                sx={{
+                  backgroundColor: "#e8f5e9", // Light green for success
+                  color: "#388e3c", // Dark green text
+                }}
+              >
+                {tasksWithComments.length || 0}{" "}
+                {tasksWithComments.length === 1 ? "Meeting" : "Meetings"}{" "}
+                Attended
+              </Chip>
+
+              {/* ⏰ Tasks without comments */}
+              <Chip
+                startDecorator={<AccessTime color="warning" />}
+                variant="soft"
+                size="lg"
+                sx={{
+                  backgroundColor: "#fff8e1", // Light yellow for warning
+                  color: "#f57c00", // Orange text
+                }}
+              >
+                {tasksWithoutComments.length || 0}{" "}
+                {tasksWithoutComments.length === 1
+                  ? "Pending Meeting"
+                  : "Pending Meetings"}
+              </Chip>
+            </Box>
+
             <Typography level="h4">Today's Task</Typography>
             <Typography level="body-md" color="neutral">
               {getCurrentDate()}
@@ -1134,7 +1177,8 @@ const TaskDashboard = () => {
                                 Task Description
                               </Typography>
                               <Typography>
-                                {selectedTask?.task_detail || "No details available"}
+                                {selectedTask?.task_detail ||
+                                  "No details available"}
                               </Typography>
                               <Button onClick={() => setOpen(false)}>
                                 Close
@@ -1252,10 +1296,13 @@ const TaskDashboard = () => {
                           >
                             {task.type}
                           </Chip>
-                          <Button variant="plain"   onClick={() => {
+                          <Button
+                            variant="plain"
+                            onClick={() => {
                               setSelectedTask(task);
                               setOpen(true);
-                            }}>
+                            }}
+                          >
                             <Typography>...</Typography>
                           </Button>
                           <Modal open={open} onClose={() => setOpen(false)}>
@@ -1264,7 +1311,8 @@ const TaskDashboard = () => {
                                 Task Description
                               </Typography>
                               <Typography>
-                                {selectedTask?.task_detail || "No details available"}
+                                {selectedTask?.task_detail ||
+                                  "No details available"}
                               </Typography>
                               <Button onClick={() => setOpen(false)}>
                                 Close
@@ -1623,7 +1671,8 @@ const TaskDashboard = () => {
                                   Task Descriptions
                                 </Typography>
                                 <Typography>
-                                  {selectedTask?.task_detail || "No details available"}
+                                  {selectedTask?.task_detail ||
+                                    "No details available"}
                                 </Typography>
                                 <Button onClick={() => setOpen(false)}>
                                   Close
@@ -1796,7 +1845,7 @@ const TaskDashboard = () => {
                   fontSize: "1.1rem",
                 },
                 "& td": { fontSize: "1rem" },
-                // display: "block",
+                display: "block",
                 maxHeight: "300px", // Set the height for the scrollable area
                 overflowY: "auto", // Enables vertical scrolling
                 width: "100%",
@@ -1808,44 +1857,62 @@ const TaskDashboard = () => {
                   <th>Reference</th>
                   <th>By Whom</th>
                   <th>Feedback</th>
+
                   <th>submitted_by</th>
                 </tr>
               </thead>
               <tbody>
-                {isLoading ? (
-                  <tr>
-                    <td
-                      colSpan="4"
-                      style={{ textAlign: "center", padding: "10px" }}
-                    >
-                      Loading history...
-                    </td>
-                  </tr>
-                ) : selectedTask?.history?.length > 0 ? (
-                  selectedTask.history.map((entry, index) => (
-                    <tr key={index}>
-                      <td>{entry.date}</td>
-                      <td>{entry.reference}</td>
-                      <td>{entry.by_whom}</td>
-                      <td>{entry.comment}</td>
-                      <td>{entry.submitted_by}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan="5"
-                      style={{
-                        textAlign: "center",
-                        padding: "10px",
-                        fontStyle: "italic",
-                      }}
-                    >
-                      No task history available.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
+  <tr>
+    <td>{selectedTask?.date || "N/A"}</td>
+    <td>{selectedTask?.type || "N/A"}</td>
+    <td>{selectedTask?.by_whom || "N/A"}</td>
+    <td>
+    {selectedTask?.isToday &&
+ selectedTask.submitted_by?.toLowerCase() === user?.name?.toLowerCase() &&
+ (!selectedTask.comment || selectedTask.comment.trim() === "") ? (
+        <>
+          <Input
+            size="sm"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Enter comment"
+            sx={{ width: "70%" }}
+          />
+          <Button
+            size="sm"
+            variant="solid"
+            onClick={handleSubmit}
+            sx={{ ml: 1 }}
+          >
+            Submit
+          </Button>
+        </>
+      ) : (
+        selectedTask?.comment || "N/A"
+      )}
+    </td>
+    <td>{selectedTask?.submitted_by || "N/A"}</td>
+  </tr>
+
+  {/* History rows */}
+  {selectedTask?.history && selectedTask.history.length > 0 ? (
+    selectedTask.history.map((historyItem, index) => (
+      <tr key={index}>
+        <td>{historyItem?.date || "N/A"}</td>
+        <td>{historyItem?.reference || "N/A"}</td>
+        <td>{historyItem?.by_whom || "N/A"}</td>
+        <td>{historyItem?.comment || "N/A"}</td>
+        <td>{historyItem?.submitted_by || "N/A"}</td>
+      </tr>
+    ))
+  ) : (
+    <tr>
+      <td colSpan={5} style={{ textAlign: "center" }}>
+        No additional history found.
+      </td>
+    </tr>
+  )}
+</tbody>
             </Table>
           </Sheet>
 

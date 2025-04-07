@@ -191,7 +191,7 @@ const Rate_Offer = () => {
           <Grid md={6} sm={12}>
             <FormLabel>SPV Modules (INR/Wp)</FormLabel>
             <Input
-              type="number"
+              type="text"
               name="spv_modules"
               value={scmData.spv_modules}
               onChange={handleChange}
@@ -202,7 +202,7 @@ const Rate_Offer = () => {
           <Grid md={6} sm={12}>
             <FormLabel>Module Mounting Structure (INR/kg)</FormLabel>
             <Input
-              type="number"
+              type="text"
               name="module_mounting_structure"
               value={scmData.module_mounting_structure}
               onChange={handleChange}
@@ -220,7 +220,7 @@ const Rate_Offer = () => {
           <Grid md={6} sm={12}>
             <FormLabel>Rate of Transmission Line (INR/km)</FormLabel>
             <Input
-              type="number"
+              type="text"
               name="transmission_line"
               value={scmData.transmission_line}
               onChange={handleChange}
@@ -231,7 +231,7 @@ const Rate_Offer = () => {
           <Grid md={6} sm={12}>
             <FormLabel>SLNKO EPCM Service Charges without GST (INR)</FormLabel>
             <Input
-              type="number"
+              type="text"
               name="slnko_charges"
               value={scmData.slnko_charges}
               onChange={handleChange}

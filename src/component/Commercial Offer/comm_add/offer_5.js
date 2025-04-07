@@ -247,8 +247,14 @@ const Page5 = () => {
                   },
                 }}
               >
-                {offerData.village} {offerData.district}, {offerData.state}{" "}
-                {offerData.pincode}
+                {[
+                  offerData.village,
+                  offerData.district,
+                  offerData.state,
+                  offerData.pincode,
+                ]
+                  .filter(Boolean)
+                  .join(", ")}
               </Typography>
             </Box>
             <br />

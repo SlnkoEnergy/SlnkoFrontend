@@ -20,7 +20,7 @@ export const leadsApi = createApi({
       pollingInterval: 5000,
     }),
     getInitialLeads: builder.query({
-      query: () => "get-all-inital-bd-lead",
+      query: () => "get-initial-bd-lead-streams",
       providesTags: ["Lead"],
       keepUnusedDataFor: 120,
       refetchOnMountOrArgChange: true,
@@ -267,18 +267,18 @@ export const leadsApi = createApi({
       query: () => "get-master-inverter",
       providesTags: ["Lead"],
     }),
-    getHandOver: builder.query({
-      query: () => "get-all-handover-sheet",
-      providesTags: ["Lead"],
-    }),
-    addHandOver: builder.mutation({
-      query: (newHandOver) => ({
-        url: "create-hand-over-sheet",
-        method: "POST",
-        body: newHandOver,
-      }),
-      invalidatesTags: ["Lead"],
-    }),
+    // getHandOver: builder.query({
+    //   query: () => "get-all-handover-sheet",
+    //   providesTags: ["Lead"],
+    // }),
+    // addHandOver: builder.mutation({
+    //   query: (newHandOver) => ({
+    //     url: "create-hand-over-sheet",
+    //     method: "POST",
+    //     body: newHandOver,
+    //   }),
+    //   invalidatesTags: ["Lead"],
+    // }),
   }),
 });
 
@@ -314,8 +314,8 @@ export const {
   useAddWarmuptoWonMutation,
   useAddWontoDeadMutation,
   useAddDeadtoWonMutation,
-  useAddHandOverMutation,
+  // useAddHandOverMutation,
   useGetMasterInverterQuery,
   useGetModuleMasterQuery,
-  useGetHandOverQuery,
+  // useGetHandOverQuery,
 } = leadsApi;

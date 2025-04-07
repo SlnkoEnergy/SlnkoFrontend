@@ -24,15 +24,15 @@ import Sidebar from "../../../../component/Partials/Sidebar";
 function InitialLeads() {
   const allLeadRef = useRef();
   const navigate = useNavigate();
-  const [selectedLead, setSelectedLead] = useState("Initial");
+  const [selectedLead, setSelectedLead] = useState("OverAll");
 
   const leadOptions = [
+    "OverAll",
     "Initial",
     "Follow Up",
     "Warm",
     "Won",
     "Dead",
-    "OverAll",
   ];
 
   const handleExportToCSV = () => {
@@ -51,10 +51,10 @@ function InitialLeads() {
         return <Lead_Won ref={allLeadRef} />;
       case "Dead":
         return <Lead_Dead ref={allLeadRef} />;
-      case "OverAll":
-        return <Lead_Overall ref={allLeadRef} />;
-      default:
+      case "Initial":
         return <Lead_Initial ref={allLeadRef} />;
+      default:
+        return <Lead_Overall ref={allLeadRef} />;
     }
   };
 

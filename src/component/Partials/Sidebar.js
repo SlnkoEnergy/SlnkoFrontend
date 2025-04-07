@@ -15,6 +15,7 @@ import IconButton from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import List from "@mui/joy/List";
 import ListItem from "@mui/joy/ListItem";
+import EngineeringIcon from '@mui/icons-material/Engineering';
 import ListItemButton, { listItemButtonClasses } from "@mui/joy/ListItemButton";
 import ListItemContent from "@mui/joy/ListItemContent";
 import Sheet from "@mui/joy/Sheet";
@@ -316,12 +317,45 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            {/* SCM Section */}
+            {/* CAM Section */}
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
                     <MiscellaneousServicesIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">CAM</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/cam_dash")}>
+                      Dashboard
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+
+            {/* SCM Section */}
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <EngineeringIcon />
                     <ListItemContent>
                       <Typography level="title-sm">SCM</Typography>
                     </ListItemContent>
@@ -452,7 +486,7 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <MiscellaneousServicesIcon />
+                    <EngineeringIcon />
                     <ListItemContent>
                       <Typography level="title-sm">SCM</Typography>
                     </ListItemContent>
@@ -527,7 +561,7 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <MiscellaneousServicesIcon />
+                    <EngineeringIcon />
                     <ListItemContent>
                       <Typography level="title-sm">SCM</Typography>
                     </ListItemContent>
@@ -621,7 +655,7 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <MiscellaneousServicesIcon />
+                    <EngineeringIcon />
                     <ListItemContent>
                       <Typography level="title-sm">SCM</Typography>
                     </ListItemContent>
@@ -766,7 +800,7 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <MiscellaneousServicesIcon />
+                    <EngineeringIcon />
                     <ListItemContent>
                       <Typography level="title-sm">SCM</Typography>
                     </ListItemContent>
@@ -870,7 +904,7 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <MiscellaneousServicesIcon />
+                    <EngineeringIcon />
                     <ListItemContent>
                       <Typography level="title-sm">SCM</Typography>
                     </ListItemContent>
@@ -1008,7 +1042,7 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <MiscellaneousServicesIcon />
+                    <EngineeringIcon />
                     <ListItemContent>
                       <Typography level="title-sm">SCM</Typography>
                     </ListItemContent>
@@ -1100,7 +1134,7 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <MiscellaneousServicesIcon />
+                    <EngineeringIcon />
                     <ListItemContent>
                       <Typography level="title-sm">SCM</Typography>
                     </ListItemContent>
@@ -1233,7 +1267,7 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <MiscellaneousServicesIcon />
+                    <EngineeringIcon />
                     <ListItemContent>
                       <Typography level="title-sm">SCM</Typography>
                     </ListItemContent>

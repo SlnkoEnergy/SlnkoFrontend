@@ -14,10 +14,10 @@ import {
 import React, { useEffect, useMemo, useState } from "react";
 import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
 import {
-  useGetHandOverQuery,
   useGetMasterInverterQuery,
   useGetModuleMasterQuery,
 } from "../../redux/leadsSlice";
+import { useGetHandOverQuery, } from "../../redux/camsSlice";
 
 const GetHandoverSheetForm = ({ onBack }) => {
   const [expanded, setExpanded] = useState(null);

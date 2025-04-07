@@ -7,6 +7,7 @@ import { tasksApi } from "../redux/tasksSlice";
 import { loginsApi } from "../redux/loginSlice";
 import { commsApi } from "../redux/commsSlice";
 import taskWorkReducer from "../redux/TaskDate_Manipulation/task_workSlice";
+import { camsApi } from "../redux/camsSlice";
 
 export const store = configureStore({
     reducer: {
@@ -17,6 +18,7 @@ export const store = configureStore({
         [tasksApi.reducerPath]: tasksApi.reducer,
         [loginsApi.reducerPath]: loginsApi.reducer,
         [commsApi.reducerPath]: commsApi.reducer,
+        [camsApi.reducerPath]: camsApi.reducer,
         taskWork: taskWorkReducer
     },
     middleware: (getDefaultMiddleware) =>
@@ -27,6 +29,7 @@ export const store = configureStore({
             leadsApi.middleware,
             tasksApi.middleware,
             loginsApi.middleware,
-            commsApi.middleware
+            commsApi.middleware,
+            camsApi.middleware
         ),
 });

@@ -33,9 +33,10 @@ import { forwardRef, useCallback, useImperativeHandle } from "react";
 import { toast } from "react-toastify";
 import NoData from "../../assets/alert-bell.svg";
 import {
-  useGetHandOverQuery,
+  
   useGetWonLeadsQuery,
 } from "../../redux/leadsSlice";
+import { useGetHandOverQuery } from "../../redux/camsSlice";
 
 const StandByRequest = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -453,13 +454,13 @@ const StandByRequest = forwardRef((props, ref) => {
               display: "flex",
               alignItems: "center",
               gap: "5px",
-              color: "red",
+              // color: "red",
               justifyContent: "center",
               flexDirection: "column",
               padding: "20px",
             }}
           >
-            <PermScanWifiIcon />
+            <PermScanWifiIcon style={{color:"red", fontSize:"2rem"}} />
             <Typography
               fontStyle={"italic"}
               fontWeight={"600"}
