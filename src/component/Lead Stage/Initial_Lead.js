@@ -261,49 +261,27 @@ const StandByRequest = forwardRef((props, ref) => {
     setSelectedDate(e.target.value);
   };
 
-  // const filteredData = useMemo(() => {
-  //   if (!user || !user.name) return [];
-
-  //   return leads
-  //     .filter((lead) => {
-  //       const submittedBy = lead.submitted_by?.trim() || "";
-  //       const userName = user.name.trim();
-  //       const userRole = user.role?.toLowerCase();
-
-  //       const isAdmin = userRole === "admin" || userRole === "superadmin";
-  //       const matchesUser = isAdmin || submittedBy === userName;
-
-  //       const matchesQuery = ["id", "c_name", "mobile", "state"].some(
-  //         (key) => lead[key]?.toLowerCase().includes(searchQuery)
-  //       );
-
-  //       const matchesDate = selectedDate
-  //         ? formatDate(lead.entry_date).toLocaleDateString() === formatDate(selectedDate).toLocaleDateString()
-  //         : true;
-
-  //       return matchesUser && matchesQuery && matchesDate;
-  //     })
-  //     .sort((a, b) => {
-  //       const dateA = formatDate(a.entry_date);
-  //       const dateB = formatDate(b.entry_date);
-
-  //       if (isNaN(dateA.getTime())) return 1;
-  //       if (isNaN(dateB.getTime())) return -1;
-
-  //       return dateB - dateA;
-  //     });
-  // }, [leads, searchQuery, selectedDate, user]);
-
   const filteredData = useMemo(() => {
+    if (!user || !user.name) return [];
+
     return leads
       .filter((lead) => {
-        const matchesQuery = ["id", "c_name", "mobile", "state"].some((key) =>
-          lead[key]?.toLowerCase().includes(searchQuery)
+        const submittedBy = lead.submitted_by?.trim() || "";
+        const userName = user.name.trim();
+        const userRole = user.role?.toLowerCase();
+
+        const isAdmin = userRole === "admin" || userRole === "superadmin";
+        const matchesUser = isAdmin || submittedBy === userName;
+
+        const matchesQuery = ["id", "c_name", "mobile", "state"].some(
+          (key) => lead[key]?.toLowerCase().includes(searchQuery)
         );
+
         const matchesDate = selectedDate
-          ? formatDate(lead.entry_date) === selectedDate
+          ? formatDate(lead.entry_date).toLocaleDateString() === formatDate(selectedDate).toLocaleDateString()
           : true;
-        return matchesQuery && matchesDate;
+
+        return matchesUser && matchesQuery && matchesDate;
       })
       .sort((a, b) => {
         const dateA = formatDate(a.entry_date);
@@ -314,7 +292,29 @@ const StandByRequest = forwardRef((props, ref) => {
 
         return dateB - dateA;
       });
-  }, [leads, searchQuery, selectedDate]);
+  }, [leads, searchQuery, selectedDate, user]);
+
+  // const filteredData = useMemo(() => {
+  //   return leads
+  //     .filter((lead) => {
+  //       const matchesQuery = ["id", "c_name", "mobile", "state"].some((key) =>
+  //         lead[key]?.toLowerCase().includes(searchQuery)
+  //       );
+  //       const matchesDate = selectedDate
+  //         ? formatDate(lead.entry_date) === selectedDate
+  //         : true;
+  //       return matchesQuery && matchesDate;
+  //     })
+  //     .sort((a, b) => {
+  //       const dateA = formatDate(a.entry_date);
+  //       const dateB = formatDate(b.entry_date);
+
+  //       if (isNaN(dateA.getTime())) return 1;
+  //       if (isNaN(dateB.getTime())) return -1;
+
+  //       return dateB - dateA;
+  //     });
+  // }, [leads, searchQuery, selectedDate]);
 
   // const getPaginatedData = (page) => {
   //   const startIndex = (page - 1) * itemsPerPage;
@@ -671,7 +671,7 @@ const StandByRequest = forwardRef((props, ref) => {
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={9}
+                    colSpan={11}
                     sx={{
                       padding: "8px",
                       textAlign: "center",

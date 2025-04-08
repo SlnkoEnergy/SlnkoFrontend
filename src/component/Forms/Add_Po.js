@@ -31,10 +31,9 @@ const AddPurchaseOrder = () => {
       padding: "0 6px",
     }),
   };
-  
+
   const [user, setUser] = useState(null);
-  
-    
+
   useEffect(() => {
     const userData = getUserData();
     setUser(userData);
@@ -42,7 +41,7 @@ const AddPurchaseOrder = () => {
       setFormData((prev) => ({ ...prev, submitted_By: userData.name }));
     }
   }, []);
-  
+
   const getUserData = () => {
     const userData = localStorage.getItem("userDetails");
     if (userData) {
@@ -50,7 +49,6 @@ const AddPurchaseOrder = () => {
     }
     return null;
   };
-
 
   const [formData, setFormData] = useState({
     p_id: "",
@@ -60,9 +58,11 @@ const AddPurchaseOrder = () => {
     date: "",
     item: "",
     po_value: "",
-    partial_billing:"",
+    po_basic: "",
+    gst: "",
+    partial_billing: "",
     other: "",
-    submitted_By:""
+    submitted_By: "",
   });
   const [projectIDs, setProjectIDs] = useState([]);
   const [vendors, setVendors] = useState([]);
@@ -76,12 +76,12 @@ const AddPurchaseOrder = () => {
         const projectsRes = await Axios.get("/get-all-projecT-IT");
         console.log("Project Data: ", projectsRes.data.data);
         setProjectIDs(projectsRes.data.data || []);
-  
+
         // Fetch vendors
         const vendorsRes = await Axios.get("/get-all-vendoR-IT");
         console.log("Vendor Data: ", vendorsRes.data.data);
         setVendors(vendorsRes.data.data || []);
-  
+
         // Fetch items
         const itemsRes = await Axios.get("/get-iteM-IT");
         const itemsData = itemsRes.data.Data || [];
@@ -91,26 +91,41 @@ const AddPurchaseOrder = () => {
         }));
         // Add "Other" as an additional option
         setItems([...transformedItems, { value: "Other", label: "Other" }]);
-  
+
         console.log("Items Data: ", transformedItems);
       } catch (err) {
         console.error("Error fetching data:", err);
       }
     };
-  
+
     fetchData();
   }, []);
-  
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
-    if(name === "po_value" && value < 0){
-      toast.warning("PO Value can't be Negative !!")
+  
+    // Don't allow negative manual entry for po_value
+    if (name === "po_value" && parseFloat(value) < 0) {
+      toast.warning("PO Value can't be Negative !!");
       return;
     }
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: value };
+  
+      // Auto-calculate po_value only if po_basic or gst is updated
+      if (name === "po_basic" || name === "gst") {
+        const poBasic = parseFloat(name === "po_basic" ? value : updated.po_basic) || 0;
+        const gst = parseFloat(name === "gst" ? value : updated.gst) || 0;
+        const calculatedPoValue = poBasic + (poBasic * gst / 100);
+  
+        updated.po_value = calculatedPoValue;
+      }
+  
+      return updated;
+    });
   };
+  
 
   const handleAutocompleteChange = (field, newValue, index) => {
     setFormData((prev) => ({
@@ -143,8 +158,10 @@ const AddPurchaseOrder = () => {
       item: formData.item === "Other" ? "other" : formData.item,
       other: formData.item === "Other" ? formData.other : "",
       po_value: formData.po_value,
-      partial_billing: formData.partial_billing|| "",
-      submitted_By:userData.name,
+      po_basic: formData.po_basic,
+      gst: formData.gst,
+      partial_billing: formData.partial_billing || "",
+      submitted_By: userData.name,
     };
 
     try {
@@ -161,9 +178,11 @@ const AddPurchaseOrder = () => {
         date: "",
         item: "",
         po_value: "",
-        partial_billing:"",
+        po_basic: "",
+        gst: "",
+        partial_billing: "",
         other: "",
-        submitted_By:userData.name
+        submitted_By: userData.name,
       });
       setShowOtherItem(false);
     } catch (error) {
@@ -174,19 +193,23 @@ const AddPurchaseOrder = () => {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#f4f6f8",
-        padding: 3,
+
+        width: "100%",
+        minHeight: "100vh",
+        backgroundColor: "background.level1",
+        padding: "20px",
       }}
     >
-      <Container
+      <Box
         sx={{
-          boxShadow: "lg",
-          padding: 4,
-          borderRadius: "md",
+          maxWidth: 900,
+          width: "100%",
+          padding: "40px",
+          boxShadow: "md",
+          borderRadius: "lg",
           backgroundColor: "background.surface",
         }}
       >
@@ -204,6 +227,9 @@ const AddPurchaseOrder = () => {
         <form onSubmit={handleSubmit}>
           <Grid container spacing={2}>
             <Grid xs={12} md={4}>
+              <Typography level="body1" fontWeight="bold" mb={1}>
+                Project ID
+              </Typography>
               <Select
                 styles={customStyles}
                 options={projectIDs.map((project) => ({
@@ -223,6 +249,9 @@ const AddPurchaseOrder = () => {
             </Grid>
 
             <Grid xs={12} md={4}>
+              <Typography level="body1" fontWeight="bold" mb={1}>
+                PO Number
+              </Typography>
               <Input
                 name="po_number"
                 placeholder="PO Number"
@@ -233,6 +262,9 @@ const AddPurchaseOrder = () => {
             </Grid>
 
             <Grid xs={12} md={4}>
+              <Typography level="body1" fontWeight="bold" mb={1}>
+                Vendor
+              </Typography>
               <Select
                 styles={customStyles}
                 options={vendors.map((vendor) => ({
@@ -252,6 +284,9 @@ const AddPurchaseOrder = () => {
             </Grid>
 
             <Grid xs={12} md={4}>
+              <Typography level="body1" fontWeight="bold" mb={1}>
+                PO Date
+              </Typography>
               <Input
                 name="date"
                 type="date"
@@ -262,20 +297,58 @@ const AddPurchaseOrder = () => {
             </Grid>
 
             <Grid xs={12} md={4}>
-            <Select
-    options={[...items, { value: "Other", label: "Other" }]}
-    value={formData.item ? { value: formData.item, label: formData.item } : null}
-    onChange={(selectedOption) =>
-      handleAutocompleteChange("item", selectedOption?.value || "")
-    }
-    placeholder="Select Item"
-  />
+              <Typography level="body1" fontWeight="bold" mb={1}>
+                Item Name
+              </Typography>
+              <Select
+                options={[...items, { value: "Other", label: "Other" }]}
+                value={
+                  formData.item
+                    ? { value: formData.item, label: formData.item }
+                    : null
+                }
+                onChange={(selectedOption) =>
+                  handleAutocompleteChange("item", selectedOption?.value || "")
+                }
+                placeholder="Select Item"
+              />
             </Grid>
 
             <Grid xs={12} md={4}>
+              <Typography level="body1" fontWeight="bold" mb={1}>
+                Basic PO Value (without GST)
+              </Typography>
+              <Input
+                name="po_basic"
+                type="text"
+                placeholder="PO Value (without GST)"
+                value={formData.po_basic}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+
+            <Grid xs={12} md={4}>
+              <Typography level="body1" fontWeight="bold" mb={1}>
+                GST Value(%)
+              </Typography>
+              <Input
+                name="gst"
+                type="text"
+                placeholder="GST Value"
+                value={formData.gst}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+
+            <Grid xs={12} md={4}>
+              <Typography level="body1" fontWeight="bold" mb={1}>
+                Total PO Value (with GST)
+              </Typography>
               <Input
                 name="po_value"
-                type="number"
+                type="text"
                 placeholder="PO Value (with GST)"
                 value={formData.po_value}
                 onChange={handleChange}
@@ -285,6 +358,9 @@ const AddPurchaseOrder = () => {
 
             {showOtherItem && (
               <Grid xs={12}>
+                <Typography level="body1" fontWeight="bold" mb={1}>
+                  Other Item Name
+                </Typography>
                 <Input
                   name="other"
                   placeholder="Other Item Name"
@@ -311,7 +387,7 @@ const AddPurchaseOrder = () => {
             </Button>
           </Box>
         </form>
-      </Container>
+      </Box>
     </Box>
   );
 };

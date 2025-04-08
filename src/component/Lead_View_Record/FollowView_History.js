@@ -36,6 +36,7 @@ import { useGetLoginsQuery } from "../../redux/loginSlice";
 import { toast } from "react-toastify";
 import { useSnackbar } from "notistack";
 import { useNavigate } from "react-router-dom";
+import Skeleton from "react-loading-skeleton";
 
 const FollowupLeadsHistory = () => {
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ const FollowupLeadsHistory = () => {
   const [openAddTaskModal, setOpenAddTaskModal] = useState(false);
 
   // API Hooks
- const [updateLead, { isLoading: isUpdating }] = useUpdateFollowupMutation();
+  const [updateLead, { isLoading: isUpdating }] = useUpdateFollowupMutation();
   const [FollowupToWarmup] = useAddFollowuptoWarmupMutation();
   const [FollowupToWon] = useAddFollowuptoWonMutation();
   const [FollowupToDead] = useAddFollowuptoDeadMutation();
@@ -135,14 +136,14 @@ const FollowupLeadsHistory = () => {
       console.error("Error: 'by_whom' field is required.");
       return;
     }
-  
-    const submittedBy = user?.name || ""; 
 
-const updatedFormData = { 
-  ...formData, 
-  id: LeadId, 
-  submitted_by: submittedBy  // Ensuring submitted_by is set properly
-};
+    const submittedBy = user?.name || "";
+
+    const updatedFormData = {
+      ...formData,
+      id: LeadId,
+      submitted_by: submittedBy, // Ensuring submitted_by is set properly
+    };
     try {
       await ADDTask(updatedFormData).unwrap();
       toast.success("🎉 Task added successfully!");
@@ -576,74 +577,106 @@ const updatedFormData = {
       </Modal>
 
       {lead ? (
-        <Sheet
-          variant="soft"
-          sx={{
-            p: 3,
-            mb: 2,
-            backgroundColor: "#e3f2fd",
-            borderRadius: "12px",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-            display: "flex",
-            flexDirection: "column",
-            gap: 1.5,
-          }}
+  <Sheet
+    variant="soft"
+    sx={{
+      p: 3,
+      mb: 3,
+      backgroundColor: "#E3F2FD",
+      borderRadius: "16px",
+      boxShadow: "0 6px 16px rgba(0, 0, 0, 0.1)",
+      display: "flex",
+      flexDirection: "column",
+      gap: 2,
+    }}
+  >
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+      }}
+    >
+      <Typography
+        level="h5"
+        sx={{ fontWeight: "bold", color: "#1976D2", letterSpacing: 0.5 }}
+      >
+        🧾 Client Information
+      </Typography>
+      <Box sx={{ display: "flex", gap: 1.5 }}>
+        <Button
+          variant="solid"
+          color="primary"
+          onClick={handleOpenAddTaskModal}
         >
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Typography
-              sx={{ fontSize: "1.2rem", fontWeight: "bold", color: "#1976D2" }}
-            >
-              Client Information
-            </Typography>
-            <Box sx={{ display: "flex", gap: 1 }}>
-              <Button
-                variant="solid"
-                color="primary"
-                onClick={() => handleOpenAddTaskModal()}
-              >
-                Add Task
-              </Button>
-              <Button variant="solid" color="success" onClick={handleOpen}>
-                Next Stage
-              </Button>
-            </Box>
-          </Box>
-          <Divider />
-          <Typography sx={{ fontSize: "1.1rem", color: "#333" }}>
-            <strong>Client Name:</strong> {lead.c_name || "N/A"} &nbsp;|
-            &nbsp;&nbsp;
-            <strong>POC:</strong> {lead.submitted_by || "N/A"} &nbsp;| &nbsp;&nbsp;
-            <strong>Company:</strong> {lead.company || "N/A"} &nbsp;|
-            &nbsp;&nbsp;
-            <strong>Location:</strong> {lead.state || "N/A"}
-          </Typography>
-        </Sheet>
-      ) : (
-        <Typography textAlign="center" color="error">
-          No lead data found.
-        </Typography>
-      )}
+          ➕ Add Task
+        </Button>
+        <Button variant="solid" color="success" onClick={handleOpen}>
+          ⏭ Next Stage
+        </Button>
+      </Box>
+    </Box>
+    <Divider />
+    <Typography sx={{ fontSize: "1.05rem", color: "#333" }}>
+      <strong>Client Name:</strong> {lead.c_name || "N/A"} &nbsp;|&nbsp;
+      <strong>POC:</strong> {lead.submitted_by || "N/A"} &nbsp;|&nbsp;
+      <strong>Company:</strong> {lead.company || "N/A"} &nbsp;|&nbsp;
+      <strong>Location:</strong> {lead.state || "N/A"}
+    </Typography>
+  </Sheet>
+) : (
+  <Sheet
+    variant="soft"
+    sx={{
+      p: 3,
+      mb: 3,
+      backgroundColor: "#F0F0F0",
+      borderRadius: "16px",
+      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+      display: "flex",
+      flexDirection: "column",
+      gap: 2,
+    }}
+  >
+    <Skeleton variant="text" level="h5" width="40%" />
+    <Skeleton variant="rectangular" height={40} width="30%" />
+    <Divider />
+    <Skeleton variant="text" width="100%" />
+    <Skeleton variant="text" width="90%" />
+  </Sheet>
+)}
+
 
       <Sheet
         variant="outlined"
-        sx={{ borderRadius: "12px", overflow: "hidden" }}
+        sx={{
+          borderRadius: "16px",
+          overflow: "hidden",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+          backgroundColor: "#fff",
+        }}
       >
         <Table
           borderAxis="both"
           size="md"
           sx={{
-            "& th": {
-              backgroundColor: "#f0f0f0",
+            "& thead th": {
+              backgroundColor: "#F5F5F5",
               fontWeight: "bold",
-              fontSize: "1.1rem",
+              fontSize: "1.05rem",
+              color: "#333",
+              textTransform: "uppercase",
+              textAlign: "left",
+              px: 2,
+              py: 1.5,
             },
-            "& td": { fontSize: "1rem" },
+            "& tbody td": {
+              fontSize: "1rem",
+              color: "#444",
+              px: 2,
+              py: 1.2,
+              borderBottom: "1px solid #eee",
+            },
           }}
         >
           <thead>
@@ -652,7 +685,7 @@ const updatedFormData = {
               <th>Reference</th>
               <th>By Whom</th>
               <th>Feedback</th>
-              <th>submitted_by</th>
+              <th>Submitted By</th>
             </tr>
           </thead>
           <tbody>
@@ -662,21 +695,30 @@ const updatedFormData = {
                   <td>{row.date || "N/A"}</td>
                   <td>{row.reference || "N/A"}</td>
                   <td>{row.by_whom || "N/A"}</td>
-                  <td>{row.comment || "N/A"}</td>
+                  <td
+                        style={{
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
+                          maxWidth: "300px",
+                        }}
+                      >
+                        {row.comment || "N/A"}
+                      </td>
                   <td>{row.submitted_by || "N/A"}</td>
                 </tr>
               ))
             ) : (
               <tr>
                 <td
-                  colSpan="4"
+                  colSpan="5"
                   style={{
                     textAlign: "center",
-                    padding: "10px",
+                    padding: "16px",
                     fontStyle: "italic",
+                    color: "#888",
                   }}
                 >
-                  No task history available.
+                  💤 No task history available.
                 </td>
               </tr>
             )}

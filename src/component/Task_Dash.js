@@ -255,7 +255,7 @@ const TaskDashboard = () => {
         categorizedTasks.past.push(taskEntry);
       } else if (isToday(taskDate)) {
         console.log("📅 Categorized as: Today");
-        taskEntry.isToday = true; 
+        taskEntry.isToday = true;
         categorizedTasks.today.push(taskEntry);
       } else if (isTomorrow(taskDate)) {
         console.log("📅 Categorized as: Tomorrow");
@@ -320,7 +320,7 @@ const TaskDashboard = () => {
     const savedState = localStorage.getItem("disabledCards");
     return savedState ? JSON.parse(savedState) : {};
   });
-
+  const [commentSubmitted, setCommentSubmitted] = useState(false);
   const handleSubmit = async () => {
     if (!selectedTask || !selectedTask._id) {
       console.error("No task selected or _id is missing!", selectedTask);
@@ -334,33 +334,16 @@ const TaskDashboard = () => {
         comment: comment,
       };
 
-      await updateTask(updateData).unwrap();
+      await updateTask(updateData).unwrap(); // Submit to backend
       toast.success("Comment updated successfully");
 
-      navigate("/dash_task");
+      setComment(""); // Clear the comment input
+      setOpenDialog(false); // Close modal if needed
 
+      // ⏳ Give a short delay, then reload
       setTimeout(() => {
         window.location.reload();
-      }, 100);
-
-      const updatedDisabledCards = {
-        ...disabledCards,
-        [selectedTask._id]: true,
-      };
-
-      setDisabledCards(updatedDisabledCards);
-      localStorage.setItem(
-        "disabledCards",
-        JSON.stringify(updatedDisabledCards)
-      );
-
-      setCompletedTasks((prev) => ({
-        ...prev,
-        [selectedTask._id]: true,
-      }));
-
-      setOpenDialog(false);
-      setComment("");
+      }, 500); // Allows toast to show
     } catch (error) {
       console.error("Error updating comment:", error);
       toast.error("Failed to update comment");
@@ -1768,13 +1751,24 @@ const TaskDashboard = () => {
       <Modal open={openModal} onClose={handleCloseModal}>
         <ModalDialog
           size="lg"
-          sx={{ maxWidth: 900, p: 3, borderRadius: "12px" }}
+          sx={{
+            width: "70%",
+            p: 4,
+            borderRadius: "16px",
+            backgroundColor: "#fff",
+            boxShadow: "lg",
+          }}
         >
           <Box textAlign="center" mb={3}>
-            <img src={Img1} alt="Task" style={{ width: 60 }} />
+            <img src={Img1} alt="Task" style={{ width: 70 }} />
             <Typography
               level="h2"
-              sx={{ color: "#D78827", fontWeight: "bold" }}
+              sx={{
+                color: "#D78827",
+                fontWeight: "bold",
+                mt: 1,
+                fontSize: "1.8rem",
+              }}
             >
               Client Details & History
             </Typography>
@@ -1785,45 +1779,52 @@ const TaskDashboard = () => {
               variant="soft"
               sx={{
                 p: 3,
-                mb: 2,
+                mb: 3,
                 backgroundColor: "#e3f2fd",
                 borderRadius: "12px",
-                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+                boxShadow: "sm",
                 display: "flex",
                 flexDirection: "column",
-                gap: 1.5,
+                gap: 2,
               }}
             >
               <Typography
                 sx={{
-                  fontSize: "1.2rem",
+                  fontSize: "1.25rem",
                   fontWeight: "bold",
-                  color: "#1976D2",
+                  color: "#1565C0",
                 }}
               >
-                Client Information
+                🧾 Client Information
               </Typography>
               <Divider />
-              <Typography sx={{ fontSize: "1.1rem", color: "#333" }}>
-                <strong>POC:</strong> {selectedTask?.submitted_by || "N/A"}{" "}
-                &nbsp;| &nbsp;&nbsp;
-                <strong>Client Name:</strong> {selectedTask?.name || "N/A"}{" "}
-                &nbsp;| &nbsp;&nbsp;
-                <strong>Company:</strong> {selectedTask?.company || "N/A"}{" "}
-                &nbsp;| &nbsp;&nbsp;
-                <strong>Location:</strong>{" "}
-                {`${selectedTask?.district || "N/A"}, ${selectedTask?.state || "N/A"}`}
-              </Typography>
-              <Typography sx={{ fontSize: "1.1rem", color: "#333" }}>
-                <strong>Mobile No:</strong> {selectedTask?.mobile || "N/A"}{" "}
-                &nbsp;| &nbsp;&nbsp;
-                <strong>Capacity:</strong> {selectedTask?.capacity || "N/A"}{" "}
-                &nbsp;| &nbsp;&nbsp;
-                <strong>Scheme:</strong> {selectedTask?.scheme || "N/A"}
-              </Typography>
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+                <Typography>
+                  <strong>POC:</strong> {selectedTask.submitted_by || "N/A"}
+                </Typography>
+                <Typography>
+                  <strong>Client Name:</strong> {selectedTask.name || "N/A"}
+                </Typography>
+                <Typography>
+                  <strong>Company:</strong> {selectedTask.company || "N/A"}
+                </Typography>
+                <Typography>
+                  <strong>Location:</strong>{" "}
+                  {`${selectedTask.district || "N/A"}, ${selectedTask.state || "N/A"}`}
+                </Typography>
+                <Typography>
+                  <strong>Mobile No:</strong> {selectedTask.mobile || "N/A"}
+                </Typography>
+                <Typography>
+                  <strong>Capacity:</strong> {selectedTask.capacity || "N/A"}
+                </Typography>
+                <Typography>
+                  <strong>Scheme:</strong> {selectedTask.scheme || "N/A"}
+                </Typography>
+              </Box>
             </Sheet>
           ) : (
-            <Typography textAlign="center" color="error">
+            <Typography textAlign="center" color="danger">
               No task data found.
             </Typography>
           )}
@@ -1832,23 +1833,23 @@ const TaskDashboard = () => {
             variant="outlined"
             sx={{
               borderRadius: "12px",
-              overflow: "hidden",
+              p: 2,
+              overflow: "auto",
+              maxHeight: "300px",
+              border: "1px solid #ddd",
             }}
           >
             <Table
               borderAxis="both"
               size="md"
+              stickyHeader
               sx={{
                 "& th": {
-                  backgroundColor: "#f0f0f0",
+                  backgroundColor: "#f5f5f5",
                   fontWeight: "bold",
-                  fontSize: "1.1rem",
+                  fontSize: "1rem",
                 },
-                "& td": { fontSize: "1rem" },
-                display: "block",
-                maxHeight: "300px", // Set the height for the scrollable area
-                overflowY: "auto", // Enables vertical scrolling
-                width: "100%",
+                "& td": { fontSize: "0.95rem" },
               }}
             >
               <thead>
@@ -1857,67 +1858,96 @@ const TaskDashboard = () => {
                   <th>Reference</th>
                   <th>By Whom</th>
                   <th>Feedback</th>
-
-                  <th>submitted_by</th>
+                  <th>Submitted By</th>
                 </tr>
               </thead>
               <tbody>
-  <tr>
-    <td>{selectedTask?.date || "N/A"}</td>
-    <td>{selectedTask?.type || "N/A"}</td>
-    <td>{selectedTask?.by_whom || "N/A"}</td>
-    <td>
-    {selectedTask?.isToday &&
- selectedTask.submitted_by?.toLowerCase() === user?.name?.toLowerCase() &&
- (!selectedTask.comment || selectedTask.comment.trim() === "") ? (
-        <>
-          <Input
-            size="sm"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="Enter comment"
-            sx={{ width: "70%" }}
-          />
-          <Button
-            size="sm"
-            variant="solid"
-            onClick={handleSubmit}
-            sx={{ ml: 1 }}
-          >
-            Submit
-          </Button>
-        </>
-      ) : (
-        selectedTask?.comment || "N/A"
-      )}
-    </td>
-    <td>{selectedTask?.submitted_by || "N/A"}</td>
-  </tr>
+                {/* Only show today's row if comment is empty */}
+                {selectedTask?.isToday &&
+                  (!selectedTask.comment ||
+                    selectedTask.comment.trim() === "") &&
+                  selectedTask.submitted_by?.toLowerCase() ===
+                    user?.name?.toLowerCase() && (
+                    <tr>
+                      <td>{selectedTask?.date || "N/A"}</td>
+                      <td>{selectedTask?.type || "N/A"}</td>
+                      <td>{selectedTask?.by_whom || "N/A"}</td>
+                      <td>
+                        <Box display="flex" alignItems="center">
+                          <Textarea
+                            minRows={2}
+                            value={comment}
+                            onChange={(e) => setComment(e.target.value)}
+                            placeholder="Enter comment"
+                            sx={{ flex: 1 }}
+                          />
 
-  {/* History rows */}
-  {selectedTask?.history && selectedTask.history.length > 0 ? (
-    selectedTask.history.map((historyItem, index) => (
-      <tr key={index}>
-        <td>{historyItem?.date || "N/A"}</td>
-        <td>{historyItem?.reference || "N/A"}</td>
-        <td>{historyItem?.by_whom || "N/A"}</td>
-        <td>{historyItem?.comment || "N/A"}</td>
-        <td>{historyItem?.submitted_by || "N/A"}</td>
-      </tr>
-    ))
-  ) : (
-    <tr>
-      <td colSpan={5} style={{ textAlign: "center" }}>
-        No additional history found.
-      </td>
-    </tr>
-  )}
-</tbody>
+                          <Button
+                            size="xs"
+                            variant="solid"
+                            onClick={handleSubmit}
+                            sx={{ ml: 1 }}
+                          >
+                            Submit
+                          </Button>
+                        </Box>
+                        {/* <Button
+                          variant="plain"
+                          onClick={() => {
+                            setSelectedTask(selectedTask); // capture the current task
+                            setOpenDialog(true); // open the modal
+                          }}
+                        >
+                          Add Comment
+                        </Button> */}
+                      </td>
+                      <td>{selectedTask?.submitted_by || "N/A"}</td>
+                    </tr>
+                  )}
+
+                {/* History rows */}
+                {selectedTask?.history?.length > 0 ? (
+                  selectedTask.history.map((item, index) => (
+                    <tr key={index}>
+                      <td>{item.date || "N/A"}</td>
+                      <td>{item.reference || "N/A"}</td>
+                      <td>{item.by_whom || "N/A"}</td>
+                      <td
+                        style={{
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
+                          maxWidth: "300px",
+                        }}
+                      >
+                        {item.comment || "N/A"}
+                      </td>
+
+                      <td>{item.submitted_by || "N/A"}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} style={{ textAlign: "center" }}>
+                    💤 No task history available.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
             </Table>
           </Sheet>
 
           <Box textAlign="center" mt={3}>
-            <Button variant="solid" color="primary" onClick={handleCloseModal}>
+            <Button
+              variant="solid"
+              color="primary"
+              onClick={handleCloseModal}
+              sx={{
+                px: 4,
+                py: 1.5,
+                fontWeight: "bold",
+                borderRadius: "xl",
+              }}
+            >
               Close
             </Button>
           </Box>

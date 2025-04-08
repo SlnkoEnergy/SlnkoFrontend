@@ -34,6 +34,7 @@ import {
   useAddTasksMutation,
   useGetTasksHistoryQuery,
 } from "../../redux/tasksSlice";
+import Skeleton from "react-loading-skeleton";
 
 const WonLeadsHistory = () => {
   const navigate = useNavigate();
@@ -562,115 +563,155 @@ const WonLeadsHistory = () => {
         </ModalDialog>
       </Modal>
 
-      {lead ? (
-        <Sheet
-          variant="soft"
-          sx={{
-            p: 3,
-            mb: 2,
-            backgroundColor: "#e3f2fd",
-            borderRadius: "12px",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-            display: "flex",
-            flexDirection: "column",
-            gap: 1.5,
-          }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Typography
-              sx={{ fontSize: "1.2rem", fontWeight: "bold", color: "#1976D2" }}
-            >
-              Client Information
-            </Typography>
-            <Box sx={{ display: "flex", gap: 1 }}>
-              <Button
-                variant="solid"
-                color="primary"
-                onClick={() => handleOpenAddTaskModal()}
-              >
-                Add Task
-              </Button>
-              <Button variant="solid" color="success" onClick={handleOpen}>
-                Next Stage
-              </Button>
-            </Box>
-          </Box>
-          <Divider />
-          <Typography sx={{ fontSize: "1.1rem", color: "#333" }}>
-            <strong>Client Name:</strong> {lead.c_name || "N/A"} &nbsp;|
-            &nbsp;&nbsp;
-            <strong>POC:</strong> {lead.submitted_by || "N/A"} &nbsp;|
-            &nbsp;&nbsp;
-            <strong>Company:</strong> {lead.company || "N/A"} &nbsp;|
-            &nbsp;&nbsp;
-            <strong>Location:</strong> {lead.state || "N/A"}
-          </Typography>
-        </Sheet>
-      ) : (
-        <Typography textAlign="center" color="error">
-          No lead data found.
-        </Typography>
-      )}
-
-      <Sheet
-        variant="outlined"
-        sx={{ borderRadius: "12px", overflow: "hidden" }}
-      >
-        <Table
-          borderAxis="both"
-          size="md"
-          sx={{
-            "& th": {
-              backgroundColor: "#f0f0f0",
-              fontWeight: "bold",
-              fontSize: "1.1rem",
-            },
-            "& td": { fontSize: "1rem" },
-          }}
-        >
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Reference</th>
-              <th>By Whom</th>
-              <th>Feedback</th>
-              <th>submitted_by</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredTasks.length > 0 ? (
-              filteredTasks.map((row, index) => (
-                <tr key={index}>
-                  <td>{row.date || "N/A"}</td>
-                  <td>{row.reference || "N/A"}</td>
-                  <td>{row.by_whom || "N/A"}</td>
-                  <td>{row.comment || "N/A"}</td>
-                  <td>{row.submitted_by || "N/A"}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan="4"
-                  style={{
-                    textAlign: "center",
-                    padding: "10px",
-                    fontStyle: "italic",
-                  }}
-                >
-                  No task history available.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </Table>
-      </Sheet>
+     {lead ? (
+       <Sheet
+         variant="soft"
+         sx={{
+           p: 3,
+           mb: 3,
+           backgroundColor: "#E3F2FD",
+           borderRadius: "16px",
+           boxShadow: "0 6px 16px rgba(0, 0, 0, 0.1)",
+           display: "flex",
+           flexDirection: "column",
+           gap: 2,
+         }}
+       >
+         <Box
+           sx={{
+             display: "flex",
+             justifyContent: "space-between",
+             alignItems: "center",
+           }}
+         >
+           <Typography
+             level="h5"
+             sx={{ fontWeight: "bold", color: "#1976D2", letterSpacing: 0.5 }}
+           >
+             🧾 Client Information
+           </Typography>
+           <Box sx={{ display: "flex", gap: 1.5 }}>
+             <Button
+               variant="solid"
+               color="primary"
+               onClick={handleOpenAddTaskModal}
+             >
+               ➕ Add Task
+             </Button>
+             <Button variant="solid" color="success" onClick={handleOpen}>
+               ⏭ Next Stage
+             </Button>
+           </Box>
+         </Box>
+         <Divider />
+         <Typography sx={{ fontSize: "1.05rem", color: "#333" }}>
+           <strong>Client Name:</strong> {lead.c_name || "N/A"} &nbsp;|&nbsp;
+           <strong>POC:</strong> {lead.submitted_by || "N/A"} &nbsp;|&nbsp;
+           <strong>Company:</strong> {lead.company || "N/A"} &nbsp;|&nbsp;
+           <strong>Location:</strong> {lead.state || "N/A"}
+         </Typography>
+       </Sheet>
+     ) : (
+       <Sheet
+         variant="soft"
+         sx={{
+           p: 3,
+           mb: 3,
+           backgroundColor: "#F0F0F0",
+           borderRadius: "16px",
+           boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+           display: "flex",
+           flexDirection: "column",
+           gap: 2,
+         }}
+       >
+         <Skeleton variant="text" level="h5" width="40%" />
+         <Skeleton variant="rectangular" height={40} width="30%" />
+         <Divider />
+         <Skeleton variant="text" width="100%" />
+         <Skeleton variant="text" width="90%" />
+       </Sheet>
+     )}
+     
+     
+           <Sheet
+             variant="outlined"
+             sx={{
+               borderRadius: "16px",
+               overflow: "hidden",
+               boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+               backgroundColor: "#fff",
+             }}
+           >
+             <Table
+               borderAxis="both"
+               size="md"
+               sx={{
+                 "& thead th": {
+                   backgroundColor: "#F5F5F5",
+                   fontWeight: "bold",
+                   fontSize: "1.05rem",
+                   color: "#333",
+                   textTransform: "uppercase",
+                   textAlign: "left",
+                   px: 2,
+                   py: 1.5,
+                 },
+                 "& tbody td": {
+                   fontSize: "1rem",
+                   color: "#444",
+                   px: 2,
+                   py: 1.2,
+                   borderBottom: "1px solid #eee",
+                 },
+               }}
+             >
+               <thead>
+                 <tr>
+                   <th>Date</th>
+                   <th>Reference</th>
+                   <th>By Whom</th>
+                   <th>Feedback</th>
+                   <th>Submitted By</th>
+                 </tr>
+               </thead>
+               <tbody>
+                 {filteredTasks.length > 0 ? (
+                   filteredTasks.map((row, index) => (
+                     <tr key={index}>
+                       <td>{row.date || "N/A"}</td>
+                       <td>{row.reference || "N/A"}</td>
+                       <td>{row.by_whom || "N/A"}</td>
+                       <td
+                        style={{
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
+                          maxWidth: "300px",
+                        }}
+                      >
+                        {row.comment || "N/A"}
+                      </td>
+                       <td>{row.submitted_by || "N/A"}</td>
+                     </tr>
+                   ))
+                 ) : (
+                   <tr>
+                     <td
+                       colSpan="5"
+                       style={{
+                         textAlign: "center",
+                         padding: "16px",
+                         fontStyle: "italic",
+                         color: "#888",
+                       }}
+                     >
+                       💤 No task history available.
+                     </td>
+                   </tr>
+                 )}
+               </tbody>
+             </Table>
+           </Sheet>
     </Box>
   );
 };

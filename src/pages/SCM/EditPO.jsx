@@ -85,7 +85,7 @@ function Edit_PO() {
               alignItems: { xs: "start", sm: "center" },
               flexWrap: "wrap",
               justifyContent: "space-between",
-              marginLeft: { xl: "16%", lg: "20%", },
+              marginLeft: { xl: "8%", lg: "15%", },
             }}
           >
             <EDITPO />

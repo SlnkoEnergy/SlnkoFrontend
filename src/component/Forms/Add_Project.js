@@ -50,6 +50,7 @@ const states = [
 ];
 const categories = ["KUSUM A", "KUSUM C", "OTHER"];
 const landTypes = ["Leased", "Owned"];
+const BillingTypes = ["Composite", "Individual"];
 
  
 const Add_Project = () => {
@@ -78,12 +79,13 @@ const Add_Project = () => {
     project_category: "",
     project_kwp: "",
     distance: "",
-    tariff: "",
+    tarrif: "",
     land: {
       type: "",
       acres: "",
     },
     service: "",
+    billing_type:"",
     project_status: "incomplete",
     submitted_by:""
   });
@@ -484,8 +486,8 @@ const Add_Project = () => {
                 <Skeleton height={40} />
               ) : (
                 <Input
-                  name="tariff"
-                  value={formData.tariff}
+                  name="tarrif"
+                  value={formData.tarrif}
                   onChange={handleChange}
                   type="number"
                   fullWidth
@@ -517,7 +519,7 @@ const Add_Project = () => {
                 />
               )}
             </Grid>
-            <Grid item="true" xs={12}>
+            <Grid item="true" xs={6}>
               <label htmlFor="types">Land Types</label>
               {isLoading ? (
                 <Skeleton height={40} />
@@ -532,6 +534,26 @@ const Add_Project = () => {
                     }))
                   }
                   placeholder="Land Type"
+                  isOptionEqualToValue={(option, value) => option === value}
+                  variant="soft"
+                  required
+                  sx={{ width: "100%" }}
+                />
+              )}
+            </Grid>
+
+            <Grid item="true" xs={6}>
+              <label htmlFor="types">Billing Types</label>
+              {isLoading ? (
+                <Skeleton height={40} />
+              ) : (
+                <Autocomplete
+                  options={BillingTypes}
+                  value={formData.billing_type || null}
+                  onChange={(e, value) =>
+                    handleAutocompleteChange("billing_type", value)
+                  }
+                  placeholder="Billing Type"
                   isOptionEqualToValue={(option, value) => option === value}
                   variant="soft"
                   required

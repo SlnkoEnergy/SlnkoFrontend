@@ -55,6 +55,7 @@ const StandByRequest = forwardRef((props, ref) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedLead, setSelectedLead] = useState(null);
+  const [user, setUser] = useState(null);
 
   const { data: getLead = [], isLoading, error } = useGetDeadLeadsQuery();
   const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
@@ -81,6 +82,14 @@ const StandByRequest = forwardRef((props, ref) => {
   //     </Chip>
   //   );
   // };
+
+    useEffect(() => {
+      const storedUser = localStorage.getItem("userDetails");
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+        // console.log("User Loaded:", JSON.parse(storedUser));
+      }
+    }, []);
 
   const sourceOptions = {
     "Referred by": ["Directors", "Clients", "Team members", "E-mail"],
@@ -369,23 +378,57 @@ const StandByRequest = forwardRef((props, ref) => {
     setSelectedDate(e.target.value);
   };
 
-  const filteredData = useMemo(() => {
-    return leads
-      .filter((lead) => {
-        const matchesQuery = ["id", "c_name", "mobile", "state"].some((key) =>
-          lead[key]?.toLowerCase().includes(searchQuery)
-        );
-        const matchesDate = selectedDate
-          ? formatDate(lead.entry_date) === selectedDate
-          : true;
-        return matchesQuery && matchesDate;
-      })
-      .sort((a, b) => {
-        if (!a.id) return 1;
-        if (!b.id) return -1;
-        return String(b.id).localeCompare(String(a.id));
-      });
-  }, [leads, searchQuery, selectedDate]);
+
+    const filteredData = useMemo(() => {
+      if (!user || !user.name) return [];
+  
+      return leads
+        .filter((lead) => {
+          const submittedBy = lead.submitted_by?.trim() || "";
+          const userName = user.name.trim();
+          const userRole = user.role?.toLowerCase();
+  
+          const isAdmin = userRole === "admin" || userRole === "superadmin";
+          const matchesUser = isAdmin || submittedBy === userName;
+  
+          const matchesQuery = ["id", "c_name", "mobile", "state"].some(
+            (key) => lead[key]?.toLowerCase().includes(searchQuery)
+          );
+  
+          const matchesDate = selectedDate
+            ? formatDate(lead.entry_date).toLocaleDateString() === formatDate(selectedDate).toLocaleDateString()
+            : true;
+  
+          return matchesUser && matchesQuery && matchesDate;
+        })
+        .sort((a, b) => {
+          const dateA = formatDate(a.entry_date);
+          const dateB = formatDate(b.entry_date);
+  
+          if (isNaN(dateA.getTime())) return 1;
+          if (isNaN(dateB.getTime())) return -1;
+  
+          return dateB - dateA;
+        });
+    }, [leads, searchQuery, selectedDate, user]);
+
+  // const filteredData = useMemo(() => {
+  //   return leads
+  //     .filter((lead) => {
+  //       const matchesQuery = ["id", "c_name", "mobile", "state"].some((key) =>
+  //         lead[key]?.toLowerCase().includes(searchQuery)
+  //       );
+  //       const matchesDate = selectedDate
+  //         ? formatDate(lead.entry_date) === selectedDate
+  //         : true;
+  //       return matchesQuery && matchesDate;
+  //     })
+  //     .sort((a, b) => {
+  //       if (!a.id) return 1;
+  //       if (!b.id) return -1;
+  //       return String(b.id).localeCompare(String(a.id));
+  //     });
+  // }, [leads, searchQuery, selectedDate]);
 
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
@@ -716,7 +759,7 @@ const StandByRequest = forwardRef((props, ref) => {
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={10}
+                    colSpan={12}
                     sx={{
                       padding: "8px",
                       textAlign: "center",

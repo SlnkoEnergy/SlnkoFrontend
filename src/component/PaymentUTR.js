@@ -153,83 +153,47 @@ function UTRPayment() {
   };
 
 
-    const handleUtrSubmit = async () => {
+  const handleUtrSubmit = async () => {
+    if (!utr) {
+      enqueueSnackbar("Please enter a valid UTR.", { variant: "warning" });
+      return;
+    }
+    if (!user || !user?.name) {
+      enqueueSnackbar("User details not found. Please login again.", { variant: "error" });
+      return;
+    }
+  
+    setIsSubmitting(true);
+  
+    try {
+      console.log("Submitting UTR...");
+      const utrResponse = await Axios.put("/utr-update", {
+        pay_id: paymentId,
+        utr: utr,
+        utr_submitted_by: user?.name,
+      });
+  
+      console.log("UTR Response:", utrResponse);
+  
+      if (utrResponse.status === 200 && utrResponse.data) {
+        enqueueSnackbar("😊 UTR submitted and money debited successfully!", { variant: "success" });
+        setIsUtrSubmitted(true);
+  
        
-
-      if (!utr) {
-        enqueueSnackbar("Please enter a valid UTR.", { variant: "warning" });
-        return;
-      }
-      if (!user || !user?.name) {
-        enqueueSnackbar("User details not found. Please login again.", { variant: "error" });
-        return;
-      }
-  
-  
-      setIsSubmitting(true);
-  
-      try {
-        console.log("Submitting UTR...");
-        const utrResponse = await Axios.put("/utr-update", {
-          pay_id: paymentId,
-          utr: utr,
-          utr_submitted_by: user?.name,
-        });
-  
-        console.log("UTR Response:", utrResponse);
-  
-        if (utrResponse.status === 200 && utrResponse.data) {
-          enqueueSnackbar("UTR submitted successfully!", { variant: "success" });
-          setIsUtrSubmitted(true);
-  
-          // Fetch PO details
-          console.log("Fetching PO details...");
-          const poResponse = await Axios.get("/get-pay-summarY-IT");
-          console.log("PO Summary Response:", poResponse.data);
-  
-          // Match PO and perform debit operation
-          const matchedPo = poResponse.data.data.find((po) => po.pay_id === paymentId);
-          if (matchedPo) {
-            console.log("Matched PO data:", matchedPo);
-  
-            const debitResponse = await Axios.post("/debit-moneY-IT", {
-              p_id: matchedPo.p_id,
-              p_group: matchedPo.p_group || "",
-              pay_type: matchedPo.pay_type || "",
-              amount_paid: matchedPo.amount_paid || "",
-              amt_for_customer: matchedPo.amt_for_customer || "",
-              dbt_date: matchedPo.dbt_date || "",
-              paid_for: matchedPo.paid_for || "",
-              vendor: matchedPo.vendor || "",
-              po_number: matchedPo.po_number || "",
-              utr: matchedPo.utr || "",
-              // submitted_by: user?.name,
-            });
-  
-            if (debitResponse.status === 200) {
-              enqueueSnackbar("Money debited successfully!", { variant: "success" });
-              console.log("Money debited successfully:", debitResponse.data);
-  
-              // Call the parent callback if provided
-              if (onAccountMatchSuccess) {
-                onAccountMatchSuccess(utr);
-              }
-            } else {
-              enqueueSnackbar("Failed to debit money. Please try again.", { variant: "error" });
-            }
-          } else {
-            enqueueSnackbar("Matching PO not found.", { variant: "error" });
-          }
-        } else {
-          enqueueSnackbar("Failed to submit UTR. Please try again.", { variant: "error" });
+        if (onAccountMatchSuccess) {
+          onAccountMatchSuccess(utr);
         }
-      } catch (error) {
-        console.error("Error during UTR submission:", error);
-        enqueueSnackbar("Something went wrong. Please try again.", { variant: "error" });
-      } finally {
-        setIsSubmitting(false);
+      } else {
+        enqueueSnackbar("Failed to submit UTR. Please try again.", { variant: "error" });
       }
-    };
+    } catch (error) {
+      console.error("Error during UTR submission:", error);
+      enqueueSnackbar("Something went wrong. Please try again.", { variant: "error" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
   
     return (
       <div style={{ marginTop: "1rem" }}>

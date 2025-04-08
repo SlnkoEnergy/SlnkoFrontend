@@ -49,6 +49,8 @@ const UpdatePurchaseOrder = () => {
     date: "",
     item: "",
     po_value: "",
+    po_basic: "",
+    gst: "",
     other: "",
     partial_billing: "",
     amount_paid: "",
@@ -107,6 +109,8 @@ const UpdatePurchaseOrder = () => {
             amount_paid: poData.amount_paid || "0",
             date: poData.date || "",
             po_value: poData.po_value || "",
+            po_basic: poData.po_basic || "",
+            gst: poData.gst || "",
             partial_billing: poData.partial_billing,
             submitted_By: user.name || "Anonymous",
           });
@@ -130,12 +134,28 @@ const UpdatePurchaseOrder = () => {
   ];
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // console.log("Field:", name, "Value:", value);
-    if (name === "po_value" && value < 0) {
+
+    // Don't allow negative manual entry for po_value
+    if (name === "po_value" && parseFloat(value) < 0) {
       toast.warning("PO Value can't be Negative !!");
       return;
     }
-    setFormData((prev) => ({ ...prev, [name]: value || "" }));
+
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: value };
+
+     
+      if (name === "po_basic" || name === "gst") {
+        const poBasic =
+          parseFloat(name === "po_basic" ? value : updated.po_basic) || 0;
+        const gst = parseFloat(name === "gst" ? value : updated.gst) || 0;
+        const calculatedPoValue = poBasic + (poBasic * gst) / 100;
+
+        updated.po_value = calculatedPoValue;
+      }
+
+      return updated;
+    });
   };
 
   const handleSelectChange = (field, newValue) => {
@@ -203,23 +223,24 @@ const UpdatePurchaseOrder = () => {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#f4f6f8",
-        padding: 3,
-        // width:{ lg:"85%",md:"80%", sm:"100%"},
-        marginLeft: { xl: "15%", lg: "18%", sm: "7%" },
+
+        width: "100%",
+        minHeight: "100vh",
+        backgroundColor: "background.level1",
+        padding: "20px",
       }}
     >
-      <Container
-        maxWidth="md"
+      <Box
         sx={{
-          boxShadow: 3,
-          borderRadius: 2,
-          backgroundColor: "#ffffff",
-          p: 4,
+          maxWidth: 900,
+          width: "100%",
+          padding: "40px",
+          boxShadow: "md",
+          borderRadius: "lg",
+          backgroundColor: "background.surface",
         }}
       >
         <Box textAlign="center" mb={3}>
@@ -391,12 +412,48 @@ const UpdatePurchaseOrder = () => {
                 fontWeight={"bold"}
                 sx={{ mb: 1 }}
               >
+                Basic PO Value (without GST)
+              </Typography>
+              <Input
+                name="po_basic"
+                type="text"
+                placeholder="PO Value (without GST)"
+                value={formData.po_basic}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Typography
+                variant="subtitle2"
+                color="secondary"
+                fontWeight={"bold"}
+                sx={{ mb: 1 }}
+              >
+                GST Value(%)
+              </Typography>
+              <Input
+                name="gst"
+                type="text"
+                placeholder="GST Value"
+                value={formData.gst}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Typography
+                variant="subtitle2"
+                color="secondary"
+                fontWeight={"bold"}
+                sx={{ mb: 1 }}
+              >
                 PO Value (with GST)
               </Typography>
               <Input
                 name="po_value"
                 placeholder="PO Value (with GST)"
-                type="number"
+                type="text"
                 value={formData.po_value}
                 onChange={handleChange}
                 required
@@ -475,7 +532,7 @@ const UpdatePurchaseOrder = () => {
                 }
               />
             </Grid> */}
-            <Grid item xs={12} md={8}>
+            <Grid item xs={12} md={12}>
               <Typography
                 variant="subtitle2"
                 color="secondary"
@@ -507,7 +564,7 @@ const UpdatePurchaseOrder = () => {
             </Button>
           </Box>
         </form>
-      </Container>
+      </Box>
     </Box>
   );
 };

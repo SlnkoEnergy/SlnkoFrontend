@@ -37,203 +37,252 @@ import { useGetLoginsQuery } from "../../redux/loginSlice";
 import { toast } from "react-toastify";
 import { useSnackbar } from "notistack";
 import { useNavigate } from "react-router-dom";
+import Skeleton from "react-loading-skeleton";
 
 const InitialLeadsHistory = () => {
-    const navigate = useNavigate();
-    const { enqueueSnackbar } = useSnackbar();
-    const [open, setOpen] = useState(false); // Ensure it's false initially
+  const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
+  const [open, setOpen] = useState(false); // Ensure it's false initially
 
-    const [selectedOptions, setSelectedOptions] = useState({ loa: false, ppa: false });
-    const [selectedRadio, setSelectedRadio] = useState("");
-    const [otherRemarks, setOtherRemarks] = useState("");
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [openAddTaskModal, setOpenAddTaskModal] = useState(false);
-    
-    // API Hooks
-    const [updateLead] = useUpdateInitialMutation();
-    const [InitialToFollowup] = useAddInitialtoFollowupMutation();
-    const [InitialToWarmup] = useAddInitialtoWarmupMutation();
-    const [InitialToWon] = useAddInitialtoWonMutation();
-    const [InitialToDead] = useAddInitialtoDeadMutation();
-    const { data: getLead = {} } = useGetEntireLeadsQuery();
-    const { data: getTask = [] } = useGetTasksHistoryQuery();
-    const { data: usersData = [] } = useGetLoginsQuery();
-    const [ADDTask] = useAddTasksMutation();
-  
-    // Extract data
-    const getTaskArray = useMemo(() => (Array.isArray(getTask) ? getTask : getTask?.data || []), [getTask]);
-    const getLeadArray = useMemo(() => [
+  const [selectedOptions, setSelectedOptions] = useState({
+    loa: false,
+    ppa: false,
+  });
+  const [selectedRadio, setSelectedRadio] = useState("");
+  const [otherRemarks, setOtherRemarks] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [openAddTaskModal, setOpenAddTaskModal] = useState(false);
+
+  // API Hooks
+  const [updateLead] = useUpdateInitialMutation();
+  const [InitialToFollowup] = useAddInitialtoFollowupMutation();
+  const [InitialToWarmup] = useAddInitialtoWarmupMutation();
+  const [InitialToWon] = useAddInitialtoWonMutation();
+  const [InitialToDead] = useAddInitialtoDeadMutation();
+  const { data: getLead = {} } = useGetEntireLeadsQuery();
+  const { data: getTask = [] } = useGetTasksHistoryQuery();
+  const { data: usersData = [] } = useGetLoginsQuery();
+  const [ADDTask] = useAddTasksMutation();
+
+  // Extract data
+  const getTaskArray = useMemo(
+    () => (Array.isArray(getTask) ? getTask : getTask?.data || []),
+    [getTask]
+  );
+  const getLeadArray = useMemo(
+    () => [
       ...(getLead?.lead?.initialdata || []),
       ...(getLead?.lead?.followupdata || []),
       ...(getLead?.lead?.warmdata || []),
       ...(getLead?.lead?.wondata || []),
       ...(getLead?.lead?.deaddata || []),
-    ], [getLead]);
-  
-    // Get Lead ID
-    const LeadId = localStorage.getItem("view_initial_history");
-    
-    const lead = getLeadArray.find((lead) => String(lead.id) === LeadId) || null;
-    const filteredTasks = getTaskArray.filter((task) => String(task.id) === LeadId);
-  
-    // Fetch BD Members
-    const bdMembers = useMemo(() => {
-      return (usersData?.data || []).filter((user) => user.department === "BD").map((member) => ({ label: member.name, id: member._id }));
-    }, [usersData]);
-  
-    // Retrieve user session
-    const [user, setUser] = useState(null);
-    useEffect(() => {
-      const userSessionData = localStorage.getItem("userDetails");
-      if (userSessionData) setUser(JSON.parse(userSessionData));
-    }, []);
-  
-    // Form Data State
-    const [formData, setFormData] = useState({
-      id: "",
-      name: "",
-      date: "",
-      reference: "",
-      by_whom: "",
-      task_detail: "",
-      submitted_by:""
-    });
-  
-    // Handle Input Changes
-    const handleChange = (field, value) => {
-      setFormData((prev) => ({ ...prev, [field]: value }));
-      if (field === "reference" && (value === "By Call" || value === "By Meeting") && user?.name) {
-        setFormData((prev) => ({ ...prev, by_whom: user.name }));
-      }
-    };
-  
-    const handleByWhomChange = (_, newValue = []) => {
-      setFormData((prev) => ({ ...prev, by_whom: newValue.map((member) => member.label).join(", ") }));
-    };
-  
-    // Handle Task Submission
-    const handleSubmitTask = async (e) => {
-      e.preventDefault();
-      if (!formData.by_whom) {
-        console.error("Error: 'by_whom' field is required.");
-        return;
-      }
-    
-      const submittedBy = user?.name || ""; 
+    ],
+    [getLead]
+  );
 
-  const updatedFormData = { 
-    ...formData, 
-    id: LeadId, 
-    submitted_by: submittedBy
+  // Get Lead ID
+  const LeadId = localStorage.getItem("view_initial_history");
+
+  const lead = getLeadArray.find((lead) => String(lead.id) === LeadId) || null;
+  const filteredTasks = getTaskArray.filter(
+    (task) => String(task.id) === LeadId
+  );
+
+  // Fetch BD Members
+  const bdMembers = useMemo(() => {
+    return (usersData?.data || [])
+      .filter((user) => user.department === "BD")
+      .map((member) => ({ label: member.name, id: member._id }));
+  }, [usersData]);
+
+  // Retrieve user session
+  const [user, setUser] = useState(null);
+  useEffect(() => {
+    const userSessionData = localStorage.getItem("userDetails");
+    if (userSessionData) setUser(JSON.parse(userSessionData));
+  }, []);
+
+  // Form Data State
+  const [formData, setFormData] = useState({
+    id: "",
+    name: "",
+    date: "",
+    reference: "",
+    by_whom: "",
+    task_detail: "",
+    submitted_by: "",
+  });
+
+  // Handle Input Changes
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (
+      field === "reference" &&
+      (value === "By Call" || value === "By Meeting") &&
+      user?.name
+    ) {
+      setFormData((prev) => ({ ...prev, by_whom: user.name }));
+    }
   };
 
-      try {
-        await ADDTask(updatedFormData).unwrap();
-        toast.success("🎉 Task added successfully!");
-        navigate("/dash_task");
-        handleCloseAddTaskModal();
-      } catch (error) {
-        toast.error("Failed to add task.");
-      }
-    };
-  
-    const handleOpenAddTaskModal = (task = null) => {
-      setFormData({
-        id: String(LeadId),
-        name: task?.name || lead?.c_name || "",
-        date: task?.date || "",
-        reference: task?.reference || "",
-        task_detail: task?.task_detail || "",
-        by_whom: task?.by_whom || "",
-      });
-      setOpenAddTaskModal(true);
-    };
-  
-    const handleCloseAddTaskModal = () => {
-      setOpenAddTaskModal(false);
-      setTimeout(() => setFormData({ id: "", name: "", date: "", reference: "", task_detail: "", by_whom: "" }), 300);
+  const handleByWhomChange = (_, newValue = []) => {
+    setFormData((prev) => ({
+      ...prev,
+      by_whom: newValue.map((member) => member.label).join(", "),
+    }));
+  };
+
+  // Handle Task Submission
+  const handleSubmitTask = async (e) => {
+    e.preventDefault();
+    if (!formData.by_whom) {
+      console.error("Error: 'by_whom' field is required.");
+      return;
+    }
+
+    const submittedBy = user?.name || "";
+
+    const updatedFormData = {
+      ...formData,
+      id: LeadId,
+      submitted_by: submittedBy,
     };
 
-    const handleOpen = () => setOpen(true);
-const handleClose = () => setOpen(false);
+    try {
+      await ADDTask(updatedFormData).unwrap();
+      toast.success("🎉 Task added successfully!");
+      navigate("/dash_task");
+      handleCloseAddTaskModal();
+    } catch (error) {
+      toast.error("Failed to add task.");
+    }
+  };
 
-const handleRadioChange = (value) => {
-  setSelectedRadio(value);
-  if (value !== "Others") {
-    setOtherRemarks("");
-  }
-};
+  const handleOpenAddTaskModal = (task = null) => {
+    setFormData({
+      id: String(LeadId),
+      name: task?.name || lead?.c_name || "",
+      date: task?.date || "",
+      reference: task?.reference || "",
+      task_detail: task?.task_detail || "",
+      by_whom: task?.by_whom || "",
+    });
+    setOpenAddTaskModal(true);
+  };
 
-const handleCheckboxChange = (option) => {
-  setSelectedOptions((prev) => ({
-    ...prev,
-    [option]: !prev[option],
-  }));
-};
-  
-    // Handle Lead Submission
-    const handleSubmit = async () => {
-const isAnyCheckboxChecked = Object.values(selectedOptions).some((val) => val);
+  const handleCloseAddTaskModal = () => {
+    setOpenAddTaskModal(false);
+    setTimeout(
+      () =>
+        setFormData({
+          id: "",
+          name: "",
+          date: "",
+          reference: "",
+          task_detail: "",
+          by_whom: "",
+        }),
+      300
+    );
+  };
 
-        if (!selectedRadio && !isAnyCheckboxChecked) {
-            toast.error("Please select at least one option.");
-            return;
-          }
-        
-      if (!LeadId) {
-        enqueueSnackbar("No valid Lead ID available.", { variant: "error" });
-        return;
-      }
-      if (
-        (selectedRadio === "loi" || selectedRadio === "token_money" || selectedRadio === "Others") &&
-        (selectedOptions.loa || selectedOptions.ppa)
-      ) {
-        enqueueSnackbar("You are choosing the wrong field combination! Please Refresh it.", {
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+
+  const handleRadioChange = (value) => {
+    setSelectedRadio(value);
+    if (value !== "Others") {
+      setOtherRemarks("");
+    }
+  };
+
+  const handleCheckboxChange = (option) => {
+    setSelectedOptions((prev) => ({
+      ...prev,
+      [option]: !prev[option],
+    }));
+  };
+
+  // Handle Lead Submission
+  const handleSubmit = async () => {
+    const isAnyCheckboxChecked = Object.values(selectedOptions).some(
+      (val) => val
+    );
+
+    if (!selectedRadio && !isAnyCheckboxChecked) {
+      toast.error("Please select at least one option.");
+      return;
+    }
+
+    if (!LeadId) {
+      enqueueSnackbar("No valid Lead ID available.", { variant: "error" });
+      return;
+    }
+    if (
+      (selectedRadio === "loi" ||
+        selectedRadio === "token_money" ||
+        selectedRadio === "Others") &&
+      (selectedOptions.loa || selectedOptions.ppa)
+    ) {
+      enqueueSnackbar(
+        "You are choosing the wrong field combination! Please Refresh it.",
+        {
+          variant: "warning",
+        }
+      );
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const response = await updateLead({
+        id: LeadId,
+        loi: selectedRadio === "loi" ? "Yes" : "No",
+        loa: selectedOptions["loa"] ? "Yes" : "No",
+        ppa: selectedOptions["ppa"] ? "Yes" : "No",
+        token_money: selectedRadio === "token_money" ? "Yes" : "No",
+        other_remarks: selectedRadio === "Others" ? otherRemarks : "",
+      }).unwrap();
+
+      const updatedId = response?.data?.id;
+      if (!updatedId) {
+        enqueueSnackbar("Warning: Response does not contain an ID.", {
           variant: "warning",
         });
         return;
       }
-      
-      try {
-        setIsSubmitting(true);
-        const response = await updateLead({
-          id: LeadId,
-          loi: selectedRadio === "loi" ? "Yes" : "No",
-          loa: selectedOptions["loa"] ? "Yes" : "No",
-          ppa: selectedOptions["ppa"] ? "Yes" : "No",
-          token_money: selectedRadio === "token_money" ? "Yes" : "No",
-          other_remarks: selectedRadio === "Others" ? otherRemarks : "",
-        }).unwrap();
-  
-        const updatedId = response?.data?.id;
-        if (!updatedId) {
-          enqueueSnackbar("Warning: Response does not contain an ID.", { variant: "warning" });
-          return;
-        }
-        enqueueSnackbar("Consignment Accepted!", { variant: "success" });
-        let postResponse;
-        if (selectedRadio === "loi") {
-            postResponse = await InitialToFollowup({ id: updatedId }).unwrap();
-            enqueueSnackbar("Lead moved from Initial to Followup!", { variant: "success" });
-          } else if (selectedRadio === "token_money") {
-            postResponse = await InitialToWon({ id: updatedId }).unwrap();
-            enqueueSnackbar("Lead moved from Initial to Won!", { variant: "success" });
-          } else if (selectedRadio === "Others") {
-            postResponse = await InitialToDead({ id: updatedId }).unwrap();
-            enqueueSnackbar("Lead moved from Initial to Dead!", { variant: "success" });
-          } else if (selectedOptions.loa || selectedOptions.ppa) {
-            postResponse = await InitialToWarmup({ id: updatedId }).unwrap();
-            enqueueSnackbar("Lead moved from Initial to Warm!", { variant: "success" });
-          }
-  
-        // enqueueSnackbar("Lead updated successfully!", { variant: "success" });
-        if (postResponse) setTimeout(() => navigate("/leads"), 1000);
-      } catch (error) {
-        enqueueSnackbar("Error processing request", { variant: "error" });
-      } finally {
-        setIsSubmitting(false);
+      enqueueSnackbar("Consignment Accepted!", { variant: "success" });
+      let postResponse;
+      if (selectedRadio === "loi") {
+        postResponse = await InitialToFollowup({ id: updatedId }).unwrap();
+        enqueueSnackbar("Lead moved from Initial to Followup!", {
+          variant: "success",
+        });
+      } else if (selectedRadio === "token_money") {
+        postResponse = await InitialToWon({ id: updatedId }).unwrap();
+        enqueueSnackbar("Lead moved from Initial to Won!", {
+          variant: "success",
+        });
+      } else if (selectedRadio === "Others") {
+        postResponse = await InitialToDead({ id: updatedId }).unwrap();
+        enqueueSnackbar("Lead moved from Initial to Dead!", {
+          variant: "success",
+        });
+      } else if (selectedOptions.loa || selectedOptions.ppa) {
+        postResponse = await InitialToWarmup({ id: updatedId }).unwrap();
+        enqueueSnackbar("Lead moved from Initial to Warm!", {
+          variant: "success",
+        });
       }
-    };
+
+      // enqueueSnackbar("Lead updated successfully!", { variant: "success" });
+      if (postResponse) setTimeout(() => navigate("/leads"), 1000);
+    } catch (error) {
+      enqueueSnackbar("Error processing request", { variant: "error" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <Box sx={{ p: 3, maxWidth: 900, mx: "auto" }}>
@@ -472,70 +521,69 @@ const isAnyCheckboxChecked = Object.values(selectedOptions).some((val) => val);
       {/***---- NextStage Modal ------*/}
       <Modal open={open} onClose={handleClose}>
         <ModalDialog size="md" sx={{ maxWidth: "100%" }}>
-             <Box
-          sx={{
-            width: "90%",
-            maxWidth: "500px",
-            bgcolor: "background.paper",
-            p: 3,
-            borderRadius: 2,
-            boxShadow: 3,
-            mx: "auto",
-            mt: 5,
-          }}
-        >
-          <Typography level="h4">
-            Select Options as per your Requirements
-          </Typography>
-          <FormControl>
-            <FormLabel>Choose Consignment:</FormLabel>
-            <RadioGroup
-              value={selectedRadio}
-              onChange={(e) => handleRadioChange(e.target.value)}
-            >
-              <Radio value="loi" label="LOI" />
-              <Radio value="token_money" label="Token Money" />
-              <Radio value="Others" label="Others" />
-            </RadioGroup>
+          <Box
+            sx={{
+              width: "90%",
+              maxWidth: "500px",
+              bgcolor: "background.paper",
+              p: 3,
+              borderRadius: 2,
+              boxShadow: 3,
+              mx: "auto",
+              mt: 5,
+            }}
+          >
+            <Typography level="h4">
+              Select Options as per your Requirements
+            </Typography>
+            <FormControl>
+              <FormLabel>Choose Consignment:</FormLabel>
+              <RadioGroup
+                value={selectedRadio}
+                onChange={(e) => handleRadioChange(e.target.value)}
+              >
+                <Radio value="loi" label="LOI" />
+                <Radio value="token_money" label="Token Money" />
+                <Radio value="Others" label="Others" />
+              </RadioGroup>
 
-            {selectedRadio === "Others" && (
-              <Input
-                placeholder="Enter your custom option"
-                value={otherRemarks}
-                onChange={(e) => setOtherRemarks(e.target.value)}
-                required
-              />
-            )}
-
-            {/* Checkboxes for LOA and PPA */}
-            <FormLabel>LOA & PPA:</FormLabel>
-            <Stack spacing={1}>
-              {["loa", "ppa"].map((option) => (
-                <Checkbox
-                  key={option}
-                  label={option.toUpperCase()}
-                  checked={selectedOptions[option]}
-                  onChange={() => handleCheckboxChange(option)}
+              {selectedRadio === "Others" && (
+                <Input
+                  placeholder="Enter your custom option"
+                  value={otherRemarks}
+                  onChange={(e) => setOtherRemarks(e.target.value)}
+                  required
                 />
-              ))}
+              )}
+
+              {/* Checkboxes for LOA and PPA */}
+              <FormLabel>LOA & PPA:</FormLabel>
+              <Stack spacing={1}>
+                {["loa", "ppa"].map((option) => (
+                  <Checkbox
+                    key={option}
+                    label={option.toUpperCase()}
+                    checked={selectedOptions[option]}
+                    onChange={() => handleCheckboxChange(option)}
+                  />
+                ))}
+              </Stack>
+            </FormControl>
+            <Stack direction="row" justifyContent="flex-end" spacing={2} mt={2}>
+              <Button variant="plain" onClick={handleClose}>
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Processing..." : "Submit"}
+              </Button>
             </Stack>
-          </FormControl>
-          <Stack direction="row" justifyContent="flex-end" spacing={2} mt={2}>
-            <Button variant="plain" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Processing..." : "Submit"}
-            </Button>
-          </Stack>
-        </Box>
+          </Box>
         </ModalDialog>
-       
       </Modal>
 
       {lead ? (
@@ -543,13 +591,13 @@ const isAnyCheckboxChecked = Object.values(selectedOptions).some((val) => val);
           variant="soft"
           sx={{
             p: 3,
-            mb: 2,
-            backgroundColor: "#e3f2fd",
-            borderRadius: "12px",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+            mb: 3,
+            backgroundColor: "#E3F2FD",
+            borderRadius: "16px",
+            boxShadow: "0 6px 16px rgba(0, 0, 0, 0.1)",
             display: "flex",
             flexDirection: "column",
-            gap: 1.5,
+            gap: 2,
           }}
         >
           <Box
@@ -560,53 +608,84 @@ const isAnyCheckboxChecked = Object.values(selectedOptions).some((val) => val);
             }}
           >
             <Typography
-              sx={{ fontSize: "1.2rem", fontWeight: "bold", color: "#1976D2" }}
+              level="h5"
+              sx={{ fontWeight: "bold", color: "#1976D2", letterSpacing: 0.5 }}
             >
-              Client Information
+              🧾 Client Information
             </Typography>
-            <Box sx={{ display: "flex", gap: 1 }}>
+            <Box sx={{ display: "flex", gap: 1.5 }}>
               <Button
                 variant="solid"
                 color="primary"
-                onClick={() => handleOpenAddTaskModal()}
+                onClick={handleOpenAddTaskModal}
               >
-                Add Task
+                ➕ Add Task
               </Button>
               <Button variant="solid" color="success" onClick={handleOpen}>
-                Next Stage
+                ⏭ Next Stage
               </Button>
             </Box>
           </Box>
           <Divider />
-          <Typography sx={{ fontSize: "1.1rem", color: "#333" }}>
-            <strong>Client Name:</strong> {lead.c_name || "N/A"} &nbsp;|
-            &nbsp;&nbsp;
-            <strong>POC:</strong>  {lead.submitted_by || "N/A"} &nbsp;| &nbsp;&nbsp;
-            <strong>Company:</strong> {lead.company || "N/A"} &nbsp;|
-            &nbsp;&nbsp;
+          <Typography sx={{ fontSize: "1.05rem", color: "#333" }}>
+            <strong>Client Name:</strong> {lead.c_name || "N/A"} &nbsp;|&nbsp;
+            <strong>POC:</strong> {lead.submitted_by || "N/A"} &nbsp;|&nbsp;
+            <strong>Company:</strong> {lead.company || "N/A"} &nbsp;|&nbsp;
             <strong>Location:</strong> {lead.state || "N/A"}
           </Typography>
         </Sheet>
       ) : (
-        <Typography textAlign="center" color="error">
-          No lead data found.
-        </Typography>
+        <Sheet
+          variant="soft"
+          sx={{
+            p: 3,
+            mb: 3,
+            backgroundColor: "#F0F0F0",
+            borderRadius: "16px",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+          }}
+        >
+          <Skeleton variant="text" level="h5" width="40%" />
+          <Skeleton variant="rectangular" height={40} width="30%" />
+          <Divider />
+          <Skeleton variant="text" width="100%" />
+          <Skeleton variant="text" width="90%" />
+        </Sheet>
       )}
 
       <Sheet
         variant="outlined"
-        sx={{ borderRadius: "12px", overflow: "hidden" }}
+        sx={{
+          borderRadius: "16px",
+          overflow: "hidden",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+          backgroundColor: "#fff",
+        }}
       >
         <Table
           borderAxis="both"
           size="md"
           sx={{
-            "& th": {
-              backgroundColor: "#f0f0f0",
+            "& thead th": {
+              backgroundColor: "#F5F5F5",
               fontWeight: "bold",
-              fontSize: "1.1rem",
+              fontSize: "1.05rem",
+              color: "#333",
+              textTransform: "uppercase",
+              textAlign: "left",
+              px: 2,
+              py: 1.5,
             },
-            "& td": { fontSize: "1rem" },
+            "& tbody td": {
+              fontSize: "1rem",
+              color: "#444",
+              px: 2,
+              py: 1.2,
+              borderBottom: "1px solid #eee",
+            },
           }}
         >
           <thead>
@@ -615,7 +694,7 @@ const isAnyCheckboxChecked = Object.values(selectedOptions).some((val) => val);
               <th>Reference</th>
               <th>By Whom</th>
               <th>Feedback</th>
-              <th>submitted_by</th>
+              <th>Submitted By</th>
             </tr>
           </thead>
           <tbody>
@@ -625,21 +704,30 @@ const isAnyCheckboxChecked = Object.values(selectedOptions).some((val) => val);
                   <td>{row.date || "N/A"}</td>
                   <td>{row.reference || "N/A"}</td>
                   <td>{row.by_whom || "N/A"}</td>
-                  <td>{row.task_detail || "N/A"}</td>
+                  <td
+                        style={{
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
+                          maxWidth: "300px",
+                        }}
+                      >
+                        {row.comment || "N/A"}
+                      </td>
                   <td>{row.submitted_by || "N/A"}</td>
                 </tr>
               ))
             ) : (
               <tr>
                 <td
-                  colSpan="4"
+                  colSpan="5"
                   style={{
                     textAlign: "center",
-                    padding: "10px",
+                    padding: "16px",
                     fontStyle: "italic",
+                    color: "#888",
                   }}
                 >
-                  No task history available.
+                  💤 No task history available.
                 </td>
               </tr>
             )}

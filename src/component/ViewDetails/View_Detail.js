@@ -151,6 +151,7 @@ const Customer_Payment_Summary = () => {
     const balancePayable = totalPOValue - totalBilledValue - netAdvance;
     const balanceRequired = balanceSlnko - balancePayable - tcs;
     const totalAvailable = totalCredited - totalDebited;
+    const totalPOBasic = 0;
 
     const summaryData = [
       ["S.No.", "Balance Summary", "Value"],
@@ -164,7 +165,8 @@ const Customer_Payment_Summary = () => {
       ["8", "Net Advance Paid [(4)-(7)]", netAdvance],
       ["9", "Balance Payable to Vendors [(6)-(7)-(8)]", balancePayable],
       ["10", "TCS as Applicable", tcs],
-      ["11", "Balance Required [(5)-(9)-(10)]", balanceRequired],
+      ["11", "Total Additional PO(Composit)", totalPOBasic],
+      ["12", "Balance Required [(5)-(9)-(10)]", balanceRequired],
     ];
 
     const summaryData2 = [
@@ -867,6 +869,13 @@ const Customer_Payment_Summary = () => {
                   </td>
                   <td style={{ padding: "8px" }}>{Math.round(tcs)}</td>
                 </tr>
+                <tr>
+                  <td style={{ padding: "8px" }}>11</td>
+                  <td style={{ padding: "8px" }}>
+                    <strong>Total Additional PO(Composit):</strong>
+                  </td>
+                  <td style={{ padding: "8px" }}>0</td>
+                </tr>
                 <tr
                   style={{
                     backgroundColor: "#B6F4C6",
@@ -874,7 +883,7 @@ const Customer_Payment_Summary = () => {
                     color: balanceRequired >= 0 ? "green" : "red",
                   }}
                 >
-                  <td style={{ padding: "8px" }}>11</td>
+                  <td style={{ padding: "8px" }}>12</td>
                   <td style={{ padding: "8px" }}>
                     <strong>Balance Required [(5)-(9)-(10)]:</strong>
                   </td>
