@@ -604,12 +604,45 @@ const WonLeadsHistory = () => {
            </Box>
          </Box>
          <Divider />
-         <Typography sx={{ fontSize: "1.05rem", color: "#333" }}>
-           <strong>Client Name:</strong> {lead.c_name || "N/A"} &nbsp;|&nbsp;
-           <strong>POC:</strong> {lead.submitted_by || "N/A"} &nbsp;|&nbsp;
-           <strong>Company:</strong> {lead.company || "N/A"} &nbsp;|&nbsp;
-           <strong>Location:</strong> {lead.state || "N/A"}
-         </Typography>
+         <Box
+                    sx={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: 2,
+                      color: "#333",
+                      fontSize: "1.05rem",
+                      mt: 2,
+                    }}
+                  >
+                    {[
+                      { label: "👤 Client Name", value: lead.c_name },
+                      { label: "📞 Mobile", value: lead.mobile },
+                      { label: "🙋 POC", value: lead.submitted_by },
+                      { label: "🏢 Company", value: lead.company },
+                      {
+                        label: "📍 Location",
+                        value: `${lead.district || "N/A"}, ${lead.state || "N/A"}`,
+                      },
+                      { label: "📅 Created On", value: lead.date },
+                      { label: "⚡ Capacity", value: lead.capacity },
+                      { label: "🧾 Scheme", value: lead.scheme },
+                      { label: "🛰️ SubStation (km)", value: lead.distance },
+                    ].map((item, index) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          flex: "1 1 45%",
+                          minWidth: "250px",
+                          backgroundColor: "#f5faff",
+                          p: 1.5,
+                          borderRadius: "8px",
+                          boxShadow: "0 1px 4px rgba(0, 0, 0, 0.08)",
+                        }}
+                      >
+                        <strong>{item.label}:</strong> {item.value || "N/A"}
+                      </Box>
+                    ))}
+                  </Box>
        </Sheet>
      ) : (
        <Sheet

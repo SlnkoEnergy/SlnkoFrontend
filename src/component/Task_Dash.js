@@ -695,7 +695,8 @@ const TaskDashboard = () => {
       <Sheet
         sx={{
           width: "100%",
-          maxWidth: 800,
+          maxWidth: 1000,
+          minHeight: 800,
           mx: "auto",
           p: 4,
           textAlign: "center",
@@ -715,63 +716,65 @@ const TaskDashboard = () => {
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
+            mt: 2,
           }}
         >
           <TabList
             sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              width: "100%",
+              width: "90%",
+              backgroundColor: "#f5f5f5",
+              borderRadius: "16px",
+              p: 1,
+              boxShadow: "md",
             }}
           >
-            <Tab sx={{ flex: 1, textAlign: "left", fontSize: "1.1rem" }}>
+            <Tab
+              sx={{ flex: 1, fontSize: "1.1rem", textTransform: "capitalize" }}
+            >
               Past
             </Tab>
-            <Tab sx={{ flex: 1, textAlign: "center", fontSize: "1.1rem" }}>
+            <Tab
+              sx={{ flex: 1, fontSize: "1.1rem", textTransform: "capitalize" }}
+            >
               Today's Task
             </Tab>
-            <Tab sx={{ flex: 1, textAlign: "right", fontSize: "1.1rem" }}>
+            <Tab
+              sx={{ flex: 1, fontSize: "1.1rem", textTransform: "capitalize" }}
+            >
               Tomorrow
             </Tab>
-            <Tab sx={{ flex: 1, textAlign: "right", fontSize: "1.1rem" }}>
+            <Tab
+              sx={{ flex: 1, fontSize: "1.1rem", textTransform: "capitalize" }}
+            >
               Future
             </Tab>
           </TabList>
-
-          {/* Past Tab */}
+          {/*Past Tab */}
           <TabPanel
             value={0}
             sx={{
-              width: { xs: "90%", sm: "70%", md: "60%", lg: "50%" },
-              borderRadius: "20px",
+              width: { xs: "95%", sm: "80%", md: "65%", lg: "55%" },
+              mt: 3,
             }}
           >
             <Box>
-              <Box display="flex" justifyContent="center" gap={2} mb={3}>
-                {/* ✅ Tasks with comments */}
+              <Box display="flex" justifyContent="center" gap={3} mb={3}>
                 <Chip
-                  startDecorator={<CheckCircle color="success" />}
+                  startDecorator={<CheckCircle />}
                   variant="soft"
                   size="lg"
-                  sx={{
-                    backgroundColor: "#e8f5e9", // Light green for success
-                    color: "#388e3c", // Dark green text
-                  }}
+                  color="success"
                 >
                   {tasksWithComments.length || 0}{" "}
                   {tasksWithComments.length === 1 ? "Meeting" : "Meetings"}{" "}
                   Attended
                 </Chip>
 
-                {/* ⏰ Tasks without comments */}
                 <Chip
-                  startDecorator={<AccessTime color="warning" />}
+                  startDecorator={<AccessTime />}
                   variant="soft"
                   size="lg"
-                  sx={{
-                    backgroundColor: "#fff8e1", // Light yellow for warning
-                    color: "#f57c00", // Orange text
-                  }}
+                  color="warning"
                 >
                   {tasksWithoutComments.length || 0}{" "}
                   {tasksWithoutComments.length === 1
@@ -781,149 +784,144 @@ const TaskDashboard = () => {
               </Box>
 
               {categorizedTasks.past.length > 0 ? (
-                currentTasksPast
-                  .filter((task) => {
-                    if (!task.by_whom || !user?.name) return false; // Ensure both exist
-
-                    // Normalize `by_whom` list to an array of trimmed, lowercase names
-                    const assignedUsers = task.by_whom
-                      .split(",")
-                      .map((name) => name.trim().toLowerCase());
-
-                    // Ensure user.name is an array and lowercase
-                    const userNames = Array.isArray(user.name)
-                      ? user.name.map((name) => name.toLowerCase())
-                      : [user.name.toLowerCase()];
-
-                    // Allow "IT Team" or "admin" to see all tasks
-                    const isMatched =
-                      userNames.includes("it team") ||
-                      userNames.includes("admin") ||
-                      userNames.some((name) => assignedUsers.includes(name));
-
-                    // Debugging logs
-                    console.log("----------- DEBUG LOG -----------");
-                    console.log("Task ID:", task.id || "N/A");
-                    console.log("Task By Whom (Original):", task.by_whom);
-                    console.log("Processed Assigned Users:", assignedUsers);
-                    console.log("Logged-in User Names:", userNames);
-                    console.log("Match Found:", isMatched);
-                    console.log("---------------------------------");
-
-                    return isMatched;
-                  })
-                  .map((task, index) => (
-                    <Card
-                      key={index}
-                      sx={{
-                        mb: 3,
-                        borderLeft: "6px solid blue",
-                        borderRadius: 6,
-                        boxShadow: "xl",
-                        border: "1px solid #bbb",
-                        p: 2,
-                        width: "90%",
-                        mx: "auto",
-                        pointerEvents: completedTasks[task._id]
-                          ? "none"
-                          : "auto", // Disable if marked completed
-                        opacity: completedTasks[task._id] ? 0.6 : 1, // Dim if disabled
-                      }}
-                    >
-                      <CardContent>
-                        <Grid container spacing={2} alignItems="center">
-                          <Grid xs={7}>
-                            <Typography
-                              level="h4"
-                              color="primary"
-                              onClick={() => handleOpenModal(task)}
-                              style={{
-                                cursor: completedTasks[task._id]
-                                  ? "not-allowed"
-                                  : "pointer",
-                              }}
-                            >
-                              {task.name}
-                            </Typography>
-
-                            <Typography level="body-lg">
-                              {task.company}
-                            </Typography>
-                            <Typography level="body-md" color="neutral">
-                              {`${task?.district ?? ""}, ${task?.state ?? ""}`}
-                            </Typography>
-                          </Grid>
-                          <Grid
-                            xs={5}
-                            display="flex"
-                            flexDirection={"column"}
-                            alignItems="center"
-                            justifyContent="flex-end"
-                            gap={2}
-                          >
-                            <Checkbox
-                              checked={isTaskCompleted(task)} // Checkbox will be ticked if task has a comment
-                              onChange={(event) =>
-                                handleCheckboxChange(task, event)
-                              }
-                              //  disabled={isTaskCompleted(task)}
-                              disabled={true}
-                              sx={{
-                                color: task.comment ? "green" : "red",
-                                "&.Mui-checked": {
-                                  color: task.comment ? "green" : "red",
-                                },
-                              }}
-                            />
-
-                            <Chip
-                              startDecorator={task.icon}
-                              variant="outlined"
-                              size="lg"
-                            >
-                              {task.type}
-                            </Chip>
-                            <Button
-                              variant="plain"
-                              onClick={() => {
-                                setSelectedTask(task);
-                                setOpen(true);
-                              }}
-                            >
-                              <Typography>...</Typography>
-                            </Button>
-                            <Modal open={open} onClose={() => setOpen(false)}>
-                              <ModalDialog>
-                                <Typography level="h4">
-                                  Task Description
+                <Grid container spacing={3}>
+                  {currentTasksPast
+                    .filter((task) => {
+                      if (!task.by_whom || !user?.name) return false;
+                      const assignedUsers = task.by_whom
+                        .split(",")
+                        .map((name) => name.trim().toLowerCase());
+                      const userNames = Array.isArray(user.name)
+                        ? user.name.map((name) => name.toLowerCase())
+                        : [user.name.toLowerCase()];
+                      const isMatched =
+                        userNames.includes("it team") ||
+                        userNames.includes("admin") ||
+                        userNames.some((name) => assignedUsers.includes(name));
+                      return isMatched;
+                    })
+                    .map((task, index) => (
+                      <Grid item xs={12} md={6} lg={3} key={index}>
+                        <Card
+                          key={index}
+                          sx={{
+                            mb: 3,
+                            borderRadius: "2xl",
+                            boxShadow: "lg",
+                            border: "1px solid #e0e0e0",
+                            p: 2,
+                            width: "100%",
+                            backgroundColor: "#fff",
+                            transition: "0.3s",
+                            "&:hover": {
+                              boxShadow: "xl",
+                              transform: "scale(1.01)",
+                            },
+                            pointerEvents: completedTasks[task._id]
+                              ? "none"
+                              : "auto",
+                            opacity: completedTasks[task._id] ? 0.6 : 1,
+                          }}
+                        >
+                          <CardContent>
+                            <Grid container spacing={2} alignItems="center">
+                              <Grid item xs={7}>
+                                <Typography
+                                  level="h5"
+                                  color="primary"
+                                  onClick={() => handleOpenModal(task)}
+                                  sx={{
+                                    cursor: completedTasks[task._id]
+                                      ? "not-allowed"
+                                      : "pointer",
+                                  }}
+                                >
+                                  {task.name}
                                 </Typography>
-                                <Typography>
-                                  {selectedTask?.task_detail ||
-                                    "No details available"}
+
+                                <Typography level="body-md" fontWeight="500">
+                                  {task.company}
                                 </Typography>
-                                <Button onClick={() => setOpen(false)}>
-                                  Close
+                                <Typography level="body-sm" color="neutral">
+                                  {`${task?.district ?? ""}, ${task?.state ?? ""}`}
+                                </Typography>
+                              </Grid>
+                              <Grid
+                                item
+                                xs={5}
+                                display="flex"
+                                flexDirection="column"
+                                alignItems="center"
+                                justifyContent="flex-end"
+                                gap={1.5}
+                              >
+                                <Checkbox
+                                  checked={isTaskCompleted(task)}
+                                  disabled
+                                  sx={{
+                                    color: task.comment ? "green" : "red",
+                                    "&.Mui-checked": {
+                                      color: task.comment ? "green" : "red",
+                                    },
+                                  }}
+                                />
+
+                                <Chip
+                                  startDecorator={task.icon}
+                                  variant="outlined"
+                                  color="neutral"
+                                  size="md"
+                                  sx={{ px: 1.5 }}
+                                >
+                                  {task.type}
+                                </Chip>
+
+                                <Button
+                                  variant="plain"
+                                  onClick={() => {
+                                    setSelectedTask(task);
+                                    setOpen(true);
+                                  }}
+                                  sx={{
+                                    fontSize: "1.25rem",
+                                    color: "#888",
+                                    "&:hover": { color: "#444" },
+                                  }}
+                                >
+                                  &hellip;
                                 </Button>
-                              </ModalDialog>
-                            </Modal>
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                    </Card>
-                  ))
+                              </Grid>
+                            </Grid>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    ))}
+                </Grid>
               ) : (
                 <Box
                   sx={{
                     display: "flex",
+                    flexDirection: "column",
                     justifyContent: "center",
                     alignItems: "center",
+                    mt: 5,
                   }}
                 >
-                  <Typography level="body-lg">No Pending Tasks</Typography>
-                  <img width={"40px"} height={"30px"} alt="logo" src={logo} />
+                  <Typography
+                    level="h5"
+                    color="neutral"
+                    textAlign="center"
+                    fontStyle="italic"
+                    fontWeight="md"
+                  >
+                    🎉 All caught up! No task for now.
+                  </Typography>
+
+                  {/* <img width={"50px"} height={"35px"} alt="logo" src={logo} /> */}
                 </Box>
               )}
-              <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+
+              <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
                 <PaginationComponent
                   currentPage={currentPages.past}
                   totalPages={totalPagesPast}
@@ -931,6 +929,28 @@ const TaskDashboard = () => {
                 />
               </Box>
             </Box>
+
+            {/* Modal */}
+            <Modal open={open} onClose={() => setOpen(false)}>
+              <ModalDialog
+                variant="outlined"
+                sx={{
+                  minWidth: 300,
+                  maxWidth: 500,
+                  p: 3,
+                  borderRadius: "lg",
+                  textAlign: "center",
+                }}
+              >
+                <Typography level="h4" mb={2}>
+                  Task Description
+                </Typography>
+                <Typography mb={3}>
+                  {selectedTask?.task_detail || "No details available"}
+                </Typography>
+                <Button onClick={() => setOpen(false)}>Close</Button>
+              </ModalDialog>
+            </Modal>
           </TabPanel>
 
           {/* Today Tab */}
@@ -1798,29 +1818,45 @@ const TaskDashboard = () => {
                 🧾 Client Information
               </Typography>
               <Divider />
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-                <Typography>
-                  <strong>POC:</strong> {selectedTask.submitted_by || "N/A"}
-                </Typography>
-                <Typography>
-                  <strong>Client Name:</strong> {selectedTask.name || "N/A"}
-                </Typography>
-                <Typography>
-                  <strong>Company:</strong> {selectedTask.company || "N/A"}
-                </Typography>
-                <Typography>
-                  <strong>Location:</strong>{" "}
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr 1fr" },
+                  gap: 2,
+                  fontSize: "1.05rem",
+                  color: "#333",
+                }}
+              >
+                <Box>
+                  <strong>🙋 POC:</strong> {selectedTask.submitted_by || "N/A"}
+                </Box>
+                <Box>
+                  <strong>👤 Client Name:</strong> {selectedTask.name || "N/A"}
+                </Box>
+                <Box>
+                  <strong>🏢 Company:</strong> {selectedTask.company || "N/A"}
+                </Box>
+                <Box>
+                  <strong>📍 Location:</strong>{" "}
                   {`${selectedTask.district || "N/A"}, ${selectedTask.state || "N/A"}`}
-                </Typography>
-                <Typography>
-                  <strong>Mobile No:</strong> {selectedTask.mobile || "N/A"}
-                </Typography>
-                <Typography>
-                  <strong>Capacity:</strong> {selectedTask.capacity || "N/A"}
-                </Typography>
-                <Typography>
-                  <strong>Scheme:</strong> {selectedTask.scheme || "N/A"}
-                </Typography>
+                </Box>
+                <Box>
+                  <strong>📞 Mobile No:</strong> {selectedTask.mobile || "N/A"}
+                </Box>
+                <Box>
+                  <strong>📅 Creation Date:</strong>{" "}
+                  {selectedTask.date || "N/A"}
+                </Box>
+                <Box>
+                  <strong>⚡ Capacity:</strong> {selectedTask.capacity || "N/A"}
+                </Box>
+                <Box>
+                  <strong>🛰️ SubStation (km):</strong>{" "}
+                  {selectedTask.distance || "N/A"}
+                </Box>
+                <Box>
+                  <strong>🧾 Scheme:</strong> {selectedTask.scheme || "N/A"}
+                </Box>
               </Box>
             </Sheet>
           ) : (
@@ -1928,7 +1964,7 @@ const TaskDashboard = () => {
                 ) : (
                   <tr>
                     <td colSpan={5} style={{ textAlign: "center" }}>
-                    💤 No task history available.
+                      💤 No task history available.
                     </td>
                   </tr>
                 )}

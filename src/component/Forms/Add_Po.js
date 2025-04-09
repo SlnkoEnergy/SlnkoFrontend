@@ -117,7 +117,7 @@ const AddPurchaseOrder = () => {
       if (name === "po_basic" || name === "gst") {
         const poBasic = parseFloat(name === "po_basic" ? value : updated.po_basic) || 0;
         const gst = parseFloat(name === "gst" ? value : updated.gst) || 0;
-        const calculatedPoValue = poBasic + (poBasic * gst / 100);
+        const calculatedPoValue = poBasic + gst;
   
         updated.po_value = calculatedPoValue;
       }
@@ -330,12 +330,12 @@ const AddPurchaseOrder = () => {
 
             <Grid xs={12} md={4}>
               <Typography level="body1" fontWeight="bold" mb={1}>
-                GST Value(%)
+              Total Tax
               </Typography>
               <Input
                 name="gst"
                 type="text"
-                placeholder="GST Value"
+                placeholder="CGST + SGST"
                 value={formData.gst}
                 onChange={handleChange}
                 required

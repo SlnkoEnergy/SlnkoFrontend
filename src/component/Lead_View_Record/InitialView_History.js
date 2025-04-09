@@ -627,12 +627,25 @@ const InitialLeadsHistory = () => {
             </Box>
           </Box>
           <Divider />
-          <Typography sx={{ fontSize: "1.05rem", color: "#333" }}>
-            <strong>Client Name:</strong> {lead.c_name || "N/A"} &nbsp;|&nbsp;
-            <strong>POC:</strong> {lead.submitted_by || "N/A"} &nbsp;|&nbsp;
-            <strong>Company:</strong> {lead.company || "N/A"} &nbsp;|&nbsp;
-            <strong>Location:</strong> {lead.state || "N/A"}
-          </Typography>
+          <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+        gap: 2,
+        color: "#333",
+        fontSize: "1.05rem",
+      }}
+    >
+      <Box><strong>👤 Client Name:</strong> {lead.c_name || "N/A"}</Box>
+      <Box><strong>📞 Mobile:</strong> {lead.mobile || "N/A"}</Box>
+      <Box><strong>🙋 POC:</strong> {lead.submitted_by || "N/A"}</Box>
+      <Box><strong>🏢 Company:</strong> {lead.company || "N/A"}</Box>
+      <Box><strong>📍 Location:</strong> {`${lead.district || "N/A"}, ${lead.state || "N/A"}`}</Box>
+      <Box><strong>📅 Created On:</strong> {lead.date || "N/A"}</Box>
+      <Box><strong>⚡ Capacity:</strong> {lead.capacity || "N/A"}</Box>
+      <Box><strong>🧾 Scheme:</strong> {lead.scheme || "N/A"}</Box>
+      <Box><strong>🛰️ SubStation (km):</strong> {lead.distance || "N/A"}</Box>
+    </Box>
         </Sheet>
       ) : (
         <Sheet

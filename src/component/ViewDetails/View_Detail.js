@@ -266,8 +266,6 @@ const Customer_Payment_Summary = () => {
     // console.log("Search Data are:", filteredD);
   };
 
-
-
   const handleClientSearch = (event) => {
     const searchValue = event.target.value.toLowerCase();
     setClientSearch(searchValue);
@@ -504,39 +502,31 @@ const Customer_Payment_Summary = () => {
 
   useEffect(() => {
     if (projectData.code) {
+      console.log("projectData.code:", projectData.code);
+
       const fetchClientHistory = async () => {
         try {
-          // console.log(
-          //   "Fetching client history for projectData.code:",
-          //   projectData.code
-          // );
-
+          const response = await Axios.get("/get-all-projecT-IT");
           const payResponse = await Axios.get("/get-pay-summarY-IT");
-          // Step 1: Fetch all PO data
           const poResponse = await Axios.get("/get-all-pO-IT");
-          // console.log("PO Response:", poResponse.data);
+          const billResponse = await Axios.get("/get-all-bilL-IT");
+
           const payData = payResponse.data?.data || [];
-          // console.log(payData);
-
           const poData = poResponse.data?.data || [];
+          const billData = billResponse.data?.data || [];
 
-          // setPayments(payData);
+          const allProjects = response.data?.data || [];
+          const currentProject = allProjects.find(
+            (proj) => proj.code === projectData.code
+          );
 
-          // Step 2: Filter POs where p_id matches projectData.code
+          console.log("Current Project:", currentProject);
+
           const filteredPOs = poData.filter(
             (po) => po.p_id === projectData.code
           );
-          // console.log("Filtered POs based on projectData.code:", filteredPOs);
 
-          // Step 3: Fetch all bills
-          const billResponse = await Axios.get("/get-all-bilL-IT");
-          // console.log("Bill Response:", billResponse.data);
-
-          const billData = billResponse.data?.data || [];
-
-          // Step 4: Enrich POs with billed values
           const enrichedPOs = filteredPOs.map((po) => {
-            // const matchingPay = payData.find((pay) => pay.po_number === po.po_number && pay.approved === "Approved");
             const totalAdvancePaid = payData
               .filter(
                 (pay) =>
@@ -546,22 +536,26 @@ const Customer_Payment_Summary = () => {
               )
               .reduce((sum, pay) => sum + Number(pay.amount_paid || 0), 0);
 
-            // Find the matching bill for this PO
             const totalBilledValue = billData
-            .filter((bill) => bill.po_number === po.po_number)
-            .reduce((sum, bill) => sum + Number(bill.bill_value || 0), 0);
+              .filter((bill) => bill.po_number === po.po_number)
+              .reduce((sum, bill) => sum + Number(bill.bill_value || 0), 0);
+
+            const poBasic = po.po_basic || 0;
+            const calculatedPoBasic =
+              currentProject?.billing_type === "Composite"
+                ? poBasic * 1.138
+                : poBasic;
 
             return {
               ...po,
               billedValue: totalBilledValue || 0,
-              // AdvancePaid: matchingPay?.amount_paid || 0,
               totalAdvancePaid: totalAdvancePaid || 0,
+              calculatedPoBasic: String(calculatedPoBasic),
             };
           });
 
-          // console.log("Enriched POs with Billed Values:", enrichedPOs);
+          console.log("Enriched POs:", enrichedPOs);
 
-          // Step 5: Update state
           setClientHistory(enrichedPOs);
           setFilteredClients(enrichedPOs);
         } catch (err) {
@@ -689,7 +683,13 @@ const Customer_Payment_Summary = () => {
       (sum, client) => sum + parseFloat(client.billedValue || 0),
       0
     ),
+    totalPOBasicValue: filteredClients.reduce(
+      (sum, client) => sum + parseFloat(client.calculatedPoBasic),
+      0
+    ),
   };
+
+  // console.log("Total PO Basic Value:", clientSummary.totalPOBasicValue);
 
   const debitHistorySummary = {
     totalCustomerAdjustment: filteredDebits.reduce((sum, row) => {
@@ -710,6 +710,7 @@ const Customer_Payment_Summary = () => {
       totalAdvanceValue: clientSummary.totalAmountPaid,
       totalPoValue: clientSummary.totalPOValue,
       totalBilled: clientSummary.totalBilledValue,
+      totalPOBasic: clientSummary.totalPOBasicValue,
       dbAmt: totalDebited,
       adjTotal: "0",
     },
@@ -721,9 +722,12 @@ const Customer_Payment_Summary = () => {
     totalAdvanceValue,
     totalPoValue,
     totalBilled,
+    totalPOBasic,
     dbAmt,
     adjTotal,
   } = balanceSummary[0];
+
+  // console.log("Total PO Basic (from balanceSummary):", totalPOBasic);
 
   const Balance_Summary = ({
     crAmt,
@@ -733,6 +737,7 @@ const Customer_Payment_Summary = () => {
     totalAdvanceValue,
     totalPoValue,
     totalBilled,
+    // totalPOBasic,
   }) => {
     const crAmtNum = Number(crAmt);
     const dbAmtNum = Number(dbAmt);
@@ -748,6 +753,8 @@ const Customer_Payment_Summary = () => {
     const tcs =
       netBalance > 5000000 ? Math.round(netBalance - 5000000) * 0.001 : 0;
     const balanceRequired = Math.round(balanceSlnko - balancePayable - tcs);
+
+    const totalPOBasicvalue = Math.round((totalPoValue)-(totalPOBasic));
 
     return (
       <Grid container spacing={2}>
@@ -869,13 +876,16 @@ const Customer_Payment_Summary = () => {
                   </td>
                   <td style={{ padding: "8px" }}>{Math.round(tcs)}</td>
                 </tr>
-                <tr>
-                  <td style={{ padding: "8px" }}>11</td>
-                  <td style={{ padding: "8px" }}>
-                    <strong>Total Additional PO(Composit):</strong>
-                  </td>
-                  <td style={{ padding: "8px" }}>0</td>
-                </tr>
+                {totalPOBasic > 0 && (
+                  <tr>
+                    <td style={{ padding: "8px" }}>11</td>
+                    <td style={{ padding: "8px" }}>
+                      <strong>Extra GST Recoverable from Client:</strong>
+                    </td>
+                    <td style={{ padding: "8px" }}>{totalPOBasicvalue}</td>
+                  </tr>
+                )}
+
                 <tr
                   style={{
                     backgroundColor: "#B6F4C6",
@@ -883,9 +893,12 @@ const Customer_Payment_Summary = () => {
                     color: balanceRequired >= 0 ? "green" : "red",
                   }}
                 >
-                  <td style={{ padding: "8px" }}>12</td>
+                  <td style={{ padding: "8px" }}>{totalPOBasic > 0 ? 12 : 11}</td>
                   <td style={{ padding: "8px" }}>
-                    <strong>Balance Required [(5)-(9)-(10)]:</strong>
+                    <strong>
+                      Balance Required [
+                      {totalPOBasic > 0 ? "(5)-(9)-(10)" : "(5)-(9)-(10)"}]:
+                    </strong>
                   </td>
                   <td style={{ padding: "8px" }}>{balanceRequired}</td>
                 </tr>
@@ -1380,7 +1393,6 @@ const Customer_Payment_Summary = () => {
           </Table>
         </Sheet>
       </Box>
-
 
       {/* Client History Section */}
       <Box>
