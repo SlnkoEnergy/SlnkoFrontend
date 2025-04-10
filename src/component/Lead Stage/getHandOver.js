@@ -243,7 +243,7 @@ const GetHandoverSheetForm = ({ onBack }) => {
   // 🎯 Populate Data from Handover if Available
   useEffect(() => {
     if (!handoverData) {
-      console.warn("⚠️ No matching handover data found.");
+      console.warn("No matching handover data found.");
       return;
     }
 

@@ -357,7 +357,7 @@ const Overall_Leads = forwardRef((props, ref) => {
         const isAdmin = userRole === "admin" || userRole === "superadmin";
         const matchesUser = isAdmin || submittedBy === userName;
 
-        const matchesQuery = ["id", "c_name", "mobile", "state"].some(
+        const matchesQuery = ["id", "c_name", "mobile", "state","submitted_by"].some(
           (key) => lead[key]?.toLowerCase().includes(searchQuery)
         );
 

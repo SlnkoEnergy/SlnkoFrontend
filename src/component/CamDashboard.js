@@ -34,6 +34,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
 import animationData from "../assets/Lotties/animation-loading.json";
 import Axios from "../utils/Axios";
+import { useGetHandOverQuery } from "../redux/camsSlice";
 
 function Dash_cam() {
   const navigate = useNavigate();
@@ -57,30 +58,30 @@ function Dash_cam() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
 
-  const renderFilters = () => (
-    <>
-      <FormControl size="sm">
-        <FormLabel>Vendor</FormLabel>
-        <Select
-          size="sm"
-          placeholder="Filter by Vendors"
-          value={vendorFilter}
-          onChange={(e) => {
-            const selectedValue = e.target.value;
-            console.log("Selected State:", selectedValue);
-            setVendorFilter(selectedValue);
-          }}
-        >
-          <Option value="">All</Option>
-          {vendors.map((vendor, index) => (
-            <Option key={index} value={vendor}>
-              {vendor}
-            </Option>
-          ))}
-        </Select>
-      </FormControl>
-    </>
-  );
+  // const renderFilters = () => (
+  //   <>
+  //     <FormControl size="sm">
+  //       <FormLabel>Vendor</FormLabel>
+  //       <Select
+  //         size="sm"
+  //         placeholder="Filter by Vendors"
+  //         value={vendorFilter}
+  //         onChange={(e) => {
+  //           const selectedValue = e.target.value;
+  //           console.log("Selected State:", selectedValue);
+  //           setVendorFilter(selectedValue);
+  //         }}
+  //       >
+  //         <Option value="">All</Option>
+  //         {vendors.map((vendor, index) => (
+  //           <Option key={index} value={vendor}>
+  //             {vendor}
+  //           </Option>
+  //         ))}
+  //       </Select>
+  //     </FormControl>
+  //   </>
+  // );
 
   // useEffect(() => {
   //   const fetchPaymentsAndProjects = async () => {
@@ -128,88 +129,16 @@ function Dash_cam() {
   //   fetchPaymentsAndProjects();
   // }, []);
 
-  useEffect(() => {
-    const fetchCommAndBdRate = async () => {
-      setLoading(true);
-      try {
-        // Fetch commercial offer and BD rate
-        const [commResponse, bdRateResponse] = await Promise.all([
-          Axios.get("/get-comm-offer"),
-          Axios.get("/get-comm-bd-rate"),
-        ]);
+const { data: getHandOverSheet = [] } = useGetHandOverQuery();
+  const HandOverSheet = useMemo(
+    () => getHandOverSheet?.Data ?? [],
+    [getHandOverSheet]
+  );
 
-        const newCommRate = commResponse.data;
-        const bdRateData = bdRateResponse.data;
+  console.log("HandOverSheet", HandOverSheet);
 
-        // Update commercial offer data only if different
-        setCommRate((prevCommRate) => {
-          if (JSON.stringify(prevCommRate) !== JSON.stringify(newCommRate)) {
-            console.log("Commercial Offer updated:", newCommRate);
-            return newCommRate;
-          }
-          return prevCommRate;
-        });
 
-        // Store BD Rate Data
-        setBdRateData(bdRateData);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setError(
-          <span
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "5px",
-              color: "red",
-              justifyContent: "center",
-              flexDirection: "column",
-              padding: "20px",
-            }}
-          >
-            <PermScanWifiIcon />
-            <Typography
-              fontStyle={"italic"}
-              fontWeight={"600"}
-              sx={{ color: "#0a6bcc" }}
-            >
-              Sit Back! Internet Connection will be back soon..
-            </Typography>
-          </span>
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCommAndBdRate();
-  }, []);
-
-  useEffect(() => {
-    if (commRate.length > 0) {
-      const mergedData = commRate.map((offer) => {
-        const matchingBdRate = bdRateData.find(
-          (bd) => bd.offer_id === offer.offer_id
-        );
-
-        return {
-          ...offer,
-          slnkoCharges: matchingBdRate ? matchingBdRate.slnko_charges : 0,
-        };
-      });
-
-      setMergedData(mergedData);
-    }
-  }, [commRate, bdRateData]);
-
-    useEffect(() => {
-      const storedUser = localStorage.getItem("userDetails");
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-        // console.log("User Loaded:", JSON.parse(storedUser)); 
-      }
-    }, []);
-
-  const RowMenu = ({ currentPage, offer_id }) => {
+  const RowMenu = ({ currentPage, project_id }) => {
     // console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
 
     const [user, setUser] = useState(null);
@@ -257,38 +186,38 @@ function Dash_cam() {
                 color="primary"
                 onClick={() => {
                   const page = currentPage;
-                  const offerId = String(offer_id);
-                  localStorage.setItem("offer_edit", offerId);
+                  const projectId = String(project_id);
+                  localStorage.setItem("project_edit", projectId);
                   // localStorage.setItem("p_id", projectID);
-                  navigate(`/edit_offer?page=${page}&offer_id=${offerId}`);
+                  navigate(`/edit_project?page=${page}&project_id=${projectId}`);
                 }}
               >
                 <ContentPasteGoIcon />
-                <Typography>Edit Offer</Typography>
+                <Typography>View</Typography>
               </MenuItem>
               <MenuItem
                 color="primary"
                 onClick={() => {
                   const page = currentPage;
-                  const offerId = String(offer_id);
-                  localStorage.setItem("offer_summary", offerId);
+                  const projectId = String(project_id);
+                  localStorage.setItem("project_summary", projectId);
                   // localStorage.setItem("p_id", projectID);
-                  navigate(`/offer_summary?page=${page}&offer_id=${offerId}`);
+                  navigate(`/project_summary?page=${page}&project_id=${projectId}`);
                 }}
               >
                 <EditNoteIcon />
-                <Typography>Edit BD Rate</Typography>
+                <Typography>Edit HandOver</Typography>
               </MenuItem>
               <MenuItem
                 onClick={() => {
                   const page = currentPage;
-                  const offerId = String(offer_id);
-                  localStorage.setItem("get-offer", offerId);
-                  navigate(`/bd_history?page=${page}&offer_id=${offerId}`);
+                  const projectId = String(project_id);
+                  localStorage.setItem("get-project", projectId);
+                  navigate(`/bd_history?page=${page}&project_id=${projectId}`);
                 }}
               >
                 <HistoryIcon />
-                <Typography>Offer History</Typography>
+                <Typography>View BOM</Typography>
               </MenuItem>
               <Divider sx={{ backgroundColor: "lightblue" }} />
               {(user?.name === "IT Team" || user?.name === "admin") && (
@@ -308,79 +237,7 @@ function Dash_cam() {
     );
   };
 
-  const AddMenu = ({ currentPage, offer_id }) => {
-    const [user, setUser] = useState(null);
 
-    useEffect(() => {
-      const userData = getUserData();
-      setUser(userData);
-    }, []);
-
-    const getUserData = () => {
-      const userData = localStorage.getItem("userDetails");
-      if (userData) {
-        return JSON.parse(userData);
-      }
-      return null;
-    };
-
-    return (
-      <>
-        {user?.name === "IT Team" ||
-        user?.name === "admin" ||
-        user?.name === "Navin Kumar Gautam" ||
-        user?.name === "Mohd Shakir Khan" ||
-        user?.name === "Shiv Ram Tathagat" ||
-        user?.name === "Kana Sharma" ||
-        user?.name === "Ketan Kumar Jha" ||
-        user?.name === "Vibhav Upadhyay" ||
-        user?.name === "Shantanu Sameer" ||
-        user?.name === "Arnav Shahi" ||
-        user?.name === "Shambhavi Gupta" ||
-        user?.name === "Geeta" ||
-        user?.name === "Anudeep Kumar" ||
-        user?.name === "Ashish Jha" ? (
-          <Tooltip title="Add" arrow>
-            <IconButton
-              size="small"
-              sx={{
-                backgroundColor: "skyblue",
-                color: "white",
-                "&:hover": { backgroundColor: "#45a049" },
-                borderRadius: "50%",
-                padding: "4px",
-              }}
-              onClick={() => {
-                if (offer_id) {
-                  const page = currentPage;
-                  const offerId = String(offer_id);
-                  localStorage.setItem("offer_rate", offerId);
-                  navigate(`/offer_rate?page=${page}&offer_id=${offerId}`);
-                }
-              }}
-            >
-              <AddIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        ) : (
-          <Tooltip title="Not Authorized" arrow>
-            <IconButton
-              size="small"
-              disabled
-              sx={{
-                backgroundColor: "gray",
-                color: "red",
-                borderRadius: "50%",
-                padding: "4px",
-              }}
-            >
-              <BlockIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        )}
-      </>
-    );
-  };
 
   const handleDelete = async () => {
     if (selected.length === 0) {
@@ -416,22 +273,22 @@ function Dash_cam() {
   };
 
   const filteredAndSortedData = useMemo(() => {
-    if (!user || !user.name) return [];
+    // if (!user || !user.name) return [];
   
-    return mergedData
+    return HandOverSheet
       .filter((project) => {
-        const preparedBy = project.prepared_by?.trim().toLowerCase() || "unassigned";
-        const userName = user.name.trim().toLowerCase();
-        const userRole = user.role?.toLowerCase();
+        // const preparedBy = project.prepared_by?.trim().toLowerCase() || "unassigned";
+        // const userName = user.name.trim().toLowerCase();
+        // const userRole = user.role?.toLowerCase();
   
       
-        const isAdmin = userRole === "admin" || userRole === "superadmin";
-        const matchesUser = isAdmin || preparedBy === userName;
+        // const isAdmin = userRole === "admin" || userRole === "superadmin";
+        // const matchesUser = isAdmin || preparedBy === userName;
   
-        const matchesSearchQuery = ["offer_id", "client_name", "state", "prepared_by"]
+        const matchesSearchQuery = ["project_id", "client_name", "state", "prepared_by"]
           .some((key) => project[key]?.toLowerCase().includes(searchQuery));
   
-        return matchesUser && matchesSearchQuery;
+        return matchesSearchQuery;
       })
       .sort((a, b) => {
         const dateA = new Date(a.createdAt || 0);
@@ -439,7 +296,7 @@ function Dash_cam() {
   
         return dateB - dateA;
       });
-  }, [mergedData, searchQuery, user]);
+  }, [HandOverSheet, searchQuery]);
   
   
 
@@ -633,17 +490,15 @@ function Dash_cam() {
                   />
                 </Box>
                 {[
-                  "Offer Id",
-                  "Client Name",
-                  "State Name",
-                  "Ac Capacity(MW)",
-                  "Scheme",
-                  "Component",
-                  "Latest Rate",
-                  "Add BD Rate",
-                  "Prepared By",
-                  "View More",
-                  // "Validation",
+                  "Project Id",
+                  "Name",
+                  "Company",
+                  "State",
+                  "Type",
+                  "Capacity(AC/DC)",
+                  "Status",
+                  "Action",
+                
                 ].map((header, index) => (
                   <Box
                     component="th"
@@ -662,7 +517,7 @@ function Dash_cam() {
             </Box>
             <Box component="tbody">
               {paginatedPayments.length > 0 ? (
-                paginatedPayments.map((offer, index) => (
+                paginatedPayments.map((project, index) => (
                   <Box
                     component="tr"
                     key={index}
@@ -680,9 +535,9 @@ function Dash_cam() {
                     >
                       <Checkbox
                         size="sm"
-                        checked={selected.includes(offer._id)}
+                        checked={selected.includes(project._id)}
                         onChange={(event) =>
-                          handleRowSelect(offer._id, event.target.checked)
+                          handleRowSelect(project._id, event.target.checked)
                         }
                       />
                     </Box>
@@ -694,7 +549,7 @@ function Dash_cam() {
                         textAlign: "center",
                       }}
                     >
-                      {offer.offer_id}
+                      {project.project_id}
                     </Box>
                     <Box
                       component="td"
@@ -704,7 +559,7 @@ function Dash_cam() {
                         textAlign: "center",
                       }}
                     >
-                      {offer.client_name}
+                      {project.client_name}
                     </Box>
                     <Box
                       component="td"
@@ -714,7 +569,7 @@ function Dash_cam() {
                         textAlign: "center",
                       }}
                     >
-                      {offer.state || "-"}
+                      {project.state || "-"}
                     </Box>
                     <Box
                       component="td"
@@ -724,7 +579,7 @@ function Dash_cam() {
                         textAlign: "center",
                       }}
                     >
-                      {offer.ac_capacity || "-"}
+                      {project.capacity || "-"}
                     </Box>
                     <Box
                       component="td"
@@ -734,20 +589,10 @@ function Dash_cam() {
                         textAlign: "center",
                       }}
                     >
-                      {offer.scheme || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {offer.component || "-"}
+                      {project.status || "-"}
                     </Box>
 
-                    <Box
+                    {/* <Box
                       component="td"
                       sx={{
                         borderBottom: "1px solid #ddd",
@@ -779,7 +624,7 @@ function Dash_cam() {
                       }}
                     >
                       {offer.prepared_by || "-"}
-                    </Box>
+                    </Box> */}
                     <Box
                       component="td"
                       sx={{
@@ -790,7 +635,7 @@ function Dash_cam() {
                     >
                       <RowMenu
                         currentPage={currentPage}
-                        offer_id={offer.offer_id}
+                        project_id={project.project_id}
                       />
                     </Box>
                   </Box>
@@ -821,7 +666,7 @@ function Dash_cam() {
                         style={{ width: "50px", height: "50px" }}
                       />
                       <Typography fontStyle={"italic"}>
-                        No offer available
+                        No HandOver data available
                       </Typography>
                     </Box>
                   </Box>

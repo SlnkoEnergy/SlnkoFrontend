@@ -14,6 +14,7 @@ import {
   FormControl,
   FormLabel,
   Grid,
+  IconButton,
   Input,
   Modal,
   ModalDialog,
@@ -27,13 +28,15 @@ import {
   TabPanel,
   Tabs,
   Textarea,
+  Tooltip,
   Typography,
 } from "@mui/joy";
 import { isBefore, isToday, isTomorrow, parseISO } from "date-fns";
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import logo from "../assets/cheer-up.png";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+// import logo from "../assets/cheer-up.png";
 import Img1 from "../assets/follow_up_history.png";
 import {
   useGetEntireLeadsQuery,
@@ -79,30 +82,114 @@ const TaskDashboard = () => {
   const PaginationComponent = ({ currentPage, totalPages, onPageChange }) => {
     const pageNumbers = generatePageNumbers(currentPage, totalPages);
 
+    const handleEllipsisClick = (direction) => {
+      const jump = 3;
+      const newPage =
+        direction === "left"
+          ? Math.max(1, currentPage - jump)
+          : Math.min(totalPages, currentPage + jump);
+      onPageChange(newPage);
+    };
+
     return (
-      <Box display="flex" justifyContent="center" gap={1} mt={2}>
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        gap={1}
+        mt={2}
+        px={2}
+        sx={{
+          overflowX: "auto",
+          scrollbarWidth: "none",
+          "&::-webkit-scrollbar": {
+            display: "none",
+          },
+        }}
+      >
+        {/* Left Arrow */}
+        <IconButton
+          disabled={currentPage === 1}
+          onClick={() => onPageChange(currentPage - 1)}
+          size="sm"
+          sx={{
+            borderRadius: "50%",
+            bgcolor: "#e3f2fd", // light blue
+            transition: "all 0.2s",
+            "&:hover": {
+              bgcolor: "#90caf9", // darker blue on hover
+            },
+          }}
+        >
+          <ChevronLeft size={16} />
+        </IconButton>
+
+        {/* Page Numbers */}
         {pageNumbers.map((number, index) =>
           number === "..." ? (
-            <span key={index} style={{ padding: "6px 12px" }}>
-              ...
-            </span>
+            <Tooltip title="Jump Pages" key={index}>
+              <IconButton
+                size="sm"
+                onClick={() =>
+                  handleEllipsisClick(
+                    index < pageNumbers.indexOf(currentPage) ? "left" : "right"
+                  )
+                }
+                sx={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: "50%",
+                  fontWeight: "bold",
+                  fontSize: "0.875rem",
+                  bgcolor: "#e3f2fd",
+                  "&:hover": {
+                    bgcolor: "#90caf9",
+                  },
+                }}
+              >
+                ...
+              </IconButton>
+            </Tooltip>
           ) : (
-            <button
+            <IconButton
               key={index}
+              size="sm"
               onClick={() => onPageChange(number)}
-              style={{
-                padding: "6px 12px",
-                backgroundColor: number === currentPage ? "#4caf50" : "#f1f1f1",
-                color: number === currentPage ? "#fff" : "#333",
-                borderRadius: "4px",
-                border: "1px solid #ccc",
-                cursor: "pointer",
+              sx={{
+                minWidth: 32,
+                height: 32,
+                borderRadius: "50%",
+                fontWeight: "bold",
+                fontSize: "0.875rem",
+                bgcolor: number === currentPage ? "#42a5f5" : "#e3f2fd", // darker if active
+                color: number === currentPage ? "#fff" : "#000",
+                "&:hover": {
+                  bgcolor: "#90caf9",
+                },
+                transition: "all 0.2s",
               }}
             >
               {number}
-            </button>
+            </IconButton>
           )
         )}
+
+        {/* Right Arrow */}
+        <IconButton
+          disabled={currentPage === totalPages}
+          onClick={() => onPageChange(currentPage + 1)}
+          size="sm"
+          sx={{
+            borderRadius: "50%",
+            bgcolor: "#e3f2fd",
+            transition: "all 0.2s",
+            "&:hover": {
+              bgcolor: "#90caf9",
+            },
+          }}
+        >
+          <ChevronRight size={16} />
+        </IconButton>
       </Box>
     );
   };
@@ -393,7 +480,24 @@ const TaskDashboard = () => {
     }
   };
 
-  const tasksPerPage = 3;
+  const getResponsiveTasksPerPage = () => {
+    const width = window.innerWidth;
+    if (width < 768) return 3;
+    return 6;
+  };
+
+  const [tasksPerPage, setTasksPerPage] = useState(getResponsiveTasksPerPage());
+
+  useEffect(() => {
+    const handleResize = () => {
+      setTasksPerPage(getResponsiveTasksPerPage());
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // const tasksPerPage = 6;
   const getPaginatedData = (tasks, currentPage) => {
     const startIndex = (currentPage - 1) * tasksPerPage;
     const endIndex = startIndex + tasksPerPage;
@@ -424,25 +528,24 @@ const TaskDashboard = () => {
   // }, [completedTasks]);
 
   // ✅ Function to generate pagination numbers
-  const generatePageNumbers = (currentPage, totalPages) => {
+  const generatePageNumbers = (
+    currentPage,
+    totalPages,
+    maxVisiblePages = 5
+  ) => {
     const pageNumbers = [];
-    const maxVisiblePages = 5; // Max number of pages to show between ellipses
 
-    // Always show first page
     pageNumbers.push(1);
 
     if (totalPages <= maxVisiblePages) {
-      // ✅ Show all pages if less than maxVisiblePages
       for (let i = 2; i <= totalPages - 1; i++) {
         pageNumbers.push(i);
       }
     } else {
-      // ✅ Add ellipses before pages if currentPage > 3
       if (currentPage > 3) {
         pageNumbers.push("...");
       }
 
-      // ✅ Add pages before and after current page dynamically
       let startPage = Math.max(2, currentPage - 1);
       let endPage = Math.min(totalPages - 1, currentPage + 1);
 
@@ -458,13 +561,11 @@ const TaskDashboard = () => {
         }
       }
 
-      // ✅ Add ellipses after pages if currentPage < totalPages - 2
       if (currentPage < totalPages - 2) {
         pageNumbers.push("...");
       }
     }
 
-    // ✅ Always show last page if totalPages > 1
     if (totalPages > 1) {
       pageNumbers.push(totalPages);
     }
@@ -697,7 +798,8 @@ const TaskDashboard = () => {
           width: "100%",
           maxWidth: 1000,
           minHeight: 800,
-          mx: "auto",
+          // mx: "auto",
+          margin: { md: "0%", xs: "5%" },
           p: 4,
           textAlign: "center",
           borderRadius: 6,
@@ -753,12 +855,19 @@ const TaskDashboard = () => {
           <TabPanel
             value={0}
             sx={{
-              width: { xs: "95%", sm: "80%", md: "65%", lg: "55%" },
+              width: "100%",
               mt: 3,
             }}
           >
             <Box>
-              <Box display="flex" justifyContent="center" gap={3} mb={3}>
+              <Box
+                display="flex"
+                flexDirection={{ xs: "column", md: "row" }}
+                justifyContent="center"
+                alignItems="center"
+                gap={3}
+                mb={3}
+              >
                 <Chip
                   startDecorator={<CheckCircle />}
                   variant="soft"
@@ -783,8 +892,12 @@ const TaskDashboard = () => {
                 </Chip>
               </Box>
 
-              {categorizedTasks.past.length > 0 ? (
-                <Grid container spacing={3}>
+              {loading ? (
+                <Typography level="body-lg" textAlign="center">
+                  ⏳ Wait.. Loading...
+                </Typography>
+              ) : categorizedTasks.past.length > 0 ? (
+                <Grid container spacing={3} justifyContent="center" mt={2}>
                   {currentTasksPast
                     .filter((task) => {
                       if (!task.by_whom || !user?.name) return false;
@@ -801,12 +914,19 @@ const TaskDashboard = () => {
                       return isMatched;
                     })
                     .map((task, index) => (
-                      <Grid item xs={12} md={6} lg={3} key={index}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={4}
+                        key={index}
+                        sx={{ display: "flex", flexDirection: "row" }}
+                      >
                         <Card
                           key={index}
                           sx={{
                             mb: 3,
-                            borderRadius: "2xl",
+                            borderRadius: "20px",
                             boxShadow: "lg",
                             border: "1px solid #e0e0e0",
                             p: 2,
@@ -827,13 +947,14 @@ const TaskDashboard = () => {
                             <Grid container spacing={2} alignItems="center">
                               <Grid item xs={7}>
                                 <Typography
-                                  level="h5"
-                                  color="primary"
+                                  level="h4"
+                                  color="secondary"
                                   onClick={() => handleOpenModal(task)}
                                   sx={{
                                     cursor: completedTasks[task._id]
                                       ? "not-allowed"
                                       : "pointer",
+                                    
                                   }}
                                 >
                                   {task.name}
@@ -914,7 +1035,7 @@ const TaskDashboard = () => {
                     fontStyle="italic"
                     fontWeight="md"
                   >
-                    🎉 All caught up! No task for now.
+                    🎉 All caught up! No task for past.
                   </Typography>
 
                   {/* <img width={"50px"} height={"35px"} alt="logo" src={logo} /> */}
@@ -956,381 +1077,469 @@ const TaskDashboard = () => {
           {/* Today Tab */}
           <TabPanel
             value={1}
-            sx={{ width: { xs: "90%", sm: "70%", md: "60%", lg: "50%" } }}
+            sx={{
+              width: "100%",
+              mt: 3,
+            }}
           >
-            <Box display="flex" justifyContent="center" gap={2} mb={3}>
-              {/* ✅ Tasks with comments */}
-              <Chip
-                startDecorator={<CheckCircle color="success" />}
-                variant="soft"
-                size="lg"
-                sx={{
-                  backgroundColor: "#e8f5e9", // Light green for success
-                  color: "#388e3c", // Dark green text
-                }}
+            <Box>
+              {/* Summary Chips */}
+              <Box
+                display="flex"
+                flexDirection={{ xs: "column", md: "row" }}
+                justifyContent="center"
+                alignItems="center"
+                gap={3}
+                mb={3}
               >
-                {tasksWithComments.length || 0}{" "}
-                {tasksWithComments.length === 1 ? "Meeting" : "Meetings"}{" "}
-                Attended
-              </Chip>
+                <Chip
+                  startDecorator={<CheckCircle />}
+                  variant="soft"
+                  size="lg"
+                  color="success"
+                >
+                  {tasksWithComments.length || 0}{" "}
+                  {tasksWithComments.length === 1 ? "Meeting" : "Meetings"}{" "}
+                  Attended
+                </Chip>
 
-              {/* ⏰ Tasks without comments */}
-              <Chip
-                startDecorator={<AccessTime color="warning" />}
-                variant="soft"
-                size="lg"
-                sx={{
-                  backgroundColor: "#fff8e1", // Light yellow for warning
-                  color: "#f57c00", // Orange text
-                }}
-              >
-                {tasksWithoutComments.length || 0}{" "}
-                {tasksWithoutComments.length === 1
-                  ? "Pending Meeting"
-                  : "Pending Meetings"}
-              </Chip>
-            </Box>
+                <Chip
+                  startDecorator={<AccessTime />}
+                  variant="soft"
+                  size="lg"
+                  color="warning"
+                >
+                  {tasksWithoutComments.length || 0}{" "}
+                  {tasksWithoutComments.length === 1
+                    ? "Pending Meeting"
+                    : "Pending Meetings"}
+                </Chip>
+              </Box>
 
-            <Typography level="h4">Today's Task</Typography>
-            <Typography level="body-md" color="neutral">
-              {getCurrentDate()}
-            </Typography>
-            {loading ? (
-              <Typography level="body-lg" sx={{ textAlign: "center", mt: 2 }}>
-                ⏳ Wait.. Loading...
+              <Typography level="h4" textAlign="center" mb={1}>
+                Today's Task
               </Typography>
-            ) : categorizedTasks.today.length > 0 ? (
-              currentTasksToday
-                .filter((task) => {
-                  if (!task.by_whom || !user?.name) return false; // Ensure both exist
+              <Typography
+                level="body-md"
+                color="neutral"
+                textAlign="center"
+                mb={3}
+              >
+                {getCurrentDate()}
+              </Typography>
 
-                  // Normalize `by_whom` list to an array of trimmed, lowercase names
-                  const assignedUsers = task.by_whom
-                    .split(",")
-                    .map((name) => name.trim().toLowerCase());
-
-                  // Ensure user.name is an array and lowercase
-                  const userNames = Array.isArray(user.name)
-                    ? user.name.map((name) => name.toLowerCase())
-                    : [user.name.toLowerCase()];
-
-                  // Allow "IT Team" or "admin" to see all tasks
-                  const isMatched =
-                    userNames.includes("it team") ||
-                    userNames.includes("admin") ||
-                    userNames.some((name) => assignedUsers.includes(name));
-
-                  // Debugging logs
-                  console.log("----------- DEBUG LOG -----------");
-                  console.log("Task ID:", task.id || "N/A");
-                  console.log("Task By Whom (Original):", task.by_whom);
-                  console.log("Processed Assigned Users:", assignedUsers);
-                  console.log("Logged-in User Names:", userNames);
-                  console.log("Match Found:", isMatched);
-                  console.log("---------------------------------");
-
-                  return isMatched;
-                })
-                .sort((a, b) => {
-                  const dateA = new Date(a.updatedAt || a.date);
-                  const dateB = new Date(b.updatedAt || b.date);
-                  return dateB - dateA;
-                })
-                .map((task, index) => (
-                  <Card
-                    key={index}
-                    sx={{
-                      mb: 3,
-                      borderRadius: 6,
-                      boxShadow: "xl",
-                      border: "1px solid #bbb",
-                      p: 2,
-                      width: "100%",
-                      mx: "auto",
-                      backgroundColor: task.success ? "#d4edda" : "#ffffff", // ✅ Light green if success
-                      border: task.success
-                        ? "1px solid #c3e6cb"
-                        : "1px solid #e0e0e0",
-                      transition: "background-color 0.3s ease-in-out",
-                      // opacity: disabledCards[task._id] ? 0.6 : 1,
-                      pointerEvents: disabledCards[task._id] ? "none" : "auto",
-                    }}
-                  >
-                    <CardContent>
-                      <Grid container spacing={2} alignItems="center">
-                        <Grid xs={7}>
-                          {(user?.name === "IT Team" ||
-                            user?.name === "admin" ||
-                            user?.name?.toLowerCase() ===
-                              task?.submitted_by?.toLowerCase()) && (
-                            <Chip
-                              variant="soft"
-                              size="lg"
-                              sx={{
-                                backgroundColor: "#d4edda", // Light green default
-                                color: "#155724", // Dark green text
-                                fontWeight: "bold",
-                                transition:
-                                  "background-color 0.3s ease-in-out, color 0.3s ease-in-out",
-                                "&:hover": {
-                                  backgroundColor: "#155724", // Dark green on hover
-                                  color: "#ffffff", // White text for contrast
-                                },
-                                pointerEvents: "auto",
-                              }}
-                            >
-                              <Button
-                                variant="plain"
-                                onClick={() => handleOpenAddTaskModal(task)}
-                                sx={{
-                                  padding: 0,
-                                  minWidth: "auto",
-                                  color: "inherit",
-                                }}
-                              >
-                                <Typography>Reschedule +</Typography>
-                              </Button>
-                            </Chip>
-                          )}
-                          <Typography
-                            level="h4"
-                            onClick={() => handleOpenModal(task)}
-                            style={{ cursor: "pointer", pointerEvents: "auto" }}
-                            color={
-                              completedTasks[task._id] ? "success" : "primary"
-                            }
-                          >
-                            {task.name}
-                          </Typography>
-
-                          <Typography level="body-lg">
-                            {task.company}
-                          </Typography>
-                          <Typography level="body-md" color="neutral">
-                            {`${task?.district ?? ""}, ${task?.state ?? ""}`}
-                          </Typography>
-                        </Grid>
-                        <Grid
-                          xs={5}
-                          display="flex"
-                          alignItems="center"
-                          justifyContent="flex-end"
-                          flexDirection={"column"}
-                          gap={1}
+              {loading ? (
+                <Typography level="body-lg" textAlign="center">
+                  ⏳ Wait.. Loading...
+                </Typography>
+              ) : categorizedTasks.today.length > 0 ? (
+                <Grid container spacing={3} justifyContent="center" mt={2}>
+                  {currentTasksToday
+                    .filter((task) => {
+                      if (!task.by_whom || !user?.name) return false;
+                      const assignedUsers = task.by_whom
+                        .split(",")
+                        .map((name) => name.trim().toLowerCase());
+                      const userNames = Array.isArray(user.name)
+                        ? user.name.map((name) => name.toLowerCase())
+                        : [user.name.toLowerCase()];
+                      const isMatched =
+                        userNames.includes("it team") ||
+                        userNames.includes("admin") ||
+                        userNames.some((name) => assignedUsers.includes(name));
+                      return isMatched;
+                    })
+                    .sort(
+                      (a, b) =>
+                        new Date(b.updatedAt || b.date) -
+                        new Date(a.updatedAt || a.date)
+                    )
+                    .map((task, index) => (
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={4}
+                        key={index}
+                        sx={{ display: "flex", flexDirection: "row" }}
+                      >
+                        <Card
+                          sx={{
+                            mb: 3,
+                            borderRadius: "20px",
+                            boxShadow: "lg",
+                            border: "1px solid #e0e0e0",
+                            p: 2,
+                            width: "100%",
+                            backgroundColor: task.success
+                              ? "#d4edda"
+                              : "#ffffff",
+                            borderColor: task.success ? "#c3e6cb" : "#e0e0e0",
+                            transition: "0.3s",
+                            "&:hover": {
+                              boxShadow: "xl",
+                              transform: "scale(1.01)",
+                            },
+                            pointerEvents: disabledCards[task._id]
+                              ? "none"
+                              : "auto",
+                            opacity: disabledCards[task._id] ? 0.6 : 1,
+                          }}
                         >
-                          <Chip
-                            startDecorator={task.icon}
-                            variant="outlined"
-                            size="lg"
-                            sx={{
-                              pointerEvents: disabledCards[task._id]
-                                ? "none"
-                                : "auto",
-                            }}
-                          >
-                            {task.type}
-                          </Chip>
-                          {(user?.name === "IT Team" ||
-                            user?.name === "admin" ||
-                            user?.name?.toLowerCase() ===
-                              task?.submitted_by?.toLowerCase()) && (
-                            <Checkbox
-                              checked={isTaskCompleted(task)} // Checkbox will be ticked if task has a comment
-                              onChange={(event) =>
-                                handleCheckboxChange(task, event)
-                              }
-                              disabled={isTaskCompleted(task)}
-                              sx={{
-                                "&.Mui-checked": {
-                                  color: "white",
-                                  backgroundColor: "#4caf50",
-                                  borderRadius: "50%",
-                                  transition:
-                                    "background-color 0.3s ease-in-out",
-                                },
-                                pointerEvents: "auto",
-                              }}
-                            />
-                          )}
+                          <CardContent>
+                            <Grid container spacing={2} alignItems="center">
+                              <Grid item xs={7}>
+                                {(user?.name === "IT Team" ||
+                                  user?.name === "admin" ||
+                                  user?.name?.toLowerCase() ===
+                                    task?.submitted_by?.toLowerCase()) && (
+                                  <Chip
+                                    variant="soft"
+                                    size="lg"
+                                    sx={{
+                                      backgroundColor: "#d4edda",
+                                      color: "#155724",
+                                      fontWeight: "bold",
+                                      "&:hover": {
+                                        backgroundColor: "#155724",
+                                        color: "#ffffff",
+                                      },
+                                    }}
+                                  >
+                                    <Button
+                                      variant="plain"
+                                      onClick={() =>
+                                        handleOpenAddTaskModal(task)
+                                      }
+                                      sx={{
+                                        padding: 0,
+                                        minWidth: "auto",
+                                        color: "inherit",
+                                      }}
+                                    >
+                                      <Typography>Reschedule +</Typography>
+                                    </Button>
+                                  </Chip>
+                                )}
 
-                          <Button
-                            variant="plain"
-                            onClick={() => {
-                              setSelectedTask(task);
-                              setOpen(true);
-                            }}
-                            disabled={disabledCards[task._id]} // Disable button after comment
-                            sx={{
-                              pointerEvents: disabledCards[task._id]
-                                ? "none"
-                                : "auto", // Disable interaction
-                            }}
-                          >
-                            <Typography>
-                              {disabledCards[task._id]
-                                ? "Comment Added"
-                                : "..."}
-                            </Typography>
-                          </Button>
+                                <Typography
+                                  level="h4"
+                                  onClick={() => handleOpenModal(task)}
+                                  color={
+                                    completedTasks[task._id]
+                                      ? "success"
+                                      : "primary"
+                                  }
+                                  sx={{
+                                    cursor: "pointer",
+                                    pointerEvents: "auto",
+                                    
+                                  }}
+                                >
+                                  {task.name}
+                                </Typography>
 
-                          {/* Modal should only open when "..." is clicked */}
-                          <Modal open={open} onClose={() => setOpen(false)}>
-                            <ModalDialog>
-                              <Typography level="h4">
-                                Task Description
-                              </Typography>
-                              <Typography>
-                                {selectedTask?.task_detail ||
-                                  "No details available"}
-                              </Typography>
-                              <Button onClick={() => setOpen(false)}>
-                                Close
-                              </Button>
-                            </ModalDialog>
-                          </Modal>
-                          {/* <Button variant="plain" onClick={() => setOpen(true)}>
-                  <Typography>Add Comment</Typography>
-                </Button> */}
-                        </Grid>
+                                <Typography level="body-md" fontWeight="500">
+                                  {task.company}
+                                </Typography>
+                                <Typography level="body-sm" color="neutral">
+                                  {`${task?.district ?? ""}, ${task?.state ?? ""}`}
+                                </Typography>
+                              </Grid>
+
+                              <Grid
+                                item
+                                xs={5}
+                                display="flex"
+                                flexDirection="column"
+                                alignItems="center"
+                                justifyContent="flex-end"
+                                gap={1.5}
+                              >
+                                <Checkbox
+                                  checked={isTaskCompleted(task)}
+                                  onChange={(event) =>
+                                    handleCheckboxChange(task, event)
+                                  }
+                                  disabled={isTaskCompleted(task)}
+                                  sx={{
+                                    "&.Mui-checked": {
+                                      color: "white",
+                                      backgroundColor: "#4caf50",
+                                      borderRadius: "50%",
+                                    },
+                                  }}
+                                />
+
+                                <Chip
+                                  startDecorator={task.icon}
+                                  variant="outlined"
+                                  color="neutral"
+                                  size="md"
+                                  sx={{ px: 1.5 }}
+                                >
+                                  {task.type}
+                                </Chip>
+
+                                <Button
+                                  variant="plain"
+                                  onClick={() => {
+                                    setSelectedTask(task);
+                                    setOpen(true);
+                                  }}
+                                  sx={{
+                                    fontSize: "1.25rem",
+                                    color: "#888",
+                                    "&:hover": { color: "#444" },
+                                    pointerEvents: disabledCards[task._id]
+                                      ? "none"
+                                      : "auto",
+                                  }}
+                                  disabled={disabledCards[task._id]}
+                                >
+                                  {disabledCards[task._id]
+                                    ? "Comment Added"
+                                    : "..."}
+                                </Button>
+                              </Grid>
+                            </Grid>
+                          </CardContent>
+                        </Card>
                       </Grid>
-                    </CardContent>
-                  </Card>
-                ))
-            ) : (
-              <Typography level="body-lg">No tasks for today.</Typography>
-            )}
+                    ))}
+                </Grid>
+              ) : (
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    mt: 5,
+                  }}
+                >
+                  <Typography
+                    level="h5"
+                    color="neutral"
+                    textAlign="center"
+                    fontStyle="italic"
+                    fontWeight="md"
+                  >
+                    🎉 No tasks for today.
+                  </Typography>
+                </Box>
+              )}
 
-            <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-              <PaginationComponent
-                currentPage={currentPages.today}
-                totalPages={totalPagesToday}
-                onPageChange={(page) => handlePageChange("today", page)}
-              />
+              <Box sx={{ display: "flex", justifyContent: "center", mt: 5 }}>
+                <PaginationComponent
+                  currentPage={currentPages.today}
+                  totalPages={totalPagesToday}
+                  onPageChange={(page) => handlePageChange("today", page)}
+                />
+              </Box>
             </Box>
+
+            {/* Modal */}
+            <Modal open={open} onClose={() => setOpen(false)}>
+              <ModalDialog
+                variant="outlined"
+                sx={{
+                  minWidth: 300,
+                  maxWidth: 500,
+                  p: 3,
+                  borderRadius: "lg",
+                  textAlign: "center",
+                }}
+              >
+                <Typography level="h4" mb={2}>
+                  Task Description
+                </Typography>
+                <Typography mb={3}>
+                  {selectedTask?.task_detail || "No details available"}
+                </Typography>
+                <Button onClick={() => setOpen(false)}>Close</Button>
+              </ModalDialog>
+            </Modal>
           </TabPanel>
 
           {/* Tomorrow Tab */}
           <TabPanel
             value={2}
-            sx={{ width: { xs: "90%", sm: "70%", md: "60%", lg: "50%" } }}
+            sx={{
+              width: "100%",
+              mt: 3,
+            }}
           >
             <Typography level="h4">Tomorrow's Task</Typography>
             <Typography level="body-md" color="neutral">
               {getTomorrowDate()}
             </Typography>
-            {categorizedTasks.tomorrow.length > 0 ? (
-              currentTasksTomorrow
-                .filter((task) => {
-                  if (!task.by_whom || !user?.name) return false; // Ensure both exist
 
-                  // Normalize `by_whom` list to an array of trimmed, lowercase names
+            {loading ? (
+              <Typography level="body-md" textColor="neutral">
+                ⏳ Wait.. Loading...
+              </Typography>
+            ) : (
+              <>
+                {currentTasksTomorrow?.filter((task) => {
+                  if (!task.by_whom || !user?.name) return false;
+
                   const assignedUsers = task.by_whom
                     .split(",")
                     .map((name) => name.trim().toLowerCase());
 
-                  // Ensure user.name is an array and lowercase
                   const userNames = Array.isArray(user.name)
                     ? user.name.map((name) => name.toLowerCase())
                     : [user.name.toLowerCase()];
 
-                  // Allow "IT Team" or "admin" to see all tasks
-                  const isMatched =
+                  return (
                     userNames.includes("it team") ||
                     userNames.includes("admin") ||
-                    userNames.some((name) => assignedUsers.includes(name));
+                    userNames.some((name) => assignedUsers.includes(name))
+                  );
+                }).length > 0 ? (
+                  <Grid container spacing={3} justifyContent="center" mt={2}>
+                    {currentTasksTomorrow
+                      .filter((task) => {
+                        if (!task.by_whom || !user?.name) return false;
 
-                  // Debugging logs
-                  console.log("----------- DEBUG LOG -----------");
-                  console.log("Task ID:", task.id || "N/A");
-                  console.log("Task By Whom (Original):", task.by_whom);
-                  console.log("Processed Assigned Users:", assignedUsers);
-                  console.log("Logged-in User Names:", userNames);
-                  console.log("Match Found:", isMatched);
-                  console.log("---------------------------------");
+                        const assignedUsers = task.by_whom
+                          .split(",")
+                          .map((name) => name.trim().toLowerCase());
 
-                  return isMatched;
-                })
-                .map((task, index) => (
-                  <Card
-                    key={index}
-                    sx={{
-                      mb: 3,
-                      borderRadius: 6,
-                      boxShadow: "xl",
-                      border: "1px solid #bbb",
-                      p: 2,
-                      width: "90%",
-                      mx: "auto",
-                    }}
-                  >
-                    <CardContent>
-                      <Grid container spacing={2} alignItems="center">
-                        <Grid xs={7}>
-                          <Typography
-                            level="h4"
-                            color="danger"
-                            onClick={() => handleOpenModal(task)}
-                            style={{ cursor: "pointer" }}
-                          >
-                            {task.name}
-                          </Typography>
-                          <Typography level="body-lg">
-                            {task.company}
-                          </Typography>
-                          <Typography level="body-md" color="neutral">
-                            {`${task?.district ?? ""}, ${task?.state ?? ""}`}
-                          </Typography>
-                        </Grid>
+                        const userNames = Array.isArray(user.name)
+                          ? user.name.map((name) => name.toLowerCase())
+                          : [user.name.toLowerCase()];
+
+                        return (
+                          userNames.includes("it team") ||
+                          userNames.includes("admin") ||
+                          userNames.some((name) => assignedUsers.includes(name))
+                        );
+                      })
+                      .map((task, index) => (
                         <Grid
-                          xs={5}
-                          display="flex"
-                          alignItems="center"
-                          justifyContent="flex-end"
-                          flexDirection={"column"}
-                          gap={1}
+                          item
+                          xs={12}
+                          sm={6}
+                          md={4}
+                          key={index}
+                          sx={{ display: "flex", flexDirection: "row" }}
                         >
-                          <Typography level="body-md" textColor="green">
-                            {getTomorrowDate()}
-                          </Typography>
-                          <Chip
-                            startDecorator={task.icon}
-                            variant="outlined"
-                            size="lg"
-                          >
-                            {task.type}
-                          </Chip>
-                          <Button
-                            variant="plain"
-                            onClick={() => {
-                              setSelectedTask(task);
-                              setOpen(true);
+                          <Card
+                            key={index}
+                            sx={{
+                              mb: 3,
+                              borderRadius: "20px",
+                              boxShadow: "lg",
+                              border: "1px solid #e0e0e0",
+                              p: 2,
+                              width: "100%",
+                              backgroundColor: "#fff",
+                              transition: "0.3s",
+                              "&:hover": {
+                                boxShadow: "xl",
+                                transform: "scale(1.01)",
+                              },
+                              // pointerEvents: completedTasks[task._id]
+                              //   ? "none"
+                              //   : "auto",
+                              // opacity: completedTasks[task._id] ? 0.6 : 1,
                             }}
                           >
-                            <Typography>...</Typography>
-                          </Button>
-                          <Modal open={open} onClose={() => setOpen(false)}>
-                            <ModalDialog>
-                              <Typography level="h4">
-                                Task Description
-                              </Typography>
-                              <Typography>
-                                {selectedTask?.task_detail ||
-                                  "No details available"}
-                              </Typography>
-                              <Button onClick={() => setOpen(false)}>
-                                Close
-                              </Button>
-                            </ModalDialog>
-                          </Modal>
+                            <CardContent>
+                              <Grid container spacing={2} alignItems="center">
+                                {/* Left Section */}
+                                <Grid item xs={7}>
+                                  <Typography
+                                    level="h4"
+                                    color="danger"
+                                    onClick={() => handleOpenModal(task)}
+                                    style={{ cursor: "pointer" }}
+                                  >
+                                    {task.name}
+                                  </Typography>
+                                  <Typography level="body-lg">
+                                    {task.company}
+                                  </Typography>
+                                  <Typography level="body-md" color="neutral">
+                                    {`${task?.district ?? ""}, ${task?.state ?? ""}`}
+                                  </Typography>
+                                </Grid>
+
+                                {/* Right Section */}
+                                <Grid
+                                  item
+                                  xs={5}
+                                  display="flex"
+                                  flexDirection="column"
+                                  alignItems="center"
+                                  justifyContent="flex-end"
+                                  gap={1.5}
+                                >
+                                  <Typography level="body-md" textColor="green">
+                                    {getTomorrowDate()}
+                                  </Typography>
+                                  <Chip
+                                    startDecorator={task.icon}
+                                    variant="outlined"
+                                    size="lg"
+                                  >
+                                    {task.type}
+                                  </Chip>
+                                  <Button
+                                    variant="plain"
+                                    onClick={() => {
+                                      setSelectedTask(task);
+                                      setOpen(true);
+                                    }}
+                                  >
+                                    <Typography>...</Typography>
+                                  </Button>
+                                </Grid>
+                              </Grid>
+                            </CardContent>
+                          </Card>
                         </Grid>
-                      </Grid>
-                    </CardContent>
-                  </Card>
-                ))
-            ) : (
-              <Typography level="body-lg">No tasks for tomorrow.</Typography>
+                      ))}
+                  </Grid>
+                ) : (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      mt: 5,
+                    }}
+                  >
+                    <Typography
+                      level="h5"
+                      color="neutral"
+                      textAlign="center"
+                      fontStyle="italic"
+                      fontWeight="md"
+                    >
+                      🎉 No tasks for tomorrow.
+                    </Typography>
+                  </Box>
+                )}
+              </>
             )}
-            <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+
+            {/* Modal */}
+            <Modal open={open} onClose={() => setOpen(false)}>
+              <ModalDialog>
+                <Typography level="h4">Task Description</Typography>
+                <Typography>
+                  {selectedTask?.task_detail || "No details available"}
+                </Typography>
+                <Button onClick={() => setOpen(false)}>Close</Button>
+              </ModalDialog>
+            </Modal>
+
+            {/* Pagination */}
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 5 }}>
               <PaginationComponent
                 currentPage={currentPages.tomorrow}
                 totalPages={totalPagesTomorrow}
@@ -1338,370 +1547,150 @@ const TaskDashboard = () => {
               />
             </Box>
           </TabPanel>
+
           {/* Future Tab */}
           <TabPanel
             value={3}
             sx={{
-              width: { xs: "90%", sm: "70%", md: "60%", lg: "50%" },
-              borderRadius: "20px",
+              width: "100%",
+              mt: 3,
             }}
           >
             <Box>
-              <Box
-                sx={{
-                  margin: "10px",
-                }}
-              >
-                <Typography level="h4">Upcoming Task</Typography>
+              <Box>
+                <Typography level="h4" textAlign="center" mb={1}>
+                  Upcoming Task
+                </Typography>
               </Box>
-              {categorizedTasks.future.length > 0 ? (
-                currentTasksFuture
-                  .filter((task) => {
-                    if (!task.by_whom || !user?.name) return false; // Ensure both exist
 
-                    // Normalize `by_whom` list to an array of trimmed, lowercase names
-                    const assignedUsers = task.by_whom
-                      .split(",")
-                      .map((name) => name.trim().toLowerCase());
+              {loading ? (
+                <Typography level="body-lg" textAlign="center">
+                  ⏳ Wait.. Loading...
+                </Typography>
+              ) : categorizedTasks.future.length > 0 ? (
+                <Grid container spacing={3} justifyContent="center" mt={2}>
+                  {currentTasksFuture
+                    .filter((task) => {
+                      if (!task.by_whom || !user?.name) return false;
 
-                    // Ensure user.name is an array and lowercase
-                    const userNames = Array.isArray(user.name)
-                      ? user.name.map((name) => name.toLowerCase())
-                      : [user.name.toLowerCase()];
+                      const assignedUsers = task.by_whom
+                        .split(",")
+                        .map((name) => name.trim().toLowerCase());
 
-                    // Allow "IT Team" or "admin" to see all tasks
-                    const isMatched =
-                      userNames.includes("it team") ||
-                      userNames.includes("admin") ||
-                      userNames.some((name) => assignedUsers.includes(name));
+                      const userNames = Array.isArray(user.name)
+                        ? user.name.map((name) => name.toLowerCase())
+                        : [user.name.toLowerCase()];
 
-                    // Debugging logs
-                    console.log("----------- DEBUG LOG -----------");
-                    console.log("Task ID:", task.id || "N/A");
-                    console.log("Task By Whom (Original):", task.by_whom);
-                    console.log("Processed Assigned Users:", assignedUsers);
-                    console.log("Logged-in User Names:", userNames);
-                    console.log("Match Found:", isMatched);
-                    console.log("---------------------------------");
-
-                    return isMatched;
-                  })
-                  .map((task, index) => (
-                    <Card
-                      key={index}
-                      sx={{
-                        mb: 3,
-                        borderLeft: "6px solid blue",
-                        borderRadius: 6,
-                        boxShadow: "xl",
-                        border: "1px solid #bbb",
-                        p: 2,
-                        width: "90%",
-                        mx: "auto",
-                      }}
-                    >
-                      <CardContent>
-                        <Grid container spacing={2} alignItems="center">
-                          <Grid xs={7}>
-                            <Typography
-                              level="h4"
-                              color="danger"
-                              onClick={() => handleOpenModal(task)}
-                              style={{ cursor: "pointer" }}
-                            >
-                              {task.name}
-                            </Typography>
-                            {/* <Modal open={openModal} onClose={handleCloseModal}>
-                            <Box
-                              sx={{
-                                p: 4,
-                                bgcolor: "background.surface",
-                                borderRadius: "md",
-                                maxWidth: 600,
-                                mx: "auto",
-                                mt: 10,
-                              }}
-                            >
-                              <Grid container spacing={2}>
-                                <Grid xs={12} sm={6}>
-                                  <FormLabel>Customer Name</FormLabel>
-                                  <Input
-                                    name="name"
-                                    value={selectedTask?.name ?? ""}
-                                    readOnly
-                                    fullWidth
-                                  />
-                                </Grid>
-                                <Grid xs={12} sm={6}>
-                                  <FormLabel>Company Name</FormLabel>
-                                  <Input
-                                    name="company"
-                                    value={selectedTask?.company ?? ""}
-                                    readOnly
-                                    fullWidth
-                                  />
-                                </Grid>
-                                <Grid xs={12} sm={6}>
-                                  <FormLabel>Group Name</FormLabel>
-                                  <Input
-                                    name="group"
-                                    value={selectedTask?.group ?? ""}
-                                    readOnly
-                                    fullWidth
-                                  />
-                                </Grid>
-                                <Grid xs={12} sm={6}>
-                                  <FormLabel>Source</FormLabel>
-                                  <Select
-                                    name="source"
-                                    value={selectedTask?.source ?? ""}
-                                    onChange={(e, newValue) =>
-                                      setSelectedTask({
-                                        ...selectedTask,
-                                        source: newValue,
-                                        reffered_by: "",
-                                      })
-                                    }
-                                    fullWidth
-                                  >
-                                    {Object.keys(sourceOptions).map(
-                                      (option) => (
-                                        <Option key={option} value={option}>
-                                          {option}
-                                        </Option>
-                                      )
-                                    )}
-                                  </Select>
-                                </Grid>
-                                {selectedTask?.source &&
-                                  sourceOptions[selectedTask.source]?.length >
-                                    0 && (
-                                    <Grid xs={12} sm={6}>
-                                      <FormLabel>Sub Source</FormLabel>
-                                      <Select
-                                        name="reffered_by"
-                                        value={selectedTask?.reffered_by ?? ""}
-                                        readOnly
-                                        fullWidth
-                                      >
-                                        {sourceOptions[selectedTask.source].map(
-                                          (option) => (
-                                            <Option key={option} value={option}>
-                                              {option}
-                                            </Option>
-                                          )
-                                        )}
-                                      </Select>
-                                    </Grid>
-                                  )}
-                                <Grid xs={12} sm={6}>
-                                  <FormLabel>Email ID</FormLabel>
-                                  <Input
-                                    name="email"
-                                    type="email"
-                                    value={selectedTask?.email ?? ""}
-                                    readOnly
-                                    fullWidth
-                                  />
-                                </Grid>
-                                <Grid xs={12} sm={6}>
-                                  <FormLabel>Mobile Number</FormLabel>
-                                  <Input
-                                    name="mobile"
-                                    type="tel"
-                                    value={selectedTask?.mobile ?? ""}
-                                    readOnly
-                                    fullWidth
-                                  />
-                                </Grid>
-                                <Grid xs={12} sm={6}>
-                                  <FormLabel>Location</FormLabel>
-                                  <Input
-                                    name="location"
-                                    value={`${selectedTask?.village ?? ""}, ${selectedTask?.district ?? ""}, ${selectedTask?.state ?? ""}`}
-                                    readOnly
-                                    fullWidth
-                                  />
-                                </Grid>
-                                <Grid xs={12} sm={6}>
-                                  <FormLabel>Capacity</FormLabel>
-                                  <Input
-                                    name="capacity"
-                                    value={selectedTask?.capacity ?? ""}
-                                    readOnly
-                                    fullWidth
-                                  />
-                                </Grid>
-                                <Grid xs={12} sm={6}>
-                                  <FormLabel>
-                                    Sub Station Distance (KM)
-                                  </FormLabel>
-                                  <Input
-                                    name="distance"
-                                    value={selectedTask?.distance ?? ""}
-                                    readOnly
-                                    fullWidth
-                                  />
-                                </Grid>
-                                <Grid xs={12} sm={6}>
-                                  <FormLabel>Tariff (Per Unit)</FormLabel>
-                                  <Input
-                                    name="tarrif"
-                                    value={selectedTask?.tarrif ?? ""}
-                                    readOnly
-                                    fullWidth
-                                  />
-                                </Grid>
-                                <Grid xs={12} sm={6}>
-                                  <FormLabel>Available Land</FormLabel>
-                                  <Input
-                                    name="available_land"
-                                    value={
-                                      selectedTask?.land?.available_land ?? ""
-                                    }
-                                    type="number"
-                                    fullWidth
-                                    variant="soft"
-                                    readOnly
-                                  />
-                                </Grid>
-                                <Grid xs={12} sm={6}>
-                                  <FormLabel>Creation Date</FormLabel>
-                                  <Input
-                                    name="entry_date"
-                                    type="date"
-                                    value={selectedTask?.entry_date ?? ""}
-                                    readOnly
-                                    fullWidth
-                                  />
-                                </Grid>
-                                <Grid xs={12} sm={6}>
-                                  <FormLabel>Scheme</FormLabel>
-                                  <Select
-                                    name="scheme"
-                                    value={selectedTask?.scheme ?? ""}
-                                    readOnly
-                                  >
-                                    {["KUSUM A", "KUSUM C", "Other"].map(
-                                      (option) => (
-                                        <Option key={option} value={option}>
-                                          {option}
-                                        </Option>
-                                      )
-                                    )}
-                                  </Select>
-                                </Grid>
-                                <Grid xs={12} sm={6}>
-                                  <FormLabel>Land Types</FormLabel>
-                                  <Autocomplete
-                                    options={landTypes}
-                                    value={
-                                      selectedTask?.land?.land_type ?? null
-                                    }
-                                    readOnly
-                                    getOptionLabel={(option) => option}
-                                    renderInput={(params) => (
-                                      <Input
-                                        {...params}
-                                        placeholder="Land Type"
-                                        variant="soft"
-                                        required
-                                      />
-                                    )}
-                                    isOptionEqualToValue={(option, value) =>
-                                      option === value
-                                    }
-                                    sx={{ width: "100%" }}
-                                  />
-                                </Grid>
-                                <Grid xs={12}>
-                                  <FormLabel>Comments</FormLabel>
-                                  <Input
-                                    name="comment"
-                                    value={selectedTask?.comment ?? ""}
-                                    multiline
-                                    rows={4}
-                                    readOnly
-                                    fullWidth
-                                  />
-                                </Grid>
+                      return (
+                        userNames.includes("it team") ||
+                        userNames.includes("admin") ||
+                        userNames.some((name) => assignedUsers.includes(name))
+                      );
+                    })
+                    .map((task, index) => (
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={4}
+                        key={index}
+                        sx={{ display: "flex", flexDirection: "row" }}
+                      >
+                        <Card
+                          key={index}
+                          sx={{
+                            mb: 3,
+                            borderRadius: "20px",
+                            boxShadow: "lg",
+                            border: "1px solid #e0e0e0",
+                            p: 2,
+                            width: "100%",
+                            backgroundColor: "#fff",
+                            transition: "0.3s",
+                            "&:hover": {
+                              boxShadow: "xl",
+                              transform: "scale(1.01)",
+                            },
+                            // pointerEvents: completedTasks[task._id]
+                            //   ? "none"
+                            //   : "auto",
+                            // opacity: completedTasks[task._id] ? 0.6 : 1,
+                          }}
+                        >
+                          <CardContent>
+                            <Grid container spacing={2} alignItems="center">
+                              <Grid xs={7}>
+                                <Typography
+                                  level="h4"
+                                  color="danger"
+                                  onClick={() => handleOpenModal(task)}
+                                  style={{ cursor: "pointer" }}
+                                >
+                                  {task.name}
+                                </Typography>
+                                <Typography level="body-lg">
+                                  {task.company}
+                                </Typography>
+                                <Typography level="body-md" color="neutral">
+                                  {`${task?.district ?? ""}, ${task?.state ?? ""}`}
+                                </Typography>
                               </Grid>
-                              <Box textAlign="center" sx={{ mt: 2 }}>
-                                <Button onClick={handleCloseModal}>
-                                  Close
-                                </Button>
-                              </Box>
-                            </Box>
-                          </Modal> */}
-                            <Typography level="body-lg">
-                              {task.company}
-                            </Typography>
-                            <Typography level="body-md" color="neutral">
-                              {`${task?.district ?? ""}, ${task?.state ?? ""}`}
-                            </Typography>
-                          </Grid>
-                          <Grid
-                            xs={5}
-                            display="flex"
-                            flexDirection="column"
-                            alignItems="center"
-                            justifyContent="flex-end"
-                            gap={1}
-                          >
-                            <Typography level="body-md" textColor="green">
-                              {/* {getDayAfterTomorrowDate(taskDate)} */}
-                              {formatTaskDate(task.date)}
-                            </Typography>
-                            <Chip
-                              startDecorator={task.icon}
-                              variant="outlined"
-                              size="lg"
-                            >
-                              {task.type}
-                            </Chip>
-                            <Button
-                              variant="plain"
-                              onClick={() => {
-                                setSelectedTask(task);
-                                setOpen(true);
-                              }}
-                            >
-                              <Typography>...</Typography>
-                            </Button>
-                            <Modal open={open} onClose={() => setOpen(false)}>
-                              <ModalDialog>
-                                <Typography level="h4">
-                                  Task Descriptions
+                              <Grid
+                                xs={5}
+                                display="flex"
+                                flexDirection="column"
+                                alignItems="center"
+                                justifyContent="flex-end"
+                                gap={1}
+                              >
+                                <Typography level="body-md" textColor="green">
+                                  {formatTaskDate(task.date)}
                                 </Typography>
-                                <Typography>
-                                  {selectedTask?.task_detail ||
-                                    "No details available"}
-                                </Typography>
-                                <Button onClick={() => setOpen(false)}>
-                                  Close
+                                <Chip
+                                  startDecorator={task.icon}
+                                  variant="outlined"
+                                  size="lg"
+                                >
+                                  {task.type}
+                                </Chip>
+                                <Button
+                                  variant="plain"
+                                  onClick={() => {
+                                    setSelectedTask(task);
+                                    setOpen(true);
+                                  }}
+                                >
+                                  <Typography>...</Typography>
                                 </Button>
-                              </ModalDialog>
-                            </Modal>
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                    </Card>
-                  ))
+                              </Grid>
+                            </Grid>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    ))}
+                </Grid>
               ) : (
                 <Box
                   sx={{
                     display: "flex",
+                    flexDirection: "column",
                     justifyContent: "center",
                     alignItems: "center",
+                    mt: 5,
                   }}
                 >
-                  <Typography level="body-lg">
-                    No Future Tasks Available
+                  <Typography
+                    level="h5"
+                    color="neutral"
+                    textAlign="center"
+                    fontStyle="italic"
+                    fontWeight="md"
+                  >
+                    🎉 No Upcoming tasks for Future.
                   </Typography>
-                  <img width={"40px"} height={"30px"} alt="logo" src={logo} />
                 </Box>
               )}
-              <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+              <Box sx={{ display: "flex", justifyContent: "center", mt: 5 }}>
                 <PaginationComponent
                   currentPage={currentPages.future}
                   totalPages={totalPagesFuture}
@@ -1709,6 +1698,19 @@ const TaskDashboard = () => {
                 />
               </Box>
             </Box>
+
+            {/* Modal placed outside the loop */}
+            <Modal open={open} onClose={() => setOpen(false)}>
+              <ModalDialog>
+                <Typography level="h4">Task Description</Typography>
+                <Typography>
+                  {selectedTask?.task_detail || "No details available"}
+                </Typography>
+                <Button onClick={() => setOpen(false)}>Close</Button>
+              </ModalDialog>
+            </Modal>
+
+            {/* Pagination */}
           </TabPanel>
         </Tabs>
       </Sheet>
