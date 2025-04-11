@@ -3,6 +3,7 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Autocomplete,
   Button,
   Grid,
   Input,
@@ -19,27 +20,62 @@ import {
   useGetMasterInverterQuery,
   useGetModuleMasterQuery,
 } from "../../redux/leadsSlice";
-import {useAddHandOverMutation} from "../../redux/camsSlice";
+import { useAddHandOverMutation } from "../../redux/camsSlice";
 
 const HandoverSheetForm = () => {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(null);
+  const states = [
+    "Andhra Pradesh",
+    "Arunachal Pradesh",
+    "Assam",
+    "Bihar",
+    "Chhattisgarh",
+    "Goa",
+    "Gujarat",
+    "Haryana",
+    "Himachal Pradesh",
+    "Jharkhand",
+    "Karnataka",
+    "Kerala",
+    "Madhya Pradesh",
+    "Maharashtra",
+    "Manipur",
+    "Meghalaya",
+    "Mizoram",
+    "Nagaland",
+    "Odisha",
+    "Punjab",
+    "Rajasthan",
+    "Sikkim",
+    "Tamil Nadu",
+    "Telangana",
+    "Tripura",
+    "Uttar Pradesh",
+    "Uttarakhand",
+    "West Bengal",
+  ];
+  const BillingTypes = ["Composite", "Individual"];
+
   const [formData, setFormData] = useState({
     id: "",
     customer_details: {
-      project_id: "",
-      project_name: "",
+      code: "",
+      name: "",
+      customer: "",
       epc_developer: "",
-      site_address_pincode: "",
+      site_address: "",
       site_google_coordinates: "",
-      contact_no: "",
+      number: "",
       gst_no: "",
       billing_address: "",
       gender_of_Loa_holder: "",
       email: "",
+      p_group: "",
       pan_no: "",
       adharNumber_of_loa_holder: "",
-      alt_contact_no: "",
+      state: "",
+      alt_number: "",
     },
 
     order_details: {
@@ -49,50 +85,54 @@ const HandoverSheetForm = () => {
       design_date: "",
       feeder_code: "",
       feeder_name: "",
-      
     },
 
-    project_detail:{
-        project_type:"",
-        module_make_capacity:"",
-        module_make:"",
-        module_capacity:"",
-        module_type:"",
-        module_model_no:"",
-        evacuation_voltage:"",
-        inverter_make_capacity:"",
-        inverter_make:"",
-        inverter_type:"",
-        inverter_size:"",
-        inverter_model_no:"",
-        work_by_slnko:"",
-        topography_survey:"",
-        soil_test:"",
-        purchase_supply_net_meter:"",
-        liaisoning_net_metering:"",
-        ceig_ceg:"",
-        project_completion_date:"",
-        proposed_dc_capacity:"",
-        transmission_line:"",
-        substation_name:"",
-        overloading:"",
-        proposed_ac_capacity:"",
-        agreement_date:"",
+    project_detail: {
+      project_type: "",
+      module_make_capacity: "",
+      module_make: "",
+      module_capacity: "",
+      module_type: "",
+      module_model_no: "",
+      evacuation_voltage: "",
+      inverter_make_capacity: "",
+      inverter_make: "",
+      inverter_type: "",
+      inverter_size: "",
+      inverter_model_no: "",
+      work_by_slnko: "",
+      topography_survey: "",
+      soil_test: "",
+      purchase_supply_net_meter: "",
+      liaisoning_net_metering: "",
+      ceig_ceg: "",
+      project_completion_date: "",
+      proposed_dc_capacity: "",
+      distance: "",
+      tarrif: "",
+      substation_name: "",
+      overloading: "",
+      project_kwp: "",
+      land: "",
+      agreement_date: "",
     },
 
     commercial_details: {
-     type:"",
-     subsidy_amount:"",
+      type: "",
+      subsidy_amount: "",
     },
 
     attached_details: {
-        taken_over_by:"",
-        cam_member_name:"",
-        loa_number:"",
-        ppa_number:"",
-        submitted_by_BD: "",
-        
-  },
+      taken_over_by: "",
+      cam_member_name: "",
+      service: "",
+      billing_type: "",
+      project_status: "",
+      loa_number: "",
+      ppa_number: "",
+      submitted_by_BD: "",
+      submitted_by: "",
+    },
   });
   const [moduleMakeOptions, setModuleMakeOptions] = useState([]);
   const [moduleTypeOptions, setModuleTypeOptions] = useState([]);
@@ -196,13 +236,17 @@ const HandoverSheetForm = () => {
   };
   const LeadId = localStorage.getItem("hand_Over");
 
+  const handleAutocompleteChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
   const handleSubmit = async () => {
     try {
       if (!LeadId) {
         toast.error("Lead ID is missing!");
         return;
       }
-  
+
       const updatedFormData = {
         ...formData,
         id: LeadId,
@@ -210,22 +254,22 @@ const HandoverSheetForm = () => {
           ...formData.attached_details,
           submitted_by_BD:
             formData.attached_details.submitted_by_BD || user?.name || "",
+            submitted_by:
+            formData.attached_details.submitted_by || user?.name || "",
         },
       };
-  
+
       const response = await HandOverSheet(updatedFormData).unwrap();
-  
+
       toast.success("Form submitted successfully");
       localStorage.setItem("HandOver_Lead", LeadId);
       navigate("/get_hand_over");
-  
     } catch (error) {
       console.error("Submission error:", error);
-  
-      
+
       const errorMessage =
         error?.data?.message || error?.message || "Submission failed";
-  
+
       if (errorMessage.toLowerCase().includes("already handed over")) {
         toast.error("Already handed over found");
       } else {
@@ -233,8 +277,6 @@ const HandoverSheetForm = () => {
       }
     }
   };
-  
-  
 
   const sections = [
     {
@@ -316,13 +358,9 @@ const HandoverSheetForm = () => {
                     <Input
                       fullWidth
                       placeholder="Project ID"
-                      value={formData.customer_details.project_id}
+                      value={formData.customer_details.code}
                       onChange={(e) =>
-                        handleChange(
-                          "customer_details",
-                          "project_id",
-                          e.target.value
-                        )
+                        handleChange("customer_details", "code", e.target.value)
                       }
                     />
                   </Grid>
@@ -336,16 +374,86 @@ const HandoverSheetForm = () => {
                     <Input
                       fullWidth
                       placeholder="Name"
-                      value={formData.customer_details.project_name}
+                      value={formData.customer_details.customer}
                       onChange={(e) =>
                         handleChange(
                           "customer_details",
-                          "project_name",
+                          "customer",
                           e.target.value
                         )
                       }
                     />
                   </Grid>
+                  {["superadmin", "admin", "executive", "visitor"].includes(
+                    user?.role
+                  ) && (
+                    <>
+                      <Grid item xs={12} sm={6}>
+                        <Typography
+                          level="body1"
+                          sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                        >
+                          Project Name
+                        </Typography>
+                        <Input
+                          fullWidth
+                          placeholder="Project Name"
+                          value={formData.customer_details.name}
+                          onChange={(e) =>
+                            handleChange(
+                              "customer_details",
+                              "name",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} sm={6}>
+                        <Typography
+                          level="body1"
+                          sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                        >
+                          Group Name
+                        </Typography>
+                        <Input
+                          fullWidth
+                          placeholder="Group Name"
+                          value={formData.customer_details.p_group}
+                          onChange={(e) =>
+                            handleChange(
+                              "customer_details",
+                              "p_group",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} sm={6}>
+                        <Typography
+                          level="body1"
+                          sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                        >
+                          State
+                        </Typography>
+                        <Autocomplete
+                          options={states}
+                          value={formData.state || null}
+                          onChange={(e, value) =>
+                            handleAutocompleteChange("state", value)
+                          }
+                          placeholder="State"
+                          isOptionEqualToValue={(option, value) =>
+                            option === value
+                          }
+                          required
+                          variant="soft"
+                          sx={{ width: "100%" }}
+                        />
+                      </Grid>
+                    </>
+                  )}
                   <Grid item xs={12} sm={6}>
                     <Typography
                       level="body1"
@@ -386,7 +494,7 @@ const HandoverSheetForm = () => {
                       }
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12} sm={6}>
                     <Typography
                       level="body1"
@@ -417,7 +525,9 @@ const HandoverSheetForm = () => {
                     <Input
                       fullWidth
                       placeholder="LOA Holder Aadhar Name"
-                      value={formData.customer_details.adharNumber_of_loa_holder}
+                      value={
+                        formData.customer_details.adharNumber_of_loa_holder
+                      }
                       onChange={(e) =>
                         handleChange(
                           "customer_details",
@@ -437,11 +547,11 @@ const HandoverSheetForm = () => {
                     <Input
                       fullWidth
                       placeholder="Site Address with Pin Code"
-                      value={formData.customer_details.site_address_pincode}
+                      value={formData.customer_details.site_address}
                       onChange={(e) =>
                         handleChange(
                           "customer_details",
-                          "site_address_pincode",
+                          "site_address",
                           e.target.value
                         )
                       }
@@ -477,11 +587,11 @@ const HandoverSheetForm = () => {
                     <Input
                       fullWidth
                       placeholder="Contact No."
-                      value={formData.customer_details.contact_no}
+                      value={formData.customer_details.number}
                       onChange={(e) =>
                         handleChange(
                           "customer_details",
-                          "contact_no",
+                          "number",
                           e.target.value
                         )
                       }
@@ -497,11 +607,11 @@ const HandoverSheetForm = () => {
                     <Input
                       fullWidth
                       placeholder="Alternate Contact No."
-                      value={formData.customer_details.alt_contact_no}
+                      value={formData.customer_details.alt_number}
                       onChange={(e) =>
                         handleChange(
                           "customer_details",
-                          "alt_contact_no",
+                          "alt_number",
                           e.target.value
                         )
                       }
@@ -1249,9 +1359,7 @@ const HandoverSheetForm = () => {
                       fullWidth
                       type="date"
                       value={
-                        formData["project_detail"]?.[
-                          "agreement_date"
-                        ] || ""
+                        formData["project_detail"]?.["agreement_date"] || ""
                       }
                       onChange={(e) =>
                         handleChange(
@@ -1283,12 +1391,12 @@ const HandoverSheetForm = () => {
                       Proposed AC Capacity (KWp)
                     </Typography>
                     <Input
-                      value={formData.project_detail.proposed_ac_capacity}
+                      value={formData.project_detail.project_kwp}
                       placeholder="Proposed AC Capacity (KWp)"
                       onChange={(e) =>
                         handleChange(
                           "project_detail",
-                          "proposed_ac_capacity",
+                          "project_kwp",
                           e.target.value
                         )
                       }
@@ -1299,17 +1407,52 @@ const HandoverSheetForm = () => {
                       Transmission Line
                     </Typography>
                     <Input
-                      value={formData.project_detail.transmission_line}
+                      value={formData.project_detail.distance}
                       placeholder="Transmission Line"
                       onChange={(e) =>
                         handleChange(
                           "project_detail",
-                          "transmission_line",
+                          "distance",
                           e.target.value
                         )
                       }
                     />
                   </Grid>
+
+                  {["superadmin", "admin", "executive", "visitor"].includes(
+                    user?.role
+                  ) && (
+                    <Grid item xs={12} sm={6}>
+                      <Typography
+                        sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                      >
+                        Tariff Rate
+                      </Typography>
+                      <Input
+                        value={formData.project_detail.tarrif}
+                        placeholder="Tariff Rate"
+                        onChange={(e) =>
+                          handleChange(
+                            "project_detail",
+                            "tarrif",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </Grid>
+                  )}
+                  {/* <Grid item xs={12} sm={6}>
+                    <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                      Land
+                    </Typography>
+                    <Input
+                      value={formData.project_detail.land}
+                      placeholder="Land"
+                      onChange={(e) =>
+                        handleChange("project_detail", "land", e.target.value)
+                      }
+                    />
+                  </Grid> */}
 
                   <Grid item xs={12} sm={6}>
                     <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
@@ -1389,6 +1532,51 @@ const HandoverSheetForm = () => {
                       }
                     />
                   </Grid>
+                  {["superadmin", "admin", "executive", "visitor"].includes(
+                    user?.role
+                  ) && (
+                    <>
+                      <Grid item xs={12} sm={6}>
+                        <Typography
+                          sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                        >
+                          Slnko Service Charges (incl. GST)
+                        </Typography>
+                        <Input
+                          value={formData.attached_details.service}
+                          placeholder="Slnko Service Charge"
+                          onChange={(e) =>
+                            handleChange(
+                              "attached_details",
+                              "service",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography
+                          sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                        >
+                          Billing Type
+                        </Typography>
+                        <Autocomplete
+                          options={BillingTypes}
+                          value={formData.billing_type || null}
+                          onChange={(e, value) =>
+                            handleAutocompleteChange("billing_type", value)
+                          }
+                          placeholder="Billing Type"
+                          isOptionEqualToValue={(option, value) =>
+                            option === value
+                          }
+                          variant="soft"
+                          required
+                          sx={{ width: "100%" }}
+                        />
+                      </Grid>
+                    </>
+                  )}
                   <Grid item xs={12} sm={6}>
                     <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                       LOA Number
@@ -1429,7 +1617,7 @@ const HandoverSheetForm = () => {
                     </Typography>
                     <Input
                       value={formData.attached_details.submitted_by_BD}
-                      // placeholder="Overloading"
+                      
                       onChange={(e) =>
                         handleChange(
                           "attached_details",
@@ -1440,6 +1628,27 @@ const HandoverSheetForm = () => {
                       readOnly
                     />
                   </Grid>
+                  {["superadmin", "admin", "executive", "visitor"].includes(
+                    user?.role
+                  ) && (
+                  <Grid item xs={12} sm={6}>
+                    <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                      Submitted By
+                    </Typography>
+                    <Input
+                      value={formData.attached_details.submitted_by}
+                     
+                      onChange={(e) =>
+                        handleChange(
+                          "attached_details",
+                          "submitted_by",
+                          e.target.value
+                        )
+                      }
+                      readOnly
+                    />
+                  </Grid>
+                  )}
                 </>
               )}
 
