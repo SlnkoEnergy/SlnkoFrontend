@@ -286,8 +286,8 @@ const StandByRequest = forwardRef((props, ref) => {
           const dateA = formatDate(a.entry_date);
           const dateB = formatDate(b.entry_date);
   
-          if (isNaN(dateA.getTime())) return 1;
-          if (isNaN(dateB.getTime())) return -1;
+          if (!dateA.id) return 1;
+        if (!dateB.id) return -1;
   
           return dateB - dateA;
         });

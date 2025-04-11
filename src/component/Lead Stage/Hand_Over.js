@@ -64,11 +64,18 @@ const HandoverSheetForm = () => {
       name: "",
       customer: "",
       epc_developer: "",
-      site_address: "",
+      billing_address: {
+        village_name: "",
+        district_name: "",
+      },
+      site_address: {
+        village_name: "",
+        district_name: "",
+      },
       site_google_coordinates: "",
       number: "",
       gst_no: "",
-      billing_address: "",
+      // billing_address: "",
       gender_of_Loa_holder: "",
       email: "",
       p_group: "",
@@ -113,7 +120,7 @@ const HandoverSheetForm = () => {
       substation_name: "",
       overloading: "",
       project_kwp: "",
-      land: "",
+      land: { type: "", acres: "" },
       agreement_date: "",
     },
 
@@ -127,7 +134,7 @@ const HandoverSheetForm = () => {
       cam_member_name: "",
       service: "",
       billing_type: "",
-      project_status: "",
+      project_status: "incomplete",
       loa_number: "",
       ppa_number: "",
       submitted_by_BD: "",
@@ -224,6 +231,7 @@ const HandoverSheetForm = () => {
         attached_details: {
           ...prev.attached_details,
           submitted_by_BD: userData.name,
+          submitted_by: userData.name,
         },
       }));
     }
@@ -254,7 +262,7 @@ const HandoverSheetForm = () => {
           ...formData.attached_details,
           submitted_by_BD:
             formData.attached_details.submitted_by_BD || user?.name || "",
-            submitted_by:
+          submitted_by:
             formData.attached_details.submitted_by || user?.name || "",
         },
       };
@@ -439,14 +447,19 @@ const HandoverSheetForm = () => {
                         </Typography>
                         <Autocomplete
                           options={states}
-                          value={formData.state || null}
+                          value={formData.customer_details.state || null}
                           onChange={(e, value) =>
-                            handleAutocompleteChange("state", value)
+                            handleAutocompleteChange(
+                              "customer_details",
+                              "state",
+                              value
+                            )
                           }
-                          placeholder="State"
+                          getOptionLabel={(option) => option}
                           isOptionEqualToValue={(option, value) =>
                             option === value
                           }
+                          placeholder="State"
                           required
                           variant="soft"
                           sx={{ width: "100%" }}
@@ -542,21 +555,48 @@ const HandoverSheetForm = () => {
                       level="body1"
                       sx={{ fontWeight: "bold", marginBottom: 0.5 }}
                     >
-                      Site Address with Pin Code
+                      PAN Number
                     </Typography>
                     <Input
                       fullWidth
-                      placeholder="Site Address with Pin Code"
-                      value={formData.customer_details.site_address}
+                      placeholder="PAN Number"
+                      value={formData.customer_details.pan_no}
                       onChange={(e) =>
                         handleChange(
                           "customer_details",
-                          "site_address",
+                          "pan_no",
                           e.target.value
                         )
                       }
                     />
                   </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography
+                      level="body1"
+                      sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                    >
+                      Site Address with Pin Code
+                    </Typography>
+                    <Input
+                      fullWidth
+                      placeholder="e.g. Sunrise Village, 221001"
+                      value={`${formData?.customer_details?.site_address?.village_name || ""}${
+                        formData?.customer_details?.site_address?.district_name
+                          ? `, ${formData?.customer_details?.site_address?.district_name}`
+                          : ""
+                      }`}
+                      onChange={(e) => {
+                        const [village, district] = e.target.value
+                          .split(",")
+                          .map((s) => s.trim());
+                        handleChange("customer_details", "site_address", {
+                          village_name: village || "",
+                          district_name: district || "",
+                        });
+                      }}
+                    />
+                  </Grid>
+
                   <Grid item xs={12} sm={6}>
                     <Typography
                       level="body1"
@@ -646,15 +686,22 @@ const HandoverSheetForm = () => {
                     </Typography>
                     <Input
                       fullWidth
-                      placeholder="Billing Address"
-                      value={formData.customer_details.billing_address}
-                      onChange={(e) =>
-                        handleChange(
-                          "customer_details",
-                          "billing_address",
-                          e.target.value
-                        )
-                      }
+                      placeholder="e.g. Greenfield, Central District"
+                      value={`${formData?.customer_details?.billing_address?.village_name}${
+                        formData?.customer_details?.billing_address
+                          ?.district_name
+                          ? `, ${formData?.customer_details?.billing_address?.district_name}`
+                          : ""
+                      }`}
+                      onChange={(e) => {
+                        const [village, district] = e.target.value
+                          .split(",")
+                          .map((s) => s.trim());
+                        handleChange("customer_details", "billing_address", {
+                          village_name: village || "",
+                          district_name: district || "",
+                        });
+                      }}
                     />
                   </Grid>
                 </>
@@ -1422,24 +1469,53 @@ const HandoverSheetForm = () => {
                   {["superadmin", "admin", "executive", "visitor"].includes(
                     user?.role
                   ) && (
-                    <Grid item xs={12} sm={6}>
-                      <Typography
-                        sx={{ fontWeight: "bold", marginBottom: 0.5 }}
-                      >
-                        Tariff Rate
-                      </Typography>
-                      <Input
-                        value={formData.project_detail.tarrif}
-                        placeholder="Tariff Rate"
-                        onChange={(e) =>
-                          handleChange(
-                            "project_detail",
-                            "tarrif",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </Grid>
+                    <>
+                      <Grid item xs={12} sm={6}>
+                        <Typography
+                          sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                        >
+                          Tariff Rate
+                        </Typography>
+                        <Input
+                          value={formData.project_detail.tarrif}
+                          placeholder="Tariff Rate"
+                          onChange={(e) =>
+                            handleChange(
+                              "project_detail",
+                              "tarrif",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} sm={6}>
+                        <Typography
+                          level="body1"
+                          sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                        >
+                          Land available
+                        </Typography>
+                        <Input
+                          fullWidth
+                          placeholder="e.g. Leased/Owned , 5"
+                          value={`${formData?.project_detail?.land}${
+                            formData?.project_detail?.land?.acres
+                              ? `, ${formData?.project_detail?.land?.acres}`
+                              : ""
+                          }`}
+                          onChange={(e) => {
+                            const [type, acres] = e.target.value
+                              .split(",")
+                              .map((s) => s.trim());
+                            handleChange("customer_details", "land", {
+                              type: type || "",
+                              acres: acres || "",
+                            });
+                          }}
+                        />
+                      </Grid>
+                    </>
                   )}
                   {/* <Grid item xs={12} sm={6}>
                     <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
@@ -1562,14 +1638,21 @@ const HandoverSheetForm = () => {
                         </Typography>
                         <Autocomplete
                           options={BillingTypes}
-                          value={formData.billing_type || null}
-                          onChange={(e, value) =>
-                            handleAutocompleteChange("billing_type", value)
+                          value={
+                            formData?.attached_details?.billing_type || null
                           }
-                          placeholder="Billing Type"
+                          onChange={(e, value) =>
+                            handleAutocompleteChange(
+                              "attached_details",
+                              "billing_type",
+                              value
+                            )
+                          }
+                          getOptionLabel={(option) => option}
                           isOptionEqualToValue={(option, value) =>
                             option === value
                           }
+                          placeholder="Billing Type"
                           variant="soft"
                           required
                           sx={{ width: "100%" }}
@@ -1617,7 +1700,6 @@ const HandoverSheetForm = () => {
                     </Typography>
                     <Input
                       value={formData.attached_details.submitted_by_BD}
-                      
                       onChange={(e) =>
                         handleChange(
                           "attached_details",
@@ -1631,23 +1713,24 @@ const HandoverSheetForm = () => {
                   {["superadmin", "admin", "executive", "visitor"].includes(
                     user?.role
                   ) && (
-                  <Grid item xs={12} sm={6}>
-                    <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                      Submitted By
-                    </Typography>
-                    <Input
-                      value={formData.attached_details.submitted_by}
-                     
-                      onChange={(e) =>
-                        handleChange(
-                          "attached_details",
-                          "submitted_by",
-                          e.target.value
-                        )
-                      }
-                      readOnly
-                    />
-                  </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography
+                        sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                      >
+                        Submitted By
+                      </Typography>
+                      <Input
+                        value={formData.attached_details.submitted_by}
+                        onChange={(e) =>
+                          handleChange(
+                            "attached_details",
+                            "submitted_by",
+                            e.target.value
+                          )
+                        }
+                        readOnly
+                      />
+                    </Grid>
                   )}
                 </>
               )}

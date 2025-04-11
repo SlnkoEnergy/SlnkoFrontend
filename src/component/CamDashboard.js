@@ -22,7 +22,7 @@ import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
 import Option from "@mui/joy/Option";
-import EditNoteIcon from '@mui/icons-material/EditNote';
+import EditNoteIcon from "@mui/icons-material/EditNote";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import { toast } from "react-toastify";
@@ -40,7 +40,7 @@ function Dash_cam() {
   const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // const [error, setError] = useState(null);
   const [vendors, setVendors] = useState([]);
   const [vendorFilter, setVendorFilter] = useState("");
   const [open, setOpen] = useState(false);
@@ -129,14 +129,18 @@ function Dash_cam() {
   //   fetchPaymentsAndProjects();
   // }, []);
 
-const { data: getHandOverSheet = [] } = useGetHandOverQuery();
-  const HandOverSheet = useMemo(
-    () => getHandOverSheet?.Data ?? [],
-    [getHandOverSheet]
-  );
+  const { data: getHandOverSheet = {}, error } = useGetHandOverQuery();
 
+  const HandOverSheet = {
+    ...(getHandOverSheet?.Data?.customer_details || {}),
+    ...(getHandOverSheet?.Data?.order_details || {}),
+    ...(getHandOverSheet?.Data?.project_detail || {}),
+    ...(getHandOverSheet?.Data?.commercial_details || {}),
+    ...(getHandOverSheet?.Data?.attached_details || {}),
+  };
+  
   console.log("HandOverSheet", HandOverSheet);
-
+  
 
   const RowMenu = ({ currentPage, project_id }) => {
     // console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
@@ -182,14 +186,16 @@ const { data: getHandOverSheet = [] } = useGetHandOverQuery();
             user?.name === "Anudeep Kumar" ||
             user?.name === "Ashish Jha") && (
             <Menu size="sm" sx={{ minWidth: 140 }}>
-               <MenuItem
+              <MenuItem
                 color="primary"
                 onClick={() => {
                   const page = currentPage;
                   const projectId = String(project_id);
                   localStorage.setItem("project_edit", projectId);
                   // localStorage.setItem("p_id", projectID);
-                  navigate(`/edit_project?page=${page}&project_id=${projectId}`);
+                  navigate(
+                    `/edit_project?page=${page}&project_id=${projectId}`
+                  );
                 }}
               >
                 <ContentPasteGoIcon />
@@ -202,7 +208,9 @@ const { data: getHandOverSheet = [] } = useGetHandOverQuery();
                   const projectId = String(project_id);
                   localStorage.setItem("project_summary", projectId);
                   // localStorage.setItem("p_id", projectID);
-                  navigate(`/project_summary?page=${page}&project_id=${projectId}`);
+                  navigate(
+                    `/project_summary?page=${page}&project_id=${projectId}`
+                  );
                 }}
               >
                 <EditNoteIcon />
@@ -219,8 +227,8 @@ const { data: getHandOverSheet = [] } = useGetHandOverQuery();
                 <HistoryIcon />
                 <Typography>View BOM</Typography>
               </MenuItem>
-              <Divider sx={{ backgroundColor: "lightblue" }} />
-              {(user?.name === "IT Team" || user?.name === "admin") && (
+              {/* <Divider sx={{ backgroundColor: "lightblue" }} /> */}
+              {/* {(user?.name === "IT Team" || user?.name === "admin") && (
                 <MenuItem
                   color="danger"
                   disabled={selected.length === 0}
@@ -229,7 +237,7 @@ const { data: getHandOverSheet = [] } = useGetHandOverQuery();
                   <DeleteIcon />
                   <Typography>Delete</Typography>
                 </MenuItem>
-              )}
+              )} */}
             </Menu>
           )}
         </Dropdown>
@@ -237,67 +245,59 @@ const { data: getHandOverSheet = [] } = useGetHandOverQuery();
     );
   };
 
+  // const handleDelete = async () => {
+  //   if (selected.length === 0) {
+  //     toast.error("No offers selected for deletion.");
+  //     return;
+  //   }
 
+  //   try {
+  //     setLoading(true);
+  //     setError("");
 
-  const handleDelete = async () => {
-    if (selected.length === 0) {
-      toast.error("No offers selected for deletion.");
-      return;
-    }
+  //     for (const _id of selected) {
+  //       await Axios.delete(`/delete-offer/${_id}`);
 
-    try {
-      setLoading(true);
-      setError("");
+  //       setCommRate((prev) => prev.filter((item) => item._id !== _id));
+  //       setBdRateData((prev) => prev.filter((item) => item.offer_id !== _id));
+  //       setMergedData((prev) => prev.filter((item) => item.offer_id !== _id));
+  //     }
 
-      for (const _id of selected) {
-        await Axios.delete(`/delete-offer/${_id}`);
-
-        setCommRate((prev) => prev.filter((item) => item._id !== _id));
-        setBdRateData((prev) => prev.filter((item) => item.offer_id !== _id));
-        setMergedData((prev) => prev.filter((item) => item.offer_id !== _id));
-      }
-
-      toast.success("Deleted successfully.");
-      setSelected([]);
-    } catch (err) {
-      console.error("Error deleting offers:", err);
-      setError(err.response?.data?.msg || "Failed to delete selected offers.");
-      toast.error("Failed to delete selected offers.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     toast.success("Deleted successfully.");
+  //     setSelected([]);
+  //   } catch (err) {
+  //     console.error("Error deleting offers:", err);
+  //     setError(err.response?.data?.msg || "Failed to delete selected offers.");
+  //     toast.error("Failed to delete selected offers.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
 
   const filteredAndSortedData = useMemo(() => {
-    // if (!user || !user.name) return [];
-  
-    return HandOverSheet
+    return [HandOverSheet]
       .filter((project) => {
-        // const preparedBy = project.prepared_by?.trim().toLowerCase() || "unassigned";
-        // const userName = user.name.trim().toLowerCase();
-        // const userRole = user.role?.toLowerCase();
-  
-      
-        // const isAdmin = userRole === "admin" || userRole === "superadmin";
-        // const matchesUser = isAdmin || preparedBy === userName;
-  
-        const matchesSearchQuery = ["project_id", "client_name", "state", "prepared_by"]
-          .some((key) => project[key]?.toLowerCase().includes(searchQuery));
+        const matchesSearchQuery = [
+          "project_id",
+          "client_name",
+          "state",
+          "prepared_by",
+        ].some((key) =>
+          project[key]?.toString().toLowerCase().includes(searchQuery?.toLowerCase())
+        );
   
         return matchesSearchQuery;
       })
       .sort((a, b) => {
         const dateA = new Date(a.createdAt || 0);
         const dateB = new Date(b.createdAt || 0);
-  
         return dateB - dateA;
       });
   }, [HandOverSheet, searchQuery]);
-  
   
 
   const handleSelectAll = (event) => {
@@ -498,7 +498,6 @@ const { data: getHandOverSheet = [] } = useGetHandOverQuery();
                   "Capacity(AC/DC)",
                   "Status",
                   "Action",
-                
                 ].map((header, index) => (
                   <Box
                     component="th"
@@ -549,7 +548,7 @@ const { data: getHandOverSheet = [] } = useGetHandOverQuery();
                         textAlign: "center",
                       }}
                     >
-                      {project.project_id}
+                      {project.code}
                     </Box>
                     <Box
                       component="td"
@@ -559,7 +558,7 @@ const { data: getHandOverSheet = [] } = useGetHandOverQuery();
                         textAlign: "center",
                       }}
                     >
-                      {project.client_name}
+                      {project.customer}
                     </Box>
                     <Box
                       component="td"
@@ -579,7 +578,7 @@ const { data: getHandOverSheet = [] } = useGetHandOverQuery();
                         textAlign: "center",
                       }}
                     >
-                      {project.capacity || "-"}
+                      {project.project_kwp || "-"}
                     </Box>
                     <Box
                       component="td"
@@ -591,40 +590,6 @@ const { data: getHandOverSheet = [] } = useGetHandOverQuery();
                     >
                       {project.status || "-"}
                     </Box>
-
-                    {/* <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {offer.slnkoCharges.toLocaleString("en-IN")}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <AddMenu
-                        currentPage={currentPage}
-                        offer_id={offer.offer_id}
-                      />
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {offer.prepared_by || "-"}
-                    </Box> */}
                     <Box
                       component="td"
                       sx={{
@@ -645,11 +610,7 @@ const { data: getHandOverSheet = [] } = useGetHandOverQuery();
                   <Box
                     component="td"
                     colSpan={12}
-                    sx={{
-                      padding: "8px",
-                      textAlign: "center",
-                      fontStyle: "italic",
-                    }}
+                    sx={{ padding: "8px", textAlign: "center" }}
                   >
                     <Box
                       sx={{
@@ -662,11 +623,15 @@ const { data: getHandOverSheet = [] } = useGetHandOverQuery();
                     >
                       <img
                         src={NoData}
-                        alt="No data Image"
-                        style={{ width: "50px", height: "50px" }}
+                        alt="No data"
+                        style={{
+                          width: "50px",
+                          height: "50px",
+                          marginBottom: "8px",
+                        }}
                       />
-                      <Typography fontStyle={"italic"}>
-                        No HandOver data available
+                      <Typography fontStyle="italic">
+                        No Handover Sheet Found
                       </Typography>
                     </Box>
                   </Box>
