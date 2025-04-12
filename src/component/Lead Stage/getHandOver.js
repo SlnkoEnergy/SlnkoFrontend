@@ -3,6 +3,7 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Autocomplete,
   Button,
   Grid,
   Input,
@@ -17,89 +18,126 @@ import {
   useGetMasterInverterQuery,
   useGetModuleMasterQuery,
 } from "../../redux/leadsSlice";
-import { useGetHandOverQuery, } from "../../redux/camsSlice";
+import { useGetHandOverQuery } from "../../redux/camsSlice";
 
 const GetHandoverSheetForm = ({ onBack }) => {
   const [expanded, setExpanded] = useState(null);
+  const states = [
+    "Andhra Pradesh",
+    "Arunachal Pradesh",
+    "Assam",
+    "Bihar",
+    "Chhattisgarh",
+    "Goa",
+    "Gujarat",
+    "Haryana",
+    "Himachal Pradesh",
+    "Jharkhand",
+    "Karnataka",
+    "Kerala",
+    "Madhya Pradesh",
+    "Maharashtra",
+    "Manipur",
+    "Meghalaya",
+    "Mizoram",
+    "Nagaland",
+    "Odisha",
+    "Punjab",
+    "Rajasthan",
+    "Sikkim",
+    "Tamil Nadu",
+    "Telangana",
+    "Tripura",
+    "Uttar Pradesh",
+    "Uttarakhand",
+    "West Bengal",
+  ];
+  const BillingTypes = ["Composite", "Individual"];
+  const landTypes = ["Leased", "Owned"];
   const [formData, setFormData] = useState({
-     id: "",
-     customer_details: {
-       code: "",
-       name: "",
-       epc_developer: "",
-       site_address: "",
-       site_google_coordinates: "",
-       number: "",
-       gst_no: "",
-       billing_address: "",
-       gender_of_Loa_holder: "",
-       email: "",
-       p_group: "",
-       pan_no: "",
-       adharNumber_of_loa_holder: "",
-       state:"",
-       alt_number: "",
-     },
- 
-     order_details: {
-       type_business: "",
-       tender_name: "",
-       discom_name: "",
-       design_date: "",
-       feeder_code: "",
-       feeder_name: "",
-       
-     },
- 
-     project_detail:{
-         project_type:"",
-         module_make_capacity:"",
-         module_make:"",
-         module_capacity:"",
-         module_type:"",
-         module_model_no:"",
-         evacuation_voltage:"",
-         inverter_make_capacity:"",
-         inverter_make:"",
-         inverter_type:"",
-         inverter_size:"",
-         inverter_model_no:"",
-         work_by_slnko:"",
-         topography_survey:"",
-         soil_test:"",
-         purchase_supply_net_meter:"",
-         liaisoning_net_metering:"",
-         ceig_ceg:"",
-         project_completion_date:"",
-         proposed_dc_capacity:"",
-         distance:"",
-         tarrif:"",
-         substation_name:"",
-         overloading:"",
-         project_kwp:"",
-         land:"",
-         agreement_date:"",
-     },
- 
-     commercial_details: {
-      type:"",
-      subsidy_amount:"",
-     },
- 
-     attached_details: {
-       
-         taken_over_by:"",
-         cam_member_name:"",
-         service:"",
-         billing_type:"",
-         project_status:"",
-         loa_number:"",
-         ppa_number:"",
-         submitted_by_BD: "",
-         submitted_by:"",
-         
-   },
-   });
+    id: "",
+    customer_details: {
+      code: "",
+      name: "",
+      customer: "",
+      epc_developer: "",
+      billing_address: {
+        village_name: "",
+        district_name: "",
+      },
+      site_address: {
+        village_name: "",
+        district_name: "",
+      },
+      site_google_coordinates: "",
+      number: "",
+      gst_no: "",
+      // billing_address: "",
+      gender_of_Loa_holder: "",
+      email: "",
+      p_group: "",
+      pan_no: "",
+      adharNumber_of_loa_holder: "",
+      state: "",
+      alt_number: "",
+    },
+
+    order_details: {
+      type_business: "",
+      tender_name: "",
+      discom_name: "",
+      design_date: "",
+      feeder_code: "",
+      feeder_name: "",
+    },
+
+    project_detail: {
+      project_type: "",
+      module_make_capacity: "",
+      module_make: "",
+      module_capacity: "",
+      module_type: "",
+      module_model_no: "",
+      evacuation_voltage: "",
+      inverter_make_capacity: "",
+      inverter_make: "",
+      inverter_type: "",
+      inverter_size: "",
+      inverter_model_no: "",
+      work_by_slnko: "",
+      topography_survey: "",
+      soil_test: "",
+      purchase_supply_net_meter: "",
+      liaisoning_net_metering: "",
+      ceig_ceg: "",
+      project_completion_date: "",
+      proposed_dc_capacity: "",
+      distance: "",
+      tarrif: "",
+      substation_name: "",
+      overloading: "",
+      project_kwp: "",
+      land: { type: "", acres: "" },
+      agreement_date: "",
+    },
+
+    commercial_details: {
+      type: "",
+      subsidy_amount: "",
+    },
+
+    attached_details: {
+      taken_over_by: "",
+      cam_member_name: "",
+      service: "",
+      billing_type: "",
+      project_status: "incomplete",
+      loa_number: "",
+      ppa_number: "",
+      submitted_by_BD: "",
+      submitted_by: "",
+    },
+  });
 
   const [moduleMakeOptions, setModuleMakeOptions] = useState([]);
   const [moduleTypeOptions, setModuleTypeOptions] = useState([]);
@@ -223,6 +261,17 @@ const GetHandoverSheetForm = ({ onBack }) => {
   const handleExpand = (panel) => {
     setExpanded(expanded === panel ? null : panel);
   };
+
+  const handleAutocompleteChange = (section, field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [field]: value,
+      },
+    }));
+  };
+
 
   const handleChange = (section, field, value) => {
     setFormData((prev) => ({
@@ -455,15 +504,10 @@ const GetHandoverSheetForm = ({ onBack }) => {
                     <Input
                       fullWidth
                       placeholder="Project ID"
-                      value={formData?.customer_details?.project_id || ""}
+                      value={formData.customer_details.code}
                       onChange={(e) =>
-                        handleChange(
-                          "customer_details",
-                          "project_id",
-                          e.target.value
-                        )
+                        handleChange("customer_details", "code", e.target.value)
                       }
-                      readOnly
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -471,22 +515,136 @@ const GetHandoverSheetForm = ({ onBack }) => {
                       level="body1"
                       sx={{ fontWeight: "bold", marginBottom: 0.5 }}
                     >
-                      Name
+                      Name(As per EB Bill)
                     </Typography>
                     <Input
                       fullWidth
                       placeholder="Name"
-                      value={formData.customer_details.project_name}
+                      value={formData.customer_details.customer}
                       onChange={(e) =>
                         handleChange(
                           "customer_details",
-                          "project_name",
+                          "customer",
                           e.target.value
                         )
                       }
-                      readOnly
                     />
                   </Grid>
+                  {["superadmin", "admin", "executive", "visitor"].includes(
+                    user?.role
+                  ) && (
+                    <>
+                      <Grid item xs={12} sm={6}>
+                        <Typography
+                          level="body1"
+                          sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                        >
+                          Project Name
+                        </Typography>
+                        <Input
+                          fullWidth
+                          placeholder="Project Name"
+                          value={formData.customer_details.name}
+                          onChange={(e) =>
+                            handleChange(
+                              "customer_details",
+                              "name",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} sm={6}>
+                        <Typography
+                          level="body1"
+                          sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                        >
+                          Group Name
+                        </Typography>
+                        <Input
+                          fullWidth
+                          placeholder="Group Name"
+                          value={formData.customer_details.p_group}
+                          onChange={(e) =>
+                            handleChange(
+                              "customer_details",
+                              "p_group",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} sm={6}>
+                        <Typography
+                          level="body1"
+                          sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                        >
+                          State
+                        </Typography>
+                        <Autocomplete
+                          options={states}
+                          value={formData.customer_details.state || null}
+                          onChange={(e, value) =>
+                            handleAutocompleteChange(
+                              "customer_details",
+                              "state",
+                              value
+                            )
+                          }
+                          getOptionLabel={(option) => option}
+                          isOptionEqualToValue={(option, value) =>
+                            option === value
+                          }
+                          placeholder="State"
+                          required
+                          sx={{ width: "100%" }}
+                        />
+                      </Grid>
+                    </>
+                  )}
+                  <Grid item xs={12} sm={6}>
+                    <Typography
+                      level="body1"
+                      sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                    >
+                      Gender of LOA Holder
+                    </Typography>
+                    <Input
+                      fullWidth
+                      placeholder="Gender of LOA Holder"
+                      value={formData.customer_details.gender_of_Loa_holder}
+                      onChange={(e) =>
+                        handleChange(
+                          "customer_details",
+                          "gender_of_Loa_holder",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography
+                      level="body1"
+                      sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                    >
+                      Email id
+                    </Typography>
+                    <Input
+                      fullWidth
+                      placeholder="Email"
+                      value={formData.customer_details.email}
+                      onChange={(e) =>
+                        handleChange(
+                          "customer_details",
+                          "email",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </Grid>
+
                   <Grid item xs={12} sm={6}>
                     <Typography
                       level="body1"
@@ -512,22 +670,70 @@ const GetHandoverSheetForm = ({ onBack }) => {
                       level="body1"
                       sx={{ fontWeight: "bold", marginBottom: 0.5 }}
                     >
+                      LOA Holder Aadhar Name
+                    </Typography>
+                    <Input
+                      fullWidth
+                      placeholder="LOA Holder Aadhar Name"
+                      value={
+                        formData.customer_details.adharNumber_of_loa_holder
+                      }
+                      onChange={(e) =>
+                        handleChange(
+                          "customer_details",
+                          "adharNumber_of_loa_holder",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography
+                      level="body1"
+                      sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                    >
+                      PAN Number
+                    </Typography>
+                    <Input
+                      fullWidth
+                      placeholder="PAN Number"
+                      value={formData.customer_details.pan_no}
+                      onChange={(e) =>
+                        handleChange(
+                          "customer_details",
+                          "pan_no",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography
+                      level="body1"
+                      sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                    >
                       Site Address with Pin Code
                     </Typography>
                     <Input
                       fullWidth
-                      placeholder="Site Address with Pin Code"
-                      value={formData.customer_details.site_address_pincode}
-                      onChange={(e) =>
-                        handleChange(
-                          "customer_details",
-                          "site_address_pincode",
-                          e.target.value
-                        )
-                      }
-                      readOnly
+                      placeholder="e.g. Sunrise Village, 221001"
+                      value={`${formData?.customer_details?.site_address?.village_name || ""}${
+                        formData?.customer_details?.site_address?.district_name
+                          ? `, ${formData?.customer_details?.site_address?.district_name}`
+                          : ""
+                      }`}
+                      onChange={(e) => {
+                        const [village, district] = e.target.value
+                          .split(",")
+                          .map((s) => s.trim());
+                        handleChange("customer_details", "site_address", {
+                          village_name: village || "",
+                          district_name: district || "",
+                        });
+                      }}
                     />
                   </Grid>
+
                   <Grid item xs={12} sm={6}>
                     <Typography
                       level="body1"
@@ -546,7 +752,6 @@ const GetHandoverSheetForm = ({ onBack }) => {
                           e.target.value
                         )
                       }
-                      readOnly
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -559,15 +764,34 @@ const GetHandoverSheetForm = ({ onBack }) => {
                     <Input
                       fullWidth
                       placeholder="Contact No."
-                      value={formData.customer_details.contact_no}
+                      value={formData.customer_details.number}
                       onChange={(e) =>
                         handleChange(
                           "customer_details",
-                          "contact_no",
+                          "number",
                           e.target.value
                         )
                       }
-                      readOnly
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography
+                      level="body1"
+                      sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                    >
+                      Alt Contact No.
+                    </Typography>
+                    <Input
+                      fullWidth
+                      placeholder="Alternate Contact No."
+                      value={formData.customer_details.alt_number}
+                      onChange={(e) =>
+                        handleChange(
+                          "customer_details",
+                          "alt_number",
+                          e.target.value
+                        )
+                      }
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -588,7 +812,6 @@ const GetHandoverSheetForm = ({ onBack }) => {
                           e.target.value
                         )
                       }
-                      readOnly
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -600,16 +823,22 @@ const GetHandoverSheetForm = ({ onBack }) => {
                     </Typography>
                     <Input
                       fullWidth
-                      placeholder="Billing Address"
-                      value={formData.customer_details.billing_address}
-                      onChange={(e) =>
-                        handleChange(
-                          "customer_details",
-                          "billing_address",
-                          e.target.value
-                        )
-                      }
-                      readOnly
+                      placeholder="e.g. Greenfield, Central District"
+                      value={`${formData?.customer_details?.billing_address?.village_name}${
+                        formData?.customer_details?.billing_address
+                          ?.district_name
+                          ? `, ${formData?.customer_details?.billing_address?.district_name}`
+                          : ""
+                      }`}
+                      onChange={(e) => {
+                        const [village, district] = e.target.value
+                          .split(",")
+                          .map((s) => s.trim());
+                        handleChange("customer_details", "billing_address", {
+                          village_name: village || "",
+                          district_name: district || "",
+                        });
+                      }}
                     />
                   </Grid>
                 </>
@@ -769,7 +998,6 @@ const GetHandoverSheetForm = ({ onBack }) => {
                       onChange={(e, newValue) =>
                         handleChange("project_detail", "project_type", newValue)
                       }
-                      disabled={true}
                     >
                       <Option value="On-Grid">On-Grid</Option>
                       <Option value="Off-Grid">Off-Grid</Option>
@@ -782,11 +1010,11 @@ const GetHandoverSheetForm = ({ onBack }) => {
                       level="body1"
                       sx={{ fontWeight: "bold", marginBottom: 0.5 }}
                     >
-                      Solar Module Make & Capacity
+                      Solar Module Scope
                     </Typography>
                     <Select
                       fullWidth
-                      placeholder="Select Module Make & Capacity"
+                      placeholder="Select Module Scope"
                       value={
                         formData["project_detail"]?.["module_make_capacity"] ||
                         ""
@@ -798,130 +1026,145 @@ const GetHandoverSheetForm = ({ onBack }) => {
                           newValue
                         )
                       }
-                      disabled={true}
                     >
                       <Option value="Slnko">Slnko</Option>
                       <Option value="Client">Client</Option>
-                      <Option value="NA">NA</Option>
+                      <Option value="TBD">TBD</Option>
                     </Select>
                   </Grid>
-                  {formData["project_detail"]?.["module_make_capacity"] ===
+                  {formData?.project_detail?.module_make_capacity ===
                     "Slnko" && (
                     <>
-                      <Grid item xs={12} sm={6}>
-                        <Typography level="body1">Module Make</Typography>
-                        <Select
-                          fullWidth
-                          value={
-                            formData["project_detail"]?.["module_make"] || ""
-                          }
-                          onChange={(e, newValue) =>
-                            handleChange(
-                              "project_detail",
-                              "module_make",
-                              newValue
-                            )
-                          }
-                          disabled={true}
-                        >
-                          {moduleMakeOptions.length > 0 ? (
-                            moduleMakeOptions.map((make, index) => (
-                              <Option key={index} value={make}>
-                                {make}
-                              </Option>
-                            ))
-                          ) : (
-                            <Option disabled>No options available</Option>
-                          )}
-                        </Select>
-                      </Grid>
+                      {/* Module Make & Capacity */}
+                      {[
+                        "superadmin",
+                        "admin",
+                        "executive",
+                        "visitor",
+                        "sales",
+                      ].includes(user?.role) && (
+                        <>
+                          <Grid item xs={12} sm={6}>
+                            <Typography level="body1">Module Make</Typography>
+                            <Select
+                              fullWidth
+                              value={
+                                formData?.project_detail?.module_make || ""
+                              }
+                              onChange={(_, newValue) =>
+                                handleChange(
+                                  "project_detail",
+                                  "module_make",
+                                  newValue
+                                )
+                              }
+                            >
+                              {moduleMakeOptions.length > 0 ? (
+                                moduleMakeOptions.map((make, index) => (
+                                  <Option key={index} value={make}>
+                                    {make}
+                                  </Option>
+                                ))
+                              ) : (
+                                <Option disabled>No options available</Option>
+                              )}
+                            </Select>
+                          </Grid>
 
-                      <Grid item xs={12} sm={6}>
-                        <Typography level="body1">Module Type</Typography>
-                        <Select
-                          fullWidth
-                          value={
-                            formData["project_detail"]?.["module_type"] || ""
-                          }
-                          onChange={(e, newValue) =>
-                            handleChange(
-                              "project_detail",
-                              "module_type",
-                              newValue
-                            )
-                          }
-                          disabled={true}
-                        >
-                          {moduleTypeOptions.length > 0 ? (
-                            moduleTypeOptions.map((type, index) => (
-                              <Option key={index} value={type}>
-                                {type}
-                              </Option>
-                            ))
-                          ) : (
-                            <Option disabled>No options available</Option>
-                          )}
-                        </Select>
-                      </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <Typography level="body1">
+                              Module Capacity
+                            </Typography>
+                            <Select
+                              fullWidth
+                              value={
+                                formData?.project_detail?.module_capacity || ""
+                              }
+                              onChange={(_, newValue) =>
+                                handleChange(
+                                  "project_detail",
+                                  "module_capacity",
+                                  newValue
+                                )
+                              }
+                            >
+                              {moduleCapacityOptions.length > 0 ? (
+                                moduleCapacityOptions.map((capacity, index) => (
+                                  <Option key={index} value={capacity}>
+                                    {capacity}
+                                  </Option>
+                                ))
+                              ) : (
+                                <Option disabled>No options available</Option>
+                              )}
+                              <Option value="TBD">TBD</Option>
+                            </Select>
+                          </Grid>
+                        </>
+                      )}
 
-                      <Grid item xs={12} sm={6}>
-                        <Typography level="body1">Module Model No</Typography>
-                        <Select
-                          fullWidth
-                          value={
-                            formData["project_detail"]?.["module_model_no"] ||
-                            ""
-                          }
-                          onChange={(e, newValue) =>
-                            handleChange(
-                              "project_detail",
-                              "module_model_no",
-                              newValue
-                            )
-                          }
-                          disabled={true}
-                        >
-                          {moduleModelOptions.length > 0 ? (
-                            moduleModelOptions.map((model, index) => (
-                              <Option key={index} value={model}>
-                                {model}
-                              </Option>
-                            ))
-                          ) : (
-                            <Option disabled>No options available</Option>
-                          )}
-                        </Select>
-                      </Grid>
+                      {/* Module Model No & Type */}
+                      {["superadmin", "admin", "executive", "visitor"].includes(
+                        user?.role
+                      ) && (
+                        <>
+                          <Grid item xs={12} sm={6}>
+                            <Typography level="body1">
+                              Module Model No
+                            </Typography>
+                            <Select
+                              fullWidth
+                              value={
+                                formData?.project_detail?.module_model_no || ""
+                              }
+                              onChange={(_, newValue) =>
+                                handleChange(
+                                  "project_detail",
+                                  "module_model_no",
+                                  newValue
+                                )
+                              }
+                            >
+                              {moduleModelOptions.length > 0 ? (
+                                moduleModelOptions.map((model, index) => (
+                                  <Option key={index} value={model}>
+                                    {model}
+                                  </Option>
+                                ))
+                              ) : (
+                                <Option disabled>No options available</Option>
+                              )}
+                            </Select>
+                          </Grid>
 
-                      <Grid item xs={12} sm={6}>
-                        <Typography level="body1">Module Capacity</Typography>
-                        <Select
-                          fullWidth
-                          value={
-                            formData["project_detail"]?.["module_capacity"] ||
-                            ""
-                          }
-                          onChange={(e, newValue) =>
-                            handleChange(
-                              "project_detail",
-                              "module_capacity",
-                              newValue
-                            )
-                          }
-                          disabled={true}
-                        >
-                          {moduleCapacityOptions.length > 0 ? (
-                            moduleCapacityOptions.map((capacity, index) => (
-                              <Option key={index} value={capacity}>
-                                {capacity}
-                              </Option>
-                            ))
-                          ) : (
-                            <Option disabled>No options available</Option>
-                          )}
-                          <Option value="TBD">TBD</Option>
-                        </Select>
-                      </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <Typography level="body1">Module Type</Typography>
+                            <Select
+                              fullWidth
+                              value={
+                                formData?.project_detail?.module_type || ""
+                              }
+                              onChange={(_, newValue) =>
+                                handleChange(
+                                  "project_detail",
+                                  "module_type",
+                                  newValue
+                                )
+                              }
+                            >
+                              {moduleTypeOptions.length > 0 ? (
+                                moduleTypeOptions.map((type, index) => (
+                                  <Option key={index} value={type}>
+                                    {type}
+                                  </Option>
+                                ))
+                              ) : (
+                                <Option disabled>No options available</Option>
+                              )}
+                            </Select>
+                          </Grid>
+                        </>
+                      )}
                     </>
                   )}
 
@@ -945,7 +1188,6 @@ const GetHandoverSheetForm = ({ onBack }) => {
                           newValue
                         )
                       }
-                      disabled={true}
                     >
                       <Option value="11 KV">11 KV</Option>
                       <Option value="33 KV">33 KV</Option>
@@ -956,11 +1198,11 @@ const GetHandoverSheetForm = ({ onBack }) => {
                       level="body1"
                       sx={{ fontWeight: "bold", marginBottom: 0.5 }}
                     >
-                      Solar Inverter Make & Capacity
+                      Solar Inverter Scope
                     </Typography>
                     <Select
                       fullWidth
-                      placeholder="Select Inverter Make & Capacity"
+                      placeholder="Select Inverter Scope"
                       value={
                         formData["project_detail"]?.[
                           "inverter_make_capacity"
@@ -973,118 +1215,135 @@ const GetHandoverSheetForm = ({ onBack }) => {
                           newValue
                         )
                       }
-                      disabled={true}
                     >
                       <Option value="Slnko">Slnko</Option>
                       <Option value="Client">Client</Option>
-                      <Option value="NA">NA</Option>
+                      <Option value="TBD">TBD</Option>
                     </Select>
                   </Grid>
                   {formData["project_detail"]?.["inverter_make_capacity"] ===
                     "Slnko" && (
                     <>
-                      <Grid item xs={12} sm={6}>
-                        <Typography level="body1">Inverter Make</Typography>
-                        <Select
-                          fullWidth
-                          value={
-                            formData["project_detail"]?.["inverter_make"] || ""
-                          }
-                          onChange={(e, newValue) =>
-                            handleChange(
-                              "project_detail",
-                              "inverter_make",
-                              newValue
-                            )
-                          }
-                          disabled={true}
-                        >
-                          {inverterMakeOptions.map((option) => (
-                            <Option key={option} value={option}>
-                              {option}
-                            </Option>
-                          ))}
-                        </Select>
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <Typography level="body1">Inverter Size</Typography>
-                        <Select
-                          fullWidth
-                          value={
-                            formData["project_detail"]?.["inverter_size"] || ""
-                          }
-                          onChange={(e, newValue) =>
-                            handleChange(
-                              "project_detail",
-                              "inverter_size",
-                              newValue
-                            )
-                          }
-                          disabled={true}
-                        >
-                          {inverterSizeOptions.map((size) => (
-                            <Option key={size} value={size}>
-                              {size}
-                            </Option>
-                          ))}
-                        </Select>
-                      </Grid>
-
-                      <Grid item xs={12} sm={6}>
-                        <Typography level="body1">Inverter Model No</Typography>
-                        <Select
-                          fullWidth
-                          value={
-                            formData["project_detail"]?.["inverter_model_no"] ||
-                            ""
-                          }
-                          onChange={(e, newValue) =>
-                            handleChange(
-                              "project_detail",
-                              "inverter_model_no",
-                              newValue
-                            )
-                          }
-                          disabled={true}
-                        >
-                          {inverterModelOptions.map((model) => (
-                            <Option key={model} value={model}>
-                              {model}
-                            </Option>
-                          ))}
-                        </Select>
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <Typography level="body1">Inverter Type</Typography>
-                        <Select
-                          fullWidth
-                          value={
-                            formData["project_detail"]?.["inverter_type"] || ""
-                          }
-                          onChange={(e, newValue) =>
-                            handleChange(
-                              "project_detail",
-                              "inverter_type",
-                              newValue
-                            )
-                          }
-                          disabled={true}
-                        >
-                          {inverterTypeOptions.length > 0 ? (
-                            inverterTypeOptions.map((type, index) => (
-                              <Option key={index} value={type}>
-                                {type}
-                              </Option>
-                            ))
-                          ) : (
-                            <Option disabled>No options available</Option>
-                          )}
-                          <Option value="TBD">TBD</Option>{" "}
-                          {/* ✅ Added "TBD" as an option */}
-                        </Select>
-                      </Grid>
+                      {[
+                        "superadmin",
+                        "admin",
+                        "executive",
+                        "visitor",
+                        "sales",
+                      ].includes(user?.role) && (
+                        <>
+                          <Grid item xs={12} sm={6}>
+                            <Typography level="body1">Inverter Make</Typography>
+                            <Select
+                              fullWidth
+                              value={
+                                formData["project_detail"]?.["inverter_make"] ||
+                                ""
+                              }
+                              onChange={(e, newValue) =>
+                                handleChange(
+                                  "project_detail",
+                                  "inverter_make",
+                                  newValue
+                                )
+                              }
+                            >
+                              {inverterMakeOptions.map((option) => (
+                                <Option key={option} value={option}>
+                                  {option}
+                                </Option>
+                              ))}
+                            </Select>
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <Typography level="body1">Inverter Type</Typography>
+                            <Select
+                              fullWidth
+                              value={
+                                formData["project_detail"]?.["inverter_type"] ||
+                                ""
+                              }
+                              onChange={(e, newValue) =>
+                                handleChange(
+                                  "project_detail",
+                                  "inverter_type",
+                                  newValue
+                                )
+                              }
+                            >
+                              {inverterTypeOptions.length > 0 ? (
+                                inverterTypeOptions.map((type, index) => (
+                                  <Option key={index} value={type}>
+                                    {type}
+                                  </Option>
+                                ))
+                              ) : (
+                                <Option disabled>No options available</Option>
+                              )}
+                              <Option value="TBD">TBD</Option>{" "}
+                              {/* ✅ Added "TBD" as an option */}
+                            </Select>
+                          </Grid>
+                        </>
+                      )}
+                      {["superadmin", "admin", "executive", "visitor"].includes(
+                        user?.role
+                      ) && (
+                        <>
+                          <Grid item xs={12} sm={6}>
+                            <Typography level="body1">
+                              Inverter Model No
+                            </Typography>
+                            <Select
+                              fullWidth
+                              value={
+                                formData["project_detail"]?.[
+                                  "inverter_model_no"
+                                ] || ""
+                              }
+                              onChange={(e, newValue) =>
+                                handleChange(
+                                  "project_detail",
+                                  "inverter_model_no",
+                                  newValue
+                                )
+                              }
+                            >
+                              {inverterModelOptions.map((model) => (
+                                <Option key={model} value={model}>
+                                  {model}
+                                </Option>
+                              ))}
+                            </Select>
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <Typography level="body1">Inverter Size</Typography>
+                            <Select
+                              fullWidth
+                              value={
+                                formData["project_detail"]?.["inverter_size"] ||
+                                ""
+                              }
+                              onChange={(e, newValue) =>
+                                handleChange(
+                                  "project_detail",
+                                  "inverter_size",
+                                  newValue
+                                )
+                              }
+                            >
+                              {inverterSizeOptions.map((size) => (
+                                <Option key={size} value={size}>
+                                  {size}
+                                </Option>
+                              ))}
+                            </Select>
+                          </Grid>
+                        </>
+                      )}
                     </>
                   )}
+
                   <Grid item xs={12} sm={6}>
                     <Typography
                       level="body1"
@@ -1105,7 +1364,6 @@ const GetHandoverSheetForm = ({ onBack }) => {
                           newValue
                         )
                       }
-                      disabled={true}
                     >
                       <Option value="Eng">Eng</Option>
                       <Option value="EP">EP</Option>
@@ -1134,7 +1392,6 @@ const GetHandoverSheetForm = ({ onBack }) => {
                           newValue
                         )
                       }
-                      disabled={true}
                     >
                       <Option value="Yes">Yes</Option>
                       <Option value="No">No</Option>
@@ -1154,7 +1411,6 @@ const GetHandoverSheetForm = ({ onBack }) => {
                       onChange={(e, newValue) =>
                         handleChange("project_detail", "soil_test", newValue)
                       }
-                      disabled={true}
                     >
                       <Option value="Yes">Yes</Option>
                       <Option value="No">No</Option>
@@ -1182,7 +1438,6 @@ const GetHandoverSheetForm = ({ onBack }) => {
                           newValue
                         )
                       }
-                      disabled={true}
                     >
                       <Option value="Yes">Yes</Option>
                       <Option value="No">No</Option>
@@ -1210,7 +1465,6 @@ const GetHandoverSheetForm = ({ onBack }) => {
                           newValue
                         )
                       }
-                      disabled={true}
                     >
                       <Option value="Yes">Yes</Option>
                       <Option value="No">No</Option>
@@ -1230,7 +1484,6 @@ const GetHandoverSheetForm = ({ onBack }) => {
                       onChange={(e, newValue) =>
                         handleChange("project_detail", "ceig_ceg", newValue)
                       }
-                      disabled={true}
                     >
                       <Option value="Yes">Yes</Option>
                       <Option value="No">No</Option>
@@ -1258,7 +1511,28 @@ const GetHandoverSheetForm = ({ onBack }) => {
                           e.target.value
                         )
                       }
-                      readOnly
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography
+                      level="body1"
+                      sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                    >
+                      Agreement Date
+                    </Typography>
+                    <Input
+                      fullWidth
+                      type="date"
+                      value={
+                        formData["project_detail"]?.["agreement_date"] || ""
+                      }
+                      onChange={(e) =>
+                        handleChange(
+                          "project_detail",
+                          "agreement_date",
+                          e.target.value
+                        )
+                      }
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1275,7 +1549,22 @@ const GetHandoverSheetForm = ({ onBack }) => {
                           e.target.value
                         )
                       }
-                      readOnly
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                      Proposed AC Capacity (KWp)
+                    </Typography>
+                    <Input
+                      value={formData.project_detail.project_kwp}
+                      placeholder="Proposed AC Capacity (KWp)"
+                      onChange={(e) =>
+                        handleChange(
+                          "project_detail",
+                          "project_kwp",
+                          e.target.value
+                        )
+                      }
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1283,18 +1572,119 @@ const GetHandoverSheetForm = ({ onBack }) => {
                       Transmission Line
                     </Typography>
                     <Input
-                      value={formData.project_detail.transmission_line}
+                      value={formData.project_detail.distance}
                       placeholder="Transmission Line"
                       onChange={(e) =>
                         handleChange(
                           "project_detail",
-                          "transmission_line",
+                          "distance",
                           e.target.value
                         )
                       }
-                      readOnly
                     />
                   </Grid>
+
+                  {["superadmin", "admin", "executive", "visitor"].includes(
+                    user?.role
+                  ) && (
+                    <>
+                      <Grid item xs={12} sm={6}>
+                        <Typography
+                          sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                        >
+                          Tariff Rate
+                        </Typography>
+                        <Input
+                          value={formData.project_detail.tarrif}
+                          placeholder="Tariff Rate"
+                          onChange={(e) =>
+                            handleChange(
+                              "project_detail",
+                              "tarrif",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} sm={6}>
+                        <Typography
+                          level="body1"
+                          sx={{ fontWeight: "bold", marginBottom: 1 }}
+                        >
+                          Land Availables
+                        </Typography>
+
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} sm={6}>
+                            <Input
+                              name="acres"
+                              type="text"
+                              placeholder="e.g. 5"
+                              value={formData.project_detail?.land?.acres || ""}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  project_detail: {
+                                    ...prev.project_detail,
+                                    land: {
+                                      ...prev.project_detail.land,
+                                      acres: e.target.value,
+                                    },
+                                  },
+                                }))
+                              }
+                              fullWidth
+                              required
+                            />
+                          </Grid>
+
+                          <Grid item xs={12} sm={6}>
+                            <Autocomplete
+                              options={landTypes}
+                              value={
+                                landTypes.includes(
+                                  formData.project_detail?.land?.type
+                                )
+                                  ? formData.project_detail.land.type
+                                  : null
+                              }
+                              onChange={(e, value) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  project_detail: {
+                                    ...prev.project_detail,
+                                    land: {
+                                      ...prev.project_detail.land,
+                                      type: value,
+                                    },
+                                  },
+                                }))
+                              }
+                              isOptionEqualToValue={(option, value) =>
+                                option === value
+                              }
+                              placeholder="Land Type"
+                              required
+                              sx={{ width: "100%" }}
+                            />
+                          </Grid>
+                        </Grid>
+                      </Grid>
+                    </>
+                  )}
+                  {/* <Grid item xs={12} sm={6}>
+                    <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                      Land
+                    </Typography>
+                    <Input
+                      value={formData.project_detail.land}
+                      placeholder="Land"
+                      onChange={(e) =>
+                        handleChange("project_detail", "land", e.target.value)
+                      }
+                    />
+                  </Grid> */}
 
                   <Grid item xs={12} sm={6}>
                     <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
@@ -1310,7 +1700,6 @@ const GetHandoverSheetForm = ({ onBack }) => {
                           e.target.value
                         )
                       }
-                      readOnly
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1327,7 +1716,6 @@ const GetHandoverSheetForm = ({ onBack }) => {
                           e.target.value
                         )
                       }
-                      readOnly
                     />
                   </Grid>
                 </>
@@ -1345,9 +1733,7 @@ const GetHandoverSheetForm = ({ onBack }) => {
                     </Typography>
                     <Select
                       fullWidth
-                      value={
-                        formData["attached_details"]?.["taken_over_by"] || ""
-                      }
+                      value={formData?.attached_details?.taken_over_by || ""}
                       onChange={(e, newValue) =>
                         handleChange(
                           "attached_details",
@@ -1355,7 +1741,7 @@ const GetHandoverSheetForm = ({ onBack }) => {
                           newValue
                         )
                       }
-                      disabled={true}
+                      required
                     >
                       <Option value="CAM">CAM</Option>
                     </Select>
@@ -1366,7 +1752,7 @@ const GetHandoverSheetForm = ({ onBack }) => {
                     </Typography>
                     <Input
                       value={formData.attached_details.cam_member_name}
-                      placeholder="Overloading"
+                      placeholder="CAM Member Name"
                       onChange={(e) =>
                         handleChange(
                           "attached_details",
@@ -1374,16 +1760,64 @@ const GetHandoverSheetForm = ({ onBack }) => {
                           e.target.value
                         )
                       }
-                      readOnly
                     />
                   </Grid>
+                  {["superadmin", "admin", "executive", "visitor"].includes(
+                    user?.role
+                  ) && (
+                    <>
+                      <Grid item xs={12} sm={6}>
+                        <Typography
+                          sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                        >
+                          Slnko Service Charges (incl. GST)
+                        </Typography>
+                        <Input
+                          value={formData.attached_details.service}
+                          placeholder="Slnko Service Charge"
+                          onChange={(e) =>
+                            handleChange(
+                              "attached_details",
+                              "service",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography
+                          sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                        >
+                          Billing Type
+                        </Typography>
+                        <Autocomplete
+                          options={BillingTypes}
+                          value={formData?.attached_details?.billing_type}
+                          onChange={(e, value) =>
+                            handleAutocompleteChange(
+                              "attached_details",
+                              "billing_type",
+                              value
+                            )
+                          }
+                          getOptionLabel={(option) => option || ""}
+                          isOptionEqualToValue={(option, value) =>
+                            option === value
+                          }
+                          placeholder="Billing Type"
+                          required
+                          sx={{ width: "100%" }}
+                        />
+                      </Grid>
+                    </>
+                  )}
                   <Grid item xs={12} sm={6}>
                     <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                       LOA Number
                     </Typography>
                     <Input
                       value={formData.attached_details.loa_number}
-                      placeholder="Overloading"
+                      placeholder="LOA Number"
                       onChange={(e) =>
                         handleChange(
                           "attached_details",
@@ -1391,7 +1825,7 @@ const GetHandoverSheetForm = ({ onBack }) => {
                           e.target.value
                         )
                       }
-                      readOnly
+                      required
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1400,7 +1834,7 @@ const GetHandoverSheetForm = ({ onBack }) => {
                     </Typography>
                     <Input
                       value={formData.attached_details.ppa_number}
-                      placeholder="Overloading"
+                      placeholder="PPA Number"
                       onChange={(e) =>
                         handleChange(
                           "attached_details",
@@ -1408,7 +1842,7 @@ const GetHandoverSheetForm = ({ onBack }) => {
                           e.target.value
                         )
                       }
-                      readOnly
+                      required
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1417,7 +1851,6 @@ const GetHandoverSheetForm = ({ onBack }) => {
                     </Typography>
                     <Input
                       value={formData.attached_details.submitted_by_BD}
-                      placeholder="Overloading"
                       onChange={(e) =>
                         handleChange(
                           "attached_details",
@@ -1428,6 +1861,28 @@ const GetHandoverSheetForm = ({ onBack }) => {
                       readOnly
                     />
                   </Grid>
+                  {["superadmin", "admin", "executive", "visitor"].includes(
+                    user?.role
+                  ) && (
+                    <Grid item xs={12} sm={6}>
+                      <Typography
+                        sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                      >
+                        Submitted By
+                      </Typography>
+                      <Input
+                        value={formData.attached_details.submitted_by}
+                        onChange={(e) =>
+                          handleChange(
+                            "attached_details",
+                            "submitted_by",
+                            e.target.value
+                          )
+                        }
+                        readOnly
+                      />
+                    </Grid>
+                  )}
                 </>
               )}
 

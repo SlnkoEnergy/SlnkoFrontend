@@ -56,6 +56,7 @@ const HandoverSheetForm = () => {
     "West Bengal",
   ];
   const BillingTypes = ["Composite", "Individual"];
+  const landTypes = ["Leased", "Owned"];
 
   const [formData, setFormData] = useState({
     id: "",
@@ -213,6 +214,16 @@ const HandoverSheetForm = () => {
     setExpanded(expanded === panel ? null : panel);
   };
 
+  const handleAutocompleteChange = (section, field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [field]: value,
+      },
+    }));
+  };
+
   const handleChange = (section, field, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -244,10 +255,6 @@ const HandoverSheetForm = () => {
   };
   const LeadId = localStorage.getItem("hand_Over");
 
-  const handleAutocompleteChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
   const handleSubmit = async () => {
     try {
       if (!LeadId) {
@@ -264,6 +271,10 @@ const HandoverSheetForm = () => {
             formData.attached_details.submitted_by_BD || user?.name || "",
           submitted_by:
             formData.attached_details.submitted_by || user?.name || "",
+        },
+        project_detail: {
+          ...formData.project_detail,
+          land: JSON.stringify(formData.project_detail.land),
         },
       };
 
@@ -461,7 +472,6 @@ const HandoverSheetForm = () => {
                           }
                           placeholder="State"
                           required
-                          variant="soft"
                           sx={{ width: "100%" }}
                         />
                       </Grid>
@@ -492,7 +502,7 @@ const HandoverSheetForm = () => {
                       level="body1"
                       sx={{ fontWeight: "bold", marginBottom: 0.5 }}
                     >
-                      Email
+                      Email id
                     </Typography>
                     <Input
                       fullWidth
@@ -1492,28 +1502,66 @@ const HandoverSheetForm = () => {
                       <Grid item xs={12} sm={6}>
                         <Typography
                           level="body1"
-                          sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                          sx={{ fontWeight: "bold", marginBottom: 1 }}
                         >
-                          Land available
+                          Land Availables
                         </Typography>
-                        <Input
-                          fullWidth
-                          placeholder="e.g. Leased/Owned , 5"
-                          value={`${formData?.project_detail?.land}${
-                            formData?.project_detail?.land?.acres
-                              ? `, ${formData?.project_detail?.land?.acres}`
-                              : ""
-                          }`}
-                          onChange={(e) => {
-                            const [type, acres] = e.target.value
-                              .split(",")
-                              .map((s) => s.trim());
-                            handleChange("customer_details", "land", {
-                              type: type || "",
-                              acres: acres || "",
-                            });
-                          }}
-                        />
+
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} sm={6}>
+                            <Input
+                              name="acres"
+                              type="text"
+                              placeholder="e.g. 5"
+                              value={formData.project_detail?.land?.acres || ""}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  project_detail: {
+                                    ...prev.project_detail,
+                                    land: {
+                                      ...prev.project_detail.land,
+                                      acres: e.target.value,
+                                    },
+                                  },
+                                }))
+                              }
+                              fullWidth
+                              required
+                            />
+                          </Grid>
+
+                          <Grid item xs={12} sm={6}>
+                            <Autocomplete
+                              options={landTypes}
+                              value={
+                                landTypes.includes(
+                                  formData.project_detail?.land?.type
+                                )
+                                  ? formData.project_detail.land.type
+                                  : null
+                              }
+                              onChange={(e, value) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  project_detail: {
+                                    ...prev.project_detail,
+                                    land: {
+                                      ...prev.project_detail.land,
+                                      type: value,
+                                    },
+                                  },
+                                }))
+                              }
+                              isOptionEqualToValue={(option, value) =>
+                                option === value
+                              }
+                              placeholder="Land Type"
+                              required
+                              sx={{ width: "100%" }}
+                            />
+                          </Grid>
+                        </Grid>
                       </Grid>
                     </>
                   )}
@@ -1577,9 +1625,7 @@ const HandoverSheetForm = () => {
                     </Typography>
                     <Select
                       fullWidth
-                      value={
-                        formData["attached_details"]?.["taken_over_by"] || ""
-                      }
+                      value={formData?.attached_details?.taken_over_by || ""}
                       onChange={(e, newValue) =>
                         handleChange(
                           "attached_details",
@@ -1638,9 +1684,7 @@ const HandoverSheetForm = () => {
                         </Typography>
                         <Autocomplete
                           options={BillingTypes}
-                          value={
-                            formData?.attached_details?.billing_type || null
-                          }
+                          value={formData?.attached_details?.billing_type}
                           onChange={(e, value) =>
                             handleAutocompleteChange(
                               "attached_details",
@@ -1648,12 +1692,11 @@ const HandoverSheetForm = () => {
                               value
                             )
                           }
-                          getOptionLabel={(option) => option}
+                          getOptionLabel={(option) => option || ""}
                           isOptionEqualToValue={(option, value) =>
                             option === value
                           }
                           placeholder="Billing Type"
-                          variant="soft"
                           required
                           sx={{ width: "100%" }}
                         />
