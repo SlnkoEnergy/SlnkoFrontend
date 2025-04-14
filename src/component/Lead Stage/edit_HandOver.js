@@ -18,9 +18,12 @@ import {
   useGetMasterInverterQuery,
   useGetModuleMasterQuery,
 } from "../../redux/leadsSlice";
-import { useGetHandOverQuery } from "../../redux/camsSlice";
+import { useGetHandOverQuery, useUpdateHandOverMutation } from "../../redux/camsSlice";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
-const GetHandoverSheetForm = ({ onBack }) => {
+const UpdateHandoverSheetForm = ({ onBack }) => {
+    const navigate = useNavigate();
   const [expanded, setExpanded] = useState(null);
   const states = [
     "Andhra Pradesh",
@@ -303,114 +306,180 @@ const GetHandoverSheetForm = ({ onBack }) => {
     const userData = localStorage.getItem("userDetails");
     return userData ? JSON.parse(userData) : null;
   };
-  const LeadId = localStorage.getItem("HandOver_Lead");
-  const { data: getHandOverSheet = [] } = useGetHandOverQuery();
-  const HandOverSheet = useMemo(
-    () => getHandOverSheet?.Data ?? [],
-    [getHandOverSheet]
-  );
 
-  console.log("HandOverSheet", HandOverSheet);
-
-  const handoverData = HandOverSheet.find((item) => item.id === LeadId);
-
-  console.log("✅ Found handoverData:", handoverData);
-
-  // 🎯 Populate Data from Handover if Available
-  useEffect(() => {
-    if (!handoverData) {
-      console.warn("No matching handover data found.");
-      return;
-    }
   
-    setFormData((prev) => ({
-      ...prev,
-      customer_details: {
-        ...prev.customer_details,
-        code: handoverData?.customer_details?.code || "",
-        name: handoverData?.customer_details?.name || "",
-        customer: handoverData?.customer_details?.customer || "",
-        epc_developer: handoverData?.customer_details?.epc_developer || "",
-        billing_address: handoverData?.customer_details?.billing_address || {
-          village_name: "",
-          district_name: "",
+  const LeadId = sessionStorage.getItem("update handover");
+
+  // console.log("LeadId:", LeadId);
+  
+  const { data: getHandOverSheet = [] } = useGetHandOverQuery();
+  const HandOverSheet = useMemo(() => getHandOverSheet?.Data ?? [], [getHandOverSheet]);
+  
+  const handoverData = useMemo(() => {
+    return HandOverSheet.find((item) => item.p_id === Number(LeadId));
+  }, [HandOverSheet, LeadId]);
+
+  // console.log("handoverData:", handoverData);
+  
+
+ 
+  useEffect(() => {
+     if (!handoverData) {
+       console.warn("No matching handover data found.");
+       return;
+     }
+   
+     setFormData((prev) => ({
+       ...prev,
+       p_id: handoverData?.p_id || "",
+       customer_details: {
+         ...prev.customer_details,
+         code: handoverData?.customer_details?.code || "",
+         name: handoverData?.customer_details?.name || "",
+         customer: handoverData?.customer_details?.customer || "",
+         epc_developer: handoverData?.customer_details?.epc_developer || "",
+         billing_address: handoverData?.customer_details?.billing_address || {
+           village_name: "",
+           district_name: "",
+         },
+         site_address: handoverData?.customer_details?.site_address || {
+           village_name: "",
+           district_name: "",
+         },
+         site_google_coordinates: handoverData?.customer_details?.site_google_coordinates || "",
+         number: handoverData?.customer_details?.number || "",
+         gst_no: handoverData?.customer_details?.gst_no || "",
+         gender_of_Loa_holder: handoverData?.customer_details?.gender_of_Loa_holder || "",
+         email: handoverData?.customer_details?.email || "",
+         p_group: handoverData?.customer_details?.p_group || "",
+         pan_no: handoverData?.customer_details?.pan_no || "",
+         adharNumber_of_loa_holder: handoverData?.customer_details?.adharNumber_of_loa_holder || "",
+         state: handoverData?.customer_details?.state || "",
+         alt_number: handoverData?.customer_details?.alt_number || "",
+       },
+       order_details: {
+         ...prev.order_details,
+         type_business: handoverData?.order_details?.type_business || "",
+         tender_name: handoverData?.order_details?.tender_name || "",
+         discom_name: handoverData?.order_details?.discom_name || "",
+         design_date: handoverData?.order_details?.design_date || "",
+         feeder_code: handoverData?.order_details?.feeder_code || "",
+         feeder_name: handoverData?.order_details?.feeder_name || "",
+       },
+       project_detail: {
+         ...prev.project_detail,
+         project_type: handoverData?.project_detail?.project_type || "",
+         module_make_capacity: handoverData?.project_detail?.module_make_capacity || "",
+         module_make: handoverData?.project_detail?.module_make || "",
+         module_capacity: handoverData?.project_detail?.module_capacity || "",
+         module_type: handoverData?.project_detail?.module_type || "",
+         module_model_no: handoverData?.project_detail?.module_model_no || "",
+         evacuation_voltage: handoverData?.project_detail?.evacuation_voltage || "",
+         inverter_make_capacity: handoverData?.project_detail?.inverter_make_capacity || "",
+         inverter_make: handoverData?.project_detail?.inverter_make || "",
+         inverter_type: handoverData?.project_detail?.inverter_type || "",
+         inverter_size: handoverData?.project_detail?.inverter_size || "",
+         inverter_model_no: handoverData?.project_detail?.inverter_model_no || "",
+         work_by_slnko: handoverData?.project_detail?.work_by_slnko || "",
+         topography_survey: handoverData?.project_detail?.topography_survey || "",
+         soil_test: handoverData?.project_detail?.soil_test || "",
+         purchase_supply_net_meter: handoverData?.project_detail?.purchase_supply_net_meter || "",
+         liaisoning_net_metering: handoverData?.project_detail?.liaisoning_net_metering || "",
+         ceig_ceg: handoverData?.project_detail?.ceig_ceg || "",
+         project_completion_date: handoverData?.project_detail?.project_completion_date || "",
+         proposed_dc_capacity: handoverData?.project_detail?.proposed_dc_capacity || "",
+         distance: handoverData?.project_detail?.distance || "",
+         tarrif: handoverData?.project_detail?.tarrif || "",
+         substation_name: handoverData?.project_detail?.substation_name || "",
+         overloading: handoverData?.project_detail?.overloading || "",
+         project_kwp: handoverData?.project_detail?.project_kwp || "",
+         land: handoverData?.project_detail?.land
+         ? JSON.parse(handoverData.project_detail.land)
+         : { type: "", acres: "" },
+         agreement_date: handoverData?.project_detail?.agreement_date || "",
+       },
+       commercial_details: {
+         ...prev.commercial_details,
+         type: handoverData?.commercial_details?.type || "",
+         subsidy_amount: handoverData?.commercial_details?.subsidy_amount || "",
+       },
+       attached_details: {
+         ...prev.attached_details,
+         taken_over_by: handoverData?.attached_details?.taken_over_by || "",
+         cam_member_name: handoverData?.attached_details?.cam_member_name || "",
+         service: handoverData?.attached_details?.service || "",
+         billing_type: handoverData?.attached_details?.billing_type || "",
+         project_status: handoverData?.attached_details?.project_status || "incomplete",
+         loa_number: handoverData?.attached_details?.loa_number || "",
+         ppa_number: handoverData?.attached_details?.ppa_number || "",
+         submitted_by_BD: handoverData?.attached_details?.submitted_by_BD || "",
+         
+       },
+       submitted_by: handoverData?.submitted_by || "-",
+     }));
+   }, [handoverData]);
+
+  const [updateHandOver, { isLoading: isUpdating }] = useUpdateHandOverMutation();
+
+  const handleSubmit = async () => {
+    try {
+      // Ensure LeadId is provided
+      if (!LeadId) {
+        toast.error("Lead ID is missing!");
+        return;
+      }
+  
+      // Prepare the data to be sent
+      const updatedFormData = {
+        p_id:Number(LeadId), // Ensure LeadId is correctly typed; no need for Number() if it's already a number
+        customer_details: {
+          ...formData.customer_details,
         },
-        site_address: handoverData?.customer_details?.site_address || {
-          village_name: "",
-          district_name: "",
+        order_details: {
+          ...formData.order_details, // Assuming you have this data structure
         },
-        site_google_coordinates: handoverData?.customer_details?.site_google_coordinates || "",
-        number: handoverData?.customer_details?.number || "",
-        gst_no: handoverData?.customer_details?.gst_no || "",
-        gender_of_Loa_holder: handoverData?.customer_details?.gender_of_Loa_holder || "",
-        email: handoverData?.customer_details?.email || "",
-        p_group: handoverData?.customer_details?.p_group || "",
-        pan_no: handoverData?.customer_details?.pan_no || "",
-        adharNumber_of_loa_holder: handoverData?.customer_details?.adharNumber_of_loa_holder || "",
-        state: handoverData?.customer_details?.state || "",
-        alt_number: handoverData?.customer_details?.alt_number || "",
-      },
-      order_details: {
-        ...prev.order_details,
-        type_business: handoverData?.order_details?.type_business || "",
-        tender_name: handoverData?.order_details?.tender_name || "",
-        discom_name: handoverData?.order_details?.discom_name || "",
-        design_date: handoverData?.order_details?.design_date || "",
-        feeder_code: handoverData?.order_details?.feeder_code || "",
-        feeder_name: handoverData?.order_details?.feeder_name || "",
-      },
-      project_detail: {
-        ...prev.project_detail,
-        project_type: handoverData?.project_detail?.project_type || "",
-        module_make_capacity: handoverData?.project_detail?.module_make_capacity || "",
-        module_make: handoverData?.project_detail?.module_make || "",
-        module_capacity: handoverData?.project_detail?.module_capacity || "",
-        module_type: handoverData?.project_detail?.module_type || "",
-        module_model_no: handoverData?.project_detail?.module_model_no || "",
-        evacuation_voltage: handoverData?.project_detail?.evacuation_voltage || "",
-        inverter_make_capacity: handoverData?.project_detail?.inverter_make_capacity || "",
-        inverter_make: handoverData?.project_detail?.inverter_make || "",
-        inverter_type: handoverData?.project_detail?.inverter_type || "",
-        inverter_size: handoverData?.project_detail?.inverter_size || "",
-        inverter_model_no: handoverData?.project_detail?.inverter_model_no || "",
-        work_by_slnko: handoverData?.project_detail?.work_by_slnko || "",
-        topography_survey: handoverData?.project_detail?.topography_survey || "",
-        soil_test: handoverData?.project_detail?.soil_test || "",
-        purchase_supply_net_meter: handoverData?.project_detail?.purchase_supply_net_meter || "",
-        liaisoning_net_metering: handoverData?.project_detail?.liaisoning_net_metering || "",
-        ceig_ceg: handoverData?.project_detail?.ceig_ceg || "",
-        project_completion_date: handoverData?.project_detail?.project_completion_date || "",
-        proposed_dc_capacity: handoverData?.project_detail?.proposed_dc_capacity || "",
-        distance: handoverData?.project_detail?.distance || "",
-        tarrif: handoverData?.project_detail?.tarrif || "",
-        substation_name: handoverData?.project_detail?.substation_name || "",
-        overloading: handoverData?.project_detail?.overloading || "",
-        project_kwp: handoverData?.project_detail?.project_kwp || "",
-        land: handoverData?.project_detail?.land
-        ? JSON.parse(handoverData.project_detail.land)
-        : { type: "", acres: "" },
-        agreement_date: handoverData?.project_detail?.agreement_date || "",
-      },
-      commercial_details: {
-        ...prev.commercial_details,
-        type: handoverData?.commercial_details?.type || "",
-        subsidy_amount: handoverData?.commercial_details?.subsidy_amount || "",
-      },
-      attached_details: {
-        ...prev.attached_details,
-        taken_over_by: handoverData?.attached_details?.taken_over_by || "",
-        cam_member_name: handoverData?.attached_details?.cam_member_name || "",
-        service: handoverData?.attached_details?.service || "",
-        billing_type: handoverData?.attached_details?.billing_type || "",
-        project_status: handoverData?.attached_details?.project_status || "incomplete",
-        loa_number: handoverData?.attached_details?.loa_number || "",
-        ppa_number: handoverData?.attached_details?.ppa_number || "",
-        submitted_by_BD: handoverData?.attached_details?.submitted_by_BD || "",
-        
-      },
-      submitted_by: handoverData?.submitted_by || "-",
-    }));
-  }, [handoverData]);
+        project_detail: {
+          ...formData.project_detail,
+          land: JSON.stringify(formData.project_detail?.land), // Ensure land is correctly serialized
+        },
+        commercial_details: {
+          ...formData.commercial_details, // Assuming you have this data structure
+        },
+        attached_details: {
+          ...formData.attached_details,
+          submitted_by_BD: formData.attached_details?.submitted_by_BD || user?.name || "",
+        },
+        submitted_by: formData.submitted_by || user?.name || "", // Use user name if formData has no submitted_by
+      };
+  
+      // Log data for debugging
+      console.log("Submitting data:", updatedFormData);
+  
+      // Send the request using the API call (ensure the action creator is correctly set up)
+      const response = await updateHandOver(updatedFormData).unwrap();
+  
+      // Success handling
+      toast.success("HandOver Sheet updated successfully");
+      navigate("/cam_dash"); // Navigate to another page after successful submission
+  
+    } catch (error) {
+      // Error handling
+      console.error("Submission error:", error);
+  
+      const errorMessage = error?.data?.message || error?.message || "Submission failed";
+  
+      // Handle specific error cases based on the message
+      if (errorMessage.toLowerCase().includes("already handed over")) {
+        toast.error("Already handed over found");
+      } else if (errorMessage.toLowerCase().includes("not found")) {
+        toast.error("No matching record found for this Lead ID");
+      } else {
+        toast.error(errorMessage);
+      }
+    }
+  };
+  
+  
   
 
   // console.log("📝 Updated formData:", formData);
@@ -1941,28 +2010,32 @@ const GetHandoverSheetForm = ({ onBack }) => {
       ))}
 
       {/* Buttons */}
-      <Grid container justifyContent="center" sx={{ marginTop: 2 }}>
-        <Grid item xs={6} sm={4} md={3}>
-          <Button
-            onClick={handlePrint} // 👈 Replace with your print function
-            variant="solid"
-            color="primary"
-            fullWidth
-            sx={{
-              padding: 1.5,
-              fontSize: "1rem",
-              fontWeight: "bold",
-              "@media print": {
-                display: "none",
-              },
-            }}
-          >
-            Print
-          </Button>
-        </Grid>
-      </Grid>
+      <Grid container spacing={2} sx={{ marginTop: 2 }}>
+              <Grid item xs={6}>
+                <Button
+                  onClick={() => navigate("/cam_dash")}
+                  variant="solid"
+                  color="neutral"
+                  fullWidth
+                  sx={{ padding: 1.5, fontSize: "1rem", fontWeight: "bold" }}
+                >
+                  Back
+                </Button>
+              </Grid>
+              <Grid item xs={6}>
+                <Button
+                  onClick={handleSubmit}
+                  variant="solid"
+                  color="primary"
+                  fullWidth
+                  sx={{ padding: 1.5, fontSize: "1rem", fontWeight: "bold" }}
+                >
+                  Submit
+                </Button>
+              </Grid>
+            </Grid>
     </Sheet>
   );
 };
 
-export default GetHandoverSheetForm;
+export default UpdateHandoverSheetForm;

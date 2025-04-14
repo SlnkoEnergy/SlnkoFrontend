@@ -67,6 +67,7 @@ import CommercialRateOffer from "../pages/BD/OfferRate";
 import Dashboardz from "../pages/Dashboards";
 import PrivateRoute from "./PrivateRoute";
 import Dashboard from "../pages/CAM/DashboardCam";
+import EditHandSheet from "../pages/CAM/EditHand_over";
 
 function index() {
   return (
@@ -517,6 +518,14 @@ function index() {
         element={
           <PrivateRoute>
             <GetHandSheet />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/edit_handover"
+        element={
+          <PrivateRoute>
+            <EditHandSheet />
           </PrivateRoute>
         }
       />

@@ -139,8 +139,9 @@ const HandoverSheetForm = () => {
       loa_number: "",
       ppa_number: "",
       submitted_by_BD: "",
-      submitted_by: "",
+      
     },
+    submitted_by: "",
   });
   const [moduleMakeOptions, setModuleMakeOptions] = useState([]);
   const [moduleTypeOptions, setModuleTypeOptions] = useState([]);
@@ -242,8 +243,9 @@ const HandoverSheetForm = () => {
         attached_details: {
           ...prev.attached_details,
           submitted_by_BD: userData.name,
-          submitted_by: userData.name,
+          
         },
+        submitted_by: userData.name,
       }));
     }
     setUser(userData);
@@ -269,13 +271,15 @@ const HandoverSheetForm = () => {
           ...formData.attached_details,
           submitted_by_BD:
             formData.attached_details.submitted_by_BD || user?.name || "",
-          submitted_by:
-            formData.attached_details.submitted_by || user?.name || "",
+          
         },
         project_detail: {
           ...formData.project_detail,
           land: JSON.stringify(formData.project_detail.land),
         },
+        submitted_by:
+            formData.submitted_by || user?.name || "",
+            
       };
 
       const response = await HandOverSheet(updatedFormData).unwrap();
@@ -1748,6 +1752,7 @@ const HandoverSheetForm = () => {
                           "attached_details",
                           "submitted_by_BD",
                           e.target.value
+                          
                         )
                       }
                       readOnly
@@ -1763,10 +1768,10 @@ const HandoverSheetForm = () => {
                         Submitted By
                       </Typography>
                       <Input
-                        value={formData.attached_details.submitted_by}
+                        value={formData.submitted_by}
                         onChange={(e) =>
                           handleChange(
-                            "attached_details",
+                            
                             "submitted_by",
                             e.target.value
                           )

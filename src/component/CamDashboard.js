@@ -35,6 +35,7 @@ import NoData from "../assets/alert-bell.svg";
 import animationData from "../assets/Lotties/animation-loading.json";
 import Axios from "../utils/Axios";
 import { useGetHandOverQuery } from "../redux/camsSlice";
+import { CircularProgress } from "@mui/joy";
 
 function Dash_cam() {
   const navigate = useNavigate();
@@ -53,7 +54,6 @@ function Dash_cam() {
   const [accountNumber, setAccountNumber] = useState([]);
   const [ifscCode, setIfscCode] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [commRate, setCommRate] = useState([]);
   const [isUtrSubmitted, setIsUtrSubmitted] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
@@ -129,21 +129,27 @@ function Dash_cam() {
   //   fetchPaymentsAndProjects();
   // }, []);
 
-  const { data: getHandOverSheet = {}, error } = useGetHandOverQuery();
+  const {
+    data: getHandOverSheet = {},
+    error,
+    isLoading,
+  } = useGetHandOverQuery();
 
-  const HandOverSheet = {
-    ...(getHandOverSheet?.Data?.customer_details || {}),
-    ...(getHandOverSheet?.Data?.order_details || {}),
-    ...(getHandOverSheet?.Data?.project_detail || {}),
-    ...(getHandOverSheet?.Data?.commercial_details || {}),
-    ...(getHandOverSheet?.Data?.attached_details || {}),
-  };
-  
-  console.log("HandOverSheet", HandOverSheet);
-  
+  const HandOverSheet = Array.isArray(getHandOverSheet?.Data)
+    ? getHandOverSheet.Data.map((entry) => ({
+        ...entry.customer_details,
+        ...entry.order_details,
+        ...entry.project_detail,
+        ...entry.commercial_details,
+        ...entry.attached_details,
+        p_id: entry.p_id,
+      }))
+    : [];
 
-  const RowMenu = ({ currentPage, project_id }) => {
-    // console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
+  console.log("📦 All Combined HandOverSheets:", HandOverSheet);
+
+  const RowMenu = ({ currentPage, p_id }) => {
+    console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
 
     const [user, setUser] = useState(null);
 
@@ -190,12 +196,10 @@ function Dash_cam() {
                 color="primary"
                 onClick={() => {
                   const page = currentPage;
-                  const projectId = String(project_id);
+                  const projectId = String(p_id);
                   localStorage.setItem("project_edit", projectId);
                   // localStorage.setItem("p_id", projectID);
-                  navigate(
-                    `/edit_project?page=${page}&project_id=${projectId}`
-                  );
+                  navigate(`/edit_project?page=${page}&p_id=${projectId}`);
                 }}
               >
                 <ContentPasteGoIcon />
@@ -205,12 +209,10 @@ function Dash_cam() {
                 color="primary"
                 onClick={() => {
                   const page = currentPage;
-                  const projectId = String(project_id);
-                  localStorage.setItem("project_summary", projectId);
+                  const projectId = Number(p_id);
+                  sessionStorage.setItem("update handover", projectId);
                   // localStorage.setItem("p_id", projectID);
-                  navigate(
-                    `/project_summary?page=${page}&project_id=${projectId}`
-                  );
+                  navigate(`/edit_handover?page=${page}&p_id=${projectId}`);
                 }}
               >
                 <EditNoteIcon />
@@ -219,9 +221,9 @@ function Dash_cam() {
               <MenuItem
                 onClick={() => {
                   const page = currentPage;
-                  const projectId = String(project_id);
+                  const projectId = String(p_id);
                   localStorage.setItem("get-project", projectId);
-                  navigate(`/bd_history?page=${page}&project_id=${projectId}`);
+                  navigate(`/bd_history?page=${page}&p_id=${projectId}`);
                 }}
               >
                 <HistoryIcon />
@@ -279,30 +281,26 @@ function Dash_cam() {
   };
 
   const filteredAndSortedData = useMemo(() => {
-    return [HandOverSheet]
-      .filter((project) => {
-        const matchesSearchQuery = [
-          "project_id",
-          "client_name",
-          "state",
-          "prepared_by",
-        ].some((key) =>
-          project[key]?.toString().toLowerCase().includes(searchQuery?.toLowerCase())
-        );
-  
-        return matchesSearchQuery;
-      })
-      .sort((a, b) => {
-        const dateA = new Date(a.createdAt || 0);
-        const dateB = new Date(b.createdAt || 0);
-        return dateB - dateA;
-      });
+    if (!Array.isArray(HandOverSheet)) return [];
+
+    return HandOverSheet.filter((project) => {
+      const matchesSearchQuery = ["code", "customer", "state"].some((key) =>
+        project[key]
+          ?.toString()
+          .toLowerCase()
+          .includes(searchQuery?.toLowerCase())
+      );
+      return matchesSearchQuery;
+    }).sort((a, b) => {
+      const dateA = new Date(a.createdAt || 0);
+      const dateB = new Date(b.createdAt || 0);
+      return dateB - dateA;
+    });
   }, [HandOverSheet, searchQuery]);
-  
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelected(commRate.map((row) => row._id));
+      setSelected(paginatedPayments.map((row) => row._id));
     } else {
       setSelected([]);
     }
@@ -354,6 +352,8 @@ function Dash_cam() {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+  // console.log(paginatedPayments);
+  // console.log("Filtered and Sorted Data:", filteredAndSortedData);
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -399,7 +399,6 @@ function Dash_cam() {
           </ModalDialog>
         </Modal>
       </Sheet> */}
-
       {/* Tablet and Up Filters */}
       <Box
         className="SearchAndFilters-tabletUp"
@@ -429,7 +428,6 @@ function Dash_cam() {
         </FormControl>
         {/* {renderFilters()} */}
       </Box>
-
       {/* Table */}
       <Sheet
         className="OrderTableContainer"
@@ -445,203 +443,182 @@ function Dash_cam() {
           maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
-        {error ? (
-          <Typography color="danger" textAlign="center">
-            {error}
-          </Typography>
-        ) : loading ? (
-          <Box
-            display="flex"
-            flexDirection="column"
-            justifyContent="center"
-            alignItems="center"
-            height="100px"
-          >
-            <Player
-              autoplay
-              loop
-              src={animationData}
-              style={{ height: 100, width: 100 }}
-            />
-          </Box>
-        ) : (
-          <Box
-            component="table"
-            sx={{ width: "100%", borderCollapse: "collapse" }}
-          >
-            <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
-              <Box component="tr">
-                <Box
-                  component="th"
-                  sx={{
+        <Box
+          component="table"
+          sx={{ width: "100%", borderCollapse: "collapse" }}
+        >
+          <thead>
+            <tr style={{ backgroundColor: "neutral.softBg" }}>
+              <th
+                style={{
+                  borderBottom: "1px solid #ddd",
+                  padding: "8px",
+                  textAlign: "center",
+                }}
+              >
+                <Checkbox
+                  size="sm"
+                  checked={selected.length === paginatedPayments.length}
+                  onChange={handleSelectAll}
+                  indeterminate={
+                    selected.length > 0 &&
+                    selected.length < paginatedPayments.length
+                  }
+                />
+              </th>
+              {[
+                "Project Id",
+                "Name",
+                "State",
+                "Capacity(AC/DC)",
+                "Status",
+                "Action",
+              ].map((header, index) => (
+                <th
+                  key={index}
+                  style={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
                     textAlign: "center",
+                    fontWeight: "bold",
                   }}
                 >
-                  <Checkbox
-                    size="sm"
-                    checked={selected.length === paginatedPayments.length}
-                    onChange={handleSelectAll}
-                    indeterminate={
-                      selected.length > 0 &&
-                      selected.length < paginatedPayments.length
-                    }
-                  />
-                </Box>
-                {[
-                  "Project Id",
-                  "Name",
-                  "Company",
-                  "State",
-                  "Type",
-                  "Capacity(AC/DC)",
-                  "Status",
-                  "Action",
-                ].map((header, index) => (
+                  {header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              <tr>
+                <td colSpan={7} style={{ padding: "8px", textAlign: "center" }}>
                   <Box
-                    component="th"
-                    key={index}
                     sx={{
+                      fontStyle: "italic",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <CircularProgress size="sm" sx={{ marginBottom: "8px" }} />
+                    <Typography fontStyle="italic">Loading...</Typography>
+                  </Box>
+                </td>
+              </tr>
+            ) : paginatedPayments.length > 0 ? (
+              paginatedPayments.map((project, index) => (
+                <tr
+                  key={index}
+                  style={{
+                    "&:hover": { backgroundColor: "neutral.plainHoverBg" },
+                  }}
+                >
+                  <td
+                    style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
                       textAlign: "center",
-                      fontWeight: "bold",
                     }}
                   >
-                    {header}
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-            <Box component="tbody">
-              {paginatedPayments.length > 0 ? (
-                paginatedPayments.map((project, index) => (
-                  <Box
-                    component="tr"
-                    key={index}
-                    sx={{
-                      "&:hover": { backgroundColor: "neutral.plainHoverBg" },
+                    <Checkbox
+                      size="sm"
+                      checked={selected.includes(project._id)}
+                      onChange={(event) =>
+                        handleRowSelect(project._id, event.target.checked)
+                      }
+                    />
+                  </td>
+                  <td
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
                     }}
                   >
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <Checkbox
-                        size="sm"
-                        checked={selected.includes(project._id)}
-                        onChange={(event) =>
-                          handleRowSelect(project._id, event.target.checked)
-                        }
-                      />
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.code}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.customer}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.state || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.project_kwp || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.status || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <RowMenu
-                        currentPage={currentPage}
-                        project_id={project.project_id}
-                      />
-                    </Box>
-                  </Box>
-                ))
-              ) : (
-                <Box component="tr">
-                  <Box
-                    component="td"
-                    colSpan={12}
-                    sx={{ padding: "8px", textAlign: "center" }}
+                    {project.code || "-"}
+                  </td>
+                  <td
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
                   >
-                    <Box
-                      sx={{
-                        fontStyle: "italic",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <img
-                        src={NoData}
-                        alt="No data"
-                        style={{
-                          width: "50px",
-                          height: "50px",
-                          marginBottom: "8px",
-                        }}
-                      />
-                      <Typography fontStyle="italic">
-                        No Handover Sheet Found
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-              )}
-            </Box>
-          </Box>
-        )}
-      </Sheet>
+                    {project.customer || "-"}
+                  </td>
+                  <td
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.state || "-"}
+                  </td>
 
+                  <td
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.project_kwp || "-"} /{" "}
+                    {project.proposed_dc_capacity || "-"} MW
+                  </td>
+
+                  <td
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.status || "-"}
+                  </td>
+                  <td
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <RowMenu currentPage={currentPage} p_id={project.p_id} />
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={7} style={{ padding: "8px", textAlign: "center" }}>
+                  <Box
+                    sx={{
+                      fontStyle: "italic",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <img
+                      src={NoData}
+                      alt="No data"
+                      style={{
+                        width: "50px",
+                        height: "50px",
+                        marginBottom: "8px",
+                      }}
+                    />
+                    <Typography fontStyle="italic">
+                      No Handover Sheet Found
+                    </Typography>
+                  </Box>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </Box>
+      </Sheet>
       {/* Pagination */}
       <Box
         className="Pagination-laptopUp"
