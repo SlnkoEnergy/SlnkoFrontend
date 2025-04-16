@@ -68,6 +68,7 @@ import Dashboardz from "../pages/Dashboards";
 import PrivateRoute from "./PrivateRoute";
 import Dashboard from "../pages/CAM/DashboardCam";
 import EditHandSheet from "../pages/CAM/EditHand_over";
+import ViewHandSheet from "../pages/CAM/HandOver_View";
 
 function index() {
   return (
@@ -526,6 +527,14 @@ function index() {
         element={
           <PrivateRoute>
             <EditHandSheet />
+          </PrivateRoute>
+        }
+      />
+        <Route
+        path="/view_handover"
+        element={
+          <PrivateRoute>
+            <ViewHandSheet />
           </PrivateRoute>
         }
       />

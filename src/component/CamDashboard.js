@@ -36,6 +36,7 @@ import animationData from "../assets/Lotties/animation-loading.json";
 import Axios from "../utils/Axios";
 import { useGetHandOverQuery } from "../redux/camsSlice";
 import { CircularProgress } from "@mui/joy";
+import { useGetEntireLeadsQuery } from "../redux/leadsSlice";
 
 function Dash_cam() {
   const navigate = useNavigate();
@@ -135,8 +136,25 @@ function Dash_cam() {
     isLoading,
   } = useGetHandOverQuery();
 
+  const { data: getLead = {} } = useGetEntireLeadsQuery();
+
+  const leads = [
+    ...(getLead?.lead?.initialdata?.map((item) => ({
+      ...item,
+    })) || []),
+    ...(getLead?.lead?.followupdata?.map((item) => ({
+      ...item,
+    })) || []),
+    ...(getLead?.lead?.warmdata?.map((item) => ({ ...item })) || []),
+    ...(getLead?.lead?.wondata?.map((item) => ({ ...item })) || []),
+    ...(getLead?.lead?.deaddata?.map((item) => ({ ...item })) || []),
+  ];
+
+  // console.log("📦 All Combined Leads:", leads);
+
   const HandOverSheet = Array.isArray(getHandOverSheet?.Data)
     ? getHandOverSheet.Data.map((entry) => ({
+        id: entry.id,
         ...entry.customer_details,
         ...entry.order_details,
         ...entry.project_detail,
@@ -146,7 +164,18 @@ function Dash_cam() {
       }))
     : [];
 
-  console.log("📦 All Combined HandOverSheets:", HandOverSheet);
+  // console.log("📦 All Combined HandOverSheets:", HandOverSheet);
+
+  const combinedData = HandOverSheet.map((handoverItem) => {
+    const matchingLead = leads.find((lead) => lead.id === handoverItem.id);
+
+    return {
+      ...handoverItem,
+      scheme: matchingLead?.scheme || "-",
+    };
+  });
+
+  // console.log(combinedData);
 
   const RowMenu = ({ currentPage, p_id }) => {
     console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
@@ -196,10 +225,10 @@ function Dash_cam() {
                 color="primary"
                 onClick={() => {
                   const page = currentPage;
-                  const projectId = String(p_id);
-                  localStorage.setItem("project_edit", projectId);
+                  const projectId = Number(p_id);
+                  sessionStorage.setItem("view handover", projectId);
                   // localStorage.setItem("p_id", projectID);
-                  navigate(`/edit_project?page=${page}&p_id=${projectId}`);
+                  navigate(`/view_handover?page=${page}&p_id=${projectId}`);
                 }}
               >
                 <ContentPasteGoIcon />
@@ -218,17 +247,17 @@ function Dash_cam() {
                 <EditNoteIcon />
                 <Typography>Edit HandOver</Typography>
               </MenuItem>
-              <MenuItem
+              {/* <MenuItem
                 onClick={() => {
                   const page = currentPage;
                   const projectId = String(p_id);
                   localStorage.setItem("get-project", projectId);
-                  navigate(`/bd_history?page=${page}&p_id=${projectId}`);
+                  navigate("#");
                 }}
               >
                 <HistoryIcon />
                 <Typography>View BOM</Typography>
-              </MenuItem>
+              </MenuItem> */}
               {/* <Divider sx={{ backgroundColor: "lightblue" }} /> */}
               {/* {(user?.name === "IT Team" || user?.name === "admin") && (
                 <MenuItem
@@ -281,22 +310,27 @@ function Dash_cam() {
   };
 
   const filteredAndSortedData = useMemo(() => {
-    if (!Array.isArray(HandOverSheet)) return [];
+    if (!Array.isArray(combinedData)) return [];
 
-    return HandOverSheet.filter((project) => {
-      const matchesSearchQuery = ["code", "customer", "state"].some((key) =>
-        project[key]
-          ?.toString()
-          .toLowerCase()
-          .includes(searchQuery?.toLowerCase())
-      );
-      return matchesSearchQuery;
-    }).sort((a, b) => {
-      const dateA = new Date(a.createdAt || 0);
-      const dateB = new Date(b.createdAt || 0);
-      return dateB - dateA;
-    });
-  }, [HandOverSheet, searchQuery]);
+    return combinedData
+      .filter((project) => {
+        if (!project) return false; // safeguard
+
+        const matchesSearchQuery = ["code", "customer", "state"].some((key) =>
+          project[key]
+            ?.toString()
+            .toLowerCase()
+            .includes(searchQuery?.toLowerCase())
+        );
+
+        return matchesSearchQuery;
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a?.createdAt || 0);
+        const dateB = new Date(b?.createdAt || 0);
+        return dateB - dateA;
+      });
+  }, [combinedData, searchQuery]);
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -468,10 +502,13 @@ function Dash_cam() {
               </th>
               {[
                 "Project Id",
-                "Name",
+                "Customer",
+                "Mobile",
                 "State",
+                "Type",
                 "Capacity(AC/DC)",
-                "Status",
+                "Slnko Service Charges (with GST)",
+                // "Status",
                 "Action",
               ].map((header, index) => (
                 <th
@@ -529,6 +566,7 @@ function Dash_cam() {
                       }
                     />
                   </td>
+
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -538,6 +576,7 @@ function Dash_cam() {
                   >
                     {project.code || "-"}
                   </td>
+
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -547,6 +586,17 @@ function Dash_cam() {
                   >
                     {project.customer || "-"}
                   </td>
+
+                  <td
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.number || "-"}
+                  </td>
+
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -556,6 +606,15 @@ function Dash_cam() {
                   >
                     {project.state || "-"}
                   </td>
+                  <td
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.scheme || "-"}
+                  </td>
 
                   <td
                     style={{
@@ -564,11 +623,22 @@ function Dash_cam() {
                       textAlign: "center",
                     }}
                   >
-                    {project.project_kwp || "-"} /{" "}
-                    {project.proposed_dc_capacity || "-"} MW
+                    {project.project_kwp && project.proposed_dc_capacity
+                      ? `${project.project_kwp} AC / ${project.proposed_dc_capacity} DC`
+                      : "-"}
                   </td>
 
                   <td
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.service || "-"}
+                  </td>
+
+                  {/* <td
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
@@ -576,7 +646,8 @@ function Dash_cam() {
                     }}
                   >
                     {project.status || "-"}
-                  </td>
+                  </td> */}
+
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -590,7 +661,7 @@ function Dash_cam() {
               ))
             ) : (
               <tr>
-                <td colSpan={7} style={{ padding: "8px", textAlign: "center" }}>
+                <td colSpan={9} style={{ padding: "8px", textAlign: "center" }}>
                   <Box
                     sx={{
                       fontStyle: "italic",
