@@ -285,13 +285,20 @@ const InitialLeadsHistory = () => {
   };
 
   return (
-    <Box sx={{ p: 3, maxWidth: 900, mx: "auto" }}>
-      <Box textAlign="center" mb={3}>
+    <Box
+      sx={{
+        p: 3,
+        maxWidth: { lg: "75%", md: "100%" },
+        mx: "auto",
+        marginLeft: { lg: "18%", md: "0%" },
+      }}
+    >
+      {/* <Box textAlign="center" mb={3}>
         <img src={Img1} alt="Follow Up" style={{ width: 60 }} />
         <Typography level="h2" sx={{ color: "#D78827", fontWeight: "bold" }}>
           View History
         </Typography>
-      </Box>
+      </Box> */}
 
       {/***---- Add Task Modal ------*/}
       <Modal open={openAddTaskModal} onClose={handleCloseAddTaskModal}>
@@ -628,24 +635,44 @@ const InitialLeadsHistory = () => {
           </Box>
           <Divider />
           <Box
-      sx={{
-        display: "grid",
-        gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-        gap: 2,
-        color: "#333",
-        fontSize: "1.05rem",
-      }}
-    >
-      <Box><strong>👤 Client Name:</strong> {lead.c_name || "N/A"}</Box>
-      <Box><strong>📞 Mobile:</strong> {lead.mobile || "N/A"}</Box>
-      <Box><strong>🙋 POC:</strong> {lead.submitted_by || "N/A"}</Box>
-      <Box><strong>🏢 Company:</strong> {lead.company || "N/A"}</Box>
-      <Box><strong>📍 Location:</strong> {`${lead.district || "N/A"}, ${lead.state || "N/A"}`}</Box>
-      <Box><strong>📅 Created On:</strong> {lead.date || "N/A"}</Box>
-      <Box><strong>⚡ Capacity:</strong> {lead.capacity || "N/A"}</Box>
-      <Box><strong>🧾 Scheme:</strong> {lead.scheme || "N/A"}</Box>
-      <Box><strong>🛰️ SubStation (km):</strong> {lead.distance || "N/A"}</Box>
-    </Box>
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 2,
+              color: "#333",
+              fontSize: "1.05rem",
+              mt: 2,
+            }}
+          >
+            {[
+              { label: "👤 Client Name", value: lead.c_name },
+              { label: "📞 Mobile", value: lead.mobile },
+              { label: "🙋 POC", value: lead.submitted_by },
+              { label: "🏢 Company", value: lead.company },
+              {
+                label: "📍 Location",
+                value: `${lead.district || "N/A"}, ${lead.state || "N/A"}`,
+              },
+              { label: "📅 Created On", value: lead.date },
+              { label: "⚡ Capacity", value: lead.capacity },
+              { label: "🧾 Scheme", value: lead.scheme },
+              { label: "🛰️ SubStation (km)", value: lead.distance },
+            ].map((item, index) => (
+              <Box
+                key={index}
+                sx={{
+                  flex: { xs: "1 1 100%", sm: "1 1 48%", md: "1 1 30%" },
+                  minWidth: "250px",
+                  backgroundColor: "#f5faff",
+                  p: 1.5,
+                  borderRadius: "8px",
+                  boxShadow: "0 1px 4px rgba(0, 0, 0, 0.08)",
+                }}
+              >
+                <strong>{item.label}:</strong> {item.value || "N/A"}
+              </Box>
+            ))}
+          </Box>
         </Sheet>
       ) : (
         <Sheet
@@ -718,14 +745,14 @@ const InitialLeadsHistory = () => {
                   <td>{row.reference || "N/A"}</td>
                   <td>{row.by_whom || "N/A"}</td>
                   <td
-                        style={{
-                          whiteSpace: "pre-wrap",
-                          wordBreak: "break-word",
-                          maxWidth: "300px",
-                        }}
-                      >
-                        {row.comment || "N/A"}
-                      </td>
+                    style={{
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                      maxWidth: "300px",
+                    }}
+                  >
+                    {row.comment || "N/A"}
+                  </td>
                   <td>{row.submitted_by || "N/A"}</td>
                 </tr>
               ))

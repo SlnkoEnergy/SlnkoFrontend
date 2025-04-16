@@ -20,6 +20,7 @@ import Input from "@mui/joy/Input";
 import Divider from "@mui/joy/Divider";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
+import { LockClosedIcon, LockOpenIcon } from '@heroicons/react/24/solid';
 import MenuItem from "@mui/joy/MenuItem";
 import Option from "@mui/joy/Option";
 import EditNoteIcon from "@mui/icons-material/EditNote";
@@ -36,6 +37,7 @@ import animationData from "../assets/Lotties/animation-loading.json";
 import Axios from "../utils/Axios";
 import { useGetHandOverQuery } from "../redux/camsSlice";
 import { CircularProgress } from "@mui/joy";
+
 import { useGetEntireLeadsQuery } from "../redux/leadsSlice";
 
 function Dash_cam() {
@@ -59,76 +61,6 @@ function Dash_cam() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
 
-  // const renderFilters = () => (
-  //   <>
-  //     <FormControl size="sm">
-  //       <FormLabel>Vendor</FormLabel>
-  //       <Select
-  //         size="sm"
-  //         placeholder="Filter by Vendors"
-  //         value={vendorFilter}
-  //         onChange={(e) => {
-  //           const selectedValue = e.target.value;
-  //           console.log("Selected State:", selectedValue);
-  //           setVendorFilter(selectedValue);
-  //         }}
-  //       >
-  //         <Option value="">All</Option>
-  //         {vendors.map((vendor, index) => (
-  //           <Option key={index} value={vendor}>
-  //             {vendor}
-  //           </Option>
-  //         ))}
-  //       </Select>
-  //     </FormControl>
-  //   </>
-  // );
-
-  // useEffect(() => {
-  //   const fetchPaymentsAndProjects = async () => {
-  //     setLoading(true);
-  //     try {
-  //       const commResponse = await Axios.get("/get-comm-offer");
-  //       const newCommOffr = commResponse.data;
-
-  //       setCommRate((prevCommRate) => {
-  //         if (JSON.stringify(prevCommRate) !== JSON.stringify(newCommOffr)) {
-  //           console.log("Commercial Offer updated:", newCommOffr);
-  //           return newCommOffr;
-  //         }
-  //         return prevCommRate;
-  //       });
-  //     } catch (error) {
-  //       console.error("Error fetching data:", error);
-  //       setError(
-  //         <span
-  //           style={{
-  //             display: "flex",
-  //             alignItems: "center",
-  //             gap: "5px",
-  //             color: "red",
-  //             justifyContent: "center",
-  //             flexDirection: "column",
-  //             padding: "20px",
-  //           }}
-  //         >
-  //           <PermScanWifiIcon />
-  //           <Typography
-  //             fontStyle={"italic"}
-  //             fontWeight={"600"}
-  //             sx={{ color: "#0a6bcc" }}
-  //           >
-  //             Hang Tight! Internet Connection will be back soon..
-  //           </Typography>
-  //         </span>
-  //       );
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   fetchPaymentsAndProjects();
-  // }, []);
 
   const {
     data: getHandOverSheet = {},
@@ -176,6 +108,24 @@ function Dash_cam() {
   });
 
   // console.log(combinedData);
+
+  const StatusIcon = ({ isLocked }) => {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        {isLocked ? (
+          <LockClosedIcon style={{ width: 20, height: 20, color: '#f44336' }} />
+        ) : (
+          <LockOpenIcon style={{ width: 20, height: 20, color: '#4caf50' }} />
+        )}
+      </Box>
+    );
+  };
 
   const RowMenu = ({ currentPage, p_id }) => {
     console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
@@ -508,7 +458,7 @@ function Dash_cam() {
                 "Type",
                 "Capacity(AC/DC)",
                 "Slnko Service Charges (with GST)",
-                // "Status",
+                "Status",
                 "Action",
               ].map((header, index) => (
                 <th
@@ -638,15 +588,15 @@ function Dash_cam() {
                     {project.service || "-"}
                   </td>
 
-                  {/* <td
+                  <td
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
                       textAlign: "center",
                     }}
                   >
-                    {project.status || "-"}
-                  </td> */}
+                    <StatusIcon isLocked={project.isLocked} />
+                  </td>
 
                   <td
                     style={{

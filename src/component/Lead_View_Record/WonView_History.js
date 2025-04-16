@@ -262,13 +262,20 @@ const WonLeadsHistory = () => {
   };
 
   return (
-    <Box sx={{ p: 3, maxWidth: 900, mx: "auto" }}>
-      <Box textAlign="center" mb={3}>
+    <Box
+      sx={{
+        p: 3,
+        maxWidth: { lg: "75%", md: "100%" },
+        mx: "auto",
+        marginLeft: { lg: "18%", md: "0%" },
+      }}
+    >
+      {/* <Box textAlign="center" mb={3}>
         <img src={Img1} alt="Follow Up" style={{ width: 60 }} />
         <Typography level="h2" sx={{ color: "#D78827", fontWeight: "bold" }}>
           View History
         </Typography>
-      </Box>
+      </Box> */}
 
       {/***---- Add Task Modal ------*/}
       <Modal open={openAddTaskModal} onClose={handleCloseAddTaskModal}>
@@ -563,188 +570,188 @@ const WonLeadsHistory = () => {
         </ModalDialog>
       </Modal>
 
-     {lead ? (
-       <Sheet
-         variant="soft"
-         sx={{
-           p: 3,
-           mb: 3,
-           backgroundColor: "#E3F2FD",
-           borderRadius: "16px",
-           boxShadow: "0 6px 16px rgba(0, 0, 0, 0.1)",
-           display: "flex",
-           flexDirection: "column",
-           gap: 2,
-         }}
-       >
-         <Box
-           sx={{
-             display: "flex",
-             justifyContent: "space-between",
-             alignItems: "center",
-           }}
-         >
-           <Typography
-             level="h5"
-             sx={{ fontWeight: "bold", color: "#1976D2", letterSpacing: 0.5 }}
-           >
-             🧾 Client Information
-           </Typography>
-           <Box sx={{ display: "flex", gap: 1.5 }}>
-             <Button
-               variant="solid"
-               color="primary"
-               onClick={handleOpenAddTaskModal}
-             >
-               ➕ Add Task
-             </Button>
-             <Button variant="solid" color="success" onClick={handleOpen}>
-               ⏭ Next Stage
-             </Button>
-           </Box>
-         </Box>
-         <Divider />
-         <Box
-                    sx={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: 2,
-                      color: "#333",
-                      fontSize: "1.05rem",
-                      mt: 2,
+      {lead ? (
+        <Sheet
+          variant="soft"
+          sx={{
+            p: 3,
+            mb: 3,
+            width: "100%",
+            backgroundColor: "#E3F2FD",
+            borderRadius: "16px",
+            boxShadow: "0 6px 16px rgba(0, 0, 0, 0.1)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Typography
+              level="h5"
+              sx={{ fontWeight: "bold", color: "#1976D2", letterSpacing: 0.5 }}
+            >
+              🧾 Client Information
+            </Typography>
+            <Box sx={{ display: "flex", gap: 1.5 }}>
+              <Button
+                variant="solid"
+                color="primary"
+                onClick={handleOpenAddTaskModal}
+              >
+                ➕ Add Task
+              </Button>
+              <Button variant="solid" color="success" onClick={handleOpen}>
+                ⏭ Next Stage
+              </Button>
+            </Box>
+          </Box>
+          <Divider />
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 2,
+              color: "#333",
+              fontSize: "1.05rem",
+              mt: 2,
+            }}
+          >
+            {[
+              { label: "👤 Client Name", value: lead.c_name },
+              { label: "📞 Mobile", value: lead.mobile },
+              { label: "🙋 POC", value: lead.submitted_by },
+              { label: "🏢 Company", value: lead.company },
+              {
+                label: "📍 Location",
+                value: `${lead.district || "N/A"}, ${lead.state || "N/A"}`,
+              },
+              { label: "📅 Created On", value: lead.date },
+              { label: "⚡ Capacity", value: lead.capacity },
+              { label: "🧾 Scheme", value: lead.scheme },
+              { label: "🛰️ SubStation (km)", value: lead.distance },
+            ].map((item, index) => (
+              <Box
+                key={index}
+                sx={{
+                  flex: { xs: "1 1 100%", sm: "1 1 48%", md: "1 1 30%" },
+                  minWidth: "250px",
+                  backgroundColor: "#f5faff",
+                  p: 1.5,
+                  borderRadius: "8px",
+                  boxShadow: "0 1px 4px rgba(0, 0, 0, 0.08)",
+                }}
+              >
+                <strong>{item.label}:</strong> {item.value || "N/A"}
+              </Box>
+            ))}
+          </Box>
+        </Sheet>
+      ) : (
+        <Sheet
+          variant="soft"
+          sx={{
+            p: 3,
+            mb: 3,
+            backgroundColor: "#F0F0F0",
+            borderRadius: "16px",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+          }}
+        >
+          <Skeleton variant="text" level="h5" width="40%" />
+          <Skeleton variant="rectangular" height={40} width="30%" />
+          <Divider />
+          <Skeleton variant="text" width="100%" />
+          <Skeleton variant="text" width="90%" />
+        </Sheet>
+      )}
+
+      <Sheet
+        variant="outlined"
+        sx={{
+          borderRadius: "16px",
+          overflow: "hidden",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+          backgroundColor: "#fff",
+        }}
+      >
+        <Table
+          borderAxis="both"
+          size="md"
+          sx={{
+            "& thead th": {
+              backgroundColor: "#F5F5F5",
+              fontWeight: "bold",
+              fontSize: "1.05rem",
+              color: "#333",
+              textTransform: "uppercase",
+              textAlign: "left",
+              px: 2,
+              py: 1.5,
+            },
+            "& tbody td": {
+              fontSize: "1rem",
+              color: "#444",
+              px: 2,
+              py: 1.2,
+              borderBottom: "1px solid #eee",
+            },
+          }}
+        >
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Reference</th>
+              <th>By Whom</th>
+              <th>Feedback</th>
+              <th>Submitted By</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredTasks.length > 0 ? (
+              filteredTasks.map((row, index) => (
+                <tr key={index}>
+                  <td>{row.date || "N/A"}</td>
+                  <td>{row.reference || "N/A"}</td>
+                  <td>{row.by_whom || "N/A"}</td>
+                  <td
+                    style={{
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                      maxWidth: "300px",
                     }}
                   >
-                    {[
-                      { label: "👤 Client Name", value: lead.c_name },
-                      { label: "📞 Mobile", value: lead.mobile },
-                      { label: "🙋 POC", value: lead.submitted_by },
-                      { label: "🏢 Company", value: lead.company },
-                      {
-                        label: "📍 Location",
-                        value: `${lead.district || "N/A"}, ${lead.state || "N/A"}`,
-                      },
-                      { label: "📅 Created On", value: lead.date },
-                      { label: "⚡ Capacity", value: lead.capacity },
-                      { label: "🧾 Scheme", value: lead.scheme },
-                      { label: "🛰️ SubStation (km)", value: lead.distance },
-                    ].map((item, index) => (
-                      <Box
-                        key={index}
-                        sx={{
-                          flex: "1 1 45%",
-                          minWidth: "250px",
-                          backgroundColor: "#f5faff",
-                          p: 1.5,
-                          borderRadius: "8px",
-                          boxShadow: "0 1px 4px rgba(0, 0, 0, 0.08)",
-                        }}
-                      >
-                        <strong>{item.label}:</strong> {item.value || "N/A"}
-                      </Box>
-                    ))}
-                  </Box>
-       </Sheet>
-     ) : (
-       <Sheet
-         variant="soft"
-         sx={{
-           p: 3,
-           mb: 3,
-           backgroundColor: "#F0F0F0",
-           borderRadius: "16px",
-           boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
-           display: "flex",
-           flexDirection: "column",
-           gap: 2,
-         }}
-       >
-         <Skeleton variant="text" level="h5" width="40%" />
-         <Skeleton variant="rectangular" height={40} width="30%" />
-         <Divider />
-         <Skeleton variant="text" width="100%" />
-         <Skeleton variant="text" width="90%" />
-       </Sheet>
-     )}
-     
-     
-           <Sheet
-             variant="outlined"
-             sx={{
-               borderRadius: "16px",
-               overflow: "hidden",
-               boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-               backgroundColor: "#fff",
-             }}
-           >
-             <Table
-               borderAxis="both"
-               size="md"
-               sx={{
-                 "& thead th": {
-                   backgroundColor: "#F5F5F5",
-                   fontWeight: "bold",
-                   fontSize: "1.05rem",
-                   color: "#333",
-                   textTransform: "uppercase",
-                   textAlign: "left",
-                   px: 2,
-                   py: 1.5,
-                 },
-                 "& tbody td": {
-                   fontSize: "1rem",
-                   color: "#444",
-                   px: 2,
-                   py: 1.2,
-                   borderBottom: "1px solid #eee",
-                 },
-               }}
-             >
-               <thead>
-                 <tr>
-                   <th>Date</th>
-                   <th>Reference</th>
-                   <th>By Whom</th>
-                   <th>Feedback</th>
-                   <th>Submitted By</th>
-                 </tr>
-               </thead>
-               <tbody>
-                 {filteredTasks.length > 0 ? (
-                   filteredTasks.map((row, index) => (
-                     <tr key={index}>
-                       <td>{row.date || "N/A"}</td>
-                       <td>{row.reference || "N/A"}</td>
-                       <td>{row.by_whom || "N/A"}</td>
-                       <td
-                        style={{
-                          whiteSpace: "pre-wrap",
-                          wordBreak: "break-word",
-                          maxWidth: "300px",
-                        }}
-                      >
-                        {row.comment || "N/A"}
-                      </td>
-                       <td>{row.submitted_by || "N/A"}</td>
-                     </tr>
-                   ))
-                 ) : (
-                   <tr>
-                     <td
-                       colSpan="5"
-                       style={{
-                         textAlign: "center",
-                         padding: "16px",
-                         fontStyle: "italic",
-                         color: "#888",
-                       }}
-                     >
-                       💤 No task history available.
-                     </td>
-                   </tr>
-                 )}
-               </tbody>
-             </Table>
-           </Sheet>
+                    {row.comment || "N/A"}
+                  </td>
+                  <td>{row.submitted_by || "N/A"}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan="5"
+                  style={{
+                    textAlign: "center",
+                    padding: "16px",
+                    fontStyle: "italic",
+                    color: "#888",
+                  }}
+                >
+                  💤 No task history available.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </Table>
+      </Sheet>
     </Box>
   );
 };

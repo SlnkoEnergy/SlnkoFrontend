@@ -527,7 +527,7 @@ function PaymentRequestForm() {
       Amount Requested (INR)
     </Typography>
               <Input
-  type="number"
+  type="text"
   value={formData.amount_paid}
   onChange={(e) => {
     const value = parseFloat(e.target.value) || "";
@@ -553,19 +553,36 @@ function PaymentRequestForm() {
 
               </Grid>
 
-              <Grid xs={12} sm={4}>
-              <Typography level="body2" fontWeight="bold">
-            Amount for Customers 
-    </Typography>
-                <Input
-                  type="number"
-                  name="amt_for_customer"
-                  value={formData.amt_for_customer || ""}
-                  onChange={handleChange}
-                  placeholder="Amount for Customers (INR)"
-                  required
-                />
-              </Grid>
+             <Grid xs={12} sm={4}>
+  <Typography level="body2" fontWeight="bold">
+    Amount for Customers
+  </Typography>
+  <Input
+    type="text"
+    name="amt_for_customer"
+    value={formData.amt_for_customer || ""}
+    onChange={(e) => {
+      const value = parseFloat(e.target.value) || 0;
+      const amountRequested = parseFloat(formData.amount_paid) || 0;
+
+      if (value > amountRequested) {
+        toast.warning("Amount for Customers can't be greater than Amount Requested!");
+        setFormData((prev) => ({
+          ...prev,
+          amt_for_customer: amountRequested,
+        }));
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          amt_for_customer: value,
+        }));
+      }
+    }}
+    placeholder="Amount for Customers (INR)"
+    required
+  />
+</Grid>
+
 
               <Grid xs={12} sm={4}>
               <Typography level="body2" fontWeight="bold">

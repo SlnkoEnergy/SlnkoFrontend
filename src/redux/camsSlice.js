@@ -29,6 +29,14 @@ export const camsApi = createApi({
         invalidatesTags: ["CAM"],
       }),
 
+      updateUnlockHandoversheet: builder.mutation({
+        query: (p_id) => ({
+          url: `/unlock-hand-over/${p_id}`,
+          method: 'PUT',
+          
+        }),
+      }),
+
   }),
 });
 
@@ -36,4 +44,5 @@ export const {
 useGetHandOverQuery,
 useAddHandOverMutation,
 useUpdateHandOverMutation,
+useUpdateUnlockHandoversheetMutation,
 } = camsApi;
