@@ -69,6 +69,7 @@ import PrivateRoute from "./PrivateRoute";
 import Dashboard from "../pages/CAM/DashboardCam";
 import EditHandSheet from "../pages/CAM/EditHand_over";
 import ViewHandSheet from "../pages/CAM/HandOver_View";
+import DashboardENG from "../pages/Eng/DashboardEng";
 
 function index() {
   return (
@@ -274,6 +275,16 @@ function index() {
         element={
           <PrivateRoute>
             <Dashboard />
+          </PrivateRoute>
+        }
+      />
+
+        {/*-------------Eng----------*/}
+        <Route
+        path="/eng_dash"
+        element={
+          <PrivateRoute>
+            <DashboardENG />
           </PrivateRoute>
         }
       />

@@ -24,6 +24,7 @@ import { useColorScheme } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import BuildIcon from '@mui/icons-material/Build';
 import Main_Logo from "../../assets/protrac_logo.png";
 import Main_Logo2 from "../../assets/white_logo.png";
 import { closeSidebar } from "../../utils/utils";
@@ -128,6 +129,8 @@ function Sidebar() {
           // backgroundColor: "var(--joy-palette-background-backdrop)",
           transition: "opacity 0.4s",
           transform: {
+            xs: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1) + var(--SideNavigation-slideIn, 0) * var(--Sidebar-width, 0px)))",
+            sm: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1) + var(--SideNavigation-slideIn, 0) * var(--Sidebar-width, 0px)))",
             md: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1) + var(--SideNavigation-slideIn, 0) * var(--Sidebar-width, 0px)))",
             lg: "translateX(-100%)",
           },
@@ -343,6 +346,39 @@ function Sidebar() {
                 <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
                     <ListItemButton onClick={() => navigate("/cam_dash")}>
+                      Dashboard
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+
+             {/* Eng Section */}
+             <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <BuildIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">Eng</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/eng_dash")}>
                       Dashboard
                     </ListItemButton>
                   </ListItem>
