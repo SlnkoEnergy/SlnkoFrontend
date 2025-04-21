@@ -43,6 +43,7 @@
     "react-slick": "^0.30.2",
     "react-to-print": "^3.0.5",
     "react-toastify": "^10.0.6",
+    "react-vertical-timeline-component": "^3.5.3",
     "slick-carousel": "^1.8.1",
     "web-vitals": "^2.1.4",
     "yup": "^1.4.0"

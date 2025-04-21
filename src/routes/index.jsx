@@ -70,6 +70,8 @@ import Dashboard from "../pages/CAM/DashboardCam";
 import EditHandSheet from "../pages/CAM/EditHand_over";
 import ViewHandSheet from "../pages/CAM/HandOver_View";
 import DashboardENG from "../pages/Eng/DashboardEng";
+import Add_BOM from "../pages/Eng/Forms/BOM_Addn";
+import Process_Tracker from "../pages/Eng/Er_Process";
 
 function index() {
   return (
@@ -285,6 +287,22 @@ function index() {
         element={
           <PrivateRoute>
             <DashboardENG />
+          </PrivateRoute>
+        }
+      />
+        <Route
+        path="/add_bom"
+        element={
+          <PrivateRoute>
+            <Add_BOM />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/process_track"
+        element={
+          <PrivateRoute>
+            <Process_Tracker />
           </PrivateRoute>
         }
       />

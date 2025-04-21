@@ -20,7 +20,7 @@ import Input from "@mui/joy/Input";
 import Divider from "@mui/joy/Divider";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
-import { LockClosedIcon, LockOpenIcon } from '@heroicons/react/24/solid';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 import MenuItem from "@mui/joy/MenuItem";
 import Option from "@mui/joy/Option";
 import EditNoteIcon from "@mui/icons-material/EditNote";
@@ -28,6 +28,7 @@ import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import { toast } from "react-toastify";
 import Tooltip from "@mui/joy/Tooltip";
+import LockIcon from "@mui/icons-material/Lock";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
 import { useEffect, useState, useMemo } from "react";
@@ -35,8 +36,11 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
 import animationData from "../assets/Lotties/animation-loading.json";
 import Axios from "../utils/Axios";
-import { useGetHandOverQuery } from "../redux/camsSlice";
-import { CircularProgress } from "@mui/joy";
+import {
+  useGetHandOverQuery,
+  useUpdateUnlockHandoversheetMutation,
+} from "../redux/camsSlice";
+import { Chip, CircularProgress } from "@mui/joy";
 
 import { useGetEntireLeadsQuery } from "../redux/leadsSlice";
 
@@ -61,12 +65,14 @@ function Dash_cam() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
 
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const {
     data: getHandOverSheet = {},
     error,
     isLoading,
-  } = useGetHandOverQuery();
+    refetch
+  } = useGetHandOverQuery(refreshKey);
 
   const { data: getLead = {} } = useGetEntireLeadsQuery();
 
@@ -93,6 +99,7 @@ function Dash_cam() {
         ...entry.commercial_details,
         ...entry.attached_details,
         p_id: entry.p_id,
+        status_of_handoversheet: entry.status_of_handoversheet,
       }))
     : [];
 
@@ -108,25 +115,90 @@ function Dash_cam() {
   });
 
   // console.log(combinedData);
+  // const [updateUnlockHandoversheet, { isLoading: isUpdating }] =
+  //   useUpdateUnlockHandoversheetMutation();
 
-  const StatusIcon = ({ isLocked }) => {
+  useEffect(() => {
+    const storedUser = localStorage.getItem("userDetails");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+      // console.log("User Loaded:", JSON.parse(storedUser));
+    }
+  }, []);
+
+  const StatusChip = ({ status, p_id, user }) => {
+    const [currentStatus, setCurrentStatus] = useState(status);
+    const [isLocked, setIsLocked] = useState(false);
+  
+    const isLockedState = currentStatus === 'locked';
+    const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  
+    const [updateUnlockHandoversheet, { isLoading }] = useUpdateUnlockHandoversheetMutation();
+  
+    useEffect(() => {
+      setCurrentStatus(status);
+    }, [status]);
+  
+    const handleSubmit = async () => {
+
+      if (!isAdmin) {
+        toast.error('Permission denied. You do not have access to perform this action.', {
+          icon: "⛔", 
+        });
+        return;
+      }
+
+      if (isLoading) return;
+  
+      try {
+        const res = await updateUnlockHandoversheet({
+          p_id,
+          emp_id: user.emp_id,
+        }).unwrap();
+  
+        const newStatus = res?.status_of_handoversheet;
+        if (newStatus) {
+          setCurrentStatus(newStatus);
+        }
+  
+        toast.success('Status unlocked 🔒');
+        
+       
+        setIsLocked(true);
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      } catch (err) {
+        console.error('Error:', err?.data?.message || err.error);
+      }
+    };
+  
     return (
-      <Box
+      <Button
+        size="sm"
+        variant="soft"
+        color={isLockedState ? 'danger' : 'success'}
+        onClick={isAdmin && !isLoading ? handleSubmit : undefined}
         sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
+          minWidth: 36,
+          height: 36,
+          padding: 0,
+          fontWeight: 500,
+          cursor: isAdmin && !isLoading ? 'pointer' : 'default',
         }}
       >
-        {isLocked ? (
-          <LockClosedIcon style={{ width: 20, height: 20, color: '#f44336' }} />
+        {isLoading ? (
+          <CircularProgress size="sm" />
+        ) : isLocked ? (
+          <LockIcon sx={{ fontSize: '1rem' }} /> // Lock icon after unlocking
         ) : (
-          <LockOpenIcon style={{ width: 20, height: 20, color: '#4caf50' }} />
+          <LockOpenIcon sx={{ fontSize: '1rem' }} /> // Unlock icon before status is locked
         )}
-      </Box>
+      </Button>
     );
   };
-
+  
+  
   const RowMenu = ({ currentPage, p_id }) => {
     console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
 
@@ -156,20 +228,7 @@ function Dash_cam() {
           >
             <MoreHorizRoundedIcon />
           </MenuButton>
-          {(user?.name === "IT Team" ||
-            user?.name === "admin" ||
-            user?.name === "Navin Kumar Gautam" ||
-            user?.name === "Mohd Shakir Khan" ||
-            user?.name === "Shiv Ram Tathagat" ||
-            user?.name === "Kana Sharma" ||
-            user?.name === "Ketan Kumar Jha" ||
-            user?.name === "Vibhav Upadhyay" ||
-            user?.name === "Shantanu Sameer" ||
-            user?.name === "Arnav Shahi" ||
-            user?.name === "Shambhavi Gupta" ||
-            user?.name === "Geeta" ||
-            user?.name === "Anudeep Kumar" ||
-            user?.name === "Ashish Jha") && (
+         
             <Menu size="sm" sx={{ minWidth: 140 }}>
               <MenuItem
                 color="primary"
@@ -220,7 +279,7 @@ function Dash_cam() {
                 </MenuItem>
               )} */}
             </Menu>
-          )}
+    
         </Dropdown>
       </>
     );
@@ -595,7 +654,12 @@ function Dash_cam() {
                       textAlign: "center",
                     }}
                   >
-                    <StatusIcon isLocked={project.isLocked} />
+                    <StatusChip
+                      status={project.status_of_handoversheet}
+                      p_id={project.p_id}
+                      user={user}
+                      refetch={refetch}
+                    />
                   </td>
 
                   <td

@@ -190,18 +190,18 @@ function Dash_eng() {
                 <Typography>Handover Summary</Typography>
               </MenuItem>
 
-              <MenuItem
+              {/* <MenuItem
                 color="primary"
                 onClick={() => {
                   const page = currentPage;
                   const projectId = Number(p_id);
                   sessionStorage.setItem("update handover", projectId);
-                  navigate("#"); // Replace with actual route
+                  navigate("#");
                 }}
               >
                 <HistoryIcon sx={{ mr: 1 }} />
                 <Typography>Cam Logs</Typography>
-              </MenuItem>
+              </MenuItem> */}
 
               <MenuItem
                 color="primary"
@@ -209,7 +209,7 @@ function Dash_eng() {
                   const page = currentPage;
                   const projectId = String(p_id);
                   localStorage.setItem("get-project", projectId);
-                  navigate("#"); // Replace with actual route
+                  navigate("#");
                 }}
               >
                 <DashboardCustomizeIcon sx={{ mr: 1 }} />
@@ -221,8 +221,8 @@ function Dash_eng() {
                 onClick={() => {
                   const page = currentPage;
                   const projectId = String(p_id);
-                  localStorage.setItem("get-project", projectId);
-                  navigate("#"); // Replace with actual route
+                  sessionStorage.setItem("add_bom", projectId);
+                  navigate(`/add_bom?page=${page}&p_id=${projectId}`);
                 }}
               >
                 <PlaylistAddIcon sx={{ mr: 1 }} />
@@ -240,8 +240,8 @@ function Dash_eng() {
                 onClick={() => {
                   const page = currentPage;
                   const projectId = String(p_id);
-                  localStorage.setItem("get-project", projectId);
-                  navigate("#"); // Replace with actual route
+                  sessionStorage.setItem("process_tracker", projectId);
+                  navigate(`/process_track?page=${page}&p_id=${projectId}`);
                 }}
               >
                 <TrackChangesIcon sx={{ mr: 1 }} />

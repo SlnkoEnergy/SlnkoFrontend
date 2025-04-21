@@ -23,26 +23,31 @@ const PaymentDetail = forwardRef((props, ref) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [paySummaryRes, projectRes] = await Promise.all([
+        const [paySummaryRes, projectRes, purchaseRes] = await Promise.all([
           Axios.get("/get-exceldata", {
             params: {
               status: "Not-paid",
             },
           }),
           Axios.get("/get-all-projecT-IT"),
+          Axios.get("/get-pay-summarY-IT"),
         ]);
 
         const paySummary = paySummaryRes.data?.data || [];
         const projects = projectRes.data?.data || [];
+        const purchase = purchaseRes.data?.data || [];
 
         // console.log(projects);
 
-        if (Array.isArray(paySummary) && Array.isArray(projects)) {
+        if (Array.isArray(paySummary) && Array.isArray(projects) && Array.isArray(purchase)) {
           const structuredData = paySummary.map((item) => {
             const project = projects.find(
               (proj) => String(proj.p_id) === String(item.p_id)
             );
-            const remarks = `${item.paid_for || ""} / ${item.vendor || ""} / ${project?.code || "-"}`;
+            const purchaseEntry = purchase.find(
+              (pur) => String(pur.p_id) === String(item.p_id)
+            );
+            const remarks = `${purchaseEntry?.po_number || "-"} / ${item.paid_for || "-"} / ${item.vendor || ""} / ${project?.code || "-"}`;
 
             return {
               id: item._id,

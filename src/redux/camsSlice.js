@@ -30,10 +30,10 @@ export const camsApi = createApi({
       }),
 
       updateUnlockHandoversheet: builder.mutation({
-        query: (p_id) => ({
-          url: `/unlock-hand-over/${p_id}`,
+        query: ({ p_id, emp_id }) => ({
+          url: "update-status-of-handoversheet",
           method: 'PUT',
-          
+          body: { p_id, emp_id },
         }),
       }),
 

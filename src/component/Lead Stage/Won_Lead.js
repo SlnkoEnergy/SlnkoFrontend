@@ -116,15 +116,20 @@ const StandByRequest = forwardRef((props, ref) => {
 
   const status_handOver = (leadId) => {
     const matchedHandOver = HandOverSheet.find((sheet) => sheet.id === leadId);
-
-    return matchedHandOver
-      ? {
-          status: matchedHandOver.status_of_handoversheet,
-          submittedBy:
-            matchedHandOver.attached_details?.submitted_by_BD ||
-            "Not Available",
-        }
-      : { status: "Not Available", submittedBy: "Not Available" };
+    const submittedBy = matchedHandOver?.attached_details?.submitted_by_BD;
+  
+    const isBDUser = user?.department === "BD";
+    const isSubmittedByBD = !!submittedBy;
+  
+    const status =
+      isBDUser || isSubmittedByBD
+        ? "done"
+        : "Not Found";
+  
+    return {
+      status,
+      submittedBy: submittedBy || "Not Found",
+    };
   };
 
   const renderFilters = () => (
@@ -619,18 +624,17 @@ const StandByRequest = forwardRef((props, ref) => {
                       lead.entry_date || "-",
                       // <LeadStatus lead={lead} />,
                       <Chip
-                        variant="soft"
-                        color={
-                          status_handOver(lead.id).status === "done"
-                            ? "success"
-                            : "warning"
-                        }
-                        size="sm"
-                      >
-                        {status_handOver(lead.id).status === "done"
-                          ? "Completed"
-                          : "Pending"}
-                      </Chip>,
+                      variant="soft"
+                      color={
+                        status_handOver(lead.id).status === "done" ? "success" : "warning"
+                      }
+                      size="sm"
+                    >
+                      {status_handOver(lead.id).status === "done"
+                        ? "Completed"
+                        : "Pending"}
+                    </Chip>
+                    ,
                       status_handOver(lead.id).submittedBy || "-",
                     ].map((data, idx) => (
                       <Box
