@@ -21,7 +21,7 @@ function ViewDetail() {
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
       <Box sx={{ display: "flex", minHeight: "100dvh" }}>
-        <Header />
+        <Header sx={{ "@media print": { display: "none" } }} />
         <Sidebar />
         <Box
           component="main"
@@ -48,6 +48,7 @@ function ViewDetail() {
               display: "flex",
               alignItems: "center",
               marginLeft: { xl: "15%", lg: "20%" },
+              "@media print": { display: "none" }
             }}
           >
             <Breadcrumbs

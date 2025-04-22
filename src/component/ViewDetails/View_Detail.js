@@ -754,7 +754,7 @@ const Customer_Payment_Summary = () => {
       netBalance > 5000000 ? Math.round(netBalance - 5000000) * 0.001 : 0;
     const balanceRequired = Math.round(balanceSlnko - balancePayable - tcs);
 
-    const totalPOBasicvalue = Math.round((totalPoValue)-(totalPOBasic));
+    const totalPOBasicvalue = Math.round(totalPoValue - totalPOBasic);
 
     return (
       <Grid container spacing={2}>
@@ -893,7 +893,9 @@ const Customer_Payment_Summary = () => {
                     color: balanceRequired >= 0 ? "green" : "red",
                   }}
                 >
-                  <td style={{ padding: "8px" }}>{totalPOBasic > 0 ? 12 : 11}</td>
+                  <td style={{ padding: "8px" }}>
+                    {totalPOBasic > 0 ? 12 : 11}
+                  </td>
                   <td style={{ padding: "8px" }}>
                     <strong>
                       Balance Required [
@@ -985,6 +987,9 @@ const Customer_Payment_Summary = () => {
         padding: "20px",
         marginLeft: { xl: "15%", lg: "20%", sm: "0%" },
         maxWidth: { lg: "80%", sm: "100%", xl: "85%" },
+        "@media print": {
+          maxWidth: "100%",
+        },
       }}
     >
       {/* Header Section */}
@@ -1025,63 +1030,112 @@ const Customer_Payment_Summary = () => {
 
       {/* Project Details Section */}
       <Typography
-        variant="h5"
+        // variant="h1"
         fontWeight={500}
         fontFamily="Playfair Display"
         mt={2}
         mb={1}
+        fontSize={"1.5rem"}
       >
         Project Details
       </Typography>
       <Divider style={{ borderWidth: "2px", marginBottom: "20px" }} />
 
       <form>
-        <Box mb={3}>
-          <Box display="flex" justifyContent="space-between" mb={2}>
-            <Input
-              fullWidth
-              value={projectData.code}
-              readOnly
-              label="Project ID"
-              sx={{ mr: 2 }}
-            />
-            <Input
-              fullWidth
-              value={projectData.name}
-              readOnly
-              label="Project Name"
-              sx={{ mr: 2 }}
-            />
-            <Input
-              fullWidth
-              value={projectData.customer || "-"}
-              readOnly
-              label="Client Name"
-            />
-          </Box>
-          <Box display="flex" justifyContent="space-between">
-            <Input
-              fullWidth
-              value={projectData.p_group || "-"}
-              readOnly
-              label="Group Name"
-              sx={{ mr: 2 }}
-            />
-            <Input
-              fullWidth
-              value={projectData.billing_address || "-"}
-              readOnly
-              label="Plant Location"
-              sx={{ mr: 2 }}
-            />
-            <Input
-              fullWidth
-              value={projectData.project_kwp}
-              readOnly
-              label="Plant Capacity"
-            />
-          </Box>
-        </Box>
+        <Grid
+          container
+          spacing={2}
+          sm={12}
+          md={12}
+          sx={{
+            display: "flex",
+            // justifyContent: "space-between",
+            alignItems: "center",
+            flexDirection: "column",
+          }}
+        >
+          <Grid item sm={6} md={6} sx={{ width: "100%!important" }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "row",
+                gap: 2,
+                "& > .expandable": {
+                  transition: "width 0.3s ease",
+                  width: "100%",
+                  maxWidth: "200px",
+                },
+                "& > .expandable:focus-within": {
+                  maxWidth: "100%",
+                },
+              }}
+            >
+              <Input
+                fullWidth
+                value={projectData.code}
+                readOnly
+                label="Project ID"
+                sx={{ mr: 2 }}
+              />
+
+              <Input
+                fullWidth
+                value={projectData.name}
+                readOnly
+                label="Project Name"
+                sx={{ mr: 2 }}
+              />
+
+              <Input
+                fullWidth
+                value={projectData.customer || "-"}
+                readOnly
+                label="Client Name"
+              />
+            </Box>
+          </Grid>
+
+          <Grid item sm={6} md={6} sx={{ width: "100%!important" }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "row",
+                gap: 2,
+                "& > .expandable": {
+                  transition: "width 0.3s ease",
+                  width: "100%",
+                  maxWidth: "200px",
+                },
+                "& > .expandable:focus-within": {
+                  maxWidth: "100%",
+                },
+              }}
+            >
+              <Input
+                fullWidth
+                value={projectData.p_group || "-"}
+                readOnly
+                label="Group Name"
+                sx={{ mr: 2 }}
+              />
+
+              <Input
+                fullWidth
+                value={projectData.billing_address || "-"}
+                readOnly
+                label="Plant Location"
+                sx={{ mr: 2 }}
+              />
+
+              <Input
+                fullWidth
+                value={projectData.project_kwp}
+                readOnly
+                label="Plant Capacity"
+              />
+            </Box>
+          </Grid>
+        </Grid>
       </form>
 
       {/* Credit History Section */}
@@ -1105,6 +1159,9 @@ const Customer_Payment_Summary = () => {
               justifyContent: "space-between",
               alignItems: "center",
               flexDirection: { md: "row", xs: "column" },
+              "@media print": {
+                display: "none",
+              },
             }}
             mb={2}
           >
@@ -1153,28 +1210,16 @@ const Customer_Payment_Summary = () => {
               p: 2,
               boxShadow: "md",
               maxWidth: "100%",
+              width: "100%",
             }}
           >
             <Table
               borderAxis="both"
+              stickyHeader
               sx={{
                 minWidth: "100%",
                 "& thead": { backgroundColor: "neutral.softBg" },
                 "& th, & td": { textAlign: "left", px: 2, py: 1.5 },
-                "@media (max-width: 768px)": {
-                  display: "block",
-                  "& thead": { display: "none" },
-                  "& tbody tr": {
-                    display: "flex",
-                    flexDirection: "column",
-                    borderBottom: "1px solid #ddd",
-                    p: 2,
-                    mb: 2,
-                    backgroundColor: "background.level1",
-                    borderRadius: "8px",
-                  },
-                  "& td": { display: "flex", justifyContent: "space-between" },
-                },
               }}
             >
               {/* Table Header */}
@@ -1252,6 +1297,9 @@ const Customer_Payment_Summary = () => {
             justifyContent: "space-between",
             alignItems: "center",
             flexDirection: { md: "row", xs: "column" },
+            "@media print": {
+              display: "none",
+            },
           }}
           mb={2}
         >
@@ -1412,6 +1460,9 @@ const Customer_Payment_Summary = () => {
             justifyContent: "space-between",
             alignItems: "center",
             flexDirection: { md: "row", xs: "column" },
+            "@media print": {
+              display: "none",
+            },
           }}
           mb={2}
         >
@@ -1556,13 +1607,31 @@ const Customer_Payment_Summary = () => {
         alignItems="center"
         mt={4}
       >
-        <Button variant="solid" color="primary" onClick={handlePrint}>
+        <Button
+          variant="solid"
+          color="primary"
+          onClick={handlePrint}
+          sx={{
+            "@media print": {
+              display: "none",
+            },
+          }}
+        >
           Print
         </Button>
         {/* <Button variant="solid" color="primary" onClick={handleDownloadPDF}>
           Download PDF
         </Button> */}
-        <Button variant="solid" color="primary" onClick={handleExportAll}>
+        <Button
+          variant="solid"
+          color="primary"
+          onClick={handleExportAll}
+          sx={{
+            "@media print": {
+              display: "none",
+            },
+          }}
+        >
           Export to CSV
         </Button>
       </Box>
