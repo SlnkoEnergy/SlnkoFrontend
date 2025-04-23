@@ -27,7 +27,13 @@ import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
 import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
-import { forwardRef, useEffect, useImperativeHandle, useState, useMemo } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useState,
+  useMemo,
+} from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../assets/Lotties/animation-loading.json";
 import Axios from "../utils/Axios";
@@ -227,12 +233,25 @@ const ProjectBalances = forwardRef((props, ref) => {
       } catch (error) {
         console.error("Error fetching data:", error);
         setError(
-          <span style={{ display: "flex", alignItems: "center", gap: "5px", color: "red", justifyContent:"center", flexDirection:"column" , padding: "20px"}}>
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              color: "red",
+              justifyContent: "center",
+              flexDirection: "column",
+              padding: "20px",
+            }}
+          >
             <PermScanWifiIcon />
-            <Typography fontStyle={"italic"} fontWeight={"600"} sx={{color:"#0a6bcc"}} >
-            Sit Back! Internet Connection will be back soon..
+            <Typography
+              fontStyle={"italic"}
+              fontWeight={"600"}
+              sx={{ color: "#0a6bcc" }}
+            >
+              Sit Back! Internet Connection will be back soon..
             </Typography>
-            
           </span>
         );
       } finally {
@@ -253,7 +272,7 @@ const ProjectBalances = forwardRef((props, ref) => {
       }
       return acc;
     }, {});
-  
+
     return projects
       .filter((project) =>
         ["code", "customer", "name", "p_group"].some((key) =>
@@ -262,42 +281,38 @@ const ProjectBalances = forwardRef((props, ref) => {
       )
       .sort((a, b) => {
         const getCrDate = (item) => new Date(latestCrDateMap[item.p_id] ?? 0);
-        const getProjectDate = (item) => new Date(item.updated_on ?? item.createdAt ?? 0);
-  
-        
+        const getProjectDate = (item) =>
+          new Date(item.updated_on ?? item.createdAt ?? 0);
+
         const crDateDiff = getCrDate(b) - getCrDate(a);
         if (crDateDiff !== 0) return crDateDiff;
-  
-        
+
         return getProjectDate(b) - getProjectDate(a);
       });
   }, [searchQuery, projects, credits]);
 
+  //   const filteredProjects = useMemo(() => {
+  //   // Create a map for the latest cr_date of each project
+  //   const latestCrDateMap = credits.reduce((acc, credit) => {
+  //     const projectId = credit.p_id;
+  //     const creditDate = new Date(credit.cr_date);
+  //     if (!acc[projectId] || creditDate > new Date(acc[projectId])) {
+  //       acc[projectId] = credit.cr_date; // Store latest cr_date
+  //     }
+  //     return acc;
+  //   }, {});
 
-//   const filteredProjects = useMemo(() => {
-//   // Create a map for the latest cr_date of each project
-//   const latestCrDateMap = credits.reduce((acc, credit) => {
-//     const projectId = credit.p_id;
-//     const creditDate = new Date(credit.cr_date);
-//     if (!acc[projectId] || creditDate > new Date(acc[projectId])) {
-//       acc[projectId] = credit.cr_date; // Store latest cr_date
-//     }
-//     return acc;
-//   }, {});
-
-//   return projects
-//     .filter((project) =>
-//       ["code", "customer", "name", "p_group"].some((key) =>
-//         project[key]?.toLowerCase().includes(searchQuery.toLowerCase())
-//       )
-//     )
-//     .sort((a, b) => {
-//       const getCrDate = (item) => new Date(latestCrDateMap[item.p_id] ?? 0);
-//       return getCrDate(b) - getCrDate(a); // Latest cr_date first
-//     });
-// }, [searchQuery, projects, credits]);
-
-
+  //   return projects
+  //     .filter((project) =>
+  //       ["code", "customer", "name", "p_group"].some((key) =>
+  //         project[key]?.toLowerCase().includes(searchQuery.toLowerCase())
+  //       )
+  //     )
+  //     .sort((a, b) => {
+  //       const getCrDate = (item) => new Date(latestCrDateMap[item.p_id] ?? 0);
+  //       return getCrDate(b) - getCrDate(a); // Latest cr_date first
+  //     });
+  // }, [searchQuery, projects, credits]);
 
   useEffect(() => {
     if (
@@ -315,30 +330,30 @@ const ProjectBalances = forwardRef((props, ref) => {
         acc[projectId] = (acc[projectId] || 0) + Number(credit.cr_amount);
         return acc;
       }, {});
-  
+
       const debitSumMap = debits.reduce((acc, debit) => {
         const projectId = debit.p_id;
         const amountPaid = Number(debit.amount_paid);
-        acc[projectId] = (acc[projectId] || 0) + (isNaN(amountPaid) ? 0 : amountPaid);
+        acc[projectId] =
+          (acc[projectId] || 0) + (isNaN(amountPaid) ? 0 : amountPaid);
         return acc;
       }, {});
-  
+
       const customerAdjustmentSumMap = debits.reduce((acc, debit) => {
         const projectId = debit.p_id;
         const amountPaid = Number(debit.amount_paid);
         if (debit.paid_for === "Customer Adjustment") {
-          acc[projectId] = (acc[projectId] || 0) + (isNaN(amountPaid) ? 0 : amountPaid);
+          acc[projectId] =
+            (acc[projectId] || 0) + (isNaN(amountPaid) ? 0 : amountPaid);
         }
         return acc;
       }, {});
-  
+
       const projectCodeMap = projects.reduce((acc, project) => {
         acc[project.code] = project.p_id;
         return acc;
       }, {});
-      
-      
-  
+
       const poSumMap = posData.reduce((acc, po) => {
         const projectId = projectCodeMap[po.p_id];
         if (projectId) {
@@ -351,8 +366,6 @@ const ProjectBalances = forwardRef((props, ref) => {
       //   projects.reduce((sum, project) => sum + (project.project_kwp || 0), 0)
       // );
 
-      
-  
       const amountPaidSumMap = posData.reduce((acc, po) => {
         const poNumber = po.po_number;
         const matchingPayments = paysData.filter(
@@ -366,23 +379,25 @@ const ProjectBalances = forwardRef((props, ref) => {
         acc[projectId] = (acc[projectId] || 0) + totalPaymentValue;
         return acc;
       }, {});
-  
+
       const billSumMap = posData.reduce((acc, po) => {
         const poNumber = po.po_number;
-        const matchingBills = billsData.filter((bill) => bill.po_number === poNumber);
-  
+        const matchingBills = billsData.filter(
+          (bill) => bill.po_number === poNumber
+        );
+
         const totalBillValue = matchingBills.reduce(
           (sum, bill) => sum + (Number(bill.bill_value) || 0),
           0
         );
-  
+
         const projectId = projectCodeMap[po.p_id];
         if (projectId) {
           acc[projectId] = (acc[projectId] || 0) + totalBillValue;
         }
         return acc;
       }, {});
-  
+
       const merged = filteredProjects.map((project) => {
         const projectId = project.p_id;
         const totalCredit = creditSumMap[projectId] || 0;
@@ -393,15 +408,16 @@ const ProjectBalances = forwardRef((props, ref) => {
         const totalBillValue = billSumMap[projectId] || 0;
         const advancePaid = amountPaidSumMap[projectId] || 0;
         const projectMW = Number(project.project_kwp) || 0;
-  
+
         const netBalance = totalCredit - customerAdjustment;
         const balanceSlnko = netBalance - advancePaid;
         const netAdvance = advancePaid - totalBillValue;
         const balancePayable = totalPoValue - totalBillValue - netAdvance;
-  
-        const tcs = netBalance > 5000000 ? Math.round((netBalance - 5000000) * 0.001) : 0;
+
+        const tcs =
+          netBalance > 5000000 ? Math.round((netBalance - 5000000) * 0.001) : 0;
         const balanceRequired = balanceSlnko - balancePayable - tcs;
-  
+
         return {
           ...project,
           projectMW: projectMW,
@@ -413,10 +429,9 @@ const ProjectBalances = forwardRef((props, ref) => {
           balanceRequired: Math.round(balanceRequired),
         };
       });
-  
+
       setMergedData(merged);
-  
-   
+
       const total = merged.reduce(
         (acc, project) => {
           acc.totalBalanceSlnko += project.balanceSlnko || 0;
@@ -433,17 +448,23 @@ const ProjectBalances = forwardRef((props, ref) => {
           totalBalanceRequired: 0,
           totalCreditSum: 0,
           totalDebitSum: 0,
-          totalmWSum:0,
+          totalmWSum: 0,
         }
       );
-  
+
       total.totalAmountAvailable = total.totalCreditSum - total.totalDebitSum;
-  
+
       setTotals(total);
     }
-  }, [credits, projects,filteredProjects, debits, posData, billsData, paysData]);
-  
-
+  }, [
+    credits,
+    projects,
+    filteredProjects,
+    debits,
+    posData,
+    billsData,
+    paysData,
+  ]);
 
   const RowMenu = ({ currentPage, p_id }) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
@@ -567,7 +588,6 @@ const ProjectBalances = forwardRef((props, ref) => {
   }, [searchParams]);
 
   const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
-  
 
   const paginatedPayments = filteredAndSortedData.slice(
     (currentPage - 1) * itemsPerPage,
@@ -641,6 +661,14 @@ const ProjectBalances = forwardRef((props, ref) => {
     },
   }));
 
+  const tdStyle = {
+    padding: "14px 16px",
+    textAlign: "left",
+    borderBottom: "1px solid #e5e7eb",
+    fontWeight: 600,
+    color: "#1f2937",
+  };
+
   return (
     <>
       {/* Mobile Filters */}
@@ -687,7 +715,7 @@ const ProjectBalances = forwardRef((props, ref) => {
           borderRadius: "sm",
           py: 2,
           // display: { xs: "none", sm: "flex" },
-          display:"flex",
+          display: "flex",
           flexWrap: "wrap",
           gap: 1.5,
           "& > *": {
@@ -708,7 +736,7 @@ const ProjectBalances = forwardRef((props, ref) => {
         {/* {renderFilters()} */}
       </Box>
 
-      <Box
+      {/* <Box
         sx={{
           marginLeft: { xl: "15%", lg: "18%"},
           maxWidth: { xl: "85%" },
@@ -866,7 +894,106 @@ const ProjectBalances = forwardRef((props, ref) => {
             </tr>
           </tbody>
         </table>
+      </Box> */}
+
+<Box
+  sx={{
+    marginLeft: { xl: "15%", lg: "18%", xs: "0%" },
+    maxWidth: { xl: "85%", xs: "100%" },
+    padding: 2,
+    backgroundColor: "#fff",
+    borderRadius: 2,
+    boxShadow: 3,
+  }}
+>
+  {/* Classic Table View (sm and up) */}
+  <Box
+    sx={{
+      display: { xs: "none", sm: "block" },
+      overflowX: "auto",
+    }}
+  >
+    <table
+      style={{
+        width: "100%",
+        borderCollapse: "collapse",
+        border: "1px solid #ddd",
+        minWidth: "700px",
+      }}
+    >
+      <thead>
+        <tr style={{ backgroundColor: "#f5f5f5" }}>
+          {[
+            "Total Plant Capacity (MW AC)",
+            "Total Credit",
+            "Total Debit",
+            "Available Amount (Old)",
+            "Balance with Slnko",
+            "Balance Payable to Vendors",
+            "Balance Required",
+          ].map((header, i) => (
+            <th
+              key={i}
+              style={{
+                padding: "12px 15px",
+                textAlign: "left",
+                fontWeight: "bold",
+                backgroundColor: "#e2e2e2",
+                border: "1px solid #ddd",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {header}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style={tdStyle}>{totals.totalmWSum?.toLocaleString("en-IN")} MW AC</td>
+          <td style={tdStyle}>{totals.totalCreditSum?.toLocaleString("en-IN") || 0}</td>
+          <td style={tdStyle}>{totals.totalDebitSum?.toLocaleString("en-IN") || 0}</td>
+          <td style={tdStyle}>{totals.totalAmountAvailable?.toLocaleString("en-IN") || 0}</td>
+          <td style={tdStyle}>{totals.totalBalanceSlnko?.toLocaleString("en-IN") || 0}</td>
+          <td style={tdStyle}>{totals.totalBalancePayable?.toLocaleString("en-IN") || 0}</td>
+          <td style={tdStyle}>{totals.totalBalanceRequired?.toLocaleString("en-IN") || 0}</td>
+        </tr>
+      </tbody>
+    </table>
+  </Box>
+
+  {/* Mobile Stacked View (xs only) */}
+  <Box
+    sx={{
+      display: { xs: "block", sm: "none" },
+    }}
+  >
+    {[
+      { label: "Total Plant Capacity (MW AC)", value: `${totals.totalmWSum?.toLocaleString("en-IN")} MW AC` },
+      { label: "Total Credit", value: totals.totalCreditSum?.toLocaleString("en-IN") || 0 },
+      { label: "Total Debit", value: totals.totalDebitSum?.toLocaleString("en-IN") || 0 },
+      { label: "Available Amount (Old)", value: totals.totalAmountAvailable?.toLocaleString("en-IN") || 0 },
+      { label: "Balance with Slnko", value: totals.totalBalanceSlnko?.toLocaleString("en-IN") || 0 },
+      { label: "Balance Payable to Vendors", value: totals.totalBalancePayable?.toLocaleString("en-IN") || 0 },
+      { label: "Balance Required", value: totals.totalBalanceRequired?.toLocaleString("en-IN") || 0 },
+    ].map((item, index) => (
+      <Box
+        key={index}
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          padding: "12px 15px",
+          borderBottom: "1px solid #ddd",
+        }}
+      >
+        <Box sx={{ fontWeight: "bold" }}>{item.label}</Box>
+        <Box>{item.value}</Box>
       </Box>
+    ))}
+  </Box>
+</Box>
+
+
       {/* Table */}
       <Sheet
         className="OrderTableContainer"
@@ -957,172 +1084,175 @@ const ProjectBalances = forwardRef((props, ref) => {
             </Box>
             <Box component="tbody">
               {paginatedPayments.length > 0 ? (
-                 paginatedPayments
-                 .sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt))
-                 .map((project, index) => (
-                  <Box
-                    component="tr"
-                    key={index}
-                    sx={{
-                      "&:hover": { backgroundColor: "neutral.plainHoverBg" },
-                    }}
-                  >
+                paginatedPayments
+                  .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+                  .map((project, index) => (
                     <Box
-                      component="td"
+                      component="tr"
+                      key={index}
                       sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
+                        "&:hover": { backgroundColor: "neutral.plainHoverBg" },
                       }}
                     >
-                      <Checkbox
-                        size="sm"
-                        checked={selected.includes(project.code)}
-                        onChange={(event) =>
-                          handleRowSelect(project.code, event.target.checked)
-                        }
-                      />
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        <Checkbox
+                          size="sm"
+                          checked={selected.includes(project.code)}
+                          onChange={(event) =>
+                            handleRowSelect(project.code, event.target.checked)
+                          }
+                        />
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {project.code}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {project.name || "-"}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {project.customer || "-"}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {project.p_group || "-"}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {project.project_kwp || "-"}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {new Intl.NumberFormat("en-IN", {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 2,
+                        }).format(project.creditAmount || 0)}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {new Intl.NumberFormat("en-IN", {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 2,
+                        }).format(project.debitAmount || 0)}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {new Intl.NumberFormat("en-IN", {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 2,
+                        }).format(project.oldAmount || 0)}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {new Intl.NumberFormat("en-IN", {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 2,
+                        }).format(project.balanceSlnko || 0)}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {new Intl.NumberFormat("en-IN", {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 2,
+                        }).format(project.balancePayable || 0)}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {new Intl.NumberFormat("en-IN", {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 2,
+                        }).format(project.balanceRequired || 0)}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        <RowMenu
+                          currentPage={currentPage}
+                          p_id={project.p_id}
+                        />
+                      </Box>
                     </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.code}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.name || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.customer || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.p_group || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.project_kwp || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 2,
-                      }).format(project.creditAmount || 0)}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 2,
-                      }).format(project.debitAmount || 0)}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 2,
-                      }).format(project.oldAmount || 0)}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 2,
-                      }).format(project.balanceSlnko || 0)}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 2,
-                      }).format(project.balancePayable || 0)}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 2,
-                      }).format(project.balanceRequired || 0)}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <RowMenu currentPage={currentPage} p_id={project.p_id} />
-                    </Box>
-                  </Box>
-                ))
+                  ))
               ) : (
                 <Box component="tr">
                   <Box
@@ -1134,18 +1264,24 @@ const ProjectBalances = forwardRef((props, ref) => {
                       fontStyle: "italic",
                     }}
                   >
-                     <Box sx={{
-                      fontStyle: "italic",
-                      display:"flex",
-                      flexDirection:"column",
-                      alignItems:"center",
-                      justifyContent:"center"
-                    }}>
-                      <img src = {NoData} alt="No data Image" style={{width:"50px", height:'50px'}}/>
-                    <Typography fontStyle={"italic"}>
-                      No Balance available
+                    <Box
+                      sx={{
+                        fontStyle: "italic",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <img
+                        src={NoData}
+                        alt="No data Image"
+                        style={{ width: "50px", height: "50px" }}
+                      />
+                      <Typography fontStyle={"italic"}>
+                        No Balance available
                       </Typography>
-                      </Box>
+                    </Box>
                   </Box>
                 </Box>
               )}
@@ -1161,8 +1297,8 @@ const ProjectBalances = forwardRef((props, ref) => {
           pt: 2,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
-          display:"flex",
-          flexDirection:{xs: "column", sm: "row"},
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
           marginLeft: { xl: "15%", lg: "18%" },
         }}

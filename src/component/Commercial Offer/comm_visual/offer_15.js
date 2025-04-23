@@ -1016,7 +1016,6 @@ const Summary = () => {
   const Total_Cost_with_GST = Math.round(
     Final_Total_with_GST_Plant_Cost / offerData.dc_capacity / 1000 / 1000
   ).toFixed(2);
-  
 
   const Without_module_INR_wp_Basic = Math.round(
     Cost_Without_Module / offerData.dc_capacity / 1000 / 1000
@@ -1028,49 +1027,101 @@ const Summary = () => {
     Cost_Without_Module_with_GST / offerData.dc_capacity / 1000 / 1000
   ).toFixed(2);
 
-  const Solar_Module_Basic_value_per_Wp = Math.floor((TotalVal1 / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+  const Solar_Module_Basic_value_per_Wp =
+    Math.floor((TotalVal1 / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
 
-  const Total_Basic_Solar_Datalogger_Per_Wp = Math.floor((Total_Basic_Solar_Datalogger / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+  const Total_Basic_Solar_Datalogger_Per_Wp =
+    Math.floor(
+      (Total_Basic_Solar_Datalogger / (offerData.dc_capacity * 1000 * 1000)) *
+        100
+    ) / 100;
 
-  const Total_Basic_MMS_Fastner_Per_Wp = Math.floor((Total_Basic_MMS_Fastner / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+  const Total_Basic_MMS_Fastner_Per_Wp =
+    Math.floor(
+      (Total_Basic_MMS_Fastner / (offerData.dc_capacity * 1000 * 1000)) * 100
+    ) / 100;
 
-  const Total_Basic_Cables_Per_Wp = Math.floor((Total_Basic_Cables / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+  const Total_Basic_Cables_Per_Wp =
+    Math.floor(
+      (Total_Basic_Cables / (offerData.dc_capacity * 1000 * 1000)) * 100
+    ) / 100;
 
-  const Total_Basic_Electrical_Equipment_Per_Wp = Math.floor((Total_Basic_Electrical_Equipment / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+  const Total_Basic_Electrical_Equipment_Per_Wp =
+    Math.floor(
+      (Total_Basic_Electrical_Equipment /
+        (offerData.dc_capacity * 1000 * 1000)) *
+        100
+    ) / 100;
 
-  const Total_Basic_Other_Material_Per_Wp = Math.floor((Total_Basic_Other_Material / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+  const Total_Basic_Other_Material_Per_Wp =
+    Math.floor(
+      (Total_Basic_Other_Material / (offerData.dc_capacity * 1000 * 1000)) * 100
+    ) / 100;
 
-  const Total_Basic_Installation_Charges_Per_Wp = Math.floor((Total_Basic_Installation_Charges / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+  const Total_Basic_Installation_Charges_Per_Wp =
+    Math.floor(
+      (Total_Basic_Installation_Charges /
+        (offerData.dc_capacity * 1000 * 1000)) *
+        100
+    ) / 100;
 
-  const Slnko_Service_Charge_Per_Wp = Math.floor((TotalVal32 / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+  const Slnko_Service_Charge_Per_Wp =
+    Math.floor((TotalVal32 / (offerData.dc_capacity * 1000 * 1000)) * 100) /
+    100;
 
-  const Total_Plant_Cost_1_Per_Wp = Math.floor((Total_Plant_Cost_1 / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+  const Total_Plant_Cost_1_Per_Wp =
+    Math.floor(
+      (Total_Plant_Cost_1 / (offerData.dc_capacity * 1000 * 1000)) * 100
+    ) / 100;
 
-  const Total_Basic_GSS_Equipment_Per_Wp = Math.floor((Total_Basic_GSS_Equipment / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+  const Total_Basic_GSS_Equipment_Per_Wp =
+    Math.floor(
+      (Total_Basic_GSS_Equipment / (offerData.dc_capacity * 1000 * 1000)) * 100
+    ) / 100;
 
-  const Transmission_Line_Per_Wp = Math.floor(((offerData.transmission_length * bdRate.transmission_line) / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+  const Transmission_Line_Per_Wp =
+    Math.floor(
+      ((offerData.transmission_length * bdRate.transmission_line) /
+        (offerData.dc_capacity * 1000 * 1000)) *
+        100
+    ) / 100;
 
-  const Total_Basic_GSS_Cost_Per_Wp = Math.floor((Total_Basic_GSS_Cost / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+  const Total_Basic_GSS_Cost_Per_Wp =
+    Math.floor(
+      (Total_Basic_GSS_Cost / (offerData.dc_capacity * 1000 * 1000)) * 100
+    ) / 100;
 
-  const Final_Total_Plant_Cost_Per_Wp = Math.floor((Final_Total_Plant_Cost / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+  const Final_Total_Plant_Cost_Per_Wp =
+    Math.floor(
+      (Final_Total_Plant_Cost / (offerData.dc_capacity * 1000 * 1000)) * 100
+    ) / 100;
 
-  const Cost_Without_Module_Per_Wp = Math.floor((Cost_Without_Module / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+  const Cost_Without_Module_Per_Wp =
+    Math.floor(
+      (Cost_Without_Module / (offerData.dc_capacity * 1000 * 1000)) * 100
+    ) / 100;
 
-  const Total_Cost_Basic_Per_Wp = ((Total_Cost_Basic / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+  const Total_Cost_Basic_Per_Wp =
+    ((Total_Cost_Basic / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
 
-  console.log("Total_Cost_Basic_Per_Wp: ",Total_Cost_Basic_Per_Wp);
-  
+  console.log("Total_Cost_Basic_Per_Wp: ", Total_Cost_Basic_Per_Wp);
 
-  const Without_module_INR_wp_Basic_Per_Wp = ((Without_module_INR_wp_Basic / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
+  const Without_module_INR_wp_Basic_Per_Wp =
+    ((Without_module_INR_wp_Basic / (offerData.dc_capacity * 1000 * 1000)) *
+      100) /
+    100;
 
-  console.log("Without_module_INR_wp_Basic_Per_Wp :", Without_module_INR_wp_Basic_Per_Wp);
-  
+  console.log(
+    "Without_module_INR_wp_Basic_Per_Wp :",
+    Without_module_INR_wp_Basic_Per_Wp
+  );
 
-  const Total_Basic_Transportatiom_Insurance_Per_Wp = Math
-  .floor((Total_Basic_Transportatiom_Insurance / (offerData.dc_capacity * 1000 * 1000)) * 100) / 100;
-
-
-
+  const Total_Basic_Transportatiom_Insurance_Per_Wp =
+    Math.floor(
+      (Total_Basic_Transportatiom_Insurance /
+        (offerData.dc_capacity * 1000 * 1000)) *
+        100
+    ) / 100;
 
   return (
     <>
@@ -1384,7 +1435,9 @@ const Summary = () => {
                     <td style={{ backgroundColor: "#FFF2CC" }}>
                       {Number(Total_Plant_Cost_with_GST_1).toLocaleString()}
                     </td>
-                    <td style={{ backgroundColor: "#FFF2CC" }}>{Total_Plant_Cost_1_Per_Wp}</td>
+                    <td style={{ backgroundColor: "#FFF2CC" }}>
+                      {Total_Plant_Cost_1_Per_Wp}
+                    </td>
                   </tr>
 
                   <tr>
@@ -1593,10 +1646,16 @@ const Summary = () => {
                   sx={{ "@media print": { fontSize: "1.2rem" } }}
                   fontWeight="bold"
                 >
+                  8. CCTV/Security
+                </Typography>
+                <Typography
+                  sx={{ "@media print": { fontSize: "1.2rem" } }}
+                  fontWeight="bold"
+                >
                   {Number(
-                      offerData.transmission_length * bdRate.transmission_line
-                    ).toLocaleString()  === "0"
-                    ? "8. Transmission Line"
+                    offerData.transmission_length * bdRate.transmission_line
+                  ).toLocaleString() === "0"
+                    ? "9. Transmission Line"
                     : ""}
                 </Typography>
               </Box>

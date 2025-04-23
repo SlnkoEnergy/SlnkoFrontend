@@ -137,10 +137,14 @@ const Customer_Payment_Summary = () => {
         0
       ) || "0";
 
+      const POBasic =
+      filteredClients.reduce((acc, client) => acc + parseFloat(client.calculatedPoBasic), 0) || "0";
+
+
     // Debugging logs
-    console.log("filteredClients:", filteredClients);
-    console.log("totalAmountPaid:", totalAmountPaid);
-    console.log("totalPOValue:", totalPOValue);
+    // console.log("filteredClients:", filteredClients);
+    // console.log("totalAmountPaid:", totalAmountPaid);
+    // console.log("totalPOValue:", totalPOValue);
 
     const totalBilledValue = filteredClients.reduce(
       (acc, client) => acc + client.billedValue,
@@ -151,7 +155,7 @@ const Customer_Payment_Summary = () => {
     const balancePayable = totalPOValue - totalBilledValue - netAdvance;
     const balanceRequired = balanceSlnko - balancePayable - tcs;
     const totalAvailable = totalCredited - totalDebited;
-    const totalPOBasic = 0;
+    const totalPOBasic = totalPoValue - POBasic;
 
     const summaryData = [
       ["S.No.", "Balance Summary", "Value"],
@@ -165,8 +169,22 @@ const Customer_Payment_Summary = () => {
       ["8", "Net Advance Paid [(4)-(7)]", netAdvance],
       ["9", "Balance Payable to Vendors [(6)-(7)-(8)]", balancePayable],
       ["10", "TCS as Applicable", tcs],
-      ["11", "Total Additional PO(Composit)", totalPOBasic],
-      ["12", "Balance Required [(5)-(9)-(10)]", balanceRequired],
+      // ["11", "Extra GST Recoverable from Client", totalPOBasic],
+      // ["12", "Balance Required [(5)-(9)-(10)]", balanceRequired],
+      ...(POBasic > 0
+        ? [
+            [
+              "11",
+              "Extra GST Recoverable from Client",
+              totalPOBasic,
+            ],
+          ]
+        : []),
+      [
+        POBasic > 0 ? "12" : "11",
+        `Balance Required [(5)-(9)-(10)]`,
+        balanceRequired,
+      ],
     ];
 
     const summaryData2 = [
@@ -756,7 +774,239 @@ const Customer_Payment_Summary = () => {
 
     const totalPOBasicvalue = Math.round(totalPoValue - totalPOBasic);
 
+    const headerStyle = {
+      fontWeight: "bold",
+      padding: "8px",
+      borderBottom: "1px solid #ddd",
+      textAlign: "left",
+    };
+
+    const cellStyle = {
+      padding: "8px",
+      borderBottom: "1px solid #eee",
+    };
+
     return (
+      // <Grid container spacing={2}>
+      //   {/* Balance Summary Section */}
+      //   <Grid item xs={12} sm={6}>
+      //     <Box
+      //       sx={{
+      //         border: "1px solid #ddd",
+      //         borderRadius: "8px",
+      //         padding: "16px",
+      //       }}
+      //     >
+      //       <Typography
+      //         level="h5"
+      //         sx={{ fontWeight: "bold", marginBottom: "12px" }}
+      //       >
+      //         Balance Summary
+      //       </Typography>
+      //       <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      //         <thead>
+      //           <tr>
+      //             <th
+      //               style={{
+      //                 fontWeight: "bold",
+      //                 padding: "8px",
+      //                 borderBottom: "1px solid #ddd",
+      //               }}
+      //             >
+      //               S.No.
+      //             </th>
+      //             <th
+      //               style={{
+      //                 fontWeight: "bold",
+      //                 padding: "8px",
+      //                 borderBottom: "1px solid #ddd",
+      //               }}
+      //             >
+      //               Description
+      //             </th>
+      //             <th
+      //               style={{
+      //                 fontWeight: "bold",
+      //                 padding: "8px",
+      //                 borderBottom: "1px solid #ddd",
+      //               }}
+      //             >
+      //               Value
+      //             </th>
+      //           </tr>
+      //         </thead>
+      //         <tbody>
+      //           <tr>
+      //             <td style={{ padding: "8px" }}>1</td>
+      //             <td style={{ padding: "8px" }}>
+      //               <strong>Total Received:</strong>
+      //             </td>
+      //             <td style={{ padding: "8px" }}>{crAmtNum}</td>
+      //           </tr>
+      //           <tr>
+      //             <td style={{ padding: "8px" }}>2</td>
+      //             <td style={{ padding: "8px" }}>
+      //               <strong>Total Return:</strong>
+      //             </td>
+      //             <td style={{ padding: "8px" }}>{totalReturn}</td>
+      //           </tr>
+      //           <tr style={{ backgroundColor: "#C8C8C6" }}>
+      //             <td style={{ padding: "8px" }}>3</td>
+      //             <td style={{ padding: "8px" }}>
+      //               <strong>Net Balance[(1)-(2)]:</strong>
+      //             </td>
+      //             <td style={{ padding: "8px" }}>{netBalance}</td>
+      //           </tr>
+      //           <tr>
+      //             <td style={{ padding: "8px" }}>4</td>
+      //             <td style={{ padding: "8px" }}>
+      //               <strong>Total Advance Paid to vendors:</strong>
+      //             </td>
+      //             <td style={{ padding: "8px" }}>{totalAdvanceValue}</td>
+      //           </tr>
+      //           <tr style={{ backgroundColor: "#B6F4C6", fontWeight: "bold" }}>
+      //             <td style={{ padding: "8px" }}>5</td>
+      //             <td style={{ padding: "8px" }}>
+      //               <strong>Balance With Slnko [(3)-(4)]:</strong>
+      //             </td>
+      //             <td style={{ padding: "8px" }}>{balanceSlnko}</td>
+      //           </tr>
+      //           <tr>
+      //             <td style={{ padding: "8px" }}>6</td>
+      //             <td style={{ padding: "8px" }}>
+      //               <strong>Total PO Value:</strong>
+      //             </td>
+      //             <td style={{ padding: "8px" }}>{totalPoValue}</td>
+      //           </tr>
+      //           <tr>
+      //             <td style={{ padding: "8px" }}>7</td>
+      //             <td style={{ padding: "8px" }}>
+      //               <strong>Total Billed Value:</strong>
+      //             </td>
+      //             <td style={{ padding: "8px" }}>{totalBilled}</td>
+      //           </tr>
+      //           <tr>
+      //             <td style={{ padding: "8px" }}>8</td>
+      //             <td style={{ padding: "8px" }}>
+      //               <strong>Net Advance Paid [(4)-(7)]:</strong>
+      //             </td>
+      //             <td style={{ padding: "8px" }}>{netAdvance}</td>
+      //           </tr>
+      //           <tr style={{ backgroundColor: "#B6F4C6", fontWeight: "bold" }}>
+      //             <td style={{ padding: "8px" }}>9</td>
+      //             <td style={{ padding: "8px" }}>
+      //               <strong>Balance Payable to vendors [(6)-(7)-(8)]:</strong>
+      //             </td>
+      //             <td style={{ padding: "8px" }}>{balancePayable}</td>
+      //           </tr>
+      //           <tr>
+      //             <td style={{ padding: "8px" }}>10</td>
+      //             <td style={{ padding: "8px" }}>
+      //               <strong>TCS as applicable:</strong>
+      //             </td>
+      //             <td style={{ padding: "8px" }}>{Math.round(tcs)}</td>
+      //           </tr>
+      //           {totalPOBasic > 0 && (
+      //             <tr>
+      //               <td style={{ padding: "8px" }}>11</td>
+      //               <td style={{ padding: "8px" }}>
+      //                 <strong>Extra GST Recoverable from Client:</strong>
+      //               </td>
+      //               <td style={{ padding: "8px" }}>{totalPOBasicvalue}</td>
+      //             </tr>
+      //           )}
+
+      //           <tr
+      //             style={{
+      //               backgroundColor: "#B6F4C6",
+      //               fontWeight: "bold",
+      //               color: balanceRequired >= 0 ? "green" : "red",
+      //             }}
+      //           >
+      //             <td style={{ padding: "8px" }}>
+      //               {totalPOBasic > 0 ? 12 : 11}
+      //             </td>
+      //             <td style={{ padding: "8px" }}>
+      //               <strong>
+      //                 Balance Required [
+      //                 {totalPOBasic > 0 ? "(5)-(9)-(10)" : "(5)-(9)-(10)"}]:
+      //               </strong>
+      //             </td>
+      //             <td style={{ padding: "8px" }}>{balanceRequired}</td>
+      //           </tr>
+      //         </tbody>
+      //       </table>
+      //     </Box>
+      //   </Grid>
+
+      //   {/* Amount Available (Old) Section */}
+      //   <Grid item xs={12} sm={6}>
+      //     <Box
+      //       sx={{
+      //         border: "1px solid #ddd",
+      //         borderRadius: "8px",
+      //         padding: "16px",
+      //       }}
+      //     >
+      //       <Typography
+      //         level="h5"
+      //         sx={{ fontWeight: "bold", marginBottom: "12px" }}
+      //       >
+      //         Amount Available (Old)
+      //       </Typography>
+      //       <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      //         <thead>
+      //           <tr>
+      //             <th
+      //               style={{
+      //                 fontWeight: "bold",
+      //                 padding: "8px",
+      //                 borderBottom: "1px solid #ddd",
+      //               }}
+      //             >
+      //               Description
+      //             </th>
+      //             <th
+      //               style={{
+      //                 fontWeight: "bold",
+      //                 padding: "8px",
+      //                 borderBottom: "1px solid #ddd",
+      //               }}
+      //             >
+      //               Amount
+      //             </th>
+      //           </tr>
+      //         </thead>
+      //         <tbody>
+      //           <tr>
+      //             <td style={{ padding: "8px" }}>
+      //               <strong>Credit - Debit + Adjust</strong>
+      //             </td>
+      //             <td style={{ padding: "8px" }}>
+      //               <strong className="text-success">{crAmt}</strong> -
+      //               <strong className="text-danger">{dbAmtNum}</strong> +
+      //               <strong className="text-primary">{adjTotalNum}</strong>
+      //             </td>
+      //           </tr>
+      //           <tr style={{ backgroundColor: "#fff" }}>
+      //             <td style={{ padding: "8px" }}>
+      //               <strong>Total</strong>
+      //             </td>
+      //             <td style={{ padding: "8px" }}>
+      //               <strong
+      //                 className={
+      //                   totalAmount >= 0 ? "text-success" : "text-danger"
+      //                 }
+      //               >
+      //                 {totalAmount}
+      //               </strong>
+      //             </td>
+      //           </tr>
+      //         </tbody>
+      //       </table>
+      //     </Box>
+      //   </Grid>
+      // </Grid>
       <Grid container spacing={2}>
         {/* Balance Summary Section */}
         <Grid item xs={12} sm={6}>
@@ -765,145 +1015,97 @@ const Customer_Payment_Summary = () => {
               border: "1px solid #ddd",
               borderRadius: "8px",
               padding: "16px",
+              backgroundColor: "#fff",
+              fontSize: "14px",
+              "@media print": {
+                boxShadow: "none",
+                border: "none",
+                // pageBreakInside: "avoid",
+              },
             }}
           >
             <Typography
               level="h5"
-              sx={{ fontWeight: "bold", marginBottom: "12px" }}
+              sx={{
+                fontWeight: "bold",
+                marginBottom: "12px",
+                fontSize: "16px",
+                "@media print": {
+                  fontSize: "14px",
+                },
+              }}
             >
               Balance Summary
             </Typography>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                fontFamily: "Arial, sans-serif",
+              }}
+            >
               <thead>
-                <tr>
-                  <th
-                    style={{
-                      fontWeight: "bold",
-                      padding: "8px",
-                      borderBottom: "1px solid #ddd",
-                    }}
-                  >
-                    S.No.
-                  </th>
-                  <th
-                    style={{
-                      fontWeight: "bold",
-                      padding: "8px",
-                      borderBottom: "1px solid #ddd",
-                    }}
-                  >
-                    Description
-                  </th>
-                  <th
-                    style={{
-                      fontWeight: "bold",
-                      padding: "8px",
-                      borderBottom: "1px solid #ddd",
-                    }}
-                  >
-                    Value
-                  </th>
+                <tr style={{ backgroundColor: "#f0f0f0" }}>
+                  <th style={headerStyle}>S.No.</th>
+                  <th style={headerStyle}>Description</th>
+                  <th style={headerStyle}>Value</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td style={{ padding: "8px" }}>1</td>
-                  <td style={{ padding: "8px" }}>
-                    <strong>Total Received:</strong>
-                  </td>
-                  <td style={{ padding: "8px" }}>{crAmtNum}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: "8px" }}>2</td>
-                  <td style={{ padding: "8px" }}>
-                    <strong>Total Return:</strong>
-                  </td>
-                  <td style={{ padding: "8px" }}>{totalReturn}</td>
-                </tr>
-                <tr style={{ backgroundColor: "#C8C8C6" }}>
-                  <td style={{ padding: "8px" }}>3</td>
-                  <td style={{ padding: "8px" }}>
-                    <strong>Net Balance[(1)-(2)]:</strong>
-                  </td>
-                  <td style={{ padding: "8px" }}>{netBalance}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: "8px" }}>4</td>
-                  <td style={{ padding: "8px" }}>
-                    <strong>Total Advance Paid to vendors:</strong>
-                  </td>
-                  <td style={{ padding: "8px" }}>{totalAdvanceValue}</td>
-                </tr>
-                <tr style={{ backgroundColor: "#B6F4C6", fontWeight: "bold" }}>
-                  <td style={{ padding: "8px" }}>5</td>
-                  <td style={{ padding: "8px" }}>
-                    <strong>Balance With Slnko [(3)-(4)]:</strong>
-                  </td>
-                  <td style={{ padding: "8px" }}>{balanceSlnko}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: "8px" }}>6</td>
-                  <td style={{ padding: "8px" }}>
-                    <strong>Total PO Value:</strong>
-                  </td>
-                  <td style={{ padding: "8px" }}>{totalPoValue}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: "8px" }}>7</td>
-                  <td style={{ padding: "8px" }}>
-                    <strong>Total Billed Value:</strong>
-                  </td>
-                  <td style={{ padding: "8px" }}>{totalBilled}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: "8px" }}>8</td>
-                  <td style={{ padding: "8px" }}>
-                    <strong>Net Advance Paid [(4)-(7)]:</strong>
-                  </td>
-                  <td style={{ padding: "8px" }}>{netAdvance}</td>
-                </tr>
-                <tr style={{ backgroundColor: "#B6F4C6", fontWeight: "bold" }}>
-                  <td style={{ padding: "8px" }}>9</td>
-                  <td style={{ padding: "8px" }}>
-                    <strong>Balance Payable to vendors [(6)-(7)-(8)]:</strong>
-                  </td>
-                  <td style={{ padding: "8px" }}>{balancePayable}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: "8px" }}>10</td>
-                  <td style={{ padding: "8px" }}>
-                    <strong>TCS as applicable:</strong>
-                  </td>
-                  <td style={{ padding: "8px" }}>{Math.round(tcs)}</td>
-                </tr>
-                {totalPOBasic > 0 && (
-                  <tr>
-                    <td style={{ padding: "8px" }}>11</td>
-                    <td style={{ padding: "8px" }}>
-                      <strong>Extra GST Recoverable from Client:</strong>
-                    </td>
-                    <td style={{ padding: "8px" }}>{totalPOBasicvalue}</td>
+                {[
+                  ["1", "Total Received", crAmtNum],
+                  ["2", "Total Return", totalReturn],
+                  ["3", "Net Balance[(1)-(2)]", netBalance, "#C8C8C6"],
+                  ["4", "Total Advance Paid to vendors", totalAdvanceValue],
+                  [
+                    "5",
+                    "Balance With Slnko [(3)-(4)]",
+                    balanceSlnko,
+                    "#B6F4C6",
+                    true,
+                  ],
+                  ["6", "Total PO Value", totalPoValue],
+                  ["7", "Total Billed Value", totalBilled],
+                  ["8", "Net Advance Paid [(4)-(7)]", netAdvance],
+                  [
+                    "9",
+                    "Balance Payable to vendors [(6)-(7)-(8)]",
+                    balancePayable,
+                    "#B6F4C6",
+                    true,
+                  ],
+                  ["10", "TCS as applicable", Math.round(tcs)],
+                  ...(totalPOBasic > 0
+                    ? [
+                        [
+                          "11",
+                          "Extra GST Recoverable from Client",
+                          totalPOBasicvalue,
+                        ],
+                      ]
+                    : []),
+                  [
+                    totalPOBasic > 0 ? "12" : "11",
+                    `Balance Required [(5)-(9)-(10)]`,
+                    balanceRequired,
+                    "#B6F4C6",
+                    true,
+                    balanceRequired >= 0 ? "green" : "red",
+                  ],
+                ].map(([sno, desc, value, bgColor, bold, color], index) => (
+                  <tr
+                    key={index}
+                    style={{
+                      backgroundColor: bgColor || "#fff",
+                      fontWeight: bold ? "bold" : "normal",
+                      color: color || "inherit",
+                    }}
+                  >
+                    <td style={cellStyle}>{sno}</td>
+                    <td style={cellStyle}>{desc}</td>
+                    <td style={cellStyle}>{value}</td>
                   </tr>
-                )}
-
-                <tr
-                  style={{
-                    backgroundColor: "#B6F4C6",
-                    fontWeight: "bold",
-                    color: balanceRequired >= 0 ? "green" : "red",
-                  }}
-                >
-                  <td style={{ padding: "8px" }}>
-                    {totalPOBasic > 0 ? 12 : 11}
-                  </td>
-                  <td style={{ padding: "8px" }}>
-                    <strong>
-                      Balance Required [
-                      {totalPOBasic > 0 ? "(5)-(9)-(10)" : "(5)-(9)-(10)"}]:
-                    </strong>
-                  </td>
-                  <td style={{ padding: "8px" }}>{balanceRequired}</td>
-                </tr>
+                ))}
               </tbody>
             </table>
           </Box>
@@ -916,22 +1118,50 @@ const Customer_Payment_Summary = () => {
               border: "1px solid #ddd",
               borderRadius: "8px",
               padding: "16px",
+              backgroundColor: "#fff",
+              fontSize: "14px",
+              "@media print": {
+                boxShadow: "none",
+                border: "none",
+                pageBreakInside: "avoid",
+              },
             }}
           >
             <Typography
               level="h5"
-              sx={{ fontWeight: "bold", marginBottom: "12px" }}
+              sx={{
+                fontWeight: "bold",
+                marginBottom: "12px",
+                fontSize: "16px",
+                "@media print": {
+                  fontSize: "14px",
+                },
+              }}
             >
               Amount Available (Old)
             </Typography>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                fontFamily: "Arial, sans-serif",
+                "@media print": {
+                  fontSize: "12px",
+                },
+              }}
+            >
               <thead>
-                <tr>
+                <tr style={{ backgroundColor: "#f0f0f0" }}>
                   <th
                     style={{
                       fontWeight: "bold",
                       padding: "8px",
                       borderBottom: "1px solid #ddd",
+                      textAlign: "left",
+                      "@media print": {
+                        padding: "6px",
+                        fontSize: "12px",
+                      },
                     }}
                   >
                     Description
@@ -941,6 +1171,10 @@ const Customer_Payment_Summary = () => {
                       fontWeight: "bold",
                       padding: "8px",
                       borderBottom: "1px solid #ddd",
+                      "@media print": {
+                        padding: "6px",
+                        fontSize: "12px",
+                      },
                     }}
                   >
                     Amount
@@ -949,20 +1183,52 @@ const Customer_Payment_Summary = () => {
               </thead>
               <tbody>
                 <tr>
-                  <td style={{ padding: "8px" }}>
+                  <td
+                    style={{
+                      padding: "8px",
+                      "@media print": {
+                        padding: "6px",
+                        fontSize: "12px",
+                      },
+                    }}
+                  >
                     <strong>Credit - Debit + Adjust</strong>
                   </td>
-                  <td style={{ padding: "8px" }}>
-                    <strong className="text-success">{crAmt}</strong> -
-                    <strong className="text-danger">{dbAmtNum}</strong> +
+                  <td
+                    style={{
+                      padding: "8px",
+                      "@media print": {
+                        padding: "6px",
+                        fontSize: "12px",
+                      },
+                    }}
+                  >
+                    <strong className="text-success">{crAmt}</strong> -{" "}
+                    <strong className="text-danger">{dbAmtNum}</strong> +{" "}
                     <strong className="text-primary">{adjTotalNum}</strong>
                   </td>
                 </tr>
                 <tr style={{ backgroundColor: "#fff" }}>
-                  <td style={{ padding: "8px" }}>
+                  <td
+                    style={{
+                      padding: "8px",
+                      "@media print": {
+                        padding: "6px",
+                        fontSize: "12px",
+                      },
+                    }}
+                  >
                     <strong>Total</strong>
                   </td>
-                  <td style={{ padding: "8px" }}>
+                  <td
+                    style={{
+                      padding: "8px",
+                      "@media print": {
+                        padding: "6px",
+                        fontSize: "12px",
+                      },
+                    }}
+                  >
                     <strong
                       className={
                         totalAmount >= 0 ? "text-success" : "text-danger"
@@ -998,19 +1264,48 @@ const Customer_Payment_Summary = () => {
         justifyContent="space-between"
         alignItems="center"
         mb={3}
+        sx={{
+          "@media print": {
+            mb: 1,
+            alignItems: "flex-start",
+          },
+        }}
       >
-        <Box>
-          <img src={Img12} style={{}} />
+        <Box
+          sx={{
+            "@media print": {
+              width: "100px", // shrink logo if needed
+            },
+          }}
+        >
+          <img src={Img12} style={{ maxHeight: "60px", width: "auto" }} />
         </Box>
         <Typography
           variant="h4"
           fontSize={"2.5rem"}
           fontFamily="Playfair Display"
           fontWeight={600}
+          sx={{
+            textAlign: "center",
+            flexGrow: 1,
+            "@media print": {
+              fontSize: "2rem",
+              marginLeft: 2,
+              marginRight: 2,
+              color: "black",
+            },
+          }}
         >
           Customer Payment Summary
         </Typography>
-        <Box textAlign="center">
+        <Box
+          textAlign="center"
+          sx={{
+            "@media print": {
+              fontSize: "0.9rem",
+            },
+          }}
+        >
           <Typography
             variant="subtitle1"
             fontFamily="Bona Nova SC"
@@ -1121,7 +1416,11 @@ const Customer_Payment_Summary = () => {
 
               <Input
                 fullWidth
-                value={projectData.billing_address || "-"}
+                value={
+                  typeof projectData.billing_address === "object"
+                    ? `${projectData.billing_address.village_name || "-"}, ${projectData.billing_address.district_name || "-"}`
+                    : projectData.billing_address || "-"
+                }
                 readOnly
                 label="Plant Location"
                 sx={{ mr: 2 }}
@@ -1211,6 +1510,12 @@ const Customer_Payment_Summary = () => {
               boxShadow: "md",
               maxWidth: "100%",
               width: "100%",
+              "@media print": {
+                boxShadow: "none",
+                p: 0,
+                borderRadius: 0,
+                overflow: "visible",
+              },
             }}
           >
             <Table
@@ -1218,8 +1523,28 @@ const Customer_Payment_Summary = () => {
               stickyHeader
               sx={{
                 minWidth: "100%",
-                "& thead": { backgroundColor: "neutral.softBg" },
-                "& th, & td": { textAlign: "left", px: 2, py: 1.5 },
+                "& thead": {
+                  backgroundColor: "neutral.softBg",
+                  "@media print": {
+                    backgroundColor: "#ddd",
+                  },
+                },
+                "& th, & td": {
+                  textAlign: "left",
+                  px: 2,
+                  py: 1.5,
+                  "@media print": {
+                    px: 1,
+                    py: 1,
+                    fontSize: "12px",
+                    border: "1px solid #ccc",
+                  },
+                },
+                "@media print": {
+                  borderCollapse: "collapse",
+                  width: "100%",
+                  tableLayout: "fixed",
+                },
               }}
             >
               {/* Table Header */}
@@ -1233,6 +1558,7 @@ const Customer_Payment_Summary = () => {
                       color="primary"
                       onChange={handleSelectAllCredit}
                       checked={selectedCredits.length === creditHistory.length}
+                      // sx={{ '@media print': { display: 'none' } }}
                     />
                   </th>
                 </tr>
@@ -1256,6 +1582,7 @@ const Customer_Payment_Summary = () => {
                         color="primary"
                         checked={selectedCredits.includes(row._id)}
                         onChange={() => handleCreditCheckboxChange(row._id)}
+                        // sx={{ '@media print': { display: 'none' } }}
                       />
                     </td>
                   </tr>
@@ -1265,10 +1592,15 @@ const Customer_Payment_Summary = () => {
               {/* Total Row */}
               <tfoot>
                 <tr style={{ fontWeight: "bold", backgroundColor: "#f5f5f5" }}>
-                  <td colSpan={2} style={{ textAlign: "right" }}>
+                  <td
+                    colSpan={2}
+                    style={{ color: "dodgerblue", textAlign: "right" }}
+                  >
                     Total Credited:
                   </td>
-                  <td>₹ {totalCredited.toLocaleString("en-IN")}</td>
+                  <td style={{ color: "dodgerblue" }}>
+                    ₹ {totalCredited.toLocaleString("en-IN")}
+                  </td>
                   <td />
                 </tr>
               </tfoot>
@@ -1349,6 +1681,12 @@ const Customer_Payment_Summary = () => {
             boxShadow: "md",
             maxWidth: "100%",
             width: "100%",
+            "@media print": {
+              boxShadow: "none",
+              p: 0,
+              borderRadius: 0,
+              overflow: "visible",
+            },
           }}
         >
           <Table
@@ -1356,8 +1694,28 @@ const Customer_Payment_Summary = () => {
             stickyHeader
             sx={{
               minWidth: "100%",
-              "& thead": { backgroundColor: "neutral.softBg" },
-              "& th, & td": { textAlign: "left", px: 2, py: 1.5 },
+              "& thead": {
+                backgroundColor: "neutral.softBg",
+                "@media print": {
+                  backgroundColor: "#ddd",
+                },
+              },
+              "& th, & td": {
+                textAlign: "left",
+                px: 2,
+                py: 1.5,
+                "@media print": {
+                  px: 1,
+                  py: 1,
+                  fontSize: "12px",
+                  border: "1px solid #ccc",
+                },
+              },
+              "@media print": {
+                borderCollapse: "collapse",
+                width: "100%",
+                tableLayout: "fixed",
+              },
             }}
           >
             {/* Table Header */}
@@ -1412,8 +1770,8 @@ const Customer_Payment_Summary = () => {
             </tbody>
 
             {/* No Data Row */}
-            {filteredDebits.length === 0 && (
-              <tfoot>
+            <tfoot>
+              {filteredDebits.length === 0 ? (
                 <tr>
                   <td
                     colSpan={7}
@@ -1422,21 +1780,17 @@ const Customer_Payment_Summary = () => {
                     No debit history available
                   </td>
                 </tr>
-              </tfoot>
-            )}
-
-            {/* Total Row */}
-            <tfoot>
-              <tr style={{ fontWeight: "bold", backgroundColor: "#f5f5f5" }}>
-                <td colSpan={4} style={{ color: "red", textAlign: "right" }}>
-                  Total Debited:
-                </td>
-                <td colSpan={2} style={{ color: "red" }}>
-                  ₹ {totalDebited.toLocaleString("en-IN")}
-                </td>
-
-                <td></td>
-              </tr>
+              ) : (
+                <tr style={{ fontWeight: "bold", backgroundColor: "#f5f5f5" }}>
+                  <td colSpan={4} style={{ color: "red", textAlign: "right" }}>
+                    Total Debited:
+                  </td>
+                  <td colSpan={2} style={{ color: "red" }}>
+                    ₹ {totalDebited.toLocaleString("en-IN")}
+                  </td>
+                  <td></td>
+                </tr>
+              )}
             </tfoot>
           </Table>
         </Sheet>
@@ -1510,14 +1864,40 @@ const Customer_Payment_Summary = () => {
             p: 2,
             boxShadow: "md",
             maxWidth: "100%",
+            "@media print": {
+              boxShadow: "none",
+              p: 0,
+              borderRadius: 0,
+              overflow: "visible",
+            },
           }}
         >
           <Table
             borderAxis="both"
             sx={{
               minWidth: "100%",
-              "& thead": { backgroundColor: "neutral.softBg" },
-              "& th, & td": { textAlign: "left", px: 2, py: 1.5 },
+              "& thead": {
+                backgroundColor: "neutral.softBg",
+                "@media print": {
+                  backgroundColor: "#eee",
+                },
+              },
+              "& th, & td": {
+                textAlign: "left",
+                px: 2,
+                py: 1.5,
+                "@media print": {
+                  px: 1,
+                  py: 1,
+                  fontSize: "12px",
+                  border: "1px solid #ccc",
+                },
+              },
+              "@media print": {
+                borderCollapse: "collapse",
+                width: "100%",
+                tableLayout: "fixed",
+              },
             }}
           >
             {/* Table Header */}
@@ -1570,7 +1950,9 @@ const Customer_Payment_Summary = () => {
             {/* Total Row */}
             <tfoot>
               <tr style={{ fontWeight: "bold", backgroundColor: "#f5f5f5" }}>
-                <td colSpan={3}>Total: </td>
+                <td colSpan={3} style={{ textAlign: "right" }}>
+                  Total:{" "}
+                </td>
                 <td>₹ {clientSummary.totalPOValue.toLocaleString("en-IN")}</td>
                 <td>
                   ₹ {clientSummary.totalAmountPaid.toLocaleString("en-IN")}

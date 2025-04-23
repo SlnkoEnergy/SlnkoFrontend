@@ -522,7 +522,7 @@ const Page17 = () => {
                 },
               }}
             >
-              401
+              572+
             </Typography>
 
             <Typography
@@ -583,7 +583,7 @@ const Page17 = () => {
                 },
               }}
             >
-              245 MWp Outgoing
+              310+ MWp Ongoing
             </Typography>
           </Box>
 
@@ -605,7 +605,7 @@ const Page17 = () => {
                 },
               }}
             >
-              156 MWp Completed
+              262+ MWp Completed
             </Typography>
           </Box>
         </Grid>

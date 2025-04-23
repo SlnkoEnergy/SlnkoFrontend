@@ -1564,10 +1564,16 @@ const Summary = () => {
                          sx={{ "@media print": { fontSize: "1.2rem" } }}
                          fontWeight="bold"
                        >
+                         8. CCTV/Security
+                       </Typography>
+                       <Typography
+                         sx={{ "@media print": { fontSize: "1.2rem" } }}
+                         fontWeight="bold"
+                       >
                          {Number(
                              offerData.transmission_length * bdRate.transmission_line
                            ).toLocaleString()  === "0"
-                           ? "8. Transmission Line"
+                           ? "9. Transmission Line"
                            : ""}
                        </Typography>
                      </Box>

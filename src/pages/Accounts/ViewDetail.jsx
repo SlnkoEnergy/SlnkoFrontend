@@ -40,6 +40,7 @@ function ViewDetail() {
             minWidth: 0,
             height: "100dvh",
             gap: 1,
+            "@media print": { px: 1, pt: 0, pb: 0, minWidth: "1000px" },
             
           }}
         >
@@ -55,7 +56,7 @@ function ViewDetail() {
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: {md:"4%", lg:"0%"} }}
+              sx={{ pl: 0, marginTop: {md:"4%", lg:"0%"}, "@media print": { marginTop: "0px"} }}
             >
               {/* <Link
                 underline="none"
@@ -89,6 +90,7 @@ function ViewDetail() {
               alignItems: { xs: "start", sm: "center" },
               flexWrap: "wrap",
               justifyContent: "space-between",
+              "@media print": { marginBottom: 0}
               
             }}
           >
@@ -104,6 +106,7 @@ function ViewDetail() {
                 alignItems: { xs: "start", sm: "center" },
                 flexWrap: "wrap",
                 justifyContent: "center",
+                "@media print": { marginBottom: 0}
               }}
             >
               {/* <Button
