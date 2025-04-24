@@ -72,6 +72,10 @@ import ViewHandSheet from "../pages/CAM/HandOver_View";
 import DashboardENG from "../pages/Eng/DashboardEng";
 import Add_BOM from "../pages/Eng/Forms/BOM_Addn";
 import Process_Tracker from "../pages/Eng/Er_Process";
+import ModuleSheet from "../pages/Eng/ModuleDashboard";
+import Add_Module from "../pages/Eng/Forms/Add_Module";
+import Add_Inverter from "../pages/Eng/Forms/Add_Inverter";
+import Add_Transformer from "../pages/Eng/Forms/Add_Transformer";
 
 function index() {
   return (
@@ -290,11 +294,43 @@ function index() {
           </PrivateRoute>
         }
       />
+      <Route
+        path="/module_sheet"
+        element={
+          <PrivateRoute>
+            <ModuleSheet />
+          </PrivateRoute>
+        }
+      />
         <Route
         path="/add_bom"
         element={
           <PrivateRoute>
             <Add_BOM />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/add_module"
+        element={
+          <PrivateRoute>
+            <Add_Module/>
+          </PrivateRoute>
+        }
+      />
+       <Route
+        path="/add_inverter"
+        element={
+          <PrivateRoute>
+            <Add_Inverter />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/add_transformer"
+        element={
+          <PrivateRoute>
+            <Add_Transformer />
           </PrivateRoute>
         }
       />

@@ -9,9 +9,9 @@ import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
 // import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
+import ViewModuleRoundedIcon from "@mui/icons-material/ViewModuleRounded";
+// import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import Sidebar from "../../component/Partials/Sidebar";
-
 
 import Header from "../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
@@ -107,7 +107,7 @@ function DashboardENG() {
             }}
           >
             <Typography level="h2" component="h1">
-            Engineering Dashboard
+              Engineering Dashboard
             </Typography>
             {/* <Box
               sx={{
@@ -120,44 +120,45 @@ function DashboardENG() {
                 justifyContent: "center",
               }}
             >
-              {(user?.name === "IT Team" ||
-                user?.name === "admin" ||
-                user?.name === "Naresh Kumar") && (
+           
                 <Button
                   color="primary"
                   startDecorator={<DownloadRoundedIcon />}
                   size="sm"
-                  onClick={() => navigate("/costing_input")}
+                  onClick={() => navigate("#")}
                 >
-                  Add Costing +
+                  Module Master Dashboard
                 </Button>
-              )}
+              
 
-              {(user?.name === "IT Team" ||
-                user?.name === "admin" ||
-                user?.name === "Navin Kumar Gautam" ||
-                user?.name === "Mohd Shakir Khan" ||
-                user?.name === "Shiv Ram Tathagat" ||
-                user?.name === "Kana Sharma" ||
-                user?.name === "Ketan Kumar Jha" ||
-                user?.name === "Vibhav Upadhyay" ||
-                user?.name === "Shantanu Sameer" ||
-                user?.name === "Arnav Shahi" ||
-                user?.name === "Shambhavi Gupta" ||
-                user?.name === "Geeta" ||
-                user?.name === "Anudeep Kumar" ||
-                user?.name === "Ashish Jha") && (
-                <Button
-                  color="primary"
-                  size="sm"
-                  onClick={() => navigate("/add_offer")}
-                >
-                  Add New offer +
-                </Button>
-              )}
+           
             </Box> */}
 
-            
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 1.5,
+                p: 2,
+                flexWrap: "wrap",
+                bgcolor: "background.level1",
+                borderRadius: "lg",
+                boxShadow: "sm",
+                mb: 2,
+              }}
+            >
+              <Button
+                variant="solid"
+                color="primary"
+                startDecorator={<ViewModuleRoundedIcon />}
+                size="md"
+                onClick={() => navigate("/module_sheet")}
+              >
+                Module Sheet Dashboard
+              </Button>
+            </Box>
           </Box>
           <Dash_eng />
           {/* <OrderTable />

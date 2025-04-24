@@ -38,6 +38,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../assets/Lotties/animation-loading.json";
 import Axios from "../utils/Axios";
 import NoData from "../assets/alert-bell.svg";
+import Skeleton from "react-loading-skeleton";
 
 const ProjectBalances = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -896,103 +897,151 @@ const ProjectBalances = forwardRef((props, ref) => {
         </table>
       </Box> */}
 
-<Box
-  sx={{
-    marginLeft: { xl: "15%", lg: "18%", xs: "0%" },
-    maxWidth: { xl: "85%", xs: "100%" },
-    padding: 2,
-    backgroundColor: "#fff",
-    borderRadius: 2,
-    boxShadow: 3,
-  }}
->
-  {/* Classic Table View (sm and up) */}
-  <Box
-    sx={{
-      display: { xs: "none", sm: "block" },
-      overflowX: "auto",
-    }}
-  >
-    <table
-      style={{
-        width: "100%",
-        borderCollapse: "collapse",
-        border: "1px solid #ddd",
-        minWidth: "700px",
-      }}
-    >
-      <thead>
-        <tr style={{ backgroundColor: "#f5f5f5" }}>
-          {[
-            "Total Plant Capacity (MW AC)",
-            "Total Credit",
-            "Total Debit",
-            "Available Amount (Old)",
-            "Balance with Slnko",
-            "Balance Payable to Vendors",
-            "Balance Required",
-          ].map((header, i) => (
-            <th
-              key={i}
-              style={{
-                padding: "12px 15px",
-                textAlign: "left",
-                fontWeight: "bold",
-                backgroundColor: "#e2e2e2",
-                border: "1px solid #ddd",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {header}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td style={tdStyle}>{totals.totalmWSum?.toLocaleString("en-IN")} MW AC</td>
-          <td style={tdStyle}>{totals.totalCreditSum?.toLocaleString("en-IN") || 0}</td>
-          <td style={tdStyle}>{totals.totalDebitSum?.toLocaleString("en-IN") || 0}</td>
-          <td style={tdStyle}>{totals.totalAmountAvailable?.toLocaleString("en-IN") || 0}</td>
-          <td style={tdStyle}>{totals.totalBalanceSlnko?.toLocaleString("en-IN") || 0}</td>
-          <td style={tdStyle}>{totals.totalBalancePayable?.toLocaleString("en-IN") || 0}</td>
-          <td style={tdStyle}>{totals.totalBalanceRequired?.toLocaleString("en-IN") || 0}</td>
-        </tr>
-      </tbody>
-    </table>
-  </Box>
-
-  {/* Mobile Stacked View (xs only) */}
-  <Box
-    sx={{
-      display: { xs: "block", sm: "none" },
-    }}
-  >
-    {[
-      { label: "Total Plant Capacity (MW AC)", value: `${totals.totalmWSum?.toLocaleString("en-IN")} MW AC` },
-      { label: "Total Credit", value: totals.totalCreditSum?.toLocaleString("en-IN") || 0 },
-      { label: "Total Debit", value: totals.totalDebitSum?.toLocaleString("en-IN") || 0 },
-      { label: "Available Amount (Old)", value: totals.totalAmountAvailable?.toLocaleString("en-IN") || 0 },
-      { label: "Balance with Slnko", value: totals.totalBalanceSlnko?.toLocaleString("en-IN") || 0 },
-      { label: "Balance Payable to Vendors", value: totals.totalBalancePayable?.toLocaleString("en-IN") || 0 },
-      { label: "Balance Required", value: totals.totalBalanceRequired?.toLocaleString("en-IN") || 0 },
-    ].map((item, index) => (
       <Box
-        key={index}
         sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          padding: "12px 15px",
-          borderBottom: "1px solid #ddd",
+          marginLeft: { xl: "15%", lg: "18%", xs: "0%" },
+          maxWidth: { xl: "85%", xs: "100%" },
+          padding: 2,
+          backgroundColor: "#fff",
+          borderRadius: 2,
+          boxShadow: 3,
         }}
       >
-        <Box sx={{ fontWeight: "bold" }}>{item.label}</Box>
-        <Box>{item.value}</Box>
-      </Box>
-    ))}
-  </Box>
-</Box>
+        {/* Classic Table View (sm and up) */}
+        <Box sx={{ display: { xs: "none", sm: "block" }, overflowX: "auto" }}>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              border: "1px solid #ddd",
+              minWidth: "700px",
+            }}
+          >
+            <thead>
+              <tr style={{ backgroundColor: "#f5f5f5" }}>
+                {[
+                  "Total Plant Capacity (MW AC)",
+                  "Total Credit",
+                  "Total Debit",
+                  "Available Amount (Old)",
+                  "Balance with Slnko",
+                  "Balance Payable to Vendors",
+                  "Balance Required",
+                ].map((header, i) => (
+                  <th
+                    key={i}
+                    style={{
+                      padding: "12px 15px",
+                      textAlign: "left",
+                      fontWeight: "bold",
+                      backgroundColor: "#e2e2e2",
+                      border: "1px solid #ddd",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  {Array.from({ length: 7 }).map((_, i) => (
+                    <td key={i} style={tdStyle}>
+                      <Skeleton height={20} />
+                    </td>
+                  ))}
+                </tr>
+              ) : (
+                <tr>
+                  <td style={tdStyle}>
+                    {totals.totalmWSum?.toLocaleString("en-IN")} MW AC
+                  </td>
+                  <td style={tdStyle}>
+                    {totals.totalCreditSum?.toLocaleString("en-IN") || 0}
+                  </td>
+                  <td style={tdStyle}>
+                    {totals.totalDebitSum?.toLocaleString("en-IN") || 0}
+                  </td>
+                  <td style={tdStyle}>
+                    {totals.totalAmountAvailable?.toLocaleString("en-IN") || 0}
+                  </td>
+                  <td style={tdStyle}>
+                    {totals.totalBalanceSlnko?.toLocaleString("en-IN") || 0}
+                  </td>
+                  <td style={tdStyle}>
+                    {totals.totalBalancePayable?.toLocaleString("en-IN") || 0}
+                  </td>
+                  <td style={tdStyle}>
+                    {totals.totalBalanceRequired?.toLocaleString("en-IN") || 0}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </Box>
 
+        {/* Mobile Stacked View (xs only) */}
+        <Box sx={{ display: { xs: "block", sm: "none" } }}>
+          {loading
+            ? Array.from({ length: 7 }).map((_, i) => (
+                <Box
+                  key={i}
+                  sx={{ padding: "12px 15px", borderBottom: "1px solid #ddd" }}
+                >
+                  <Skeleton height={20} width="50%" />
+                  <Skeleton height={20} width="30%" />
+                </Box>
+              ))
+            : [
+                {
+                  label: "Total Plant Capacity (MW AC)",
+                  value: `${totals.totalmWSum?.toLocaleString("en-IN")} MW AC`,
+                },
+                {
+                  label: "Total Credit",
+                  value: totals.totalCreditSum?.toLocaleString("en-IN") || 0,
+                },
+                {
+                  label: "Total Debit",
+                  value: totals.totalDebitSum?.toLocaleString("en-IN") || 0,
+                },
+                {
+                  label: "Available Amount (Old)",
+                  value:
+                    totals.totalAmountAvailable?.toLocaleString("en-IN") || 0,
+                },
+                {
+                  label: "Balance with Slnko",
+                  value: totals.totalBalanceSlnko?.toLocaleString("en-IN") || 0,
+                },
+                {
+                  label: "Balance Payable to Vendors",
+                  value:
+                    totals.totalBalancePayable?.toLocaleString("en-IN") || 0,
+                },
+                {
+                  label: "Balance Required",
+                  value:
+                    totals.totalBalanceRequired?.toLocaleString("en-IN") || 0,
+                },
+              ].map((item, index) => (
+                <Box
+                  key={index}
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    padding: "12px 15px",
+                    borderBottom: "1px solid #ddd",
+                  }}
+                >
+                  <Box sx={{ fontWeight: "bold" }}>{item.label}</Box>
+                  <Box>{item.value}</Box>
+                </Box>
+              ))}
+        </Box>
+      </Box>
 
       {/* Table */}
       <Sheet
@@ -1028,9 +1077,7 @@ const ProjectBalances = forwardRef((props, ref) => {
               style={{ height: 100, width: 100 }}
             />
 
-            {/* <Typography textAlign="center" mt={2} fontWeight="bold">
-              Loading...
-            </Typography> */}
+            
           </Box>
         ) : (
           <Box
@@ -1110,12 +1157,14 @@ const ProjectBalances = forwardRef((props, ref) => {
                           }
                         />
                       </Box>
+                      
                       <Box
                         component="td"
                         sx={{
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
                           textAlign: "center",
+                          fontWeight: "400",
                         }}
                       >
                         {project.code}
@@ -1126,6 +1175,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
                           textAlign: "center",
+                          fontWeight: "400",
                         }}
                       >
                         {project.name || "-"}
@@ -1136,6 +1186,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
                           textAlign: "center",
+                          fontWeight: "400",
                         }}
                       >
                         {project.customer || "-"}
@@ -1146,6 +1197,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
                           textAlign: "center",
+                          fontWeight: "400",
                         }}
                       >
                         {project.p_group || "-"}
@@ -1156,6 +1208,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
                           textAlign: "center",
+                          fontWeight: "400",
                         }}
                       >
                         {project.project_kwp || "-"}
@@ -1166,6 +1219,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
                           textAlign: "center",
+                          fontWeight: "400",
                         }}
                       >
                         {new Intl.NumberFormat("en-IN", {
@@ -1179,6 +1233,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
                           textAlign: "center",
+                          fontWeight: "400",
                         }}
                       >
                         {new Intl.NumberFormat("en-IN", {
@@ -1192,6 +1247,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
                           textAlign: "center",
+                          fontWeight: "400",
                         }}
                       >
                         {new Intl.NumberFormat("en-IN", {
@@ -1205,6 +1261,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
                           textAlign: "center",
+                          fontWeight: "400",
                         }}
                       >
                         {new Intl.NumberFormat("en-IN", {
@@ -1218,6 +1275,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
                           textAlign: "center",
+                          fontWeight: "400",
                         }}
                       >
                         {new Intl.NumberFormat("en-IN", {
@@ -1231,6 +1289,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
                           textAlign: "center",
+                          fontWeight: "400",
                         }}
                       >
                         {new Intl.NumberFormat("en-IN", {
@@ -1244,6 +1303,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
                           textAlign: "center",
+                          fontWeight: "400",
                         }}
                       >
                         <RowMenu
@@ -1251,6 +1311,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                           p_id={project.p_id}
                         />
                       </Box>
+
                     </Box>
                   ))
               ) : (
