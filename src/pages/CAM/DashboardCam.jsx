@@ -9,9 +9,10 @@ import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
 // import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
+// import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
+// import BuildRoundedIcon from "@mui/icons-material/BuildRounded";
+import { BriefcaseIcon } from "@heroicons/react/24/outline";
 import Sidebar from "../../component/Partials/Sidebar";
-
 
 import Header from "../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
@@ -107,57 +108,30 @@ function Dashboard() {
             }}
           >
             <Typography level="h2" component="h1">
-            CAM Dashboard
+              CAM Dashboard
             </Typography>
-            {/* <Box
+            <Box
               sx={{
                 display: "flex",
                 mb: 1,
                 gap: 1,
                 flexDirection: { xs: "column", sm: "row" },
-                alignItems: { xs: "start", sm: "center" },
+                alignItems: { xs: "flex-start", sm: "center" },
                 flexWrap: "wrap",
                 justifyContent: "center",
               }}
             >
-              {(user?.name === "IT Team" ||
-                user?.name === "admin" ||
-                user?.name === "Naresh Kumar") && (
-                <Button
-                  color="primary"
-                  startDecorator={<DownloadRoundedIcon />}
-                  size="sm"
-                  onClick={() => navigate("/costing_input")}
-                >
-                  Add Costing +
-                </Button>
-              )}
-
-              {(user?.name === "IT Team" ||
-                user?.name === "admin" ||
-                user?.name === "Navin Kumar Gautam" ||
-                user?.name === "Mohd Shakir Khan" ||
-                user?.name === "Shiv Ram Tathagat" ||
-                user?.name === "Kana Sharma" ||
-                user?.name === "Ketan Kumar Jha" ||
-                user?.name === "Vibhav Upadhyay" ||
-                user?.name === "Shantanu Sameer" ||
-                user?.name === "Arnav Shahi" ||
-                user?.name === "Shambhavi Gupta" ||
-                user?.name === "Geeta" ||
-                user?.name === "Anudeep Kumar" ||
-                user?.name === "Ashish Jha") && (
-                <Button
-                  color="primary"
-                  size="sm"
-                  onClick={() => navigate("/add_offer")}
-                >
-                  Add New offer +
-                </Button>
-              )}
-            </Box> */}
-
-            
+              <Button
+                color="primary"
+                startDecorator={
+                  <BriefcaseIcon style={{ width: 18, height: 18 }} />
+                }
+                size="sm"
+                onClick={() => navigate("/all-project")}
+              >
+                All Project
+              </Button>
+            </Box>
           </Box>
           <Dash_cam />
           {/* <OrderTable />

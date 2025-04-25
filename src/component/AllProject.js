@@ -369,7 +369,7 @@ const handleDelete = async () => {
           marginLeft: { xl: "15%", lg: "18%", },
           borderRadius: "sm",
           py: 2,
-          display: { xs: "none", sm: "flex" },
+          display: "flex",
           flexWrap: "wrap",
           gap: 1.5,
           "& > *": {
@@ -395,7 +395,7 @@ const handleDelete = async () => {
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "initial" },
+          display: "flex",
           width: "100%",
           borderRadius: "sm",
           flexShrink: 1,
@@ -589,8 +589,9 @@ const handleDelete = async () => {
           pt: 2,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
-          display: { xs: "none", md: "flex" },
+          display: "flex",
           alignItems: "center",
+          flexDirection:{xs:"column", md:"row"},
           marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
