@@ -155,7 +155,7 @@ const AddPurchaseOrder = () => {
       po_number: formData.po_number,
       vendor: formData.name,
       date: formData.date,
-      item: formData.item === "Other" ? "other" : formData.item,
+      item: formData.item === "Other" ? "Other" : formData.item,
       other: formData.item === "Other" ? formData.other : "",
       po_value: formData.po_value,
       po_basic: formData.po_basic,
@@ -357,7 +357,7 @@ const AddPurchaseOrder = () => {
             </Grid>
 
             {showOtherItem && (
-              <Grid xs={12}>
+              <Grid xs={12} md={4}>
                 <Typography level="body1" fontWeight="bold" mb={1}>
                   Other Item Name
                 </Typography>

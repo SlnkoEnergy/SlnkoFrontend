@@ -90,7 +90,7 @@ const UpdatePurchaseOrder = () => {
         setGetFormData({
           projectIDs: projectsRes.data.data || [],
           vendors: vendorsRes.data.data || [],
-          items: [...itemsRes.data.Data, "Other"],
+          items: [...itemsRes.data.Data, "other"],
           AllPo: poRes.data.data || [],
         });
 
@@ -168,7 +168,7 @@ const UpdatePurchaseOrder = () => {
       }),
     }));
 
-    if (field === "item" && newValue === "Other") {
+    if (field === "item" && newValue === "other") {
       setShowOtherItem(true);
     } else if (field === "item") {
       setShowOtherItem(false);
@@ -456,7 +456,7 @@ const UpdatePurchaseOrder = () => {
             </Grid>
 
             {showOtherItem && (
-              <Grid item xs={12}>
+              <Grid item xs={12} md={4}>
                 <Typography
                   variant="subtitle2"
                   color="secondary"
@@ -475,7 +475,7 @@ const UpdatePurchaseOrder = () => {
               </Grid>
             )}
 
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={6}>
               <Typography
                 variant="subtitle2"
                 color="secondary"
@@ -527,7 +527,7 @@ const UpdatePurchaseOrder = () => {
                 }
               />
             </Grid> */}
-            <Grid item xs={12} md={12}>
+            <Grid item xs={12} md={6}>
               <Typography
                 variant="subtitle2"
                 color="secondary"
