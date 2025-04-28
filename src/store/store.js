@@ -9,6 +9,15 @@ import { commsApi } from "../redux/commsSlice";
 import taskWorkReducer from "../redux/TaskDate_Manipulation/task_workSlice";
 import { camsApi } from "../redux/camsSlice";
 import { engsApi } from "../redux/engsSlice";
+import { engsModuleApi } from "../redux/Eng/modulesSlice";
+import { engsTransformerApi } from "../redux/Eng/transformersSlice";
+import { engsInverterApi } from "../redux/Eng/invertersSlice";
+import { engsPoolingApi } from "../redux/Eng/poolingsSlice";
+import { engsBOSApi } from "../redux/Eng/bosSlice";
+import { engsLTPanelApi } from "../redux/Eng/ltsSlice";
+import { engsHTPanelApi } from "../redux/Eng/htsSlice";
+import { engsAcCableApi } from "../redux/Eng/acsSlice";
+import { engsDcCableApi } from "../redux/Eng/dcsSlice";
 
 export const store = configureStore({
     reducer: {
@@ -21,6 +30,15 @@ export const store = configureStore({
         [commsApi.reducerPath]: commsApi.reducer,
         [camsApi.reducerPath]: camsApi.reducer,
         [engsApi.reducerPath]: engsApi.reducer,
+        [engsModuleApi.reducerPath]: engsModuleApi.reducer,
+        [engsTransformerApi.reducerPath]: engsTransformerApi.reducer,
+        [engsInverterApi.reducerPath]: engsInverterApi.reducer,
+        [engsPoolingApi.reducerPath]: engsPoolingApi.reducer,
+        [engsBOSApi.reducerPath]: engsBOSApi.reducer,
+        [engsLTPanelApi.reducerPath]: engsLTPanelApi.reducer,
+        [engsHTPanelApi.reducerPath]: engsHTPanelApi.reducer,
+        [engsAcCableApi.reducerPath]: engsAcCableApi.reducer,   
+        [engsDcCableApi.reducerPath]: engsDcCableApi.reducer,
         taskWork: taskWorkReducer
     },
     middleware: (getDefaultMiddleware) =>
@@ -33,6 +51,15 @@ export const store = configureStore({
             loginsApi.middleware,
             commsApi.middleware,
             camsApi.middleware,
-            engsApi.middleware
+            engsApi.middleware,
+            engsModuleApi.middleware,
+            engsBOSApi.middleware,
+            engsDcCableApi.middleware,
+            engsAcCableApi.middleware,
+            engsHTPanelApi.middleware,
+            engsLTPanelApi.middleware,
+            engsPoolingApi.middleware,
+            engsInverterApi.middleware,
+            engsTransformerApi.middleware        
         ),
 });

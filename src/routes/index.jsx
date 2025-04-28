@@ -76,6 +76,13 @@ import ModuleSheet from "../pages/Eng/ModuleDashboard";
 import Add_Module from "../pages/Eng/Forms/Add_Module";
 import Add_Inverter from "../pages/Eng/Forms/Add_Inverter";
 import Add_Transformer from "../pages/Eng/Forms/Add_Transformer";
+import Add_BOS from "../pages/Eng/Forms/Add_BOS";
+import Add_DC_Cable from "../pages/Eng/Forms/Add_DC";
+import Add_AC_Cable from "../pages/Eng/Forms/Add_AC";
+import Add_Pooling from "../pages/Eng/Forms/Add_Pooling";
+import Add_HT_Panel from "../pages/Eng/Forms/Add_HT";
+import Add_LT_Panel from "../pages/Eng/Forms/Add_LT";
+import Add_BOS_Station from "../pages/Eng/Forms/Add_BOS";
 
 function index() {
   return (
@@ -334,6 +341,63 @@ function index() {
           </PrivateRoute>
         }
       />
+      <Route
+        path="/add_bos"
+        element={
+          <PrivateRoute>
+            <Add_BOS />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/add_dc_cable"
+        element={
+          <PrivateRoute>
+            <Add_DC_Cable />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/add_ac_cable"
+        element={
+          <PrivateRoute>
+            <Add_AC_Cable />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/add_bos"
+        element={
+          <PrivateRoute>
+            <Add_BOS_Station />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/add_pooling"
+        element={
+          <PrivateRoute>
+            <Add_Pooling />
+          </PrivateRoute>
+        }
+      />
+       <Route
+        path="/add_ht_panel"
+        element={
+          <PrivateRoute>
+            <Add_HT_Panel />
+          </PrivateRoute>
+        }
+      />
+       <Route
+        path="/add_lt_panel"
+        element={
+          <PrivateRoute>
+            <Add_LT_Panel />
+          </PrivateRoute>
+        }
+      />
+
       <Route
         path="/process_track"
         element={

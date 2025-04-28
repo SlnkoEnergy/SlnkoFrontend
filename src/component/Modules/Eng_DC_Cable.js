@@ -19,25 +19,24 @@ import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-
 import * as React from "react";
 // import FollowTheSignsIcon from '@mui/icons-material/FollowTheSigns';
-// import ManageHistoryIcon from "@mui/icons-material/ManageHistory";
-// import NextPlanIcon from "@mui/icons-material/NextPlan";
+import ManageHistoryIcon from "@mui/icons-material/ManageHistory";
+import NextPlanIcon from "@mui/icons-material/NextPlan";
 import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
-import { useEffect, useMemo, useState } from "react";
-import EditRoundedIcon from "@mui/icons-material/EditRounded";
+import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import DeleteIcon from "@mui/icons-material/Delete";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../../assets/Lotties/animation-loading.json";
 // import Axios from "../utils/Axios";
 import { Autocomplete, Divider, Grid, Modal, Option, Select } from "@mui/joy";
 import { forwardRef, useCallback, useImperativeHandle } from "react";
 import NoData from "../../assets/alert-bell.svg";
+import { useGetInitialLeadsQuery } from "../../redux/leadsSlice";
 import { toast } from "react-toastify";
-import { useGetModulesQuery } from "../../redux/Eng/modulesSlice";
 
-const Module = forwardRef((props, ref) => {
+const DCCableTab = forwardRef((props, ref) => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -50,7 +49,7 @@ const Module = forwardRef((props, ref) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [user, setUser] = useState(null);
-  const [selectedModule, setSelectedModule] = useState(null);
+  const [selectedLead, setSelectedLead] = useState(null);
 
   // const [cachedData, setCachedData] = useState(() => {
   //   // Try to load cached data from localStorage
@@ -58,14 +57,11 @@ const Module = forwardRef((props, ref) => {
   //   return cached ? JSON.parse(cached) : [];
   // });
 
-  const { data: getModule = [], isLoading, error } = useGetModulesQuery();
-  const modules = useMemo(() => getModule?.data ?? [], [getModule?.data]);
+  const { data: getLead = [], isLoading, error } = useGetInitialLeadsQuery();
+  const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
 
-  // console.log(modules);
-  
-
-  // const LeadStatus = ({ module }) => {
-  //   const { loi, ppa, loa, other_remarks, token_money } = module;
+  // const LeadStatus = ({ lead }) => {
+  //   const { loi, ppa, loa, other_remarks, token_money } = lead;
 
   //   // Determine the initial status
   //   const isInitialStatus =
@@ -90,16 +86,25 @@ const Module = forwardRef((props, ref) => {
     }
   }, []);
 
+  const sourceOptions = {
+    "Referred by": ["Directors", "Clients", "Team members", "E-mail"],
+    "Social Media": ["Whatsapp", "Instagram", "LinkedIn"],
+    Marketing: ["Youtube", "Advertisements"],
+    "IVR/My Operator": [],
+    Others: [],
+  };
+  const landTypes = ["Leased", "Owned"];
+
   const [openModal, setOpenModal] = useState(false);
 
-  const handleOpenModal = useCallback((module) => {
-    setSelectedModule(module);
+  const handleOpenModal = useCallback((lead) => {
+    setSelectedLead(lead);
     setOpenModal(true);
   }, []);
 
   const handleCloseModal = useCallback(() => {
     setOpenModal(false);
-    setSelectedModule(null);
+    setSelectedLead(null);
   }, []);
 
   // useEffect(() => {
@@ -121,24 +126,7 @@ const Module = forwardRef((props, ref) => {
           style={{ width: "200px" }}
         />
       </FormControl> */}
-      {/* <FormControl size="sm">
-        <FormLabel>Status Filter</FormLabel>
-        <Select
-          size="sm"
-          placeholder="Select status"
-          value={statusFilter}
-          onChange={(e) => {
-            const selectedValue = e.target.value;
-            console.log("Selected Status:", selectedValue);
-            setStatusFilter(selectedValue);
-          }}
-        >
-          <Option value="">All</Option>
-          <Option value="Available">Available</Option>
-          <Option value="Not Available">Not Available</Option>
-        </Select>
-      </FormControl> */}
-      <FormControl size="sm">
+        <FormControl size="sm">
         <FormLabel>Status Filter</FormLabel>
         <Select size="sm" placeholder="Select status">
           <Option value="">All</Option>
@@ -152,8 +140,8 @@ const Module = forwardRef((props, ref) => {
   const handleSelectAll = (event) => {
     if (event.target.checked) {
       // Select all visible (paginated) leads
-      const allModules = paginatedData.map((module) => module._id);
-      setSelected(allModules);
+      const allIds = paginatedData.map((lead) => lead._id);
+      setSelected(allIds);
     } else {
       // Unselect all
       setSelected([]);
@@ -283,62 +271,42 @@ const Module = forwardRef((props, ref) => {
     setSearchQuery(e.target.value.toLowerCase());
   };
 
-  // const handleDateFilter = (e) => {
-  //   setSelectedDate(e.target.value);
-  // };
-
-  // const filteredData = useMemo(() => {
-  //   // if (!user || !user.name) return [];
-
-  //   return modules
-  //     .filter((module) => {
-  //       // const submittedBy = module.submitted_by?.trim() || "";
-  //       // const userName = user.name.trim();
-  //       // const userRole = user.role?.toLowerCase();
-
-  //       // const isAdmin = userRole === "admin" || userRole === "superadmin";
-  //       // const matchesUser = isAdmin || submittedBy === userName;
-
-  //       const matchesQuery = [
-  //         "make",
-  //         "status",
-          
-  //       ].some((key) => module[key]?.toLowerCase().includes(searchQuery));
-
-  //       // const matchesDate = selectedDate
-  //       //   ? formatDate(module.entry_date).toLocaleDateString() ===
-  //       //     formatDate(selectedDate).toLocaleDateString()
-  //       //   : true;
-
-  //       return matchesQuery;
-  //     })
-  //     .sort((a, b) => {
-  //       const dateA = formatDate(a.createdAt);
-  //       const dateB = formatDate(b.createdAt);
-
-  //       if (!dateA.id) return 1;
-  //       if (!dateB.id) return -1;
-
-  //       return dateB - dateA;
-  //     });
-  // }, [modules, searchQuery, selectedDate, user]);
+  const handleDateFilter = (e) => {
+    setSelectedDate(e.target.value);
+  };
 
   const filteredData = useMemo(() => {
-    return modules
-      .filter((module) => {
-        const matchesQuery = ["make", "status"].some((key) =>
-          module[key]?.toLowerCase().includes(searchQuery.toLowerCase())
+    if (!user || !user.name) return [];
+
+    return leads
+      .filter((lead) => {
+        const submittedBy = lead.submitted_by?.trim() || "";
+        const userName = user.name.trim();
+        const userRole = user.role?.toLowerCase();
+
+        const isAdmin = userRole === "admin" || userRole === "superadmin";
+        const matchesUser = isAdmin || submittedBy === userName;
+
+        const matchesQuery = ["id", "c_name", "mobile", "state", "submitted_by"].some(
+          (key) => lead[key]?.toLowerCase().includes(searchQuery)
         );
-  
-        return matchesQuery;
+
+        const matchesDate = selectedDate
+          ? formatDate(lead.entry_date).toLocaleDateString() === formatDate(selectedDate).toLocaleDateString()
+          : true;
+
+        return matchesUser && matchesQuery && matchesDate;
       })
       .sort((a, b) => {
-        const dateA = new Date(a.createdAt);
-        const dateB = new Date(b.createdAt);
+        const dateA = formatDate(a.entry_date);
+        const dateB = formatDate(b.entry_date);
+
+        if (!dateA.id) return 1;
+        if (!dateB.id) return -1;
+
         return dateB - dateA;
       });
-  }, [modules, searchQuery]);
-  
+  }, [leads, searchQuery, selectedDate, user]);
 
   // const filteredData = useMemo(() => {
   //   return leads
@@ -407,9 +375,6 @@ const Module = forwardRef((props, ref) => {
     return filteredData.slice(
       (currentPage - 1) * itemsPerPage,
       currentPage * itemsPerPage
-
-
-
     );
   }, [filteredData, currentPage, itemsPerPage]);
 
@@ -447,25 +412,41 @@ const Module = forwardRef((props, ref) => {
     exportToCSV() {
       console.log("Exporting data to CSV...");
 
-      const headers = ["Make", "Power", "Type", "Model", "Status"];
+      const headers = [
+        "Lead Id",
+        "Customer",
+        "Mobile",
+        "State",
+        "Scheme",
+        "Capacity",
+        "Substation Distance",
+        "Creation Date",
+        "Lead Status",
+        "Submitted_ By",
+      ];
 
       // If selected list has items, use it. Otherwise export all.
-      const exportModules =
+      const exportLeads =
         selected.length > 0
-          ? modules.filter((module) => selected.includes(module._id))
-          : modules;
+          ? leads.filter((lead) => selected.includes(lead._id))
+          : leads;
 
-      if (exportModules.length === 0) {
-        toast.warning("No modules available to export.");
+      if (exportLeads.length === 0) {
+        toast.warning("No leads available to export.");
         return;
       }
 
-      const rows = exportModules.map((module) => [
-        module.make || "-",
-        module.power || "-",
-        module.type || "-",
-        module.model || "-",
-        module.status || "-",
+      const rows = exportLeads.map((lead) => [
+        lead.id,
+        lead.c_name,
+        lead.mobile,
+        lead.state,
+        lead.scheme,
+        lead.capacity || "-",
+        lead.distance || "-",
+        lead.entry_date || "-",
+        lead.status || "",
+        lead.submitted_by || "-",
       ]);
 
       const csvContent = [
@@ -480,7 +461,7 @@ const Module = forwardRef((props, ref) => {
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download =
-        selected.length > 0 ? "Selected_Modules.csv" : "All_Modules.csv";
+        selected.length > 0 ? "Selected_Leads.csv" : "Initial_Leads.csv";
       link.click();
     },
   }));
@@ -559,7 +540,7 @@ const Module = forwardRef((props, ref) => {
               padding: "20px",
             }}
           >
-            <PermScanWifiIcon style={{ color: "red", fontSize: "2rem" }} />
+            <PermScanWifiIcon style={{color:"red", fontSize:"2rem"}} />
             <Typography
               fontStyle={"italic"}
               fontWeight={"600"}
@@ -599,10 +580,11 @@ const Module = forwardRef((props, ref) => {
                 {[
                   "Make",
                   "Power(Wp)",
-                
+                  // "Type",
                   "Model No",
                   "Status",
                   "Action",
+                  
                 ].map((header, index) => (
                   <Box
                     component="th"
@@ -622,7 +604,7 @@ const Module = forwardRef((props, ref) => {
 
             <Box component="tbody">
               {paginatedData.length > 0 ? (
-                paginatedData.map((module, index) => (
+                paginatedData.map((lead, index) => (
                   <Box
                     component="tr"
                     key={index}
@@ -641,27 +623,35 @@ const Module = forwardRef((props, ref) => {
                       <Checkbox
                         size="sm"
                         color="primary"
-                        checked={selected.includes(module._id)}
-                        onChange={() => handleRowSelect(module._id)}
+                        checked={selected.includes(lead._id)}
+                        onChange={() => handleRowSelect(lead._id)}
                       />
                     </Box>
 
                     {[
                       <span
-                        key={module.id}
-                        onClick={() => handleOpenModal(module)}
+                        key={lead.id}
+                        onClick={() => handleOpenModal(lead)}
                         style={{
                           cursor: "pointer",
                           color: "black",
                           textDecoration: "none",
                         }}
                       >
-                        {module.make}
+                        {/* {lead.id} */}
+                        Rayzon Solar
                       </span>,
-                      module.power,
-
-                      module.model,
-                      module.status,
+                      "580",
+                      // "N-TYPE TOPCON BIFACIAL",
+                      // `${lead.village}, ${lead.district}, ${lead.state}`,
+                      "RS580-144TGC",
+                      // lead.scheme,
+                      // lead.capacity || "-",
+                      // lead.distance || "-",
+                      // lead.entry_date || "-",
+                      // lead.submitted_by || "-",
+                      "Available",
+                      // <LeadStatus lead={lead} />,
                     ].map((data, idx) => (
                       <Box
                         component="td"
@@ -685,7 +675,7 @@ const Module = forwardRef((props, ref) => {
                         textAlign: "center",
                       }}
                     >
-                      <RowMenu currentPage={currentPage} id={module.id} />
+                      <RowMenu currentPage={currentPage} id={lead.id} />
                     </Box>
                   </Box>
                 ))
@@ -693,7 +683,7 @@ const Module = forwardRef((props, ref) => {
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={6}
+                    colSpan={11}
                     sx={{
                       padding: "8px",
                       textAlign: "center",
@@ -715,7 +705,7 @@ const Module = forwardRef((props, ref) => {
                         style={{ width: "50px", height: "50px" }}
                       />
                       <Typography fontStyle={"italic"}>
-                        No Modules available
+                        No Initial Leads available
                       </Typography>
                     </Box>
                   </Box>
@@ -801,59 +791,184 @@ const Module = forwardRef((props, ref) => {
         >
           <Grid container spacing={2}>
             <Grid xs={12} sm={6}>
-              <FormLabel>Make</FormLabel>
+              <FormLabel>Customer Name</FormLabel>
               <Input
-                name="make"
-                value={selectedModule?.make ?? ""}
+                name="name"
+                value={selectedLead?.c_name ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
             <Grid xs={12} sm={6}>
-              <FormLabel>Rating</FormLabel>
+              <FormLabel>Company Name</FormLabel>
               <Input
-                name="power"
-                value={selectedModule?.power ?? ""}
+                name="company"
+                value={selectedLead?.company ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
             <Grid xs={12} sm={6}>
-              <FormLabel>Specification</FormLabel>
+              <FormLabel>Group Name</FormLabel>
               <Input
-                name="type"
-                value={selectedModule?.type ?? ""}
+                name="group"
+                value={selectedLead?.group ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
-
             <Grid xs={12} sm={6}>
-              <FormLabel>Model No</FormLabel>
+              <FormLabel>Source</FormLabel>
+              <Select
+                name="source"
+                value={selectedLead?.source ?? ""}
+                onChange={(e, newValue) =>
+                  setSelectedLead({
+                    ...selectedLead,
+                    source: newValue,
+                    reffered_by: "",
+                  })
+                }
+                fullWidth
+              >
+                {Object.keys(sourceOptions).map((option) => (
+                  <Option key={option} value={option}>
+                    {option}
+                  </Option>
+                ))}
+              </Select>
+            </Grid>
+            {selectedLead?.source &&
+              sourceOptions[selectedLead.source]?.length > 0 && (
+                <Grid xs={12} sm={6}>
+                  <FormLabel>Sub Source</FormLabel>
+                  <Select
+                    name="reffered_by"
+                    value={selectedLead?.reffered_by ?? ""}
+                    readOnly
+                    fullWidth
+                  >
+                    {sourceOptions[selectedLead.source].map((option) => (
+                      <Option key={option} value={option}>
+                        {option}
+                      </Option>
+                    ))}
+                  </Select>
+                </Grid>
+              )}
+            <Grid xs={12} sm={6}>
+              <FormLabel>Email ID</FormLabel>
               <Input
-                name="model"
-                value={selectedModule?.model ?? ""}
+                name="email"
+                type="email"
+                value={selectedLead?.email ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
-
-            {/* <Grid xs={12} sm={6}>
-              <FormLabel>Status</FormLabel>
-              <Select name="scheme" value={selectedModule?.scheme ?? ""} readOnly>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Mobile Number</FormLabel>
+              <Input
+                name="mobile"
+                type="tel"
+                value={selectedLead?.mobile ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Location</FormLabel>
+              <Input
+                name="location"
+                value={`${selectedLead?.village ?? ""}, ${selectedLead?.district ?? ""}, ${selectedLead?.state ?? ""}`}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Capacity</FormLabel>
+              <Input
+                name="capacity"
+                value={selectedLead?.capacity ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Sub Station Distance (KM)</FormLabel>
+              <Input
+                name="distance"
+                value={selectedLead?.distance ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Tariff (Per Unit)</FormLabel>
+              <Input
+                name="tarrif"
+                value={selectedLead?.tarrif ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Available Land (acres)</FormLabel>
+              <Input
+                name="available_land"
+                value={selectedLead?.land?.available_land ?? ""}
+                type="text"
+                fullWidth
+                variant="soft"
+                readOnly
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Creation Date</FormLabel>
+              <Input
+                name="entry_date"
+                type="date"
+                value={selectedLead?.entry_date ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Scheme</FormLabel>
+              <Select name="scheme" value={selectedLead?.scheme ?? ""} readOnly>
                 {["KUSUM A", "KUSUM C", "KUSUM C2", "Other"].map((option) => (
                   <Option key={option} value={option}>
                     {option}
                   </Option>
                 ))}
               </Select>
-            </Grid> */}
-
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Land Types</FormLabel>
+              <Autocomplete
+                options={landTypes}
+                value={selectedLead?.land?.land_type ?? null}
+                readOnly
+                getOptionLabel={(option) => option}
+                renderInput={(params) => (
+                  <Input
+                    {...params}
+                    placeholder="Land Type"
+                    variant="soft"
+                    required
+                  />
+                )}
+                isOptionEqualToValue={(option, value) => option === value}
+                sx={{ width: "100%" }}
+              />
+            </Grid>
             <Grid xs={12}>
-              <FormLabel>Status</FormLabel>
+              <FormLabel>Comments</FormLabel>
               <Input
-                name="status"
-                value={selectedModule?.status ?? ""}
+                name="comment"
+                value={selectedLead?.comment ?? ""}
+                multiline
+                rows={4}
                 readOnly
                 fullWidth
               />
@@ -867,4 +982,4 @@ const Module = forwardRef((props, ref) => {
     </>
   );
 });
-export default Module;
+export default DCCableTab;

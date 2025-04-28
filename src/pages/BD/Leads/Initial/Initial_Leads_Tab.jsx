@@ -206,7 +206,7 @@ function LeadPage({
           component="ul"
           sx={{
             display: "flex",
-            flexDirection: "row",
+            flexDirection: {md:"row", xs:"column"},
             alignItems: "center",
             justifyContent: "flex-start",
             listStyle: "none",

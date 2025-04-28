@@ -14,6 +14,8 @@ import {
   Grid,
 } from "@mui/joy";
 import { useNavigate } from "react-router-dom";
+import { useAddTransformerMutation } from "../../../redux/Eng/transformersSlice";
+import { toast } from "react-toastify";
 
 const AddNewTransformerForm = () => {
   const navigate = useNavigate();
@@ -30,21 +32,23 @@ const AddNewTransformerForm = () => {
     status: "",
   });
 
+  const [addTransformer, { isLoading }] = useAddTransformerMutation();
+
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submitting:", formData);
+    // console.log("Submitting:", formData);
+    const updatedPayload = {
+      ...formData,
+    };
 
     try {
-      const response = await axios.post(
-        "https://api.slnkoprotrac.com/v1/get-transformer-options",
-        formData
-      );
-      console.log("Response:", response.data);
-      alert("Transformer added successfully!");
+      const response = await addTransformer(updatedPayload).unwrap();
+      // console.log("Response:", response.data);
+      toast.success("Transformer added successfully!");
       setFormData({
         make: "",
         size: "",
@@ -57,26 +61,27 @@ const AddNewTransformerForm = () => {
         impedance: "",
         status: "",
       });
+      navigate("/module_sheet");
     } catch (error) {
       console.error("Error submitting form:", error);
       alert("Submission failed.");
     }
   };
 
-  const handleBack = () => {
-    setFormData({
-      make: "",
-      size: "",
-      type: "",
-      vector_group: "",
-      cooling_type: "",
-      primary_voltage: "",
-      secondary_voltage: "",
-      voltage_ratio: "",
-      impedance: "",
-      status: "",
-    });
-  };
+  // const handleBack = () => {
+  //   setFormData({
+  //     make: "",
+  //     size: "",
+  //     type: "",
+  //     vector_group: "",
+  //     cooling_type: "",
+  //     primary_voltage: "",
+  //     secondary_voltage: "",
+  //     voltage_ratio: "",
+  //     impedance: "",
+  //     status: "",
+  //   });
+  // };
 
   return (
     <Sheet

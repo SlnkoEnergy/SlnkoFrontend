@@ -14,6 +14,8 @@ import {
   Grid,
 } from "@mui/joy";
 import { useNavigate } from "react-router-dom";
+import { useAddModuleMutation } from "../../../redux/Eng/modulesSlice";
+import { toast } from "react-toastify";
 
 const AddNewModuleForm = () => {
   const navigate = useNavigate();
@@ -24,22 +26,24 @@ const AddNewModuleForm = () => {
     model: "",
     status: "",
   });
-
+const [addModule, { isLoading }] = useAddModuleMutation();
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submitting:", formData);
+    // console.log("Submitting:", formData);
+
+    const updatedPayload = {
+      ...formData,
+    
+    };
 
     try {
-      const response = await axios.post(
-        "https://api.slnkoprotrac.com/v1/add-module-master",
-        formData
-      );
-      console.log("Response:", response.data);
-      alert("Module added successfully!");
+      const response = await addModule(updatedPayload).unwrap();
+      // console.log("Response:", response.data);
+      toast.success("Module added successfully!");
       setFormData({
         make: "",
         power: "",
@@ -47,6 +51,7 @@ const AddNewModuleForm = () => {
         model: "",
         status: "",
       });
+      navigate("/module_sheet");
     } catch (error) {
       console.error("Error submitting form:", error);
       alert("Submission failed.");

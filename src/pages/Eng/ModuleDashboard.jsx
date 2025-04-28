@@ -18,10 +18,11 @@ import InverterTab from "../../component/Modules/Eng_Inverter";
 import TransformerTab from "../../component/Modules/Eng_Transformer";
 import LTPanelTab from "../../component/Modules/Eng_LT";
 import HTPanelTab from "../../component/Modules/Eng_HT";
-import CableTab from "../../component/Modules/Eng_Cable";
+import ACCableTab from "../../component/Modules/Eng_AC_Cable";
 import BOSTab from "../../component/Modules/Eng_BOS";
 import PoolingTab from "../../component/Modules/Eng_Pooling";
 import ModuleTab from "../../component/Modules/Eng_Modules";
+import DCCableTab from "../../component/Modules/Eng_DC_Cable";
 
 function ModuleSheet() {
   const allEngRef = useRef();
@@ -34,7 +35,8 @@ function ModuleSheet() {
     "Transformer",
     "LT Panel",
     "HT Panel",
-    "Cable",
+    "AC Cable",
+    "DC Cable",
     "BOS Items",
     "Pooling Station",
   ];
@@ -55,8 +57,10 @@ function ModuleSheet() {
         return <LTPanelTab ref={allEngRef} />;
       case "HT Panel":
         return <HTPanelTab ref={allEngRef} />;
-      case "Cable":
-        return <CableTab ref={allEngRef} />;
+      case "AC Cable":
+        return <ACCableTab ref={allEngRef} />;
+        case "DC Cable":
+        return <DCCableTab ref={allEngRef} />;
         case "BOS Items":
         return <BOSTab ref={allEngRef} />;
         case "Pooling Station":
@@ -93,15 +97,17 @@ const getAddNewRoute = (module) => {
     case "Transformer":
       return "/add_transformer";
     case "LT Panel":
-      return "#";
+      return "/add_lt_panel";
     case "HT Panel":
-      return "#";
-    case "Cable":
-      return "#";
+      return "/add_ht_panel";
+    case "AC Cable":
+      return "/add_ac_cable";
+      case "DC Cable":
+      return "/add_dc_cable";
     case "BOS Items":
-      return "#";
+      return "/add_bos";
     case "Pooling Station":
-      return "#";
+      return "/add_pooling";
     default:
       return "/add_module";
   }
@@ -251,7 +257,7 @@ function LeadPage({
           component="ul"
           sx={{
             display: "flex",
-            flexDirection: "row",
+            flexDirection: {md:"row", xs:"column"},
             alignItems: "center",
             justifyContent: "flex-start",
             padding: 0,

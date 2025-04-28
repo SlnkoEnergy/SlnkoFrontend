@@ -36,7 +36,7 @@ import NoData from "../../assets/alert-bell.svg";
 import { useGetInitialLeadsQuery } from "../../redux/leadsSlice";
 import { toast } from "react-toastify";
 
-const CableTab = forwardRef((props, ref) => {
+const ACCableTab = forwardRef((props, ref) => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -982,4 +982,4 @@ const CableTab = forwardRef((props, ref) => {
     </>
   );
 });
-export default CableTab;
+export default ACCableTab;

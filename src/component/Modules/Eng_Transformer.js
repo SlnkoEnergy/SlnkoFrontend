@@ -33,8 +33,8 @@ import animationData from "../../assets/Lotties/animation-loading.json";
 import { Autocomplete, Divider, Grid, Modal, Option, Select } from "@mui/joy";
 import { forwardRef, useCallback, useImperativeHandle } from "react";
 import NoData from "../../assets/alert-bell.svg";
-import { useGetInitialLeadsQuery } from "../../redux/leadsSlice";
 import { toast } from "react-toastify";
+import { useGetTransformersQuery } from "../../redux/Eng/transformersSlice";
 
 const TransformerTab = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -49,7 +49,7 @@ const TransformerTab = forwardRef((props, ref) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [user, setUser] = useState(null);
-  const [selectedLead, setSelectedLead] = useState(null);
+  const [selectedTransformer, setSelectedTransformer] = useState(null);
 
   // const [cachedData, setCachedData] = useState(() => {
   //   // Try to load cached data from localStorage
@@ -57,11 +57,11 @@ const TransformerTab = forwardRef((props, ref) => {
   //   return cached ? JSON.parse(cached) : [];
   // });
 
-  const { data: getLead = [], isLoading, error } = useGetInitialLeadsQuery();
-  const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
+  const { data: getTransformer = [], isLoading, error } = useGetTransformersQuery();
+  const transformers = useMemo(() => getTransformer?.data ?? [], [getTransformer?.data]);
 
-  // const LeadStatus = ({ lead }) => {
-  //   const { loi, ppa, loa, other_remarks, token_money } = lead;
+  // const LeadStatus = ({ module }) => {
+  //   const { loi, ppa, loa, other_remarks, token_money } = module;
 
   //   // Determine the initial status
   //   const isInitialStatus =
@@ -86,25 +86,16 @@ const TransformerTab = forwardRef((props, ref) => {
     }
   }, []);
 
-  const sourceOptions = {
-    "Referred by": ["Directors", "Clients", "Team members", "E-mail"],
-    "Social Media": ["Whatsapp", "Instagram", "LinkedIn"],
-    Marketing: ["Youtube", "Advertisements"],
-    "IVR/My Operator": [],
-    Others: [],
-  };
-  const landTypes = ["Leased", "Owned"];
-
   const [openModal, setOpenModal] = useState(false);
 
-  const handleOpenModal = useCallback((lead) => {
-    setSelectedLead(lead);
+  const handleOpenModal = useCallback((transformer) => {
+    setSelectedTransformer(transformer);
     setOpenModal(true);
   }, []);
 
   const handleCloseModal = useCallback(() => {
     setOpenModal(false);
-    setSelectedLead(null);
+    setSelectedTransformer(null);
   }, []);
 
   // useEffect(() => {
@@ -126,6 +117,23 @@ const TransformerTab = forwardRef((props, ref) => {
           style={{ width: "200px" }}
         />
       </FormControl> */}
+      {/* <FormControl size="sm">
+        <FormLabel>Status Filter</FormLabel>
+        <Select
+          size="sm"
+          placeholder="Select status"
+          value={statusFilter}
+          onChange={(e) => {
+            const selectedValue = e.target.value;
+            console.log("Selected Status:", selectedValue);
+            setStatusFilter(selectedValue);
+          }}
+        >
+          <Option value="">All</Option>
+          <Option value="Available">Available</Option>
+          <Option value="Not Available">Not Available</Option>
+        </Select>
+      </FormControl> */}
       <FormControl size="sm">
         <FormLabel>Status Filter</FormLabel>
         <Select size="sm" placeholder="Select status">
@@ -140,8 +148,8 @@ const TransformerTab = forwardRef((props, ref) => {
   const handleSelectAll = (event) => {
     if (event.target.checked) {
       // Select all visible (paginated) leads
-      const allIds = paginatedData.map((lead) => lead._id);
-      setSelected(allIds);
+      const allModules = paginatedData.map((transformer) => transformer._id);
+      setSelected(allModules);
     } else {
       // Unselect all
       setSelected([]);
@@ -271,47 +279,25 @@ const TransformerTab = forwardRef((props, ref) => {
     setSearchQuery(e.target.value.toLowerCase());
   };
 
-  const handleDateFilter = (e) => {
-    setSelectedDate(e.target.value);
-  };
+  // const handleDateFilter = (e) => {
+  //   setSelectedDate(e.target.value);
+  // };
 
   const filteredData = useMemo(() => {
-    if (!user || !user.name) return [];
-
-    return leads
-      .filter((lead) => {
-        const submittedBy = lead.submitted_by?.trim() || "";
-        const userName = user.name.trim();
-        const userRole = user.role?.toLowerCase();
-
-        const isAdmin = userRole === "admin" || userRole === "superadmin";
-        const matchesUser = isAdmin || submittedBy === userName;
-
-        const matchesQuery = [
-          "id",
-          "c_name",
-          "mobile",
-          "state",
-          "submitted_by",
-        ].some((key) => lead[key]?.toLowerCase().includes(searchQuery));
-
-        const matchesDate = selectedDate
-          ? formatDate(lead.entry_date).toLocaleDateString() ===
-            formatDate(selectedDate).toLocaleDateString()
-          : true;
-
-        return matchesUser && matchesQuery && matchesDate;
+    return transformers
+      .filter((transformer) => {
+        const matchesQuery = ["make", "status"].some((key) =>
+          transformer[key]?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+  
+        return matchesQuery;
       })
       .sort((a, b) => {
-        const dateA = formatDate(a.entry_date);
-        const dateB = formatDate(b.entry_date);
-
-        if (!dateA.id) return 1;
-        if (!dateB.id) return -1;
-
+        const dateA = new Date(a.createdAt);
+        const dateB = new Date(b.createdAt);
         return dateB - dateA;
       });
-  }, [leads, searchQuery, selectedDate, user]);
+  }, [transformers, searchQuery]);
 
   // const filteredData = useMemo(() => {
   //   return leads
@@ -417,41 +403,25 @@ const TransformerTab = forwardRef((props, ref) => {
     exportToCSV() {
       console.log("Exporting data to CSV...");
 
-      const headers = [
-        "Lead Id",
-        "Customer",
-        "Mobile",
-        "State",
-        "Scheme",
-        "Capacity",
-        "Substation Distance",
-        "Creation Date",
-        "Lead Status",
-        "Submitted_ By",
-      ];
+      const headers = ["Make", "Size", "Type", "Status"];
 
       // If selected list has items, use it. Otherwise export all.
-      const exportLeads =
+      const exportTransformers =
         selected.length > 0
-          ? leads.filter((lead) => selected.includes(lead._id))
-          : leads;
+          ? transformers.filter((transformer) => selected.includes(transformer._id))
+          : transformers;
 
-      if (exportLeads.length === 0) {
-        toast.warning("No leads available to export.");
+      if (exportTransformers.length === 0) {
+        toast.warning("No transformers available to export.");
         return;
       }
 
-      const rows = exportLeads.map((lead) => [
-        lead.id,
-        lead.c_name,
-        lead.mobile,
-        lead.state,
-        lead.scheme,
-        lead.capacity || "-",
-        lead.distance || "-",
-        lead.entry_date || "-",
-        lead.status || "",
-        lead.submitted_by || "-",
+      const rows = exportTransformers.map((transformer) => [
+        transformer.make || "-",
+        transformer.size || "-",
+        transformer.type || "-",
+        
+        transformer.status || "-",
       ]);
 
       const csvContent = [
@@ -466,7 +436,7 @@ const TransformerTab = forwardRef((props, ref) => {
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download =
-        selected.length > 0 ? "Selected_Leads.csv" : "Initial_Leads.csv";
+        selected.length > 0 ? "Selected_Transformer.csv" : "All_Transformers.csv";
       link.click();
     },
   }));
@@ -584,9 +554,9 @@ const TransformerTab = forwardRef((props, ref) => {
                 </Box>
                 {[
                   "Make",
-                  "Power(Wp)",
-                  // "Type",
-                  "Model No",
+                  "Size",
+                  "Type",
+                  // "Model No",
                   "Status",
                   "Action",
                 ].map((header, index) => (
@@ -608,7 +578,7 @@ const TransformerTab = forwardRef((props, ref) => {
 
             <Box component="tbody">
               {paginatedData.length > 0 ? (
-                paginatedData.map((lead, index) => (
+                paginatedData.map((transformer, index) => (
                   <Box
                     component="tr"
                     key={index}
@@ -627,35 +597,27 @@ const TransformerTab = forwardRef((props, ref) => {
                       <Checkbox
                         size="sm"
                         color="primary"
-                        checked={selected.includes(lead._id)}
-                        onChange={() => handleRowSelect(lead._id)}
+                        checked={selected.includes(transformer._id)}
+                        onChange={() => handleRowSelect(transformer._id)}
                       />
                     </Box>
 
                     {[
                       <span
-                        key={lead.id}
-                        onClick={() => handleOpenModal(lead)}
+                        key={transformer.id}
+                        onClick={() => handleOpenModal(transformer)}
                         style={{
                           cursor: "pointer",
                           color: "black",
                           textDecoration: "none",
                         }}
                       >
-                        {/* {lead.id} */}
-                        Rayzon Solar
+                        {transformer.make}
                       </span>,
-                      "580",
-                      // "N-TYPE TOPCON BIFACIAL",
-                      // `${lead.village}, ${lead.district}, ${lead.state}`,
-                      "RS580-144TGC",
-                      // lead.scheme,
-                      // lead.capacity || "-",
-                      // lead.distance || "-",
-                      // lead.entry_date || "-",
-                      // lead.submitted_by || "-",
-                      "Available",
-                      // <LeadStatus lead={lead} />,
+                      transformer.size,
+
+                      transformer.type,
+                      transformer.status,
                     ].map((data, idx) => (
                       <Box
                         component="td"
@@ -679,7 +641,7 @@ const TransformerTab = forwardRef((props, ref) => {
                         textAlign: "center",
                       }}
                     >
-                      <RowMenu currentPage={currentPage} id={lead.id} />
+                      <RowMenu currentPage={currentPage} id={transformer.id} />
                     </Box>
                   </Box>
                 ))
@@ -687,7 +649,7 @@ const TransformerTab = forwardRef((props, ref) => {
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={11}
+                    colSpan={6}
                     sx={{
                       padding: "8px",
                       textAlign: "center",
@@ -709,7 +671,7 @@ const TransformerTab = forwardRef((props, ref) => {
                         style={{ width: "50px", height: "50px" }}
                       />
                       <Typography fontStyle={"italic"}>
-                        No Initial Leads available
+                        No Transformers available
                       </Typography>
                     </Box>
                   </Box>
@@ -795,184 +757,113 @@ const TransformerTab = forwardRef((props, ref) => {
         >
           <Grid container spacing={2}>
             <Grid xs={12} sm={6}>
-              <FormLabel>Customer Name</FormLabel>
+              <FormLabel>Make</FormLabel>
               <Input
-                name="name"
-                value={selectedLead?.c_name ?? ""}
+                name="make"
+                value={selectedTransformer?.make ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
             <Grid xs={12} sm={6}>
-              <FormLabel>Company Name</FormLabel>
+              <FormLabel>Size</FormLabel>
               <Input
-                name="company"
-                value={selectedLead?.company ?? ""}
+                name="size"
+                value={selectedTransformer?.size ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
             <Grid xs={12} sm={6}>
-              <FormLabel>Group Name</FormLabel>
+              <FormLabel>Type</FormLabel>
               <Input
-                name="group"
-                value={selectedLead?.group ?? ""}
+                name="type"
+                value={selectedTransformer?.type ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
             <Grid xs={12} sm={6}>
-              <FormLabel>Source</FormLabel>
-              <Select
-                name="source"
-                value={selectedLead?.source ?? ""}
-                onChange={(e, newValue) =>
-                  setSelectedLead({
-                    ...selectedLead,
-                    source: newValue,
-                    reffered_by: "",
-                  })
-                }
-                fullWidth
-              >
-                {Object.keys(sourceOptions).map((option) => (
-                  <Option key={option} value={option}>
-                    {option}
-                  </Option>
-                ))}
-              </Select>
-            </Grid>
-            {selectedLead?.source &&
-              sourceOptions[selectedLead.source]?.length > 0 && (
-                <Grid xs={12} sm={6}>
-                  <FormLabel>Sub Source</FormLabel>
-                  <Select
-                    name="reffered_by"
-                    value={selectedLead?.reffered_by ?? ""}
-                    readOnly
-                    fullWidth
-                  >
-                    {sourceOptions[selectedLead.source].map((option) => (
-                      <Option key={option} value={option}>
-                        {option}
-                      </Option>
-                    ))}
-                  </Select>
-                </Grid>
-              )}
-            <Grid xs={12} sm={6}>
-              <FormLabel>Email ID</FormLabel>
+              <FormLabel>Vector Group</FormLabel>
               <Input
-                name="email"
-                type="email"
-                value={selectedLead?.email ?? ""}
+                name="vector_group"
+                value={selectedTransformer?.vector_group ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
             <Grid xs={12} sm={6}>
-              <FormLabel>Mobile Number</FormLabel>
+              <FormLabel>Vector Group</FormLabel>
               <Input
-                name="mobile"
-                type="tel"
-                value={selectedLead?.mobile ?? ""}
+                name="vector_group"
+                value={selectedTransformer?.vector_group ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
             <Grid xs={12} sm={6}>
-              <FormLabel>Location</FormLabel>
+              <FormLabel>Cooling Type</FormLabel>
               <Input
-                name="location"
-                value={`${selectedLead?.village ?? ""}, ${selectedLead?.district ?? ""}, ${selectedLead?.state ?? ""}`}
+                name="cooling_type"
+                value={selectedTransformer?.cooling_type ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
             <Grid xs={12} sm={6}>
-              <FormLabel>Capacity</FormLabel>
+              <FormLabel>Primary Voltage</FormLabel>
               <Input
-                name="capacity"
-                value={selectedLead?.capacity ?? ""}
+                name="primary_voltage"
+                value={selectedTransformer?.primary_voltage ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
             <Grid xs={12} sm={6}>
-              <FormLabel>Sub Station Distance (KM)</FormLabel>
+              <FormLabel>Secondary Voltage</FormLabel>
               <Input
-                name="distance"
-                value={selectedLead?.distance ?? ""}
+                name="secondary_voltage"
+                value={selectedTransformer?.secondary_voltage ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
             <Grid xs={12} sm={6}>
-              <FormLabel>Tariff (Per Unit)</FormLabel>
+              <FormLabel>Voltage Ratio</FormLabel>
               <Input
-                name="tarrif"
-                value={selectedLead?.tarrif ?? ""}
+                name="voltage_ratio"
+                value={selectedTransformer?.voltage_ratio ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
             <Grid xs={12} sm={6}>
-              <FormLabel>Available Land (acres)</FormLabel>
+              <FormLabel>% Impedance</FormLabel>
               <Input
-                name="available_land"
-                value={selectedLead?.land?.available_land ?? ""}
-                type="text"
-                fullWidth
-                variant="soft"
-                readOnly
-              />
-            </Grid>
-            <Grid xs={12} sm={6}>
-              <FormLabel>Creation Date</FormLabel>
-              <Input
-                name="entry_date"
-                type="date"
-                value={selectedLead?.entry_date ?? ""}
+                name="impedance"
+                value={selectedTransformer?.impedance ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
-            <Grid xs={12} sm={6}>
-              <FormLabel>Scheme</FormLabel>
-              <Select name="scheme" value={selectedLead?.scheme ?? ""} readOnly>
+           
+
+            {/* <Grid xs={12} sm={6}>
+              <FormLabel>Status</FormLabel>
+              <Select name="scheme" value={selectedModule?.scheme ?? ""} readOnly>
                 {["KUSUM A", "KUSUM C", "KUSUM C2", "Other"].map((option) => (
                   <Option key={option} value={option}>
                     {option}
                   </Option>
                 ))}
               </Select>
-            </Grid>
-            <Grid xs={12} sm={6}>
-              <FormLabel>Land Types</FormLabel>
-              <Autocomplete
-                options={landTypes}
-                value={selectedLead?.land?.land_type ?? null}
-                readOnly
-                getOptionLabel={(option) => option}
-                renderInput={(params) => (
-                  <Input
-                    {...params}
-                    placeholder="Land Type"
-                    variant="soft"
-                    required
-                  />
-                )}
-                isOptionEqualToValue={(option, value) => option === value}
-                sx={{ width: "100%" }}
-              />
-            </Grid>
+            </Grid> */}
+
             <Grid xs={12}>
-              <FormLabel>Comments</FormLabel>
+              <FormLabel>Status</FormLabel>
               <Input
-                name="comment"
-                value={selectedLead?.comment ?? ""}
-                multiline
-                rows={4}
+                name="status"
+                value={selectedTransformer?.status ?? ""}
                 readOnly
                 fullWidth
               />

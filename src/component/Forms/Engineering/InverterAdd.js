@@ -15,6 +15,8 @@ import {
   Stack,
 } from "@mui/joy";
 import { useNavigate } from "react-router-dom";
+import { useAddInverterMutation } from "../../../redux/Eng/invertersSlice";
+import { toast } from "react-toastify";
 
 const AddNewInverterForm = () => {
     const navigate = useNavigate();
@@ -26,21 +28,25 @@ const AddNewInverterForm = () => {
     status: "",
   });
 
+  const [addInverter, { isLoading }] = useAddInverterMutation();
+
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submitting:", formData);
+    // console.log("Submitting:", formData);
+
+    const updatedPayload = {
+      ...formData,
+    
+    };
 
     try {
-      const response = await axios.post(
-        "https://api.slnkoprotrac.com/v1/add-inveter-master",
-        formData
-      );
-      console.log("Response:", response.data);
-      alert("Inverter added successfully!");
+      const response = await addInverter(updatedPayload).unwrap();
+            // console.log("Response:", response.data);
+            toast.success("Inverter added successfully!");
       setFormData({
         inveter_make: "",
         inveter_model: "",
@@ -48,15 +54,16 @@ const AddNewInverterForm = () => {
         inveter_size: "",
         status: "",
       });
+      navigate("/module_sheet");
     } catch (error) {
       console.error("Error submitting form:", error);
       alert("Submission failed.");
     }
   };
 
-  const handleBack = () => {
-    window.history.back();
-  };
+  // const handleBack = () => {
+  //   window.history.back();
+  // };
 
   return (
     <Sheet

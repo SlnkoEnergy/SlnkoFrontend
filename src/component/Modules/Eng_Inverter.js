@@ -35,6 +35,7 @@ import { forwardRef, useCallback, useImperativeHandle } from "react";
 import NoData from "../../assets/alert-bell.svg";
 import { useGetInitialLeadsQuery } from "../../redux/leadsSlice";
 import { toast } from "react-toastify";
+import { useGetInvertersQuery } from "../../redux/Eng/invertersSlice";
 
 const InverterTab = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -49,7 +50,7 @@ const InverterTab = forwardRef((props, ref) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [user, setUser] = useState(null);
-  const [selectedLead, setSelectedLead] = useState(null);
+  const [selectedInverter, setSelectedInverter] = useState(null);
 
   // const [cachedData, setCachedData] = useState(() => {
   //   // Try to load cached data from localStorage
@@ -57,11 +58,14 @@ const InverterTab = forwardRef((props, ref) => {
   //   return cached ? JSON.parse(cached) : [];
   // });
 
-  const { data: getLead = [], isLoading, error } = useGetInitialLeadsQuery();
-  const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
+  const { data: getInverter = [], isLoading, error } = useGetInvertersQuery();
+  const inverters = useMemo(() => getInverter?.data ?? [], [getInverter?.data]);
 
-  // const LeadStatus = ({ lead }) => {
-  //   const { loi, ppa, loa, other_remarks, token_money } = lead;
+  // console.log(inverters);
+  
+
+  // const LeadStatus = ({ module }) => {
+  //   const { loi, ppa, loa, other_remarks, token_money } = module;
 
   //   // Determine the initial status
   //   const isInitialStatus =
@@ -86,25 +90,16 @@ const InverterTab = forwardRef((props, ref) => {
     }
   }, []);
 
-  const sourceOptions = {
-    "Referred by": ["Directors", "Clients", "Team members", "E-mail"],
-    "Social Media": ["Whatsapp", "Instagram", "LinkedIn"],
-    Marketing: ["Youtube", "Advertisements"],
-    "IVR/My Operator": [],
-    Others: [],
-  };
-  const landTypes = ["Leased", "Owned"];
-
   const [openModal, setOpenModal] = useState(false);
 
-  const handleOpenModal = useCallback((lead) => {
-    setSelectedLead(lead);
+  const handleOpenModal = useCallback((inverter) => {
+    setSelectedInverter(inverter);
     setOpenModal(true);
   }, []);
 
   const handleCloseModal = useCallback(() => {
     setOpenModal(false);
-    setSelectedLead(null);
+    setSelectedInverter(null);
   }, []);
 
   // useEffect(() => {
@@ -126,7 +121,24 @@ const InverterTab = forwardRef((props, ref) => {
           style={{ width: "200px" }}
         />
       </FormControl> */}
-        <FormControl size="sm">
+      {/* <FormControl size="sm">
+        <FormLabel>Status Filter</FormLabel>
+        <Select
+          size="sm"
+          placeholder="Select status"
+          value={statusFilter}
+          onChange={(e) => {
+            const selectedValue = e.target.value;
+            console.log("Selected Status:", selectedValue);
+            setStatusFilter(selectedValue);
+          }}
+        >
+          <Option value="">All</Option>
+          <Option value="Available">Available</Option>
+          <Option value="Not Available">Not Available</Option>
+        </Select>
+      </FormControl> */}
+      <FormControl size="sm">
         <FormLabel>Status Filter</FormLabel>
         <Select size="sm" placeholder="Select status">
           <Option value="">All</Option>
@@ -140,8 +152,8 @@ const InverterTab = forwardRef((props, ref) => {
   const handleSelectAll = (event) => {
     if (event.target.checked) {
       // Select all visible (paginated) leads
-      const allIds = paginatedData.map((lead) => lead._id);
-      setSelected(allIds);
+      const allInverters = paginatedData.map((inverter) => inverter._id);
+      setSelected(allInverters);
     } else {
       // Unselect all
       setSelected([]);
@@ -271,42 +283,62 @@ const InverterTab = forwardRef((props, ref) => {
     setSearchQuery(e.target.value.toLowerCase());
   };
 
-  const handleDateFilter = (e) => {
-    setSelectedDate(e.target.value);
-  };
+  // const handleDateFilter = (e) => {
+  //   setSelectedDate(e.target.value);
+  // };
+
+  // const filteredData = useMemo(() => {
+  //   // if (!user || !user.name) return [];
+
+  //   return modules
+  //     .filter((module) => {
+  //       // const submittedBy = module.submitted_by?.trim() || "";
+  //       // const userName = user.name.trim();
+  //       // const userRole = user.role?.toLowerCase();
+
+  //       // const isAdmin = userRole === "admin" || userRole === "superadmin";
+  //       // const matchesUser = isAdmin || submittedBy === userName;
+
+  //       const matchesQuery = [
+  //         "make",
+  //         "status",
+          
+  //       ].some((key) => module[key]?.toLowerCase().includes(searchQuery));
+
+  //       // const matchesDate = selectedDate
+  //       //   ? formatDate(module.entry_date).toLocaleDateString() ===
+  //       //     formatDate(selectedDate).toLocaleDateString()
+  //       //   : true;
+
+  //       return matchesQuery;
+  //     })
+  //     .sort((a, b) => {
+  //       const dateA = formatDate(a.createdAt);
+  //       const dateB = formatDate(b.createdAt);
+
+  //       if (!dateA.id) return 1;
+  //       if (!dateB.id) return -1;
+
+  //       return dateB - dateA;
+  //     });
+  // }, [modules, searchQuery, selectedDate, user]);
 
   const filteredData = useMemo(() => {
-    if (!user || !user.name) return [];
-
-    return leads
-      .filter((lead) => {
-        const submittedBy = lead.submitted_by?.trim() || "";
-        const userName = user.name.trim();
-        const userRole = user.role?.toLowerCase();
-
-        const isAdmin = userRole === "admin" || userRole === "superadmin";
-        const matchesUser = isAdmin || submittedBy === userName;
-
-        const matchesQuery = ["id", "c_name", "mobile", "state", "submitted_by"].some(
-          (key) => lead[key]?.toLowerCase().includes(searchQuery)
+    return inverters
+      .filter((inverter) => {
+        const matchesQuery = ["make", "status"].some((key) =>
+          inverter[key]?.toLowerCase().includes(searchQuery.toLowerCase())
         );
-
-        const matchesDate = selectedDate
-          ? formatDate(lead.entry_date).toLocaleDateString() === formatDate(selectedDate).toLocaleDateString()
-          : true;
-
-        return matchesUser && matchesQuery && matchesDate;
+  
+        return matchesQuery;
       })
       .sort((a, b) => {
-        const dateA = formatDate(a.entry_date);
-        const dateB = formatDate(b.entry_date);
-
-        if (!dateA.id) return 1;
-        if (!dateB.id) return -1;
-
+        const dateA = new Date(a.createdAt);
+        const dateB = new Date(b.createdAt);
         return dateB - dateA;
       });
-  }, [leads, searchQuery, selectedDate, user]);
+  }, [inverters, searchQuery]);
+  
 
   // const filteredData = useMemo(() => {
   //   return leads
@@ -375,6 +407,9 @@ const InverterTab = forwardRef((props, ref) => {
     return filteredData.slice(
       (currentPage - 1) * itemsPerPage,
       currentPage * itemsPerPage
+
+
+
     );
   }, [filteredData, currentPage, itemsPerPage]);
 
@@ -412,41 +447,25 @@ const InverterTab = forwardRef((props, ref) => {
     exportToCSV() {
       console.log("Exporting data to CSV...");
 
-      const headers = [
-        "Lead Id",
-        "Customer",
-        "Mobile",
-        "State",
-        "Scheme",
-        "Capacity",
-        "Substation Distance",
-        "Creation Date",
-        "Lead Status",
-        "Submitted_ By",
-      ];
+      const headers = ["Make", "Size", "Type", "Model", "Status"];
 
       // If selected list has items, use it. Otherwise export all.
-      const exportLeads =
+      const exportInverters =
         selected.length > 0
-          ? leads.filter((lead) => selected.includes(lead._id))
-          : leads;
+          ? inverters.filter((inverter) => selected.includes(inverter._id))
+          : inverters;
 
-      if (exportLeads.length === 0) {
-        toast.warning("No leads available to export.");
+      if (exportInverters.length === 0) {
+        toast.warning("No inverters available to export.");
         return;
       }
 
-      const rows = exportLeads.map((lead) => [
-        lead.id,
-        lead.c_name,
-        lead.mobile,
-        lead.state,
-        lead.scheme,
-        lead.capacity || "-",
-        lead.distance || "-",
-        lead.entry_date || "-",
-        lead.status || "",
-        lead.submitted_by || "-",
+      const rows = exportInverters.map((inverter) => [
+        inverter.inveter_make || "-",
+        inverter.inveter_size || "-",
+        inverter.inveter_type || "-",
+        inverter.inveter_model || "-",
+        inverter.status || "-",
       ]);
 
       const csvContent = [
@@ -461,7 +480,7 @@ const InverterTab = forwardRef((props, ref) => {
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download =
-        selected.length > 0 ? "Selected_Leads.csv" : "Initial_Leads.csv";
+        selected.length > 0 ? "Selected_Inverter.csv" : "All_Inverter.csv";
       link.click();
     },
   }));
@@ -540,7 +559,7 @@ const InverterTab = forwardRef((props, ref) => {
               padding: "20px",
             }}
           >
-            <PermScanWifiIcon style={{color:"red", fontSize:"2rem"}} />
+            <PermScanWifiIcon style={{ color: "red", fontSize: "2rem" }} />
             <Typography
               fontStyle={"italic"}
               fontWeight={"600"}
@@ -579,12 +598,11 @@ const InverterTab = forwardRef((props, ref) => {
                 </Box>
                 {[
                   "Make",
-                  "Power(Wp)",
-                  // "Type",
+                  "Size",
+                
                   "Model No",
                   "Status",
                   "Action",
-                  
                 ].map((header, index) => (
                   <Box
                     component="th"
@@ -604,7 +622,7 @@ const InverterTab = forwardRef((props, ref) => {
 
             <Box component="tbody">
               {paginatedData.length > 0 ? (
-                paginatedData.map((lead, index) => (
+                paginatedData.map((inverter, index) => (
                   <Box
                     component="tr"
                     key={index}
@@ -623,35 +641,27 @@ const InverterTab = forwardRef((props, ref) => {
                       <Checkbox
                         size="sm"
                         color="primary"
-                        checked={selected.includes(lead._id)}
-                        onChange={() => handleRowSelect(lead._id)}
+                        checked={selected.includes(inverter._id)}
+                        onChange={() => handleRowSelect(inverter._id)}
                       />
                     </Box>
 
                     {[
                       <span
-                        key={lead.id}
-                        onClick={() => handleOpenModal(lead)}
+                        key={inverter.id}
+                        onClick={() => handleOpenModal(inverter)}
                         style={{
                           cursor: "pointer",
                           color: "black",
                           textDecoration: "none",
                         }}
                       >
-                        {/* {lead.id} */}
-                        Rayzon Solar
+                        {inverter.inveter_make}
                       </span>,
-                      "580",
-                      // "N-TYPE TOPCON BIFACIAL",
-                      // `${lead.village}, ${lead.district}, ${lead.state}`,
-                      "RS580-144TGC",
-                      // lead.scheme,
-                      // lead.capacity || "-",
-                      // lead.distance || "-",
-                      // lead.entry_date || "-",
-                      // lead.submitted_by || "-",
-                      "Available",
-                      // <LeadStatus lead={lead} />,
+                      inverter.inveter_size,
+
+                      inverter.inveter_model,
+                      inverter.status,
                     ].map((data, idx) => (
                       <Box
                         component="td"
@@ -675,7 +685,7 @@ const InverterTab = forwardRef((props, ref) => {
                         textAlign: "center",
                       }}
                     >
-                      <RowMenu currentPage={currentPage} id={lead.id} />
+                      <RowMenu currentPage={currentPage} id={inverter.id} />
                     </Box>
                   </Box>
                 ))
@@ -683,7 +693,7 @@ const InverterTab = forwardRef((props, ref) => {
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={11}
+                    colSpan={6}
                     sx={{
                       padding: "8px",
                       textAlign: "center",
@@ -705,7 +715,7 @@ const InverterTab = forwardRef((props, ref) => {
                         style={{ width: "50px", height: "50px" }}
                       />
                       <Typography fontStyle={"italic"}>
-                        No Initial Leads available
+                        No Inverters available
                       </Typography>
                     </Box>
                   </Box>
@@ -791,184 +801,59 @@ const InverterTab = forwardRef((props, ref) => {
         >
           <Grid container spacing={2}>
             <Grid xs={12} sm={6}>
-              <FormLabel>Customer Name</FormLabel>
+              <FormLabel>Make</FormLabel>
               <Input
-                name="name"
-                value={selectedLead?.c_name ?? ""}
+                name="make"
+                value={selectedInverter?.inveter_make ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
             <Grid xs={12} sm={6}>
-              <FormLabel>Company Name</FormLabel>
+              <FormLabel>Size</FormLabel>
               <Input
-                name="company"
-                value={selectedLead?.company ?? ""}
+                name="power"
+                value={selectedInverter?.inveter_size ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
             <Grid xs={12} sm={6}>
-              <FormLabel>Group Name</FormLabel>
+              <FormLabel>Specification</FormLabel>
               <Input
-                name="group"
-                value={selectedLead?.group ?? ""}
+                name="type"
+                value={selectedInverter?.inveter_type ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
+
             <Grid xs={12} sm={6}>
-              <FormLabel>Source</FormLabel>
-              <Select
-                name="source"
-                value={selectedLead?.source ?? ""}
-                onChange={(e, newValue) =>
-                  setSelectedLead({
-                    ...selectedLead,
-                    source: newValue,
-                    reffered_by: "",
-                  })
-                }
-                fullWidth
-              >
-                {Object.keys(sourceOptions).map((option) => (
-                  <Option key={option} value={option}>
-                    {option}
-                  </Option>
-                ))}
-              </Select>
-            </Grid>
-            {selectedLead?.source &&
-              sourceOptions[selectedLead.source]?.length > 0 && (
-                <Grid xs={12} sm={6}>
-                  <FormLabel>Sub Source</FormLabel>
-                  <Select
-                    name="reffered_by"
-                    value={selectedLead?.reffered_by ?? ""}
-                    readOnly
-                    fullWidth
-                  >
-                    {sourceOptions[selectedLead.source].map((option) => (
-                      <Option key={option} value={option}>
-                        {option}
-                      </Option>
-                    ))}
-                  </Select>
-                </Grid>
-              )}
-            <Grid xs={12} sm={6}>
-              <FormLabel>Email ID</FormLabel>
+              <FormLabel>Model No</FormLabel>
               <Input
-                name="email"
-                type="email"
-                value={selectedLead?.email ?? ""}
+                name="model"
+                value={selectedInverter?.inveter_model ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
-            <Grid xs={12} sm={6}>
-              <FormLabel>Mobile Number</FormLabel>
-              <Input
-                name="mobile"
-                type="tel"
-                value={selectedLead?.mobile ?? ""}
-                readOnly
-                fullWidth
-              />
-            </Grid>
-            <Grid xs={12} sm={6}>
-              <FormLabel>Location</FormLabel>
-              <Input
-                name="location"
-                value={`${selectedLead?.village ?? ""}, ${selectedLead?.district ?? ""}, ${selectedLead?.state ?? ""}`}
-                readOnly
-                fullWidth
-              />
-            </Grid>
-            <Grid xs={12} sm={6}>
-              <FormLabel>Capacity</FormLabel>
-              <Input
-                name="capacity"
-                value={selectedLead?.capacity ?? ""}
-                readOnly
-                fullWidth
-              />
-            </Grid>
-            <Grid xs={12} sm={6}>
-              <FormLabel>Sub Station Distance (KM)</FormLabel>
-              <Input
-                name="distance"
-                value={selectedLead?.distance ?? ""}
-                readOnly
-                fullWidth
-              />
-            </Grid>
-            <Grid xs={12} sm={6}>
-              <FormLabel>Tariff (Per Unit)</FormLabel>
-              <Input
-                name="tarrif"
-                value={selectedLead?.tarrif ?? ""}
-                readOnly
-                fullWidth
-              />
-            </Grid>
-            <Grid xs={12} sm={6}>
-              <FormLabel>Available Land (acres)</FormLabel>
-              <Input
-                name="available_land"
-                value={selectedLead?.land?.available_land ?? ""}
-                type="text"
-                fullWidth
-                variant="soft"
-                readOnly
-              />
-            </Grid>
-            <Grid xs={12} sm={6}>
-              <FormLabel>Creation Date</FormLabel>
-              <Input
-                name="entry_date"
-                type="date"
-                value={selectedLead?.entry_date ?? ""}
-                readOnly
-                fullWidth
-              />
-            </Grid>
-            <Grid xs={12} sm={6}>
-              <FormLabel>Scheme</FormLabel>
-              <Select name="scheme" value={selectedLead?.scheme ?? ""} readOnly>
+
+            {/* <Grid xs={12} sm={6}>
+              <FormLabel>Status</FormLabel>
+              <Select name="scheme" value={selectedModule?.scheme ?? ""} readOnly>
                 {["KUSUM A", "KUSUM C", "KUSUM C2", "Other"].map((option) => (
                   <Option key={option} value={option}>
                     {option}
                   </Option>
                 ))}
               </Select>
-            </Grid>
-            <Grid xs={12} sm={6}>
-              <FormLabel>Land Types</FormLabel>
-              <Autocomplete
-                options={landTypes}
-                value={selectedLead?.land?.land_type ?? null}
-                readOnly
-                getOptionLabel={(option) => option}
-                renderInput={(params) => (
-                  <Input
-                    {...params}
-                    placeholder="Land Type"
-                    variant="soft"
-                    required
-                  />
-                )}
-                isOptionEqualToValue={(option, value) => option === value}
-                sx={{ width: "100%" }}
-              />
-            </Grid>
+            </Grid> */}
+
             <Grid xs={12}>
-              <FormLabel>Comments</FormLabel>
+              <FormLabel>Status</FormLabel>
               <Input
-                name="comment"
-                value={selectedLead?.comment ?? ""}
-                multiline
-                rows={4}
+                name="status"
+                value={selectedInverter?.status ?? ""}
                 readOnly
                 fullWidth
               />

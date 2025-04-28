@@ -44,10 +44,10 @@ const PaymentDetail = forwardRef((props, ref) => {
             const project = projects.find(
               (proj) => String(proj.p_id) === String(item.p_id)
             );
-            const purchaseEntry = purchase.find(
-              (pur) => String(pur.p_id) === String(item.p_id)
-            );
-            const remarks = `${purchaseEntry?.po_number || "-"} / ${item.paid_for || "-"} / ${item.vendor || ""} / ${project?.code || "-"}`;
+            // const purchaseEntry = purchase.find(
+            //   (pur) => String(pur.p_id) === String(item.p_id)
+            // );
+            const remarks = `${item?.po_number || "-"} / ${item.paid_for || "-"} / ${item.vendor || ""} / ${project?.code || "-"}`;
 
             return {
               id: item._id,
