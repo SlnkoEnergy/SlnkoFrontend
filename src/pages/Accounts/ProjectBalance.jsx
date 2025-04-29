@@ -14,10 +14,17 @@ import Header from "../../component/Partials/Header";
 import Sidebar from "../../component/Partials/Sidebar";
 import ProjectBalances from "../../component/ProjectBalance";
 import { useEffect, useState } from "react";
+import { Snackbar } from "@mui/joy";
 
 function ProjectBalance() {
-  const navigate = useNavigate();
+  
   const [user, setUser] = useState(null);
+  const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    setOpen(true);
+  };
 
   useEffect(() => {
     const userData = getUserData();
@@ -78,7 +85,7 @@ function ProjectBalance() {
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0 , marginTop: {md:"4%", lg:"0%"}}}
+              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
               <Link
                 underline="hover"
@@ -111,22 +118,22 @@ function ProjectBalance() {
             <Typography level="h2" component="h1">
               Project Balances
             </Typography>
-           
-              <Box
-                sx={{
-                  display: "flex",
-                  mb: 1,
-                  gap: 1,
-                  flexDirection: { xs: "column", sm: "row" },
-                  alignItems: { xs: "start", sm: "center" },
-                  flexWrap: "wrap",
-                  justifyContent: "center",
-                }}
-              > 
-              {(user?.name === "IT Team" ||
-              user?.name === "Guddu Rani Dubey" ||
-              user?.name === "Prachi Singh" ||
-              user?.name === "admin") && (
+
+            <Box
+              sx={{
+                display: "flex",
+                mb: 1,
+                gap: 1,
+                flexDirection: { xs: "column", sm: "row" },
+                alignItems: { xs: "start", sm: "center" },
+                flexWrap: "wrap",
+                justifyContent: "center",
+              }}
+            >
+              {/* {(user?.name === "IT Team" ||
+                user?.name === "Guddu Rani Dubey" ||
+                user?.name === "Prachi Singh" ||
+                user?.name === "admin") && (
                 <Button
                   color="primary"
                   onClick={() => navigate("/add_project")}
@@ -134,11 +141,32 @@ function ProjectBalance() {
                 >
                   Add New Project +
                 </Button>
- )}
-  {(user?.name === "IT Team" ||
-              user?.name === "Guddu Rani Dubey" ||
-              user?.name === "Prachi Singh" ||
-              user?.name === "admin" || user?.name === "Naresh Kumar" || user?.name === "Chandan Singh") && (
+              )} */}
+              {(user?.name === "IT Team" ||
+                user?.name === "Guddu Rani Dubey" ||
+                user?.name === "Prachi Singh" ||
+                user?.name === "admin") && (
+                <Button color="primary" onClick={handleClick} size="sm">
+                  Add New Project +
+                </Button>
+              )}
+
+              <Snackbar
+                open={open}
+                onClose={() => setOpen(false)}
+                variant="soft"
+                color="danger"
+                anchorOrigin={{ vertical: "top", horizontal: "center" }}
+                autoHideDuration={4000}
+              >
+                Projects can now only be added from the Handover Sheet.
+              </Snackbar>
+              {(user?.name === "IT Team" ||
+                user?.name === "Guddu Rani Dubey" ||
+                user?.name === "Prachi Singh" ||
+                user?.name === "admin" ||
+                user?.name === "Naresh Kumar" ||
+                user?.name === "Chandan Singh") && (
                 <Button
                   color="primary"
                   startDecorator={<DownloadRoundedIcon />}
@@ -148,8 +176,7 @@ function ProjectBalance() {
                   Export to CSV
                 </Button>
               )}
-              </Box>
-           
+            </Box>
           </Box>
           <ProjectBalances ref={projectBalancesRef} />
         </Box>

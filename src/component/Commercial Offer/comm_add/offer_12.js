@@ -399,7 +399,7 @@ const Reference3 = () => {
                   <th>UoM</th>
                   {/* <th>Qty (Int.)</th> */}
                   <th>Qty</th>
-                  <th>Tentative Mac</th>
+                  <th>Tentative Make</th>
                   <th>Category</th>
                   {/* <th>Rate</th>
                      <th>Rate UoM</th>

@@ -107,12 +107,25 @@ function PaymentRequest() {
       } catch (error) {
         console.error("Error fetching data:", error);
         setError(
-          <span style={{ display: "flex", alignItems: "center", gap: "5px", color: "red", justifyContent:"center", flexDirection:"column" , padding: "20px"}}>
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              color: "red",
+              justifyContent: "center",
+              flexDirection: "column",
+              padding: "20px",
+            }}
+          >
             <PermScanWifiIcon />
-            <Typography fontStyle={"italic"} fontWeight={"600"} sx={{color:"#0a6bcc"}} >
-            Hang tight! Internet Connection will be back soon..
+            <Typography
+              fontStyle={"italic"}
+              fontWeight={"600"}
+              sx={{ color: "#0a6bcc" }}
+            >
+              Hang tight! Internet Connection will be back soon..
             </Typography>
-            
           </span>
         );
       } finally {
@@ -187,7 +200,6 @@ function PaymentRequest() {
             variant: "success",
           });
 
-        
           if (onAccountMatchSuccess) {
             onAccountMatchSuccess();
           }
@@ -267,7 +279,7 @@ function PaymentRequest() {
           </form>
         )}
 
-        {isMatched && (
+        {/* {isMatched && (
           <div style={{ marginTop: "1rem" }}>
             <Chip
               label="Account Matched Successfully"
@@ -275,6 +287,13 @@ function PaymentRequest() {
               icon={<CheckIcon />}
             />
           </div>
+        )} */}
+        {isMatched && (
+          <Box sx={{ mt: 2 }}>
+            <Chip variant="soft" color="success" startDecorator={<CheckIcon />}>
+              Matched
+            </Chip>
+          </Box>
         )}
       </div>
     );
@@ -431,12 +450,12 @@ function PaymentRequest() {
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
-          marginLeft: { xl: "15%", lg: "18%",},
+          marginLeft: { xl: "15%", lg: "18%" },
           borderRadius: "sm",
           py: 2,
           // display: { xs: "none", sm: "flex" },
           flexWrap: "wrap",
-          display:"flex",
+          display: "flex",
           gap: 1.5,
           "& > *": {
             minWidth: { xs: "120px", md: "160px" },
@@ -623,7 +642,7 @@ function PaymentRequest() {
                         textAlign: "center",
                       }}
                     >
-                  {Number(payment.amt_for_customer).toLocaleString("en-IN")}
+                      {Number(payment.amt_for_customer).toLocaleString("en-IN")}
                     </Box>
                     <Box
                       component="td"
@@ -661,19 +680,24 @@ function PaymentRequest() {
                       // fontStyle: "italic",
                     }}
                   >
-                     <Box sx={{
-                      fontStyle: "italic",
-                      display:"flex",
-                      flexDirection:"column",
-                      alignItems:"center",
-                      justifyContent:"center"
-                    }}>
-                      <img src = {NoData} alt="No data Image" style={{width:"50px", height:'50px'}}/>
-                    <Typography fontStyle={"italic"}>
-                      No approved available
+                    <Box
+                      sx={{
+                        fontStyle: "italic",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <img
+                        src={NoData}
+                        alt="No data Image"
+                        style={{ width: "50px", height: "50px" }}
+                      />
+                      <Typography fontStyle={"italic"}>
+                        No approved available
                       </Typography>
-                      </Box>
-                    
+                    </Box>
                   </Box>
                 </Box>
               )}
@@ -690,10 +714,10 @@ function PaymentRequest() {
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           // display: { xs: "none", md: "flex" },
-          display:"flex",
-          flexDirection:{xs: "column", sm: "row"},
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          marginLeft: {lg: "18%", xl: "15%" },
+          marginLeft: { lg: "18%", xl: "15%" },
         }}
       >
         <Button

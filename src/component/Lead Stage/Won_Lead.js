@@ -28,14 +28,11 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../../assets/Lotties/animation-loading.json";
 // import Axios from "../utils/Axios";
 import FollowTheSignsIcon from "@mui/icons-material/FollowTheSigns";
-import { Autocomplete, Chip, Grid, Modal, Option, Select } from "@mui/joy";
+import { Autocomplete, Chip, Divider, Grid, Modal, Option, Select, Stack } from "@mui/joy";
 import { forwardRef, useCallback, useImperativeHandle } from "react";
 import { toast } from "react-toastify";
 import NoData from "../../assets/alert-bell.svg";
-import {
-  
-  useGetWonLeadsQuery,
-} from "../../redux/leadsSlice";
+import { useGetWonLeadsQuery } from "../../redux/leadsSlice";
 import { useGetHandOverQuery } from "../../redux/camsSlice";
 
 const StandByRequest = forwardRef((props, ref) => {
@@ -51,7 +48,6 @@ const StandByRequest = forwardRef((props, ref) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedLead, setSelectedLead] = useState(null);
   const [user, setUser] = useState(null);
-  
 
   const { data: getLead = [], isLoading, error } = useGetWonLeadsQuery();
   const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
@@ -79,13 +75,13 @@ const StandByRequest = forwardRef((props, ref) => {
   //   );
   // };
 
-    useEffect(() => {
-      const storedUser = localStorage.getItem("userDetails");
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-        // console.log("User Loaded:", JSON.parse(storedUser));
-      }
-    }, []);
+  useEffect(() => {
+    const storedUser = localStorage.getItem("userDetails");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+      // console.log("User Loaded:", JSON.parse(storedUser));
+    }
+  }, []);
 
   const sourceOptions = {
     "Referred by": ["Directors", "Clients", "Team members", "E-mail"],
@@ -117,15 +113,12 @@ const StandByRequest = forwardRef((props, ref) => {
   const status_handOver = (leadId) => {
     const matchedHandOver = HandOverSheet.find((sheet) => sheet.id === leadId);
     const submittedBy = matchedHandOver?.attached_details?.submitted_by_BD;
-  
+
     const isBDUser = user?.department === "BD";
     const isSubmittedByBD = !!submittedBy;
-  
-    const status =
-      isBDUser || isSubmittedByBD
-        ? "done"
-        : "Not Found";
-  
+
+    const status = isSubmittedByBD ? "done" : "Not Found";
+
     return {
       status,
       submittedBy: submittedBy || "Not Found",
@@ -303,38 +296,42 @@ const StandByRequest = forwardRef((props, ref) => {
   //     });
   // }, [leads, searchQuery, selectedDate]);
 
+  const filteredData = useMemo(() => {
+    if (!user || !user.name) return [];
 
-    const filteredData = useMemo(() => {
-      if (!user || !user.name) return [];
-  
-      return leads
-        .filter((lead) => {
-          const submittedBy = lead.submitted_by?.trim() || "";
-          const userName = user.name.trim();
-          const userRole = user.role?.toLowerCase();
-  
-          const isAdmin = userRole === "admin" || userRole === "superadmin";
-          const matchesUser = isAdmin || submittedBy === userName;
-  
-          const matchesQuery = ["id", "c_name", "mobile", "state","submitted_by"].some(
-            (key) => lead[key]?.toLowerCase().includes(searchQuery)
-          );
-  
-          const matchesDate = selectedDate
-            ? formatDate(lead.entry_date).toLocaleDateString() === formatDate(selectedDate).toLocaleDateString()
-            : true;
-  
-          return matchesUser && matchesQuery && matchesDate;
-        })
-        .sort((a, b) => {
-          const dateA = formatDate(a.entry_date);
-          const dateB = formatDate(b.entry_date);
-  
-          if (!dateA.id) return 1;
+    return leads
+      .filter((lead) => {
+        const submittedBy = lead.submitted_by?.trim() || "";
+        const userName = user.name.trim();
+        const userRole = user.role?.toLowerCase();
+
+        const isAdmin = userRole === "admin" || userRole === "superadmin";
+        const matchesUser = isAdmin || submittedBy === userName;
+
+        const matchesQuery = [
+          "id",
+          "c_name",
+          "mobile",
+          "state",
+          "submitted_by",
+        ].some((key) => lead[key]?.toLowerCase().includes(searchQuery));
+
+        const matchesDate = selectedDate
+          ? formatDate(lead.entry_date).toLocaleDateString() ===
+            formatDate(selectedDate).toLocaleDateString()
+          : true;
+
+        return matchesUser && matchesQuery && matchesDate;
+      })
+      .sort((a, b) => {
+        const dateA = formatDate(a.entry_date);
+        const dateB = formatDate(b.entry_date);
+
+        if (!dateA.id) return 1;
         if (!dateB.id) return -1;
-          return dateB - dateA;
-        });
-    }, [leads, searchQuery, selectedDate, user]);
+        return dateB - dateA;
+      });
+  }, [leads, searchQuery, selectedDate, user]);
 
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
@@ -433,6 +430,13 @@ const StandByRequest = forwardRef((props, ref) => {
       link.click();
     },
   }));
+  const [expandedRows, setExpandedRows] = useState([]);
+
+  const toggleRow = (id) => {
+    setExpandedRows((prev) =>
+      prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
+    );
+  };
 
   return (
     <>
@@ -471,16 +475,17 @@ const StandByRequest = forwardRef((props, ref) => {
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "initial" },
+          display: "flex",
+          flexDirection: "column",
           width: "100%",
           borderRadius: "sm",
-          flexShrink: 1,
           overflow: "auto",
-          minHeight: 0,
           marginLeft: { xl: "15%", lg: "18%" },
           maxWidth: { lg: "85%", sm: "100%" },
+          minHeight: { xs: "fit-content", lg: "0%" },
         }}
       >
+        {/* Loading Spinner */}
         {isLoading ? (
           <Box
             display="flex"
@@ -497,18 +502,14 @@ const StandByRequest = forwardRef((props, ref) => {
             />
           </Box>
         ) : error ? (
-          <span
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "5px",
-              // color: "red",
-              justifyContent: "center",
-              flexDirection: "column",
-              padding: "20px",
-            }}
+          <Box
+            display="flex"
+            flexDirection="column"
+            alignItems="center"
+            justifyContent="center"
+            padding="20px"
           >
-            <PermScanWifiIcon style={{color:"red", fontSize:"2rem"}} />
+            <PermScanWifiIcon style={{ color: "red", fontSize: "2rem" }} />
             <Typography
               fontStyle={"italic"}
               fontWeight={"600"}
@@ -516,187 +517,259 @@ const StandByRequest = forwardRef((props, ref) => {
             >
               Hang tight! Internet Connection will be back soon..
             </Typography>
-          </span>
-        ) : (
+          </Box>
+        ) : paginatedData.length === 0 ? (
           <Box
-            component="table"
-            sx={{ width: "100%", borderCollapse: "collapse" }}
+            sx={{
+              fontStyle: "italic",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
           >
-            <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
-              <Box component="tr">
-                <Box
-                  component="th"
-                  sx={{
-                    borderBottom: "1px solid #ddd",
-                    padding: "8px",
-                    textAlign: "center",
-                  }}
-                >
-                  <Checkbox
-                    size="sm"
-                    checked={
-                      selected.length === paginatedData.length &&
-                      paginatedData.length > 0
-                    }
-                    indeterminate={
-                      selected.length > 0 &&
-                      selected.length < paginatedData.length
-                    }
-                    onChange={handleSelectAll}
-                  />
-                </Box>
-                {[
-                  "Lead Id",
-                  "Customer",
-                  "Mobile",
-                  "State",
-                  "Scheme",
-                  "Capacity",
-                  "Substation Distance",
-                  "Creation Date",
-                  // "Lead Status",
-                  "HandOver Status",
-                  "HandOver submission",
-                  "Action",
-                ].map((header, index) => (
-                  <Box
-                    component="th"
-                    key={index}
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
+            <img
+              src={NoData}
+              alt="No data"
+              style={{ width: "50px", height: "50px" }}
+            />
+            <Typography fontStyle={"italic"}>No Won Leads available</Typography>
+          </Box>
+        ) : (
+          <>
+            {/* Desktop View - Single Table with Header and Body */}
+            <Box
+              component="table"
+              sx={{
+                display: { xs: "none", md: "table" },
+                width: "100%",
+                borderCollapse: "collapse",
+                backgroundColor: "neutral.softBg",
+              }}
+            >
+              <thead>
+                <tr>
+                  <th
+                    style={{
+                      padding: 8,
                       textAlign: "center",
-                      fontWeight: "bold",
+                      borderBottom: "1px solid #ccc",
                     }}
-                  >
-                    {header}
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-
-            {/*****pagination ****/}
-            <Box component="tbody">
-              {paginatedData.length > 0 ? (
-                paginatedData.map((lead, index) => (
-                  <Box
-                    component="tr"
-                    key={index}
-                    sx={{
-                      "&:hover": { backgroundColor: "neutral.plainHoverBg" },
-                    }}
-                  >
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
+                  ></th>
+                  {[
+                    "Lead Id",
+                    "Customer",
+                    "Mobile",
+                    "State",
+                    "Scheme",
+                    "Capacity(MW)",
+                    "Substation Distance(KM)",
+                    "Date",
+                    "HandOver Status",
+                    "HandOver submission",
+                    "Action",
+                  ].map((header, idx) => (
+                    <th
+                      key={idx}
+                      style={{
+                        padding: 8,
                         textAlign: "center",
+                        fontWeight: "bold",
+                        borderBottom: "1px solid #ccc",
                       }}
                     >
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody
+                style={{
+                  backgroundColor: "#fff",
+                }}
+              >
+                {paginatedData.map((lead) => (
+                  <tr
+                    key={lead._id}
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      cursor: "pointer",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#F4F9FF";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "";
+                    }}
+                  >
+                    <td style={{ textAlign: "center", padding: 8 }}>
                       <Checkbox
                         size="sm"
                         color="primary"
                         checked={selected.includes(lead._id)}
                         onChange={() => handleRowSelect(lead._id)}
                       />
-                    </Box>
-
+                    </td>
                     {[
                       <span
-                        key={lead.id}
+                        key="id"
                         onClick={() => handleOpenModal(lead)}
-                        style={{
-                          cursor: "pointer",
-                          color: "black",
-                          textDecoration: "none",
-                        }}
+                        style={{ cursor: "pointer" }}
                       >
                         {lead.id}
                       </span>,
                       lead.c_name,
                       lead.mobile,
-                      // `${lead.village}, ${lead.district}, ${lead.state}`,
                       lead.state,
                       lead.scheme,
                       lead.capacity || "-",
                       lead.distance || "-",
                       lead.entry_date || "-",
-                      // <LeadStatus lead={lead} />,
                       <Chip
+                        variant="soft"
+                        color={
+                          status_handOver(lead.id).status === "done"
+                            ? "success"
+                            : "warning"
+                        }
+                        size="sm"
+                      >
+                        {status_handOver(lead.id).status === "done"
+                          ? "Completed"
+                          : "Pending"}
+                      </Chip>,
+                      status_handOver(lead.id).submittedBy || "-",
+                      <RowMenu currentPage={currentPage} id={lead.id} />,
+                    ].map((data, idx) => (
+                      <td key={idx} style={{ padding: 8, textAlign: "center" }}>
+                        {data}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </Box>
+
+            {/* Mobile View - Card Style */}
+            {paginatedData.map((lead) => {
+              const isExpanded = expandedRows.includes(lead._id);
+              return (
+                <Box
+                  key={lead._id}
+                  sx={{
+                    display: { xs: "flex", md: "none" },
+                    flexDirection: "column",
+                    borderBottom: "1px solid #ddd",
+                    p: 2,
+                    "&:hover": { backgroundColor: "neutral.plainHoverBg" },
+                  }}
+                >
+                  {/* Header Section */}
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      mb: 1,
+                    }}
+                  >
+                    <Typography
+                      level="body1"
+                      fontWeight="lg"
+                      onClick={() => handleOpenModal(lead)}
+                      sx={{ cursor: "pointer", flex: 1 }}
+                    >
+                      {lead.c_name}
+                    </Typography>
+
+                    <Chip
                       variant="soft"
                       color={
-                        status_handOver(lead.id).status === "done" ? "success" : "warning"
+                        status_handOver(lead.id).status === "done"
+                          ? "success"
+                          : "warning"
                       }
                       size="sm"
+                      sx={{ ml: 1 }}
                     >
                       {status_handOver(lead.id).status === "done"
                         ? "Completed"
                         : "Pending"}
                     </Chip>
-                    ,
-                      status_handOver(lead.id).submittedBy || "-",
-                    ].map((data, idx) => (
-                      <Box
-                        component="td"
-                        key={idx}
-                        sx={{
-                          borderBottom: "1px solid #ddd",
-                          padding: "8px",
-                          textAlign: "center",
-                        }}
-                      >
-                        {data}
-                      </Box>
-                    ))}
 
-                    {/* Actions */}
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
+                    <Box sx={{ ml: 1 }}>
                       <RowMenu currentPage={currentPage} id={lead.id} />
                     </Box>
                   </Box>
-                ))
-              ) : (
-                <Box component="tr">
-                  <Box
-                    component="td"
-                    colSpan={12}
-                    sx={{
-                      padding: "8px",
-                      textAlign: "center",
-                      fontStyle: "italic",
-                    }}
+
+                 
+                  <Button
+                    size="sm"
+                    variant="outlined"
+                    onClick={() => toggleRow(lead._id)}
+                    sx={{ width: "fit-content", mb: 1 }}
                   >
-                    <Box
-                      sx={{
-                        fontStyle: "italic",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <img
-                        src={NoData}
-                        alt="No data"
-                        style={{ width: "50px", height: "50px" }}
-                      />
-                      <Typography fontStyle={"italic"}>
-                        No Won Leads available
-                      </Typography>
+                    {isExpanded ? "Hide Details" : "View Details"}
+                  </Button>
+
+              
+                  {isExpanded && (
+                    <Box sx={{ pl: 1 }}>
+                      <Divider sx={{ my: 1 }} />
+                      <Stack spacing={1}>
+                        {[
+                          { label: "Lead ID", value: lead.id },
+                          { label: "Mobile", value: lead.mobile },
+                          { label: "State", value: lead.state },
+                          { label: "Scheme", value: lead.scheme },
+                          {
+                            label: "Capacity (MW)",
+                            value: lead.capacity || "-",
+                          },
+                          {
+                            label: "Distance (KM)",
+                            value: lead.distance || "-",
+                          },
+                          { label: "Date", value: lead.entry_date || "-" },
+                          {
+                            label: "Handover Status",
+                            value: (
+                              <Chip
+                                variant="soft"
+                                color={
+                                  status_handOver(lead.id).status === "done"
+                                    ? "success"
+                                    : "warning"
+                                }
+                                size="sm"
+                              >
+                                {status_handOver(lead.id).status === "done"
+                                  ? "Completed"
+                                  : "Pending"}
+                              </Chip>
+                            ),
+                          },
+                          {
+                            label: "Handover Submission",
+                            value: status_handOver(lead.id).submittedBy || "-",
+                          },
+                        ].map((item, idx) => (
+                          <Box key={idx}>
+                            <Typography level="body2" fontWeight="md">
+                              {item.label}:
+                            </Typography>
+                            <Typography level="body2" color="neutral">
+                              {item.value}
+                            </Typography>
+                          </Box>
+                        ))}
+                      </Stack>
                     </Box>
-                  </Box>
+                  )}
                 </Box>
-              )}
-            </Box>
-          </Box>
+              );
+            })}
+          </>
         )}
       </Sheet>
 
@@ -900,10 +973,9 @@ const StandByRequest = forwardRef((props, ref) => {
               <FormLabel>Available Land (acres)</FormLabel>
               <Input
                 name="available_land"
-                value={selectedLead?.land?.available_land ?? ""}
+                value={selectedLead?.land?.available_land ?? "-"}
                 type="text"
                 fullWidth
-                variant="soft"
                 readOnly
               />
             </Grid>
@@ -911,8 +983,8 @@ const StandByRequest = forwardRef((props, ref) => {
               <FormLabel>Creation Date</FormLabel>
               <Input
                 name="entry_date"
-                type="date"
-                value={selectedLead?.entry_date ?? ""}
+                type="text"
+                value={selectedLead?.entry_date ?? "-"}
                 readOnly
                 fullWidth
               />
@@ -935,22 +1007,18 @@ const StandByRequest = forwardRef((props, ref) => {
                 readOnly
                 getOptionLabel={(option) => option}
                 renderInput={(params) => (
-                  <Input
-                    {...params}
-                    placeholder="Land Type"
-                    variant="soft"
-                    required
-                  />
+                  <Input {...params} placeholder="Land Type" required />
                 )}
                 isOptionEqualToValue={(option, value) => option === value}
                 sx={{ width: "100%" }}
               />
             </Grid>
-            <Grid xs={12}>
+            <Grid xs={12} sm={6}>
               <FormLabel>Comments</FormLabel>
               <Input
                 name="comment"
                 value={selectedLead?.comment ?? ""}
+                type="textarea"
                 multiline
                 rows={4}
                 readOnly

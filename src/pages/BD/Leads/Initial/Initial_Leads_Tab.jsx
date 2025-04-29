@@ -20,6 +20,7 @@ import Lead_Warm from "../../../../component/Lead Stage/Warm_Lead";
 import Lead_Won from "../../../../component/Lead Stage/Won_Lead";
 import Header from "../../../../component/Partials/Header";
 import Sidebar from "../../../../component/Partials/Sidebar";
+import { Dropdown, Menu, MenuButton, MenuItem, Option, Select } from "@mui/joy";
 
 function InitialLeads() {
   const allLeadRef = useRef();
@@ -160,6 +161,7 @@ function LeadPage({
               justifyContent: "center",
             }}
           >
+          
             {(selectedLead === "Won" ||
               selectedLead === "Follow Up" ||
               selectedLead === "Warm") && (
@@ -172,15 +174,8 @@ function LeadPage({
               </Button>
             )}
 
-            <Button
-              color="primary"
-              size="sm"
-              onClick={() => navigate("/dash_task")}
-            >
-              Task Dashboard
-            </Button>
-
-            {selectedLead === "Initial" && (
+        
+            {(selectedLead === "Initial" || selectedLead === "OverAll") && (
               <Button
                 color="primary"
                 size="sm"
@@ -190,65 +185,128 @@ function LeadPage({
               </Button>
             )}
 
-            <Button
-              color="primary"
-              startDecorator={<DownloadRoundedIcon />}
-              size="sm"
-              onClick={handleExportToCSV}
+           
+            <Box sx={{ display: { xs: "flex", md: "none" } }}>
+              <Dropdown>
+                <MenuButton size="sm" color="primary" variant="outlined">
+                  More Actions
+                </MenuButton>
+                <Menu>
+                  <MenuItem onClick={() => navigate("/dash_task")}>
+                    Task Dashboard
+                  </MenuItem>
+                  <MenuItem onClick={handleExportToCSV}>Export to CSV</MenuItem>
+                </Menu>
+              </Dropdown>
+            </Box>
+
+          
+            <Box
+              sx={{
+                display: { xs: "none", md: "flex" },
+                gap: 1,
+              }}
             >
-              Export to CSV
-            </Button>
+              <Button
+                color="primary"
+                size="sm"
+                onClick={() => navigate("/dash_task")}
+              >
+                Task Dashboard
+              </Button>
+
+              <Button
+                color="primary"
+                startDecorator={<DownloadRoundedIcon />}
+                size="sm"
+                onClick={handleExportToCSV}
+              >
+                Export to CSV
+              </Button>
+            </Box>
           </Box>
         </Box>
 
         {/* Lead Filter Tabs */}
         <Box
-          component="ul"
           sx={{
             display: "flex",
-            flexDirection: {md:"row", xs:"column"},
-            alignItems: "center",
-            justifyContent: "flex-start",
-            listStyle: "none",
-            padding: 0,
-            margin: "10px 0",
-            gap: 3,
+            flexDirection: "column",
+            alignItems: "flex-start",
+            gap: 1,
             marginLeft: { xl: "15%", lg: "18%" },
           }}
         >
-          {leadOptions.map((item, index) => (
-            <Box
-              component="li"
-              key={index}
-              sx={{
-                padding: "8px 15px",
-                cursor: "pointer",
-                fontWeight: 500,
-                fontSize: "14px",
-                color:
-                  mode === "dark"
-                    ? selectedLead === item
-                      ? "#007bff"
-                      : "#86c3ff"
-                    : selectedLead === item
-                      ? "#007bff"
-                      : "black",
-                borderRadius: "8px",
-                transition: "0.3s",
-                "&:hover": {
-                  backgroundColor: "#007bff",
-                  color: "white",
-                },
-                ...(selectedLead === item && {
-                  backgroundColor: "#007bff",
-                  color: "white",
-                }),
-              }}
-              onClick={() => setSelectedLead(item)}
+         
+          <Box sx={{ display: { xs: "flex", md: "none" }, gap: 1 }}>
+            <Button
+              variant={selectedLead === "OverAll" ? "solid" : "outlined"}
+              onClick={() => setSelectedLead("OverAll")}
+              size="sm"
             >
-              {item}
-            </Box>
-          ))}
+              Overall
+            </Button>
+
+            <Select
+              value={selectedLead}
+              onChange={(e, value) => value && setSelectedLead(value)}
+              size="sm"
+              placeholder="Select Lead Type"
+              sx={{ minWidth: 150 }}
+            >
+              {leadOptions
+                .filter((lead) => lead !== "OverAll")
+                .map((option, index) => (
+                  <Option key={index} value={option}>
+                    {option}
+                  </Option>
+                ))}
+            </Select>
+          </Box>
+          <Box
+            sx={{
+              display: { xs: "none", md: "flex" },
+              flexDirection: "row",
+              alignItems: "center",
+              listStyle: "none",
+              padding: 0,
+              margin: "10px 0",
+              gap: 3,
+            }}
+          >
+            {leadOptions.map((item, index) => (
+              <Box
+                key={index}
+                sx={{
+                  padding: "8px 15px",
+                  cursor: "pointer",
+                  fontWeight: 500,
+                  fontSize: "14px",
+                  color:
+                    mode === "dark"
+                      ? selectedLead === item
+                        ? "#007bff"
+                        : "#86c3ff"
+                      : selectedLead === item
+                        ? "#007bff"
+                        : "black",
+                  borderRadius: "8px",
+                  transition: "0.3s",
+                  "&:hover": {
+                    backgroundColor: "#007bff",
+                    color: "white",
+                  },
+                  ...(selectedLead === item && {
+                    backgroundColor: "#007bff",
+                    color: "white",
+                  }),
+                }}
+                onClick={() => setSelectedLead(item)}
+              >
+                {item}
+              </Box>
+            ))}
+          </Box>
         </Box>
 
         {renderLeadComponent()}

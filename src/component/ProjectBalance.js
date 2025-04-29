@@ -26,6 +26,7 @@ import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
+import { useColorScheme, useTheme } from '@mui/joy/styles';
 import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import {
   forwardRef,
@@ -41,6 +42,8 @@ import NoData from "../assets/alert-bell.svg";
 import Skeleton from "react-loading-skeleton";
 
 const ProjectBalances = forwardRef((props, ref) => {
+  const theme = useTheme();
+  const { mode } = useColorScheme();
   const navigate = useNavigate();
   const [credits, setCredits] = useState([]);
   const [debits, setDebits] = useState([]);
@@ -664,10 +667,12 @@ const ProjectBalances = forwardRef((props, ref) => {
 
   const tdStyle = {
     padding: "14px 16px",
-    textAlign: "left",
+    textAlign: "center",
     borderBottom: "1px solid #e5e7eb",
     fontWeight: 600,
-    color: "#1f2937",
+    // color: "#1f2937",
+    color: 'text.primary',
+    bgcolor: 'background.surface',
   };
 
   return (
@@ -898,13 +903,13 @@ const ProjectBalances = forwardRef((props, ref) => {
       </Box> */}
 
       <Box
-        sx={{
-          marginLeft: { xl: "15%", lg: "18%", xs: "0%" },
-          maxWidth: { xl: "85%", xs: "100%" },
-          padding: 2,
-          backgroundColor: "#fff",
-          borderRadius: 2,
-          boxShadow: 3,
+         sx={{
+          marginLeft: { xl: '15%', lg: '18%', xs: '0%' },
+          maxWidth: { xl: '85%', xs: '100%' },
+          p: 2,
+          bgcolor: 'background.surface',
+          borderRadius: 'md',
+          boxShadow: 'lg',
         }}
       >
         {/* Classic Table View (sm and up) */}
@@ -918,7 +923,7 @@ const ProjectBalances = forwardRef((props, ref) => {
             }}
           >
             <thead>
-              <tr style={{ backgroundColor: "#f5f5f5" }}>
+              <tr style={{ backgroundColor: theme.vars.palette.background.level1 }}>
                 {[
                   "Total Plant Capacity (MW AC)",
                   "Total Credit",
@@ -929,16 +934,16 @@ const ProjectBalances = forwardRef((props, ref) => {
                   "Balance Required",
                 ].map((header, i) => (
                   <th
-                    key={i}
-                    style={{
-                      padding: "12px 15px",
-                      textAlign: "left",
-                      fontWeight: "bold",
-                      backgroundColor: "#e2e2e2",
-                      border: "1px solid #ddd",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
+                  key={i}
+                  style={{
+                    padding: '12px 15px',
+                    textAlign: 'left',
+                    fontWeight: 'bold',
+                    borderBottom: `1px solid ${theme.vars.palette.divider}`,
+                    whiteSpace: 'nowrap',
+                    color: theme.vars.palette.text.primary,
+                  }}
+                >
                     {header}
                   </th>
                 ))}
