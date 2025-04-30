@@ -775,49 +775,14 @@ const Reference4 = () => {
           // height: "100%",
           display: "flex",
           justifyContent: "center",
-          marginTop: "10px",
           alignItems: "center",
+          marginTop: "10px",
           flexDirection: "column",
           "@media print": {
             width: "84%",
           },
         }}
       >
-        <Box
-          sx={{
-            width: "100%",
-            padding: "20px",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <Typography
-            sx={{
-              color: "#56A4DA",
-              fontSize: "3rem",
-              fontWeight: "bolder",
-              textDecoration: "underline rgb(243, 182, 39)",
-              textDecorationThickness: "3px",
-              textUnderlineOffset: "6px",
-            }}
-          >
-            Civil&nbsp;{" "}
-          </Typography>
-
-          <Typography
-            sx={{
-              color: "black",
-              fontSize: "3rem",
-              fontWeight: "bolder",
-              textDecoration: "underline rgb(243, 182, 39)",
-              textDecorationThickness: "3px",
-              textUnderlineOffset: "6px",
-            }}
-          >
-            Works
-          </Typography>
-        </Box>
         <Grid
           sx={{
             width: "60%",
@@ -826,64 +791,66 @@ const Reference4 = () => {
             border: "2px solid #0f4C7f",
             "@media print": {
               width: "100%",
+              height: "100vh",
             },
           }}
         >
           {/* <Box
-               sx={{
-                 display: "flex",
-                 width: "100%",
-                 alignItems: "flex-end",
-                 gap: 2,
-               }}
-             >
-                <img width={"220px"} height={"110px"} alt="logo" src={logo} />
-         
-                     <hr
-                       style={{
-                         width: "60%",
-                         color: "blue",
-                         borderTop: "3px solid #0f4C7f",
-                         margin: "19px 0",
-                       }}
-                     /> 
-             </Box> */}
-          {/* <Box
-                     sx={{
-                       width: "100%",
-                       height: "100%",
-                       marginTop: "20px",
-                       display: "flex",
-                       justifyContent: "center",
-                       alignItems: "center",
-                     }}
-                   >
-                     <Typography
-                       sx={{
-                         color: "#56A4DA",
-                         fontSize: "3rem",
-                         fontWeight: "bolder",
-                         textDecoration: "underline rgb(243, 182, 39)",
-                         textDecorationThickness: "3px",
-                         textUnderlineOffset: "6px",
-                       }}
-                     >
-                       Reference&nbsp;{" "}
-                     </Typography>
-         
-                     <Typography
-                       sx={{
-                         color: "black",
-                         fontSize: "3rem",
-                         fontWeight: "bolder",
-                         textDecoration: "underline rgb(243, 182, 39)",
-                         textDecorationThickness: "3px",
-                         textUnderlineOffset: "6px",
-                       }}
-                     >
-                       Material List
-                     </Typography>
-                   </Box> */}
+                                sx={{
+                                  display: "flex",
+                                  width: "100%",
+                                  alignItems: "flex-end",
+                                  gap: 2,
+                                  marginTop:"2%"
+                                }}
+                              >
+                                <img width={"220px"} height={"110px"} alt="logo" src={logo} />
+                    
+                                <hr
+                                  style={{
+                                    width: "80%",
+                                    color: "blue",
+                                    borderTop: "2px solid #0f4C7f",
+                                    margin: "19px 0",
+                                  }}
+                                />
+                              </Box>
+                              <Box
+                                sx={{
+                                  width: "100%",
+                                  height: "100%",
+                                  marginTop: "20px",
+                                  display: "flex",
+                                  justifyContent: "center",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <Typography
+                                  sx={{
+                                    color: "#56A4DA",
+                                    fontSize: "3rem",
+                                    fontWeight: "bolder",
+                                    textDecoration: "underline rgb(243, 182, 39)",
+                                    textDecorationThickness: "3px",
+                                    textUnderlineOffset: "6px",
+                                  }}
+                                >
+                                  Reference&nbsp;{" "}
+                                </Typography>
+                    
+                                <Typography
+                                  sx={{
+                                    color: "black",
+                                    fontSize: "3rem",
+                                    fontWeight: "bolder",
+                                    textDecoration: "underline rgb(243, 182, 39)",
+                                    textDecorationThickness: "3px",
+                                    textUnderlineOffset: "6px",
+                                  }}
+                                >
+                                  Material List
+                                </Typography>
+                              </Box> */}
 
           <Sheet
             sx={{
@@ -898,278 +865,521 @@ const Reference4 = () => {
                   <th>S.NO.</th>
                   <th>ITEM NAME</th>
                   <th>RATING</th>
-                  <th>SPECIFICATION</th>
+                  {/* <th>SPECIFICATION</th> */}
                   <th>UoM</th>
                   {/* <th>Qty (Int.)</th> */}
                   <th>Qty</th>
                   <th>Tentative Make</th>
                   <th>Category</th>
                   {/* <th>Rate</th>
-                     <th>Rate UoM</th>
-                     <th>Total Value</th>
-                     <th>GST</th>
-                     <th>GST Value</th>
-                     <th>Total with GST</th> */}
+                                  <th>Rate UoM</th>
+                                  <th>Total Value</th>
+                                  <th>GST</th>
+                                  <th>GST Value</th>
+                                  <th>Total with GST</th> */}
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>24.</td>
-                  <td>Installation and commissioing</td>
-                  <td>
-                    <span style={{ fontWeight: "bold" }}>LABOUR WORKS:</span>{" "}
-                    Includes Pile casting, Module Mounting & Alignment, and
-                    complete AC-DC work till commissioning inside plant boundary
-                  </td>
-                  <td></td>
-                  <td>KWp</td>
-                  {/* <td>{internalQuantity24}</td> */}
-                  <td>{internalQuantity24}</td>
-                  <td>Standard</td>
-                  <td>
-                    Installation Charges inside boundary wall (Labour, Machinary
-                    & Civil Material)
-                  </td>
-                  {/* <td>{scmData.installation_commissioing.labour_works}</td>
-                     <td>INR/Wp</td>
-                     <td>{TotalVal24}</td>
-                     <td>18%</td>
-                     <td>{Math.round((TotalVal24 * 18) / 100)}</td>
-                     <td>{Math.round((TotalVal24 * 18) / 100 + TotalVal24)}</td> */}
-                </tr>
-
-                <tr>
-                  <td></td>
-                  <td></td>
-                  <td>
-                    <span style={{ fontWeight: "bold", textAlign: "center" }}>
-                      MACHINARY :
-                    </span>{" "}
-                    Includes Augar, Tractor, JCBs, Hydra, Ajax and other
-                    machinaries
-                  </td>
-
-                  <td></td>
-                  <td>KWp</td>
-                  {/* <td>{internalQuantity24}</td> */}
-                  <td>{internalQuantity24}</td>
-                  <td>Standard</td>
-                  <td>
-                    Installation Charges inside boundary wall (Labour, Machinary
-                    & Civil Material)
-                  </td>
-                  {/* <td>{scmData.installation_commissioing.machinery}</td>
-                             <td>INR/Wp</td>
-                             <td>{TotalVal25}</td>
-                             <td>18%</td>
-                             <td>{Math.round((TotalVal25 * 18) / 100)} </td>
-                             <td>{Math.round((TotalVal25 * 18) / 100 + TotalVal25)}</td> */}
-                </tr>
-
-                <tr>
-                  <td></td>
-                  <td></td>
-                  <td>
-                    <span style={{ fontWeight: "bold" }}>CIVIL MATERIAL:</span>{" "}
-                    Cement, Aggregates, Bricks, Sand & Iron Bars
-                  </td>
-                  <td></td>
-                  <td>KWp</td>
-                  {/* <td>{internalQuantity24}</td> */}
-                  <td>{internalQuantity24}</td>
-                  <td>Standard</td>
-                  <td>
-                    Installation Charges inside boundary wall (Labour, Machinary
-                    & Civil Material)
-                  </td>
-
-                  {/* <td>{scmData.installation_commissioing.civil_material}</td>
-                             <td>INR/Wp</td>
-                             <td>{TotalVal26}</td>
-                             <td>18%</td>
-                             <td>{Math.round((TotalVal26 * 18) / 100)}</td>
-                             <td>{Math.round((TotalVal26 * 18) / 100 + TotalVal26)}</td> */}
-                </tr>
-
-                <tr>
-                  <td>25.</td>
-                  <td>Transportaion</td>
-                  <td>Transformer, LT/HT, Cables, BOS</td>
-                  <td></td>
-                  <td>Vehicles</td>
-                  {/* <td>{internalQuantity25}</td> */}
-                  <td>{internalQuantity25}</td>
-                  <td>Standard</td>
-                  <td>Transportation & Insurance</td>
-                  {/* <td>{scmData.transportation}</td>
-                             <td>INR/Vehicle</td>
-                             <td>{TotalVal27}</td>
-                             <td>18%</td>
-                             <td>{Math.round((TotalVal27 * 18) / 100)}</td>
-                             <td>{Math.round((TotalVal27 * 18) / 100 + TotalVal27)}</td> */}
-                </tr>
-
-                <tr>
-                  <td>26.</td>
-                  <td>Transmission Line</td>
-                  <td>
-                    {offerData.evacuation_voltage}kV Transmission Line with
-                    appropriate conductor size and PCC Poles
-                  </td>
-                  <td></td>
-                  <td>Km</td>
-                  {/* <td>{offerData.transmission_length}</td> */}
-                  <td>{offerData.transmission_length}</td>
-                  <td>Standard</td>
-                  <td>Transmission Line</td>
-                  {/* <td>{bdRate.transmission_line}</td>
-                             <td>INR/Km</td>
-                             <td>
-                               {offerData.transmission_length * bdRate.transmission_line}
-                             </td>
-                             <td>18%</td>
-                             <td>
-                               {Math.round(
-                                 (offerData.transmission_length *
-                                   bdRate.transmission_line *
-                                   18) /
-                                   100
-                               )}
-                             </td>
-                             <td>
-                               {(Math.round(
-                                 offerData.transmission_length * bdRate.transmission_line
-                               ) *
-                                 18) /
-                                 100 +
-                                 bdRate.transmission_line *
-                                   offerData.transmission_length}
-                             </td> */}
-                </tr>
-
-                <tr>
-                  <td>27.</td>
-                  <td>CT PT</td>
-                  <td>As per DISCOM requirements</td>
-                  <td></td>
+                  <td>19.</td>
+                  <td>Lightening Arrestor</td>
+                  <td>107 Mtr Dia over 7 Mtr High Mast with counter</td>
+                  {/* <td>
+                                 ESE type as per NFC 17-102, ESE are considered with 107 Mtr
+                                 Dia over 7 Mtr High Mast with counter
+                               </td> */}
                   <td>Set</td>
-                  {/* <td>2</td> */}
-                  <td>2</td>
-                  <td>Standard</td>
-                  <td>GSS Equipment</td>
-                  {/* <td>{ct_pt_cal}</td>
-                             <td>INR/Set</td>
-                             <td>{2 * ct_pt_cal}</td>
-                             <td>18%</td>
-                             <td>{Math.round((ct_pt_cal * 2 * 18) / 100)}</td>
-                             <td>
-                               {Math.round((ct_pt_cal * 2 * 18) / 100 + ct_pt_cal * 2)}
-                             </td> */}
+                  {/* <td>{internalQuantity18}</td> */}
+                  <td>{internalQuantity18}</td>
+                  <td>Reputed</td>
+                  <td>Other Balance of Material</td>
+                  {/* <td>{scmData.lightening_arrestor}</td>
+                                  <td>INR/Set</td>
+                                  <td>{TotalVal19}</td>
+                                  <td>18%</td>
+                                  <td>{Math.round((TotalVal19 * 18) / 100)}</td>
+                                  <td>{Math.round((TotalVal19 * 18) / 100 + TotalVal19)}</td> */}
                 </tr>
-
                 <tr>
-                  <td>28.</td>
-                  <td>ABT Meter</td>
-                  <td>As per DISCOM requirements</td>
-                  <td></td>
-                  <td>Set</td>
-                  {/* <td>3</td> */}
-                  <td>3</td>
-                  <td>Standard</td>
-                  <td>GSS Equipment</td>
-                  {/* <td>{abt_cal}</td>
-                             <td>INR/Set</td>
-                             <td>{3 * abt_cal}</td>
-                             <td>18%</td>
-                             <td>{Math.round((abt_cal * 3 * 18) / 100)}</td>
-                             <td>
-                               {Math.round((abt_cal * 3 * 18) / 100 + abt_cal * 3)}
-                             </td> */}
-                </tr>
-
-                <tr>
-                  <td>29.</td>
-                  <td>VCB Kiosk</td>
-                  <td>As per DISCOM requirements</td>
-                  <td></td>
+                  <td>20.</td>
+                  <td>Datalogger</td>
+                  <td>As per inverter manufacturer</td>
+                  {/* <td>As per inverter manufacturer</td> */}
                   <td>Set</td>
                   {/* <td>1</td> */}
                   <td>1</td>
-                  <td>Standard</td>
-                  <td>GSS Equipment</td>
-                  {/* <td>{selectedVCBValue}</td>
-                             <td>INR/Set</td>
-                             <td>{totalVCB}</td>
-                             <td>18%</td>
-                             <td>{Math.round((totalVCB * 18) / 100)}</td>
-                             <td>{Math.round((totalVCB * 18) / 100 + totalVCB)}</td> */}
+                  <td>Reputed</td>
+                  <td>Solar Inverter & Datalogger</td>
+                  {/* <td>{scmData.datalogger}</td>
+                                  <td>INR/Set</td>
+                                  <td>{TotalVal20}</td>
+                                  <td>18%</td>
+                                  <td>{Math.round((TotalVal20 * 18) / 100)}</td>
+                                  <td>{Math.round((TotalVal20 * 18) / 100 + TotalVal20)}</td> */}
                 </tr>
 
                 <tr>
-                  <td>30.</td>
-                  <td>RMS at Substation side</td>
-                  <td>As per DISCOM requirements</td>
-                  <td></td>
+                  <td>21.</td>
+                  <td>Auxilary transformer</td>
+                  <td>10 kVA,50Hz, 800/415 V, Dyn11</td>
+                  {/* <td>Dry Type Transformer</td> */}
+                  <td>Nos.</td>
+                  {/* <td>1</td> */}
+                  <td>1</td>
+                  <td>Reputed</td>
+                  <td>
+                    Electrical Equipment - Solar Plant Side (Transformer+LT
+                    Panel+HT Panel+Aux Transformer+UPS System)
+                  </td>
+                  {/* <td>{scmData.auxilary_transformer}</td>
+                                  <td>INR/Nos.</td>
+                                  <td>{TotalVal21}</td>
+                                  <td>18%</td>
+                                  <td>{Math.round((TotalVal21 * 18) / 100)}</td>
+                                  <td>{Math.round((TotalVal21 * 18) / 100 + TotalVal21)}</td> */}
+                </tr>
+
+                <tr>
+                  <td>22.</td>
+                  <td>UPS & LDB</td>
+                  <td>1.5 kW Load with 1 Hour backup, Battery SMF Type</td>
+                  {/* <td></td> */}
                   <td>Set</td>
                   {/* <td>1</td> */}
                   <td>1</td>
-                  <td>Standard</td>
-                  <td>GSS Equipment</td>
-                  {/* <td>{scmWeekly4(offerData.ac_capacity)}</td>
-                             <td>INR/Set</td>
-                             <td>{scmWeekly4(offerData.ac_capacity) * 1}</td>
-                             <td>18%</td>
-                             <td>
-                               {Math.round(
-                                 (scmWeekly4(offerData.ac_capacity) * 1 * 18) / 100
-                               )}
-                             </td>
-                             <td>
-                               {Math.round(
-                                 (scmWeekly4(offerData.ac_capacity) * 1 * 18) / 100 +
-                                   scmWeekly4(offerData.ac_capacity) * 1
-                               )}
-                             </td> */}
+                  <td>Reputed</td>
+                  <td>
+                    Electrical Equipment - Solar Plant Side (Transformer+LT
+                    Panel+HT Panel+Aux Transformer+UPS System)
+                  </td>
+                  {/* <td>{scmData.ups_ldb}</td>
+                                  <td>INR/Set</td>
+                                  <td>{TotalVal22}</td>
+                                  <td>18%</td>
+                                  <td>{Math.round((TotalVal22 * 18) / 100)}</td>
+                                  <td>{Math.round((TotalVal22 * 18) / 100 + TotalVal22)}</td> */}
                 </tr>
 
                 <tr>
-                  <td>31.</td>
-                  <td>Plant Insurance</td>
-                  <td>Transit & EAR</td>
+                  <td>23.</td>
+                  <td>
+                    Balance of system with Wet Module Cleaning System (MCS) &
+                    Dry Cleaning semi automatic robot
+                  </td>
+                  {/* <td>
+                                 Class C Items including Connectors, Lungs, Glands,
+                                 Termination Kits, Conduits, Cable Tie, Ferruls, Sleeves, PU
+                                 Foam, Route Marker, Danger boards and signages, Double
+                                 Warning Tape, & Fire Fighting System
+                               </td> */}
                   <td></td>
                   <td>KWp</td>
-                  {/* <td>{internalQuantity31}</td> */}
-                  <td>{internalQuantity31}</td>
-                  <td>Standard</td>
-                  <td>Transportation & Insurance</td>
-                  {/* <td>{scmWeekly5}</td>
-                             <td>INR</td>
-                             <td>{scmWeekly5}</td>
-                             <td>18%</td>
-                             <td>{Math.round((scmWeekly5 * 18) / 100)}</td>
-                             <td>{Math.round((scmWeekly5 * 18) / 100 + scmWeekly5)}</td> */}
-                </tr>
-
-                <tr>
-                  <td>32.</td>
-                  <td>SLNKO EPCM Service Charges</td>
-                  <td>SLNKO FEE</td>
-                  <td></td>
-                  <td>KWp</td>
-                  {/* <td>{internalQuantity32}</td> */}
-                  <td>{internalQuantity32}</td>
-                  <td>Standard</td>
-                  <td>SLNKO Service Charges</td>
-                  {/* <td>{bdRate.slnko_charges}</td>
-                             <td>INR</td>
-                             <td>{TotalVal32}</td>
-                             <td>18%</td>
-                             <td>{Math.round((TotalVal32 * 18) / 100)}</td>
-                             <td>{Math.round((TotalVal32 * 18) / 100 + TotalVal32)}</td> */}
+                  {/* <td>{internalQuantity24}</td> */}
+                  <td>{internalQuantity24}</td>
+                  <td>Reputed</td>
+                  <td>Other Balance of Material</td>
+                  {/* <td>{scmData.balance_of_system}</td>
+                                    <td>INR/Set</td>
+                                    <td>{TotalVal23}</td>
+                                    <td>18%</td>
+                                    <td>{Math.round((TotalVal23 * 18) / 100)}</td>
+                                    <td>{Math.round((TotalVal23 * 18) / 100 + TotalVal23)}</td> */}
                 </tr>
               </tbody>
             </Table>
           </Sheet>
+
+          <Box
+            sx={{
+              width: "100%",
+              padding: "20px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Typography
+              sx={{
+                color: "#56A4DA",
+                fontSize: "3rem",
+                fontWeight: "bolder",
+                textDecoration: "underline rgb(243, 182, 39)",
+                textDecorationThickness: "3px",
+                textUnderlineOffset: "6px",
+              }}
+            >
+              Civil&nbsp;{" "}
+            </Typography>
+
+            <Typography
+              sx={{
+                color: "black",
+                fontSize: "3rem",
+                fontWeight: "bolder",
+                textDecoration: "underline rgb(243, 182, 39)",
+                textDecorationThickness: "3px",
+                textUnderlineOffset: "6px",
+              }}
+            >
+              Works
+            </Typography>
+          </Box>
+          <Grid
+            sx={{
+              width: "100%",
+              height: "100%",
+              //  marginTop: "5%",
+              // border: "2px solid #0f4C7f",
+              "@media print": {
+                width: "100%",
+              },
+            }}
+          >
+            {/* <Box
+                     sx={{
+                       display: "flex",
+                       width: "100%",
+                       alignItems: "flex-end",
+                       gap: 2,
+                     }}
+                   >
+                      <img width={"220px"} height={"110px"} alt="logo" src={logo} />
+               
+                           <hr
+                             style={{
+                               width: "60%",
+                               color: "blue",
+                               borderTop: "3px solid #0f4C7f",
+                               margin: "19px 0",
+                             }}
+                           /> 
+                   </Box> */}
+            {/* <Box
+                           sx={{
+                             width: "100%",
+                             height: "100%",
+                             marginTop: "20px",
+                             display: "flex",
+                             justifyContent: "center",
+                             alignItems: "center",
+                           }}
+                         >
+                           <Typography
+                             sx={{
+                               color: "#56A4DA",
+                               fontSize: "3rem",
+                               fontWeight: "bolder",
+                               textDecoration: "underline rgb(243, 182, 39)",
+                               textDecorationThickness: "3px",
+                               textUnderlineOffset: "6px",
+                             }}
+                           >
+                             Reference&nbsp;{" "}
+                           </Typography>
+               
+                           <Typography
+                             sx={{
+                               color: "black",
+                               fontSize: "3rem",
+                               fontWeight: "bolder",
+                               textDecoration: "underline rgb(243, 182, 39)",
+                               textDecorationThickness: "3px",
+                               textUnderlineOffset: "6px",
+                             }}
+                           >
+                             Material List
+                           </Typography>
+                         </Box> */}
+
+            <Sheet
+              sx={{
+                width: "100%",
+                padding: "7px 10px",
+                background: "white",
+              }}
+            >
+              <Table className="table-header">
+                <thead>
+                  <tr>
+                    <th>S.NO.</th>
+                    <th>ITEM NAME</th>
+                    <th>RATING</th>
+                    {/* <th>SPECIFICATION</th> */}
+                    <th>UoM</th>
+                    {/* <th>Qty (Int.)</th> */}
+                    <th>Qty</th>
+                    <th>Tentative Make</th>
+                    <th>Category</th>
+                    {/* <th>Rate</th>
+                           <th>Rate UoM</th>
+                           <th>Total Value</th>
+                           <th>GST</th>
+                           <th>GST Value</th>
+                           <th>Total with GST</th> */}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>24.</td>
+                    <td>Installation and commissioing</td>
+                    <td>
+                      <span style={{ fontWeight: "bold" }}>LABOUR WORKS:</span>{" "}
+                      Includes Pile casting, Module Mounting & Alignment, and
+                      complete AC-DC work till commissioning inside plant
+                      boundary
+                    </td>
+                    {/* <td></td> */}
+                    <td>KWp</td>
+                    {/* <td>{internalQuantity24}</td> */}
+                    <td>{internalQuantity24}</td>
+                    <td>Standard</td>
+                    <td>
+                      Installation Charges inside boundary wall (Labour,
+                      Machinary & Civil Material)
+                    </td>
+                    {/* <td>{scmData.installation_commissioing.labour_works}</td>
+                           <td>INR/Wp</td>
+                           <td>{TotalVal24}</td>
+                           <td>18%</td>
+                           <td>{Math.round((TotalVal24 * 18) / 100)}</td>
+                           <td>{Math.round((TotalVal24 * 18) / 100 + TotalVal24)}</td> */}
+                  </tr>
+
+                  <tr>
+                    <td></td>
+                    <td></td>
+                    <td>
+                      <span style={{ fontWeight: "bold", textAlign: "center" }}>
+                        MACHINARY :
+                      </span>{" "}
+                      Includes Augar, Tractor, JCBs, Hydra, Ajax and other
+                      machinaries
+                    </td>
+
+                    {/* <td></td> */}
+                    <td>KWp</td>
+                    {/* <td>{internalQuantity24}</td> */}
+                    <td>{internalQuantity24}</td>
+                    <td>Standard</td>
+                    <td>
+                      Installation Charges inside boundary wall (Labour,
+                      Machinary & Civil Material)
+                    </td>
+                    {/* <td>{scmData.installation_commissioing.machinery}</td>
+                                   <td>INR/Wp</td>
+                                   <td>{TotalVal25}</td>
+                                   <td>18%</td>
+                                   <td>{Math.round((TotalVal25 * 18) / 100)} </td>
+                                   <td>{Math.round((TotalVal25 * 18) / 100 + TotalVal25)}</td> */}
+                  </tr>
+
+                  <tr>
+                    <td></td>
+                    <td></td>
+                    <td>
+                      <span style={{ fontWeight: "bold" }}>
+                        CIVIL MATERIAL:
+                      </span>{" "}
+                      Cement, Aggregates, Bricks, Sand & Iron Bars
+                    </td>
+                    {/* <td></td> */}
+                    <td>KWp</td>
+                    {/* <td>{internalQuantity24}</td> */}
+                    <td>{internalQuantity24}</td>
+                    <td>Standard</td>
+                    <td>
+                      Installation Charges inside boundary wall (Labour,
+                      Machinary & Civil Material)
+                    </td>
+
+                    {/* <td>{scmData.installation_commissioing.civil_material}</td>
+                                   <td>INR/Wp</td>
+                                   <td>{TotalVal26}</td>
+                                   <td>18%</td>
+                                   <td>{Math.round((TotalVal26 * 18) / 100)}</td>
+                                   <td>{Math.round((TotalVal26 * 18) / 100 + TotalVal26)}</td> */}
+                  </tr>
+
+                  <tr>
+                    <td>25.</td>
+                    <td>Transportaion</td>
+                    <td>Transformer, LT/HT, Cables, BOS</td>
+                    {/* <td></td> */}
+                    <td>Vehicles</td>
+                    {/* <td>{internalQuantity25}</td> */}
+                    <td>{internalQuantity25}</td>
+                    <td>Standard</td>
+                    <td>Transportation & Insurance</td>
+                    {/* <td>{scmData.transportation}</td>
+                                   <td>INR/Vehicle</td>
+                                   <td>{TotalVal27}</td>
+                                   <td>18%</td>
+                                   <td>{Math.round((TotalVal27 * 18) / 100)}</td>
+                                   <td>{Math.round((TotalVal27 * 18) / 100 + TotalVal27)}</td> */}
+                  </tr>
+
+                  <tr>
+                    <td>26.</td>
+                    <td>Transmission Line</td>
+                    <td>
+                      {offerData.evacuation_voltage}kV Transmission Line with
+                      appropriate conductor size and PCC Poles
+                    </td>
+                    {/* <td></td> */}
+                    <td>Km</td>
+                    {/* <td>{offerData.transmission_length}</td> */}
+                    <td>{offerData.transmission_length}</td>
+                    <td>Standard</td>
+                    <td>Transmission Line</td>
+                    {/* <td>{bdRate.transmission_line}</td>
+                                   <td>INR/Km</td>
+                                   <td>
+                                     {offerData.transmission_length * bdRate.transmission_line}
+                                   </td>
+                                   <td>18%</td>
+                                   <td>
+                                     {Math.round(
+                                       (offerData.transmission_length *
+                                         bdRate.transmission_line *
+                                         18) /
+                                         100
+                                     )}
+                                   </td>
+                                   <td>
+                                     {(Math.round(
+                                       offerData.transmission_length * bdRate.transmission_line
+                                     ) *
+                                       18) /
+                                       100 +
+                                       bdRate.transmission_line *
+                                         offerData.transmission_length}
+                                   </td> */}
+                  </tr>
+
+                  <tr>
+                    <td>27.</td>
+                    <td>CT PT</td>
+                    <td>As per DISCOM requirements</td>
+                    {/* <td></td> */}
+                    <td>Set</td>
+                    {/* <td>2</td> */}
+                    <td>2</td>
+                    <td>Standard</td>
+                    <td>GSS Equipment</td>
+                    {/* <td>{ct_pt_cal}</td>
+                                   <td>INR/Set</td>
+                                   <td>{2 * ct_pt_cal}</td>
+                                   <td>18%</td>
+                                   <td>{Math.round((ct_pt_cal * 2 * 18) / 100)}</td>
+                                   <td>
+                                     {Math.round((ct_pt_cal * 2 * 18) / 100 + ct_pt_cal * 2)}
+                                   </td> */}
+                  </tr>
+
+                  <tr>
+                    <td>28.</td>
+                    <td>ABT Meter</td>
+                    <td>As per DISCOM requirements</td>
+                    {/* <td></td> */}
+                    <td>Set</td>
+                    {/* <td>3</td> */}
+                    <td>3</td>
+                    <td>Standard</td>
+                    <td>GSS Equipment</td>
+                    {/* <td>{abt_cal}</td>
+                                   <td>INR/Set</td>
+                                   <td>{3 * abt_cal}</td>
+                                   <td>18%</td>
+                                   <td>{Math.round((abt_cal * 3 * 18) / 100)}</td>
+                                   <td>
+                                     {Math.round((abt_cal * 3 * 18) / 100 + abt_cal * 3)}
+                                   </td> */}
+                  </tr>
+
+                  <tr>
+                    <td>29.</td>
+                    <td>VCB Kiosk</td>
+                    <td>As per DISCOM requirements</td>
+                    {/* <td></td> */}
+                    <td>Set</td>
+                    {/* <td>1</td> */}
+                    <td>1</td>
+                    <td>Standard</td>
+                    <td>GSS Equipment</td>
+                    {/* <td>{selectedVCBValue}</td>
+                                   <td>INR/Set</td>
+                                   <td>{totalVCB}</td>
+                                   <td>18%</td>
+                                   <td>{Math.round((totalVCB * 18) / 100)}</td>
+                                   <td>{Math.round((totalVCB * 18) / 100 + totalVCB)}</td> */}
+                  </tr>
+
+                  <tr>
+                    <td>30.</td>
+                    <td>RMS at Substation side</td>
+                    <td>As per DISCOM requirements</td>
+                    {/* <td></td> */}
+                    <td>Set</td>
+                    {/* <td>1</td> */}
+                    <td>1</td>
+                    <td>Standard</td>
+                    <td>GSS Equipment</td>
+                    {/* <td>{scmWeekly4(offerData.ac_capacity)}</td>
+                                   <td>INR/Set</td>
+                                   <td>{scmWeekly4(offerData.ac_capacity) * 1}</td>
+                                   <td>18%</td>
+                                   <td>
+                                     {Math.round(
+                                       (scmWeekly4(offerData.ac_capacity) * 1 * 18) / 100
+                                     )}
+                                   </td>
+                                   <td>
+                                     {Math.round(
+                                       (scmWeekly4(offerData.ac_capacity) * 1 * 18) / 100 +
+                                         scmWeekly4(offerData.ac_capacity) * 1
+                                     )}
+                                   </td> */}
+                  </tr>
+
+                  <tr>
+                    <td>31.</td>
+                    <td>Plant Insurance</td>
+                    <td>Transit & EAR</td>
+                    {/* <td></td> */}
+                    <td>KWp</td>
+                    {/* <td>{internalQuantity31}</td> */}
+                    <td>{internalQuantity31}</td>
+                    <td>Standard</td>
+                    <td>Transportation & Insurance</td>
+                    {/* <td>{scmWeekly5}</td>
+                                   <td>INR</td>
+                                   <td>{scmWeekly5}</td>
+                                   <td>18%</td>
+                                   <td>{Math.round((scmWeekly5 * 18) / 100)}</td>
+                                   <td>{Math.round((scmWeekly5 * 18) / 100 + scmWeekly5)}</td> */}
+                  </tr>
+
+                  <tr>
+                    <td>32.</td>
+                    <td>SLNKO EPCM Service Charges</td>
+                    <td>SLNKO FEE</td>
+                    {/* <td></td> */}
+                    <td>KWp</td>
+                    {/* <td>{internalQuantity32}</td> */}
+                    <td>{internalQuantity32}</td>
+                    <td>Standard</td>
+                    <td>SLNKO Service Charges</td>
+                    {/* <td>{bdRate.slnko_charges}</td>
+                                   <td>INR</td>
+                                   <td>{TotalVal32}</td>
+                                   <td>18%</td>
+                                   <td>{Math.round((TotalVal32 * 18) / 100)}</td>
+                                   <td>{Math.round((TotalVal32 * 18) / 100 + TotalVal32)}</td> */}
+                  </tr>
+                </tbody>
+              </Table>
+            </Sheet>
+          </Grid>
         </Grid>
       </Grid>
     </>

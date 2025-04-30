@@ -6,13 +6,13 @@ export const engsAcCableApi = createApi({
   tagTypes: ["AcCable"],
   endpoints: (builder) => ({
     getAcCable: builder.query({
-      query: () => "get-accable-master",
+      query: () => "get-accabel-master",
       providesTags: ["AcCable"],
       
     }),
     addAcCable: builder.mutation({
       query: (addAcCable) => ({
-        url: "/add-accabel-master",
+        url: "add-accabel-master",
         method: "POST",
         body: addAcCable,
       }),

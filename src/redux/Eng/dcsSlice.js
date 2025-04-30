@@ -6,13 +6,13 @@ export const engsDcCableApi = createApi({
   tagTypes: ["DcCable"],
   endpoints: (builder) => ({
     getDcCable: builder.query({
-      query: () => "get-dccable-master",
+      query: () => "get-dc-cabel-master",
       providesTags: ["DcCable"],
       
     }),
     addDcCable: builder.mutation({
       query: (addDcCable) => ({
-        url: "/add-dccabel-master",
+        url: "/add-dc-cabel-master",
         method: "POST",
         body: addDcCable,
       }),

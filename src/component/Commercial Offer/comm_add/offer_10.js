@@ -258,6 +258,21 @@ const Reference = () => {
   const internalQuantity2 = offerData.ac_capacity
     ? Math.round((offerData.ac_capacity * 1000) / offerData.inverter_capacity)
     : 0;
+      // ***for 9th row***
+  const internalQuantity9 = internalQuantity2 * 5;
+
+    // ***for 19th row***/
+    const internalQuantity19 = offerData.dc_capacity
+    ? Math.round(offerData.dc_capacity)
+    : 0;
+
+  //***for 10th row***/
+  const internalQuantity10 = internalQuantity19 * 15;
+
+    //***for 11th row***/
+    const internalQuantity11 = offerData.dc_capacity
+    ? Math.round(offerData.dc_capacity * 0.4 * 1000)
+    : 0;
 
   // ***for 3rd row***
   const InternalQuantity3 =
@@ -275,6 +290,61 @@ const Reference = () => {
 
   // ***for 6th row***
   const InternalQuantity7 = internalQuantity2 * 20;
+
+  const evacuationVoltage = (evacuation_voltage) => {
+    if (evacuation_voltage === 11) {
+      return "11 kV(E),3C,120Sqmm Al,Ar,HT,XLPE, CABLE";
+    } else {
+      return "33 kV(E),3C,120Sqmm Al,Ar,HT,XLPE, CABLE";
+    }
+  };
+
+    //***for N10 ***/
+    const Nten = (internalQuantity2) => {
+      if (internalQuantity2 <= 11) {
+        console.log(`Nten = ${internalQuantity2}`); // Log the original value
+        return internalQuantity2;
+      } else {
+        const roundedValue = Math.round(internalQuantity2 / 2);
+        console.log(`Nten = ${roundedValue}`); // Log the rounded value
+        return roundedValue;
+      }
+    };
+  
+    const NtenValue = Nten(internalQuantity2); // Call function and store the result
+    const Neleven = internalQuantity2 - NtenValue; // Compute Neleven
+      //***finding P17***/
+  const setUp = (ac) => {
+    const acValue = parseFloat(ac);
+    if (!isNaN(acValue)) {
+      return Math.round((acValue * 1.1 * 1000) / 100) * 100;
+    }
+    return "";
+  };
+
+  const EvacuationVoltage = (evacuation_voltage) => {
+    if (evacuation_voltage === 11) {
+      return "11 kV, 630/800 amp,25 kA for 3 sec With MFM of CL0.2s";
+    } else {
+      return "33 kV, 630/800 amp,25 kA for 3 sec With MFM of CL0.2s";
+    }
+  };
+   // ***for 16th row***/
+   const internalQuantity16 = offerData.dc_capacity
+   ? Math.ceil(
+       offerData.dc_capacity * 2 +
+         Math.round(offerData.dc_capacity) * 2 +
+         internalQuantity2 +
+         10
+     )
+   : 0;
+
+     // ***for 17th row***/
+  const internalQuantity17 = offerData.dc_capacity
+  ? offerData.dc_capacity * 1000 * 0.8
+  : 0;
+
+const internalQuantity17_2 = 150;
 
   //***Total Value 1***/
   const TotalVal1 =
@@ -414,7 +484,7 @@ const Reference = () => {
                   <th>S.NO.</th>
                   <th>ITEM NAME</th>
                   <th>RATING</th>
-                  <th>SPECIFICATION</th>
+                  {/* <th>SPECIFICATION</th> */}
                   <th>UoM</th>
                   {/* <th>Qty (Int.)</th> */}
                   <th>Qty</th>
@@ -434,7 +504,7 @@ const Reference = () => {
                   <td>1.</td>
                   <td>SPV Modules</td>
                   <td>{offerData.module_capacity} Wp</td>
-                  <td>{getSpecification(offerData.module_capacity)}</td>
+                  {/* <td>{getSpecification(offerData.module_capacity)}</td> */}
 
                   <td>Nos.</td>
                   {/* <td>{internalQuantity1}</td> */}
@@ -453,12 +523,12 @@ const Reference = () => {
                   <td>2.</td>
                   <td>Solar Inverter</td>
                   <td>{offerData.inverter_capacity} Wp</td>
-                  <td>
+                  {/* <td>
                     Grid-tied String Inverter, Three Phase, 50 Hz Inverter
                     output shall be at 800V, & IGBT/MOSFET Microprocessor,
                     Efficiency-98% or above. 5 years warranty shall be provided
                     by Manufacturer.
-                  </td>
+                  </td> */}
                   <td>Nos.</td>
                   {/* <td>{internalQuantity2}</td> */}
                   <td>{internalQuantity2}</td>
@@ -476,7 +546,7 @@ const Reference = () => {
                   <td>3.</td>
                   <td>Module Mounting Structure</td>
                   <td>{mountingStructure(offerData.module_orientation)}</td>
-                  <td>
+                  {/* <td>
                     MMS Shall be designed for wind speed as per IS 875 Part 3
                     and optimum tilt angle. Galvalume (AZ-150-550MPA) shall
                     conform to IS 15961, Column (YS-250) shall conform to IS
@@ -484,7 +554,7 @@ const Reference = () => {
                     Sections shall be decided at the time of detailed
                     engineering. Depth of pile foundation shall be decided after
                     soil tests.
-                  </td>
+                  </td> */}
                   <td>Kg</td>
                   {/* <td>{Math.round(InternalQuantity3)}</td> */}
                   <td>{Math.round(InternalQuantity3)}</td>
@@ -502,10 +572,10 @@ const Reference = () => {
                   <td>4.</td>
                   <td>Module Mounting & MMS Hardware</td>
                   <td>SS304, HDG Grade 8.8</td>
-                  <td>
+                  {/* <td>
                     SS304 for Module to Purlin Mounting & HDG Grade 8.8 for all
                     other connections
-                  </td>
+                  </td> */}
                   <td>Set</td>
                   {/* <td>1</td> */}
                   <td>1</td>
@@ -526,14 +596,14 @@ const Reference = () => {
                     1C x 4 sqmm Cu flexible copper conductor solar DC cable (Red
                     & Black)
                   </td>
-                  <td>
+                  {/* <td>
                     Flexible copper conductor solar DC cable, Fine wire strands
                     of annealed tinned copper, Rated 1.5 kV DC, Electron Beam
                     Cross Linked Co-polymer(XLPO) Halogen Free Insulation and
                     outer sheath, Black color and Red Colour, DC cables
                     complying to EN50618, TUV 2PFG 1169 for service life
                     expectency of 25 years. Flame retardent, UV resistent
-                  </td>
+                  </td> */}
                   <td>m</td>
                   {/* <td>{Math.round(InternalQuantity5)}</td> */}
                   <td>{Math.round(InternalQuantity5)}</td>
@@ -551,13 +621,13 @@ const Reference = () => {
                   <td>6.</td>
                   <td>AC Cable (Inverter to ACCB) </td>
                   <td>1.9/3.3 kV,3C,300Sqmm Al</td>
-                  <td>
+                  {/* <td>
                     Aluminium, FRLS with galvanized steel armouring minimum area
                     of coverage 90% , XLPE insulated compliant to IS: 7098, with
                     distinct extruded XLPE inner sheath of black color as per IS
                     5831. If armoured, Galvanized Steel armouring to be used
                     with minumum 90% area of coverage.
-                  </td>
+                  </td> */}
                   <td>m</td>
                   {/* <td>{InternalQuantity6}</td> */}
                   <td>{InternalQuantity6}</td>
@@ -575,13 +645,13 @@ const Reference = () => {
                   <td>7.</td>
                   <td>AC Cable (ACCB to Transformer)</td>
                   <td>1.9/3.3 kV,3C,300Sqmm Al</td>
-                  <td>
+                  {/* <td>
                     Aluminium, FRLS with galvanized steel armouring minimum area
                     of coverage 90% , XLPE insulated compliant to IS: 7098, with
                     distinct extruded XLPE inner sheath of black color as per IS
                     5831. If armoured, Galvanized Steel armouring to be used
                     with minumum 90% area of coverage.
-                  </td>
+                  </td> */}
                   <td>m</td>
                   {/* <td>{InternalQuantity7}</td> */}
                   <td>{InternalQuantity7}</td>
@@ -593,6 +663,279 @@ const Reference = () => {
                          <td>18%</td>
                          <td>{Math.round((TotalVal7 * 18) / 100)}</td>
                          <td>{Math.round((TotalVal7 * 18) / 100 + TotalVal7)}</td> */}
+                </tr>
+                <tr>
+                  <td>8.</td>
+                  <td>AC HT Cable (Transformer to HT Panel)</td>
+                  <td>{evacuationVoltage(offerData.evacuation_voltage)}</td>
+                  {/* <td>
+                    Aluminium, FRLS with galvanized steel armouring minimum area
+                    of coverage 90% , XLPE insulated compliant to IS: 7098, with
+                    distinct extruded XLPE inner sheath of black color as per IS
+                    5831. If armoured, Galvanized Steel armouring to be used
+                    with minumum 90% area of coverage.
+                  </td> */}
+                  <td>m</td>
+                  {/* <td>50</td> */}
+                  <td>50</td>
+                  <td>Polycab/Equivalent</td>
+                  <td>Cables</td>
+                  {/* <td>{selectedCable}</td>
+                     <td>INR/m</td>
+                     <td>{TotalVal8}</td>
+                     <td>18%</td>
+                     <td>{Math.round(TotalVal8*18/100)}</td>
+                     <td>{Math.round(TotalVal8*18/100+TotalVal8)}</td> */}
+                </tr>
+
+                <tr>
+                  <td>9.</td>
+                  <td>AC & DC Earthing Cable</td>
+                  <td>1C/35 sqmm /Cu / Green Cable/UnAr</td>
+                  {/* <td>Cu / Green Cable/UnAr., 450/750V</td> */}
+                  <td>m</td>
+                  {/* <td>{internalQuantity9}</td> */}
+                  <td>{internalQuantity9}</td>
+                  <td>Polycab/Equivalent</td>
+                  <td>Cables</td>
+                  {/* <td>380</td>
+                     <td>INR/m</td>
+                     <td>{TotalVal9}</td>
+                     <td>18%</td>
+                     <td>{Math.round(TotalVal9*18/100)}</td>
+                     <td>{Math.round(TotalVal9*18/100+TotalVal9)}</td> */}
+                </tr>
+
+                <tr>
+                  <td>10.</td>
+                  <td>LA Earthing Cable</td>
+                  <td>1C/70 sqmm /Cu / Green Cable/UnAr</td>
+                  {/* <td>
+                    PVC Insulated flexible Cu Cable, Cu / Green Cable/UnAr
+                  </td> */}
+                  <td>m</td>
+                  {/* <td>{internalQuantity10}</td> */}
+                  <td>{internalQuantity10}</td>
+                  <td>Polycab/Equivalent</td>
+                  <td>Cables</td>
+                  {/* <td>660</td>
+                     <td>INR/m</td>
+                     <td>{TotalVal10}</td>
+                     <td>18%</td>
+                     <td>{Math.round(TotalVal10*18/100)}</td>
+                     <td>{Math.round(TotalVal10*18/100+TotalVal10)}</td> */}
+                </tr>
+
+                <tr>
+                  <td>11.</td>
+                  <td>Communication Cable</td>
+                  <td>RS485 / 2P / 0.5 sqmm / Armoured / Shielded Cable</td>
+                  {/* <td>RS485 / 2P / 0.5 sqmm / Armoured / Shielded Cable</td> */}
+                  <td>m</td>
+                  {/* <td>{internalQuantity11}</td> */}
+                  <td>{internalQuantity11}</td>
+                  <td>Polycab/Equivalent</td>
+                  <td>Cables</td>
+                  {/* <td>130</td>
+                     <td>INR/m</td>
+                     <td>{TotalVal11}</td>
+                     <td>18%</td>
+                     <td>{Math.round(TotalVal11*18/100)}</td>
+                     <td>{Math.round(TotalVal11*18/100+TotalVal11)}</td> */}
+                </tr>
+
+                <tr>
+                  <td>12.</td>
+                  <td>Control Cable (Trafo to HT Panel)</td>
+                  <td>14Cx2.5 sqmm Cu XLPE Ar Cable</td>
+                  {/* <td>14Cx2.5 sqmm Cu XLPE Ar Cable</td> */}
+                  <td>m</td>
+                  {/* <td>20</td> */}
+                  <td>20</td>
+                  <td>Polycab/Equivalent</td>
+                  <td>Cables</td>
+                  {/* <td>470</td>
+                     <td>INR/m</td>
+                     <td>{TotalVal12}</td>
+                     <td>18%</td>
+                     <td>{Math.round(TotalVal12*18/100)}</td>
+                     <td>{Math.round(TotalVal12*18/100+TotalVal12)}</td> */}
+                </tr>
+
+                <tr>
+                  <td>13.</td>
+                  <td>AC Combiner (Distribution) Box</td>
+                  <td>
+                    {NtenValue}IN 2OUT{" "}
+                    {Neleven > 0 ? `& ${Neleven}IN 1OUT` : ""} (I/P MCCB & O/P
+                    ACB)
+                  </td>
+                  {/* <td>
+                    3 phase, 800 V, 50 Hz ACCB Panel with
+                    <br />
+                    - Suitable MCCB's at Input
+                    <br />
+                    - Suitable ACB at Output
+                    <br />
+                    - Al, 3 phase, 3 W, bus bar
+                    <br />
+                    - MFM of class 0.5s accuracy
+                    <br />- IP 65, floor mounted, air - insulated, cubical type
+                  </td> */}
+                  <td>Set</td>
+                  {/* <td>1</td> */}
+                  <td>1</td>
+                  <td>Switchgears of L&T/ABB/Equivalent</td>
+                  <td>
+                    Electrical Equipment - Solar Plant Side (Transformer+LT
+                    Panel+HT Panel+Aux Transformer+UPS System)
+                  </td>
+                  {/* <td>{scmWeekly1}</td>
+                     <td>INR/Set</td>
+                     <td>{TotalVal13}</td>
+                     <td>18%</td>
+                     <td>{TotalVal13*18/100}</td>
+                     <td>{TotalVal13*18/100+TotalVal13}</td> */}
+                </tr>
+
+                <tr>
+                  <td>14.</td>
+                  <td>Step-up Transformer</td>
+                  <td>
+                    Step up Transformer {setUp(offerData.ac_capacity)} kVA,
+                    0.800/{offerData.evacuation_voltage}kV±10%, 50Hz±5Hz,
+                    Ynd11,Z=6.5%,
+                    <br />
+                    {offerData.transformer},ONAN
+                  </td>
+                  {/* <td>
+                    Step up inverter duty Transformer, Copper wound, ONAN,
+                    natural cooled, outdoor type, oil immersed, Type Test report
+                    required.
+                  </td> */}
+                  <td>Nos.</td>
+                  {/* <td>1</td> */}
+                  <td>1</td>
+                  <td>Uttam/ABC/Marsons/Equivalent</td>
+                  <td>
+                    Electrical Equipment - Solar Plant Side (Transformer+LT
+                    Panel+HT Panel+Aux Transformer+UPS System)
+                  </td>
+                  {/* <td>{scmWeekly2(offerData.transformer, offerData.ac_capacity, offerData.evacuation_voltage)}</td>
+                     <td>INR/Nos.</td>
+                     <td>{scmWeekly2(offerData.transformer, offerData.ac_capacity, offerData.evacuation_voltage)}</td>
+                     <td>18%</td>
+                     <td>{scmWeekly2(offerData.transformer, offerData.ac_capacity, offerData.evacuation_voltage)*18/100}</td>
+                     <td>{scmWeekly2(offerData.transformer, offerData.ac_capacity, offerData.evacuation_voltage)*18/100+scmWeekly2(offerData.transformer, offerData.ac_capacity, offerData.evacuation_voltage)}</td> */}
+                </tr>
+
+                <tr>
+                  <td>15.</td>
+                  <td>ICOG, Outdoor Panel</td>
+                  <td>{EvacuationVoltage(offerData.evacuation_voltage)}</td>
+                  {/* <td>
+                    CT-25 kA For 3 Sec, XXX/5A, CORE-1,10VA,5P20, CORE-2,
+                    10VA,CL0.2s
+                    <br />
+                    PT-XXkV/SQRT3/110/SQRT3/110/SQRT3
+                    <br />
+                    30VA,30VA,
+                    <br />
+                    CORE-1,CL-3P
+                    <br />
+                    CORE-2,CL0.2
+                    <br />
+                  </td> */}
+                  <td>Nos.</td>
+                  {/* <td>1</td> */}
+                  <td>1</td>
+                  <td>Switchgears of L&T/ABB/Equivalent</td>
+                  <td>
+                    Electrical Equipment - Solar Plant Side (Transformer+LT
+                    Panel+HT Panel+Aux Transformer+UPS System)
+                  </td>
+                  {/* <td>{scmWeekly3(offerData.evacuation_voltage)}</td>
+                     <td>INR/Nos.</td>
+                     <td>{scmWeekly3(offerData.evacuation_voltage)}</td>
+                     <td>18%</td>
+                     <td>
+                       {Math.round(
+                         (scmWeekly3(offerData.evacuation_voltage) * 18) / 100
+                       )}
+                     </td>
+                     <td>
+                       {Math.round(
+                         (scmWeekly3(offerData.evacuation_voltage) * 18) / 100 +
+                           scmWeekly3(offerData.evacuation_voltage)
+                       )}
+                     </td> */}
+                </tr>
+                <tr>
+                  <td>16.</td>
+                  <td>Earthing Station</td>
+                  <td>
+                    Maintenance Free Earth Electrode with Chemical Earthing Set{" "}
+                  </td>
+                  {/* <td>
+                    The earthing for array and LT power system shall be made of
+                    3 mtr long , 17.2 mm dia, Copper Bonded , thickness of 250
+                    microns, chemical compound filled, double walled earthing
+                    electrodes including accessories, and providing masonry
+                    enclosure with cast iron cover plate having pad-locking
+                    arrangement, watering pipe using charcoal or coke and salt
+                    as required as per provisions of IS: 3043
+                  </td> */}
+                  <td>Set</td>
+                  {/* <td>{internalQuantity16}</td> */}
+                  <td>{internalQuantity16}</td>
+                  <td>Reputed</td>
+                  <td>Other Balance of Material</td>
+                  {/* <td>{scmData.earthing_station}</td>
+                     <td>INR/Set</td>
+                     <td>{TotalVal16}</td>
+                     <td>18%</td>
+                     <td>{Math.round((TotalVal16 * 18) / 100)}</td>
+                     <td>{Math.round((TotalVal16 * 18) / 100 + TotalVal16)}</td> */}
+                </tr>
+
+                <tr>
+                  <td>17.</td>
+                  <td>Earthing Strips</td>
+                  <td>25x3 mm GI strip</td>
+                  {/* <td>
+                    25x3 mm GI strip With Zinc coating of 70 to 80 microns
+                  </td> */}
+                  <td>m</td>
+                  {/* <td>{internalQuantity17}</td> */}
+                  <td>{Math.round(internalQuantity17)}</td>
+                  <td>Reputed</td>
+                  <td>Other Balance of Material</td>
+                  {/* <td>{scmData.earthing_strips}</td>
+                     <td>INR/m</td>
+                     <td>{TotalVal17}</td>
+                     <td>18%</td>
+                     <td>{Math.round((TotalVal17 * 18) / 100)}</td>
+                     <td>{Math.ceil((TotalVal17 * 18) / 100 + TotalVal17)}</td> */}
+                </tr>
+
+                <tr>
+                  <td>18.</td>
+                  <td>Earthing Strips</td>
+                  <td>50x6 mm GI strip</td>
+                  {/* <td>
+                    50x6 mm GI strip With Zinc coating of 70 to 80 microns
+                  </td> */}
+                  <td>m</td>
+                  {/* <td>{internalQuantity17_2}</td> */}
+                  <td>{internalQuantity17_2}</td>
+                  <td>Reputed</td>
+                  <td>Other Balance of Material</td>
+                  {/* <td>{scmData.earthing_strip}</td>
+                     <td>INR/m</td>
+                     <td>{TotalVal18}</td>
+                     <td>18%</td>
+                     <td>{Math.round((TotalVal18 * 18) / 100)}</td>
+                     <td>{Math.round((TotalVal18 * 18) / 100) + TotalVal18}</td> */}
                 </tr>
               </tbody>
             </Table>

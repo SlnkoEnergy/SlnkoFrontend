@@ -783,6 +783,212 @@ const Reference4 = () => {
           },
         }}
       >
+        <Grid
+          sx={{
+            width: "60%",
+            height: "100%",
+            //  marginTop: "5%",
+            border: "2px solid #0f4C7f",
+            "@media print": {
+              width: "100%",
+              height:"100vh"
+            },
+          }}
+        >
+          {/* <Box
+                          sx={{
+                            display: "flex",
+                            width: "100%",
+                            alignItems: "flex-end",
+                            gap: 2,
+                            marginTop:"2%"
+                          }}
+                        >
+                          <img width={"220px"} height={"110px"} alt="logo" src={logo} />
+              
+                          <hr
+                            style={{
+                              width: "80%",
+                              color: "blue",
+                              borderTop: "2px solid #0f4C7f",
+                              margin: "19px 0",
+                            }}
+                          />
+                        </Box>
+                        <Box
+                          sx={{
+                            width: "100%",
+                            height: "100%",
+                            marginTop: "20px",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                          }}
+                        >
+                          <Typography
+                            sx={{
+                              color: "#56A4DA",
+                              fontSize: "3rem",
+                              fontWeight: "bolder",
+                              textDecoration: "underline rgb(243, 182, 39)",
+                              textDecorationThickness: "3px",
+                              textUnderlineOffset: "6px",
+                            }}
+                          >
+                            Reference&nbsp;{" "}
+                          </Typography>
+              
+                          <Typography
+                            sx={{
+                              color: "black",
+                              fontSize: "3rem",
+                              fontWeight: "bolder",
+                              textDecoration: "underline rgb(243, 182, 39)",
+                              textDecorationThickness: "3px",
+                              textUnderlineOffset: "6px",
+                            }}
+                          >
+                            Material List
+                          </Typography>
+                        </Box> */}
+
+          <Sheet
+            sx={{
+              width: "100%",
+              padding: "7px 10px",
+              background: "white",
+            }}
+          >
+            <Table className="table-header">
+              <thead>
+                <tr>
+                  <th>S.NO.</th>
+                  <th>ITEM NAME</th>
+                  <th>RATING</th>
+                  {/* <th>SPECIFICATION</th> */}
+                  <th>UoM</th>
+                  {/* <th>Qty (Int.)</th> */}
+                  <th>Qty</th>
+                  <th>Tentative Make</th>
+                  <th>Category</th>
+                  {/* <th>Rate</th>
+                            <th>Rate UoM</th>
+                            <th>Total Value</th>
+                            <th>GST</th>
+                            <th>GST Value</th>
+                            <th>Total with GST</th> */}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>19.</td>
+                  <td>Lightening Arrestor</td>
+                  <td>107 Mtr Dia over 7 Mtr High Mast with counter</td>
+                  {/* <td>
+                           ESE type as per NFC 17-102, ESE are considered with 107 Mtr
+                           Dia over 7 Mtr High Mast with counter
+                         </td> */}
+                  <td>Set</td>
+                  {/* <td>{internalQuantity18}</td> */}
+                  <td>{internalQuantity18}</td>
+                  <td>Reputed</td>
+                  <td>Other Balance of Material</td>
+                  {/* <td>{scmData.lightening_arrestor}</td>
+                            <td>INR/Set</td>
+                            <td>{TotalVal19}</td>
+                            <td>18%</td>
+                            <td>{Math.round((TotalVal19 * 18) / 100)}</td>
+                            <td>{Math.round((TotalVal19 * 18) / 100 + TotalVal19)}</td> */}
+                </tr>
+                <tr>
+                  <td>20.</td>
+                  <td>Datalogger</td>
+                  <td>As per inverter manufacturer</td>
+                  {/* <td>As per inverter manufacturer</td> */}
+                  <td>Set</td>
+                  {/* <td>1</td> */}
+                  <td>1</td>
+                  <td>Reputed</td>
+                  <td>Solar Inverter & Datalogger</td>
+                  {/* <td>{scmData.datalogger}</td>
+                            <td>INR/Set</td>
+                            <td>{TotalVal20}</td>
+                            <td>18%</td>
+                            <td>{Math.round((TotalVal20 * 18) / 100)}</td>
+                            <td>{Math.round((TotalVal20 * 18) / 100 + TotalVal20)}</td> */}
+                </tr>
+
+                <tr>
+                  <td>21.</td>
+                  <td>Auxilary transformer</td>
+                  <td>10 kVA,50Hz, 800/415 V, Dyn11</td>
+                  {/* <td>Dry Type Transformer</td> */}
+                  <td>Nos.</td>
+                  {/* <td>1</td> */}
+                  <td>1</td>
+                  <td>Reputed</td>
+                  <td>
+                    Electrical Equipment - Solar Plant Side (Transformer+LT
+                    Panel+HT Panel+Aux Transformer+UPS System)
+                  </td>
+                  {/* <td>{scmData.auxilary_transformer}</td>
+                            <td>INR/Nos.</td>
+                            <td>{TotalVal21}</td>
+                            <td>18%</td>
+                            <td>{Math.round((TotalVal21 * 18) / 100)}</td>
+                            <td>{Math.round((TotalVal21 * 18) / 100 + TotalVal21)}</td> */}
+                </tr>
+
+                <tr>
+                  <td>22.</td>
+                  <td>UPS & LDB</td>
+                  <td>1.5 kW Load with 1 Hour backup, Battery SMF Type</td>
+                  {/* <td></td> */}
+                  <td>Set</td>
+                  {/* <td>1</td> */}
+                  <td>1</td>
+                  <td>Reputed</td>
+                  <td>
+                    Electrical Equipment - Solar Plant Side (Transformer+LT
+                    Panel+HT Panel+Aux Transformer+UPS System)
+                  </td>
+                  {/* <td>{scmData.ups_ldb}</td>
+                            <td>INR/Set</td>
+                            <td>{TotalVal22}</td>
+                            <td>18%</td>
+                            <td>{Math.round((TotalVal22 * 18) / 100)}</td>
+                            <td>{Math.round((TotalVal22 * 18) / 100 + TotalVal22)}</td> */}
+                </tr>
+
+                <tr>
+                  <td>23.</td>
+                  <td>
+                    Balance of system with Wet Module Cleaning System (MCS) &
+                    Dry Cleaning semi automatic robot
+                  </td>
+                  {/* <td>
+                           Class C Items including Connectors, Lungs, Glands,
+                           Termination Kits, Conduits, Cable Tie, Ferruls, Sleeves, PU
+                           Foam, Route Marker, Danger boards and signages, Double
+                           Warning Tape, & Fire Fighting System
+                         </td> */}
+                  <td></td>
+                  <td>KWp</td>
+                  {/* <td>{internalQuantity24}</td> */}
+                  <td>{internalQuantity24}</td>
+                  <td>Reputed</td>
+                  <td>Other Balance of Material</td>
+                  {/* <td>{scmData.balance_of_system}</td>
+                              <td>INR/Set</td>
+                              <td>{TotalVal23}</td>
+                              <td>18%</td>
+                              <td>{Math.round((TotalVal23 * 18) / 100)}</td>
+                              <td>{Math.round((TotalVal23 * 18) / 100 + TotalVal23)}</td> */}
+                </tr>
+              </tbody>
+            </Table>
+          </Sheet>
+        
         <Box
           sx={{
             width: "100%",
@@ -820,10 +1026,10 @@ const Reference4 = () => {
         </Box>
         <Grid
           sx={{
-            width: "60%",
+            width: "100%",
             height: "100%",
             //  marginTop: "5%",
-            border: "2px solid #0f4C7f",
+            // border: "2px solid #0f4C7f",
             "@media print": {
               width: "100%",
             },
@@ -898,7 +1104,7 @@ const Reference4 = () => {
                   <th>S.NO.</th>
                   <th>ITEM NAME</th>
                   <th>RATING</th>
-                  <th>SPECIFICATION</th>
+                  {/* <th>SPECIFICATION</th> */}
                   <th>UoM</th>
                   {/* <th>Qty (Int.)</th> */}
                   <th>Qty</th>
@@ -921,7 +1127,7 @@ const Reference4 = () => {
                     Includes Pile casting, Module Mounting & Alignment, and
                     complete AC-DC work till commissioning inside plant boundary
                   </td>
-                  <td></td>
+                  {/* <td></td> */}
                   <td>KWp</td>
                   {/* <td>{internalQuantity24}</td> */}
                   <td>{internalQuantity24}</td>
@@ -949,7 +1155,7 @@ const Reference4 = () => {
                     machinaries
                   </td>
 
-                  <td></td>
+                  {/* <td></td> */}
                   <td>KWp</td>
                   {/* <td>{internalQuantity24}</td> */}
                   <td>{internalQuantity24}</td>
@@ -973,7 +1179,7 @@ const Reference4 = () => {
                     <span style={{ fontWeight: "bold" }}>CIVIL MATERIAL:</span>{" "}
                     Cement, Aggregates, Bricks, Sand & Iron Bars
                   </td>
-                  <td></td>
+                  {/* <td></td> */}
                   <td>KWp</td>
                   {/* <td>{internalQuantity24}</td> */}
                   <td>{internalQuantity24}</td>
@@ -995,7 +1201,7 @@ const Reference4 = () => {
                   <td>25.</td>
                   <td>Transportaion</td>
                   <td>Transformer, LT/HT, Cables, BOS</td>
-                  <td></td>
+                  {/* <td></td> */}
                   <td>Vehicles</td>
                   {/* <td>{internalQuantity25}</td> */}
                   <td>{internalQuantity25}</td>
@@ -1016,7 +1222,7 @@ const Reference4 = () => {
                     {offerData.evacuation_voltage}kV Transmission Line with
                     appropriate conductor size and PCC Poles
                   </td>
-                  <td></td>
+                  {/* <td></td> */}
                   <td>Km</td>
                   {/* <td>{offerData.transmission_length}</td> */}
                   <td>{offerData.transmission_length}</td>
@@ -1051,7 +1257,7 @@ const Reference4 = () => {
                   <td>27.</td>
                   <td>CT PT</td>
                   <td>As per DISCOM requirements</td>
-                  <td></td>
+                  {/* <td></td> */}
                   <td>Set</td>
                   {/* <td>2</td> */}
                   <td>2</td>
@@ -1071,7 +1277,7 @@ const Reference4 = () => {
                   <td>28.</td>
                   <td>ABT Meter</td>
                   <td>As per DISCOM requirements</td>
-                  <td></td>
+                  {/* <td></td> */}
                   <td>Set</td>
                   {/* <td>3</td> */}
                   <td>3</td>
@@ -1091,7 +1297,7 @@ const Reference4 = () => {
                   <td>29.</td>
                   <td>VCB Kiosk</td>
                   <td>As per DISCOM requirements</td>
-                  <td></td>
+                  {/* <td></td> */}
                   <td>Set</td>
                   {/* <td>1</td> */}
                   <td>1</td>
@@ -1109,7 +1315,7 @@ const Reference4 = () => {
                   <td>30.</td>
                   <td>RMS at Substation side</td>
                   <td>As per DISCOM requirements</td>
-                  <td></td>
+                  {/* <td></td> */}
                   <td>Set</td>
                   {/* <td>1</td> */}
                   <td>1</td>
@@ -1136,7 +1342,7 @@ const Reference4 = () => {
                   <td>31.</td>
                   <td>Plant Insurance</td>
                   <td>Transit & EAR</td>
-                  <td></td>
+                  {/* <td></td> */}
                   <td>KWp</td>
                   {/* <td>{internalQuantity31}</td> */}
                   <td>{internalQuantity31}</td>
@@ -1154,7 +1360,7 @@ const Reference4 = () => {
                   <td>32.</td>
                   <td>SLNKO EPCM Service Charges</td>
                   <td>SLNKO FEE</td>
-                  <td></td>
+                  {/* <td></td> */}
                   <td>KWp</td>
                   {/* <td>{internalQuantity32}</td> */}
                   <td>{internalQuantity32}</td>
@@ -1170,6 +1376,7 @@ const Reference4 = () => {
               </tbody>
             </Table>
           </Sheet>
+        </Grid>
         </Grid>
       </Grid>
     </>

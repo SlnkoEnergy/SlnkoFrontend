@@ -6,13 +6,13 @@ export const engsPoolingApi = createApi({
   tagTypes: ["Pooling"],
   endpoints: (builder) => ({
     getPoolings: builder.query({
-      query: () => "/get-pooling",
+      query: () => "/get-pooling-station-master",
       providesTags: ["Pooling"],
       
     }),
     addPooling: builder.mutation({
       query: (addPooling) => ({
-        url: "/add-pooling-master",
+        url: "add-pooling-station-master",
         method: "POST",
         body: addPooling,
       }),

@@ -35,9 +35,10 @@ import { forwardRef, useCallback, useImperativeHandle } from "react";
 import NoData from "../../assets/alert-bell.svg";
 import { useGetInitialLeadsQuery } from "../../redux/leadsSlice";
 import { toast } from "react-toastify";
+import { useGetHTPanelsQuery } from "../../redux/Eng/htsSlice";
 
 const HTPanelTab = forwardRef((props, ref) => {
-  const navigate = useNavigate();
+ const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -57,8 +58,11 @@ const HTPanelTab = forwardRef((props, ref) => {
   //   return cached ? JSON.parse(cached) : [];
   // });
 
-  const { data: getLead = [], isLoading, error } = useGetInitialLeadsQuery();
-  const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
+  const { data: getLead = [], isLoading, error } = useGetHTPanelsQuery();
+  const leads = useMemo(() => getLead?.data ?? [], [getLead?.data ?? ""]);
+
+  console.log(leads);
+  
 
   // const LeadStatus = ({ lead }) => {
   //   const { loi, ppa, loa, other_remarks, token_money } = lead;
@@ -85,15 +89,6 @@ const HTPanelTab = forwardRef((props, ref) => {
       // console.log("User Loaded:", JSON.parse(storedUser));
     }
   }, []);
-
-  const sourceOptions = {
-    "Referred by": ["Directors", "Clients", "Team members", "E-mail"],
-    "Social Media": ["Whatsapp", "Instagram", "LinkedIn"],
-    Marketing: ["Youtube", "Advertisements"],
-    "IVR/My Operator": [],
-    Others: [],
-  };
-  const landTypes = ["Leased", "Owned"];
 
   const [openModal, setOpenModal] = useState(false);
 
@@ -126,7 +121,7 @@ const HTPanelTab = forwardRef((props, ref) => {
           style={{ width: "200px" }}
         />
       </FormControl> */}
-        <FormControl size="sm">
+      <FormControl size="sm">
         <FormLabel>Status Filter</FormLabel>
         <Select size="sm" placeholder="Select status">
           <Option value="">All</Option>
@@ -275,38 +270,21 @@ const HTPanelTab = forwardRef((props, ref) => {
     setSelectedDate(e.target.value);
   };
 
-  const filteredData = useMemo(() => {
-    if (!user || !user.name) return [];
-
+const filteredData = useMemo(() => {
     return leads
       .filter((lead) => {
-        const submittedBy = lead.submitted_by?.trim() || "";
-        const userName = user.name.trim();
-        const userRole = user.role?.toLowerCase();
-
-        const isAdmin = userRole === "admin" || userRole === "superadmin";
-        const matchesUser = isAdmin || submittedBy === userName;
-
-        const matchesQuery = ["id", "c_name", "mobile", "state", "submitted_by"].some(
-          (key) => lead[key]?.toLowerCase().includes(searchQuery)
+        const matchesQuery = ["make", "status"].some((key) =>
+          lead[key]?.toLowerCase().includes(searchQuery.toLowerCase())
         );
-
-        const matchesDate = selectedDate
-          ? formatDate(lead.entry_date).toLocaleDateString() === formatDate(selectedDate).toLocaleDateString()
-          : true;
-
-        return matchesUser && matchesQuery && matchesDate;
+  
+        return matchesQuery;
       })
       .sort((a, b) => {
-        const dateA = formatDate(a.entry_date);
-        const dateB = formatDate(b.entry_date);
-
-        if (!dateA.id) return 1;
-        if (!dateB.id) return -1;
-
+        const dateA = new Date(a.createdAt);
+        const dateB = new Date(b.createdAt);
         return dateB - dateA;
       });
-  }, [leads, searchQuery, selectedDate, user]);
+  }, [leads, searchQuery]);
 
   // const filteredData = useMemo(() => {
   //   return leads
@@ -412,18 +390,7 @@ const HTPanelTab = forwardRef((props, ref) => {
     exportToCSV() {
       console.log("Exporting data to CSV...");
 
-      const headers = [
-        "Lead Id",
-        "Customer",
-        "Mobile",
-        "State",
-        "Scheme",
-        "Capacity",
-        "Substation Distance",
-        "Creation Date",
-        "Lead Status",
-        "Submitted_ By",
-      ];
+      const headers = ["Make", "VCB Make", "VCB Rating", "CT Make", "PT Make","Status",];
 
       // If selected list has items, use it. Otherwise export all.
       const exportLeads =
@@ -437,16 +404,12 @@ const HTPanelTab = forwardRef((props, ref) => {
       }
 
       const rows = exportLeads.map((lead) => [
-        lead.id,
-        lead.c_name,
-        lead.mobile,
-        lead.state,
-        lead.scheme,
-        lead.capacity || "-",
-        lead.distance || "-",
-        lead.entry_date || "-",
-        lead.status || "",
-        lead.submitted_by || "-",
+        lead.make || "-",
+        lead.vcb_make || "-",
+        lead.vcb_rating || "-",
+        lead.ct_make || "-",
+        lead.pt_make || "-",
+        lead.status || "-",
       ]);
 
       const csvContent = [
@@ -461,7 +424,7 @@ const HTPanelTab = forwardRef((props, ref) => {
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download =
-        selected.length > 0 ? "Selected_Leads.csv" : "Initial_Leads.csv";
+        selected.length > 0 ? "Selected_HT Panel.csv" : "All_HT Panel.csv";
       link.click();
     },
   }));
@@ -540,7 +503,7 @@ const HTPanelTab = forwardRef((props, ref) => {
               padding: "20px",
             }}
           >
-            <PermScanWifiIcon style={{color:"red", fontSize:"2rem"}} />
+            <PermScanWifiIcon style={{ color: "red", fontSize: "2rem" }} />
             <Typography
               fontStyle={"italic"}
               fontWeight={"600"}
@@ -577,28 +540,22 @@ const HTPanelTab = forwardRef((props, ref) => {
                     onChange={handleSelectAll}
                   />
                 </Box>
-                {[
-                  "Make",
-                  "Power(Wp)",
-                  // "Type",
-                  "Model No",
-                  "Status",
-                  "Action",
-                  
-                ].map((header, index) => (
-                  <Box
-                    component="th"
-                    key={index}
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {header}
-                  </Box>
-                ))}
+                {["Make", "VCB Make", "VCB Rating", "CT Make", "PT Make","Status", "Action"].map(
+                  (header, index) => (
+                    <Box
+                      component="th"
+                      key={index}
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "center",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {header}
+                    </Box>
+                  )
+                )}
               </Box>
             </Box>
 
@@ -638,20 +595,14 @@ const HTPanelTab = forwardRef((props, ref) => {
                           textDecoration: "none",
                         }}
                       >
-                        {/* {lead.id} */}
-                        Rayzon Solar
+                        {lead.make}
+                        
                       </span>,
-                      "580",
-                      // "N-TYPE TOPCON BIFACIAL",
-                      // `${lead.village}, ${lead.district}, ${lead.state}`,
-                      "RS580-144TGC",
-                      // lead.scheme,
-                      // lead.capacity || "-",
-                      // lead.distance || "-",
-                      // lead.entry_date || "-",
-                      // lead.submitted_by || "-",
-                      "Available",
-                      // <LeadStatus lead={lead} />,
+                       lead.vcb_make || "-",
+                       lead.vcb_rating || "-",
+                       lead.ct_make || "-",
+                       lead.pt_make || "-",
+                       lead.status || "-",
                     ].map((data, idx) => (
                       <Box
                         component="td"
@@ -683,7 +634,7 @@ const HTPanelTab = forwardRef((props, ref) => {
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={11}
+                    colSpan={6}
                     sx={{
                       padding: "8px",
                       textAlign: "center",
@@ -705,7 +656,7 @@ const HTPanelTab = forwardRef((props, ref) => {
                         style={{ width: "50px", height: "50px" }}
                       />
                       <Typography fontStyle={"italic"}>
-                        No Initial Leads available
+                        No HT Panel available
                       </Typography>
                     </Box>
                   </Box>
@@ -791,188 +742,101 @@ const HTPanelTab = forwardRef((props, ref) => {
         >
           <Grid container spacing={2}>
             <Grid xs={12} sm={6}>
-              <FormLabel>Customer Name</FormLabel>
+              <FormLabel>Make</FormLabel>
               <Input
-                name="name"
-                value={selectedLead?.c_name ?? ""}
+                name="make"
+                value={selectedLead?.make ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+          
+            <Grid xs={12} sm={6}>
+              <FormLabel>VCB Make</FormLabel>
+              <Input
+                name="type"
+                value={selectedLead?.vcb_make ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid> 
+             <Grid xs={12} sm={6}>
+              <FormLabel>PT Ratio</FormLabel>
+              <Input
+                name="size"
+                value={selectedLead?.pt_ratio ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
             <Grid xs={12} sm={6}>
-              <FormLabel>Company Name</FormLabel>
+              <FormLabel>VCB Rating</FormLabel>
               <Input
-                name="company"
-                value={selectedLead?.company ?? ""}
+                name="size"
+                value={selectedLead?.vcb_rating ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
             <Grid xs={12} sm={6}>
-              <FormLabel>Group Name</FormLabel>
+              <FormLabel>CT Make</FormLabel>
               <Input
-                name="group"
-                value={selectedLead?.group ?? ""}
+                name="size"
+                value={selectedLead?.ct_make ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
             <Grid xs={12} sm={6}>
-              <FormLabel>Source</FormLabel>
-              <Select
-                name="source"
-                value={selectedLead?.source ?? ""}
-                onChange={(e, newValue) =>
-                  setSelectedLead({
-                    ...selectedLead,
-                    source: newValue,
-                    reffered_by: "",
-                  })
-                }
-                fullWidth
-              >
-                {Object.keys(sourceOptions).map((option) => (
-                  <Option key={option} value={option}>
-                    {option}
-                  </Option>
-                ))}
-              </Select>
-            </Grid>
-            {selectedLead?.source &&
-              sourceOptions[selectedLead.source]?.length > 0 && (
-                <Grid xs={12} sm={6}>
-                  <FormLabel>Sub Source</FormLabel>
-                  <Select
-                    name="reffered_by"
-                    value={selectedLead?.reffered_by ?? ""}
-                    readOnly
-                    fullWidth
-                  >
-                    {sourceOptions[selectedLead.source].map((option) => (
-                      <Option key={option} value={option}>
-                        {option}
-                      </Option>
-                    ))}
-                  </Select>
-                </Grid>
-              )}
-            <Grid xs={12} sm={6}>
-              <FormLabel>Email ID</FormLabel>
+              <FormLabel>CT Ratio</FormLabel>
               <Input
-                name="email"
-                type="email"
-                value={selectedLead?.email ?? ""}
+                name="size"
+                value={selectedLead?.ct_ratio ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
             <Grid xs={12} sm={6}>
-              <FormLabel>Mobile Number</FormLabel>
+              <FormLabel>Cable Size Incoming (Sqmm)</FormLabel>
               <Input
-                name="mobile"
-                type="tel"
-                value={selectedLead?.mobile ?? ""}
+                name="size"
+                value={selectedLead?.cabel_size_incoming ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
             <Grid xs={12} sm={6}>
-              <FormLabel>Location</FormLabel>
+              <FormLabel>PT Make</FormLabel>
               <Input
-                name="location"
-                value={`${selectedLead?.village ?? ""}, ${selectedLead?.district ?? ""}, ${selectedLead?.state ?? ""}`}
+                name="size"
+                value={selectedLead?.pt_make ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
+
             <Grid xs={12} sm={6}>
-              <FormLabel>Capacity</FormLabel>
+              <FormLabel>Status</FormLabel>
               <Input
-                name="capacity"
-                value={selectedLead?.capacity ?? ""}
+                name="status"
+                value={selectedLead?.status ?? ""}
                 readOnly
                 fullWidth
               />
             </Grid>
-            <Grid xs={12} sm={6}>
-              <FormLabel>Sub Station Distance (KM)</FormLabel>
-              <Input
-                name="distance"
-                value={selectedLead?.distance ?? ""}
-                readOnly
-                fullWidth
-              />
-            </Grid>
-            <Grid xs={12} sm={6}>
-              <FormLabel>Tariff (Per Unit)</FormLabel>
-              <Input
-                name="tarrif"
-                value={selectedLead?.tarrif ?? ""}
-                readOnly
-                fullWidth
-              />
-            </Grid>
-            <Grid xs={12} sm={6}>
-              <FormLabel>Available Land (acres)</FormLabel>
-              <Input
-                name="available_land"
-                value={selectedLead?.land?.available_land ?? ""}
-                type="text"
-                fullWidth
-                variant="soft"
-                readOnly
-              />
-            </Grid>
-            <Grid xs={12} sm={6}>
-              <FormLabel>Creation Date</FormLabel>
-              <Input
-                name="entry_date"
-                type="date"
-                value={selectedLead?.entry_date ?? ""}
-                readOnly
-                fullWidth
-              />
-            </Grid>
-            <Grid xs={12} sm={6}>
-              <FormLabel>Scheme</FormLabel>
-              <Select name="scheme" value={selectedLead?.scheme ?? ""} readOnly>
+
+            {/* <Grid xs={12} sm={6}>
+              <FormLabel>Status</FormLabel>
+              <Select name="scheme" value={selectedModule?.scheme ?? ""} readOnly>
                 {["KUSUM A", "KUSUM C", "KUSUM C2", "Other"].map((option) => (
                   <Option key={option} value={option}>
                     {option}
                   </Option>
                 ))}
               </Select>
-            </Grid>
-            <Grid xs={12} sm={6}>
-              <FormLabel>Land Types</FormLabel>
-              <Autocomplete
-                options={landTypes}
-                value={selectedLead?.land?.land_type ?? null}
-                readOnly
-                getOptionLabel={(option) => option}
-                renderInput={(params) => (
-                  <Input
-                    {...params}
-                    placeholder="Land Type"
-                    variant="soft"
-                    required
-                  />
-                )}
-                isOptionEqualToValue={(option, value) => option === value}
-                sx={{ width: "100%" }}
-              />
-            </Grid>
-            <Grid xs={12}>
-              <FormLabel>Comments</FormLabel>
-              <Input
-                name="comment"
-                value={selectedLead?.comment ?? ""}
-                multiline
-                rows={4}
-                readOnly
-                fullWidth
-              />
-            </Grid>
+            </Grid> */}
+            
+
           </Grid>
           <Box textAlign="center" sx={{ mt: 2 }}>
             <Button onClick={handleCloseModal}>Close</Button>

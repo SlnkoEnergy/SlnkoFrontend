@@ -1433,11 +1433,11 @@ const HandoverSheetForm = () => {
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                      Proposed DC Capacity (KWp)
+                      Proposed DC Capacity (kWp)
                     </Typography>
                     <Input
                       value={formData.project_detail.proposed_dc_capacity}
-                      placeholder="Proposed DC Capacity (KWp)"
+                      placeholder="Proposed DC Capacity (kWp)"
                       onChange={(e) =>
                         handleChange(
                           "project_detail",
@@ -1449,11 +1449,11 @@ const HandoverSheetForm = () => {
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                      Proposed AC Capacity (KWp)
+                      Proposed AC Capacity (kWp)
                     </Typography>
                     <Input
                       value={formData.project_detail.project_kwp}
-                      placeholder="Proposed AC Capacity (KWp)"
+                      placeholder="Proposed AC Capacity (kWp)"
                       onChange={(e) =>
                         handleChange(
                           "project_detail",

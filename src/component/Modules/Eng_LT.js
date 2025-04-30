@@ -59,7 +59,7 @@ const LTPanelTab = forwardRef((props, ref) => {
   // });
 
   const { data: getLead = [], isLoading, error } = useGetLTPanelsQuery();
-  const leads = useMemo(() => getLead ?? [], [getLead]);
+  const leads = useMemo(() => getLead?.data ?? [], [getLead?.data ?? ""]);
 
   // const LeadStatus = ({ lead }) => {
   //   const { loi, ppa, loa, other_remarks, token_money } = lead;
@@ -267,43 +267,21 @@ const LTPanelTab = forwardRef((props, ref) => {
     setSelectedDate(e.target.value);
   };
 
-  const filteredData = useMemo(() => {
-    if (!user || !user.name) return [];
-
+ const filteredData = useMemo(() => {
     return leads
       .filter((lead) => {
-        const submittedBy = lead.submitted_by?.trim() || "";
-        const userName = user.name.trim();
-        const userRole = user.role?.toLowerCase();
-
-        const isAdmin = userRole === "admin" || userRole === "superadmin";
-        const matchesUser = isAdmin || submittedBy === userName;
-
-        const matchesQuery = [
-          "id",
-          "c_name",
-          "mobile",
-          "state",
-          "submitted_by",
-        ].some((key) => lead[key]?.toLowerCase().includes(searchQuery));
-
-        const matchesDate = selectedDate
-          ? formatDate(lead.entry_date).toLocaleDateString() ===
-            formatDate(selectedDate).toLocaleDateString()
-          : true;
-
-        return matchesUser && matchesQuery && matchesDate;
+        const matchesQuery = ["make", "status"].some((key) =>
+          lead[key]?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+  
+        return matchesQuery;
       })
       .sort((a, b) => {
-        const dateA = formatDate(a.entry_date);
-        const dateB = formatDate(b.entry_date);
-
-        if (!dateA.id) return 1;
-        if (!dateB.id) return -1;
-
+        const dateA = new Date(a.createdAt);
+        const dateB = new Date(b.createdAt);
         return dateB - dateA;
       });
-  }, [leads, searchQuery, selectedDate, user]);
+  }, [leads, searchQuery]);
 
   // const filteredData = useMemo(() => {
   //   return leads
@@ -658,7 +636,7 @@ const LTPanelTab = forwardRef((props, ref) => {
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={5}
+                    colSpan={6}
                     sx={{
                       padding: "8px",
                       textAlign: "center",
@@ -680,7 +658,7 @@ const LTPanelTab = forwardRef((props, ref) => {
                         style={{ width: "50px", height: "50px" }}
                       />
                       <Typography fontStyle={"italic"}>
-                        No Initial Leads available
+                        No LT Panel available
                       </Typography>
                     </Box>
                   </Box>
@@ -774,20 +752,30 @@ const LTPanelTab = forwardRef((props, ref) => {
                 fullWidth
               />
             </Grid>
-            <Grid xs={12} sm={6}>
-              <FormLabel>Voltage</FormLabel>
-              <Input
-                name="size"
-                value={selectedLead?.size ?? ""}
-                readOnly
-                fullWidth
-              />
-            </Grid>
+          
             <Grid xs={12} sm={6}>
               <FormLabel>Type</FormLabel>
               <Input
                 name="type"
                 value={selectedLead?.type ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid> 
+             <Grid xs={12} sm={6}>
+              <FormLabel>Cable Size Outgoing</FormLabel>
+              <Input
+                name="size"
+                value={selectedLead?.outgoing ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormLabel>Cable Size Incoming</FormLabel>
+              <Input
+                name="size"
+                value={selectedLead?.incoming ?? ""}
                 readOnly
                 fullWidth
               />
@@ -813,6 +801,15 @@ const LTPanelTab = forwardRef((props, ref) => {
                 ))}
               </Select>
             </Grid> */}
+            <Grid xs={12} sm={6}>
+              <FormLabel>Voltage</FormLabel>
+              <Input
+                name="type"
+                value={selectedLead?.voltage ?? ""}
+                readOnly
+                fullWidth
+              />
+            </Grid> 
 
           </Grid>
           <Box textAlign="center" sx={{ mt: 2 }}>

@@ -58,7 +58,7 @@ const TransformerTab = forwardRef((props, ref) => {
   // });
 
   const { data: getTransformer = [], isLoading, error } = useGetTransformersQuery();
-  const transformers = useMemo(() => getTransformer ?? [], [getTransformer]);
+  const transformers = useMemo(() => getTransformer?.data ?? [], [getTransformer?.data ?? "-"]);
 
   // const LeadStatus = ({ module }) => {
   //   const { loi, ppa, loa, other_remarks, token_money } = module;

@@ -5,8 +5,8 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import Offer1 from "../comm_add/offer_1";
 import Offer10 from "../comm_add/offer_10";
-import Offer11 from "../comm_add/offer_11";
-import Offer12 from "../comm_add/offer_12";
+// import Offer11 from "../comm_add/offer_11";
+// import Offer12 from "../comm_add/offer_12";
 import Offer13 from "../comm_add/offer_13";
 // import Offer14 from "../comm_add/offer_14";
 import Offer15 from "../comm_add/offer_15";
@@ -47,8 +47,8 @@ const Comm_Entire = () => {
         <Offer8 />
         <Offer9 />
         <Offer10 />
-        <Offer11 />
-        <Offer12 />
+        {/* <Offer11 /> */}
+        {/* <Offer12 /> */}
         <Offer13 />
         {/* <Offer14 /> */}
         <Offer15 />

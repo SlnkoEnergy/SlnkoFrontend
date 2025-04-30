@@ -395,7 +395,7 @@ const Reference3 = () => {
                   <th>S.NO.</th>
                   <th>ITEM NAME</th>
                   <th>RATING</th>
-                  <th>SPECIFICATION</th>
+                  {/* <th>SPECIFICATION</th> */}
                   <th>UoM</th>
                   {/* <th>Qty (Int.)</th> */}
                   <th>Qty</th>
@@ -410,11 +410,31 @@ const Reference3 = () => {
                 </tr>
               </thead>
               <tbody>
+              <tr>
+                  <td>19.</td>
+                  <td>Lightening Arrestor</td>
+                  <td>107 Mtr Dia over 7 Mtr High Mast with counter</td>
+                  {/* <td>
+                    ESE type as per NFC 17-102, ESE are considered with 107 Mtr
+                    Dia over 7 Mtr High Mast with counter
+                  </td> */}
+                  <td>Set</td>
+                  {/* <td>{internalQuantity18}</td> */}
+                  <td>{internalQuantity18}</td>
+                  <td>Reputed</td>
+                  <td>Other Balance of Material</td>
+                  {/* <td>{scmData.lightening_arrestor}</td>
+                     <td>INR/Set</td>
+                     <td>{TotalVal19}</td>
+                     <td>18%</td>
+                     <td>{Math.round((TotalVal19 * 18) / 100)}</td>
+                     <td>{Math.round((TotalVal19 * 18) / 100 + TotalVal19)}</td> */}
+                </tr>
                 <tr>
                   <td>20.</td>
                   <td>Datalogger</td>
                   <td>As per inverter manufacturer</td>
-                  <td>As per inverter manufacturer</td>
+                  {/* <td>As per inverter manufacturer</td> */}
                   <td>Set</td>
                   {/* <td>1</td> */}
                   <td>1</td>
@@ -432,7 +452,7 @@ const Reference3 = () => {
                   <td>21.</td>
                   <td>Auxilary transformer</td>
                   <td>10 kVA,50Hz, 800/415 V, Dyn11</td>
-                  <td>Dry Type Transformer</td>
+                  {/* <td>Dry Type Transformer</td> */}
                   <td>Nos.</td>
                   {/* <td>1</td> */}
                   <td>1</td>
@@ -453,7 +473,7 @@ const Reference3 = () => {
                   <td>22.</td>
                   <td>UPS & LDB</td>
                   <td>1.5 kW Load with 1 Hour backup, Battery SMF Type</td>
-                  <td></td>
+                  {/* <td></td> */}
                   <td>Set</td>
                   {/* <td>1</td> */}
                   <td>1</td>
@@ -476,12 +496,12 @@ const Reference3 = () => {
                     Balance of system with Wet Module Cleaning System (MCS) &
                     Dry Cleaning semi automatic robot
                   </td>
-                  <td>
+                  {/* <td>
                     Class C Items including Connectors, Lungs, Glands,
                     Termination Kits, Conduits, Cable Tie, Ferruls, Sleeves, PU
                     Foam, Route Marker, Danger boards and signages, Double
                     Warning Tape, & Fire Fighting System
-                  </td>
+                  </td> */}
                   <td></td>
                   <td>KWp</td>
                   {/* <td>{internalQuantity24}</td> */}
