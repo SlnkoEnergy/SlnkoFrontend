@@ -537,7 +537,7 @@ const PoolingTab = forwardRef((props, ref) => {
                      onChange={handleSelectAll}
                    />
                  </Box>
-                 {["Category", "Item Name", "Rating", "Status"].map(
+                 {["Category", "Item Name", "Rating", "Status", "Action"].map(
                    (header, index) => (
                      <Box
                        component="th"

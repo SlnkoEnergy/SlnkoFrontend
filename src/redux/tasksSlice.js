@@ -18,6 +18,14 @@ export const tasksApi = createApi({
       }),
       invalidatesTags: ["Task"],
     }),
+    updateTaskStatus: builder.mutation({
+      query: (_id) => ({
+        url: "update-task-status",
+        method: "PUT",
+        body: { _id },
+      }),
+    }),
+    
     getTasksHistory: builder.query({
       query: () => "get-task-history",
       providesTags: ["Task"],
@@ -29,6 +37,7 @@ export const tasksApi = createApi({
 export const {
   useGetTasksQuery,
   useAddTasksMutation,
+  useUpdateTaskStatusMutation,
   useGetTasksHistoryQuery
 } = tasksApi;
 

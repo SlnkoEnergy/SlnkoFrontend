@@ -105,7 +105,7 @@ function index() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
 
       <Route
-        path="add_user"
+        path="/add_user"
         element={
           <PrivateRoute>
             <AddUser />
@@ -113,7 +113,7 @@ function index() {
         }
       />
       <Route
-        path="edit_user"
+        path="/edit_user"
         element={
           <PrivateRoute>
             <EditUser />

@@ -12,6 +12,8 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import NotificationsIcon from "@mui/icons-material/Notifications";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import Lead_Dead from "../../../../component/Lead Stage/Dead_Lead";
 import Lead_FollowUp from "../../../../component/Lead Stage/Follow_Lead";
 import Lead_Initial from "../../../../component/Lead Stage/Initial_Lead";
@@ -19,8 +21,31 @@ import Lead_Overall from "../../../../component/Lead Stage/Overall_Lead";
 import Lead_Warm from "../../../../component/Lead Stage/Warm_Lead";
 import Lead_Won from "../../../../component/Lead Stage/Won_Lead";
 import Header from "../../../../component/Partials/Header";
+import CloseIcon from "@mui/icons-material/Close";
 import Sidebar from "../../../../component/Partials/Sidebar";
-import { Dropdown, Menu, MenuButton, MenuItem, Option, Select } from "@mui/joy";
+import {
+  Badge,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Dropdown,
+  IconButton,
+  ListItemDecorator,
+  Menu,
+  MenuButton,
+  MenuItem,
+  Modal,
+  ModalDialog,
+  Option,
+  Select,
+  Sheet,
+} from "@mui/joy";
+import {
+  useGetTasksQuery,
+  useUpdateTaskStatusMutation,
+} from "../../../../redux/tasksSlice";
+import { Dialog } from "@mui/material";
+import { toast } from "react-toastify";
 
 function InitialLeads() {
   const allLeadRef = useRef();
@@ -74,6 +99,226 @@ function InitialLeads() {
   );
 }
 
+function NotificationBell() {
+  const { data: notifications = [], isLoading, refetch } = useGetTasksQuery();
+  const [updateTaskStatus] = useUpdateTaskStatusMutation();
+
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [openModal, setOpenModal] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState(null);
+
+  const currentUser = JSON.parse(localStorage.getItem("userDetails"))?.name;
+
+  const handleToggle = (event) => {
+    setAnchorEl(anchorEl ? null : event.currentTarget);
+  };
+
+  const handleModalOpen = (notification) => {
+    setSelectedNotification(notification);
+    setOpenModal(true);
+  };
+
+  const handleModalClose = () => {
+    setOpenModal(false);
+    setSelectedNotification(null);
+  };
+
+  const handleClearOne = async (id) => {
+    try {
+      await updateTaskStatus(id);
+      toast.success("Notification cleared");
+      refetch();
+    } catch (error) {
+      toast.error("Unable to clear notification");
+    }
+  };
+
+  const handleClearAll = async () => {
+    try {
+      const clearPromises = userNotifications.map((notif) =>
+        updateTaskStatus(notif._id)
+      );
+      await Promise.all(clearPromises);
+      toast.success("All notifications cleared");
+      handleModalClose();
+      refetch();
+    } catch (error) {
+      toast.error("Some notifications couldn't be cleared");
+    }
+  };
+
+  const userNotifications = notifications
+    .filter(
+      (task) =>
+        task.status === "Add" &&
+        task.submitted_by !== currentUser &&
+        task.by_whom
+          ?.split(",")
+          .map((name) => name.trim())
+          .includes(currentUser) &&
+        task.reference?.toLowerCase() === "by meeting"
+    )
+    .slice(-5)
+    .reverse();
+
+  return (
+    <>
+      <IconButton onClick={handleToggle}>
+        <Badge
+          badgeContent={userNotifications.length}
+          color="danger"
+          sx={{
+            "& .MuiBadge-badge": {
+              fontSize: "0.75rem",
+              height: "18px",
+              minWidth: "18px",
+              backgroundColor:
+                userNotifications.length > 0 ? "red" : "transparent",
+              color: "white",
+            },
+          }}
+        >
+          <NotificationsIcon
+            sx={{
+              fontSize: "2rem",
+              color: userNotifications.length > 0 ? "#FFD700" : "gray",
+              animation:
+                userNotifications.length > 0 ? "ringBell 1s infinite" : "none",
+              transformOrigin: "top center",
+              "@keyframes ringBell": {
+                "0%": { transform: "rotate(0deg)" },
+                "10%": { transform: "rotate(-15deg)" },
+                "20%": { transform: "rotate(15deg)" },
+                "30%": { transform: "rotate(-10deg)" },
+                "40%": { transform: "rotate(10deg)" },
+                "50%": { transform: "rotate(-5deg)" },
+                "60%": { transform: "rotate(5deg)" },
+                "70%": { transform: "rotate(0deg)" },
+                "100%": { transform: "rotate(0deg)" },
+              },
+            }}
+          />
+        </Badge>
+      </IconButton>
+
+      <Menu
+        open={Boolean(anchorEl)}
+        anchorEl={anchorEl}
+        onClose={() => setAnchorEl(null)}
+        placement="bottom-end"
+      >
+        {isLoading ? (
+          <MenuItem>Loading...</MenuItem>
+        ) : userNotifications.length === 0 ? (
+          <MenuItem>No notifications</MenuItem>
+        ) : (
+          <>
+            {userNotifications.map((task, index) => {
+              const message =
+                task.submitted_by === currentUser ? (
+                  <>
+                    Hi, the task <strong>"{task.name}"</strong> has been
+                    assigned to you.
+                  </>
+                ) : (
+                  <>
+                    New task <strong>{task.name}</strong> has been assigned to
+                    you from <strong>{task.submitted_by}</strong> meeting.
+                  </>
+                );
+
+              return (
+                <MenuItem
+                  key={index}
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  <Box
+                    onClick={() => {
+                      handleModalOpen(task);
+                      setAnchorEl(null);
+                    }}
+                    sx={{ flexGrow: 1, cursor: "pointer" }}
+                  >
+                    <ListItemDecorator>
+                      {/* <AccessTimeIcon fontSize="small" /> */}
+                    </ListItemDecorator>
+                    <Typography level="body-sm">{message}</Typography>
+                  </Box>
+                  <IconButton
+                    size="small"
+                    color="danger"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleClearOne(task._id);
+                    }}
+                  >
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </MenuItem>
+              );
+            })}
+            <MenuItem
+              onClick={() => {
+                handleClearAll();
+                setAnchorEl(null);
+              }}
+              sx={{
+                justifyContent: "center",
+                fontWeight: "bold",
+                color: "red",
+              }}
+            >
+              Clear All
+            </MenuItem>
+          </>
+        )}
+      </Menu>
+
+      <Modal open={openModal} onClose={handleModalClose}>
+        <ModalDialog variant="outlined" role="alertdialog">
+          <Typography level="h4">Task Notification</Typography>
+          <Typography>
+            {selectedNotification?.reference?.toLowerCase() === "by meeting" ? (
+              <>
+                New task <strong>{selectedNotification.name}</strong> has been
+                assigned to you from{" "}
+                <strong>{selectedNotification.submitted_by}</strong> meeting.
+              </>
+            ) : (
+              "You have a new task."
+            )}
+          </Typography>
+
+          <Sheet
+            sx={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 1,
+              mt: 2,
+            }}
+          >
+            <Button variant="solid" color="danger" onClick={handleClearAll}>
+              Clear All
+            </Button>
+            <Button
+              variant="solid"
+              color="primary"
+              onClick={() => handleClearOne(selectedNotification._id)}
+            >
+              Clear
+            </Button>
+          </Sheet>
+        </ModalDialog>
+      </Modal>
+    </>
+  );
+}
+
 function LeadPage({
   navigate,
   selectedLead,
@@ -83,6 +328,20 @@ function LeadPage({
   handleExportToCSV,
 }) {
   const { mode } = useColorScheme();
+  //   const [user, setUser] = useState(null);
+
+  //   useEffect(() => {
+  //    const userData = getUserData();
+  //    setUser(userData);
+  //  }, []);
+
+  //  const getUserData = () => {
+  //    const userData = localStorage.getItem("userDetails");
+  //    if (userData) {
+  //      return JSON.parse(userData);
+  //    }
+  //    return null;
+  //  };
 
   return (
     <Box sx={{ display: "flex", minHeight: "100dvh" }}>
@@ -161,7 +420,6 @@ function LeadPage({
               justifyContent: "center",
             }}
           >
-          
             {(selectedLead === "Won" ||
               selectedLead === "Follow Up" ||
               selectedLead === "Warm") && (
@@ -174,7 +432,6 @@ function LeadPage({
               </Button>
             )}
 
-        
             {(selectedLead === "Initial" || selectedLead === "OverAll") && (
               <Button
                 color="primary"
@@ -185,7 +442,6 @@ function LeadPage({
               </Button>
             )}
 
-           
             <Box sx={{ display: { xs: "flex", md: "none" } }}>
               <Dropdown>
                 <MenuButton size="sm" color="primary" variant="outlined">
@@ -200,7 +456,6 @@ function LeadPage({
               </Dropdown>
             </Box>
 
-          
             <Box
               sx={{
                 display: { xs: "none", md: "flex" },
@@ -223,7 +478,9 @@ function LeadPage({
               >
                 Export to CSV
               </Button>
+              
             </Box>
+            <NotificationBell />
           </Box>
         </Box>
 
@@ -237,7 +494,6 @@ function LeadPage({
             marginLeft: { xl: "15%", lg: "18%" },
           }}
         >
-         
           <Box sx={{ display: { xs: "flex", md: "none" }, gap: 1 }}>
             <Button
               variant={selectedLead === "OverAll" ? "solid" : "outlined"}

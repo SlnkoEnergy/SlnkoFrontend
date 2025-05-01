@@ -10,7 +10,7 @@ import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 
 import Sidebar from '../../component/Partials/Sidebar';
 import Header from '../../component/Partials/Header';
-import AddUser from '../../component/Forms/User/AddUser';
+import AddUserForm from '../../component/Forms/User/AddUser';
 
 function Add_User() {
   return (
@@ -75,10 +75,9 @@ function Add_User() {
               alignItems: { xs: 'start', sm: 'center' },
               flexWrap: 'wrap',
               justifyContent: 'space-between',
-              marginLeft:{xl:"40%", lg:"35%"}
             }}
           >
-           <AddUser />
+           <AddUserForm />
            
           </Box>
           

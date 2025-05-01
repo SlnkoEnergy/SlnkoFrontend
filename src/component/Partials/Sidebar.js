@@ -15,7 +15,7 @@ import IconButton from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import List from "@mui/joy/List";
 import ListItem from "@mui/joy/ListItem";
-import EngineeringIcon from '@mui/icons-material/Engineering';
+import EngineeringIcon from "@mui/icons-material/Engineering";
 import ListItemButton, { listItemButtonClasses } from "@mui/joy/ListItemButton";
 import ListItemContent from "@mui/joy/ListItemContent";
 import Sheet from "@mui/joy/Sheet";
@@ -24,7 +24,7 @@ import { useColorScheme } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import BuildIcon from '@mui/icons-material/Build';
+import BuildIcon from "@mui/icons-material/Build";
 import Main_Logo from "../../assets/protrac_logo.png";
 import Main_Logo2 from "../../assets/white_logo.png";
 import { closeSidebar } from "../../utils/utils";
@@ -353,8 +353,8 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-             {/* Eng Section */}
-             <ListItem nested>
+            {/* Eng Section */}
+            <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
@@ -768,7 +768,8 @@ function Sidebar() {
               </List>
             </Toggler>
           </ListItem>
-        ) : user?.department === "account" && user?.name === "Sujan Maharjan" ? (
+        ) : user?.department === "account" &&
+          user?.name === "Sujan Maharjan" ? (
           <List
             size="sm"
             sx={{
@@ -1016,7 +1017,6 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-
             {/* CAM */}
             <ListItem nested>
               <Toggler
@@ -1049,7 +1049,6 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
-
           </List>
         ) : user?.role === "purchase" &&
           (user?.name === "Aryan Maheshwari" ||
@@ -1372,6 +1371,118 @@ function Sidebar() {
                   Vendor Bill
                 </ListItemButton>
               </ListItem> */}
+                </List>
+              </Toggler>
+            </ListItem>
+          </List>
+        ) : user?.role === "manager" && user?.name === "Ranvijay Singh" ? (
+          <List
+            size="sm"
+            sx={{
+              gap: 1,
+              "--List-nestedInsetStart": "30px",
+              "--ListItem-radius": (theme) => theme.vars.radius.sm,
+            }}
+          >
+            {/* <ListItem>
+              <ListItemButton>
+                <HomeRoundedIcon />
+                <ListItemContent>
+                  <Typography
+                    level="title-sm"
+                    onClick={() => navigate("/dashboard")}
+                  >
+                    Dashboard
+                  </Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem> */}
+            {/* Eng Section */}
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <BuildIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">Eng</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List>
+                  <ListItem>
+                    <ListItemButton onClick={() => navigate("/eng_dash")}>
+                      Dashboard
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+          </List>
+        ) : user?.department === "eng" &&
+          (user?.name === "Rishav Mahato" ||
+          user?.name === "Dhruv Choudhary") ? (
+          <List
+            size="sm"
+            sx={{
+              gap: 1,
+              "--List-nestedInsetStart": "30px",
+              "--ListItem-radius": (theme) => theme.vars.radius.sm,
+            }}
+          >
+            {/* <ListItem>
+              <ListItemButton>
+                <HomeRoundedIcon />
+                <ListItemContent>
+                  <Typography
+                    level="title-sm"
+                    onClick={() => navigate("/dashboard")}
+                  >
+                    Dashboard
+                  </Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem> */}
+            {/* Eng Section */}
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <BuildIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">Eng</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List>
+                  <ListItem>
+                    <ListItemButton onClick={() => navigate("/eng_dash")}>
+                      Dashboard
+                    </ListItemButton>
+                  </ListItem>
                 </List>
               </Toggler>
             </ListItem>
