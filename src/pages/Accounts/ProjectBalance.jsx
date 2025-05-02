@@ -146,6 +146,14 @@ function ProjectBalance() {
                 user?.name === "Guddu Rani Dubey" ||
                 user?.name === "Prachi Singh" ||
                 user?.name === "admin") && (
+                <Button color="primary" onClick={() => navigate("/adjust_request")} size="sm">
+                  Adjustment Form
+                </Button>
+              )}
+              {(user?.name === "IT Team" ||
+                user?.name === "Guddu Rani Dubey" ||
+                user?.name === "Prachi Singh" ||
+                user?.name === "admin") && (
                 <Button color="primary" onClick={handleClick} size="sm">
                   Add New Project +
                 </Button>

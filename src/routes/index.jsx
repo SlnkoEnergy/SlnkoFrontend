@@ -83,6 +83,7 @@ import Add_Pooling from "../pages/Eng/Forms/Add_Pooling";
 import Add_HT_Panel from "../pages/Eng/Forms/Add_HT";
 import Add_LT_Panel from "../pages/Eng/Forms/Add_LT";
 import Add_BOS_Station from "../pages/Eng/Forms/Add_BOS";
+import Add_Adjusment from "../pages/Accounts/Adjust_Request";
 
 function index() {
   return (
@@ -440,6 +441,14 @@ function index() {
         element={
           <PrivateRoute>
             <AddPayment_Request />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/adjust_request"
+        element={
+          <PrivateRoute>
+            <Add_Adjusment />
           </PrivateRoute>
         }
       />

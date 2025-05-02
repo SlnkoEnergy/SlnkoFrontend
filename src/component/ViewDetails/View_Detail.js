@@ -107,6 +107,33 @@ const Customer_Payment_Summary = () => {
     const tcs =
       netBalance > 5000000 ? Math.round(netBalance - 5000000) * 0.001 : 0;
 
+    const adjustHeader = [
+      "S.No.",
+      "Adjust Date",
+      "PO Number",
+      "Paid For",
+      "Paid To",
+      "Credit Adjustment",
+      "Debit Adjustment",
+    ];
+    const adjustRows = adjustHistory.map((row, index) => [
+      index + 1,
+      new Date(row.adj_date).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }),
+
+      row.po_number || "-",
+      row.paid_for || "-",
+      row.vendor || "-",
+      // Credit Adjustment column
+      row.adj_type === "Add" ? parseFloat(row.adj_amount) : "-",
+
+      // Debit Adjustment column
+      row.adj_type === "Subtract" ? parseFloat(row.adj_amount) : "-",
+    ]);
+
     // Client Table
     const clientHeader = [
       "S.No.",
@@ -137,9 +164,11 @@ const Customer_Payment_Summary = () => {
         0
       ) || "0";
 
-      const POBasic =
-      filteredClients.reduce((acc, client) => acc + parseFloat(client.calculatedPoBasic), 0) || "0";
-
+    const POBasic =
+      filteredClients.reduce(
+        (acc, client) => acc + parseFloat(client.calculatedPoBasic),
+        0
+      ) || "0";
 
     // Debugging logs
     // console.log("filteredClients:", filteredClients);
@@ -172,13 +201,7 @@ const Customer_Payment_Summary = () => {
       // ["11", "Extra GST Recoverable from Client", totalPOBasic],
       // ["12", "Balance Required [(5)-(9)-(10)]", balanceRequired],
       ...(POBasic > 0
-        ? [
-            [
-              "11",
-              "Extra GST Recoverable from Client",
-              totalPOBasic,
-            ],
-          ]
+        ? [["11", "Extra GST Recoverable from Client", totalPOBasic]]
         : []),
       [
         POBasic > 0 ? "12" : "11",
@@ -207,6 +230,9 @@ const Customer_Payment_Summary = () => {
       clientHeader.join(","),
       ...clientRows.map((row) => row.join(",")),
       "",
+      adjustHeader.join(","),
+      ...adjustRows.map((row) => row.join(",")),
+      "",
       ...summaryData.map((row) => row.join(",")),
       "",
       ...summaryData2.map((row) => row.join(",")),
@@ -221,12 +247,15 @@ const Customer_Payment_Summary = () => {
   const [creditHistory, setCreditHistory] = useState([]);
 
   const [debitHistory, setDebitHistory] = useState([]);
+  const [adjustHistory, setAdjustHistory] = useState([]);
 
   const [clientHistory, setClientHistory] = useState([]);
   const [filteredClients, setFilteredClients] = useState([]);
   const [clientSearch, setClientSearch] = useState("");
+  const [adjustSearch, setAdjustSearch] = useState("");
   const [creditSearch, setCreditSearch] = useState("");
   const [selectedClients, setSelectedClients] = useState([]);
+  const [selectedAdjust, setSelectedAdjust] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const adjustmentHistory = [
@@ -250,7 +279,9 @@ const Customer_Payment_Summary = () => {
   const [selectedDate, setSelectedDate] = useState("");
   const [debitSearch, setDebitSearch] = useState("");
   const [selectedDebits, setSelectedDebits] = useState([]);
+  const [selectedAdjusts, setSelectedAdjusts] = useState([]);
   const [filteredDebits, setFilteredDebits] = useState([]);
+  const [filteredAdjusts, setFilteredAdjusts] = useState([]);
   const [payments, setPayments] = useState([]);
 
   const totalCredited = creditHistory.reduce(
@@ -296,6 +327,20 @@ const Customer_Payment_Summary = () => {
     );
 
     setFilteredClients(filtered);
+  };
+
+  const handleAdjustSearch = (event) => {
+    const searchValue = event.target.value.toLowerCase();
+    setAdjustSearch(searchValue);
+
+    const filtered = adjustHistory.filter(
+      (adjust) =>
+        adjust.po_number.toLowerCase().includes(searchValue) ||
+        adjust.vendor.toLowerCase().includes(searchValue) ||
+        adjust.item.toLowerCase().includes(searchValue)
+    );
+
+    setFilteredAdjusts(filtered);
   };
 
   // const handleCreditSearch = (event) => {
@@ -718,6 +763,111 @@ const Customer_Payment_Summary = () => {
     }, 0),
   };
   // console.log("Total Customer Adjustment:", debitHistorySummary);
+
+  useEffect(() => {
+    if (projectData.p_id) {
+      console.log("projectData.p_id:", projectData.p_id);
+
+      const fetchAdjustHistory = async () => {
+        try {
+          const response = await Axios.get(
+            `/get-all-projecT-IT?p_id=${projectData.p_id}`
+          );
+          // const payResponse = await Axios.get("/get-pay-summarY-IT");
+          // const poResponse = await Axios.get("/get-all-pO-IT");
+          // const billResponse = await Axios.get("/get-all-bilL-IT");
+          const adjustResponse = await Axios.get("/get-adjustment-request");
+
+          // const payData = payResponse.data?.data || [];
+          // const poData = poResponse.data?.data || [];
+          // const billData = billResponse.data?.data || [];
+
+          const adjustData = adjustResponse.data;
+
+          console.log(adjustData);
+
+          const allProjects = response.data?.data || [];
+          // Filter debit history based on p_id match
+          const filteredAdjustHistory = adjustData.filter(
+            (item) => String(item.p_id) === String(projectData.p_id)
+          );
+
+          // const matchingPO = poData.find(
+          //   (po) => String(po.p_id) === String(projectData.p_id)
+          // );
+
+          const updatedAdjusts = filteredAdjustHistory.map((item) => ({
+            ...item,
+            // po_number: matchingPO ? matchingPO.po_number : "-",
+          }));
+
+          // console.log("Updated Adjust History with PO Number:", updatedAdjusts);
+
+          setAdjustHistory(filteredAdjustHistory);
+          setFilteredAdjusts(updatedAdjusts);
+        } catch (err) {
+          console.error("Error fetching adjust history:", err);
+          setError("Failed to fetch adjust history. Please try again later.");
+        }
+      };
+
+      fetchAdjustHistory();
+    }
+  }, [projectData.p_id]);
+
+  // const handleDeleteAdjust = async () => {
+  //   try {
+  //     setLoading(true);
+  //     setError("");
+
+  //     if (selectedClients.length === 0) {
+  //       toast.error("No debits selected for deletion.");
+  //       return;
+  //     }
+
+  //     console.log("Deleting selected clients:", selectedClients);
+
+  //     await Promise.all(
+  //       selectedClients.map((_id) => Axios.delete(`/delete-pO-IT/${_id}`))
+  //     );
+
+  //     toast.success("PO Deleted successfully.");
+
+  //     setClientHistory((prev) =>
+  //       prev.filter((item) => !selectedClients.includes(item._id))
+  //     );
+  //     setFilteredClients((prev) =>
+  //       prev.filter((item) => !selectedClients.includes(item._id))
+  //     );
+  //     setSelectedClients([]);
+  //   } catch (err) {
+  //     console.error("Error deleting pos:", err);
+  //     setError(err.response?.data?.msg || "Failed to delete selected pos.");
+  //     toast.error("Failed to delete selected pos.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const handleAdjustCheckboxChange = (_id) => {
+    setSelectedAdjusts((prev) =>
+      prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
+    );
+  };
+  const handleSelectAllAdjust = (event) => {
+    if (event.target.checked) {
+      setSelectedAdjusts(filteredAdjusts.map((adjust) => adjust._id));
+    } else {
+      setSelectedAdjusts([]);
+    }
+  };
+  const creditTotal = filteredAdjusts
+    .filter((row) => row.adj_type === "Add")
+    .reduce((sum, row) => sum + parseFloat(row.adj_amount || 0), 0);
+
+  const debitTotal = filteredAdjusts
+    .filter((row) => row.adj_type === "Subtract")
+    .reduce((sum, row) => sum + parseFloat(row.adj_amount || 0), 0);
 
   // ***Balance Summary***
 
@@ -1962,6 +2112,184 @@ const Customer_Payment_Summary = () => {
                   ₹ {clientSummary.totalBilledValue.toLocaleString("en-IN")}
                 </td>
                 <td />
+              </tr>
+            </tfoot>
+          </Table>
+        </Sheet>
+      </Box>
+
+      {/* Adjust History Section */}
+      <Box>
+        <Typography
+          variant="h5"
+          fontFamily="Playfair Display"
+          fontWeight={600}
+          mt={4}
+          mb={2}
+        >
+          Adjustment History
+        </Typography>
+        <Divider style={{ borderWidth: "2px", marginBottom: "20px" }} />
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexDirection: { md: "row", xs: "column" },
+            "@media print": {
+              display: "none",
+            },
+          }}
+          mb={2}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              flexDirection: { md: "row", xs: "column" },
+            }}
+          >
+            <Input
+              placeholder="Search here"
+              value={adjustSearch}
+              onChange={handleAdjustSearch}
+              style={{ width: "250px" }}
+            />
+            {/* <Input
+              type="date"
+              value={selectedDate}
+              onChange={handleDateFilter}
+              style={{ width: "200px", marginLeft: "5px" }}
+            /> */}
+          </Box>
+          {/* {(user?.name === "IT Team" ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Prachi Singh" ||
+            user?.name === "admin") && (
+            <Box>
+              <IconButton
+                color="danger"
+                disabled={selectedClients.length === 0}
+                onClick={handleDeleteClient}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Box>
+          )} */}
+        </Box>
+
+        <Sheet
+          variant="outlined"
+          sx={{
+            borderRadius: "12px",
+            overflow: "hidden",
+            p: 2,
+            boxShadow: "md",
+            maxWidth: "100%",
+            "@media print": {
+              boxShadow: "none",
+              p: 0,
+              borderRadius: 0,
+              overflow: "visible",
+            },
+          }}
+        >
+          <Table
+            borderAxis="both"
+            sx={{
+              minWidth: "100%",
+              "& thead": {
+                backgroundColor: "neutral.softBg",
+                "@media print": {
+                  backgroundColor: "#eee",
+                },
+              },
+              "& th, & td": {
+                textAlign: "left",
+                px: 2,
+                py: 1.5,
+                "@media print": {
+                  px: 1,
+                  py: 1,
+                  fontSize: "12px",
+                  border: "1px solid #ccc",
+                },
+              },
+              "@media print": {
+                borderCollapse: "collapse",
+                width: "100%",
+                tableLayout: "fixed",
+              },
+            }}
+          >
+            {/* Table Header */}
+            <thead>
+              <tr>
+                <th>Adjust Date</th>
+                <th>PO Number</th>
+                <th>Paid For</th>
+                <th>Paid To</th>
+                <th>Credit Adjustment</th>
+                <th>Debit Adjustment</th>
+                <th style={{ textAlign: "center" }}>
+                  <Checkbox
+                    onChange={handleSelectAllClient}
+                    checked={selectedAdjust.length === filteredAdjusts.length}
+                  />
+                </th>
+              </tr>
+            </thead>
+
+            {/* Table Body */}
+            <tbody>
+              {filteredAdjusts
+                .slice()
+                .sort((a, b) => new Date(a.adj_date) - new Date(b.adj_date))
+                .map((row) => (
+                  <tr key={row.id}>
+                    <td>
+                      {new Date(row.adj_date).toLocaleDateString("en-IN", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </td>
+                    <td>{row.po_number || "-"}</td>
+                    <td>{row.paid_for}</td>
+                    <td>{row.vendor}</td>
+
+                    <td>
+                      {row.adj_type === "Add"
+                        ? `₹ ${parseFloat(row.adj_amount).toLocaleString("en-IN")}`
+                        : "-"}
+                    </td>
+
+                    <td>
+                      {row.adj_type === "Subtract"
+                        ? `₹ ${parseFloat(row.adj_amount).toLocaleString("en-IN")}`
+                        : "-"}
+                    </td>
+
+                    <td style={{ textAlign: "center" }}>
+                      <Checkbox
+                        color="primary"
+                        checked={selectedDebits.includes(row._id)}
+                        onChange={() => handleDebitCheckboxChange(row._id)}
+                      />
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+
+            {/* Total Row */}
+            <tfoot>
+              <tr style={{ fontWeight: "bold", backgroundColor: "#f5f5f5" }}>
+                <td colSpan={4} style={{ textAlign: "right" }}>
+                  Total:{" "}
+                </td>
+                <td>₹ {creditTotal.toLocaleString("en-IN")}</td>
+                <td>₹ {debitTotal.toLocaleString("en-IN")}</td>
+                <td></td>
               </tr>
             </tfoot>
           </Table>
