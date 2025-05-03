@@ -39,6 +39,7 @@ const Overall_Leads = forwardRef((props, ref) => {
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  // const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
   const [projects, setProjects] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
@@ -73,6 +74,12 @@ const Overall_Leads = forwardRef((props, ref) => {
     ...(getLead?.lead?.deaddata?.map((item) => ({ ...item, status: "Dead" })) ||
       []),
   ];
+
+
+  // const handleItemsPerPageChange = (event) => {
+  //   setItemsPerPage(parseInt(event.target.value));
+  //   setCurrentPage(1); // Optional: reset to first page on change
+  // };
 
   // console.log("overall leads", leads);
 
@@ -197,6 +204,8 @@ const Overall_Leads = forwardRef((props, ref) => {
   //   console.log("API Response:", getLead);
   // }, [getLead]);
 
+  
+
   const renderFilters = () => (
     <>
       <FormControl size="sm">
@@ -208,6 +217,19 @@ const Overall_Leads = forwardRef((props, ref) => {
           style={{ width: "200px" }}
         />
       </FormControl>
+      {/* <FormControl size="sm">
+        <FormLabel>Items per page</FormLabel>
+        <Select
+          size="sm"
+          value={itemsPerPage}
+          onChange={handleItemsPerPageChange}
+        >
+          <Option value={10}>10</Option>
+          <Option value={20}>20</Option>
+          <Option value={50}>50</Option>
+          <Option value={100}>100</Option>
+        </Select>
+      </FormControl> */}
     </>
   );
 
@@ -1063,7 +1085,6 @@ const Overall_Leads = forwardRef((props, ref) => {
                 value={selectedLead?.land?.available_land ?? "-"}
                 type="text"
                 fullWidth
-              
                 readOnly
               />
             </Grid>
@@ -1095,12 +1116,7 @@ const Overall_Leads = forwardRef((props, ref) => {
                 readOnly
                 getOptionLabel={(option) => option}
                 renderInput={(params) => (
-                  <Input
-                    {...params}
-                    placeholder="Land Type"
-                   
-                    required
-                  />
+                  <Input {...params} placeholder="Land Type" required />
                 )}
                 isOptionEqualToValue={(option, value) => option === value}
                 sx={{ width: "100%" }}

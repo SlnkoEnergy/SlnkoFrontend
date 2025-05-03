@@ -201,7 +201,7 @@ function AdjustmentRequestForm() {
       paid_for: selectedPo.item ?? "",
       vendor: selectedPo.vendor ?? "",
       po_value: poValue.toString(),
-      amount_paid: totalAdvancePaid.toString(),
+      amount_paid: totalAdvancePaid.toString() || 0,
       po_balance: po_balance.toString(),
     }));
   
@@ -223,24 +223,7 @@ function AdjustmentRequestForm() {
       console.warn("No matching project found for p_id:", selectedPo.p_id);
     }
   
-    if (selectedPo.vendor) {
-      const matchedVendor = getFormData.vendors.find(
-        (vendor) => vendor.name === selectedPo.vendor
-      );
-  
-      if (matchedVendor) {
-        console.log("Matched Vendor:", matchedVendor);
-        setFormData((prev) => ({
-          ...prev,
-          benificiary: matchedVendor.name ?? "",
-          acc_number: matchedVendor.Account_No ?? "",
-          ifsc: matchedVendor.IFSC_Code ?? "",
-          branch: matchedVendor.Bank_Name ?? "",
-        }));
-      } else {
-        console.warn("No matching vendor found for:", selectedPo.vendor);
-      }
-    }
+   
   };
   
   
@@ -465,7 +448,7 @@ function AdjustmentRequestForm() {
 
 <Grid xs={12} sm={4}>
   <Typography level="body2" fontWeight="bold">
-    Payment Type
+    Adjustment Type
   </Typography>
   <Select
     name="pay_type"
@@ -474,9 +457,19 @@ function AdjustmentRequestForm() {
         ? { label: formData.pay_type, value: formData.pay_type }
         : null
     }
-    onChange={(selectedOption) =>
-      handleChange({ target: { name: "pay_type", value: selectedOption.value } })
-    }
+    onChange={(selectedOption) => {
+      const newPayType = selectedOption.value;
+
+      handleChange({
+        target: { name: "pay_type", value: newPayType },
+      });
+
+      if (newPayType === "CN" || newPayType === "Adjustment") {
+        handleChange({
+          target: { name: "amount_paid", value: 0 },
+        });
+      }
+    }}
     options={[
       { label: "Payment Against PO", value: "Payment Against PO" },
       { label: "Adjustment", value: "Adjustment" },
@@ -487,6 +480,7 @@ function AdjustmentRequestForm() {
     required
   />
 </Grid>
+
 
 {formData.pay_type !== "CN" && (
   <Grid xs={12} sm={4}>
@@ -593,7 +587,7 @@ function AdjustmentRequestForm() {
         adj_amount: value,
       }));
     }}
-    placeholder="Amount Requested (INR)"
+    placeholder="Amount Adjusted (INR)"
     required
   />
 </Grid>

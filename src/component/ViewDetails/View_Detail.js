@@ -4,10 +4,15 @@ import {
   Button,
   Checkbox,
   Container,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   Grid,
   IconButton,
   Input,
+  Modal,
+  ModalDialog,
   Typography,
 } from "@mui/joy";
 import Sheet from "@mui/joy/Sheet";
@@ -110,6 +115,7 @@ const Customer_Payment_Summary = () => {
     const adjustHeader = [
       "S.No.",
       "Adjust Date",
+      "Adjust Type",
       "PO Number",
       "Paid For",
       "Paid To",
@@ -123,7 +129,7 @@ const Customer_Payment_Summary = () => {
         month: "short",
         year: "numeric",
       }),
-
+      row.pay_type,
       row.po_number || "-",
       row.paid_for || "-",
       row.vendor || "-",
@@ -179,7 +185,18 @@ const Customer_Payment_Summary = () => {
       (acc, client) => acc + client.billedValue,
       0
     );
-    const balanceSlnko = netBalance - totalAmountPaid;
+
+    const creditTotal = filteredAdjusts
+      .filter((row) => row.adj_type === "Add")
+      .reduce((sum, row) => sum + Math.abs(parseFloat(row.adj_amount || 0)), 0);
+
+    const debitTotal = filteredAdjusts
+      .filter((row) => row.adj_type === "Subtract")
+      .reduce((sum, row) => sum + Math.abs(parseFloat(row.adj_amount || 0)), 0);
+
+    const adjTotal = debitTotal - creditTotal;
+
+    const balanceSlnko = netBalance - totalAmountPaid - adjTotal;
     const netAdvance = totalAmountPaid - totalBilledValue;
     const balancePayable = totalPOValue - totalBilledValue - netAdvance;
     const balanceRequired = balanceSlnko - balancePayable - tcs;
@@ -192,7 +209,8 @@ const Customer_Payment_Summary = () => {
       ["2", "Total Return", totalReturn],
       ["3", "Net Balance [(1)-(2)]", netBalance],
       ["4", "Total Advance Paid to Vendors", totalAmountPaid],
-      ["5", "Balance with Slnko [(3)-(4)]", balanceSlnko],
+      ["4A", "Total Adjustment (Debit-Credit)", adjTotal],
+      ["5", "Balance with Slnko [(3)-(4)-(4A)]", balanceSlnko],
       ["6", "Total PO Value", totalPOValue],
       ["7", "Total Billed Value", totalBilledValue],
       ["8", "Net Advance Paid [(4)-(7)]", netAdvance],
@@ -258,31 +276,16 @@ const Customer_Payment_Summary = () => {
   const [selectedAdjust, setSelectedAdjust] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const adjustmentHistory = [
-    {
-      id: 1,
-      date: "2023-12-12",
-      adjusted_from: "ABC Supplies",
-      adjusted_for: "Materials",
-      value: 1500,
-    },
-    {
-      id: 2,
-      date: "2023-12-13",
-      adjusted_from: "XYZ Services",
-      adjusted_for: "Labor",
-      value: -500,
-    },
-  ];
-
   const [selectedCredits, setSelectedCredits] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
   const [debitSearch, setDebitSearch] = useState("");
   const [selectedDebits, setSelectedDebits] = useState([]);
-  const [selectedAdjusts, setSelectedAdjusts] = useState([]);
   const [filteredDebits, setFilteredDebits] = useState([]);
   const [filteredAdjusts, setFilteredAdjusts] = useState([]);
   const [payments, setPayments] = useState([]);
+
+  const [openRemarkModal, setOpenRemarkModal] = useState(false);
+  const [selectedRemark, setSelectedRemark] = useState("");
 
   const totalCredited = creditHistory.reduce(
     (sum, item) => sum + item.cr_amount,
@@ -293,13 +296,6 @@ const Customer_Payment_Summary = () => {
     (sum, item) => sum + item.amount_paid,
     0
   );
-
-  // const [selectedAdjustments, setSelectedAdjustments] = useState([]);
-
-  // const totalAdjustment = adjustmentHistory.reduce(
-  //   (sum, item) => sum + item.value,
-  //   0
-  // );
 
   const handleSearchDebit = (event) => {
     const searchValue = event.target.value.toLowerCase();
@@ -815,59 +811,61 @@ const Customer_Payment_Summary = () => {
     }
   }, [projectData.p_id]);
 
-  // const handleDeleteAdjust = async () => {
-  //   try {
-  //     setLoading(true);
-  //     setError("");
+  const handleDeleteAdjust = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-  //     if (selectedClients.length === 0) {
-  //       toast.error("No debits selected for deletion.");
-  //       return;
-  //     }
+      if (selectedAdjust.length === 0) {
+        toast.error("No adjustment selected for deletion.");
+        return;
+      }
 
-  //     console.log("Deleting selected clients:", selectedClients);
+      // console.log("Deleting selected clients:", selectedAdjust);
 
-  //     await Promise.all(
-  //       selectedClients.map((_id) => Axios.delete(`/delete-pO-IT/${_id}`))
-  //     );
+      await Promise.all(
+        selectedAdjust.map((_id) =>
+          Axios.delete(`/delete-adjustment-request/${_id}`)
+        )
+      );
 
-  //     toast.success("PO Deleted successfully.");
+      toast.success("Amount Deleted successfully.");
 
-  //     setClientHistory((prev) =>
-  //       prev.filter((item) => !selectedClients.includes(item._id))
-  //     );
-  //     setFilteredClients((prev) =>
-  //       prev.filter((item) => !selectedClients.includes(item._id))
-  //     );
-  //     setSelectedClients([]);
-  //   } catch (err) {
-  //     console.error("Error deleting pos:", err);
-  //     setError(err.response?.data?.msg || "Failed to delete selected pos.");
-  //     toast.error("Failed to delete selected pos.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+      setAdjustHistory((prev) =>
+        prev.filter((item) => !selectedAdjust.includes(item._id))
+      );
+      setFilteredAdjusts((prev) =>
+        prev.filter((item) => !selectedAdjust.includes(item._id))
+      );
+      setSelectedAdjust([]);
+    } catch (err) {
+      console.error("Error deleting adjust:", err);
+      setError(err.response?.data?.msg || "Failed to delete selected adjust.");
+      toast.error("Failed to delete selected adjust.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAdjustCheckboxChange = (_id) => {
-    setSelectedAdjusts((prev) =>
+    setSelectedAdjust((prev) =>
       prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
     );
   };
   const handleSelectAllAdjust = (event) => {
     if (event.target.checked) {
-      setSelectedAdjusts(filteredAdjusts.map((adjust) => adjust._id));
+      setSelectedAdjust(filteredAdjusts.map((adjust) => adjust._id));
     } else {
-      setSelectedAdjusts([]);
+      setSelectedAdjust([]);
     }
   };
   const creditTotal = filteredAdjusts
     .filter((row) => row.adj_type === "Add")
-    .reduce((sum, row) => sum + parseFloat(row.adj_amount || 0), 0);
+    .reduce((sum, row) => sum + Math.abs(parseFloat(row.adj_amount || 0)), 0);
 
   const debitTotal = filteredAdjusts
     .filter((row) => row.adj_type === "Subtract")
-    .reduce((sum, row) => sum + parseFloat(row.adj_amount || 0), 0);
+    .reduce((sum, row) => sum + Math.abs(parseFloat(row.adj_amount || 0)), 0);
 
   // ***Balance Summary***
 
@@ -880,7 +878,7 @@ const Customer_Payment_Summary = () => {
       totalBilled: clientSummary.totalBilledValue,
       totalPOBasic: clientSummary.totalPOBasicValue,
       dbAmt: totalDebited,
-      adjTotal: "0",
+      adjTotal: debitTotal - creditTotal,
     },
   ];
 
@@ -911,10 +909,12 @@ const Customer_Payment_Summary = () => {
     const dbAmtNum = Number(dbAmt);
     const adjTotalNum = Number(adjTotal);
 
-    const totalAmount = Math.round(crAmtNum - dbAmtNum) + adjTotalNum;
+    const totalAmount = Math.round(crAmtNum - dbAmtNum);
 
     const netBalance = Math.round(crAmt - totalReturn);
-    const balanceSlnko = Math.round(netBalance - totalAdvanceValue);
+    const balanceSlnko = Math.round(
+      netBalance - totalAdvanceValue - adjTotalNum
+    );
     const netAdvance = Math.round(totalAdvanceValue - totalBilled);
     const balancePayable = Math.round(totalPoValue - totalBilled - netAdvance);
 
@@ -1207,9 +1207,10 @@ const Customer_Payment_Summary = () => {
                   ["2", "Total Return", totalReturn],
                   ["3", "Net Balance[(1)-(2)]", netBalance, "#C8C8C6"],
                   ["4", "Total Advance Paid to vendors", totalAdvanceValue],
+                  ["4A", "Total Adjustment (Debit-Credit)", adjTotalNum],
                   [
                     "5",
-                    "Balance With Slnko [(3)-(4)]",
+                    "Balance With Slnko [(3)-(4)-(4A)]",
                     balanceSlnko,
                     "#B6F4C6",
                     true,
@@ -1342,7 +1343,7 @@ const Customer_Payment_Summary = () => {
                       },
                     }}
                   >
-                    <strong>Credit - Debit + Adjust</strong>
+                    <strong>Credit - Debit</strong>
                   </td>
                   <td
                     style={{
@@ -1354,8 +1355,8 @@ const Customer_Payment_Summary = () => {
                     }}
                   >
                     <strong className="text-success">{crAmt}</strong> -{" "}
-                    <strong className="text-danger">{dbAmtNum}</strong> +{" "}
-                    <strong className="text-primary">{adjTotalNum}</strong>
+                    <strong className="text-danger">{dbAmtNum}</strong>{" "}
+                    {/* <strong className="text-primary">{adjTotalNum}</strong> */}
                   </td>
                 </tr>
                 <tr style={{ backgroundColor: "#fff" }}>
@@ -2162,20 +2163,20 @@ const Customer_Payment_Summary = () => {
               style={{ width: "200px", marginLeft: "5px" }}
             /> */}
           </Box>
-          {/* {(user?.name === "IT Team" ||
+          {(user?.name === "IT Team" ||
             user?.name === "Guddu Rani Dubey" ||
             user?.name === "Prachi Singh" ||
             user?.name === "admin") && (
             <Box>
               <IconButton
                 color="danger"
-                disabled={selectedClients.length === 0}
-                onClick={handleDeleteClient}
+                disabled={selectedAdjust.length === 0}
+                onClick={handleDeleteAdjust}
               >
                 <DeleteIcon />
               </IconButton>
             </Box>
-          )} */}
+          )}
         </Box>
 
         <Sheet
@@ -2226,14 +2227,16 @@ const Customer_Payment_Summary = () => {
             <thead>
               <tr>
                 <th>Adjust Date</th>
+                <th>Adjustment Type</th>
+                <th>Reason</th>
                 <th>PO Number</th>
                 <th>Paid For</th>
-                <th>Paid To</th>
+                <th>Description</th>
                 <th>Credit Adjustment</th>
                 <th>Debit Adjustment</th>
                 <th style={{ textAlign: "center" }}>
                   <Checkbox
-                    onChange={handleSelectAllClient}
+                    onChange={handleSelectAllAdjust}
                     checked={selectedAdjust.length === filteredAdjusts.length}
                   />
                 </th>
@@ -2254,9 +2257,11 @@ const Customer_Payment_Summary = () => {
                         year: "numeric",
                       })}
                     </td>
+                    <td>{row.pay_type}</td>
+                    <td>{row.remark || "-"}</td>
                     <td>{row.po_number || "-"}</td>
                     <td>{row.paid_for}</td>
-                    <td>{row.vendor}</td>
+                    <td>{row.comment || "-"}</td>
 
                     <td>
                       {row.adj_type === "Add"
@@ -2273,8 +2278,8 @@ const Customer_Payment_Summary = () => {
                     <td style={{ textAlign: "center" }}>
                       <Checkbox
                         color="primary"
-                        checked={selectedDebits.includes(row._id)}
-                        onChange={() => handleDebitCheckboxChange(row._id)}
+                        checked={selectedAdjust.includes(row._id)}
+                        onChange={() => handleAdjustCheckboxChange(row._id)}
                       />
                     </td>
                   </tr>
@@ -2284,7 +2289,7 @@ const Customer_Payment_Summary = () => {
             {/* Total Row */}
             <tfoot>
               <tr style={{ fontWeight: "bold", backgroundColor: "#f5f5f5" }}>
-                <td colSpan={4} style={{ textAlign: "right" }}>
+                <td colSpan={6} style={{ textAlign: "right" }}>
                   Total:{" "}
                 </td>
                 <td>₹ {creditTotal.toLocaleString("en-IN")}</td>
