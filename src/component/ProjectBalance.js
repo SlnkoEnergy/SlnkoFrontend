@@ -57,6 +57,7 @@ const ProjectBalances = forwardRef((props, ref) => {
   const [posData, setPoData] = useState([]);
   const [billsData, setBillData] = useState([]);
   const [paysData, setPayData] = useState([]);
+  const [adjustmentsData, setAdjustmentData] = useState([]);
   const [mergedData, setMergedData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -135,6 +136,7 @@ const ProjectBalances = forwardRef((props, ref) => {
           poResponse,
           billResponse,
           payResponse,
+          adjResponse,
         ] = await Promise.all([
           Axios.get("/get-all-projecT-IT"),
           Axios.get("/all-bilL-IT"),
@@ -142,6 +144,7 @@ const ProjectBalances = forwardRef((props, ref) => {
           Axios.get("/get-all-pO-IT"),
           Axios.get("/get-all-bilL-IT"),
           Axios.get("/get-pay-summarY-IT"),
+          Axios.get("/get-adjustment-request"),
         ]);
 
         // Extract data from responses
@@ -151,6 +154,7 @@ const ProjectBalances = forwardRef((props, ref) => {
         const poData = poResponse.data.data;
         const billData = billResponse.data.data;
         const paymentData = payResponse.data.data;
+        const adjustmentData = adjResponse.data;
 
         // console.log("Po data are:", poData);
         // console.log("All bills are :", billData);
@@ -162,6 +166,7 @@ const ProjectBalances = forwardRef((props, ref) => {
         setPoData(poData);
         setBillData(billData);
         setPayData(paymentData);
+        setAdjustmentData(adjustmentData);
 
         // Calculate aggregated values
         const totalCredit = creditData.reduce(
@@ -185,7 +190,15 @@ const ProjectBalances = forwardRef((props, ref) => {
         const availableAmount = totalCredit - totalDebit;
         setAvailable_Amount(availableAmount.toLocaleString("en-IN"));
 
+        const creditAdjustmentTotal = adjustmentData
+        .filter((row) => row.adj_type === "Add")
+        .reduce((sum, row) => sum + Math.abs(parseFloat(row.adj_amount || 0)), 0);
+
+        const debitAdjustmentTotal = adjustmentData
+        .filter((row) => row.adj_type === "Add")
+        .reduce((sum, row) => sum + Math.abs(parseFloat(row.adj_amount || 0)), 0);
         // console.log(totalDebit);
+        
 
         //  const ProjectData =  projectsResponse?.data?.data.map((item) => {
         //     return{
@@ -326,7 +339,8 @@ const ProjectBalances = forwardRef((props, ref) => {
       debits.length > 0 &&
       posData.length > 0 &&
       billsData.length > 0 &&
-      paysData.length > 0
+      paysData.length > 0 &&
+      adjustmentsData.length > 0
     ) {
       // Group and aggregate data by project ID
       const creditSumMap = credits.reduce((acc, credit) => {
