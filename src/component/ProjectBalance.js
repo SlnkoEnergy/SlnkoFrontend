@@ -1,14 +1,14 @@
-import { Player } from "@lottiefiles/react-lottie-player";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
+import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import SearchIcon from "@mui/icons-material/Search";
+import { Card, Checkbox, Tooltip } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
-import Checkbox from "@mui/joy/Checkbox";
 import Divider from "@mui/joy/Divider";
 import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
@@ -24,22 +24,22 @@ import ModalDialog from "@mui/joy/ModalDialog";
 import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
+import { useColorScheme, useTheme } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
-import { useColorScheme, useTheme } from '@mui/joy/styles';
-import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import {
   forwardRef,
   useEffect,
   useImperativeHandle,
-  useState,
   useMemo,
+  useState,
 } from "react";
+import Skeleton from "react-loading-skeleton";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
+import NoData from "../assets/alert-bell.svg";
 import animationData from "../assets/Lotties/animation-loading.json";
 import Axios from "../utils/Axios";
-import NoData from "../assets/alert-bell.svg";
-import Skeleton from "react-loading-skeleton";
 
 const ProjectBalances = forwardRef((props, ref) => {
   const theme = useTheme();
@@ -159,6 +159,9 @@ const ProjectBalances = forwardRef((props, ref) => {
         // console.log("Po data are:", poData);
         // console.log("All bills are :", billData);
 
+        // console.log(adjustmentData);
+        // console.log(paymentData);
+
         // Update state with raw data
         setProjects(projectsData);
         setCredits(creditData);
@@ -191,14 +194,19 @@ const ProjectBalances = forwardRef((props, ref) => {
         setAvailable_Amount(availableAmount.toLocaleString("en-IN"));
 
         const creditAdjustmentTotal = adjustmentData
-        .filter((row) => row.adj_type === "Add")
-        .reduce((sum, row) => sum + Math.abs(parseFloat(row.adj_amount || 0)), 0);
+          .filter((row) => row.adj_type === "Add")
+          .reduce(
+            (sum, row) => sum + Math.abs(parseFloat(row.adj_amount || 0)),
+            0
+          );
 
         const debitAdjustmentTotal = adjustmentData
-        .filter((row) => row.adj_type === "Add")
-        .reduce((sum, row) => sum + Math.abs(parseFloat(row.adj_amount || 0)), 0);
+          .filter((row) => row.adj_type === "Add")
+          .reduce(
+            (sum, row) => sum + Math.abs(parseFloat(row.adj_amount || 0)),
+            0
+          );
         // console.log(totalDebit);
-        
 
         //  const ProjectData =  projectsResponse?.data?.data.map((item) => {
         //     return{
@@ -333,13 +341,13 @@ const ProjectBalances = forwardRef((props, ref) => {
 
   useEffect(() => {
     if (
-      credits.length > 0 &&
-      projects.length > 0 &&
-      filteredProjects.length > 0 &&
-      debits.length > 0 &&
-      posData.length > 0 &&
-      billsData.length > 0 &&
-      paysData.length > 0 &&
+      credits.length > 0 ||
+      projects.length > 0 ||
+      filteredProjects.length > 0 ||
+      debits.length > 0 ||
+      posData.length > 0 ||
+      billsData.length > 0 ||
+      paysData.length > 0 ||
       adjustmentsData.length > 0
     ) {
       // Group and aggregate data by project ID
@@ -371,6 +379,26 @@ const ProjectBalances = forwardRef((props, ref) => {
         acc[project.code] = project.p_id;
         return acc;
       }, {});
+
+      const creditAdjustment = adjustmentsData
+        .filter((row) => row.adj_type === "Add")
+        .reduce((acc, credit) => {
+          const projectId = credit.p_id;
+          const amount = parseFloat(credit.adj_amount || 0);
+          acc[projectId] =
+            (acc[projectId] || 0) + (isNaN(amount) ? 0 : Math.abs(amount));
+          return acc;
+        }, {});
+
+      const debitAdjustment = adjustmentsData
+        .filter((row) => row.adj_type === "Subtract")
+        .reduce((acc, debit) => {
+          const projectId = debit.p_id;
+          const amount = parseFloat(debit.adj_amount || 0);
+          acc[projectId] =
+            (acc[projectId] || 0) + (isNaN(amount) ? 0 : Math.abs(amount));
+          return acc;
+        }, {});
 
       const poSumMap = posData.reduce((acc, po) => {
         const projectId = projectCodeMap[po.p_id];
@@ -420,6 +448,9 @@ const ProjectBalances = forwardRef((props, ref) => {
         const projectId = project.p_id;
         const totalCredit = creditSumMap[projectId] || 0;
         const totalDebits = debitSumMap[projectId] || 0;
+        const creditAdj = creditAdjustment[projectId] || 0;
+        const debitAdj = debitAdjustment[projectId] || 0;
+        const totalAdjustment = debitAdj - creditAdj;
         const oldAmount = totalCredit - totalDebits || 0;
         const customerAdjustment = customerAdjustmentSumMap[projectId] || 0;
         const totalPoValue = poSumMap[projectId] || 0;
@@ -441,6 +472,7 @@ const ProjectBalances = forwardRef((props, ref) => {
           projectMW: projectMW,
           creditAmount: Math.round(totalCredit),
           debitAmount: totalDebits,
+          adjustmentAmount: Math.round(totalAdjustment),
           oldAmount: oldAmount,
           balanceSlnko: Math.round(balanceSlnko),
           balancePayable: Math.round(balancePayable),
@@ -457,6 +489,7 @@ const ProjectBalances = forwardRef((props, ref) => {
           acc.totalBalanceRequired += project.balanceRequired || 0;
           acc.totalCreditSum += project.creditAmount || 0;
           acc.totalDebitSum += project.debitAmount || 0;
+          acc.totalAdjustmentSum += project.adjustmentAmount || 0;
           acc.totalmWSum += project.projectMW || 0;
           return acc;
         },
@@ -466,6 +499,7 @@ const ProjectBalances = forwardRef((props, ref) => {
           totalBalanceRequired: 0,
           totalCreditSum: 0,
           totalDebitSum: 0,
+          totalAdjustmentSum: 0,
           totalmWSum: 0,
         }
       );
@@ -482,6 +516,7 @@ const ProjectBalances = forwardRef((props, ref) => {
     posData,
     billsData,
     paysData,
+    adjustmentsData,
   ]);
 
   const RowMenu = ({ currentPage, p_id }) => {
@@ -551,6 +586,68 @@ const ProjectBalances = forwardRef((props, ref) => {
     );
   };
 
+  const ProjectCode = ({ currentPage, p_id, code }) => {
+    // console.log("currentPage:", currentPage, "p_id:", p_id);
+
+    return (
+      <>
+        <span
+          style={{
+            cursor: "pointer",
+            color: theme.vars.palette.text.primary,
+            textDecoration: "none",
+          }}
+          onClick={() => {
+            localStorage.setItem("view_detail", p_id);
+            navigate(`/view_detail?page=${currentPage}&p_id=${p_id}`);
+          }}
+        >
+          {code || "-"}
+        </span>
+      </>
+    );
+  };
+
+  const ProjectName = ({ currentPage, p_id, name }) => {
+    // console.log("currentPage:", currentPage, "p_id:", p_id);
+
+    return (
+      <>
+        <span
+          style={{
+            cursor: "pointer",
+            color: theme.vars.palette.text.primary,
+            textDecoration: "none",
+          }}
+          onClick={() => {
+            localStorage.setItem("view_detail", p_id);
+            navigate(`/view_detail?page=${currentPage}&p_id=${p_id}`);
+          }}
+        >
+          {name || "-"}
+        </span>
+      </>
+    );
+  };
+
+  const AddMoney = ({ currentPage, p_id }) => {
+    // console.log("currentPage:", currentPage, "p_id:", p_id);
+
+    return (
+      <>
+        <IconButton
+          color="primary"
+          onClick={() => {
+            localStorage.setItem("add_money", p_id);
+            navigate(`/add_money?page=${currentPage}&p_id=${p_id}`);
+          }}
+        >
+          <AddCircleOutlineIcon />
+        </IconButton>
+      </>
+    );
+  };
+
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
@@ -570,18 +667,17 @@ const ProjectBalances = forwardRef((props, ref) => {
   }, [mergedData, searchQuery]);
 
   const handleSelectAll = (event) => {
+    const allVisibleIds = mergedData.map((row) => row._id); // assuming visible/paginated data
     if (event.target.checked) {
-      setSelected(mergedData.map((row) => row.code));
+      setSelected(allVisibleIds);
     } else {
       setSelected([]);
     }
   };
 
-  const handleRowSelect = (code, isSelected) => {
-    setSelected((prevSelected) =>
-      isSelected
-        ? [...prevSelected, code]
-        : prevSelected.filter((item) => item !== code)
+  const handleRowSelect = (_id) => {
+    setSelected((prev) =>
+      prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
     );
   };
   const generatePageNumbers = (currentPage, totalPages) => {
@@ -630,6 +726,7 @@ const ProjectBalances = forwardRef((props, ref) => {
         "Plant Capacity (MW AC)",
         "Total Credit",
         "Total Debit",
+        "Total Adjustment",
         "Amount Amount(Old)",
         "Balance with SLnko",
         "Balance Payable to Vendors",
@@ -644,7 +741,17 @@ const ProjectBalances = forwardRef((props, ref) => {
         // "Balance Required",
       ];
 
-      const rows = mergedData.map((project) => [
+      const exportLeads =
+        selected.length > 0
+          ? mergedData.filter((lead) => selected.includes(lead._id))
+          : mergedData;
+
+      if (exportLeads.length === 0) {
+        toast.warning("No balance available to export.");
+        return;
+      }
+
+      const rows = exportLeads.map((project) => [
         project.code || "-",
         project.name || "-",
         project.customer || "-",
@@ -652,6 +759,7 @@ const ProjectBalances = forwardRef((props, ref) => {
         project.project_kwp || "-",
         project.creditAmount || "-",
         project.debitAmount || "-",
+        project.adjustmentAmount || "-",
         project.oldAmount || "-",
         project.balanceSlnko || "-",
         project.balancePayable || "-",
@@ -674,7 +782,11 @@ const ProjectBalances = forwardRef((props, ref) => {
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = "project_balance.csv";
+      // link.download = "project_balance.csv";
+      link.download =
+        selected.length > 0
+          ? "Selected_ProjectBalance.csv"
+          : "All_ProjectBalance.csv";
       link.click();
     },
   }));
@@ -685,8 +797,19 @@ const ProjectBalances = forwardRef((props, ref) => {
     borderBottom: "1px solid #e5e7eb",
     fontWeight: 600,
     // color: "#1f2937",
-    color: 'text.primary',
-    bgcolor: 'background.surface',
+    color: "text.primary",
+    bgcolor: "background.surface",
+  };
+
+  const cellStyle = {
+    borderBottom: "1px solid #e0e0e0",
+    padding: "12px",
+    textAlign: "left", // More natural alignment for most text
+    fontWeight: 400,
+    fontSize: "1rem",
+    whiteSpace: "nowrap", // Prevent text wrapping
+    overflow: "hidden",
+    textOverflow: "ellipsis",
   };
 
   return (
@@ -726,7 +849,6 @@ const ProjectBalances = forwardRef((props, ref) => {
           </ModalDialog>
         </Modal>
       </Sheet>
-
       {/* Tablet and Up Filters */}
       <Box
         className="SearchAndFilters-tabletUp"
@@ -755,7 +877,6 @@ const ProjectBalances = forwardRef((props, ref) => {
         </FormControl>
         {/* {renderFilters()} */}
       </Box>
-
       {/* <Box
         sx={{
           marginLeft: { xl: "15%", lg: "18%"},
@@ -915,15 +1036,14 @@ const ProjectBalances = forwardRef((props, ref) => {
           </tbody>
         </table>
       </Box> */}
-
       <Box
-         sx={{
-          marginLeft: { xl: '15%', lg: '18%', xs: '0%' },
-          maxWidth: { xl: '85%', xs: '100%' },
+        sx={{
+          marginLeft: { xl: "15%", lg: "18%", xs: "0%" },
+          maxWidth: { xl: "85%", xs: "100%" },
           p: 2,
-          bgcolor: 'background.surface',
-          borderRadius: 'md',
-          boxShadow: 'lg',
+          bgcolor: "background.surface",
+          borderRadius: "md",
+          boxShadow: "lg",
         }}
       >
         {/* Classic Table View (sm and up) */}
@@ -937,27 +1057,32 @@ const ProjectBalances = forwardRef((props, ref) => {
             }}
           >
             <thead>
-              <tr style={{ backgroundColor: theme.vars.palette.background.level1 }}>
+              <tr
+                style={{
+                  backgroundColor: theme.vars.palette.background.level1,
+                }}
+              >
                 {[
                   "Total Plant Capacity (MW AC)",
                   "Total Credit",
                   "Total Debit",
+                  "Total Adjustment",
                   "Available Amount (Old)",
                   "Balance with Slnko",
                   "Balance Payable to Vendors",
                   "Balance Required",
                 ].map((header, i) => (
                   <th
-                  key={i}
-                  style={{
-                    padding: '12px 15px',
-                    textAlign: 'left',
-                    fontWeight: 'bold',
-                    borderBottom: `1px solid ${theme.vars.palette.divider}`,
-                    whiteSpace: 'nowrap',
-                    color: theme.vars.palette.text.primary,
-                  }}
-                >
+                    key={i}
+                    style={{
+                      padding: "12px 15px",
+                      textAlign: "left",
+                      fontWeight: "bold",
+                      borderBottom: `1px solid ${theme.vars.palette.divider}`,
+                      whiteSpace: "nowrap",
+                      color: theme.vars.palette.text.primary,
+                    }}
+                  >
                     {header}
                   </th>
                 ))}
@@ -966,7 +1091,7 @@ const ProjectBalances = forwardRef((props, ref) => {
             <tbody>
               {loading ? (
                 <tr>
-                  {Array.from({ length: 7 }).map((_, i) => (
+                  {Array.from({ length: 8 }).map((_, i) => (
                     <td key={i} style={tdStyle}>
                       <Skeleton height={20} />
                     </td>
@@ -982,6 +1107,9 @@ const ProjectBalances = forwardRef((props, ref) => {
                   </td>
                   <td style={tdStyle}>
                     {totals.totalDebitSum?.toLocaleString("en-IN") || 0}
+                  </td>
+                  <td style={tdStyle}>
+                    {totals.totalAdjustmentSum?.toLocaleString("en-IN") || 0}
                   </td>
                   <td style={tdStyle}>
                     {totals.totalAmountAvailable?.toLocaleString("en-IN") || 0}
@@ -1027,6 +1155,11 @@ const ProjectBalances = forwardRef((props, ref) => {
                   value: totals.totalDebitSum?.toLocaleString("en-IN") || 0,
                 },
                 {
+                  label: "Total Adjustment",
+                  value:
+                    totals.totalAdjustmentSum?.toLocaleString("en-IN") || 0,
+                },
+                {
                   label: "Available Amount (Old)",
                   value:
                     totals.totalAmountAvailable?.toLocaleString("en-IN") || 0,
@@ -1061,9 +1194,8 @@ const ProjectBalances = forwardRef((props, ref) => {
               ))}
         </Box>
       </Box>
-
       {/* Table */}
-      <Sheet
+      {/* <Sheet
         className="OrderTableContainer"
         variant="outlined"
         sx={{
@@ -1095,8 +1227,6 @@ const ProjectBalances = forwardRef((props, ref) => {
               src={animationData}
               style={{ height: 100, width: 100 }}
             />
-
-            
           </Box>
         ) : (
           <Box
@@ -1127,6 +1257,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                   "Plant Capacity (MW AC)",
                   "Total Credit",
                   "Total Debit",
+                  "Total Adjustment",
                   "Available Amount(Old)",
                   "Balance with SLnko",
                   "Balance Payable to Vendors",
@@ -1170,13 +1301,12 @@ const ProjectBalances = forwardRef((props, ref) => {
                       >
                         <Checkbox
                           size="sm"
-                          checked={selected.includes(project.code)}
-                          onChange={(event) =>
-                            handleRowSelect(project.code, event.target.checked)
-                          }
+                          color="primary"
+                          checked={selected.includes(project._id)}
+                          onChange={() => handleRowSelect(project._id)}
                         />
                       </Box>
-                      
+
                       <Box
                         component="td"
                         sx={{
@@ -1272,6 +1402,20 @@ const ProjectBalances = forwardRef((props, ref) => {
                         {new Intl.NumberFormat("en-IN", {
                           minimumFractionDigits: 0,
                           maximumFractionDigits: 2,
+                        }).format(project.adjustmentAmount || 0)}
+                      </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "center",
+                          fontWeight: "400",
+                        }}
+                      >
+                        {new Intl.NumberFormat("en-IN", {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 2,
                         }).format(project.oldAmount || 0)}
                       </Box>
                       <Box
@@ -1330,14 +1474,13 @@ const ProjectBalances = forwardRef((props, ref) => {
                           p_id={project.p_id}
                         />
                       </Box>
-
                     </Box>
                   ))
               ) : (
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={12}
+                    colSpan={13}
                     sx={{
                       padding: "8px",
                       textAlign: "center",
@@ -1367,6 +1510,362 @@ const ProjectBalances = forwardRef((props, ref) => {
               )}
             </Box>
           </Box>
+        )}
+      </Sheet> */}
+
+      <Sheet
+        className="OrderTableContainer"
+        variant="outlined"
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          width: "100%",
+          borderRadius: "sm",
+          flexShrink: 1,
+          overflowX: "auto",
+          minHeight: 0,
+          marginLeft: { xl: "15%", lg: "18%" },
+          maxWidth: { lg: "85%", sm: "100%" },
+          minHeight: { xs: "fit-content", lg: "0%" },
+        }}
+      >
+        {error ? (
+          <Typography color="danger" textAlign="center">
+            {error}
+          </Typography>
+        ) : loading ? (
+          <Box sx={{ padding: 2 }}>
+            {/* Render 3 skeleton rows */}
+            {[...Array(3)].map((_, index) => (
+              <Box key={index} sx={{ display: "flex", gap: 1, mb: 2 }}>
+                {[...Array(13)].map((__, cellIdx) => (
+                  <Skeleton key={cellIdx} height={30} width={100} />
+                ))}
+              </Box>
+            ))}
+          </Box>
+        ) : (
+          <>
+            {/* Mobile View (Card Layout) */}
+            <Box
+              sx={{
+                display: { xs: "flex", sm: "none" },
+                flexDirection: "column",
+                gap: 2,
+              }}
+            >
+              {paginatedPayments.map((project, index) => (
+                <Card
+                  key={index}
+                  variant="outlined"
+                  sx={{
+                    borderRadius: 2,
+                    padding: 2,
+                    boxShadow: "sm",
+                  }}
+                >
+                  <Typography fontWeight={600} fontSize="1rem" gutterBottom>
+                    <span>
+                      <ProjectCode
+                        currentPage={currentPage}
+                        p_id={project.p_id}
+                        code={project.code}
+                      />
+                    </span>
+                  </Typography>
+
+                  <Typography fontSize="0.9rem" color="text.secondary">
+                    Client:{" "}
+                    <span>
+                      <ProjectName
+                        currentPage={currentPage}
+                        p_id={project.p_id}
+                        name={project.name}
+                      />
+                    </span>
+                  </Typography>
+
+                  <Typography fontSize="0.9rem" color="text.secondary">
+                    Capacity: {project.project_kwp || "-"} MW AC
+                  </Typography>
+
+                  <Box mt={1}>
+                    <Divider />
+                  </Box>
+
+                  <Box mt={1}>
+                    {[
+                      { label: "Credit", value: project.creditAmount },
+                      { label: "Debit", value: project.debitAmount },
+                      { label: "Adjustment", value: project.adjustmentAmount },
+                      {
+                        label: "Available Amount (Old)",
+                        value: project.oldAmount,
+                      },
+                      {
+                        label: "Balance with SLnko",
+                        value: project.balanceSlnko,
+                      },
+                      {
+                        label: "Balance Payable to Vendors",
+                        value: project.balancePayable,
+                      },
+                      {
+                        label: "Balance Required",
+                        value: project.balanceRequired,
+                      },
+                    ].map(({ label, value }) => (
+                      <Box
+                        key={label}
+                        display="flex"
+                        justifyContent="space-between"
+                        py={0.5}
+                      >
+                        <Typography fontSize="0.85rem" color="text.secondary">
+                          {label}
+                        </Typography>
+                        <Typography fontSize="0.85rem">
+                          ₹{" "}
+                          {new Intl.NumberFormat("en-IN", {
+                            maximumFractionDigits: 2,
+                          }).format(value || 0)}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+
+                  <Box mt={2} display="flex" justifyContent="flex-end">
+                    <RowMenu currentPage={currentPage} p_id={project.p_id} />
+                  </Box>
+                </Card>
+              ))}
+            </Box>
+
+            {/* Table View for Larger Screens */}
+            <Box sx={{ display: { xs: "none", sm: "block" } }}>
+              <Box
+                component="table"
+                sx={{
+                  width: "100%",
+                  minWidth: "900px",
+                  borderCollapse: "collapse",
+                }}
+              >
+                <Box
+                  component="thead"
+                  sx={{ backgroundColor: "neutral.softBg" }}
+                >
+                  <Box component="tr">
+                    <Box
+                      component="th"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "left",
+                      }}
+                    >
+                      <Checkbox
+                        size="sm"
+                        checked={selected.length === mergedData.length}
+                        onChange={handleSelectAll}
+                      />
+                    </Box>
+                    {[
+                      "",
+                      "Project Id",
+                      "Project Name",
+                      "Client Name",
+                      "Group Name",
+                      "Plant Capacity (MW AC)",
+                      "Total Credit",
+                      "Total Debit",
+                      "Total Adjustment",
+                      "Available Amount(Old)",
+                      "Balance with SLnko",
+                      "Balance Payable to Vendors",
+                      "Balance Required",
+                      "View More",
+                    ].map((header, index) => (
+                      <Box
+                        component="th"
+                        key={index}
+                        sx={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "left",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {header}
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+                <Box component="tbody">
+                  {!loading && paginatedPayments.length === 0 ? (
+                    <Box component="tr">
+                      <Box
+                        component="td"
+                        colSpan={14}
+                        sx={{
+                          padding: "8px",
+                          textAlign: "center",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <img
+                            src={NoData}
+                            alt="No data"
+                            style={{ width: "50px", height: "50px" }}
+                          />
+                          <Typography fontStyle={"italic"}>
+                            No Balance available
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Box>
+                  ) : (
+                    paginatedPayments
+                      .sort(
+                        (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+                      )
+                      .map((project, index) => (
+                        <Box
+                          component="tr"
+                          key={index}
+                          sx={{
+                            "&:hover": {
+                              backgroundColor: "neutral.plainHoverBg",
+                            },
+                          }}
+                        >
+                          <Box
+                            component="td"
+                            sx={{
+                              borderBottom: "1px solid #ddd",
+                              padding: "8px",
+                              textAlign: "center",
+                            }}
+                          >
+                            <Checkbox
+                              size="sm"
+                              color="primary"
+                              checked={selected.includes(project._id)}
+                              onChange={() => handleRowSelect(project._id)}
+                            />
+                          </Box>
+                          <Box
+                            component="td"
+                            sx={{
+                              ...cellStyle,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center", // center it within the td
+                              minWidth: "40px", // ensure space
+                            }}
+                          >
+                            <AddMoney
+                              currentPage={currentPage}
+                              p_id={project.p_id}
+                            />
+                          </Box>
+                          <Box component="td" sx={cellStyle}>
+                            <Tooltip title="View More Detail" arrow>
+                              <span>
+                                <ProjectCode
+                                  currentPage={currentPage}
+                                  p_id={project.p_id}
+                                  code={project.code}
+                                />
+                              </span>
+                            </Tooltip>
+                          </Box>
+                          <Box component="td" sx={cellStyle}>
+                            <Tooltip title="View More Detail" arrow>
+                              <span>
+                                <ProjectName
+                                  currentPage={currentPage}
+                                  p_id={project.p_id}
+                                  name={project.name}
+                                />
+                              </span>
+                            </Tooltip>
+                          </Box>
+
+                          <Box component="td" sx={cellStyle}>
+                            {project.customer || "-"}
+                          </Box>
+
+                          <Box component="td" sx={cellStyle}>
+                            {project.p_group || "-"}
+                          </Box>
+                          <Box component="td" sx={cellStyle}>
+                            {project.project_kwp || "-"}
+                          </Box>
+                          <Box component="td" sx={cellStyle}>
+                            {new Intl.NumberFormat("en-IN", {
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 2,
+                            }).format(project.creditAmount || 0)}
+                          </Box>
+                          <Box component="td" sx={cellStyle}>
+                            {new Intl.NumberFormat("en-IN", {
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 2,
+                            }).format(project.debitAmount || 0)}
+                          </Box>
+                          <Box component="td" sx={cellStyle}>
+                            {new Intl.NumberFormat("en-IN", {
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 2,
+                            }).format(project.adjustmentAmount || 0)}
+                          </Box>
+                          <Box component="td" sx={cellStyle}>
+                            {new Intl.NumberFormat("en-IN", {
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 2,
+                            }).format(project.oldAmount || 0)}
+                          </Box>
+                          <Box component="td" sx={cellStyle}>
+                            {new Intl.NumberFormat("en-IN", {
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 2,
+                            }).format(project.balanceSlnko || 0)}
+                          </Box>
+                          <Box component="td" sx={cellStyle}>
+                            {new Intl.NumberFormat("en-IN", {
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 2,
+                            }).format(project.balancePayable || 0)}
+                          </Box>
+                          <Box component="td" sx={cellStyle}>
+                            {new Intl.NumberFormat("en-IN", {
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 2,
+                            }).format(project.balanceRequired || 0)}
+                          </Box>
+
+                          <Box component="td" sx={cellStyle}>
+                            <RowMenu
+                              currentPage={currentPage}
+                              p_id={project.p_id}
+                            />
+                          </Box>
+                        </Box>
+                      ))
+                  )}
+                </Box>
+              </Box>
+            </Box>
+          </>
         )}
       </Sheet>
 

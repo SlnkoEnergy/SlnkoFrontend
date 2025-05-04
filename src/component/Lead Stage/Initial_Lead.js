@@ -28,11 +28,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../../assets/Lotties/animation-loading.json";
 // import Axios from "../utils/Axios";
-import { Autocomplete, Chip, Grid, Modal, Option, Select } from "@mui/joy";
+import { Autocomplete, Grid, Modal, Option, Select } from "@mui/joy";
 import { forwardRef, useCallback, useImperativeHandle } from "react";
+import { toast } from "react-toastify";
 import NoData from "../../assets/alert-bell.svg";
 import { useGetInitialLeadsQuery } from "../../redux/leadsSlice";
-import { toast } from "react-toastify";
 
 const StandByRequest = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -938,7 +938,6 @@ const StandByRequest = forwardRef((props, ref) => {
                 value={selectedLead?.land?.available_land ?? ""}
                 type="text"
                 fullWidth
-                
                 readOnly
               />
             </Grid>
@@ -970,18 +969,13 @@ const StandByRequest = forwardRef((props, ref) => {
                 readOnly
                 getOptionLabel={(option) => option}
                 renderInput={(params) => (
-                  <Input
-                    {...params}
-                    placeholder="Land Type"
-                   
-                    required
-                  />
+                  <Input {...params} placeholder="Land Type" required />
                 )}
                 isOptionEqualToValue={(option, value) => option === value}
                 sx={{ width: "100%" }}
               />
             </Grid>
-            <Grid  xs={12} sm={6}>
+            <Grid xs={12} sm={6}>
               <FormLabel>Comments</FormLabel>
               <Input
                 name="comment"
