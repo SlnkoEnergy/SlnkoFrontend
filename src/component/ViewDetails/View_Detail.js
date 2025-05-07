@@ -4,28 +4,24 @@ import {
   Button,
   Checkbox,
   Container,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Divider,
   Grid,
   IconButton,
   Input,
-  Modal,
-  ModalDialog,
   Typography,
 } from "@mui/joy";
 import Sheet from "@mui/joy/Sheet";
 import Table from "@mui/joy/Table";
 import { saveAs } from "file-saver";
-import { jsPDF } from "jspdf";
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import Img12 from "../../assets/slnko_blue_logo.png";
 import Axios from "../../utils/Axios";
 
 const Customer_Payment_Summary = () => {
   const [error, setError] = useState("");
+  const navigate = useNavigate();
   const [projectData, setProjectData] = useState({
     p_id: "",
     code: "",
@@ -40,16 +36,16 @@ const Customer_Payment_Summary = () => {
     window.print();
   };
 
-  const handleDownloadPDF = () => {
-    const doc = new jsPDF();
-    doc.html(document.body, {
-      callback: function (doc) {
-        doc.save("CustomerPaymentSummary.pdf");
-      },
-      x: 10,
-      y: 10,
-    });
-  };
+  // const handleDownloadPDF = () => {
+  //   const doc = new jsPDF();
+  //   doc.html(document.body, {
+  //     callback: function (doc) {
+  //       doc.save("CustomerPaymentSummary.pdf");
+  //     },
+  //     x: 10,
+  //     y: 10,
+  //   });
+  // };
 
   const today = new Date();
 
@@ -2334,9 +2330,13 @@ const Customer_Payment_Summary = () => {
         >
           Print
         </Button>
-        {/* <Button variant="solid" color="primary" onClick={handleDownloadPDF}>
-          Download PDF
-        </Button> */}
+        <Button
+          variant="solid"
+          color="primary"
+          onClick={() => navigate("/project-balance")}
+        >
+          Back
+        </Button>
         <Button
           variant="solid"
           color="primary"

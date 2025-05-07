@@ -75,7 +75,6 @@ const Overall_Leads = forwardRef((props, ref) => {
       []),
   ];
 
-
   // const handleItemsPerPageChange = (event) => {
   //   setItemsPerPage(parseInt(event.target.value));
   //   setCurrentPage(1); // Optional: reset to first page on change
@@ -203,8 +202,6 @@ const Overall_Leads = forwardRef((props, ref) => {
   // useEffect(() => {
   //   console.log("API Response:", getLead);
   // }, [getLead]);
-
-  
 
   const renderFilters = () => (
     <>
@@ -384,6 +381,7 @@ const Overall_Leads = forwardRef((props, ref) => {
           "c_name",
           "mobile",
           "state",
+          "status",
           "submitted_by",
         ].some((key) => lead[key]?.toLowerCase().includes(searchQuery));
 

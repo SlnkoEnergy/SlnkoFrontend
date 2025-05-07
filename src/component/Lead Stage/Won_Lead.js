@@ -23,17 +23,27 @@ import * as React from "react";
 import ManageHistoryIcon from "@mui/icons-material/ManageHistory";
 import NextPlanIcon from "@mui/icons-material/NextPlan";
 import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../../assets/Lotties/animation-loading.json";
 // import Axios from "../utils/Axios";
 import FollowTheSignsIcon from "@mui/icons-material/FollowTheSigns";
-import { Autocomplete, Chip, Divider, Grid, Modal, Option, Select, Stack } from "@mui/joy";
+import {
+  Autocomplete,
+  Chip,
+  Divider,
+  Grid,
+  Modal,
+  Option,
+  Select,
+  Stack,
+} from "@mui/joy";
 import { forwardRef, useCallback, useImperativeHandle } from "react";
 import { toast } from "react-toastify";
 import NoData from "../../assets/alert-bell.svg";
-import { useGetWonLeadsQuery } from "../../redux/leadsSlice";
 import { useGetHandOverQuery } from "../../redux/camsSlice";
+import { useGetWonLeadsQuery } from "../../redux/leadsSlice";
 
 const StandByRequest = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -264,6 +274,24 @@ const StandByRequest = forwardRef((props, ref) => {
     );
   };
 
+  const ViewHandOver = ({ currentPage, id }) => {
+    // console.log("currentPage:", currentPage, "p_id:", p_id);
+
+    return (
+      <>
+        <IconButton
+          color="primary"
+          onClick={() => {
+            localStorage.setItem("bd_handover", id);
+            navigate(`/bd_hand_over?page=${currentPage}&id=${id}`);
+          }}
+        >
+          <VisibilityIcon />
+        </IconButton>
+      </>
+    );
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return ""; // Return empty if date is null or undefined
     const date = new Date(dateString);
@@ -305,7 +333,11 @@ const StandByRequest = forwardRef((props, ref) => {
         const userName = user.name.trim();
         const userRole = user.role?.toLowerCase();
 
-        const isAdmin = userRole === "admin" || userRole === "superadmin";
+        const isAdmin =
+          userRole === "admin" ||
+          userRole === "superadmin" ||
+          userName === "Guddu Rani Dubey" ||
+          userName === "Prachi Singh";
         const matchesUser = isAdmin || submittedBy === userName;
 
         const matchesQuery = [
@@ -557,6 +589,7 @@ const StandByRequest = forwardRef((props, ref) => {
                     }}
                   ></th>
                   {[
+                    "",
                     "Lead Id",
                     "Customer",
                     "Mobile",
@@ -610,7 +643,9 @@ const StandByRequest = forwardRef((props, ref) => {
                         onChange={() => handleRowSelect(lead._id)}
                       />
                     </td>
+
                     {[
+                      <ViewHandOver currentPage={currentPage} id={lead.id} />,
                       <span
                         key="id"
                         onClick={() => handleOpenModal(lead)}
@@ -702,7 +737,6 @@ const StandByRequest = forwardRef((props, ref) => {
                     </Box>
                   </Box>
 
-                 
                   <Button
                     size="sm"
                     variant="outlined"
@@ -712,7 +746,6 @@ const StandByRequest = forwardRef((props, ref) => {
                     {isExpanded ? "Hide Details" : "View Details"}
                   </Button>
 
-              
                   {isExpanded && (
                     <Box sx={{ pl: 1 }}>
                       <Divider sx={{ my: 1 }} />

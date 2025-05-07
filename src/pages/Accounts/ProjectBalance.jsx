@@ -9,15 +9,14 @@ import React, { useRef } from "react";
 
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
+import { Snackbar } from "@mui/joy";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../../component/Partials/Header";
 import Sidebar from "../../component/Partials/Sidebar";
 import ProjectBalances from "../../component/ProjectBalance";
-import { useEffect, useState } from "react";
-import { Snackbar } from "@mui/joy";
 
 function ProjectBalance() {
-  
   const [user, setUser] = useState(null);
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
@@ -146,7 +145,11 @@ function ProjectBalance() {
                 user?.name === "Guddu Rani Dubey" ||
                 user?.name === "Prachi Singh" ||
                 user?.name === "admin") && (
-                <Button color="primary" onClick={() => navigate("/adjust_request")} size="sm">
+                <Button
+                  color="primary"
+                  onClick={() => navigate("/adjust_request")}
+                  size="sm"
+                >
                   Adjustment Form
                 </Button>
               )}
@@ -174,7 +177,8 @@ function ProjectBalance() {
                 user?.name === "Prachi Singh" ||
                 user?.name === "admin" ||
                 user?.name === "Naresh Kumar" ||
-                user?.name === "Chandan Singh") && (
+                user?.name === "Chandan Singh" ||
+                user?.department === "account") && (
                 <Button
                   color="primary"
                   startDecorator={<DownloadRoundedIcon />}

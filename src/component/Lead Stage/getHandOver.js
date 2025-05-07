@@ -14,11 +14,11 @@ import {
 } from "@mui/joy";
 import React, { useEffect, useMemo, useState } from "react";
 import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
+import { useGetHandOverQuery } from "../../redux/camsSlice";
 import {
   useGetMasterInverterQuery,
   useGetModuleMasterQuery,
 } from "../../redux/leadsSlice";
-import { useGetHandOverQuery } from "../../redux/camsSlice";
 
 const GetHandoverSheetForm = ({ onBack }) => {
   const [expanded, setExpanded] = useState(null);
@@ -135,7 +135,6 @@ const GetHandoverSheetForm = ({ onBack }) => {
       loa_number: "",
       ppa_number: "",
       submitted_by_BD: "",
-      
     },
     submitted_by: "",
   });
@@ -176,7 +175,7 @@ const GetHandoverSheetForm = ({ onBack }) => {
         ...new Set(ModuleMaster.map((item) => item.make).filter(Boolean)),
       ]);
       setModuleTypeOptions([
-        ...new Set(ModuleMaster.map((item) => item.type).filter(Boolean)),
+        ...new Set(ModuleMaster.map((item) => item.Type).filter(Boolean)),
       ]);
       setModuleModelOptions([
         ...new Set(ModuleMaster.map((item) => item.model).filter(Boolean)),
@@ -273,7 +272,6 @@ const GetHandoverSheetForm = ({ onBack }) => {
     }));
   };
 
-
   const handleChange = (section, field, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -322,7 +320,7 @@ const GetHandoverSheetForm = ({ onBack }) => {
       console.warn("No matching handover data found.");
       return;
     }
-  
+
     setFormData((prev) => ({
       ...prev,
       customer_details: {
@@ -339,14 +337,17 @@ const GetHandoverSheetForm = ({ onBack }) => {
           village_name: "",
           district_name: "",
         },
-        site_google_coordinates: handoverData?.customer_details?.site_google_coordinates || "",
+        site_google_coordinates:
+          handoverData?.customer_details?.site_google_coordinates || "",
         number: handoverData?.customer_details?.number || "",
         gst_no: handoverData?.customer_details?.gst_no || "",
-        gender_of_Loa_holder: handoverData?.customer_details?.gender_of_Loa_holder || "",
+        gender_of_Loa_holder:
+          handoverData?.customer_details?.gender_of_Loa_holder || "",
         email: handoverData?.customer_details?.email || "",
         p_group: handoverData?.customer_details?.p_group || "",
         pan_no: handoverData?.customer_details?.pan_no || "",
-        adharNumber_of_loa_holder: handoverData?.customer_details?.adharNumber_of_loa_holder || "",
+        adharNumber_of_loa_holder:
+          handoverData?.customer_details?.adharNumber_of_loa_holder || "",
         state: handoverData?.customer_details?.state || "",
         alt_number: handoverData?.customer_details?.alt_number || "",
       },
@@ -362,33 +363,42 @@ const GetHandoverSheetForm = ({ onBack }) => {
       project_detail: {
         ...prev.project_detail,
         project_type: handoverData?.project_detail?.project_type || "",
-        module_make_capacity: handoverData?.project_detail?.module_make_capacity || "",
+        module_make_capacity:
+          handoverData?.project_detail?.module_make_capacity || "",
         module_make: handoverData?.project_detail?.module_make || "",
         module_capacity: handoverData?.project_detail?.module_capacity || "",
         module_type: handoverData?.project_detail?.module_type || "",
         module_model_no: handoverData?.project_detail?.module_model_no || "",
-        evacuation_voltage: handoverData?.project_detail?.evacuation_voltage || "",
-        inverter_make_capacity: handoverData?.project_detail?.inverter_make_capacity || "",
+        evacuation_voltage:
+          handoverData?.project_detail?.evacuation_voltage || "",
+        inverter_make_capacity:
+          handoverData?.project_detail?.inverter_make_capacity || "",
         inverter_make: handoverData?.project_detail?.inverter_make || "",
         inverter_type: handoverData?.project_detail?.inverter_type || "",
         inverter_size: handoverData?.project_detail?.inverter_size || "",
-        inverter_model_no: handoverData?.project_detail?.inverter_model_no || "",
+        inverter_model_no:
+          handoverData?.project_detail?.inverter_model_no || "",
         work_by_slnko: handoverData?.project_detail?.work_by_slnko || "",
-        topography_survey: handoverData?.project_detail?.topography_survey || "",
+        topography_survey:
+          handoverData?.project_detail?.topography_survey || "",
         soil_test: handoverData?.project_detail?.soil_test || "",
-        purchase_supply_net_meter: handoverData?.project_detail?.purchase_supply_net_meter || "",
-        liaisoning_net_metering: handoverData?.project_detail?.liaisoning_net_metering || "",
+        purchase_supply_net_meter:
+          handoverData?.project_detail?.purchase_supply_net_meter || "",
+        liaisoning_net_metering:
+          handoverData?.project_detail?.liaisoning_net_metering || "",
         ceig_ceg: handoverData?.project_detail?.ceig_ceg || "",
-        project_completion_date: handoverData?.project_detail?.project_completion_date || "",
-        proposed_dc_capacity: handoverData?.project_detail?.proposed_dc_capacity || "",
+        project_completion_date:
+          handoverData?.project_detail?.project_completion_date || "",
+        proposed_dc_capacity:
+          handoverData?.project_detail?.proposed_dc_capacity || "",
         distance: handoverData?.project_detail?.distance || "",
         tarrif: handoverData?.project_detail?.tarrif || "",
         substation_name: handoverData?.project_detail?.substation_name || "",
         overloading: handoverData?.project_detail?.overloading || "",
         project_kwp: handoverData?.project_detail?.project_kwp || "",
         land: handoverData?.project_detail?.land
-        ? JSON.parse(handoverData.project_detail.land)
-        : { type: "", acres: "" },
+          ? JSON.parse(handoverData.project_detail.land)
+          : { type: "", acres: "" },
         agreement_date: handoverData?.project_detail?.agreement_date || "",
       },
       commercial_details: {
@@ -402,16 +412,15 @@ const GetHandoverSheetForm = ({ onBack }) => {
         cam_member_name: handoverData?.attached_details?.cam_member_name || "",
         service: handoverData?.attached_details?.service || "",
         billing_type: handoverData?.attached_details?.billing_type || "",
-        project_status: handoverData?.attached_details?.project_status || "incomplete",
+        project_status:
+          handoverData?.attached_details?.project_status || "incomplete",
         loa_number: handoverData?.attached_details?.loa_number || "",
         ppa_number: handoverData?.attached_details?.ppa_number || "",
         submitted_by_BD: handoverData?.attached_details?.submitted_by_BD || "",
-        
       },
       submitted_by: handoverData?.submitted_by || "-",
     }));
   }, [handoverData]);
-  
 
   // console.log("📝 Updated formData:", formData);
   // console.log("📦 order_details:", handoverData?.order_details);
@@ -1133,7 +1142,7 @@ const GetHandoverSheetForm = ({ onBack }) => {
                         <>
                           <Grid item xs={12} sm={6}>
                             <Typography level="body1">
-                              Module Model No
+                              Module Content Category
                             </Typography>
                             <Select
                               fullWidth
@@ -1148,15 +1157,8 @@ const GetHandoverSheetForm = ({ onBack }) => {
                                 )
                               }
                             >
-                              {moduleModelOptions.length > 0 ? (
-                                moduleModelOptions.map((model, index) => (
-                                  <Option key={index} value={model}>
-                                    {model}
-                                  </Option>
-                                ))
-                              ) : (
-                                <Option disabled>No options available</Option>
-                              )}
+                              <Option value="DCR">DCR</Option>
+                              <Option value="Non DCR">Non DCR</Option>
                             </Select>
                           </Grid>
 
@@ -1896,11 +1898,7 @@ const GetHandoverSheetForm = ({ onBack }) => {
                       <Input
                         value={formData.submitted_by}
                         onChange={(e) =>
-                          handleChange(
-                         
-                            "submitted_by",
-                            e.target.value
-                          )
+                          handleChange("submitted_by", e.target.value)
                         }
                         readOnly
                       />

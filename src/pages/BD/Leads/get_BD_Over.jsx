@@ -1,3 +1,4 @@
+import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import Box from "@mui/joy/Box";
 import Breadcrumbs from "@mui/joy/Breadcrumbs";
 import CssBaseline from "@mui/joy/CssBaseline";
@@ -6,32 +7,30 @@ import { CssVarsProvider } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
 import React from "react";
 
-import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import { useNavigate } from "react-router-dom";
+import GetBDHandoverSheetForm from "../../../component/Lead Stage/getBD_HandOver";
+import Header from "../../../component/Partials/Header";
+import Sidebar from "../../../component/Partials/Sidebar";
 
-import Sidebar from "../../component/Partials/Sidebar";
-// import OrderTable from '../../component/OrderTable';
-// import OrderList from '../../component/OrderList';
-import BDHistory from "../../component/BD_History";
-import Header from "../../component/Partials/Header";
-
-function BD_History() {
+function BDHandSheet() {
+  const navigate = useNavigate();
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
-      <Box sx={{ display: "flex", minHeight: "100dvh" }}>
+      <Box sx={{ display: "flex", minHeight: "100%" }}>
         <Header />
         <Sidebar />
         <Box
           component="main"
           className="MainContent"
           sx={{
-            px: { xs: 2, md: 6 },
-            pt: {
-              xs: "calc(12px + var(--Header-height))",
-              sm: "calc(12px + var(--Header-height))",
-              md: 3,
-            },
-            pb: { xs: 2, sm: 2, md: 3 },
+            // px: { xs: 2, md: 6 },
+            // pt: {
+            //   xs: 'calc(12px + var(--Header-height))',
+            //   sm: 'calc(12px + var(--Header-height))',
+            //   md: 3,
+            // },
+            // pb: { xs: 2, sm: 2, md: 3 },
             flex: 1,
             display: "flex",
             flexDirection: "column",
@@ -44,7 +43,7 @@ function BD_History() {
             sx={{
               display: "flex",
               alignItems: "center",
-              marginLeft: { xl: "15%", lg: "18%" },
+              marginLeft: { xl: "17%", lg: "20%" },
             }}
           >
             <Breadcrumbs
@@ -64,16 +63,16 @@ function BD_History() {
               <Link
                 underline="hover"
                 color="neutral"
-                href=""
-                sx={{ fontSize: 12, fontWeight: 500 }}
+                sx={{ fontSize: 12, fontWeight: 500, textDecoration: "none" }}
+                onClick={() => navigate("/leads")}
               >
-                Commercial Offer
+                Leads
               </Link>
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                BD History
+                HandOver Sheet Form
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -86,41 +85,11 @@ function BD_History() {
               alignItems: { xs: "start", sm: "center" },
               flexWrap: "wrap",
               justifyContent: "space-between",
-              marginLeft: { xl: "15%", lg: "18%" },
             }}
           >
-            <Typography level="h2" component="h1">
-              BD History
-            </Typography>
-            <Box
-              sx={{
-                display: "flex",
-                mb: 1,
-                gap: 1,
-                flexDirection: { xs: "column", sm: "row" },
-                alignItems: { xs: "start", sm: "center" },
-                flexWrap: "wrap",
-                justifyContent: "center",
-              }}
-            >
-              {/* <Button
-              color="primary"
-              
-              size="sm"
-            >
-              Add New Project +
-            </Button> */}
-              {/* <Button
-                color="primary"
-                startDecorator={<DownloadRoundedIcon />}
-                size="sm"
-                onClick={handleExportToCSV} 
-              >
-                Export to CSV
-              </Button> */}
-            </Box>
+            <GetBDHandoverSheetForm />
           </Box>
-          <BDHistory />
+
           {/* <OrderTable /> */}
           {/* <OrderList /> */}
         </Box>
@@ -128,4 +97,4 @@ function BD_History() {
     </CssVarsProvider>
   );
 }
-export default BD_History;
+export default BDHandSheet;

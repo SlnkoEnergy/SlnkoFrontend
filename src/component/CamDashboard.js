@@ -1,46 +1,34 @@
-import { Player } from "@lottiefiles/react-lottie-player";
-import AddIcon from "@mui/icons-material/Add";
-import BlockIcon from "@mui/icons-material/Block";
 import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
-import HistoryIcon from "@mui/icons-material/History";
+import EditNoteIcon from "@mui/icons-material/EditNote";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
+import LockIcon from "@mui/icons-material/Lock";
+import LockOpenIcon from "@mui/icons-material/LockOpen";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
-import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import SearchIcon from "@mui/icons-material/Search";
+import { CircularProgress } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
 import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
-import DeleteIcon from "@mui/icons-material/Delete";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
-import Divider from "@mui/joy/Divider";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
-import LockOpenIcon from '@mui/icons-material/LockOpen';
 import MenuItem from "@mui/joy/MenuItem";
-import Option from "@mui/joy/Option";
-import EditNoteIcon from "@mui/icons-material/EditNote";
-import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
-import { toast } from "react-toastify";
-import Tooltip from "@mui/joy/Tooltip";
-import LockIcon from "@mui/icons-material/Lock";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
 import NoData from "../assets/alert-bell.svg";
-import animationData from "../assets/Lotties/animation-loading.json";
-import Axios from "../utils/Axios";
 import {
   useGetHandOverQuery,
   useUpdateUnlockHandoversheetMutation,
 } from "../redux/camsSlice";
-import { Chip, CircularProgress } from "@mui/joy";
 
 import { useGetEntireLeadsQuery } from "../redux/leadsSlice";
 
@@ -71,7 +59,7 @@ function Dash_cam() {
     data: getHandOverSheet = {},
     error,
     isLoading,
-    refetch
+    refetch,
   } = useGetHandOverQuery(refreshKey);
 
   const { data: getLead = {} } = useGetEntireLeadsQuery();
@@ -129,76 +117,77 @@ function Dash_cam() {
   const StatusChip = ({ status, p_id, user }) => {
     const [currentStatus, setCurrentStatus] = useState(status);
     const [isLocked, setIsLocked] = useState(false);
-  
-    const isLockedState = currentStatus === 'locked';
-    const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
-  
-    const [updateUnlockHandoversheet, { isLoading }] = useUpdateUnlockHandoversheetMutation();
-  
+
+    const isLockedState = currentStatus === "locked";
+    const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+
+    const [updateUnlockHandoversheet, { isLoading }] =
+      useUpdateUnlockHandoversheetMutation();
+
     useEffect(() => {
       setCurrentStatus(status);
     }, [status]);
-  
-    const handleSubmit = async () => {
 
+    const handleSubmit = async () => {
       if (!isAdmin) {
-        toast.error('Permission denied. You do not have access to perform this action.', {
-          icon: "⛔", 
-        });
+        toast.error(
+          "Permission denied. You do not have access to perform this action.",
+          {
+            icon: "⛔",
+          }
+        );
         return;
       }
 
       if (isLoading) return;
-  
+
       try {
         const res = await updateUnlockHandoversheet({
           p_id,
           emp_id: user.emp_id,
         }).unwrap();
-  
+
         const newStatus = res?.status_of_handoversheet;
         if (newStatus) {
           setCurrentStatus(newStatus);
         }
-  
-        toast.success('Status unlocked 🔒');
-        
-       
+
+        toast.success("Status unlocked 🔒");
+
         setIsLocked(true);
         setTimeout(() => {
           window.location.reload();
         }, 500);
       } catch (err) {
-        console.error('Error:', err?.data?.message || err.error);
+        console.error("Error:", err?.data?.message || err.error);
       }
     };
-  
+
     return (
       <Button
         size="sm"
         variant="soft"
-        color={isLockedState ? 'danger' : 'success'}
+        color={isLockedState ? "danger" : "success"}
         onClick={isAdmin && !isLoading ? handleSubmit : undefined}
         sx={{
           minWidth: 36,
           height: 36,
           padding: 0,
           fontWeight: 500,
-          cursor: isAdmin && !isLoading ? 'pointer' : 'default',
+          cursor: isAdmin && !isLoading ? "pointer" : "default",
         }}
       >
         {isLoading ? (
           <CircularProgress size="sm" />
         ) : isLocked ? (
-          <LockIcon sx={{ fontSize: '1rem' }} /> // Lock icon after unlocking
+          <LockIcon sx={{ fontSize: "1rem" }} /> // Lock icon after unlocking
         ) : (
-          <LockOpenIcon sx={{ fontSize: '1rem' }} /> // Unlock icon before status is locked
+          <LockOpenIcon sx={{ fontSize: "1rem" }} /> // Unlock icon before status is locked
         )}
       </Button>
     );
   };
-  
-  
+
   const RowMenu = ({ currentPage, p_id }) => {
     console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
 
@@ -228,35 +217,35 @@ function Dash_cam() {
           >
             <MoreHorizRoundedIcon />
           </MenuButton>
-         
-            <Menu size="sm" sx={{ minWidth: 140 }}>
-              <MenuItem
-                color="primary"
-                onClick={() => {
-                  const page = currentPage;
-                  const projectId = Number(p_id);
-                  sessionStorage.setItem("view handover", projectId);
-                  // localStorage.setItem("p_id", projectID);
-                  navigate(`/view_handover?page=${page}&p_id=${projectId}`);
-                }}
-              >
-                <ContentPasteGoIcon />
-                <Typography>View</Typography>
-              </MenuItem>
-              <MenuItem
-                color="primary"
-                onClick={() => {
-                  const page = currentPage;
-                  const projectId = Number(p_id);
-                  sessionStorage.setItem("update handover", projectId);
-                  // localStorage.setItem("p_id", projectID);
-                  navigate(`/edit_handover?page=${page}&p_id=${projectId}`);
-                }}
-              >
-                <EditNoteIcon />
-                <Typography>Edit HandOver</Typography>
-              </MenuItem>
-              {/* <MenuItem
+
+          <Menu size="sm" sx={{ minWidth: 140 }}>
+            <MenuItem
+              color="primary"
+              onClick={() => {
+                const page = currentPage;
+                const projectId = Number(p_id);
+                sessionStorage.setItem("view handover", projectId);
+                // localStorage.setItem("p_id", projectID);
+                navigate(`/view_handover?page=${page}&p_id=${projectId}`);
+              }}
+            >
+              <ContentPasteGoIcon />
+              <Typography>View</Typography>
+            </MenuItem>
+            <MenuItem
+              color="primary"
+              onClick={() => {
+                const page = currentPage;
+                const projectId = Number(p_id);
+                sessionStorage.setItem("update handover", projectId);
+                // localStorage.setItem("p_id", projectID);
+                navigate(`/edit_handover?page=${page}&p_id=${projectId}`);
+              }}
+            >
+              <EditNoteIcon />
+              <Typography>Edit HandOver</Typography>
+            </MenuItem>
+            {/* <MenuItem
                 onClick={() => {
                   const page = currentPage;
                   const projectId = String(p_id);
@@ -267,8 +256,8 @@ function Dash_cam() {
                 <HistoryIcon />
                 <Typography>View BOM</Typography>
               </MenuItem> */}
-              {/* <Divider sx={{ backgroundColor: "lightblue" }} /> */}
-              {/* {(user?.name === "IT Team" || user?.name === "admin") && (
+            {/* <Divider sx={{ backgroundColor: "lightblue" }} /> */}
+            {/* {(user?.name === "IT Team" || user?.name === "admin") && (
                 <MenuItem
                   color="danger"
                   disabled={selected.length === 0}
@@ -278,8 +267,7 @@ function Dash_cam() {
                   <Typography>Delete</Typography>
                 </MenuItem>
               )} */}
-            </Menu>
-    
+          </Menu>
         </Dropdown>
       </>
     );
@@ -537,7 +525,10 @@ function Dash_cam() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={7} style={{ padding: "8px", textAlign: "center" }}>
+                <td
+                  colSpan={10}
+                  style={{ padding: "8px", textAlign: "center" }}
+                >
                   <Box
                     sx={{
                       fontStyle: "italic",

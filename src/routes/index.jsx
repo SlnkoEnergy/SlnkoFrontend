@@ -32,6 +32,7 @@ import ForgotPassword from "../pages/Users/auth/ForgotPassword";
 import Login from "../pages/Users/auth/Login";
 import EditUser from "../pages/Users/EditUser";
 // import { BalanceProvider } from "../store/Context/Balance_Context";
+import Add_Adjusment from "../pages/Accounts/Adjust_Request";
 import Offer_edit from "../pages/BD/Comm_/EditOffer";
 import ListReference3 from "../pages/BD/Comm_/offer_previw";
 import ListReference from "../pages/BD/Comm_/offer_ref";
@@ -46,6 +47,7 @@ import Edit_Followup_Leads from "../pages/BD/Leads/Followup/Forms/follow_edit";
 import FollowUpSummary from "../pages/BD/Leads/Followup/Forms/follow_Summary";
 import Add_Task_Followup from "../pages/BD/Leads/Followup/Forms/FollowupTask";
 import CheckboxModal2 from "../pages/BD/Leads/Followup/Forms/FollowupToAll";
+import BDHandSheet from "../pages/BD/Leads/get_BD_Over";
 import GetHandSheet from "../pages/BD/Leads/getHand_Over";
 import HandSheet from "../pages/BD/Leads/HandOver";
 import Edit_Initial_Leads from "../pages/BD/Leads/Initial/Forms/initial_edit";
@@ -64,26 +66,27 @@ import Add_Task_Won from "../pages/BD/Leads/Won/Forms/WonTask";
 import Sum_Won_Leads from "../pages/BD/Leads/Won/Forms/WonToAll";
 import Won_History from "../pages/BD/Leads/Won/Won_History";
 import CommercialRateOffer from "../pages/BD/OfferRate";
-import Dashboardz from "../pages/Dashboards";
-import PrivateRoute from "./PrivateRoute";
 import Dashboard from "../pages/CAM/DashboardCam";
 import EditHandSheet from "../pages/CAM/EditHand_over";
 import ViewHandSheet from "../pages/CAM/HandOver_View";
+import Dashboardz from "../pages/Dashboards";
 import DashboardENG from "../pages/Eng/DashboardEng";
-import Add_BOM from "../pages/Eng/Forms/BOM_Addn";
 import Process_Tracker from "../pages/Eng/Er_Process";
-import ModuleSheet from "../pages/Eng/ModuleDashboard";
-import Add_Module from "../pages/Eng/Forms/Add_Module";
-import Add_Inverter from "../pages/Eng/Forms/Add_Inverter";
-import Add_Transformer from "../pages/Eng/Forms/Add_Transformer";
-import Add_BOS from "../pages/Eng/Forms/Add_BOS";
-import Add_DC_Cable from "../pages/Eng/Forms/Add_DC";
 import Add_AC_Cable from "../pages/Eng/Forms/Add_AC";
-import Add_Pooling from "../pages/Eng/Forms/Add_Pooling";
+import {
+  default as Add_BOS,
+  default as Add_BOS_Station,
+} from "../pages/Eng/Forms/Add_BOS";
+import Add_DC_Cable from "../pages/Eng/Forms/Add_DC";
 import Add_HT_Panel from "../pages/Eng/Forms/Add_HT";
+import Add_Inverter from "../pages/Eng/Forms/Add_Inverter";
 import Add_LT_Panel from "../pages/Eng/Forms/Add_LT";
-import Add_BOS_Station from "../pages/Eng/Forms/Add_BOS";
-import Add_Adjusment from "../pages/Accounts/Adjust_Request";
+import Add_Module from "../pages/Eng/Forms/Add_Module";
+import Add_Pooling from "../pages/Eng/Forms/Add_Pooling";
+import Add_Transformer from "../pages/Eng/Forms/Add_Transformer";
+import Add_BOM from "../pages/Eng/Forms/BOM_Addn";
+import ModuleSheet from "../pages/Eng/ModuleDashboard";
+import PrivateRoute from "./PrivateRoute";
 
 function index() {
   return (
@@ -293,8 +296,8 @@ function index() {
         }
       />
 
-        {/*-------------Eng----------*/}
-        <Route
+      {/*-------------Eng----------*/}
+      <Route
         path="/eng_dash"
         element={
           <PrivateRoute>
@@ -310,7 +313,7 @@ function index() {
           </PrivateRoute>
         }
       />
-        <Route
+      <Route
         path="/add_bom"
         element={
           <PrivateRoute>
@@ -322,11 +325,11 @@ function index() {
         path="/add_module"
         element={
           <PrivateRoute>
-            <Add_Module/>
+            <Add_Module />
           </PrivateRoute>
         }
       />
-       <Route
+      <Route
         path="/add_inverter"
         element={
           <PrivateRoute>
@@ -382,7 +385,7 @@ function index() {
           </PrivateRoute>
         }
       />
-       <Route
+      <Route
         path="/add_ht_panel"
         element={
           <PrivateRoute>
@@ -390,7 +393,7 @@ function index() {
           </PrivateRoute>
         }
       />
-       <Route
+      <Route
         path="/add_lt_panel"
         element={
           <PrivateRoute>
@@ -653,6 +656,14 @@ function index() {
         }
       />
       <Route
+        path="/bd_hand_over"
+        element={
+          <PrivateRoute>
+            <BDHandSheet />
+          </PrivateRoute>
+        }
+      />
+      <Route
         path="/get_hand_over"
         element={
           <PrivateRoute>
@@ -668,7 +679,7 @@ function index() {
           </PrivateRoute>
         }
       />
-        <Route
+      <Route
         path="/view_handover"
         element={
           <PrivateRoute>

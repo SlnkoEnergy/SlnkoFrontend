@@ -15,13 +15,13 @@ import {
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
-import { useGetHandOverQuery } from "../../redux/camsSlice";
+import { useGetBDHandOverQuery } from "../../redux/camsSlice";
 import {
   useGetMasterInverterQuery,
   useGetModuleMasterQuery,
 } from "../../redux/leadsSlice";
 
-const ViewHandoverSheetForm = ({ onBack }) => {
+const GetBDHandoverSheetForm = ({ onBack }) => {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(null);
   const states = [
@@ -303,8 +303,8 @@ const ViewHandoverSheetForm = ({ onBack }) => {
     const userData = localStorage.getItem("userDetails");
     return userData ? JSON.parse(userData) : null;
   };
-  const LeadId = sessionStorage.getItem("view handover");
-  const { data: getHandOverSheet = [] } = useGetHandOverQuery();
+  const LeadId = localStorage.getItem("bd_handover");
+  const { data: getHandOverSheet = [] } = useGetBDHandOverQuery();
   const HandOverSheet = useMemo(
     () => getHandOverSheet?.Data ?? [],
     [getHandOverSheet]
@@ -312,13 +312,10 @@ const ViewHandoverSheetForm = ({ onBack }) => {
 
   console.log("HandOverSheet", HandOverSheet);
 
-  const handoverData = useMemo(() => {
-    return HandOverSheet.find((item) => item.p_id === Number(LeadId));
-  }, [HandOverSheet, LeadId]);
+  const handoverData = HandOverSheet.find((item) => item.id === LeadId);
 
   console.log("✅ Found handoverData:", handoverData);
 
-  // 🎯 Populate Data from Handover if Available
   useEffect(() => {
     if (!handoverData) {
       console.warn("No matching handover data found.");
@@ -327,7 +324,6 @@ const ViewHandoverSheetForm = ({ onBack }) => {
 
     setFormData((prev) => ({
       ...prev,
-      p_id: handoverData?.p_id || "",
       customer_details: {
         ...prev.customer_details,
         code: handoverData?.customer_details?.code || "",
@@ -1947,11 +1943,15 @@ const ViewHandoverSheetForm = ({ onBack }) => {
       <Grid container justifyContent="center" sx={{ marginTop: 2 }}>
         <Grid item xs={6} sm={4} md={3}>
           <Button
-            onClick={() => navigate("/cam_dash")}
             variant="solid"
-            color="neutral"
+            color="primary"
             fullWidth
-            sx={{ padding: 1.5, fontSize: "1rem", fontWeight: "bold" }}
+            sx={{
+              padding: 1.5,
+              fontSize: "1rem",
+              fontWeight: "bold",
+            }}
+            onClick={() => navigate("/leads")}
           >
             Back
           </Button>
@@ -1961,4 +1961,4 @@ const ViewHandoverSheetForm = ({ onBack }) => {
   );
 };
 
-export default ViewHandoverSheetForm;
+export default GetBDHandoverSheetForm;

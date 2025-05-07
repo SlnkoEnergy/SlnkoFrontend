@@ -415,7 +415,8 @@ const ProjectBalances = forwardRef((props, ref) => {
       const amountPaidSumMap = posData.reduce((acc, po) => {
         const poNumber = po.po_number;
         const matchingPayments = paysData.filter(
-          (pay) => pay.po_number === poNumber && pay.approved === "Approved"
+          (pay) =>
+            pay.po_number === poNumber && pay.approved === "Approved" && pay.utr
         );
         const totalPaymentValue = matchingPayments.reduce(
           (sum, pay) => sum + Number(pay.amount_paid || 0),
@@ -451,6 +452,7 @@ const ProjectBalances = forwardRef((props, ref) => {
         const creditAdj = creditAdjustment[projectId] || 0;
         const debitAdj = debitAdjustment[projectId] || 0;
         const totalAdjustment = debitAdj - creditAdj;
+        const adjTotalNum = Number(totalAdjustment);
         const oldAmount = totalCredit - totalDebits || 0;
         const customerAdjustment = customerAdjustmentSumMap[projectId] || 0;
         const totalPoValue = poSumMap[projectId] || 0;
@@ -459,7 +461,7 @@ const ProjectBalances = forwardRef((props, ref) => {
         const projectMW = Number(project.project_kwp) || 0;
 
         const netBalance = totalCredit - customerAdjustment;
-        const balanceSlnko = netBalance - advancePaid;
+        const balanceSlnko = netBalance - advancePaid - adjTotalNum;
         const netAdvance = advancePaid - totalBillValue;
         const balancePayable = totalPoValue - totalBillValue - netAdvance;
 
@@ -472,15 +474,31 @@ const ProjectBalances = forwardRef((props, ref) => {
           projectMW: projectMW,
           creditAmount: Math.round(totalCredit),
           debitAmount: totalDebits,
-          adjustmentAmount: Math.round(totalAdjustment),
+          adjustmentAmount: Math.round(adjTotalNum),
           oldAmount: oldAmount,
           balanceSlnko: Math.round(balanceSlnko),
           balancePayable: Math.round(balancePayable),
           balanceRequired: Math.round(balanceRequired),
+          netBalance: Math.round(netBalance),
+          advancePaid: Math.round(advancePaid),
         };
       });
 
       setMergedData(merged);
+      console.log("==== Project Balances by p_id ====");
+      merged.forEach((project) => {
+        console.log(`Project ID: ${project.code}`);
+        console.log(`Project ID: ${project.p_id}`);
+        console.log(`  Credit Amount: ${project.creditAmount}`);
+        console.log(`  Debit Amount: ${project.debitAmount}`);
+        console.log(`  Adjustment: ${project.adjustmentAmount}`);
+        console.log(`  Balance SLNKO: ${project.balanceSlnko}`);
+        console.log(`  Balance Payable: ${project.balancePayable}`);
+        console.log(`  Balance Required: ${project.balanceRequired}`);
+        console.log(`  netBalance: ${project.netBalance}`);
+        console.log(`  advancePaid: ${project.advancePaid}`);
+        console.log("-----------------------------");
+      });
 
       const total = merged.reduce(
         (acc, project) => {
@@ -491,6 +509,7 @@ const ProjectBalances = forwardRef((props, ref) => {
           acc.totalDebitSum += project.debitAmount || 0;
           acc.totalAdjustmentSum += project.adjustmentAmount || 0;
           acc.totalmWSum += project.projectMW || 0;
+
           return acc;
         },
         {
@@ -505,7 +524,7 @@ const ProjectBalances = forwardRef((props, ref) => {
       );
 
       total.totalAmountAvailable = total.totalCreditSum - total.totalDebitSum;
-
+      console.log("Final Totals:", total);
       setTotals(total);
     }
   }, [
@@ -1684,7 +1703,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                       "Balance with SLnko",
                       "Balance Payable to Vendors",
                       "Balance Required",
-                      "View More",
+                      // "View More",
                     ].map((header, index) => (
                       <Box
                         component="th"
@@ -1706,7 +1725,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                     <Box component="tr">
                       <Box
                         component="td"
-                        colSpan={14}
+                        colSpan={13}
                         sx={{
                           padding: "8px",
                           textAlign: "center",
@@ -1853,12 +1872,12 @@ const ProjectBalances = forwardRef((props, ref) => {
                             }).format(project.balanceRequired || 0)}
                           </Box>
 
-                          <Box component="td" sx={cellStyle}>
+                          {/* <Box component="td" sx={cellStyle}>
                             <RowMenu
                               currentPage={currentPage}
                               p_id={project.p_id}
                             />
-                          </Box>
+                          </Box> */}
                         </Box>
                       ))
                   )}

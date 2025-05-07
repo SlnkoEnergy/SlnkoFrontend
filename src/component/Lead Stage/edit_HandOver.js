@@ -13,17 +13,17 @@ import {
   Typography,
 } from "@mui/joy";
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
-import {
-  useGetMasterInverterQuery,
-  useGetModuleMasterQuery,
-} from "../../redux/leadsSlice";
 import {
   useGetHandOverQuery,
   useUpdateHandOverMutation,
 } from "../../redux/camsSlice";
-import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import {
+  useGetMasterInverterQuery,
+  useGetModuleMasterQuery,
+} from "../../redux/leadsSlice";
 
 const UpdateHandoverSheetForm = ({ onBack }) => {
   const navigate = useNavigate();
@@ -181,7 +181,7 @@ const UpdateHandoverSheetForm = ({ onBack }) => {
         ...new Set(ModuleMaster.map((item) => item.make).filter(Boolean)),
       ]);
       setModuleTypeOptions([
-        ...new Set(ModuleMaster.map((item) => item.type).filter(Boolean)),
+        ...new Set(ModuleMaster.map((item) => item.Type).filter(Boolean)),
       ]);
       setModuleModelOptions([
         ...new Set(ModuleMaster.map((item) => item.model).filter(Boolean)),
@@ -489,9 +489,7 @@ const UpdateHandoverSheetForm = ({ onBack }) => {
 
       // Handle case when status is not "done"
       if (formData.status_of_handoversheet !== "done") {
-        toast.error(
-          "Your handover sheet has been locked"
-        );
+        toast.error("Your handover sheet has been locked");
       }
 
       if (errorMessage.toLowerCase().includes("already handed over")) {
@@ -1227,7 +1225,7 @@ const UpdateHandoverSheetForm = ({ onBack }) => {
                         <>
                           <Grid item xs={12} sm={6}>
                             <Typography level="body1">
-                              Module Model No
+                              Module Content Category
                             </Typography>
                             <Select
                               fullWidth
@@ -1242,15 +1240,8 @@ const UpdateHandoverSheetForm = ({ onBack }) => {
                                 )
                               }
                             >
-                              {moduleModelOptions.length > 0 ? (
-                                moduleModelOptions.map((model, index) => (
-                                  <Option key={index} value={model}>
-                                    {model}
-                                  </Option>
-                                ))
-                              ) : (
-                                <Option disabled>No options available</Option>
-                              )}
+                              <Option value="DCR">DCR</Option>
+                              <Option value="Non DCR">Non DCR</Option>
                             </Select>
                           </Grid>
 

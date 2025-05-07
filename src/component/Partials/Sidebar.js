@@ -1,6 +1,8 @@
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import AssignmentRoundedIcon from "@mui/icons-material/AssessmentRounded";
+import BuildIcon from "@mui/icons-material/Build";
+import EngineeringIcon from "@mui/icons-material/Engineering";
 import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
@@ -15,7 +17,6 @@ import IconButton from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import List from "@mui/joy/List";
 import ListItem from "@mui/joy/ListItem";
-import EngineeringIcon from "@mui/icons-material/Engineering";
 import ListItemButton, { listItemButtonClasses } from "@mui/joy/ListItemButton";
 import ListItemContent from "@mui/joy/ListItemContent";
 import Sheet from "@mui/joy/Sheet";
@@ -24,7 +25,6 @@ import { useColorScheme } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import BuildIcon from "@mui/icons-material/Build";
 import Main_Logo from "../../assets/protrac_logo.png";
 import Main_Logo2 from "../../assets/white_logo.png";
 import { closeSidebar } from "../../utils/utils";
@@ -719,19 +719,18 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
-        ) : (user?.department === "BD" &&
-            user?.name === "Navin Kumar Gautam") ||
-          user?.name === "Mohd Shakir Khan" ||
-          user?.name === "Shiv Ram Tathagat" ||
-          user?.name === "Kana Sharma" ||
-          user?.name === "Ketan Kumar Jha" ||
-          user?.name === "Vibhav Upadhyay" ||
-          user?.name === "Shantanu Sameer" ||
-          user?.name === "Arnav Shahi" ||
-          user?.name === "Shambhavi Gupta" ||
-          user?.name === "Geeta" ||
-          user?.name === "Anudeep Kumar" ||
-          user?.name === "Ashish Jha" ? (
+        ) : user?.department === "BD" &&
+          (user?.name === "Navin Kumar Gautam" ||
+            user?.name === "Mohd Shakir Khan" ||
+            user?.name === "Shiv Ram Tathagat" ||
+            user?.name === "Ketan Kumar Jha" ||
+            user?.name === "Vibhav Upadhyay" ||
+            user?.name === "Shantanu Sameer" ||
+            user?.name === "Shambhavi Gupta" ||
+            user?.name === "Geeta" ||
+            user?.name === "Anudeep Kumar" ||
+            user?.name === "Ashish Jha" ||
+            user?.name === "Priyanka Sharma") ? (
           <ListItem nested>
             <Toggler
               renderToggle={({ open, setOpen }) => (
@@ -1046,6 +1045,43 @@ function Sidebar() {
                       Dashboard
                     </ListItemButton>
                   </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+            {/*BD*/}
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <AssignmentRoundedIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">BD</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/leads")}>
+                      Leads
+                    </ListItemButton>
+                  </ListItem>
+                  {/* <ListItem>
+                    <ListItemButton onClick={() => navigate("/comm_offer")}>
+                      Commercial Offer
+                    </ListItemButton>
+                  </ListItem> */}
                 </List>
               </Toggler>
             </ListItem>
@@ -1432,7 +1468,7 @@ function Sidebar() {
           </List>
         ) : user?.department === "eng" &&
           (user?.name === "Rishav Mahato" ||
-          user?.name === "Dhruv Choudhary") ? (
+            user?.name === "Dhruv Choudhary") ? (
           <List
             size="sm"
             sx={{
