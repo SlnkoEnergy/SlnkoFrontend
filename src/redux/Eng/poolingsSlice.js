@@ -6,9 +6,8 @@ export const engsPoolingApi = createApi({
   tagTypes: ["Pooling"],
   endpoints: (builder) => ({
     getPoolings: builder.query({
-      query: () => "/get-pooling-station-master",
+      query: () => "get-pooling-station-master",
       providesTags: ["Pooling"],
-      
     }),
     addPooling: builder.mutation({
       query: (addPooling) => ({
@@ -21,13 +20,9 @@ export const engsPoolingApi = createApi({
     // getTasksHistory: builder.query({
     //   query: () => "get-task-history",
     //   providesTags: ["Task"],
-      
+
     // }),
   }),
 });
 
-export const {
-useAddPoolingMutation,
-useGetPoolingsQuery
-} = engsPoolingApi;
-
+export const { useAddPoolingMutation, useGetPoolingsQuery } = engsPoolingApi;

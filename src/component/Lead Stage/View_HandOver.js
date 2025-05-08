@@ -138,6 +138,12 @@ const ViewHandoverSheetForm = ({ onBack }) => {
       ppa_number: "",
       submitted_by_BD: "",
     },
+    invoice_detail: {
+      invoice_recipient: "",
+      invoicing_GST_no: "",
+      invoicing_address: "",
+      delivery_address: "",
+    },
     submitted_by: "",
   });
 
@@ -423,6 +429,15 @@ const ViewHandoverSheetForm = ({ onBack }) => {
         ppa_number: handoverData?.attached_details?.ppa_number || "",
         submitted_by_BD: handoverData?.attached_details?.submitted_by_BD || "",
       },
+      invoice_detail: {
+        ...prev.invoice_detail,
+        invoice_recipient:
+          handoverData?.invoice_detail?.invoice_recipient || "",
+        invoicing_GST_no: handoverData?.invoice_detail?.invoicing_GST_no || "",
+        invoicing_address:
+          handoverData?.invoice_detail?.invoicing_address || "",
+        delivery_address: handoverData?.invoice_detail?.delivery_address || "",
+      },
       submitted_by: handoverData?.submitted_by || "-",
     }));
   }, [handoverData]);
@@ -464,6 +479,10 @@ const ViewHandoverSheetForm = ({ onBack }) => {
   const sections = [
     {
       name: "Customer Details",
+      fields: [],
+    },
+    {
+      name: "Invoicing Details",
       fields: [],
     },
     {
@@ -876,6 +895,91 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                           district_name: district || "",
                         });
                       }}
+                    />
+                  </Grid>
+                </>
+              )}
+              {/* Handle special case for "Invoicing Details" section  */}
+              {section.name === "Invoicing Details" && (
+                <>
+                  <Grid item xs={12} sm={6}>
+                    <Typography
+                      level="body1"
+                      sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                    >
+                      Invoice To
+                    </Typography>
+                    <Input
+                      fullWidth
+                      placeholder="Invoice To Party Name"
+                      value={formData.invoice_detail.invoice_recipient}
+                      onChange={(e) =>
+                        handleChange(
+                          "invoice_detail",
+                          "invoice_recipient",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography
+                      level="body1"
+                      sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                    >
+                      Invoicing GST No.
+                    </Typography>
+                    <Input
+                      fullWidth
+                      placeholder="Invoicing GST No."
+                      value={formData.invoice_detail.invoicing_GST_no}
+                      onChange={(e) =>
+                        handleChange(
+                          "invoice_detail",
+                          "invoicing_GST_no",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography
+                      level="body1"
+                      sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                    >
+                      Invoicing Address
+                    </Typography>
+                    <Input
+                      fullWidth
+                      placeholder="Invoicing Address"
+                      value={formData.invoice_detail.invoicing_address}
+                      onChange={(e) =>
+                        handleChange(
+                          "invoice_detail",
+                          "invoicing_address",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography
+                      level="body1"
+                      sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                    >
+                      Delivery Address
+                    </Typography>
+                    <Input
+                      fullWidth
+                      placeholder="Delivery Address"
+                      value={formData.invoice_detail.delivery_address}
+                      onChange={(e) =>
+                        handleChange(
+                          "invoice_detail",
+                          "delivery_address",
+                          e.target.value
+                        )
+                      }
                     />
                   </Grid>
                 </>

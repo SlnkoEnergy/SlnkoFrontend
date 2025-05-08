@@ -66,6 +66,7 @@ import Add_Task_Won from "../pages/BD/Leads/Won/Forms/WonTask";
 import Sum_Won_Leads from "../pages/BD/Leads/Won/Forms/WonToAll";
 import Won_History from "../pages/BD/Leads/Won/Won_History";
 import CommercialRateOffer from "../pages/BD/OfferRate";
+import Approval_Dashboard from "../pages/CAM/ApprovalHandOver";
 import Dashboard from "../pages/CAM/DashboardCam";
 import EditHandSheet from "../pages/CAM/EditHand_over";
 import ViewHandSheet from "../pages/CAM/HandOver_View";
@@ -292,6 +293,14 @@ function index() {
         element={
           <PrivateRoute>
             <Dashboard />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/handover_dash"
+        element={
+          <PrivateRoute>
+            <Approval_Dashboard />
           </PrivateRoute>
         }
       />

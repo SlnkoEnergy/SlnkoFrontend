@@ -140,6 +140,12 @@ const HandoverSheetForm = () => {
       ppa_number: "",
       submitted_by_BD: "",
     },
+    invoice_detail: {
+      invoice_recipient: "",
+      invoicing_GST_no: "",
+      invoicing_address: "",
+      delivery_address: "",
+    },
     submitted_by: "",
   });
   const [moduleMakeOptions, setModuleMakeOptions] = useState([]);
@@ -299,6 +305,10 @@ const HandoverSheetForm = () => {
   const sections = [
     {
       name: "Customer Details",
+      fields: [],
+    },
+    {
+      name: "Invoicing Details",
       fields: [],
     },
     {
@@ -711,6 +721,91 @@ const HandoverSheetForm = () => {
                           district_name: district || "",
                         });
                       }}
+                    />
+                  </Grid>
+                </>
+              )}
+              {/* Handle special case for "Invoicing Details" section  */}
+              {section.name === "Invoicing Details" && (
+                <>
+                  <Grid item xs={12} sm={6}>
+                    <Typography
+                      level="body1"
+                      sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                    >
+                      Invoice To
+                    </Typography>
+                    <Input
+                      fullWidth
+                      placeholder="Invoice To Party Name"
+                      value={formData.invoice_detail.invoice_recipient}
+                      onChange={(e) =>
+                        handleChange(
+                          "invoice_detail",
+                          "invoice_recipient",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography
+                      level="body1"
+                      sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                    >
+                      Invoicing GST No.
+                    </Typography>
+                    <Input
+                      fullWidth
+                      placeholder="Invoicing GST No."
+                      value={formData.invoice_detail.invoicing_GST_no}
+                      onChange={(e) =>
+                        handleChange(
+                          "invoice_detail",
+                          "invoicing_GST_no",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography
+                      level="body1"
+                      sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                    >
+                      Invoicing Address
+                    </Typography>
+                    <Input
+                      fullWidth
+                      placeholder="Invoicing Address"
+                      value={formData.invoice_detail.invoicing_address}
+                      onChange={(e) =>
+                        handleChange(
+                          "invoice_detail",
+                          "invoicing_address",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography
+                      level="body1"
+                      sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                    >
+                      Delivery Address
+                    </Typography>
+                    <Input
+                      fullWidth
+                      placeholder="Delivery Address"
+                      value={formData.invoice_detail.delivery_address}
+                      onChange={(e) =>
+                        handleChange(
+                          "invoice_detail",
+                          "delivery_address",
+                          e.target.value
+                        )
+                      }
                     />
                   </Grid>
                 </>

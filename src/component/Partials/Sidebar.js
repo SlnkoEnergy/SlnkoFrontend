@@ -349,6 +349,11 @@ function Sidebar() {
                       Dashboard
                     </ListItemButton>
                   </ListItem>
+                  <ListItem>
+                    <ListItemButton onClick={() => navigate("/handover_dash")}>
+                      HandOver Approval
+                    </ListItemButton>
+                  </ListItem>
                 </List>
               </Toggler>
             </ListItem>
@@ -1045,9 +1050,19 @@ function Sidebar() {
                       Dashboard
                     </ListItemButton>
                   </ListItem>
+                  {user?.name === "Prachi Singh" && (
+                    <ListItem>
+                      <ListItemButton
+                        onClick={() => navigate("/handover_dash")}
+                      >
+                        HandOver Approval
+                      </ListItemButton>
+                    </ListItem>
+                  )}
                 </List>
               </Toggler>
             </ListItem>
+
             {/*BD*/}
             <ListItem nested>
               <Toggler

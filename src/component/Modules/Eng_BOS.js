@@ -1,6 +1,4 @@
 import { Player } from "@lottiefiles/react-lottie-player";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
-import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
@@ -21,20 +19,17 @@ import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
 // import FollowTheSignsIcon from '@mui/icons-material/FollowTheSigns';
-import ManageHistoryIcon from "@mui/icons-material/ManageHistory";
-import NextPlanIcon from "@mui/icons-material/NextPlan";
-import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
-import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import DeleteIcon from "@mui/icons-material/Delete";
+import EditRoundedIcon from "@mui/icons-material/EditRounded";
+import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../../assets/Lotties/animation-loading.json";
 // import Axios from "../utils/Axios";
-import { Autocomplete, Divider, Grid, Modal, Option, Select } from "@mui/joy";
+import { Divider, Grid, Modal, Option, Select } from "@mui/joy";
 import { forwardRef, useCallback, useImperativeHandle } from "react";
-import NoData from "../../assets/alert-bell.svg";
-import { useGetInitialLeadsQuery } from "../../redux/leadsSlice";
 import { toast } from "react-toastify";
+import NoData from "../../assets/alert-bell.svg";
 import { useGetBOSQuery } from "../../redux/Eng/bosSlice";
 
 const BOSTab = forwardRef((props, ref) => {
@@ -537,7 +532,7 @@ const BOSTab = forwardRef((props, ref) => {
                     onChange={handleSelectAll}
                   />
                 </Box>
-                {["Category", "Item Name", "Rating", "Status"].map(
+                {["Category", "Item Name", "Rating", "Status", "Action"].map(
                   (header, index) => (
                     <Box
                       component="th"
@@ -594,10 +589,10 @@ const BOSTab = forwardRef((props, ref) => {
                       >
                         {lead.category}
                       </span>,
-                      
-                        lead.itemName || "-",
-                        lead.rating || "-",
-                        lead.status || "-",
+
+                      lead.itemName || "-",
+                      lead.rating || "-",
+                      lead.status || "-",
                     ].map((data, idx) => (
                       <Box
                         component="td"
