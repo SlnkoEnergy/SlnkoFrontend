@@ -23,7 +23,7 @@ import Sheet from "@mui/joy/Sheet";
 import Stack from "@mui/joy/Stack";
 import { useColorScheme } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Main_Logo from "../../assets/protrac_logo.png";
 import Main_Logo2 from "../../assets/white_logo.png";
@@ -679,6 +679,13 @@ function Sidebar() {
                       onClick={() => navigate("/daily-payment-request")}
                     >
                       Daily Payment Request
+                    </ListItemButton>
+                  </ListItem>
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/payment-approval")}
+                    >
+                      Payment Approval
                     </ListItemButton>
                   </ListItem>
                   <ListItem>

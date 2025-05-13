@@ -5,7 +5,7 @@ import CssBaseline from "@mui/joy/CssBaseline";
 import Link from "@mui/joy/Link";
 import { CssVarsProvider } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
-import React, { useRef } from "react";
+import { useRef } from "react";
 
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
@@ -78,7 +78,7 @@ function POSummary() {
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0 , marginTop: {md:"4%", lg:"0%"}}}
+              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
               {/* <Link
                 underline="none"
@@ -94,7 +94,7 @@ function POSummary() {
                 href=""
                 sx={{ fontSize: 12, fontWeight: 500 }}
               >
-                Accounts
+                SCM
               </Link>
               <Typography
                 color="primary"
@@ -128,7 +128,7 @@ function POSummary() {
               user?.name === "Aryan Maheshwari" ||
               user?.name === "Sarthak Sharma" ||
               user?.name === "Naresh Kumar" ||
-            user?.name === "Shubham Gupta") && (
+              user?.name === "Shubham Gupta") && (
               <Box
                 sx={{
                   display: "flex",

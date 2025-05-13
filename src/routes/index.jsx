@@ -1,4 +1,3 @@
-import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import AddMoney_Page from "../pages/Accounts/AddMoney_Page";
 import AddPayment_Request from "../pages/Accounts/AddPayment_Request";
@@ -88,6 +87,7 @@ import Add_Transformer from "../pages/Eng/Forms/Add_Transformer";
 import Add_BOM from "../pages/Eng/Forms/BOM_Addn";
 import ModuleSheet from "../pages/Eng/ModuleDashboard";
 import PrivateRoute from "./PrivateRoute";
+import Update_Bill from "../pages/SCM/EditBill";
 
 function index() {
   return (
@@ -512,6 +512,16 @@ function index() {
           </PrivateRoute>
         }
       />
+
+      <Route
+        path="/edit_bill"
+        element={
+          <PrivateRoute>
+            <Update_Bill />
+          </PrivateRoute>
+        }
+      />
+
       <Route
         path="/edit_po"
         element={

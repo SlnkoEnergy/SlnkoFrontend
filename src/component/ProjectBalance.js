@@ -26,7 +26,6 @@ import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import { useColorScheme, useTheme } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
-import * as React from "react";
 import {
   forwardRef,
   useEffect,

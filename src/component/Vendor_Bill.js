@@ -1,20 +1,20 @@
-import React, { useEffect, useState } from "react";
-import Box from "@mui/joy/Box";
-import Typography from "@mui/joy/Typography";
-import Button from "@mui/joy/Button";
-import Axios from "../utils/Axios";
-import  Chip from "@mui/joy/Chip";
-import { useSearchParams } from "react-router-dom";
+import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
-import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
+import Box from "@mui/joy/Box";
+import Button from "@mui/joy/Button";
+import Chip from "@mui/joy/Chip";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
-import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
-import { useSnackbar } from "notistack";
+import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
+import Typography from "@mui/joy/Typography";
+import { useSnackbar } from "notistack";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import Axios from "../utils/Axios";
 
 function VendorBillSummary() {
   const [poData, setPoData] = useState([]);
@@ -58,7 +58,7 @@ function VendorBillSummary() {
     async function fetchBillData() {
       try {
         const response = await Axios.get("/get-all-bilL-IT");
-        console.log("Bill Data:", response.data.data); // Check Bill Data
+        // console.log("Bill Data:", response.data.data); // Check Bill Data
         setBillData(response.data.data);
       } catch (error) {
         console.error("Error fetching Bill data:", error);
@@ -115,37 +115,42 @@ function VendorBillSummary() {
     const [isAccepted, setIsAccepted] = useState(false);
     const [user, setUser] = useState(null);
     const { enqueueSnackbar } = useSnackbar();
-  
+
     useEffect(() => {
-      
       const userData = getUserData();
       setUser(userData);
     }, []);
-  
+
     const getUserData = () => {
       const userData = localStorage.getItem("userDetails");
       return userData ? JSON.parse(userData) : null;
     };
-  
+
     const handleAcceptance = async () => {
       try {
         const response = await Axios.put("/accepted-by", {
           bill_number: billNumber,
           approved_by: user?.name,
         });
-  
+
         if (response.status === 200) {
           setIsAccepted(true);
-          enqueueSnackbar(`Bill accepted successfully by ${user?.name}`, { variant: "success" });
+          enqueueSnackbar(`Bill accepted successfully by ${user?.name}`, {
+            variant: "success",
+          });
         } else {
-          enqueueSnackbar("Failed to accept the bill. Please try again.", { variant: "error" });
+          enqueueSnackbar("Failed to accept the bill. Please try again.", {
+            variant: "error",
+          });
         }
       } catch (error) {
         console.error("Failed to accept the bill:", error);
-        enqueueSnackbar("This bill has already been accepted.", { variant: "error" });
+        enqueueSnackbar("This bill has already been accepted.", {
+          variant: "error",
+        });
       }
     };
-  
+
     return (
       <Box>
         <form
@@ -311,7 +316,7 @@ function VendorBillSummary() {
           borderRadius: "sm",
           py: 2,
           // display: { xs: "none", sm: "flex" },
-          display:"flex",
+          display: "flex",
           flexWrap: "wrap",
           gap: 1.5,
           "& > *": {
@@ -448,7 +453,7 @@ function VendorBillSummary() {
                     {row.total_billed}
                   </Box>
                   <Box component="td" sx={{ padding: 2 }}>
-                  <BillingStatusChip status={row.po_status} />
+                    <BillingStatusChip status={row.po_status} />
                   </Box>
                   <Box component="td" sx={{ padding: 2 }}>
                     {row.po_balance}

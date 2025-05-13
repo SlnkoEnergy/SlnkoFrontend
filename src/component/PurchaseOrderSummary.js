@@ -29,7 +29,6 @@ import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import * as React from "react";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
@@ -261,6 +260,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             user?.name === "Ajay Singh" ||
             user?.name === "Aryan Maheshwari" ||
             user?.name === "Sarthak Sharma" ||
+            user?.name === "Shubham Gupta" ||
             user?.name === "Naresh Kumar") && (
             <MenuItem
               onClick={() => {
@@ -290,6 +290,26 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           {/* <MenuItem color="primary" style={{ fontWeight: "bold" }}>
             Adjust Bill
           </MenuItem> */}
+          {(user?.name === "IT Team" ||
+            user?.name === "admin" ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Prachi Singh" ||
+            user?.name === "Ajay Singh" ||
+            user?.name === "Naresh Kumar" ||
+            user?.name === "Shubham Gupta") && (
+            <MenuItem
+              onClick={() => {
+                const page = currentPage;
+                const po = po_number;
+                localStorage.setItem("edit_bill", po);
+                navigate(`/edit_bill?page=${page}&po_number=${po}`);
+              }}
+            >
+              {" "}
+              <EditNoteIcon />
+              <Typography>Edit Bill</Typography>
+            </MenuItem>
+          )}
         </Menu>
       </Dropdown>
     );
@@ -708,7 +728,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         borderBottom: "1px solid",
                       }}
                     >
-                      {(po.item === "Other" || po.item === "other") ? po.other : po.item}
+                      {po.item === "Other" || po.item === "other"
+                        ? po.other
+                        : po.item}
                     </Box>
                     <Box
                       component="td"
