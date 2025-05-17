@@ -363,7 +363,7 @@ function PaymentRequest() {
       >
         {/* Approve Chip */}
         <Chip
-          variant="solid"
+          variant="solid" 
           color="success"
           label="Approved"
           onClick={() => handleChipClick("Approved")} // Pass a function reference, not invoke it directly

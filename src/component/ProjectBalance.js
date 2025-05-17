@@ -671,19 +671,49 @@ const ProjectBalances = forwardRef((props, ref) => {
     setSearchQuery(query.toLowerCase());
   };
 
+const DEBOUNCE_DELAY = 300;
+
+
+const [debouncedSearch, setDebouncedSearch] = useState(searchQuery)
+
+  // const filteredAndSortedData = useMemo(() => {
+  //   return mergedData.sort((a, b) => {
+  //     if (a.name?.toLowerCase().includes(searchQuery)) return -1;
+  //     if (b.name?.toLowerCase().includes(searchQuery)) return 1;
+  //     if (a.code?.toLowerCase().includes(searchQuery)) return -1;
+  //     if (b.code?.toLowerCase().includes(searchQuery)) return 1;
+  //     if (a.p_group?.toLowerCase().includes(searchQuery)) return -1;
+  //     if (b.p_group?.toLowerCase().includes(searchQuery)) return 1;
+  //     if (a.customer?.toLowerCase().includes(searchQuery)) return -1;
+  //     if (b.customer?.toLowerCase().includes(searchQuery)) return 1;
+  //     return 0;
+  //   });
+  // }, [mergedData, searchQuery]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, DEBOUNCE_DELAY);
+  
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery]);
+  
   const filteredAndSortedData = useMemo(() => {
     return mergedData.sort((a, b) => {
-      if (a.name?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.name?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.code?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.code?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.p_group?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.p_group?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.customer?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.customer?.toLowerCase().includes(searchQuery)) return 1;
+      const aFields = [a.name, a.code, a.p_group, a.customer].map(field => field?.toLowerCase() || '');
+      const bFields = [b.name, b.code, b.p_group, b.customer].map(field => field?.toLowerCase() || '');
+  
+      const aMatch = aFields.some(field => field.includes(debouncedSearch));
+      const bMatch = bFields.some(field => field.includes(debouncedSearch));
+  
+      if (aMatch && !bMatch) return -1;
+      if (!aMatch && bMatch) return 1;
+  
       return 0;
     });
-  }, [mergedData, searchQuery]);
+  }, [mergedData, debouncedSearch]);
 
   const handleSelectAll = (event) => {
     const allVisibleIds = mergedData.map((row) => row._id); // assuming visible/paginated data

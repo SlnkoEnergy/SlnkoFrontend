@@ -180,9 +180,9 @@ function Dash_cam() {
         {isLoading ? (
           <CircularProgress size="sm" />
         ) : isLocked ? (
-          <LockIcon sx={{ fontSize: "1rem" }} /> // Lock icon after unlocking
+          <LockIcon sx={{ fontSize: "1rem" }} />
         ) : (
-          <LockOpenIcon sx={{ fontSize: "1rem" }} /> // Unlock icon before status is locked
+          <LockOpenIcon sx={{ fontSize: "1rem" }} />
         )}
       </Button>
     );
