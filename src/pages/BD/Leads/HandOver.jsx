@@ -10,7 +10,8 @@ import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 
 import Sidebar from '../../../component/Partials/Sidebar';
 import Header from '../../../component/Partials/Header';
-import HandoverSheetForm from '../../../component/Lead Stage/Hand_Over';
+// import HandoverSheetForm from '../../../component/Lead Stage/Hand_Over';
+import HandoverSheetForm from '../../../component/Lead Stage/Handover/BDHandover';
 
 function HandSheet() {
   return (
