@@ -343,15 +343,15 @@ function Sidebar() {
                   </ListItemButton>
                 )}
               >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/cam_dash")}>
-                      Dashboard
-                    </ListItemButton>
-                  </ListItem>
+                <List>
                   <ListItem>
                     <ListItemButton onClick={() => navigate("/handover_dash")}>
                       HandOver Approval
+                    </ListItemButton>
+                  </ListItem>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/cam_dash")}>
+                      Dashboard
                     </ListItemButton>
                   </ListItem>
                 </List>

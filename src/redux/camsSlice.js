@@ -24,10 +24,10 @@ export const camsApi = createApi({
     }),
 
     updateHandOver: builder.mutation({
-      query: (payload) => ({
-        url: "edit-hand-over-sheet",
+      query: ({ _id, ...data }) => ({
+        url: `edit-hand-over-sheet/${_id}`,
         method: "PUT",
-        body: payload,
+        body: data,
       }),
       invalidatesTags: ["CAM"],
     }),

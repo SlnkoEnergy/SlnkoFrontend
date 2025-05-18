@@ -18,7 +18,6 @@ import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import * as React from "react";
 // import FollowTheSignsIcon from '@mui/icons-material/FollowTheSigns';
 import ManageHistoryIcon from "@mui/icons-material/ManageHistory";
 import NextPlanIcon from "@mui/icons-material/NextPlan";
@@ -127,7 +126,7 @@ const StandByRequest = forwardRef((props, ref) => {
     const isBDUser = user?.department === "BD";
     const isSubmittedByBD = !!submittedBy;
 
-    const status = isSubmittedByBD ? "done" : "Not Found";
+    const status = isSubmittedByBD ? "draft" : "Not Found";
 
     return {
       status,

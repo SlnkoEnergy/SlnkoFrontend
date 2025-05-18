@@ -13,11 +13,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import Img1 from "../../../assets/HandOverSheet_Icon.jpeg";
+import { useAddHandOverMutation } from "../../../redux/camsSlice";
 import {
   useGetMasterInverterQuery,
   useGetModuleMasterQuery,
 } from "../../../redux/leadsSlice";
-import { useAddHandOverMutation } from "../../../redux/camsSlice";
 
 const HandoverSheetForm = () => {
   const navigate = useNavigate();
@@ -56,6 +56,7 @@ const HandoverSheetForm = () => {
     id: "",
     customer_details: {
       name: "",
+      code: "",
       customer: "",
       epc_developer: "",
       site_address: {
@@ -145,27 +146,26 @@ const HandoverSheetForm = () => {
       formData.project_detail.project_kwp,
       formData.project_detail.overloading
     );
-      const calculated = calculateSlnkoBasic(
-    formData.project_detail.project_kwp,
-    formData.other_details.slnko_basic
-  );
+    const calculated = calculateSlnkoBasic(
+      formData.project_detail.project_kwp,
+      formData.other_details.slnko_basic
+    );
     setFormData((prev) => ({
       ...prev,
       project_detail: {
         ...prev.project_detail,
         proposed_dc_capacity: updatedDcCapacity,
       },
-        other_details: {
-            ...prev.other_details,
-            service: calculated,
-        },
+      other_details: {
+        ...prev.other_details,
+        service: calculated,
+      },
     }));
   }, [
     formData.project_detail.project_kwp,
     formData.project_detail.overloading,
-    formData.other_details.slnko_basic
+    formData.other_details.slnko_basic,
   ]);
-
 
   const handleAutocompleteChange = (section, field, value) => {
     setFormData((prev) => ({
@@ -354,16 +354,25 @@ const HandoverSheetForm = () => {
           >
             EPC/Developer <span style={{ color: "red" }}>*</span>
           </Typography>
-          <Input
+          <Select
             required
             fullWidth
-            placeholder="EPC/Developer"
-            value={formData.customer_details.epc_developer}
-            onChange={(e) =>
-              handleChange("customer_details", "epc_developer", e.target.value)
+            placeholder="Select EPC or Developer"
+            value={formData.customer_details.epc_developer || ""}
+            onChange={(_, newValue) =>
+              handleChange("customer_details", "epc_developer", newValue)
             }
-          />
+            sx={{
+              fontSize: "1rem",
+              backgroundColor: "#fff",
+              borderRadius: "md",
+            }}
+          >
+            <Option value="EPC">EPC</Option>
+            <Option value="Developer">Developer</Option>
+          </Select>
         </Grid>
+
         <Grid item xs={12} sm={6}>
           <Typography
             level="body1"
@@ -451,50 +460,51 @@ const HandoverSheetForm = () => {
             <Option value="Others">Others</Option>
           </Select>
         </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography
-            level="body1"
-            sx={{ fontWeight: "bold", marginBottom: 0.5 }}
-          >
-            Project Component<span style={{ color: "red" }}>*</span>
-          </Typography>
 
-          <Select
-            fullWidth
-            placeholder="Project Component"
-            value={formData["project_detail"]?.["project_component"] || ""}
-            onChange={(_, newValue) => {
-              handleChange("project_detail", "project_component", newValue);
-              // Clear the custom input if not selecting "Other"
-              if (newValue !== "Other") {
-                handleChange("project_detail", "project_component_other", "");
-              }
-            }}
-          >
-            <Option value="KA">Kusum A</Option>
-            <Option value="KC">Kusum C</Option>
-            <Option value="KC2">Kusum C2</Option>
-            <Option value="Other">Other</Option>
-          </Select>
+        {/* Show Project Component only if type_business === "Kusum" */}
+        {formData.order_details.type_business === "Kusum" && (
+          <Grid item xs={12} sm={6}>
+            <Typography
+              level="body1"
+              sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+            >
+              Project Component<span style={{ color: "red" }}>*</span>
+            </Typography>
 
-          {formData["project_detail"]?.["project_component"] === "Other" && (
-            <Input
+            <Select
               fullWidth
-              placeholder="Enter other project component"
-              value={
-                formData["project_detail"]?.["project_component_other"] || ""
-              }
-              onChange={(e) =>
-                handleChange(
-                  "project_detail",
-                  "project_component_other",
-                  e.target.value
-                )
-              }
-              sx={{ mt: 1 }}
-            />
-          )}
-        </Grid>
+              placeholder="Project Component"
+              value={formData.project_detail?.project_component || ""}
+              onChange={(_, newValue) => {
+                handleChange("project_detail", "project_component", newValue);
+                if (newValue !== "Other") {
+                  handleChange("project_detail", "project_component_other", "");
+                }
+              }}
+            >
+              <Option value="KA">Kusum A</Option>
+              <Option value="KC">Kusum C</Option>
+              <Option value="KC2">Kusum C2</Option>
+              <Option value="Other">Other</Option>
+            </Select>
+
+            {formData.project_detail?.project_component === "Other" && (
+              <Input
+                fullWidth
+                placeholder="Enter other project component"
+                value={formData.project_detail?.project_component_other || ""}
+                onChange={(e) =>
+                  handleChange(
+                    "project_detail",
+                    "project_component_other",
+                    e.target.value
+                  )
+                }
+                sx={{ mt: 1 }}
+              />
+            )}
+          </Grid>
+        )}
         <Grid item xs={12} sm={6}>
           <Typography
             level="body1"
@@ -779,12 +789,10 @@ const HandoverSheetForm = () => {
           <Input
             value={formData.other_details.slnko_basic}
             placeholder="Slnko Service Charges (Without GST)/Wp"
-           onChange={(e) =>
+            onChange={(e) =>
               handleChange("other_details", "slnko_basic", e.target.value)
             }
-            
           />
-        
         </Grid>
         <Grid item xs={12} sm={6}>
           <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>

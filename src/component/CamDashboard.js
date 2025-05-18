@@ -1,34 +1,21 @@
-import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
 import EditNoteIcon from "@mui/icons-material/EditNote";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import LockIcon from "@mui/icons-material/Lock";
-import LockOpenIcon from "@mui/icons-material/LockOpen";
-import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import SearchIcon from "@mui/icons-material/Search";
-import { CircularProgress } from "@mui/joy";
+import { Chip, CircularProgress } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
-import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
-import Menu from "@mui/joy/Menu";
-import MenuButton from "@mui/joy/MenuButton";
-import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "react-toastify";
 import NoData from "../assets/alert-bell.svg";
-import {
-  useGetHandOverQuery,
-  useUpdateUnlockHandoversheetMutation,
-} from "../redux/camsSlice";
+import { useGetHandOverQuery } from "../redux/camsSlice";
 
 import { useGetEntireLeadsQuery } from "../redux/leadsSlice";
 
@@ -114,164 +101,164 @@ function Dash_cam() {
     }
   }, []);
 
-  const StatusChip = ({ status, p_id, user }) => {
-    const [currentStatus, setCurrentStatus] = useState(status);
-    const [isLocked, setIsLocked] = useState(false);
+  // const StatusChip = ({ status, p_id, user }) => {
+  //   const [currentStatus, setCurrentStatus] = useState(status);
+  //   const [isLocked, setIsLocked] = useState(false);
 
-    const isLockedState = currentStatus === "locked";
-    const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+  //   const isLockedState = currentStatus === "locked";
+  //   const isAdmin = user?.role === "admin" || user?.role === "superadmin";
 
-    const [updateUnlockHandoversheet, { isLoading }] =
-      useUpdateUnlockHandoversheetMutation();
+  //   const [updateUnlockHandoversheet, { isLoading }] =
+  //     useUpdateUnlockHandoversheetMutation();
 
-    useEffect(() => {
-      setCurrentStatus(status);
-    }, [status]);
+  //   useEffect(() => {
+  //     setCurrentStatus(status);
+  //   }, [status]);
 
-    const handleSubmit = async () => {
-      if (!isAdmin) {
-        toast.error(
-          "Permission denied. You do not have access to perform this action.",
-          {
-            icon: "⛔",
-          }
-        );
-        return;
-      }
+  //   const handleSubmit = async () => {
+  //     if (!isAdmin) {
+  //       toast.error(
+  //         "Permission denied. You do not have access to perform this action.",
+  //         {
+  //           icon: "⛔",
+  //         }
+  //       );
+  //       return;
+  //     }
 
-      if (isLoading) return;
+  //     if (isLoading) return;
 
-      try {
-        const res = await updateUnlockHandoversheet({
-          p_id,
-          emp_id: user.emp_id,
-        }).unwrap();
+  //     try {
+  //       const res = await updateUnlockHandoversheet({
+  //         p_id,
+  //         emp_id: user.emp_id,
+  //       }).unwrap();
 
-        const newStatus = res?.status_of_handoversheet;
-        if (newStatus) {
-          setCurrentStatus(newStatus);
-        }
+  //       const newStatus = res?.status_of_handoversheet;
+  //       if (newStatus) {
+  //         setCurrentStatus(newStatus);
+  //       }
 
-        toast.success("Status unlocked 🔒");
+  //       toast.success("Status unlocked 🔒");
 
-        setIsLocked(true);
-        setTimeout(() => {
-          window.location.reload();
-        }, 500);
-      } catch (err) {
-        console.error("Error:", err?.data?.message || err.error);
-      }
-    };
+  //       setIsLocked(true);
+  //       setTimeout(() => {
+  //         window.location.reload();
+  //       }, 500);
+  //     } catch (err) {
+  //       console.error("Error:", err?.data?.message || err.error);
+  //     }
+  //   };
 
-    return (
-      <Button
-        size="sm"
-        variant="soft"
-        color={isLockedState ? "danger" : "success"}
-        onClick={isAdmin && !isLoading ? handleSubmit : undefined}
-        sx={{
-          minWidth: 36,
-          height: 36,
-          padding: 0,
-          fontWeight: 500,
-          cursor: isAdmin && !isLoading ? "pointer" : "default",
-        }}
-      >
-        {isLoading ? (
-          <CircularProgress size="sm" />
-        ) : isLocked ? (
-          <LockIcon sx={{ fontSize: "1rem" }} />
-        ) : (
-          <LockOpenIcon sx={{ fontSize: "1rem" }} />
-        )}
-      </Button>
-    );
-  };
+  //   return (
+  //     <Button
+  //       size="sm"
+  //       variant="soft"
+  //       color={isLockedState ? "danger" : "success"}
+  //       onClick={isAdmin && !isLoading ? handleSubmit : undefined}
+  //       sx={{
+  //         minWidth: 36,
+  //         height: 36,
+  //         padding: 0,
+  //         fontWeight: 500,
+  //         cursor: isAdmin && !isLoading ? "pointer" : "default",
+  //       }}
+  //     >
+  //       {isLoading ? (
+  //         <CircularProgress size="sm" />
+  //       ) : isLocked ? (
+  //         <LockIcon sx={{ fontSize: "1rem" }} />
+  //       ) : (
+  //         <LockOpenIcon sx={{ fontSize: "1rem" }} />
+  //       )}
+  //     </Button>
+  //   );
+  // };
 
-  const RowMenu = ({ currentPage, p_id }) => {
-    console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
+  // const RowMenu = ({ currentPage, p_id }) => {
+  //   console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
 
-    const [user, setUser] = useState(null);
+  //   const [user, setUser] = useState(null);
 
-    useEffect(() => {
-      const userData = getUserData();
-      setUser(userData);
-    }, []);
+  //   useEffect(() => {
+  //     const userData = getUserData();
+  //     setUser(userData);
+  //   }, []);
 
-    const getUserData = () => {
-      const userData = localStorage.getItem("userDetails");
-      if (userData) {
-        return JSON.parse(userData);
-      }
-      return null;
-    };
+  //   const getUserData = () => {
+  //     const userData = localStorage.getItem("userDetails");
+  //     if (userData) {
+  //       return JSON.parse(userData);
+  //     }
+  //     return null;
+  //   };
 
-    return (
-      <>
-        <Dropdown>
-          <MenuButton
-            slots={{ root: IconButton }}
-            slotProps={{
-              root: { variant: "plain", color: "neutral", size: "sm" },
-            }}
-          >
-            <MoreHorizRoundedIcon />
-          </MenuButton>
+  //   return (
+  //     <>
+  //       <Dropdown>
+  //         <MenuButton
+  //           slots={{ root: IconButton }}
+  //           slotProps={{
+  //             root: { variant: "plain", color: "neutral", size: "sm" },
+  //           }}
+  //         >
+  //           <MoreHorizRoundedIcon />
+  //         </MenuButton>
 
-          <Menu size="sm" sx={{ minWidth: 140 }}>
-            <MenuItem
-              color="primary"
-              onClick={() => {
-                const page = currentPage;
-                const projectId = Number(p_id);
-                sessionStorage.setItem("view handover", projectId);
-                // localStorage.setItem("p_id", projectID);
-                navigate(`/view_handover?page=${page}&p_id=${projectId}`);
-              }}
-            >
-              <ContentPasteGoIcon />
-              <Typography>View</Typography>
-            </MenuItem>
-            <MenuItem
-              color="primary"
-              onClick={() => {
-                const page = currentPage;
-                const projectId = Number(p_id);
-                sessionStorage.setItem("update handover", projectId);
-                // localStorage.setItem("p_id", projectID);
-                navigate(`/edit_handover?page=${page}&p_id=${projectId}`);
-              }}
-            >
-              <EditNoteIcon />
-              <Typography>Edit HandOver</Typography>
-            </MenuItem>
-            {/* <MenuItem
-                onClick={() => {
-                  const page = currentPage;
-                  const projectId = String(p_id);
-                  localStorage.setItem("get-project", projectId);
-                  navigate("#");
-                }}
-              >
-                <HistoryIcon />
-                <Typography>View BOM</Typography>
-              </MenuItem> */}
-            {/* <Divider sx={{ backgroundColor: "lightblue" }} /> */}
-            {/* {(user?.name === "IT Team" || user?.name === "admin") && (
-                <MenuItem
-                  color="danger"
-                  disabled={selected.length === 0}
-                  onClick={handleDelete}
-                >
-                  <DeleteIcon />
-                  <Typography>Delete</Typography>
-                </MenuItem>
-              )} */}
-          </Menu>
-        </Dropdown>
-      </>
-    );
-  };
+  //         <Menu size="sm" sx={{ minWidth: 140 }}>
+  //           <MenuItem
+  //             color="primary"
+  //             onClick={() => {
+  //               const page = currentPage;
+  //               const projectId = Number(p_id);
+  //               sessionStorage.setItem("view handover", projectId);
+  //               // localStorage.setItem("p_id", projectID);
+  //               navigate(`/view_handover?page=${page}&p_id=${projectId}`);
+  //             }}
+  //           >
+  //             <ContentPasteGoIcon />
+  //             <Typography>View</Typography>
+  //           </MenuItem>
+  //           <MenuItem
+  //             color="primary"
+  //             onClick={() => {
+  //               const page = currentPage;
+  //               const projectId = Number(p_id);
+  //               sessionStorage.setItem("update handover", projectId);
+  //               // localStorage.setItem("p_id", projectID);
+  //               navigate(`/edit_handover?page=${page}&p_id=${projectId}`);
+  //             }}
+  //           >
+  //             <EditNoteIcon />
+  //             <Typography>Edit HandOver</Typography>
+  //           </MenuItem>
+  //           {/* <MenuItem
+  //               onClick={() => {
+  //                 const page = currentPage;
+  //                 const projectId = String(p_id);
+  //                 localStorage.setItem("get-project", projectId);
+  //                 navigate("#");
+  //               }}
+  //             >
+  //               <HistoryIcon />
+  //               <Typography>View BOM</Typography>
+  //             </MenuItem> */}
+  //           {/* <Divider sx={{ backgroundColor: "lightblue" }} /> */}
+  //           {/* {(user?.name === "IT Team" || user?.name === "admin") && (
+  //               <MenuItem
+  //                 color="danger"
+  //                 disabled={selected.length === 0}
+  //                 onClick={handleDelete}
+  //               >
+  //                 <DeleteIcon />
+  //                 <Typography>Delete</Typography>
+  //               </MenuItem>
+  //             )} */}
+  //         </Menu>
+  //       </Dropdown>
+  //     </>
+  //   );
+  // };
 
   // const handleDelete = async () => {
   //   if (selected.length === 0) {
@@ -301,6 +288,31 @@ function Dash_cam() {
   //     setLoading(false);
   //   }
   // };
+
+  const RowMenu = ({ currentPage, p_id }) => {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+        <Chip
+          variant="solid"
+          color="success"
+          label="Approved"
+          onClick={() => {
+            const page = currentPage;
+            const projectId = Number(p_id);
+            sessionStorage.setItem("submitInfo", projectId);
+            navigate(`/edit_cam_handover?page=${page}&p_id=${projectId}`);
+          }}
+          sx={{
+            textTransform: "none",
+            fontSize: "0.875rem",
+            fontWeight: 500,
+            borderRadius: "sm",
+          }}
+          startDecorator={<EditNoteIcon />}
+        />
+      </Box>
+    );
+  };
 
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
@@ -382,6 +394,10 @@ function Dash_cam() {
   const paginatedPayments = filteredAndSortedData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
+  );
+
+  const draftPayments = paginatedPayments.filter(
+    (project) => project.status_of_handoversheet === "submitted"
   );
   // console.log(paginatedPayments);
   // console.log("Filtered and Sorted Data:", filteredAndSortedData);
@@ -505,7 +521,7 @@ function Dash_cam() {
                 "Type",
                 "Capacity(AC/DC)",
                 "Slnko Service Charges (with GST)",
-                "Status",
+                // "Status",
                 "Action",
               ].map((header, index) => (
                 <th
@@ -543,8 +559,8 @@ function Dash_cam() {
                   </Box>
                 </td>
               </tr>
-            ) : paginatedPayments.length > 0 ? (
-              paginatedPayments.map((project, index) => (
+            ) : draftPayments.length > 0 ? (
+              draftPayments.map((project, index) => (
                 <tr
                   key={index}
                   style={{
@@ -638,7 +654,7 @@ function Dash_cam() {
                     {project.service || "-"}
                   </td>
 
-                  <td
+                  {/* <td
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
@@ -651,7 +667,7 @@ function Dash_cam() {
                       user={user}
                       refetch={refetch}
                     />
-                  </td>
+                  </td> */}
 
                   <td
                     style={{
@@ -720,7 +736,7 @@ function Dash_cam() {
           Previous
         </Button>
         <Box>
-          Showing {paginatedPayments.length} of {filteredAndSortedData.length}{" "}
+          Showing {draftPayments.length} of {draftPayments.length} results
           results
         </Box>
         <Box

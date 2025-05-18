@@ -67,6 +67,8 @@ import Won_History from "../pages/BD/Leads/Won/Won_History";
 import CommercialRateOffer from "../pages/BD/OfferRate";
 import Approval_Dashboard from "../pages/CAM/ApprovalHandOver";
 import Dashboard from "../pages/CAM/DashboardCam";
+import EditCamHandSheet from "../pages/CAM/Edit_Cam";
+import EditOpsHandSheet from "../pages/CAM/Edit_Ops";
 import EditHandSheet from "../pages/CAM/EditHand_over";
 import ViewHandSheet from "../pages/CAM/HandOver_View";
 import Dashboardz from "../pages/Dashboards";
@@ -86,8 +88,8 @@ import Add_Pooling from "../pages/Eng/Forms/Add_Pooling";
 import Add_Transformer from "../pages/Eng/Forms/Add_Transformer";
 import Add_BOM from "../pages/Eng/Forms/BOM_Addn";
 import ModuleSheet from "../pages/Eng/ModuleDashboard";
-import PrivateRoute from "./PrivateRoute";
 import Update_Bill from "../pages/SCM/EditBill";
+import PrivateRoute from "./PrivateRoute";
 
 function index() {
   return (
@@ -695,6 +697,22 @@ function index() {
         element={
           <PrivateRoute>
             <EditHandSheet />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/edit_ops_handover"
+        element={
+          <PrivateRoute>
+            <EditOpsHandSheet />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/edit_cam_handover"
+        element={
+          <PrivateRoute>
+            <EditCamHandSheet />
           </PrivateRoute>
         }
       />
