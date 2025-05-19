@@ -3,7 +3,7 @@ import EditNoteIcon from "@mui/icons-material/EditNote";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
-import { Chip, CircularProgress } from "@mui/joy";
+import { Chip, CircularProgress, Modal, ModalDialog, Textarea } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
@@ -193,16 +193,25 @@ function Dash_cam() {
   // };
 
   const RowMenu1 = ({ currentPage, p_id, _id }) => {
+    const [openModal, setOpenModal] = useState(false);
+    const [comment, setComment] = useState("");
+    
     const handleReject = async () => {
-      const projectId = String(p_id);
+      if (!comment.trim()) {
+        toast.error("Please enter a comment before submitting.");
+        return;
+      }
+
       const ID = String(_id);
 
       try {
         await Axios.put(`/update-status/${ID}`, {
-          status_of_handoversheet: "",
+          status_of_handoversheet: "Rejected",
+          comment: comment,
         });
 
         toast.success("Handover sent back to BD");
+        setOpenModal(false);
 
         setTimeout(() => {
           window.location.reload();
@@ -212,44 +221,76 @@ function Dash_cam() {
           "Error updating status:",
           error.response?.data || error.message
         );
+        toast.error("Failed to reject the handover.");
       }
     };
 
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
-        <Chip
-          variant="solid"
-          color="success"
-          label="Approved"
-          onClick={() => {
-            const page = currentPage;
-            const projectId = Number(p_id);
-            sessionStorage.setItem("approvalInfo", projectId);
-            navigate(`/edit_ops_handover?page=${page}&p_id=${projectId}`);
-          }}
-          sx={{
-            textTransform: "none",
-            fontSize: "0.875rem",
-            fontWeight: 500,
-            borderRadius: "sm",
-          }}
-          startDecorator={<EditNoteIcon />}
-        />
+      <>
+        <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+          <Chip
+            variant="solid"
+            color="success"
+            label="Approved"
+            onClick={() => {
+              const page = currentPage;
+              const projectId = _id;
 
-        <Chip
-          variant="outlined"
-          color="danger"
-          label="Rejected"
-          onClick={handleReject}
-          sx={{
-            textTransform: "none",
-            fontSize: "0.875rem",
-            fontWeight: 500,
-            borderRadius: "sm",
-          }}
-          startDecorator={<BlockIcon />}
-        />
-      </Box>
+              sessionStorage.setItem("approvalInfo", projectId);
+              navigate(`/edit_ops_handover?page=${page}&_id=${projectId}`);
+            }}
+            sx={{
+              textTransform: "none",
+              fontSize: "0.875rem",
+              fontWeight: 500,
+              borderRadius: "sm",
+            }}
+            startDecorator={<EditNoteIcon />}
+          />
+
+          <Chip
+            variant="outlined"
+            color="danger"
+            label="Rejected"
+            onClick={() => setOpenModal(true)}
+            sx={{
+              textTransform: "none",
+              fontSize: "0.875rem",
+              fontWeight: 500,
+              borderRadius: "sm",
+            }}
+            startDecorator={<BlockIcon />}
+          />
+        </Box>
+
+        <Modal open={openModal} onClose={() => setOpenModal(false)}>
+          <ModalDialog variant="outlined" layout="center">
+            <Typography level="h5">Updation Remarks</Typography>
+            <Textarea
+              minRows={3}
+              placeholder="Enter your reason for rejection"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              sx={{ mt: 2 }}
+            />
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 1,
+                mt: 2,
+              }}
+            >
+              <Button variant="plain" onClick={() => setOpenModal(false)}>
+                Cancel
+              </Button>
+              <Button color="danger" onClick={handleReject}>
+                Submit
+              </Button>
+            </Box>
+          </ModalDialog>
+        </Modal>
+      </>
     );
   };
 

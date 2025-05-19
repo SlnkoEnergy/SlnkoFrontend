@@ -121,18 +121,35 @@ const StandByRequest = forwardRef((props, ref) => {
 
   const status_handOver = (leadId) => {
     const matchedHandOver = HandOverSheet.find((sheet) => sheet.id === leadId);
-    const submittedBy = matchedHandOver?.attached_details?.submitted_by_BD;
 
-    const isBDUser = user?.department === "BD";
-    const isSubmittedByBD = !!submittedBy;
+    if (!matchedHandOver) {
+      return {
+        status: "Not Found",
+        submittedBy: "Not Found",
+      };
+    }
 
-    const status = isSubmittedByBD ? "draft" : "Not Found";
+    const submittedBy = matchedHandOver.submitted_by || "Not Found";
+    const status = matchedHandOver.status_of_handoversheet || "Not Found";
 
     return {
       status,
-      submittedBy: submittedBy || "Not Found",
+      submittedBy,
     };
   };
+
+  // const status_handOver = (leadId) => {
+  //   const matchedHandOver = HandOverSheet.find((sheet) => sheet.id === leadId);
+  //   const attachedDetails = matchedHandOver?.attached_details;
+
+  //   const status = attachedDetails?.status || "Not Found"; // assuming `status` is stored here
+  //   const submittedBy = attachedDetails?.submitted_by || "Not Found";
+
+  //   return {
+  //     status: status.toLowerCase(),
+  //     submittedBy,
+  //   };
+  // };
 
   const renderFilters = () => (
     <>
@@ -662,16 +679,27 @@ const StandByRequest = forwardRef((props, ref) => {
                       <Chip
                         variant="soft"
                         color={
-                          status_handOver(lead.id).status === "done"
+                          status_handOver(lead.id).status === "submitted" ||
+                          status_handOver(lead.id).status === "Approved"
                             ? "success"
-                            : "warning"
+                            : status_handOver(lead.id).status === "Rejected"
+                              ? "danger"
+                              : status_handOver(lead.id).status === "draft"
+                                ? "warning"
+                                : "neutral"
                         }
                         size="sm"
                       >
-                        {status_handOver(lead.id).status === "done"
-                          ? "Completed"
-                          : "Pending"}
+                        {status_handOver(lead.id).status === "submitted" ||
+                        status_handOver(lead.id).status === "Approved"
+                          ? "Submitted"
+                          : status_handOver(lead.id).status === "Rejected"
+                            ? "Rejected"
+                            : status_handOver(lead.id).status === "draft"
+                              ? "Drafted"
+                              : "Pending"}
                       </Chip>,
+
                       status_handOver(lead.id).submittedBy || "-",
                       <RowMenu currentPage={currentPage} id={lead.id} />,
                     ].map((data, idx) => (
@@ -719,16 +747,25 @@ const StandByRequest = forwardRef((props, ref) => {
                     <Chip
                       variant="soft"
                       color={
-                        status_handOver(lead.id).status === "done"
+                        status_handOver(lead.id).status === "submitted" ||
+                        status_handOver(lead.id).status === "Approved"
                           ? "success"
-                          : "warning"
+                          : status_handOver(lead.id).status === "Rejected"
+                            ? "danger"
+                            : status_handOver(lead.id).status === "draft"
+                              ? "warning"
+                              : "neutral"
                       }
                       size="sm"
-                      sx={{ ml: 1 }}
                     >
-                      {status_handOver(lead.id).status === "done"
-                        ? "Completed"
-                        : "Pending"}
+                      {status_handOver(lead.id).status === "submitted" ||
+                      status_handOver(lead.id).status === "Approved"
+                        ? "Submitted"
+                        : status_handOver(lead.id).status === "Rejected"
+                          ? "Rejected"
+                          : status_handOver(lead.id).status === "draft"
+                            ? "Drafted"
+                            : "Pending"}
                     </Chip>
 
                     <Box sx={{ ml: 1 }}>
@@ -769,15 +806,26 @@ const StandByRequest = forwardRef((props, ref) => {
                               <Chip
                                 variant="soft"
                                 color={
-                                  status_handOver(lead.id).status === "done"
+                                  status_handOver.status ===
+                                  ("submitted" || "Approved")
                                     ? "success"
-                                    : "warning"
+                                    : status_handOver.status === "Rejected"
+                                      ? "danger"
+                                      : status_handOver.status === "draft"
+                                        ? "warning"
+                                        : "neutral"
                                 }
                                 size="sm"
+                                sx={{ ml: 1 }}
                               >
-                                {status_handOver(lead.id).status === "done"
-                                  ? "Completed"
-                                  : "Pending"}
+                                {status_handOver.status ===
+                                ("submitted" || "Approved")
+                                  ? "Submitted"
+                                  : status_handOver.status === "Rejected"
+                                    ? "Rejected"
+                                    : status_handOver.status === "draft"
+                                      ? "Drafted"
+                                      : "Pending"}
                               </Chip>
                             ),
                           },

@@ -67,6 +67,7 @@ function Dash_cam() {
 
   const HandOverSheet = Array.isArray(getHandOverSheet?.Data)
     ? getHandOverSheet.Data.map((entry) => ({
+        _id: entry._id,
         id: entry.id,
         ...entry.customer_details,
         ...entry.order_details,
@@ -289,7 +290,7 @@ function Dash_cam() {
   //   }
   // };
 
-  const RowMenu = ({ currentPage, p_id }) => {
+  const RowMenu = ({ currentPage, p_id, _id }) => {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
         <Chip
@@ -298,9 +299,9 @@ function Dash_cam() {
           label="Approved"
           onClick={() => {
             const page = currentPage;
-            const projectId = Number(p_id);
+            const projectId = _id;
             sessionStorage.setItem("submitInfo", projectId);
-            navigate(`/edit_cam_handover?page=${page}&p_id=${projectId}`);
+            navigate(`/edit_cam_handover?page=${page}&_id=${projectId}`);
           }}
           sx={{
             textTransform: "none",
@@ -676,7 +677,7 @@ function Dash_cam() {
                       textAlign: "center",
                     }}
                   >
-                    <RowMenu currentPage={currentPage} p_id={project.p_id} />
+                    <RowMenu currentPage={currentPage} p_id={project.p_id} _id = {project._id} />
                   </td>
                 </tr>
               ))

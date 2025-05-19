@@ -32,6 +32,15 @@ export const camsApi = createApi({
       invalidatesTags: ["CAM"],
     }),
 
+    updateStatusHandOver: builder.mutation({
+      query: ({ _id, ...data }) => ({
+        url: `update-status/${_id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["CAM"],
+    }),
+
     updateUnlockHandoversheet: builder.mutation({
       query: ({ p_id, emp_id }) => ({
         url: "update-status-of-handoversheet",
@@ -48,4 +57,5 @@ export const {
   useAddHandOverMutation,
   useUpdateHandOverMutation,
   useUpdateUnlockHandoversheetMutation,
+  useUpdateStatusHandOverMutation,
 } = camsApi;

@@ -16,6 +16,7 @@ import Img1 from "../../../assets/HandOverSheet_Icon.jpeg";
 import {
   useGetHandOverQuery,
   useUpdateHandOverMutation,
+  useUpdateStatusHandOverMutation,
 } from "../../../redux/camsSlice";
 import {
   useGetMasterInverterQuery,
@@ -61,7 +62,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
     _id: "",
     customer_details: {
       name: "",
-      code: "",
+     code:"",
       customer: "",
       epc_developer: "",
       site_address: {
@@ -190,7 +191,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
   );
 
   const handoverData = useMemo(() => {
-    return HandOverSheet.find((item) => item.p_id === Number(LeadId));
+    return HandOverSheet.find((item) => item._id === LeadId);
   }, [HandOverSheet, LeadId]);
 
   // console.log("handoverData:", handoverData);
@@ -266,6 +267,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
         slnko_basic: handoverData?.other_details?.slnko_basic || "",
 
         remark: handoverData?.other_details?.remark || "",
+        remarks_for_slnko: handoverData?.other_details?.remarks_for_slnko || "",
         submitted_by_BD: handoverData?.other_details?.submitted_by_BD || "",
       },
 
@@ -320,11 +322,12 @@ const OpsHandoverSheetForm = ({ onBack }) => {
 
   const [updateHandOver, { isLoading: isUpdating }] =
     useUpdateHandOverMutation();
+  
 
   const handleSubmit = async () => {
     try {
-      if (!LeadId || isNaN(Number(LeadId))) {
-        toast.error("Invalid or missing Lead ID!");
+      if (!LeadId) {
+        toast.error("Invalid or missing ID!");
         return;
       }
 
@@ -334,8 +337,8 @@ const OpsHandoverSheetForm = ({ onBack }) => {
       }
 
       const updatedFormData = {
-        _id: formData._id, // Required for URL
-        p_id: Number(LeadId),
+        _id: LeadId,
+        // p_id: formData.p_id,
         customer_details: { ...formData.customer_details },
         order_details: { ...formData.order_details },
         project_detail: {
@@ -344,7 +347,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
         },
         commercial_details: { ...formData.commercial_details },
         other_details: { ...formData.other_details },
-        status_of_handoversheet: "submitted", // Move to "submitted" after editing
+        status_of_handoversheet: "submitted",
       };
 
       await updateHandOver(updatedFormData).unwrap();
@@ -927,6 +930,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
           <Input
             value={formData.project_detail.tarrif}
             placeholder="Tariff Rate"
+            required
             onChange={(e) =>
               handleChange("project_detail", "tarrif", e.target.value)
             }

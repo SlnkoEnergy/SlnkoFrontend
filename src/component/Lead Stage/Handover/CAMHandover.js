@@ -20,6 +20,7 @@ import Img1 from "../../../assets/HandOverSheet_Icon.jpeg";
 import {
   useGetHandOverQuery,
   useUpdateHandOverMutation,
+  useUpdateStatusHandOverMutation,
 } from "../../../redux/camsSlice";
 import {
   useGetMasterInverterQuery,
@@ -144,6 +145,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
     invoice_detail: {
       invoice_recipient: "",
       invoicing_GST_no: "",
+      invoicing_GST_status:"",
       invoicing_address: "",
       delivery_address: "",
       msme_reg: "",
@@ -326,7 +328,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
   );
 
   const handoverData = useMemo(() => {
-    return HandOverSheet.find((item) => item.p_id === Number(LeadId));
+    return HandOverSheet.find((item) => item._id === LeadId);
   }, [HandOverSheet, LeadId]);
 
   // console.log("handoverData:", handoverData);
@@ -451,6 +453,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
         invoice_recipient:
           handoverData?.invoice_detail?.invoice_recipient || "",
         invoicing_GST_no: handoverData?.invoice_detail?.invoicing_GST_no || "",
+        invoicing_GST_status: handoverData?.invoice_detail?.invoicing_GST_status || "",
         invoicing_address:
           handoverData?.invoice_detail?.invoicing_address || "",
         delivery_address: handoverData?.invoice_detail?.delivery_address || "",
@@ -507,11 +510,12 @@ const CamHandoverSheetForm = ({ onBack }) => {
 
   const [updateHandOver, { isLoading: isUpdating }] =
     useUpdateHandOverMutation();
+  const [updateStatusHandOver] = useUpdateStatusHandOverMutation();
 
   const handleSubmit = async () => {
     try {
-      if (!LeadId || isNaN(Number(LeadId))) {
-        toast.error("Invalid or missing Lead ID!");
+      if (!LeadId) {
+        toast.error("Invalid or missing ID!");
         return;
       }
 
@@ -521,8 +525,8 @@ const CamHandoverSheetForm = ({ onBack }) => {
       }
 
       const updatedFormData = {
-        _id: formData._id,
-        p_id: Number(LeadId),
+        _id: LeadId,
+        // p_id: formData.p_id,
         customer_details: { ...formData.customer_details },
         order_details: { ...formData.order_details },
         project_detail: {
@@ -532,12 +536,26 @@ const CamHandoverSheetForm = ({ onBack }) => {
         commercial_details: { ...formData.commercial_details },
         other_details: { ...formData.other_details },
         invoice_detail: { ...formData.invoice_detail },
-        status_of_handoversheet: "approved",
+        status_of_handoversheet: "Approved",
       };
 
-      await updateHandOver(updatedFormData).unwrap();
+      const statusPayload = {
+        _id: formData._id,
+        status_of_handoversheet: "Approved",
+      };
 
-      toast.success("Project Created successfully");
+      // Start both API calls
+      const statusPromise = updateStatusHandOver(statusPayload).unwrap();
+      const updatePromise = updateHandOver(updatedFormData).unwrap();
+
+      // Wait for status update
+      await statusPromise;
+      toast.success("Status updated successfully");
+
+      // Wait for handover update
+      await updatePromise;
+      toast.success("Handover sheet updated successfully");
+
       navigate("/cam_dash");
     } catch (error) {
       const errorMessage =
@@ -555,40 +573,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
       }
     }
   };
-
-  // console.log("📝 Updated formData:", formData);
-  // console.log("📦 order_details:", handoverData?.order_details);
-  // console.log("📦 project_detail:", handoverData?.project_detail);
-
-  // ✅ Debugging: Log State Updates to Ensure Data is Set Correctly
-  // useEffect(() => {
-  //   console.log("Updated Form Data in State:", formData);
-  // }, [formData]);
-
-  //   const handleExpand = (panel) => {
-  //     setExpanded(expanded === panel ? null : panel);
-  //   };
-
-  //   const handleChange = (section, field, value) => {
-  //     setFormData((prev) => ({
-  //       ...prev,
-  //       [section]: {
-  //         ...prev[section],
-  //         [field]: value,
-  //       },
-  //     }));
-  //   };
-
-  //   const handleSubmit = async (e) => {
-  //     e.preventDefault();
-  //     try {
-  //       await axios.put(`https://api.slnkoprotrac.com/v1/edit-hand-over-sheet/67e2744c5c891bb412838925`, formData);
-
-  //         alert('Handover Sheet updated successfully');
-  //     } catch (error) {
-  //         console.error('Error updating data:', error);
-  //     }
-  // };
 
   const sections = [
     {
