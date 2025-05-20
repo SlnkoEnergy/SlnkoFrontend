@@ -149,11 +149,12 @@ const CamHandoverSheetForm = ({ onBack }) => {
       invoicing_GST_no: "",
       invoicing_GST_status: "",
       invoicing_address: "",
-      
+
       msme_reg: "",
     },
     submitted_by: "",
     status_of_handoversheet: "submitted",
+    is_locked: "locked",
   });
 
   const [moduleMakeOptions, setModuleMakeOptions] = useState([]);
@@ -289,15 +290,16 @@ const CamHandoverSheetForm = ({ onBack }) => {
   const handoverSchema = Yup.object().shape({
     customer_details: Yup.object().shape({
       email: Yup.string("Enter Email"),
-      AdharNumber_of_loa_holder: Yup.string().required(
+      adharNumber_of_loa_holder: Yup.string().required(
         "Aadhar Number is required"
       ),
       pan_no: Yup.string().required("PAN Number is required"),
     }),
     order_details: Yup.object().shape({
-      cam_member_name: Yup.string().required("CAM member name is required"),
-      // loa_number: Yup.string().required("LOA number is required"),
-      // ppa_number: Yup.string().required("PPA number is required"),
+      discom_name: Yup.string().required("DISCOM name is required"),
+      design_date: Yup.string().required(
+        "Preliminary design sign-off date is required"
+      ),
     }),
     project_detail: Yup.object().shape({
       project_type: Yup.string().required("Project type is required"),
@@ -313,24 +315,18 @@ const CamHandoverSheetForm = ({ onBack }) => {
         // acres: Yup.string().required("Land acres is required"),
       }),
       // agreement_date: Yup.string().required("Agreement date is required"),
-     
     }),
     commercial_details: Yup.object().shape({
       type: Yup.string().required("Commercial type is required"),
     }),
     other_details: Yup.object().shape({
       // cam_member_name: Yup.string().required("CAM member name is required"),
-    
       // feeder_name: Yup.string().required("Feeder name is required"),
-      discom_name: Yup.string().required("DISCOM name is required"),
-      design_date: Yup.string().required(
-        "Preliminary design sign-off date is required"
-      ),
     }),
     invoice_detail: Yup.object().shape({
       invoice_recipient: Yup.string().required("Invoice recipient is required"),
       invoicing_address: Yup.string().required("Invoicing address is required"),
-     
+
       invoicing_GST_no: Yup.string().when("invoicing_GST_status", {
         is: "Yes",
         then: Yup.string().required("Invoicing GST No. is required"),
@@ -466,11 +462,12 @@ const CamHandoverSheetForm = ({ onBack }) => {
           handoverData?.invoice_detail?.invoicing_GST_status || "",
         invoicing_address:
           handoverData?.invoice_detail?.invoicing_address || "",
-       
+
         msme_reg: handoverData?.invoice_detail?.msme_reg || "",
       },
       submitted_by: handoverData?.submitted_by || "-",
       status_of_handoversheet: handoverData?.status_of_handoversheet,
+      // is_locked: handoverData?.is_locked,
     }));
   }, [handoverData]);
 
@@ -567,13 +564,26 @@ const CamHandoverSheetForm = ({ onBack }) => {
   const [updateStatusHandOver] = useUpdateStatusHandOverMutation();
 
   const handleSubmit = async () => {
+    if (!LeadId) {
+      toast.error("Invalid or missing ID!");
+      return;
+    }
+
     try {
-      if (!LeadId) {
-        toast.error("Invalid or missing ID!");
+      await handoverSchema.validate(formData, { abortEarly: false });
+
+      // ✅ Block editing if already approved and locked
+      if (
+        formData.status_of_handoversheet === "Approved" &&
+        formData.is_locked === "locked"
+      ) {
+        toast.error(
+          "This handover sheet is approved and locked. No further edits allowed."
+        );
         return;
       }
-      
 
+      // ✅ Then check if it's in a valid editable state
       if (formData.status_of_handoversheet !== "submitted") {
         toast.error("This handover sheet cannot be edited.");
         return;
@@ -581,17 +591,17 @@ const CamHandoverSheetForm = ({ onBack }) => {
 
       const updatedFormData = {
         _id: LeadId,
-        // p_id: formData.p_id,
         customer_details: { ...formData.customer_details },
         order_details: { ...formData.order_details },
         project_detail: {
           ...formData.project_detail,
-          land: JSON.stringify(formData.project_detail?.land),
+          land: formData.project_detail?.land,
         },
         commercial_details: { ...formData.commercial_details },
         other_details: { ...formData.other_details },
         invoice_detail: { ...formData.invoice_detail },
-        status_of_handoversheet: "Approved",
+
+        is_locked: "locked",
       };
 
       const statusPayload = {
@@ -599,17 +609,14 @@ const CamHandoverSheetForm = ({ onBack }) => {
         status_of_handoversheet: "Approved",
       };
 
-      // Start both API calls
       const statusPromise = updateStatusHandOver(statusPayload).unwrap();
       const updatePromise = updateHandOver(updatedFormData).unwrap();
 
-      // Wait for status update
       await statusPromise;
-      toast.success("Status updated successfully");
+      toast.success("Handover sheet locked.");
 
-      // Wait for handover update
       await updatePromise;
-      toast.success("Handover sheet updated successfully");
+      toast.success("Project created successfully.");
 
       navigate("/cam_dash");
     } catch (error) {
@@ -620,6 +627,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
       } else {
         const errorMessage =
           error?.data?.message || error?.message || "Submission failed";
+        toast.error(errorMessage);
       }
     }
   };
@@ -675,7 +683,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 Email id <span style={{ color: "red" }}>*</span>
               </Typography>
               <Input
-                required
                 fullWidth
                 placeholder="Email"
                 value={formData.customer_details.email}
@@ -694,7 +701,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
               <Input
                 fullWidth
                 placeholder="Aadhar Number"
-                required
                 value={formData.customer_details.adharNumber_of_loa_holder}
                 onChange={(e) =>
                   handleChange(
@@ -713,7 +719,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 PAN Number <span style={{ color: "red" }}>*</span>
               </Typography>
               <Input
-                required
                 fullWidth
                 placeholder="PAN Number"
                 value={formData.customer_details.pan_no}
@@ -809,7 +814,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 }
               />
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <Typography
                 level="body1"
@@ -830,10 +835,8 @@ const CamHandoverSheetForm = ({ onBack }) => {
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 Feeder Code / Substation Code{" "}
-                
               </Typography>
               <Input
-              
                 value={formData.order_details.feeder_code}
                 onChange={(e) =>
                   handleChange("order_details", "feeder_code", e.target.value)
@@ -844,10 +847,8 @@ const CamHandoverSheetForm = ({ onBack }) => {
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 Feeder Name / Substation Names{" "}
-               
               </Typography>
               <Input
-              
                 value={formData.order_details.feeder_name}
                 onChange={(e) =>
                   handleChange("order_details", "feeder_name", e.target.value)
@@ -860,7 +861,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 DISCOM Name <span style={{ color: "red" }}>*</span>
               </Typography>
               <Input
-                required
                 value={formData.order_details.discom_name}
                 onChange={(e) =>
                   handleChange("order_details", "discom_name", e.target.value)
@@ -1162,59 +1162,54 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 Land Availables
               </Typography>
 
-              
-                <Grid item xs={12} sm={6} md={3}>
-                  <Input
-                    name="acres"
-                    type="text"
-                    placeholder="e.g. 5"
-                    value={formData.project_detail?.land?.acres || ""}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        project_detail: {
-                          ...prev.project_detail,
-                          land: {
-                            ...prev.project_detail.land,
-                            acres: e.target.value,
-                          },
+              <Grid item xs={12} sm={6} md={3}>
+                <Input
+                  name="acres"
+                  type="text"
+                  placeholder="e.g. 5"
+                  value={formData.project_detail?.land?.acres || ""}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      project_detail: {
+                        ...prev.project_detail,
+                        land: {
+                          ...prev.project_detail.land,
+                          acres: e.target.value,
                         },
-                      }))
-                    }
-                    fullWidth
-                 
-                  />
-                </Grid>
+                      },
+                    }))
+                  }
+                  fullWidth
+                />
+              </Grid>
 
-                <Grid item xs={12} sm={6} md={3}>
-                  <Autocomplete
-                    options={landTypes}
-                    value={
-                      landTypes.includes(formData.project_detail?.land?.type)
-                        ? formData.project_detail.land.type
-                        : null
-                    }
-                    onChange={(e, value) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        project_detail: {
-                          ...prev.project_detail,
-                          land: {
-                            ...prev.project_detail.land,
-                            type: value,
-                          },
+              <Grid item xs={12} sm={6} md={3}>
+                <Autocomplete
+                  options={landTypes}
+                  value={
+                    landTypes.includes(formData.project_detail?.land?.type)
+                      ? formData.project_detail.land.type
+                      : null
+                  }
+                  onChange={(e, value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      project_detail: {
+                        ...prev.project_detail,
+                        land: {
+                          ...prev.project_detail.land,
+                          type: value,
                         },
-                      }))
-                    }
-                    isOptionEqualToValue={(option, value) => option === value}
-                    placeholder="Land Type"
-                   
-                    sx={{ width: "100%" }}
-                  />
-              
+                      },
+                    }))
+                  }
+                  isOptionEqualToValue={(option, value) => option === value}
+                  placeholder="Land Type"
+                  sx={{ width: "100%" }}
+                />
               </Grid>
             </Grid>
-
 
             <Grid item xs={12} sm={6}>
               <Typography
@@ -1222,7 +1217,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
                 Project Completion Date(As per PPA)
-                
               </Typography>
               <Input
                 fullWidth
@@ -1259,7 +1253,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 }
               />
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 CAM Member Name
@@ -1286,7 +1280,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 onChange={(e) =>
                   handleChange("other_details", "loa_number", e.target.value)
                 }
-                
               />
             </Grid>
 
@@ -1300,7 +1293,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 onChange={(e) =>
                   handleChange("other_details", "ppa_number", e.target.value)
                 }
-               
               />
             </Grid>
           </Grid>

@@ -1,6 +1,8 @@
 import EditNoteIcon from "@mui/icons-material/EditNote";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
+import LockIcon from "@mui/icons-material/Lock";
+import LockOpenIcon from "@mui/icons-material/LockOpen";
 import SearchIcon from "@mui/icons-material/Search";
 import { Chip, CircularProgress } from "@mui/joy";
 import Box from "@mui/joy/Box";
@@ -9,8 +11,6 @@ import Checkbox from "@mui/joy/Checkbox";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
-import LockIcon from '@mui/icons-material/Lock';
-import LockOpenIcon from '@mui/icons-material/LockOpen';
 
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
@@ -18,10 +18,13 @@ import Typography from "@mui/joy/Typography";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
-import { useGetHandOverQuery, useUpdateStatusHandOverMutation } from "../redux/camsSlice";
+import {
+  useGetHandOverQuery,
+  useUpdateHandOverMutation,
+} from "../redux/camsSlice";
 
-import { useGetEntireLeadsQuery } from "../redux/leadsSlice";
 import { toast } from "react-toastify";
+import { useGetEntireLeadsQuery } from "../redux/leadsSlice";
 
 function Dash_cam() {
   const navigate = useNavigate();
@@ -80,6 +83,7 @@ function Dash_cam() {
         ...entry.other_details,
         p_id: entry.p_id,
         status_of_handoversheet: entry.status_of_handoversheet,
+        submitted_by: entry.submitted_by,
         is_locked: entry.is_locked,
       }))
     : [];
@@ -107,81 +111,69 @@ function Dash_cam() {
     }
   }, []);
 
-  const StatusChip = ({ status, _id, user }) => {
-    console.log("ID:", _id);
-    
-  const [currentStatus, setCurrentStatus] = useState(status);
-  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+  const StatusChip = ({ status, is_locked, _id, user, refetch }) => {
+    const isAdmin = user?.role === "admin" || user?.role === "superadmin";
 
-  const isLockedState = currentStatus === "Approved";
+    const [lockedState, setLockedState] = useState(is_locked === "locked");
+    const [updateUnlockHandoversheet, { isLoading }] =
+      useUpdateHandOverMutation();
 
-  const [updateUnlockHandoversheet, { isLoading }] =
-    useUpdateStatusHandOverMutation();
+    useEffect(() => {
+      setLockedState(is_locked === "locked");
+    }, [is_locked]);
 
-  useEffect(() => {
-    setCurrentStatus(status);
-  }, [status]);
-
-  const handleSubmit = async () => {
-    if (!isAdmin) {
-      toast.error(
-        "Permission denied. You do not have access to perform this action.",
-        {
-          icon: "⛔",
-        }
-      );
-      return;
-    }
-
-    if (isLoading || !isLockedState) return;
-
-    try {
-      const res = await updateUnlockHandoversheet({
-      _id,
-        status_of_handoversheet: "unlock",
-      }).unwrap();
-
-      const newStatus = res?.status_of_handoversheet;
-      if (newStatus) {
-        setCurrentStatus(newStatus);
+    const handleSubmit = async () => {
+      if (!isAdmin) {
+        toast.error(
+          "Permission denied. You do not have access to perform this action.",
+          {
+            icon: "⛔",
+          }
+        );
+        return;
       }
 
-      toast.success("Status unlocked 🔒");
+      if (isLoading || !lockedState) return;
 
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
-    } catch (err) {
-      console.error("Error:", err?.data?.message || err.error);
-      toast.error("Failed to update status.");
-    }
+      try {
+        await updateUnlockHandoversheet({ _id, is_locked: "unlock" }).unwrap();
+        toast.success("Handover sheet unlocked 🔓");
+        setLockedState(false);
+        refetch?.();
+      } catch (err) {
+        console.error("Error:", err?.data?.message || err.error);
+        toast.error("Failed to update status.");
+      }
+    };
+
+    const showUnlockIcon = status === "Approved" && is_locked === "unlock";
+
+    return (
+      <Button
+        size="sm"
+        variant="soft"
+        color={showUnlockIcon ? "success" : "danger"}
+        onClick={
+          isAdmin && lockedState && !isLoading ? handleSubmit : undefined
+        }
+        sx={{
+          minWidth: 36,
+          height: 36,
+          padding: 0,
+          fontWeight: 500,
+          cursor: isAdmin && lockedState && !isLoading ? "pointer" : "default",
+        }}
+      >
+        {isLoading ? (
+          <CircularProgress size="sm" />
+        ) : showUnlockIcon ? (
+          <LockOpenIcon sx={{ fontSize: "1rem" }} />
+        ) : (
+          <LockIcon sx={{ fontSize: "1rem" }} />
+        )}
+      </Button>
+    );
   };
-
-  return (
-    <Button
-      size="sm"
-      variant="soft"
-      color={isLockedState ? "danger" : "success"}
-      onClick={isAdmin && isLockedState && !isLoading ? handleSubmit : undefined}
-      sx={{
-        minWidth: 36,
-        height: 36,
-        padding: 0,
-        fontWeight: 500,
-        cursor: isAdmin && isLockedState && !isLoading ? "pointer" : "default",
-      }}
-    >
-      {isLoading ? (
-        <CircularProgress size="sm" />
-      ) : isLockedState ? (
-        <LockIcon sx={{ fontSize: "1rem" }} />
-      ) : (
-        <LockOpenIcon sx={{ fontSize: "1rem" }} />
-      )}
-    </Button>
-  );
-};
-
 
   // const RowMenu = ({ currentPage, p_id }) => {
   //   console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
@@ -329,9 +321,17 @@ function Dash_cam() {
   const filteredAndSortedData = useMemo(() => {
     if (!Array.isArray(combinedData)) return [];
 
+    if (!user || !user.name) return [];
+
     return combinedData
       .filter((project) => {
-        if (!project) return false; // safeguard
+        if (!project) return false;
+        const submittedBy = project.submitted_by?.trim() || "";
+        const userName = user.name.trim();
+        const userRole = user.role?.toLowerCase();
+
+        const isAdmin = userRole === "admin" || userRole === "superadmin";
+        const matchesUser = isAdmin || submittedBy === userName;
 
         const matchesSearchQuery = ["code", "customer", "state"].some((key) =>
           project[key]
@@ -345,9 +345,9 @@ function Dash_cam() {
       .sort((a, b) => {
         const dateA = new Date(a?.createdAt || 0);
         const dateB = new Date(b?.createdAt || 0);
-        return dateB - dateA;
+        return dateA - dateB;
       });
-  }, [combinedData, searchQuery]);
+  }, [combinedData, searchQuery, user]);
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -404,9 +404,9 @@ function Dash_cam() {
     currentPage * itemsPerPage
   );
 
-const draftPayments = paginatedPayments.filter((project) =>
-  ["submitted", "Approved",].includes(project.status_of_handoversheet)
-);
+  const draftPayments = paginatedPayments.filter((project) =>
+    ["submitted", "Approved"].includes(project.status_of_handoversheet)
+  );
 
   // console.log(paginatedPayments);
   // console.log("Filtered and Sorted Data:", filteredAndSortedData);
@@ -672,6 +672,7 @@ const draftPayments = paginatedPayments.filter((project) =>
                   >
                     <StatusChip
                       status={project.status_of_handoversheet}
+                      is_locked={project.is_locked}
                       _id={project._id}
                       user={user}
                       refetch={refetch}
@@ -685,7 +686,11 @@ const draftPayments = paginatedPayments.filter((project) =>
                       textAlign: "center",
                     }}
                   >
-                    <RowMenu currentPage={currentPage} p_id={project.p_id} _id = {project._id} />
+                    <RowMenu
+                      currentPage={currentPage}
+                      p_id={project.p_id}
+                      _id={project._id}
+                    />
                   </td>
                 </tr>
               ))
