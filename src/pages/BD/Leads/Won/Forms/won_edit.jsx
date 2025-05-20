@@ -11,9 +11,9 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import Sidebar from "../../../../../component/Partials/Sidebar";
 import Header from "../../../../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
-import FollowEdit_lead from "../../../../../component/Forms/followup_edit";
+import WonEdit_lead from "../../../../../component/Forms/won_edit";
 
-function Edit_Followup_Leads() {
+function Edit_Won_Leads() {
   const navigate = useNavigate();
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -81,13 +81,13 @@ function Edit_Followup_Leads() {
                 sx={{ fontSize: 12, fontWeight: 500 }}
                 onClick={() => navigate("/leads")}
               >
-                Followup Leads
+                Won Leads
               </Link>
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Edit Followup Leads
+                Edit Won Leads
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -102,7 +102,7 @@ function Edit_Followup_Leads() {
               justifyContent: "space-between",
             }}
           >
-            <FollowEdit_lead />
+            <WonEdit_lead />
           </Box>
 
           {/* <OrderTable /> */}
@@ -112,4 +112,4 @@ function Edit_Followup_Leads() {
     </CssVarsProvider>
   );
 }
-export default Edit_Followup_Leads;
+export default Edit_Won_Leads;

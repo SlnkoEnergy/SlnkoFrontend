@@ -74,7 +74,7 @@ function Dash_cam() {
         ...entry.order_details,
         ...entry.project_detail,
         ...entry.commercial_details,
-        ...entry.attached_details,
+        ...entry.other_details,
         p_id: entry.p_id,
         status_of_handoversheet: entry.status_of_handoversheet,
       }))
@@ -86,6 +86,7 @@ function Dash_cam() {
     return {
       ...handoverItem,
       scheme: matchingLead?.scheme || "-",
+     
     };
   });
 
@@ -614,7 +615,7 @@ function Dash_cam() {
                 "State",
                 "Type",
                 "Capacity(AC/DC)",
-                "Slnko Service Charges (with GST)",
+                "Slnko Service Charges (w/o GST)",
                 "Action",
               ].map((header, index) => (
                 <th

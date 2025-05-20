@@ -14,6 +14,7 @@ import Box from "@mui/joy/Box";
 import Card from "@mui/joy/Card";
 import GlobalStyles from "@mui/joy/GlobalStyles";
 import IconButton from "@mui/joy/IconButton";
+import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import Input from "@mui/joy/Input";
 import List from "@mui/joy/List";
 import ListItem from "@mui/joy/ListItem";
@@ -320,6 +321,41 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
+            {/* Ops Section */}
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    
+                    <SettingsSuggestIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">Internal Ops</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List>
+                  <ListItem>
+                    <ListItemButton onClick={() => navigate("/handover_dash")}>
+                      HandOver Approval
+                    </ListItemButton>
+                  </ListItem>
+                  
+                </List>
+              </Toggler>
+            </ListItem>
+
             {/* CAM Section */}
             <ListItem nested>
               <Toggler
@@ -344,11 +380,6 @@ function Sidebar() {
                 )}
               >
                 <List>
-                  <ListItem>
-                    <ListItemButton onClick={() => navigate("/handover_dash")}>
-                      HandOver Approval
-                    </ListItemButton>
-                  </ListItem>
                   <ListItem sx={{ mt: 0.5 }}>
                     <ListItemButton onClick={() => navigate("/cam_dash")}>
                       Dashboard
@@ -1028,6 +1059,43 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
+            {/* Ops Section */}
+            {user?.name === "Prachi Singh" && (
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    
+                    <SettingsSuggestIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">Internal Ops</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List>
+                  <ListItem>
+                    <ListItemButton onClick={() => navigate("/handover_dash")}>
+                      HandOver Approval
+                    </ListItemButton>
+                  </ListItem>
+                  
+                </List>
+              </Toggler>
+            </ListItem>
+            )}
+
             {/* CAM */}
             <ListItem nested>
               <Toggler
@@ -1057,15 +1125,6 @@ function Sidebar() {
                       Dashboard
                     </ListItemButton>
                   </ListItem>
-                  {user?.name === "Prachi Singh" && (
-                    <ListItem>
-                      <ListItemButton
-                        onClick={() => navigate("/handover_dash")}
-                      >
-                        HandOver Approval
-                      </ListItemButton>
-                    </ListItem>
-                  )}
                 </List>
               </Toggler>
             </ListItem>

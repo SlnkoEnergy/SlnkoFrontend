@@ -128,6 +128,11 @@ const Create_lead = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
+     if (name === "capacity" && Number(value) < 0) {
+    return;
+  }
+
+
     if (name.includes(".")) {
       const [parent, child] = name.split(".");
       setFormData((prev) => ({
@@ -332,9 +337,11 @@ const Create_lead = () => {
           <Grid xs={12} sm={6}>
             <FormLabel>Capacity</FormLabel>
             <Input
+              type="number"
               name="capacity"
               value={formData.capacity}
               onChange={handleChange}
+              min={0}
             />
           </Grid>
           <Grid xs={12} sm={6}>

@@ -79,7 +79,7 @@ function Edit_Initial_Leads() {
                 color="neutral"
                 href=""
                 sx={{ fontSize: 12, fontWeight: 500 }}
-                onClick={() => navigate("/all-project")}
+                onClick={() => navigate("/leads")}
               >
                 Initial Leads
               </Link>

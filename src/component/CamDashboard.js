@@ -9,15 +9,19 @@ import Checkbox from "@mui/joy/Checkbox";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
+import LockIcon from '@mui/icons-material/Lock';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
+
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
-import { useGetHandOverQuery } from "../redux/camsSlice";
+import { useGetHandOverQuery, useUpdateStatusHandOverMutation } from "../redux/camsSlice";
 
 import { useGetEntireLeadsQuery } from "../redux/leadsSlice";
+import { toast } from "react-toastify";
 
 function Dash_cam() {
   const navigate = useNavigate();
@@ -73,9 +77,10 @@ function Dash_cam() {
         ...entry.order_details,
         ...entry.project_detail,
         ...entry.commercial_details,
-        ...entry.attached_details,
+        ...entry.other_details,
         p_id: entry.p_id,
         status_of_handoversheet: entry.status_of_handoversheet,
+        is_locked: entry.is_locked,
       }))
     : [];
 
@@ -102,79 +107,81 @@ function Dash_cam() {
     }
   }, []);
 
-  // const StatusChip = ({ status, p_id, user }) => {
-  //   const [currentStatus, setCurrentStatus] = useState(status);
-  //   const [isLocked, setIsLocked] = useState(false);
+  const StatusChip = ({ status, _id, user }) => {
+    console.log("ID:", _id);
+    
+  const [currentStatus, setCurrentStatus] = useState(status);
+  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
 
-  //   const isLockedState = currentStatus === "locked";
-  //   const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+  const isLockedState = currentStatus === "Approved";
 
-  //   const [updateUnlockHandoversheet, { isLoading }] =
-  //     useUpdateUnlockHandoversheetMutation();
+  const [updateUnlockHandoversheet, { isLoading }] =
+    useUpdateStatusHandOverMutation();
 
-  //   useEffect(() => {
-  //     setCurrentStatus(status);
-  //   }, [status]);
+  useEffect(() => {
+    setCurrentStatus(status);
+  }, [status]);
 
-  //   const handleSubmit = async () => {
-  //     if (!isAdmin) {
-  //       toast.error(
-  //         "Permission denied. You do not have access to perform this action.",
-  //         {
-  //           icon: "⛔",
-  //         }
-  //       );
-  //       return;
-  //     }
+  const handleSubmit = async () => {
+    if (!isAdmin) {
+      toast.error(
+        "Permission denied. You do not have access to perform this action.",
+        {
+          icon: "⛔",
+        }
+      );
+      return;
+    }
 
-  //     if (isLoading) return;
+    if (isLoading || !isLockedState) return;
 
-  //     try {
-  //       const res = await updateUnlockHandoversheet({
-  //         p_id,
-  //         emp_id: user.emp_id,
-  //       }).unwrap();
+    try {
+      const res = await updateUnlockHandoversheet({
+      _id,
+        status_of_handoversheet: "unlock",
+      }).unwrap();
 
-  //       const newStatus = res?.status_of_handoversheet;
-  //       if (newStatus) {
-  //         setCurrentStatus(newStatus);
-  //       }
+      const newStatus = res?.status_of_handoversheet;
+      if (newStatus) {
+        setCurrentStatus(newStatus);
+      }
 
-  //       toast.success("Status unlocked 🔒");
+      toast.success("Status unlocked 🔒");
 
-  //       setIsLocked(true);
-  //       setTimeout(() => {
-  //         window.location.reload();
-  //       }, 500);
-  //     } catch (err) {
-  //       console.error("Error:", err?.data?.message || err.error);
-  //     }
-  //   };
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    } catch (err) {
+      console.error("Error:", err?.data?.message || err.error);
+      toast.error("Failed to update status.");
+    }
+  };
 
-  //   return (
-  //     <Button
-  //       size="sm"
-  //       variant="soft"
-  //       color={isLockedState ? "danger" : "success"}
-  //       onClick={isAdmin && !isLoading ? handleSubmit : undefined}
-  //       sx={{
-  //         minWidth: 36,
-  //         height: 36,
-  //         padding: 0,
-  //         fontWeight: 500,
-  //         cursor: isAdmin && !isLoading ? "pointer" : "default",
-  //       }}
-  //     >
-  //       {isLoading ? (
-  //         <CircularProgress size="sm" />
-  //       ) : isLocked ? (
-  //         <LockIcon sx={{ fontSize: "1rem" }} />
-  //       ) : (
-  //         <LockOpenIcon sx={{ fontSize: "1rem" }} />
-  //       )}
-  //     </Button>
-  //   );
-  // };
+  return (
+    <Button
+      size="sm"
+      variant="soft"
+      color={isLockedState ? "danger" : "success"}
+      onClick={isAdmin && isLockedState && !isLoading ? handleSubmit : undefined}
+      sx={{
+        minWidth: 36,
+        height: 36,
+        padding: 0,
+        fontWeight: 500,
+        cursor: isAdmin && isLockedState && !isLoading ? "pointer" : "default",
+      }}
+    >
+      {isLoading ? (
+        <CircularProgress size="sm" />
+      ) : isLockedState ? (
+        <LockIcon sx={{ fontSize: "1rem" }} />
+      ) : (
+        <LockOpenIcon sx={{ fontSize: "1rem" }} />
+      )}
+    </Button>
+  );
+};
+
 
   // const RowMenu = ({ currentPage, p_id }) => {
   //   console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
@@ -397,9 +404,10 @@ function Dash_cam() {
     currentPage * itemsPerPage
   );
 
-  const draftPayments = paginatedPayments.filter(
-    (project) => project.status_of_handoversheet === "submitted"
-  );
+const draftPayments = paginatedPayments.filter((project) =>
+  ["submitted", "Approved",].includes(project.status_of_handoversheet)
+);
+
   // console.log(paginatedPayments);
   // console.log("Filtered and Sorted Data:", filteredAndSortedData);
 
@@ -522,7 +530,7 @@ function Dash_cam() {
                 "Type",
                 "Capacity(AC/DC)",
                 "Slnko Service Charges (with GST)",
-                // "Status",
+                "Status",
                 "Action",
               ].map((header, index) => (
                 <th
@@ -652,10 +660,10 @@ function Dash_cam() {
                       textAlign: "center",
                     }}
                   >
-                    {project.service || "-"}
+                    {project.total_gst || "-"}
                   </td>
 
-                  {/* <td
+                  <td
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
@@ -664,11 +672,11 @@ function Dash_cam() {
                   >
                     <StatusChip
                       status={project.status_of_handoversheet}
-                      p_id={project.p_id}
+                      _id={project._id}
                       user={user}
                       refetch={refetch}
                     />
-                  </td> */}
+                  </td>
 
                   <td
                     style={{

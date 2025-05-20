@@ -110,6 +110,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
       cam_member_name: "",
       service: "",
       slnko_basic: "",
+      total_gst: "",
       billing_type: "",
       project_status: "incomplete",
       remark: "",
@@ -294,25 +295,29 @@ const OpsHandoverSheetForm = ({ onBack }) => {
     }));
   }, [handoverData]);
 
-  const calculateDcCapacity = (ac, overloadingPercent) => {
-    const acValue = parseFloat(ac);
-    const overloadingValue = parseFloat(overloadingPercent) / 100;
-    if (!isNaN(acValue) && !isNaN(overloadingValue)) {
-      return (acValue * (1 + overloadingValue)).toFixed(3);
-    }
-    return "";
-  };
+const calculateDcCapacity = (ac, overloadingPercent) => {
+  const acValue = parseFloat(ac);
+  const overloadingValue = parseFloat(overloadingPercent) / 100;
+  if (!isNaN(acValue) && !isNaN(overloadingValue)) {
+    return Math.round(acValue * (1 + overloadingValue));
+  }
+  return "";
+};
 
-  const calculateSlnkoBasic = (kwp, slnko_basic) => {
-    const kwpValue = parseFloat(kwp);
-    const serviceValue = parseFloat(slnko_basic);
-    if (!isNaN(kwpValue) && !isNaN(serviceValue)) {
-      return (kwpValue * serviceValue * 1_000_000).toFixed(0);
-    }
-    return "";
-  };
+const calculateSlnkoBasic = (kwp, slnko_basic) => {
+  const kwpValue = parseFloat(kwp);
+  const serviceValue = parseFloat(slnko_basic);
+  if (!isNaN(kwpValue) && !isNaN(serviceValue)) {
+    return (kwpValue * serviceValue).toFixed(0);
+  }
+  return "";
+};
+
 
   useEffect(() => {
+    const serviceAmount = parseFloat(formData?.other_details?.service);
+    const billingType = formData?.other_details?.billing_type;
+
     const updatedDcCapacity = calculateDcCapacity(
       formData.project_detail.project_kwp,
       formData.project_detail.overloading
@@ -332,10 +337,52 @@ const OpsHandoverSheetForm = ({ onBack }) => {
         service: calculated,
       },
     }));
+//    if (!isNaN(serviceAmount)) {
+//   let gstPercentage = 0;
+//   if (billingType === "Composite") {
+//     gstPercentage = 13.8;
+//   } else if (billingType === "Individual") {
+//     gstPercentage = 18;
+//   }
+
+//   if (gstPercentage > 0) {
+//     const totalGST = Math.round(serviceAmount * (1 + gstPercentage / 100));
+//     setFormData((prev) => ({
+//       ...prev,
+//       other_details: {
+//         ...prev.other_details,
+//         total_gst: totalGST,
+//       },
+//     }));
+//   }
+// }
+
+  if (!isNaN(serviceAmount)) {
+      let gstPercentage = 0;
+      if (billingType === "Composite") {
+        gstPercentage = 13.8;
+      } else if (billingType === "Individual") {
+        gstPercentage = 18;
+      }
+
+      if (gstPercentage > 0) {
+        const totalGST = (serviceAmount * (1 + gstPercentage / 100)).toFixed(0);
+        setFormData((prev) => ({
+          ...prev,
+          other_details: {
+            ...prev.other_details,
+            total_gst: totalGST,
+          },
+        }));
+      }
+    }
+
   }, [
     formData.project_detail.project_kwp,
     formData.project_detail.overloading,
     formData.other_details.slnko_basic,
+    formData?.other_details?.billing_type,
+    formData?.other_details?.service,
   ]);
 
   const [updateHandOver, { isLoading: isUpdating }] =
@@ -486,6 +533,24 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 isOptionEqualToValue={(option, value) => option === value}
                 placeholder="Billing Type"
                 sx={{ width: "100%" }}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                {formData?.other_details?.billing_type === "Composite"
+                  ? "Total GST (For Composite)"
+                  : formData?.other_details?.billing_type === "Individual"
+                    ? "Total GST (For Individual)"
+                    : "Total GST"}
+              </Typography>
+              <Input
+                fullWidth
+                value={formData?.other_details?.total_gst || ""}
+                InputProps={{
+                  readOnly: true,
+                }}
+                placeholder="Calculated Total GST"
               />
             </Grid>
           </Grid>

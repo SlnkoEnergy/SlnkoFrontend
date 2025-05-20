@@ -215,6 +215,14 @@ export const leadsApi = createApi({
       }),
       invalidatesTags: ["Lead"],
     }),
+    updateWONLeads: builder.mutation({
+      query: ({ _id, updatedLead }) => ({
+        url: `edit-won/${_id}`,
+        method: "PUT",
+        body: updatedLead,
+      }),
+      invalidatesTags: ["Lead"],
+    }),
 
     updateInitial: builder.mutation({
       query: (newInitial) => ({
@@ -317,5 +325,6 @@ export const {
   // useAddHandOverMutation,
   useGetMasterInverterQuery,
   useGetModuleMasterQuery,
+  useUpdateWONLeadsMutation,
   // useGetHandOverQuery,
 } = leadsApi;

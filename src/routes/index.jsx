@@ -90,6 +90,7 @@ import Add_BOM from "../pages/Eng/Forms/BOM_Addn";
 import ModuleSheet from "../pages/Eng/ModuleDashboard";
 import Update_Bill from "../pages/SCM/EditBill";
 import PrivateRoute from "./PrivateRoute";
+import Edit_Won_Leads from "../pages/BD/Leads/Won/Forms/won_edit";
 
 function index() {
   return (
@@ -585,6 +586,14 @@ function index() {
         element={
           <PrivateRoute>
             <Edit_Warm_Leads />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/edit_won"
+        element={
+          <PrivateRoute>
+            <Edit_Won_Leads />
           </PrivateRoute>
         }
       />

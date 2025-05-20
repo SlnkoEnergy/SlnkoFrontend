@@ -15,6 +15,7 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
+import InfoOutlined from "@mui/icons-material/InfoOutlined";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
@@ -22,7 +23,10 @@ import Typography from "@mui/joy/Typography";
 import ManageHistoryIcon from "@mui/icons-material/ManageHistory";
 import NextPlanIcon from "@mui/icons-material/NextPlan";
 import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
+// import EditSquareIcon from '@mui/icons-material/EditSquare';
+
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import EditNoteIcon from "@mui/icons-material/EditNote";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../../assets/Lotties/animation-loading.json";
@@ -37,6 +41,7 @@ import {
   Option,
   Select,
   Stack,
+  Tooltip,
 } from "@mui/joy";
 import { forwardRef, useCallback, useImperativeHandle } from "react";
 import { toast } from "react-toastify";
@@ -50,39 +55,15 @@ const StandByRequest = forwardRef((props, ref) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
-  const [projects, setProjects] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
-  const [mergedData, setMergedData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedLead, setSelectedLead] = useState(null);
+  const [selectedStatus, setSelectedStatus] = useState("");
   const [user, setUser] = useState(null);
 
   const { data: getLead = [], isLoading, error } = useGetWonLeadsQuery();
   const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
-
-  // const LeadStatus = ({ lead }) => {
-  //   const { loi, ppa, loa, other_remarks, token_money } = lead;
-
-  //   // Determine the initial status
-
-  //   const isWarmStatus =
-  //     (!loi || loi === "No" || loi === "Yes") &&
-  //     (!ppa || ppa === "Yes" || ppa === "No") &&
-  //     (!loa || loa === "Yes" || loa === "No") &&
-  //     (!other_remarks || other_remarks === "") &&
-  //     (!token_money || token_money === "Yes");
-
-  //   return (
-  //     <Chip
-  //       color="neutral"
-  //       variant="soft"
-  //       sx={{ backgroundColor: "#C8E6C9", color: "#000" }}
-  //     >
-  //       won
-  //     </Chip>
-  //   );
-  // };
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userDetails");
@@ -119,6 +100,8 @@ const StandByRequest = forwardRef((props, ref) => {
     [getHandOverSheet]
   );
 
+  // console.log("HandOverSheet:", HandOverSheet);
+
   const status_handOver = (leadId) => {
     const matchedHandOver = HandOverSheet.find((sheet) => sheet.id === leadId);
 
@@ -126,30 +109,20 @@ const StandByRequest = forwardRef((props, ref) => {
       return {
         status: "Not Found",
         submittedBy: "Not Found",
+        comment: "Not Found",
       };
     }
 
     const submittedBy = matchedHandOver.submitted_by || "Not Found";
     const status = matchedHandOver.status_of_handoversheet || "Not Found";
+    const comment = matchedHandOver.comment || "Not Found";
 
     return {
       status,
       submittedBy,
+      comment,
     };
   };
-
-  // const status_handOver = (leadId) => {
-  //   const matchedHandOver = HandOverSheet.find((sheet) => sheet.id === leadId);
-  //   const attachedDetails = matchedHandOver?.attached_details;
-
-  //   const status = attachedDetails?.status || "Not Found"; // assuming `status` is stored here
-  //   const submittedBy = attachedDetails?.submitted_by || "Not Found";
-
-  //   return {
-  //     status: status.toLowerCase(),
-  //     submittedBy,
-  //   };
-  // };
 
   const renderFilters = () => (
     <>
@@ -161,6 +134,22 @@ const StandByRequest = forwardRef((props, ref) => {
           onChange={handleDateFilter}
           style={{ width: "200px" }}
         />
+      </FormControl>
+      <FormControl size="sm">
+        <FormLabel>Select Handover Status</FormLabel>
+        <Select
+          value={selectedStatus}
+          onChange={(e, value) => setSelectedStatus(value)}
+          placeholder="Choose status"
+          style={{ width: "200px" }}
+        >
+          <Option value="">All</Option>
+          <Option value="submitted">Submitted</Option>
+          <Option value="approved">Approved</Option>
+          <Option value="rejected">Rejected</Option>
+          <Option value="draft">In Process</Option>
+          <Option value="not_found">Pending</Option>
+        </Select>
       </FormControl>
     </>
   );
@@ -214,6 +203,7 @@ const StandByRequest = forwardRef((props, ref) => {
             onClick={() => {
               const page = currentPage;
               const leadId = String(id);
+
               // const projectID = Number(p_id);
               setOpen(true);
               localStorage.setItem("stage_next3", leadId);
@@ -308,10 +298,28 @@ const StandByRequest = forwardRef((props, ref) => {
     );
   };
 
+  const EditHandOver = ({ currentPage, id }) => {
+    // console.log("currentPage:", currentPage, "p_id:", p_id);
+
+    return (
+      <>
+        <IconButton
+          color="primary"
+          onClick={() => {
+            localStorage.setItem("edit_won_handover", id);
+            navigate(`/edit_won?page=${currentPage}&id=${id}`);
+          }}
+        >
+          <EditNoteIcon />
+        </IconButton>
+      </>
+    );
+  };
+
   const formatDate = (dateString) => {
-    if (!dateString) return ""; // Return empty if date is null or undefined
+    if (!dateString) return "";
     const date = new Date(dateString);
-    return isNaN(date.getTime()) ? "" : date.toISOString().split("T")[0]; // Validate date before formatting
+    return isNaN(date.getTime()) ? "" : date.toISOString().split("T")[0];
   };
 
   const handleSearch = (e) => {
@@ -323,22 +331,43 @@ const StandByRequest = forwardRef((props, ref) => {
   };
 
   // const filteredData = useMemo(() => {
+  //   if (!user || !user.name) return [];
+
   //   return leads
   //     .filter((lead) => {
-  //       const matchesQuery = ["id", "c_name", "mobile", "state"].some((key) =>
-  //         lead[key]?.toLowerCase().includes(searchQuery)
-  //       );
+  //       const submittedBy = lead.submitted_by?.trim() || "";
+  //       const userName = user.name.trim();
+  //       const userRole = user.role?.toLowerCase();
+
+  //       const isAdmin =
+  //         userRole === "admin" ||
+  //         userRole === "superadmin" ||
+  //         userName === "Guddu Rani Dubey" ||
+  //         userName === "Prachi Singh";
+
+  //       const matchesUser = isAdmin || submittedBy === userName;
+
+  //       const statusInfo = status_handOver(lead.id);
+  //       const statusText = statusInfo.status?.toLowerCase() || "";
+
+  //       const matchesQuery =
+  //         ["id", "c_name", "mobile", "state", "submitted_by"].some((key) =>
+  //           lead[key]?.toLowerCase().includes(searchQuery)
+  //         ) || statusText.includes(searchQuery);
+
   //       const matchesDate = selectedDate
-  //         ? formatDate(lead.entry_date) === selectedDate
+  //         ? formatDate(lead.entry_date).toLocaleDateString() ===
+  //           formatDate(selectedDate).toLocaleDateString()
   //         : true;
-  //       return matchesQuery && matchesDate;
+
+  //       return matchesUser && matchesQuery && matchesDate;
   //     })
   //     .sort((a, b) => {
-  //       if (!a.id) return 1;
-  //       if (!b.id) return -1;
-  //       return String(b.id).localeCompare(String(a.id));
+  //       const dateA = new Date(a.entry_date);
+  //       const dateB = new Date(b.entry_date);
+  //       return dateB - dateA;
   //     });
-  // }, [leads, searchQuery, selectedDate]);
+  // }, [leads, searchQuery, selectedDate, user]);
 
   const filteredData = useMemo(() => {
     if (!user || !user.name) return [];
@@ -354,32 +383,35 @@ const StandByRequest = forwardRef((props, ref) => {
           userRole === "superadmin" ||
           userName === "Guddu Rani Dubey" ||
           userName === "Prachi Singh";
+
         const matchesUser = isAdmin || submittedBy === userName;
 
-        const matchesQuery = [
-          "id",
-          "c_name",
-          "mobile",
-          "state",
-          "submitted_by",
-        ].some((key) => lead[key]?.toLowerCase().includes(searchQuery));
+        const statusInfo = status_handOver(lead.id);
+        const statusText = statusInfo.status?.toLowerCase() || "";
+
+        const matchesQuery =
+          ["id", "c_name", "mobile", "state", "submitted_by"].some((key) =>
+            lead[key]?.toLowerCase().includes(searchQuery)
+          ) || statusText.includes(searchQuery);
 
         const matchesDate = selectedDate
           ? formatDate(lead.entry_date).toLocaleDateString() ===
             formatDate(selectedDate).toLocaleDateString()
           : true;
 
-        return matchesUser && matchesQuery && matchesDate;
+        const matchesStatus = selectedStatus
+          ? (selectedStatus === "not_found" && statusText === "not found") ||
+            statusText === selectedStatus
+          : true;
+
+        return matchesUser && matchesQuery && matchesDate && matchesStatus;
       })
       .sort((a, b) => {
-        const dateA = formatDate(a.entry_date);
-        const dateB = formatDate(b.entry_date);
-
-        if (!dateA.id) return 1;
-        if (!dateB.id) return -1;
+        const dateA = new Date(a.entry_date);
+        const dateB = new Date(b.entry_date);
         return dateB - dateA;
       });
-  }, [leads, searchQuery, selectedDate, user]);
+  }, [leads, searchQuery, selectedDate, selectedStatus, user]);
 
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
@@ -606,6 +638,7 @@ const StandByRequest = forwardRef((props, ref) => {
                   ></th>
                   {[
                     "",
+                    "",
                     "Lead Id",
                     "Customer",
                     "Mobile",
@@ -615,6 +648,7 @@ const StandByRequest = forwardRef((props, ref) => {
                     "Substation Distance(KM)",
                     "Date",
                     "HandOver Status",
+                    // "comment",
                     "HandOver submission",
                     "Action",
                   ].map((header, idx) => (
@@ -662,6 +696,7 @@ const StandByRequest = forwardRef((props, ref) => {
 
                     {[
                       <ViewHandOver currentPage={currentPage} id={lead.id} />,
+                      <EditHandOver currentPage={currentPage} id={lead.id} />,
                       <span
                         key="id"
                         onClick={() => handleOpenModal(lead)}
@@ -676,6 +711,7 @@ const StandByRequest = forwardRef((props, ref) => {
                       lead.capacity || "-",
                       lead.distance || "-",
                       lead.entry_date || "-",
+
                       <Chip
                         variant="soft"
                         color={
@@ -689,6 +725,14 @@ const StandByRequest = forwardRef((props, ref) => {
                                 : "neutral"
                         }
                         size="sm"
+                        endDecorator={
+                          status_handOver(lead.id).status === "Rejected" &&
+                          status_handOver(lead.id).comment !== "Not Found" ? (
+                            <Tooltip title={status_handOver(lead.id).comment}>
+                              <InfoOutlined fontSize="small" />
+                            </Tooltip>
+                          ) : null
+                        }
                       >
                         {status_handOver(lead.id).status === "submitted" ||
                         status_handOver(lead.id).status === "Approved"
@@ -696,10 +740,10 @@ const StandByRequest = forwardRef((props, ref) => {
                           : status_handOver(lead.id).status === "Rejected"
                             ? "Rejected"
                             : status_handOver(lead.id).status === "draft"
-                              ? "Drafted"
+                              ? "In Process"
                               : "Pending"}
                       </Chip>,
-
+                     
                       status_handOver(lead.id).submittedBy || "-",
                       <RowMenu currentPage={currentPage} id={lead.id} />,
                     ].map((data, idx) => (
@@ -764,7 +808,7 @@ const StandByRequest = forwardRef((props, ref) => {
                         : status_handOver(lead.id).status === "Rejected"
                           ? "Rejected"
                           : status_handOver(lead.id).status === "draft"
-                            ? "Drafted"
+                            ? "In Process"
                             : "Pending"}
                     </Chip>
 
@@ -824,7 +868,7 @@ const StandByRequest = forwardRef((props, ref) => {
                                   : status_handOver.status === "Rejected"
                                     ? "Rejected"
                                     : status_handOver.status === "draft"
-                                      ? "Drafted"
+                                      ? "In Process"
                                       : "Pending"}
                               </Chip>
                             ),

@@ -16,14 +16,14 @@ import {
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import {useGetFollowupLeadsQuery, useGetInitialLeadsQuery, useGetLeadsQuery, useUpdateFollowupLeadsMutation, useUpdateLeadsMutation } from "../../redux/leadsSlice";
+import {useGetFollowupLeadsQuery, useGetInitialLeadsQuery, useGetLeadsQuery, useGetWarmLeadsQuery, useGetWonLeadsQuery, useUpdateFollowupLeadsMutation, useUpdateLeadsMutation, useUpdateWARMupLeadsMutation, useUpdateWONLeadsMutation } from "../../redux/leadsSlice";
 
-const FollowEdit_lead = () => {
+const WonEdit_lead = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const [updateLead, { isLoading: isUpdating }] = useUpdateFollowupLeadsMutation();
-  const { data: getLead, isLoading, error } = useGetFollowupLeadsQuery();
+  const [updateLead, { isLoading: isUpdating }] = useUpdateWONLeadsMutation();
+  const { data: getLead, isLoading, error } = useGetWonLeadsQuery();
   const [user, setUser] = useState(null);
   const [formData, setFormData] = useState({});
 
@@ -63,7 +63,7 @@ const FollowEdit_lead = () => {
       return;
     }
 
-    const LeadId = localStorage.getItem("edit_follow");
+    const LeadId = localStorage.getItem("edit_won_handover");
 
     if (!LeadId) {
       console.error("Invalid Lead ID retrieved from localStorage.");
@@ -95,7 +95,6 @@ const FollowEdit_lead = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
      if (name === "capacity" && Number(value) < 0) {
     return;
   }
@@ -116,49 +115,49 @@ const FollowEdit_lead = () => {
   };
   
 
-  const handleSubmit = async (e) => {
-     e.preventDefault();
-     if (!formData || !formData._id) {
-       toast.error("Lead ID is missing. Cannot update project.");
-       return;
-     }
-   
-     const formatDateToDDMMYYYY = (dateString) => {
-       if (!dateString) return "";
-       const parts = dateString.split("-");
-       if (parts.length !== 3) return dateString;
-       return `${parts[2]}-${parts[1]}-${parts[0]}`; // Convert YYYY-MM-DD to DD-MM-YYYY
-     };
-   
-     try {
-       const updatedLeadData = {
-         ...formData,
-         entry_date: formatDateToDDMMYYYY(formData.entry_date), // Convert before sending to API
-       };
-   
-       const response = await updateLead({
-         _id: formData._id,
-         updatedLead: updatedLeadData,
-       }).unwrap();
-   
-       console.log("API Response from updateLead:", response); // ✅ Debug API response
-   
-       if (response?.data) {
-         setFormData({
-           ...response.data,
-           entry_date: formatDateToDDMMYYYY(response.data.entry_date), // Ensure UI shows DD-MM-YYYY
-         });
-       } else {
-         console.warn("No updated data received from API");
-       }
-   
-       toast.success(response.msg || "Lead updated successfully.");
-       navigate("/leads");
-     } catch (err) {
-       console.error("Update Error:", err);
-       toast.error("Oops! Something went wrong.");
-     }
-   };
+ const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData || !formData._id) {
+      toast.error("Lead ID is missing. Cannot update project.");
+      return;
+    }
+  
+    const formatDateToDDMMYYYY = (dateString) => {
+      if (!dateString) return "";
+      const parts = dateString.split("-");
+      if (parts.length !== 3) return dateString;
+      return `${parts[2]}-${parts[1]}-${parts[0]}`; // Convert YYYY-MM-DD to DD-MM-YYYY
+    };
+  
+    try {
+      const updatedLeadData = {
+        ...formData,
+        entry_date: formatDateToDDMMYYYY(formData.entry_date), // Convert before sending to API
+      };
+  
+      const response = await updateLead({
+        _id: formData._id,
+        updatedLead: updatedLeadData,
+      }).unwrap();
+  
+      console.log("API Response from updateLead:", response); // ✅ Debug API response
+  
+      if (response?.data) {
+        setFormData({
+          ...response.data,
+          entry_date: formatDateToDDMMYYYY(response.data.entry_date), // Ensure UI shows DD-MM-YYYY
+        });
+      } else {
+        console.warn("No updated data received from API");
+      }
+  
+      toast.success(response.msg || "Lead updated successfully.");
+      navigate("/leads");
+    } catch (err) {
+      console.error("Update Error:", err);
+      toast.error("Oops! Something went wrong.");
+    }
+  };
   
   
 
@@ -175,7 +174,7 @@ const FollowEdit_lead = () => {
         }}
       >
         <Typography level="h3" mb={4} textAlign="center" fontWeight="bold">
-          Update Initial Lead
+          Update Won Lead
         </Typography>
         <form onSubmit={handleSubmit}>
           <Grid container spacing={3}>
@@ -228,7 +227,8 @@ const FollowEdit_lead = () => {
               </Select>
             </Grid>
   
-            {formData.source && sourceOptions[formData.source].length > 0 && (
+            {formData.source && sourceOptions[formData.source]?.length > 0 && (
+
               <Grid xs={12} sm={6}>
                 <FormLabel>Sub Source</FormLabel>
                 <Select
@@ -263,10 +263,10 @@ const FollowEdit_lead = () => {
               <FormLabel>Mobile Number</FormLabel>
               <Input
                 name="mobile"
-                type="tel"
+                type="text"
                 value={formData.mobile}
                 onChange={handleChange}
-                required
+                
               />
             </Grid>
             <Grid xs={12} sm={6}>
@@ -308,7 +308,7 @@ const FollowEdit_lead = () => {
             <Grid xs={12} sm={6}>
               <FormLabel>Capacity</FormLabel>
               <Input
-                type="number"
+              type="number"
                 name="capacity"
                 value={formData.capacity}
                 onChange={handleChange}
@@ -441,4 +441,4 @@ const FollowEdit_lead = () => {
     );
 };
 
-export default FollowEdit_lead;
+export default WonEdit_lead;

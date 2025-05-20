@@ -98,6 +98,10 @@ const Create_lead = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+     if (name === "capacity" && Number(value) < 0) {
+    return; // Prevent setting negative values
+  }
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -324,9 +328,11 @@ const Create_lead = () => {
               Capacity<strong style={{ color: "red" }}>*</strong>
             </FormLabel>
             <Input
+            type="number"
               name="capacity"
               value={formData.capacity}
               onChange={handleChange}
+              min={0}
               required
             />
           </Grid>

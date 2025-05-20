@@ -136,6 +136,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
       cam_member_name: "",
       service: "",
       slnko_basic: "",
+      total_gst: "",
       billing_type: "",
       project_status: "incomplete",
       loa_number: "",
@@ -148,7 +149,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
       invoicing_GST_no: "",
       invoicing_GST_status: "",
       invoicing_address: "",
-      delivery_address: "",
+      
       msme_reg: "",
     },
     submitted_by: "",
@@ -295,8 +296,8 @@ const CamHandoverSheetForm = ({ onBack }) => {
     }),
     order_details: Yup.object().shape({
       cam_member_name: Yup.string().required("CAM member name is required"),
-      loa_number: Yup.string().required("LOA number is required"),
-      ppa_number: Yup.string().required("PPA number is required"),
+      // loa_number: Yup.string().required("LOA number is required"),
+      // ppa_number: Yup.string().required("PPA number is required"),
     }),
     project_detail: Yup.object().shape({
       project_type: Yup.string().required("Project type is required"),
@@ -309,20 +310,18 @@ const CamHandoverSheetForm = ({ onBack }) => {
       ),
       land: Yup.object().shape({
         type: Yup.string().required("Land type is required"),
-        acres: Yup.string().required("Land acres is required"),
+        // acres: Yup.string().required("Land acres is required"),
       }),
-      agreement_date: Yup.string().required("Agreement date is required"),
-      project_completion_date: Yup.string().required(
-        "Project completion date is required"
-      ),
+      // agreement_date: Yup.string().required("Agreement date is required"),
+     
     }),
     commercial_details: Yup.object().shape({
       type: Yup.string().required("Commercial type is required"),
     }),
     other_details: Yup.object().shape({
       // cam_member_name: Yup.string().required("CAM member name is required"),
-      feeder_code: Yup.string().required("Feeder code is required"),
-      feeder_name: Yup.string().required("Feeder name is required"),
+    
+      // feeder_name: Yup.string().required("Feeder name is required"),
       discom_name: Yup.string().required("DISCOM name is required"),
       design_date: Yup.string().required(
         "Preliminary design sign-off date is required"
@@ -331,7 +330,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
     invoice_detail: Yup.object().shape({
       invoice_recipient: Yup.string().required("Invoice recipient is required"),
       invoicing_address: Yup.string().required("Invoicing address is required"),
-      delivery_address: Yup.string().required("Delivery address is required"),
+     
       invoicing_GST_no: Yup.string().when("invoicing_GST_status", {
         is: "Yes",
         then: Yup.string().required("Invoicing GST No. is required"),
@@ -447,6 +446,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
         taken_over_by: handoverData?.other_details?.taken_over_by || "",
         cam_member_name: handoverData?.other_details?.cam_member_name || "",
         service: handoverData?.other_details?.service || "",
+        total_gst: handoverData?.other_details?.total_gst || "",
         slnko_basic: handoverData?.other_details?.slnko_basic || "",
         billing_type: handoverData?.other_details?.billing_type || "",
         project_status:
@@ -466,7 +466,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
           handoverData?.invoice_detail?.invoicing_GST_status || "",
         invoicing_address:
           handoverData?.invoice_detail?.invoicing_address || "",
-        delivery_address: handoverData?.invoice_detail?.delivery_address || "",
+       
         msme_reg: handoverData?.invoice_detail?.msme_reg || "",
       },
       submitted_by: handoverData?.submitted_by || "-",
@@ -478,7 +478,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
     const acValue = parseFloat(ac);
     const overloadingValue = parseFloat(overloadingPercent) / 100;
     if (!isNaN(acValue) && !isNaN(overloadingValue)) {
-      return (acValue * (1 + overloadingValue)).toFixed(3);
+      return Math.round(acValue * (1 + overloadingValue));
     }
     return "";
   };
@@ -487,12 +487,15 @@ const CamHandoverSheetForm = ({ onBack }) => {
     const kwpValue = parseFloat(kwp);
     const serviceValue = parseFloat(slnko_basic);
     if (!isNaN(kwpValue) && !isNaN(serviceValue)) {
-      return (kwpValue * serviceValue * 1_000_000).toFixed(0);
+      return (kwpValue * serviceValue).toFixed(0);
     }
     return "";
   };
 
   useEffect(() => {
+    const serviceAmount = parseFloat(formData?.other_details?.service);
+    const billingType = formData?.other_details?.billing_type;
+
     const updatedDcCapacity = calculateDcCapacity(
       formData.project_detail.project_kwp,
       formData.project_detail.overloading
@@ -512,10 +515,51 @@ const CamHandoverSheetForm = ({ onBack }) => {
         service: calculated,
       },
     }));
+    //    if (!isNaN(serviceAmount)) {
+    //   let gstPercentage = 0;
+    //   if (billingType === "Composite") {
+    //     gstPercentage = 13.8;
+    //   } else if (billingType === "Individual") {
+    //     gstPercentage = 18;
+    //   }
+
+    //   if (gstPercentage > 0) {
+    //     const totalGST = Math.round(serviceAmount * (1 + gstPercentage / 100));
+    //     setFormData((prev) => ({
+    //       ...prev,
+    //       other_details: {
+    //         ...prev.other_details,
+    //         total_gst: totalGST,
+    //       },
+    //     }));
+    //   }
+    // }
+
+    if (!isNaN(serviceAmount)) {
+      let gstPercentage = 0;
+      if (billingType === "Composite") {
+        gstPercentage = 13.8;
+      } else if (billingType === "Individual") {
+        gstPercentage = 18;
+      }
+
+      if (gstPercentage > 0) {
+        const totalGST = (serviceAmount * (1 + gstPercentage / 100)).toFixed(0);
+        setFormData((prev) => ({
+          ...prev,
+          other_details: {
+            ...prev.other_details,
+            total_gst: totalGST,
+          },
+        }));
+      }
+    }
   }, [
     formData.project_detail.project_kwp,
     formData.project_detail.overloading,
     formData.other_details.slnko_basic,
+    formData?.other_details?.billing_type,
+    formData?.other_details?.service,
   ]);
 
   const [updateHandOver, { isLoading: isUpdating }] =
@@ -528,6 +572,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
         toast.error("Invalid or missing ID!");
         return;
       }
+      
 
       if (formData.status_of_handoversheet !== "submitted") {
         toast.error("This handover sheet cannot be edited.");
@@ -764,26 +809,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 }
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography
-                level="body1"
-                sx={{ fontWeight: "bold", marginBottom: 0.5 }}
-              >
-                Delivery Address
-              </Typography>
-              <Input
-                fullWidth
-                placeholder="Delivery Address"
-                value={formData.invoice_detail.delivery_address}
-                onChange={(e) =>
-                  handleChange(
-                    "invoice_detail",
-                    "delivery_address",
-                    e.target.value
-                  )
-                }
-              />
-            </Grid>
+            
             <Grid item xs={12} sm={6}>
               <Typography
                 level="body1"
@@ -804,10 +830,10 @@ const CamHandoverSheetForm = ({ onBack }) => {
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 Feeder Code / Substation Code{" "}
-                <span style={{ color: "red" }}>*</span>
+                
               </Typography>
               <Input
-                required
+              
                 value={formData.order_details.feeder_code}
                 onChange={(e) =>
                   handleChange("order_details", "feeder_code", e.target.value)
@@ -818,10 +844,10 @@ const CamHandoverSheetForm = ({ onBack }) => {
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 Feeder Name / Substation Names{" "}
-                <span style={{ color: "red" }}>*</span>
+               
               </Typography>
               <Input
-                required
+              
                 value={formData.order_details.feeder_name}
                 onChange={(e) =>
                   handleChange("order_details", "feeder_name", e.target.value)
@@ -1133,10 +1159,10 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                Land Availables<span style={{ color: "red" }}>*</span>
+                Land Availables
               </Typography>
 
-              <Grid container spacing={2}>
+              
                 <Grid item xs={12} sm={6} md={3}>
                   <Input
                     name="acres"
@@ -1156,7 +1182,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
                       }))
                     }
                     fullWidth
-                    required
+                 
                   />
                 </Grid>
 
@@ -1182,19 +1208,21 @@ const CamHandoverSheetForm = ({ onBack }) => {
                     }
                     isOptionEqualToValue={(option, value) => option === value}
                     placeholder="Land Type"
-                    required
+                   
                     sx={{ width: "100%" }}
                   />
-                </Grid>
+              
               </Grid>
             </Grid>
+
+
             <Grid item xs={12} sm={6}>
               <Typography
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
                 Project Completion Date(As per PPA)
-                <span style={{ color: "red" }}>*</span>
+                
               </Typography>
               <Input
                 fullWidth
@@ -1216,7 +1244,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                LOA/PPA Date<span style={{ color: "red" }}>*</span>
+                LOA/PPA Date
               </Typography>
               <Input
                 fullWidth
@@ -1231,6 +1259,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 }
               />
             </Grid>
+            
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 CAM Member Name
@@ -1249,7 +1278,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                LOA Number <span style={{ color: "red" }}>*</span>
+                LOA Number
               </Typography>
               <Input
                 value={formData.other_details.loa_number}
@@ -1257,13 +1286,13 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 onChange={(e) =>
                   handleChange("other_details", "loa_number", e.target.value)
                 }
-                required
+                
               />
             </Grid>
 
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                PPA Number <span style={{ color: "red" }}>*</span>
+                PPA Number
               </Typography>
               <Input
                 value={formData.other_details.ppa_number}
@@ -1271,7 +1300,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 onChange={(e) =>
                   handleChange("other_details", "ppa_number", e.target.value)
                 }
-                required
+               
               />
             </Grid>
           </Grid>
@@ -1345,6 +1374,24 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 isOptionEqualToValue={(option, value) => option === value}
                 placeholder="Billing Type"
                 sx={{ width: "100%" }}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                {formData?.other_details?.billing_type === "Composite"
+                  ? "Total GST (For Composite)"
+                  : formData?.other_details?.billing_type === "Individual"
+                    ? "Total GST (For Individual)"
+                    : "Total GST"}
+              </Typography>
+              <Input
+                fullWidth
+                value={formData?.other_details?.total_gst || ""}
+                InputProps={{
+                  readOnly: true,
+                }}
+                placeholder="Calculated Total GST"
               />
             </Grid>
           </Grid>
