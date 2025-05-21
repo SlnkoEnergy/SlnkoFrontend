@@ -311,7 +311,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
         "Purchase supply net metering is required"
       ),
       land: Yup.object().shape({
-        type: Yup.string().required("Land type is required"),
+        // type: Yup.string().required("Land type is required"),
         // acres: Yup.string().required("Land acres is required"),
       }),
       // agreement_date: Yup.string().required("Agreement date is required"),
@@ -420,9 +420,10 @@ const CamHandoverSheetForm = ({ onBack }) => {
         substation_name: handoverData?.project_detail?.substation_name || "",
         overloading: handoverData?.project_detail?.overloading || "",
         project_kwp: handoverData?.project_detail?.project_kwp || "",
-        land: handoverData?.project_detail?.land
-          ? JSON.parse(handoverData.project_detail.land)
-          : { type: "", acres: "" },
+        land:
+          typeof handoverData?.project_detail?.land === "string"
+            ? JSON.parse(handoverData.project_detail.land)
+            : handoverData?.project_detail?.land || { type: "", acres: "" },
         agreement_date: handoverData?.project_detail?.agreement_date || "",
         project_component:
           handoverData?.project_detail?.project_component || "",
@@ -467,7 +468,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
       },
       submitted_by: handoverData?.submitted_by || "-",
       status_of_handoversheet: handoverData?.status_of_handoversheet,
-      // is_locked: handoverData?.is_locked,
+      is_locked: handoverData?.is_locked,
     }));
   }, [handoverData]);
 
@@ -484,7 +485,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
     const kwpValue = parseFloat(kwp);
     const serviceValue = parseFloat(slnko_basic);
     if (!isNaN(kwpValue) && !isNaN(serviceValue)) {
-      return (kwpValue * serviceValue).toFixed(0);
+      return (kwpValue * serviceValue * 1000).toFixed(0);
     }
     return "";
   };
@@ -564,73 +565,77 @@ const CamHandoverSheetForm = ({ onBack }) => {
   const [updateStatusHandOver] = useUpdateStatusHandOverMutation();
 
   const handleSubmit = async () => {
-    if (!LeadId) {
-      toast.error("Invalid or missing ID!");
+  if (!LeadId) {
+    toast.error("Invalid or missing ID!");
+    return;
+  }
+
+  try {
+    await handoverSchema.validate(formData, { abortEarly: false });
+
+    // ✅ Only allow editing in these two conditions:
+  
+
+    if (formData.status_of_handoversheet === "Approved" &&
+        formData.is_locked === "locked") {
+      toast.error("This handover sheet cannot be update because it is locked.");
       return;
     }
 
-    try {
-      await handoverSchema.validate(formData, { abortEarly: false });
+    // ✅ Handle land conversion safely
+    const land =
+      typeof formData.project_detail?.land === "string"
+        ? formData.project_detail.land
+        : JSON.stringify(formData.project_detail?.land || { type: "", acres: "" });
 
-      // ✅ Block editing if already approved and locked
-      if (
-        formData.status_of_handoversheet === "Approved" &&
-        formData.is_locked === "locked"
-      ) {
-        toast.error(
-          "This handover sheet is approved and locked. No further edits allowed."
-        );
-        return;
-      }
+    const updatedFormData = {
+      _id: LeadId,
+      customer_details: { ...formData.customer_details },
+      order_details: { ...formData.order_details },
+      project_detail: {
+        ...formData.project_detail,
+        land: land,
+      },
+      commercial_details: { ...formData.commercial_details },
+      other_details: { ...formData.other_details },
+      invoice_detail: { ...formData.invoice_detail },
+      status_of_handoversheet: "Approved",
+      is_locked: "locked",
+    };
 
-      // ✅ Then check if it's in a valid editable state
-      if (formData.status_of_handoversheet !== "submitted") {
-        toast.error("This handover sheet cannot be edited.");
-        return;
-      }
+    const statusPayload = {
+      _id: formData._id,
+      status_of_handoversheet: "Approved",
+    };
 
-      const updatedFormData = {
-        _id: LeadId,
-        customer_details: { ...formData.customer_details },
-        order_details: { ...formData.order_details },
-        project_detail: {
-          ...formData.project_detail,
-          land: formData.project_detail?.land,
-        },
-        commercial_details: { ...formData.commercial_details },
-        other_details: { ...formData.other_details },
-        invoice_detail: { ...formData.invoice_detail },
+    // ✅ Call APIs
+    console.log("Updating status...");
+    const statusPromise = updateStatusHandOver(statusPayload).unwrap();
 
-        is_locked: "locked",
-      };
+    console.log("Updating form data...");
+    const updatePromise = updateHandOver(updatedFormData).unwrap();
 
-      const statusPayload = {
-        _id: formData._id,
-        status_of_handoversheet: "Approved",
-      };
+    await statusPromise;
+    toast.success("Handover sheet locked.");
 
-      const statusPromise = updateStatusHandOver(statusPayload).unwrap();
-      const updatePromise = updateHandOver(updatedFormData).unwrap();
+    await updatePromise;
+    toast.success("Project updated successfully.");
 
-      await statusPromise;
-      toast.success("Handover sheet locked.");
-
-      await updatePromise;
-      toast.success("Project created successfully.");
-
-      navigate("/cam_dash");
-    } catch (error) {
-      if (error.name === "ValidationError") {
-        error.inner.forEach((err) => {
-          toast.error(err.message);
-        });
-      } else {
-        const errorMessage =
-          error?.data?.message || error?.message || "Submission failed";
-        toast.error(errorMessage);
-      }
+    navigate("/cam_dash");
+  } catch (error) {
+    if (error.name === "ValidationError") {
+      error.inner.forEach((err) => {
+        toast.error(err.message);
+      });
+    } else {
+      console.error("Submission Error:", error);
+      const errorMessage =
+        error?.data?.message || error?.message || "Submission failed";
+      toast.error(errorMessage);
     }
-  };
+  }
+};
+
 
   return (
     <Sheet
@@ -1372,10 +1377,10 @@ const CamHandoverSheetForm = ({ onBack }) => {
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 {formData?.other_details?.billing_type === "Composite"
-                  ? "Total GST (For Composite)"
+                  ? "Total Slnko Service Charge(with GST)"
                   : formData?.other_details?.billing_type === "Individual"
-                    ? "Total GST (For Individual)"
-                    : "Total GST"}
+                    ? "Total Slnko Service Charge (with GST)"
+                    : "Total Slnko Service Charge(with GST)"}
               </Typography>
               <Input
                 fullWidth
@@ -1932,7 +1937,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
 
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                Slnko Service Charges (Without GST)/Wp{" "}
+                Slnko Service Charges (Without GST)/W{" "}
                 <span style={{ color: "red" }}>*</span>
               </Typography>
               <Input

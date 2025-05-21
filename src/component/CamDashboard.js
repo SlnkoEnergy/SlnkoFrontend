@@ -111,69 +111,82 @@ function Dash_cam() {
     }
   }, []);
 
-  const StatusChip = ({ status, is_locked, _id, user, refetch }) => {
-    const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+ const StatusChip = ({ status, is_locked, _id, user, refetch }) => {
+  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+  const [lockedState, setLockedState] = useState(is_locked === "locked");
 
-    const [lockedState, setLockedState] = useState(is_locked === "locked");
-    const [updateUnlockHandoversheet, { isLoading }] =
-      useUpdateHandOverMutation();
+  const [updateUnlockHandoversheet, { isLoading }] =
+    useUpdateHandOverMutation();
 
-    useEffect(() => {
-      setLockedState(is_locked === "locked");
-    }, [is_locked]);
+  useEffect(() => {
+    setLockedState(is_locked === "locked");
+  }, [is_locked]);
 
-    const handleSubmit = async () => {
-      if (!isAdmin) {
-        toast.error(
-          "Permission denied. You do not have access to perform this action.",
-          {
-            icon: "⛔",
-          }
-        );
-        return;
-      }
+  const handleSubmit = async () => {
+    if (!isAdmin) {
+      toast.error(
+        "Permission denied. You do not have access to perform this action.",
+        { icon: "⛔" }
+      );
+      return;
+    }
 
-      if (isLoading || !lockedState) return;
+    if (isLoading || !lockedState || status !== "Approved") return;
 
-      try {
-        await updateUnlockHandoversheet({ _id, is_locked: "unlock" }).unwrap();
-        toast.success("Handover sheet unlocked 🔓");
-        setLockedState(false);
-        refetch?.();
-      } catch (err) {
-        console.error("Error:", err?.data?.message || err.error);
-        toast.error("Failed to update status.");
-      }
-    };
-
-    const showUnlockIcon = status === "Approved" && is_locked === "unlock";
-
-    return (
-      <Button
-        size="sm"
-        variant="soft"
-        color={showUnlockIcon ? "success" : "danger"}
-        onClick={
-          isAdmin && lockedState && !isLoading ? handleSubmit : undefined
-        }
-        sx={{
-          minWidth: 36,
-          height: 36,
-          padding: 0,
-          fontWeight: 500,
-          cursor: isAdmin && lockedState && !isLoading ? "pointer" : "default",
-        }}
-      >
-        {isLoading ? (
-          <CircularProgress size="sm" />
-        ) : showUnlockIcon ? (
-          <LockOpenIcon sx={{ fontSize: "1rem" }} />
-        ) : (
-          <LockIcon sx={{ fontSize: "1rem" }} />
-        )}
-      </Button>
-    );
+    try {
+      await updateUnlockHandoversheet({ _id, is_locked: "unlock" }).unwrap();
+      toast.success("Handover sheet unlocked 🔓");
+      setLockedState(false);
+      refetch?.();
+    } catch (err) {
+      console.error("Error:", err?.data?.message || err.error);
+      toast.error("Failed to update status.");
+    }
   };
+
+  // New conditions for colors and icons
+  const showUnlockIcon = !lockedState && status === "Approved";
+  const showSuccessLockIcon = lockedState && status === "submitted";
+  
+  // Color logic:
+  // success color if (unlocked & Approved) OR (locked & Submitted)
+  const color =
+    (showUnlockIcon || showSuccessLockIcon) ? "success" : "danger";
+
+  // Icon logic:
+  // Unlock icon if showUnlockIcon, else lock icon always
+  const IconComponent = showUnlockIcon ? LockOpenIcon : LockIcon;
+
+  return (
+    <Button
+      size="sm"
+      variant="soft"
+      color={color}
+      onClick={
+        isAdmin && lockedState && status === "Approved" && !isLoading
+          ? handleSubmit
+          : undefined
+      }
+      sx={{
+        minWidth: 36,
+        height: 36,
+        padding: 0,
+        fontWeight: 500,
+        cursor:
+          isAdmin && lockedState && status === "Approved" && !isLoading
+            ? "pointer"
+            : "default",
+      }}
+    >
+      {isLoading ? (
+        <CircularProgress size="sm" />
+      ) : (
+        <IconComponent sx={{ fontSize: "1rem" }} />
+      )}
+    </Button>
+  );
+};
+
 
   // const RowMenu = ({ currentPage, p_id }) => {
   //   console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
@@ -326,12 +339,13 @@ function Dash_cam() {
     return combinedData
       .filter((project) => {
         if (!project) return false;
-        const submittedBy = project.submitted_by?.trim() || "";
-        const userName = user.name.trim();
-        const userRole = user.role?.toLowerCase();
+        // const submittedBy = project.submitted_by?.trim() || "";
+        // const userName = user.name.trim();
+        // const userRole = user.role?.toLowerCase();
 
-        const isAdmin = userRole === "admin" || userRole === "superadmin";
-        const matchesUser = isAdmin || submittedBy === userName;
+        // const isAdmin = userRole === "admin" || userRole === "superadmin";
+        // const isCAM = userName === "Prachi Singh" || userName === "Guddu Rani Dubey" || userName === "Sanjiv Kumar"  || userName === "Sushant Ranjan Dubey";
+        // const matchesUser = isAdmin || submittedBy === userName;
 
         const matchesSearchQuery = ["code", "customer", "state"].some((key) =>
           project[key]
@@ -342,13 +356,43 @@ function Dash_cam() {
 
         return matchesSearchQuery;
       })
-      .sort((a, b) => {
-        const dateA = new Date(a?.createdAt || 0);
-        const dateB = new Date(b?.createdAt || 0);
-        return dateA - dateB;
-      });
+       .sort((a, b) => {
+      const dateA = new Date(a?.updatedAt || a?.createdAt || 0);
+      const dateB = new Date(b?.updatedAt || b?.createdAt || 0);
+      return dateB - dateA;
+    });
   }, [combinedData, searchQuery, user]);
 
+  
+// const filteredAndSortedData = useMemo(() => {
+//   if (!Array.isArray(combinedData) || !user?.name) return [];
+
+//   const userName = user.name.trim();
+//   const userRole = user.role?.toLowerCase();
+//   const isAdmin = userRole === "admin" || userRole === "superadmin";
+//   const isCAM = ["Prachi Singh", "Guddu Rani Dubey", "Sanjiv Kumar", "Sushant Ranjan Dubey"].includes(userName);
+
+//   return combinedData
+//     .filter((project) => {
+//       if (!project) return false;
+
+//       const submittedBy = project.submitted_by?.trim().toLowerCase() || "";
+//       const canAccess = isAdmin || isCAM || submittedBy === userName;
+
+//       const matchesSearchQuery = ["code", "customer", "state"].some((key) =>
+//         project[key]?.toString().toLowerCase().includes(searchQuery?.toLowerCase())
+//       );
+
+//       return matchesSearchQuery && canAccess;
+//     })
+//     .sort((a, b) => {
+//       const dateA = new Date(a?.updatedAt || a?.createdAt || 0);
+//       const dateB = new Date(b?.updatedAt || b?.createdAt || 0);
+//       return dateB - dateA; // Most recent first
+//     });
+// }, [combinedData, searchQuery, user]);
+
+ 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
       setSelected(paginatedPayments.map((row) => row._id));

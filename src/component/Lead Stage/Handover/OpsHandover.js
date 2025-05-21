@@ -308,7 +308,7 @@ const calculateSlnkoBasic = (kwp, slnko_basic) => {
   const kwpValue = parseFloat(kwp);
   const serviceValue = parseFloat(slnko_basic);
   if (!isNaN(kwpValue) && !isNaN(serviceValue)) {
-    return (kwpValue * serviceValue).toFixed(0);
+    return (kwpValue * serviceValue * 1000).toFixed(0);
   }
   return "";
 };
@@ -539,10 +539,10 @@ const calculateSlnkoBasic = (kwp, slnko_basic) => {
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 {formData?.other_details?.billing_type === "Composite"
-                  ? "Total GST (For Composite)"
+                  ? "Total Slnko Service Charge(with GST)"
                   : formData?.other_details?.billing_type === "Individual"
-                    ? "Total GST (For Individual)"
-                    : "Total GST"}
+                    ? "Total Slnko Service Charge(with GST)"
+                    : "Total Slnko Service Charge(with GST)"}
               </Typography>
               <Input
                 fullWidth
@@ -1108,7 +1108,7 @@ const calculateSlnkoBasic = (kwp, slnko_basic) => {
 
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                Slnko Service Charges (Without GST)/Wp{" "}
+                Slnko Service Charges (Without GST)/W{" "}
                 <span style={{ color: "red" }}>*</span>
               </Typography>
               <Input

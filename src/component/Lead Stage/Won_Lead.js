@@ -369,49 +369,50 @@ const StandByRequest = forwardRef((props, ref) => {
   //     });
   // }, [leads, searchQuery, selectedDate, user]);
 
-  const filteredData = useMemo(() => {
-    if (!user || !user.name) return [];
+const filteredData = useMemo(() => {
+  if (!user || !user.name) return [];
 
-    return leads
-      .filter((lead) => {
-        const submittedBy = lead.submitted_by?.trim() || "";
-        const userName = user.name.trim();
-        const userRole = user.role?.toLowerCase();
+  return leads
+    .filter((lead) => {
+      const submittedBy = lead.submitted_by?.trim() || "";
+      const userName = user.name.trim();
+      const userRole = user.role?.toLowerCase();
 
-        const isAdmin =
-          userRole === "admin" ||
-          userRole === "superadmin" ||
-          userName === "Guddu Rani Dubey" ||
-          userName === "Prachi Singh";
+      const isAdmin =
+        userRole === "admin" ||
+        userRole === "superadmin" ||
+        userName === "Guddu Rani Dubey" ||
+        userName === "Prachi Singh";
 
-        const matchesUser = isAdmin || submittedBy === userName;
+      const matchesUser = isAdmin || submittedBy === userName;
 
-        const statusInfo = status_handOver(lead.id);
-        const statusText = statusInfo.status?.toLowerCase() || "";
+      const statusInfo = status_handOver(lead.id);
+      const statusText = statusInfo.status?.toLowerCase() || "";
 
-        const matchesQuery =
-          ["id", "c_name", "mobile", "state", "submitted_by"].some((key) =>
-            lead[key]?.toLowerCase().includes(searchQuery)
-          ) || statusText.includes(searchQuery);
+      const matchesQuery =
+        ["id", "c_name", "mobile", "state", "submitted_by"].some((key) =>
+          lead[key]?.toLowerCase().includes(searchQuery)
+        ) || statusText.includes(searchQuery);
 
-        const matchesDate = selectedDate
-          ? formatDate(lead.entry_date).toLocaleDateString() ===
-            formatDate(selectedDate).toLocaleDateString()
-          : true;
+      const matchesDate = selectedDate
+        ? formatDate(lead.entry_date).toLocaleDateString() ===
+          formatDate(selectedDate).toLocaleDateString()
+        : true;
 
-        const matchesStatus = selectedStatus
-          ? (selectedStatus === "not_found" && statusText === "not found") ||
-            statusText === selectedStatus
-          : true;
+      const matchesStatus = selectedStatus
+        ? (selectedStatus === "not_found" && statusText === "not found") ||
+          statusText === selectedStatus
+        : true;
 
-        return matchesUser && matchesQuery && matchesDate && matchesStatus;
-      })
-      .sort((a, b) => {
-        const dateA = new Date(a.entry_date);
-        const dateB = new Date(b.entry_date);
-        return dateB - dateA;
-      });
-  }, [leads, searchQuery, selectedDate, selectedStatus, user]);
+      return matchesUser && matchesQuery && matchesDate && matchesStatus;
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.updatedAt || a.entry_date);
+      const dateB = new Date(b.updatedAt || b.entry_date);
+      return dateB - dateA;
+    });
+}, [leads, searchQuery, selectedDate, selectedStatus, user]);
+
 
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
