@@ -25,6 +25,7 @@ const AddNewInverterForm = () => {
     inveter_model: "",
     inveter_type: "",
     inveter_size: "",
+    ac_output_power: "",
     status: "",
   });
 
@@ -52,6 +53,7 @@ const AddNewInverterForm = () => {
         inveter_model: "",
         inveter_type: "",
         inveter_size: "",
+        ac_output_power: "",
         status: "",
       });
       navigate("/module_sheet");
@@ -134,6 +136,18 @@ const AddNewInverterForm = () => {
                 value={formData.inveter_size}
                 onChange={(e) => handleChange("inveter_size", e.target.value)}
                 placeholder="Enter Size"
+                required
+              />
+            </FormControl>
+          </Grid>
+
+          <Grid xs={12} sm={6}>
+            <FormControl>
+              <FormLabel sx={{ fontSize: "lg" }}>AC Output Power</FormLabel>
+              <Input
+                value={formData.ac_output_power}
+                onChange={(e) => handleChange("ac_output_power", e.target.value)}
+                placeholder="Enter AC Output Power"
                 required
               />
             </FormControl>

@@ -120,14 +120,31 @@ const DCCableTab = forwardRef((props, ref) => {
               style={{ width: "200px" }}
             />
           </FormControl> */}
-        <FormControl size="sm">
-          <FormLabel>Status Filter</FormLabel>
-          <Select size="sm" placeholder="Select status">
-            <Option value="">All</Option>
-            <Option value="Available">Available</Option>
-            <Option value="Not Available">Not Available</Option>
-          </Select>
-        </FormControl>
+        <Box
+  sx={{
+    display: "flex",
+    alignItems: "flex-end", // Aligns items to the bottom
+    gap: 2, // Adds spacing between dropdown and button
+  }}
+>
+  <FormControl size="sm">
+    <FormLabel>Status Filter</FormLabel>
+    <Select size="sm" placeholder="Select status">
+      <Option value="">All</Option>
+      <Option value="Available">Available</Option>
+      <Option value="Not Available">Not Available</Option>
+    </Select>
+  </FormControl>
+
+  <Button
+    color="primary"
+    size="sm"
+    onClick={() => navigate("/add_dc_cable")}
+    sx={{ mb: '2px' }} // optional fine-tuning to align perfectly
+  >
+    Add New DC Cable +
+  </Button>
+</Box>
       </>
     );
   

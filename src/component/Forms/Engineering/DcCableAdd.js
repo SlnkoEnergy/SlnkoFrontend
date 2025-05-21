@@ -28,6 +28,7 @@ const DCCableForm = () => {
     rated_ac_voltage: "",
     nominal_dc_voltage: "",
     core: "",
+    cable_type:"",
     status: "",
   });
 
@@ -57,6 +58,7 @@ const DCCableForm = () => {
         rated_ac_voltage: "",
         nominal_dc_voltage: "",
         core: "",
+        cable_type:"",
         status: "",
       });
       navigate("/module_sheet");
@@ -136,8 +138,19 @@ const DCCableForm = () => {
               </FormControl>
             </Grid>
 
+            <Grid xs={12} sm={6}>
+              <FormControl>
+                <FormLabel>Cable Type</FormLabel>
+                <Input
+                  name="cable_type"
+                  value={formData.cable_type}
+                  onChange={(e) => handleChange("cable_type", e.target.value)}
+                />
+              </FormControl>
+            </Grid>
+
             {/* ✅ Integrated Custom Status Field */}
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={12}>
               <FormControl fullWidth>
                 <FormLabel>Status</FormLabel>
                 <Select

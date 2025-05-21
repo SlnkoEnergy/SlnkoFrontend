@@ -138,14 +138,31 @@ const InverterTab = forwardRef((props, ref) => {
           <Option value="Not Available">Not Available</Option>
         </Select>
       </FormControl> */}
-      <FormControl size="sm">
-        <FormLabel>Status Filter</FormLabel>
-        <Select size="sm" placeholder="Select status">
-          <Option value="">All</Option>
-          <Option value="Available">Available</Option>
-          <Option value="Not Available">Not Available</Option>
-        </Select>
-      </FormControl>
+      <Box
+  sx={{
+    display: "flex",
+    alignItems: "flex-end", // Aligns items to the bottom
+    gap: 2, // Adds spacing between dropdown and button
+  }}
+>
+  <FormControl size="sm">
+    <FormLabel>Status Filter</FormLabel>
+    <Select size="sm" placeholder="Select status">
+      <Option value="">All</Option>
+      <Option value="Available">Available</Option>
+      <Option value="Not Available">Not Available</Option>
+    </Select>
+  </FormControl>
+
+  <Button
+    color="primary"
+    size="sm"
+    onClick={() => navigate("/add_inverter")}
+    sx={{ mb: '2px' }} // optional fine-tuning to align perfectly
+  >
+    Add New Inverter +
+  </Button>
+</Box>
     </>
   );
 

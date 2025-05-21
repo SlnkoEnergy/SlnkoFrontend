@@ -225,9 +225,10 @@ function LeadPage({
             <Button
   color="primary"
   size="sm"
-  onClick={() => navigate(getAddNewRoute(selectedModule))}
+  onClick={() => navigate("/add_category")}
 >
-  {getAddNewButtonLabel(selectedModule)}
+  {/* {getAddNewButtonLabel(selectedModule)} */}
+  Add New Category +
 </Button>
 
 

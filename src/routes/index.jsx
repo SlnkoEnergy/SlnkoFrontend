@@ -90,6 +90,7 @@ import Add_BOM from "../pages/Eng/Forms/BOM_Addn";
 import ModuleSheet from "../pages/Eng/ModuleDashboard";
 import Update_Bill from "../pages/SCM/EditBill";
 import PrivateRoute from "./PrivateRoute";
+import Add_Category_Eng from "../pages/Eng/Forms/Add_Category";
 
 function index() {
   return (
@@ -409,6 +410,15 @@ function index() {
         element={
           <PrivateRoute>
             <Add_LT_Panel />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/add_category"
+        element={
+          <PrivateRoute>
+            <Add_Category_Eng />
           </PrivateRoute>
         }
       />

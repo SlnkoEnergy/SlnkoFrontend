@@ -30,6 +30,8 @@ const HTPanelForm = () => {
     ct_ratio: "",
     cable_size_incoming: "",
     pt_make: "",
+    ht_panel_size:"",
+    ht_voltage:"",
     status: "",
   });
 
@@ -62,6 +64,8 @@ const HTPanelForm = () => {
         ct_ratio: "",
         cable_size_incoming: "",
         pt_make: "",
+         ht_panel_size:"",
+         ht_voltage:"",
         status: "",
       });
       navigate("/module_sheet");
@@ -152,6 +156,7 @@ const HTPanelForm = () => {
                   }
                 />
               </FormControl>
+              
             </Grid>
             <Grid xs={12} sm={6}>
               <FormControl>
@@ -160,6 +165,30 @@ const HTPanelForm = () => {
                   name="pt_make"
                   value={formData.pt_make}
                   onChange={(e) => handleChange("pt_make", e.target.value)}
+                />
+              </FormControl>
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormControl>
+                <FormLabel>HT Panel Size</FormLabel>
+                <Input
+                  name="ht_panel_size"
+                  value={formData.ht_panel_size}
+                  onChange={(e) =>
+                    handleChange("ht_panel_size", e.target.value)
+                  }
+                />
+              </FormControl>
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <FormControl>
+                <FormLabel>HT Panel Voltage</FormLabel>
+                <Input
+                  name="ht_voltage"
+                  value={formData.ht_voltage}
+                  onChange={(e) =>
+                    handleChange("ht_voltage", e.target.value)
+                  }
                 />
               </FormControl>
             </Grid>

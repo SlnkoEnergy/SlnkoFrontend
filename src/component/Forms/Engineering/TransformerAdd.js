@@ -29,6 +29,7 @@ const AddNewTransformerForm = () => {
     secondary_voltage: "",
     voltage_ratio: "",
     impedance: "",
+    winding_material:"",
     status: "",
   });
 
@@ -59,6 +60,7 @@ const AddNewTransformerForm = () => {
         secondary_voltage: "",
         voltage_ratio: "",
         impedance: "",
+        winding_material:"",
         status: "",
       });
       navigate("/module_sheet");
@@ -222,6 +224,17 @@ const AddNewTransformerForm = () => {
                 value={formData.impedance}
                 onChange={(e) => handleChange("impedance", e.target.value)}
                 placeholder="Enter % Impedance"
+                required
+              />
+            </FormControl>
+          </Grid>
+          <Grid xs={12} sm={6}>
+            <FormControl>
+              <FormLabel>Winding Material</FormLabel>
+              <Input
+                value={formData.winding_material}
+                onChange={(e) => handleChange("winding_material", e.target.value)}
+                placeholder="Enter Winding Material"
                 required
               />
             </FormControl>
