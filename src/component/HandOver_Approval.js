@@ -77,6 +77,7 @@ function Dash_cam() {
         ...entry.other_details,
         p_id: entry.p_id,
         status_of_handoversheet: entry.status_of_handoversheet,
+        submitted_by: entry.submitted_by
       }))
     : [];
 
@@ -584,6 +585,7 @@ function Dash_cam() {
                 "Type",
                 "Capacity(AC/DC)",
                 "Slnko Service Charges (w/o GST)",
+                "Submitted By",
                 "Action",
               ].map((header, index) => (
                 <th
@@ -714,6 +716,15 @@ function Dash_cam() {
                     }}
                   >
                     {project.service || "-"}
+                  </td>
+                  <td
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.submitted_by || "-"}
                   </td>
 
                   <td

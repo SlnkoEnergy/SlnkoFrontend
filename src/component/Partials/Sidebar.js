@@ -173,16 +173,7 @@ function Sidebar() {
           },
         }}
       >
-        <List>
-          <ListItem>
-            <ListItemButton onClick={() => navigate("#")}>
-              <AccountBalanceWalletIcon />
-
-              <ListItemContent>
-                <Typography level="title-sm">Expense Sheet</Typography>
-              </ListItemContent>
-            </ListItemButton>
-          </ListItem>
+       
 
           {user?.name === "IT Team" || user?.name === "admin" ? (
             <List>
@@ -1717,7 +1708,7 @@ function Sidebar() {
               </ListItem>
             </List>
           ) : null}
-        </List>
+      
 
         <List
           size="sm"

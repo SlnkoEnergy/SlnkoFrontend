@@ -9,10 +9,10 @@ export const camsApi = createApi({
       query: () => "get-all-handover-sheet",
       providesTags: ["CAM"],
     }),
-    getBDHandOver: builder.query({
-      query: () => "get-all-bd-handoversheet",
-      providesTags: ["CAM"],
-    }),
+    // getBDHandOver: builder.query({
+    //   query: () => "get-all-bd-handoversheet",
+    //   providesTags: ["CAM"],
+    // }),
 
     addHandOver: builder.mutation({
       query: (newHandOver) => ({
@@ -53,7 +53,7 @@ export const camsApi = createApi({
 
 export const {
   useGetHandOverQuery,
-  useGetBDHandOverQuery,
+  // useGetBDHandOverQuery,
   useAddHandOverMutation,
   useUpdateHandOverMutation,
   useUpdateUnlockHandoversheetMutation,
