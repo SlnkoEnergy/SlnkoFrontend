@@ -19,19 +19,26 @@ import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
 import DeleteIcon from "@mui/icons-material/Delete";
-import ModeEditIcon from '@mui/icons-material/ModeEdit';
+import ModeEditIcon from "@mui/icons-material/ModeEdit";
 import Divider from "@mui/joy/Divider";
-import { forwardRef, useEffect, useImperativeHandle, useState, useMemo } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useState,
+  useMemo,
+} from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 // import Axios from "../utils/Axios";
-import { useDeleteProjectMutation, useGetProjectsQuery } from "../redux/projectsSlice";
+import {
+  useDeleteProjectMutation,
+  useGetProjectsQuery,
+} from "../redux/projectsSlice";
 
 const AllExpense = forwardRef((props, ref) => {
   const navigate = useNavigate();
-  // const [projects, setProjects] = useState([]);
-  // const [loading, setLoading] = useState(true);
-  // const [error, setError] = useState(null);
+
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
@@ -40,164 +47,41 @@ const AllExpense = forwardRef((props, ref) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedProjects, setSelectedProjects] = useState([]);
 
-  // const states = ["California", "Texas", "New York", "Florida"];
-
-  
-
-  // useEffect(() => {
-  //   const fetchTableData = async () => {
-  //     try {
-  //       const response = await Axios.get("/get-all-projecT-IT");
-
-  //       const projectsData = Array.isArray(response.data.data)
-  //         ? response.data.data
-  //         : [];
-  //       setProjects(projectsData);
-  //     } catch (err) {
-  //       console.error("API Error:", err);
-  //       setError("Failed to fetch table data.");
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   fetchTableData();
-  // }, []);
-
   const { data: getProject = [], isLoading, error } = useGetProjectsQuery();
 
   const [deleteProject] = useDeleteProjectMutation();
 
-console.log("getProject: ", getProject);
+  console.log("getProject: ", getProject);
 
+  const [user, setUser] = useState(null);
 
-    const [user, setUser] = useState(null);
-  
-    useEffect(() => {
-      const userData = getUserData();
-      setUser(userData);
-    }, []);
-  
-    const getUserData = () => {
-      const userData = localStorage.getItem("userDetails");
-      if (userData) {
-        return JSON.parse(userData);
-      }
-      return null;
-    };
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
 
-
-
-
-  const RowMenu = ({ currentPage, p_id, _id }) => {
-    // console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
-    return (
-      <>
-        <Dropdown>
-          <MenuButton
-            slots={{ root: IconButton }}
-            slotProps={{
-              root: { variant: "plain", color: "neutral", size: "sm" },
-            }}
-          >
-            <MoreHorizRoundedIcon />
-          </MenuButton>
-          <Menu size="sm" sx={{ minWidth: 140 }}>
-            <MenuItem
-              color="primary"
-              onClick={() => {
-                const page = currentPage;
-                const ID = p_id;
-                localStorage.setItem("idd", ID);
-                // console.log(`/add_money?page=${page}&p_id=${projectId}`);
-                navigate(`/edit_project?page=${page}&p_id=${ID}`);
-              }}
-            >
-              <ModeEditIcon />
-              <Typography>
-                 Edit
-              </Typography>
-             
-            </MenuItem>
-            <Divider sx={{ backgroundColor: "lightblue" }} />
-            {(user?.name === "IT Team" ||
-            user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Prachi Singh" ||
-            user?.name === "admin") && (
-            <MenuItem color="danger" disabled={selectedProjects.length === 0}
-            onClick={handleDelete}>
-                
-                  <DeleteIcon />
-                  <Typography>Delete</Typography>
-                </MenuItem>
-                )}
-          </Menu>
-        </Dropdown>
-      </>
-    );
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
   };
-// Delete Api 
-
-  // const handleDelete = async () => {
-  //   if (selectedProjects.length === 0) {
-  //     toast.error("No projects selected for deletion.");
-  //     return;
-  //   }
-  //   // console.log("Deleting selected projects:", selectedProjects);
-  //   try {
-  //     await Promise.all(
-  //       selectedProjects.map((_id) => Axios.delete(`/delete-by-iD-IT/${_id}`))
-  //     );
-      
-  //     toast.success("Deleted successfully.");
-  
-  //     // Remove deleted projects from state
-  //     setProjects((prevProjects) =>
-  //       prevProjects.filter((project) => !selectedProjects.includes(project._id))
-  //     );
-  
-  //     // Clear selection after deletion
-  //     setSelectedProjects([]);
-  //   } catch (error) {
-  //     console.error("Delete Error:", error);
-  //     toast.error("Failed to delete projects.");
-  //   }
-  // };
-  
-
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelectedProjects(getProject.map((row) => row._id));
+      const ids = paginatedProjects.map((row) => row._id);
+      setSelectedProjects((prevSelected) => [
+        ...new Set([...prevSelected, ...ids]),
+      ]);
     } else {
-      setSelectedProjects([]);
+      // Remove only the IDs from current page
+      const ids = paginatedProjects.map((row) => row._id);
+      setSelectedProjects((prevSelected) =>
+        prevSelected.filter((id) => !ids.includes(id))
+      );
     }
   };
-  
-
-const handleDelete = async () => {
-  if (selectedProjects.length === 0) {
-    toast.error("No projects selected for deletion.");
-    return;
-  }
-
-  try {
-    await Promise.all(
-      selectedProjects.map(async (_id) => {
-        await deleteProject(_id).unwrap();
-      })
-    );
-
-    toast.success("Selected projects deleted successfully.");
-
-    // Clear selection after successful deletion
-    setSelectedProjects([]);
-  } catch (err) {
-    console.error("Failed to delete selected projects:", err);
-    toast.error("Failed to delete selected projects.");
-  }
-};
-
 
   const handleRowSelect = (_id) => {
     setSelectedProjects((prev) =>
@@ -207,21 +91,17 @@ const handleDelete = async () => {
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
-  const projects = useMemo(() => Array.isArray(getProject?.data) ? getProject.data : [], [getProject]);
+  const projects = useMemo(
+    () => (Array.isArray(getProject?.data) ? getProject.data : []),
+    [getProject]
+  );
 
-  const filteredAndSortedData = projects.filter((project) => {
+  const filteredAndSortedData = projects
+    .filter((project) => {
       const matchesSearchQuery = ["code", "customer", "name"].some((key) =>
         project[key]?.toLowerCase().includes(searchQuery)
       );
-      // Apply the state filter
-      // const matchesStateFilter = !stateFilter || project.state === stateFilter;
-      // // console.log("MatchStates are: ", matchesStateFilter);
 
-      // // Apply the customer filter
-      // const matchesCustomerFilter =
-      //   !customerFilter || project.customer === customerFilter;
-
-      // Combine all filters
       return matchesSearchQuery;
     })
     .sort((a, b) => {
@@ -269,7 +149,9 @@ const handleDelete = async () => {
     setCurrentPage(page);
   }, [searchParams]);
 
-  const totalPages = Math.ceil((filteredAndSortedData?.length || 0) / itemsPerPage);
+  const totalPages = Math.ceil(
+    (filteredAndSortedData?.length || 0) / itemsPerPage
+  );
 
   const paginatedProjects = filteredAndSortedData.slice(
     (currentPage - 1) * itemsPerPage,
@@ -283,90 +165,13 @@ const handleDelete = async () => {
     }
   };
 
-  const renderFilters = () => (
-    <>
-      {/* <FormControl size="sm">
-        <FormLabel>State</FormLabel>
-        <Select
-          size="sm"
-          placeholder="Filter by state"
-          value={stateFilter}
-          onChange={(e) => {
-            const selectedValue = e.target.value;
-            console.log("Selected State:", selectedValue);
-            setStateFilter(selectedValue);
-          }}
-        >
-          <Option value="">All</Option>
-          {states.map((state, index) => (
-            <Option key={index} value={state}>
-              {state}
-            </Option>
-          ))}
-        </Select>
-      </FormControl>
-      <FormControl size="sm">
-        <FormLabel>Customer</FormLabel>
-        <Select
-          size="sm"
-          placeholder="Filter by customer"
-          value={customerFilter}
-          onChange={(e) => setCustomerFilter(e.target.value)}
-        >
-          <Option value="">All</Option>
-          {customers.map((customer, index) => (
-            <Option key={index} value={customer}>
-              {customer}
-            </Option>
-          ))}
-        </Select>
-      </FormControl> */}
-    </>
-  );
-
-  useImperativeHandle(ref, () => ({
-    exportToCSV() {
-      console.log("Exporting data to CSV...");
-      const headers = [
-        "Project ID",
-        "Customer",
-        "Project Name",
-        "Email",
-        "Mobile",
-        "State",
-        "Slnko Service Charges (with GST)",
-      ];
-
-      const rows = projects.map((project) => [
-        project.code || "-",
-        project.customer || "-",
-        project.name || "-",
-        project.email || "-",
-        project.number || "-",
-        project.state || "-",
-        project.service || "-",
-      ]);
-
-      const csvContent = [
-        headers.join(","),
-        ...rows.map((row) => row.join(",")),
-      ].join("\n");
-
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "All_Project.csv";
-      link.click();
-    },
-  }));
-
   return (
     <>
       {/* Tablet and Up Filters */}
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
-          marginLeft: { xl: "15%", lg: "18%", },
+          marginLeft: { xl: "15%", lg: "18%" },
           borderRadius: "sm",
           py: 2,
           display: "flex",
@@ -401,185 +206,169 @@ const handleDelete = async () => {
           flexShrink: 1,
           overflow: "auto",
           minHeight: 0,
-          marginLeft: { xl: "15%",lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%", },
+          marginLeft: { xl: "15%", lg: "18%" },
+          maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
-     
-          <Box
-            component="table"
-            sx={{ width: "100%", borderCollapse: "collapse" }}
-          >
-            <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
-              <Box component="tr">
+        <Box
+          component="table"
+          sx={{ width: "100%", borderCollapse: "collapse" }}
+        >
+          <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
+            <Box component="tr">
+              <Box
+                component="th"
+                sx={{
+                  borderBottom: "1px solid #ddd",
+                  padding: "8px",
+                  textAlign: "center",
+                }}
+              >
+                <Checkbox
+                  size="sm"
+                  checked={
+                    paginatedProjects.length > 0 &&
+                    paginatedProjects.every((project) =>
+                      selectedProjects.includes(project._id)
+                    )
+                  }
+                  indeterminate={
+                    paginatedProjects.some((project) =>
+                      selectedProjects.includes(project._id)
+                    ) &&
+                    !paginatedProjects.every((project) =>
+                      selectedProjects.includes(project._id)
+                    )
+                  }
+                  onChange={handleSelectAll}
+                />
+              </Box>
+              {[
+                "Expense Code",
+                "Requested Amount",
+                "Approval Amount",
+                "Disburstment Date",
+                "Status",
+                "",
+              ].map((header, index) => (
                 <Box
                   component="th"
+                  key={index}
                   sx={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
                     textAlign: "center",
+                    fontWeight: "bold",
                   }}
                 >
-                  <Checkbox
-  size="sm"
-  checked={selectedProjects.length === getProject.length}
-  onChange={handleSelectAll}
-  indeterminate={
-    selectedProjects.length > 0 && selectedProjects.length < getProject.length
-  }
-/>
-
+                  {header}
                 </Box>
-                {[
-                  "Project ID",
-                  "Customer",
-                  "Project Name",
-                  "Email",
-                  "Mobile",
-                  "State",
-                  "Slnko Service Charges (with GST)",
-                  "",
-                ].map((header, index) => (
+              ))}
+            </Box>
+          </Box>
+          <Box component="tbody">
+            {paginatedProjects.length > 0 ? (
+              paginatedProjects.map((project, index) => (
+                <Box
+                  component="tr"
+                  key={index}
+                  sx={{
+                    "&:hover": { backgroundColor: "neutral.plainHoverBg" },
+                  }}
+                >
                   <Box
-                    component="th"
-                    key={index}
+                    component="td"
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
                       textAlign: "center",
-                      fontWeight: "bold",
                     }}
                   >
-                    {header}
+                    <Checkbox
+                      size="sm"
+                      color="primary"
+                      checked={selectedProjects.includes(project._id)}
+                      onChange={() => handleRowSelect(project._id)}
+                    />
                   </Box>
-                ))}
-              </Box>
-            </Box>
-            <Box component="tbody">
-              {paginatedProjects.length > 0 ? (
-                paginatedProjects.map((project, index) => (
-                  <Box
-                    component="tr"
-                    key={index}
-                    sx={{
-                      "&:hover": { backgroundColor: "neutral.plainHoverBg" },
-                    }}
-                  >
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <Checkbox
-                        size="sm"
-                        color="primary"
-                        checked={selectedProjects.includes(project._id)}
-                        onChange={() => handleRowSelect(project._id)}
-                      />
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.code}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.customer}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.name}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.email}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.number}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.state}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.service}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <RowMenu currentPage={currentPage} p_id={project.p_id} />
-                    </Box>
-                  </Box>
-                ))
-              ) : (
-                <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={9}
                     sx={{
+                      borderBottom: "1px solid #ddd",
                       padding: "8px",
                       textAlign: "center",
-                      fontStyle: "italic",
                     }}
                   >
-                    No data available
+                    {project.code}
                   </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.customer}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.name}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.email}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.number}
+                  </Box>
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  ></Box>
                 </Box>
-              )}
-            </Box>
+              ))
+            ) : (
+              <Box component="tr">
+                <Box
+                  component="td"
+                  colSpan={9}
+                  sx={{
+                    padding: "8px",
+                    textAlign: "center",
+                    fontStyle: "italic",
+                  }}
+                >
+                  No data available
+                </Box>
+              </Box>
+            )}
           </Box>
-      
+        </Box>
       </Sheet>
 
       {/* Pagination */}
@@ -591,7 +380,7 @@ const handleDelete = async () => {
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
           alignItems: "center",
-          flexDirection:{xs:"column", md:"row"},
+          flexDirection: { xs: "column", md: "row" },
           marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
@@ -627,19 +416,6 @@ const handleDelete = async () => {
             )
           )}
         </Box>
-        {/* <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
-    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-      <IconButton
-        key={page}
-        size="sm"
-        variant={page === currentPage ? "contained" : "outlined"}
-        color="neutral"
-        onClick={() => handlePageChange(page)}
-      >
-        {page}
-      </IconButton>
-    ))}
-  </Box> */}
 
         <Button
           size="sm"

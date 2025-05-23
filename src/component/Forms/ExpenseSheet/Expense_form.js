@@ -328,7 +328,7 @@ const Expense_Form = () => {
       <tr>
         <th>Head</th>
         <th>Amt</th>
-        <th>Approval Amt</th> {/* New Column */}
+        <th>Approval Amt</th> 
       </tr>
     </thead>
     <tbody>
