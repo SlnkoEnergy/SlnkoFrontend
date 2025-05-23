@@ -297,9 +297,9 @@ const CamHandoverSheetForm = ({ onBack }) => {
     }),
     order_details: Yup.object().shape({
       discom_name: Yup.string().required("DISCOM name is required"),
-      design_date: Yup.string().required(
-        "Preliminary design sign-off date is required"
-      ),
+      // design_date: Yup.string().required(
+      //   "Preliminary design sign-off date is required"
+      // ),
     }),
     project_detail: Yup.object().shape({
       project_type: Yup.string().required("Project type is required"),
@@ -316,7 +316,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
     }),
     
     invoice_detail: Yup.object().shape({
-      invoice_recipient: Yup.string().required("Invoice recipient is required"),
+      // invoice_recipient: Yup.string().required("Invoice recipient is required"),
       invoicing_address: Yup.string().required("Invoicing address is required"),
     }),
   });
@@ -548,25 +548,26 @@ const CamHandoverSheetForm = ({ onBack }) => {
     useUpdateHandOverMutation();
   const [updateStatusHandOver] = useUpdateStatusHandOverMutation();
 
-  const handleSubmit = async () => {
-  if (!LeadId) {
+const handleSubmit = async () => {
+  if (!LeadId || !formData._id) {
     toast.error("Invalid or missing ID!");
     return;
   }
 
   try {
+    
     await handoverSchema.validate(formData, { abortEarly: false });
 
-    // ✅ Only allow editing in these two conditions:
-  
-
-    if (formData.status_of_handoversheet === "Approved" &&
-        formData.is_locked === "locked") {
-      toast.error("This handover sheet cannot be update because it is locked.");
+   
+    if (
+      formData.status_of_handoversheet === "Approved" &&
+      formData.is_locked === "locked"
+    ) {
+      toast.error("This handover sheet cannot be updated because it is locked.");
       return;
     }
 
-    // ✅ Handle land conversion safely
+  
     const land =
       typeof formData.project_detail?.land === "string"
         ? formData.project_detail.land
@@ -578,14 +579,14 @@ const CamHandoverSheetForm = ({ onBack }) => {
       order_details: { ...formData.order_details },
       project_detail: {
         ...formData.project_detail,
-        land: land,
+        land,
       },
       commercial_details: { ...formData.commercial_details },
       other_details: { ...formData.other_details },
       invoice_detail: { ...formData.invoice_detail },
       status_of_handoversheet: "Approved",
       is_locked: "locked",
-      submitted_by: user?.name
+      submitted_by: user?.name,
     };
 
     const statusPayload = {
@@ -593,19 +594,16 @@ const CamHandoverSheetForm = ({ onBack }) => {
       status_of_handoversheet: "Approved",
     };
 
-    // ✅ Call APIs
-    console.log("Updating status...");
-    const statusPromise = updateStatusHandOver(statusPayload).unwrap();
-
-    console.log("Updating form data...");
-    const updatePromise = updateHandOver(updatedFormData).unwrap();
-
-    await statusPromise;
+    
+    // console.log("Updating status...");
+    await updateStatusHandOver(statusPayload).unwrap();
     toast.success("Handover sheet locked.");
 
-    await updatePromise;
+    // console.log("Updating form data...");
+    await updateHandOver(updatedFormData).unwrap();
     toast.success("Project updated successfully.");
 
+    
     navigate("/cam_dash");
   } catch (error) {
     if (error.name === "ValidationError") {
@@ -620,6 +618,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
     }
   }
 };
+
 
 
   return (
@@ -723,7 +722,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                Invoice To <span style={{ color: "red" }}>*</span>
+                Invoice To
               </Typography>
               <Input
                 fullWidth
@@ -860,7 +859,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
 
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                Preliminary Design Sign-off Date <span style={{ color: "red" }}>*</span>
+                Preliminary Design Sign-off Date
               </Typography>
               <Input
                 type="date"
@@ -876,7 +875,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                Solar Module Scope<span style={{ color: "red" }}>*</span>
+                Solar Module Scope
               </Typography>
               <Select
                 fullWidth
@@ -903,7 +902,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
               <>
                 <Grid item xs={12} sm={6}>
                   <Typography level="body1">
-                    Module Make<span style={{ color: "red" }}>*</span>
+                    Module Make
                   </Typography>
                   <Select
                     fullWidth
@@ -944,7 +943,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
 
                 <Grid item xs={12} sm={6}>
                   <Typography level="body1">
-                    Module Capacity<span style={{ color: "red" }}>*</span>
+                    Module Capacity
                   </Typography>
                   <Select
                     fullWidth
@@ -974,7 +973,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
 
                 <Grid item xs={12} sm={6}>
                   <Typography level="body1">
-                    Module Type<span style={{ color: "red" }}>*</span>
+                    Module Type
                   </Typography>
                   <Select
                     fullWidth
@@ -997,7 +996,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
                 Solar Inverter Scope
-                <span style={{ color: "red" }}>*</span>
+                
               </Typography>
               <Select
                 fullWidth
@@ -1024,7 +1023,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
               <>
                 <Grid item xs={12} sm={6}>
                   <Typography level="body1">
-                    Inverter Make<span style={{ color: "red" }}>*</span>
+                    
                   </Typography>
                   <Select
                     fullWidth
@@ -1071,7 +1070,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
 
                 <Grid item xs={12} sm={6}>
                   <Typography level="body1">
-                    Inverter Type<span style={{ color: "red" }}>*</span>
+                    Inverter Type
                   </Typography>
                   <Select
                     fullWidth
@@ -1113,7 +1112,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
               >
                 <Option value="Yes">Yes</Option>
                 <Option value="No">No</Option>
-              </Select>
+              </Select> 
             </Grid>
 
             <Grid item xs={12} sm={6}>

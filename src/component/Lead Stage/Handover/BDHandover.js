@@ -261,6 +261,10 @@ const HandoverSheetForm = () => {
       customer: Yup.string().required("Customer is required"),
       number: Yup.string().required("Phone number is required"),
       state: Yup.string().required("State is required"),
+     site_address: Yup.object().shape({
+      village_name: Yup.string().required("Village name is required"),
+      district_name: Yup.string().required("District name is required"),
+    }),
     }),
     order_details: Yup.object().shape({
       type_business: Yup.string().required("Business type is required"),
