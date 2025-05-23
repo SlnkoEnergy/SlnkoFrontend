@@ -601,6 +601,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
       invoice_detail: { ...formData.invoice_detail },
       status_of_handoversheet: "Approved",
       is_locked: "locked",
+      submitted_by: user?.name
     };
 
     const statusPayload = {
@@ -1171,7 +1172,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 <Input
                   name="acres"
                   type="text"
-                  placeholder="e.g. 5"
+                  placeholder="e.g. 5, 2, 3"
                   value={formData.project_detail?.land?.acres || ""}
                   onChange={(e) =>
                     setFormData((prev) => ({

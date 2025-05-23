@@ -33,6 +33,7 @@ import { forwardRef, useCallback, useImperativeHandle } from "react";
 import { toast } from "react-toastify";
 import NoData from "../../assets/alert-bell.svg";
 import { useGetEntireLeadsQuery } from "../../redux/leadsSlice";
+import { useGetTasksQuery } from "../../redux/tasksSlice";
 
 const Overall_Leads = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -57,6 +58,7 @@ const Overall_Leads = forwardRef((props, ref) => {
   // });
 
   const { data: getLead = [], isLoading, error } = useGetEntireLeadsQuery();
+  const { data: getTask = [] } = useGetTasksQuery();
 
   const leads = [
     ...(getLead?.lead?.initialdata?.map((item) => ({
@@ -74,97 +76,6 @@ const Overall_Leads = forwardRef((props, ref) => {
     ...(getLead?.lead?.deaddata?.map((item) => ({ ...item, status: "Dead" })) ||
       []),
   ];
-
-  // const handleItemsPerPageChange = (event) => {
-  //   setItemsPerPage(parseInt(event.target.value));
-  //   setCurrentPage(1); // Optional: reset to first page on change
-  // };
-
-  // console.log("overall leads", leads);
-
-  // const LeadStatus = ({ lead = {} }) => {
-  //   const {
-  //     loi = "",
-  //     ppa = "",
-  //     loa = "",
-  //     other_remarks = "",
-  //     token_money = ""
-  //   } = lead;
-
-  //   let status = "Initial";
-  //   let color = "primary";
-  //   let variant = "soft";
-
-  //   // ✅ Won
-  //   if (
-  //     (loi === "Yes" || loi === "No") &&
-  //     (ppa === "Yes" || ppa === "No") &&
-  //     (loa === "Yes" || loa === "No") &&
-  //     token_money === "Yes" &&
-  //     (!other_remarks || other_remarks.trim() === "")
-  //   ) {
-  //     status = "Won";
-  //     color = "success";
-  //   }
-  //   // ✅ Initial
-  //   else if (
-  //     (loi === "No" || loi === "") &&
-  //     (!ppa || ppa === "No") &&
-  //     (!loa || loa === "No") &&
-  //     (!other_remarks || other_remarks.trim() === "") &&
-  //     (!token_money || token_money === "No")
-  //   ) {
-  //     status = "Initial";
-  //     color = "primary";
-  //   }
-  //   // ✅ Warm (allowing other_remarks to be filled or empty)
-  //   else if (
-  //     (loi === "Yes" || loi === "No") &&
-  //     (ppa === "Yes" || ppa === "No") &&
-  //     (loa === "Yes" || loa === "No") &&
-  //     token_money === "No"
-  //   ) {
-  //     status = "Warm";
-  //     color = "warning";
-  //   }
-
-  //   // ✅ Follow Up (if loi is "Yes", regardless of token_money, and other_remarks is empty)
-  //   else if (
-  //     loi === "Yes" &&
-  //     (ppa === "Yes" || ppa === "No") &&
-  //     (loa === "Yes" || loa === "No") &&
-  //     (!other_remarks || other_remarks.trim() === "")
-  //   ) {
-  //     status = "Follow Up";
-  //     color = "warning";
-  //   }
-  //   // ✅ Dead (fallback)
-  //   else if (
-  //     (loi === "No" || loi === "Yes") &&
-  //     (ppa === "No" || ppa === "Yes") &&
-  //     (loa === "No" || loa === "Yes") &&
-  //     (token_money === "No" || token_money === "Yes")
-  //   ) {
-  //     status = "Dead";
-  //     color = "danger";
-  //   }
-
-  //   // ❓ Unknown fallback
-  //   else {
-  //     status = "Unknown";
-  //     color = "neutral";
-  //   }
-
-  //   return (
-  //     <Chip
-  //       variant={variant}
-  //       color={color}
-  //       size="md"
-  //     >
-  //       {status}
-  //     </Chip>
-  //   );
-  // };
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userDetails");
@@ -367,41 +278,74 @@ const Overall_Leads = forwardRef((props, ref) => {
   const filteredData = useMemo(() => {
     if (!user || !user.name) return [];
 
+    const userName = user.name.trim();
+    const userRole = user.role?.trim();
+    const isAdmin =
+      userRole === "admin" ||
+      userRole === "superadmin" ||
+      userName === "Shiv Ram Tathagat";
+
+    const taskByWhomList =
+      getTask?.flatMap((task) => {
+        const byWhom = task.by_whom;
+        if (Array.isArray(byWhom)) return byWhom.map((s) => s.trim());
+        if (typeof byWhom === "string") return [byWhom.trim()];
+        return [];
+      }) || [];
+
+    const stateUserMap = {
+      "Uttar Pradesh": [
+        "Geeta",
+        "Shambhavi Gupta",
+        "Vibhav Upadhyay",
+        "Navin Kumar Gautam",
+      ],
+      Rajasthan: ["Shantanu Sameer", "Vibhav Upadhyay", "Navin Kumar Gautam"],
+      "Madhya Pradesh": ["Ketan Kumar Jha"],
+    };
+
     return leads
       .filter((lead) => {
-        const submittedBy = lead.submitted_by?.trim() || "unassigned";
-        const userName = user.name.trim();
-        const userRole = user.role?.toLowerCase();
+        const leadState = lead.state?.trim() || "";
+        const submittedBy = lead.submitted_by?.trim() || "";
 
-        const isAdmin = userRole === "admin" || userRole === "superadmin";
-        const matchesUser = isAdmin || submittedBy === userName;
+        const allowedUsers = stateUserMap[leadState] || [];
+        const isAllowedForState = allowedUsers.includes(userName);
+        const isSubmittedByUser = submittedBy === userName;
+        const isLinkedByTask = taskByWhomList.includes(submittedBy);
 
+        return (
+          isAdmin || isAllowedForState || isSubmittedByUser || isLinkedByTask
+        );
+      })
+      .filter((lead) => {
         const matchesQuery = [
           "id",
           "c_name",
           "mobile",
           "state",
-          "status",
           "submitted_by",
-        ].some((key) => lead[key]?.toLowerCase().includes(searchQuery));
+        ].some((key) =>
+          lead[key]
+            ?.toString()
+            .toLowerCase()
+            .trim()
+            .includes(searchQuery.trim().toLowerCase())
+        );
 
         const matchesDate = selectedDate
           ? formatDate(lead.entry_date).toLocaleDateString() ===
             formatDate(selectedDate).toLocaleDateString()
           : true;
 
-        return matchesUser && matchesQuery && matchesDate;
+        return matchesQuery && matchesDate;
       })
       .sort((a, b) => {
-        const dateA = formatDate(a.entry_date);
-        const dateB = formatDate(b.entry_date);
-
-        if (!dateA.id) return 1;
-        if (!dateB.id) return -1;
-
+        const dateA = new Date(formatDate(a.entry_date));
+        const dateB = new Date(formatDate(b.entry_date));
         return dateB - dateA;
       });
-  }, [leads, searchQuery, selectedDate, user]);
+  }, [leads, searchQuery, selectedDate, user, getTask]);
 
   // const filteredData = useMemo(() => {
   //   return leads

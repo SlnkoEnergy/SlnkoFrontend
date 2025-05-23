@@ -255,40 +255,67 @@ const StandByRequest = forwardRef((props, ref) => {
   //       return String(b.id).localeCompare(String(a.id));
   //     });
   // }, [leads, searchQuery, selectedDate]);
-    const filteredData = useMemo(() => {
-      if (!user || !user.name) return [];
-  
-      return leads
-        .filter((lead) => {
-          const submittedBy = lead.submitted_by?.trim() || "";
-          const userName = user.name.trim();
-          const userRole = user.role?.toLowerCase();
-  
-          const isAdmin = userRole === "admin" || userRole === "superadmin";
-          const matchesUser = isAdmin || submittedBy === userName;
-  
-          const matchesQuery = ["id", "c_name", "mobile", "state", "submitted_by"].some(
-            (key) => lead[key]?.toLowerCase().includes(searchQuery)
-          );
-  
-          const matchesDate = selectedDate
-            ? formatDate(lead.entry_date).toLocaleDateString() === formatDate(selectedDate).toLocaleDateString()
-            : true;
-  
-          return matchesUser && matchesQuery && matchesDate;
-        })
-        .sort((a, b) => {
-          const dateA = formatDate(a.entry_date);
-          const dateB = formatDate(b.entry_date);
-  
-          // if (isNaN(dateA.getTime())) return 1;
-          // if (isNaN(dateB.getTime())) return -1;
-          if (!dateA.id) return 1;
-          if (!dateB.id) return -1;
-  
-          return dateB - dateA;
-        });
-    }, [leads, searchQuery, selectedDate, user]);
+
+   const filteredData = useMemo(() => {
+     if (!user || !user.name) return [];
+   
+     const userName = user.name.trim();
+     const userRole = user.role?.trim();
+     const isAdmin = userRole === "admin" || userRole === "superadmin"|| userName === "Shiv Ram Tathagat";
+   
+     // State-based user access
+      const stateUserMap = {
+       "Uttar Pradesh": ["Geeta", "Shambhavi Gupta", "Vibhav Upadhyay", "Navin Kumar Gautam"],
+       "Rajasthan": ["Shantanu Sameer", "Vibhav Upadhyay", "Navin Kumar Gautam"],
+       "Madhya Pradesh": ["Ketan Kumar Jha"],
+     };
+   
+     return leads
+       .filter((lead) => {
+         const leadState = lead.state?.trim() || "";
+         const submittedBy = lead.submitted_by?.trim() || "";
+   
+         // ✅ Allow if user is admin
+         if (isAdmin) return true;
+   
+         // ✅ Allow if user is in the list for that state
+         const allowedUsers = stateUserMap[leadState] || [];
+         const isAllowedForState = allowedUsers.includes(userName);
+   
+         // ✅ Allow if user submitted this lead
+         const isSubmittedByUser = submittedBy === userName;
+   
+         return isAllowedForState || isSubmittedByUser;
+       })
+       .filter((lead) => {
+         // Apply search and date filters after role filtering
+        const matchesQuery = [
+          "id",
+          "c_name",
+          "mobile",
+          "state",
+          "submitted_by",
+        ].some((key) =>
+          lead[key]
+            ?.toString()
+            .toLowerCase()
+            .trim()
+            .includes(searchQuery.trim().toLowerCase())
+        );
+   
+         const matchesDate = selectedDate
+           ? formatDate(lead.entry_date).toLocaleDateString() ===
+             formatDate(selectedDate).toLocaleDateString()
+           : true;
+   
+         return matchesQuery && matchesDate;
+       })
+       .sort((a, b) => {
+         const dateA = new Date(formatDate(a.entry_date));
+         const dateB = new Date(formatDate(b.entry_date));
+         return dateB - dateA;
+       });
+   }, [leads, searchQuery, selectedDate, user]);
 
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];

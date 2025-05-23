@@ -46,6 +46,7 @@ import {
 } from "../../../../redux/tasksSlice";
 import { Dialog } from "@mui/material";
 import { toast } from "react-toastify";
+import { useEffect } from "react";
 
 function InitialLeads() {
   const allLeadRef = useRef();
@@ -328,20 +329,20 @@ function LeadPage({
   handleExportToCSV,
 }) {
   const { mode } = useColorScheme();
-  //   const [user, setUser] = useState(null);
+    const [user, setUser] = useState(null);
 
-  //   useEffect(() => {
-  //    const userData = getUserData();
-  //    setUser(userData);
-  //  }, []);
+    useEffect(() => {
+     const userData = getUserData();
+     setUser(userData);
+   }, []);
 
-  //  const getUserData = () => {
-  //    const userData = localStorage.getItem("userDetails");
-  //    if (userData) {
-  //      return JSON.parse(userData);
-  //    }
-  //    return null;
-  //  };
+   const getUserData = () => {
+     const userData = localStorage.getItem("userDetails");
+     if (userData) {
+       return JSON.parse(userData);
+     }
+     return null;
+   };
 
   return (
     <Box sx={{ display: "flex", minHeight: "100dvh" }}>
@@ -470,15 +471,16 @@ function LeadPage({
                 Task Dashboard
               </Button>
 
-              <Button
-                color="primary"
-                startDecorator={<DownloadRoundedIcon />}
-                size="sm"
-                onClick={handleExportToCSV}
-              >
-                Export to CSV
-              </Button>
-              
+              {(user?.name === "admin" || user?.name === "IT Team") && (
+                <Button
+                  color="primary"
+                  startDecorator={<DownloadRoundedIcon />}
+                  size="sm"
+                  onClick={handleExportToCSV}
+                >
+                  Export to CSV
+                </Button>
+              )}
             </Box>
             <NotificationBell />
           </Box>

@@ -49,32 +49,11 @@ const StandByRequest = forwardRef((props, ref) => {
   const [user, setUser] = useState(null);
   const [selectedLead, setSelectedLead] = useState(null);
 
-  // const [cachedData, setCachedData] = useState(() => {
-  //   // Try to load cached data from localStorage
-  //   const cached = localStorage.getItem("paginatedData");
-  //   return cached ? JSON.parse(cached) : [];
-  // });
 
   const { data: getLead = [], isLoading, error } = useGetInitialLeadsQuery();
   const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
 
-  // const LeadStatus = ({ lead }) => {
-  //   const { loi, ppa, loa, other_remarks, token_money } = lead;
 
-  //   // Determine the initial status
-  //   const isInitialStatus =
-  //     (!loi || loi === "No") &&
-  //     (!ppa || ppa === "No") &&
-  //     (!loa || loa === "No") &&
-  //     (!other_remarks || other_remarks === "") &&
-  //     (!token_money || token_money === "No");
-
-  //   return (
-  //     <Chip color="neutral" variant="soft" sx={{ backgroundColor: "#BBDEFB", color: "#000" }}>
-  //     Initial
-  //   </Chip>
-  //   );
-  // };
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userDetails");
@@ -259,45 +238,109 @@ const StandByRequest = forwardRef((props, ref) => {
 
   const handleDateFilter = (e) => {
     setSelectedDate(e.target.value);
+  }; 
+
+const filteredData = useMemo(() => {
+  if (!user || !user.name) return [];
+
+  const userName = user.name.trim();
+  const userRole = user.role?.trim();
+  const isAdmin = userRole === "admin" || userRole === "superadmin"|| userName === "Shiv Ram Tathagat";
+
+  // State-based user access
+   const stateUserMap = {
+    "Uttar Pradesh": ["Geeta", "Shambhavi Gupta", "Vibhav Upadhyay", "Navin Kumar Gautam"],
+    "Rajasthan": ["Shantanu Sameer", "Vibhav Upadhyay", "Navin Kumar Gautam"],
+    "Madhya Pradesh": ["Ketan Kumar Jha"],
   };
 
-  const filteredData = useMemo(() => {
-    if (!user || !user.name) return [];
+  return leads
+    .filter((lead) => {
+      const leadState = lead.state?.trim() || "";
+      const submittedBy = lead.submitted_by?.trim() || "";
 
-    return leads
-      .filter((lead) => {
-        const submittedBy = lead.submitted_by?.trim() || "";
-        const userName = user.name.trim();
-        const userRole = user.role?.toLowerCase();
+      // ✅ Allow if user is admin
+      if (isAdmin) return true;
 
-        const isAdmin = userRole === "admin" || userRole === "superadmin";
-        const matchesUser = isAdmin || submittedBy === userName;
+      // ✅ Allow if user is in the list for that state
+      const allowedUsers = stateUserMap[leadState] || [];
+      const isAllowedForState = allowedUsers.includes(userName);
 
-        const matchesQuery = [
+      // ✅ Allow if user submitted this lead
+      const isSubmittedByUser = submittedBy === userName;
+
+      return isAllowedForState || isSubmittedByUser;
+    })
+    .filter((lead) => {
+      // Apply search and date filters after role filtering
+      const matchesQuery = [
           "id",
           "c_name",
           "mobile",
           "state",
           "submitted_by",
-        ].some((key) => lead[key]?.toLowerCase().includes(searchQuery));
+        ].some((key) =>
+          lead[key]
+            ?.toString()
+            .toLowerCase()
+            .trim()
+            .includes(searchQuery.trim().toLowerCase())
+        );
 
-        const matchesDate = selectedDate
-          ? formatDate(lead.entry_date).toLocaleDateString() ===
-            formatDate(selectedDate).toLocaleDateString()
-          : true;
+      const matchesDate = selectedDate
+        ? formatDate(lead.entry_date).toLocaleDateString() ===
+          formatDate(selectedDate).toLocaleDateString()
+        : true;
 
-        return matchesUser && matchesQuery && matchesDate;
-      })
-      .sort((a, b) => {
-        const dateA = formatDate(a.entry_date);
-        const dateB = formatDate(b.entry_date);
+      return matchesQuery && matchesDate;
+    })
+    .sort((a, b) => {
+      const dateA = new Date(formatDate(a.entry_date));
+      const dateB = new Date(formatDate(b.entry_date));
+      return dateB - dateA;
+    });
+}, [leads, searchQuery, selectedDate, user]);
 
-        if (!dateA.id) return 1;
-        if (!dateB.id) return -1;
 
-        return dateB - dateA;
-      });
-  }, [leads, searchQuery, selectedDate, user]);
+
+
+  // const filteredData = useMemo(() => {
+  //   if (!user || !user.name) return [];
+
+  //   return leads
+  //     .filter((lead) => {
+  //       const submittedBy = lead.submitted_by?.trim() || "";
+  //       const userName = user.name.trim();
+  //       const userRole = user.role?.toLowerCase();
+
+  //       const isAdmin = userRole === "admin" || userRole === "superadmin";
+  //       const matchesUser = isAdmin || submittedBy === userName;
+
+  //       const matchesQuery = [
+  //         "id",
+  //         "c_name",
+  //         "mobile",
+  //         "state",
+  //         "submitted_by",
+  //       ].some((key) => lead[key]?.toLowerCase().includes(searchQuery));
+
+  //       const matchesDate = selectedDate
+  //         ? formatDate(lead.entry_date).toLocaleDateString() ===
+  //           formatDate(selectedDate).toLocaleDateString()
+  //         : true;
+
+  //       return matchesUser && matchesQuery && matchesDate;
+  //     })
+  //     .sort((a, b) => {
+  //       const dateA = formatDate(a.entry_date);
+  //       const dateB = formatDate(b.entry_date);
+
+  //       if (!dateA.id) return 1;
+  //       if (!dateB.id) return -1;
+
+  //       return dateB - dateA;
+  //     });
+  // }, [leads, searchQuery, selectedDate, user]);
 
   // const filteredData = useMemo(() => {
   //   return leads

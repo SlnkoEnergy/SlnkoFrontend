@@ -172,7 +172,8 @@ function Sidebar() {
           },
         }}
       >
-        {user?.name === "IT Team" || user?.name === "admin" ? (
+
+        {(user?.name === "IT Team" || user?.name === "admin") ? (
           <List>
             {/* Dashboard */}
             <ListItem>
@@ -1631,7 +1632,18 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
-        ) : null}
+        ) : (
+        <List>
+      <ListItem>
+        <ListItemButton onClick={() => navigate("/dashboard")}>
+          <HomeRoundedIcon />
+          <ListItemContent>
+            <Typography level="title-sm">Expense Sheet</Typography>
+          </ListItemContent>
+        </ListItemButton>
+      </ListItem>
+    </List> )}
+       
 
         <List
           size="sm"
