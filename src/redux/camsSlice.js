@@ -6,9 +6,10 @@ export const camsApi = createApi({
   tagTypes: ["CAM"],
   endpoints: (builder) => ({
     getHandOver: builder.query({
-      query: () => "get-all-handover-sheet",
+      query: ({ page = 1 } = {}) => `get-all-handover-sheet?page=${page}`,
       providesTags: ["CAM"],
     }),
+
     // getBDHandOver: builder.query({
     //   query: () => "get-all-bd-handoversheet",
     //   providesTags: ["CAM"],

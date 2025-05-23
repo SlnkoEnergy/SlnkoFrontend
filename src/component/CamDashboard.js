@@ -54,7 +54,7 @@ function Dash_cam() {
     error,
     isLoading,
     refetch,
-  } = useGetHandOverQuery(refreshKey);
+  } = useGetHandOverQuery();
 
   const { data: getLead = {} } = useGetEntireLeadsQuery();
 
@@ -111,196 +111,80 @@ function Dash_cam() {
     }
   }, []);
 
- const StatusChip = ({ status, is_locked, _id, user, refetch }) => {
-  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
-  const [lockedState, setLockedState] = useState(is_locked === "locked");
+  const StatusChip = ({ status, is_locked, _id, user, refetch }) => {
+    const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+    const [lockedState, setLockedState] = useState(is_locked === "locked");
 
-  const [updateUnlockHandoversheet, { isLoading }] =
-    useUpdateHandOverMutation();
+    const [updateUnlockHandoversheet, { isLoading }] =
+      useUpdateHandOverMutation();
 
-  useEffect(() => {
-    setLockedState(is_locked === "locked");
-  }, [is_locked]);
+    useEffect(() => {
+      setLockedState(is_locked === "locked");
+    }, [is_locked]);
 
-  const handleSubmit = async () => {
-    if (!isAdmin) {
-      toast.error(
-        "Permission denied. You do not have access to perform this action.",
-        { icon: "⛔" }
-      );
-      return;
-    }
-
-    if (isLoading || !lockedState || status !== "Approved") return;
-
-    try {
-      await updateUnlockHandoversheet({ _id, is_locked: "unlock" }).unwrap();
-      toast.success("Handover sheet unlocked 🔓");
-      setLockedState(false);
-      refetch?.();
-    } catch (err) {
-      console.error("Error:", err?.data?.message || err.error);
-      toast.error("Failed to update status.");
-    }
-  };
-
-  // New conditions for colors and icons
-  const showUnlockIcon = !lockedState && status === "Approved";
-  const showSuccessLockIcon = lockedState && status === "submitted";
-  
-  // Color logic:
-  // success color if (unlocked & Approved) OR (locked & Submitted)
-  const color =
-    (showUnlockIcon || showSuccessLockIcon) ? "success" : "danger";
-
-  // Icon logic:
-  // Unlock icon if showUnlockIcon, else lock icon always
-  const IconComponent = showUnlockIcon ? LockOpenIcon : LockIcon;
-
-  return (
-    <Button
-      size="sm"
-      variant="soft"
-      color={color}
-      onClick={
-        isAdmin && lockedState && status === "Approved" && !isLoading
-          ? handleSubmit
-          : undefined
+    const handleSubmit = async () => {
+      if (!isAdmin) {
+        toast.error(
+          "Permission denied. You do not have access to perform this action.",
+          { icon: "⛔" }
+        );
+        return;
       }
-      sx={{
-        minWidth: 36,
-        height: 36,
-        padding: 0,
-        fontWeight: 500,
-        cursor:
+
+      if (isLoading || !lockedState || status !== "Approved") return;
+
+      try {
+        await updateUnlockHandoversheet({ _id, is_locked: "unlock" }).unwrap();
+        toast.success("Handover sheet unlocked 🔓");
+        setLockedState(false);
+        refetch?.();
+      } catch (err) {
+        console.error("Error:", err?.data?.message || err.error);
+        toast.error("Failed to update status.");
+      }
+    };
+
+    // New conditions for colors and icons
+    const showUnlockIcon = !lockedState && status === "Approved";
+    const showSuccessLockIcon = lockedState && status === "submitted";
+
+    // Color logic:
+    // success color if (unlocked & Approved) OR (locked & Submitted)
+    const color = showUnlockIcon || showSuccessLockIcon ? "success" : "danger";
+
+    // Icon logic:
+    // Unlock icon if showUnlockIcon, else lock icon always
+    const IconComponent = showUnlockIcon ? LockOpenIcon : LockIcon;
+
+    return (
+      <Button
+        size="sm"
+        variant="soft"
+        color={color}
+        onClick={
           isAdmin && lockedState && status === "Approved" && !isLoading
-            ? "pointer"
-            : "default",
-      }}
-    >
-      {isLoading ? (
-        <CircularProgress size="sm" />
-      ) : (
-        <IconComponent sx={{ fontSize: "1rem" }} />
-      )}
-    </Button>
-  );
-};
-
-
-  // const RowMenu = ({ currentPage, p_id }) => {
-  //   console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
-
-  //   const [user, setUser] = useState(null);
-
-  //   useEffect(() => {
-  //     const userData = getUserData();
-  //     setUser(userData);
-  //   }, []);
-
-  //   const getUserData = () => {
-  //     const userData = localStorage.getItem("userDetails");
-  //     if (userData) {
-  //       return JSON.parse(userData);
-  //     }
-  //     return null;
-  //   };
-
-  //   return (
-  //     <>
-  //       <Dropdown>
-  //         <MenuButton
-  //           slots={{ root: IconButton }}
-  //           slotProps={{
-  //             root: { variant: "plain", color: "neutral", size: "sm" },
-  //           }}
-  //         >
-  //           <MoreHorizRoundedIcon />
-  //         </MenuButton>
-
-  //         <Menu size="sm" sx={{ minWidth: 140 }}>
-  //           <MenuItem
-  //             color="primary"
-  //             onClick={() => {
-  //               const page = currentPage;
-  //               const projectId = Number(p_id);
-  //               sessionStorage.setItem("view handover", projectId);
-  //               // localStorage.setItem("p_id", projectID);
-  //               navigate(`/view_handover?page=${page}&p_id=${projectId}`);
-  //             }}
-  //           >
-  //             <ContentPasteGoIcon />
-  //             <Typography>View</Typography>
-  //           </MenuItem>
-  //           <MenuItem
-  //             color="primary"
-  //             onClick={() => {
-  //               const page = currentPage;
-  //               const projectId = Number(p_id);
-  //               sessionStorage.setItem("update handover", projectId);
-  //               // localStorage.setItem("p_id", projectID);
-  //               navigate(`/edit_handover?page=${page}&p_id=${projectId}`);
-  //             }}
-  //           >
-  //             <EditNoteIcon />
-  //             <Typography>Edit HandOver</Typography>
-  //           </MenuItem>
-  //           {/* <MenuItem
-  //               onClick={() => {
-  //                 const page = currentPage;
-  //                 const projectId = String(p_id);
-  //                 localStorage.setItem("get-project", projectId);
-  //                 navigate("#");
-  //               }}
-  //             >
-  //               <HistoryIcon />
-  //               <Typography>View BOM</Typography>
-  //             </MenuItem> */}
-  //           {/* <Divider sx={{ backgroundColor: "lightblue" }} /> */}
-  //           {/* {(user?.name === "IT Team" || user?.name === "admin") && (
-  //               <MenuItem
-  //                 color="danger"
-  //                 disabled={selected.length === 0}
-  //                 onClick={handleDelete}
-  //               >
-  //                 <DeleteIcon />
-  //                 <Typography>Delete</Typography>
-  //               </MenuItem>
-  //             )} */}
-  //         </Menu>
-  //       </Dropdown>
-  //     </>
-  //   );
-  // };
-
-  // const handleDelete = async () => {
-  //   if (selected.length === 0) {
-  //     toast.error("No offers selected for deletion.");
-  //     return;
-  //   }
-
-  //   try {
-  //     setLoading(true);
-  //     setError("");
-
-  //     for (const _id of selected) {
-  //       await Axios.delete(`/delete-offer/${_id}`);
-
-  //       setCommRate((prev) => prev.filter((item) => item._id !== _id));
-  //       setBdRateData((prev) => prev.filter((item) => item.offer_id !== _id));
-  //       setMergedData((prev) => prev.filter((item) => item.offer_id !== _id));
-  //     }
-
-  //     toast.success("Deleted successfully.");
-  //     setSelected([]);
-  //   } catch (err) {
-  //     console.error("Error deleting offers:", err);
-  //     setError(err.response?.data?.msg || "Failed to delete selected offers.");
-  //     toast.error("Failed to delete selected offers.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+            ? handleSubmit
+            : undefined
+        }
+        sx={{
+          minWidth: 36,
+          height: 36,
+          padding: 0,
+          fontWeight: 500,
+          cursor:
+            isAdmin && lockedState && status === "Approved" && !isLoading
+              ? "pointer"
+              : "default",
+        }}
+      >
+        {isLoading ? (
+          <CircularProgress size="sm" />
+        ) : (
+          <IconComponent sx={{ fontSize: "1rem" }} />
+        )}
+      </Button>
+    );
+  };
 
   const RowMenu = ({ currentPage, p_id, _id }) => {
     return (
@@ -356,43 +240,41 @@ function Dash_cam() {
 
         return matchesSearchQuery;
       })
-       .sort((a, b) => {
-      const dateA = new Date(a?.updatedAt || a?.createdAt || 0);
-      const dateB = new Date(b?.updatedAt || b?.createdAt || 0);
-      return dateB - dateA;
-    });
+      .sort((a, b) => {
+        const dateA = new Date(a?.updatedAt || a?.createdAt || 0);
+        const dateB = new Date(b?.updatedAt || b?.createdAt || 0);
+        return dateB - dateA;
+      });
   }, [combinedData, searchQuery, user]);
 
-  
-// const filteredAndSortedData = useMemo(() => {
-//   if (!Array.isArray(combinedData) || !user?.name) return [];
+  // const filteredAndSortedData = useMemo(() => {
+  //   if (!Array.isArray(combinedData) || !user?.name) return [];
 
-//   const userName = user.name.trim();
-//   const userRole = user.role?.toLowerCase();
-//   const isAdmin = userRole === "admin" || userRole === "superadmin";
-//   const isCAM = ["Prachi Singh", "Guddu Rani Dubey", "Sanjiv Kumar", "Sushant Ranjan Dubey"].includes(userName);
+  //   const userName = user.name.trim();
+  //   const userRole = user.role?.toLowerCase();
+  //   const isAdmin = userRole === "admin" || userRole === "superadmin";
+  //   const isCAM = ["Prachi Singh", "Guddu Rani Dubey", "Sanjiv Kumar", "Sushant Ranjan Dubey"].includes(userName);
 
-//   return combinedData
-//     .filter((project) => {
-//       if (!project) return false;
+  //   return combinedData
+  //     .filter((project) => {
+  //       if (!project) return false;
 
-//       const submittedBy = project.submitted_by?.trim().toLowerCase() || "";
-//       const canAccess = isAdmin || isCAM || submittedBy === userName;
+  //       const submittedBy = project.submitted_by?.trim().toLowerCase() || "";
+  //       const canAccess = isAdmin || isCAM || submittedBy === userName;
 
-//       const matchesSearchQuery = ["code", "customer", "state"].some((key) =>
-//         project[key]?.toString().toLowerCase().includes(searchQuery?.toLowerCase())
-//       );
+  //       const matchesSearchQuery = ["code", "customer", "state"].some((key) =>
+  //         project[key]?.toString().toLowerCase().includes(searchQuery?.toLowerCase())
+  //       );
 
-//       return matchesSearchQuery && canAccess;
-//     })
-//     .sort((a, b) => {
-//       const dateA = new Date(a?.updatedAt || a?.createdAt || 0);
-//       const dateB = new Date(b?.updatedAt || b?.createdAt || 0);
-//       return dateB - dateA; // Most recent first
-//     });
-// }, [combinedData, searchQuery, user]);
+  //       return matchesSearchQuery && canAccess;
+  //     })
+  //     .sort((a, b) => {
+  //       const dateA = new Date(a?.updatedAt || a?.createdAt || 0);
+  //       const dateB = new Date(b?.updatedAt || b?.createdAt || 0);
+  //       return dateB - dateA; // Most recent first
+  //     });
+  // }, [combinedData, searchQuery, user]);
 
- 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
       setSelected(paginatedPayments.map((row) => row._id));
@@ -409,13 +291,16 @@ function Dash_cam() {
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
 
-    if (currentPage > 2) {
-      pages.push(1);
+    if (totalPages <= 5) {
+      // If 5 or fewer pages, show all
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+      return pages;
     }
 
-    if (currentPage > 3) {
-      pages.push("...");
-    }
+    if (currentPage > 2) pages.push(1);
+    if (currentPage > 3) pages.push("...");
 
     for (
       let i = Math.max(1, currentPage - 1);
@@ -425,28 +310,30 @@ function Dash_cam() {
       pages.push(i);
     }
 
-    if (currentPage < totalPages - 2) {
-      pages.push("...");
-    }
-
-    if (currentPage < totalPages - 1) {
-      pages.push(totalPages);
-    }
+    if (currentPage < totalPages - 2) pages.push("...");
+    if (currentPage < totalPages - 1) pages.push(totalPages);
 
     return pages;
   };
+
+  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
+  // const startIndex = (currentPage - 1) * itemsPerPage;
+  // const endIndex = startIndex + itemsPerPage;
+  // const paginatedPayments = filteredAndSortedData.slice(startIndex, endIndex);
 
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
   }, [searchParams]);
 
-  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
-
   const paginatedPayments = filteredAndSortedData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
+  // const totalPages = Math.ceil(currentPage / (1000 / itemsPerPage));
+
+  // const paginatedPayments = filteredAndSortedData;
 
   const draftPayments = paginatedPayments.filter((project) =>
     ["submitted", "Approved"].includes(project.status_of_handoversheet)
@@ -776,13 +663,13 @@ function Dash_cam() {
           pt: 2,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
-          // display: { xs: "none", md: "flex" },
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
           marginLeft: { lg: "18%", xl: "15%" },
         }}
       >
+        {/* Previous Button */}
         <Button
           size="sm"
           variant="outlined"
@@ -793,10 +680,14 @@ function Dash_cam() {
         >
           Previous
         </Button>
+
+        {/* Showing X of Y Results */}
         <Box>
-          Showing {draftPayments.length} of {draftPayments.length} results
+          Showing {paginatedPayments.length} of {filteredAndSortedData.length}{" "}
           results
         </Box>
+
+        {/* Page Numbers */}
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
@@ -818,20 +709,8 @@ function Dash_cam() {
             )
           )}
         </Box>
-        {/* <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
-    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-      <IconButton
-        key={page}
-        size="sm"
-        variant={page === currentPage ? "contained" : "outlined"}
-        color="neutral"
-        onClick={() => handlePageChange(page)}
-      >
-        {page}
-      </IconButton>
-    ))}
-  </Box> */}
 
+        {/* Next Button */}
         <Button
           size="sm"
           variant="outlined"
