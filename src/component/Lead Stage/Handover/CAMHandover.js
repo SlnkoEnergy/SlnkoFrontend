@@ -310,30 +310,14 @@ const CamHandoverSheetForm = ({ onBack }) => {
       purchase_supply_net_meter: Yup.string().required(
         "Purchase supply net metering is required"
       ),
-      land: Yup.object().shape({
-        // type: Yup.string().required("Land type is required"),
-        // acres: Yup.string().required("Land acres is required"),
-      }),
-      // agreement_date: Yup.string().required("Agreement date is required"),
     }),
     commercial_details: Yup.object().shape({
       type: Yup.string().required("Commercial type is required"),
     }),
-    other_details: Yup.object().shape({
-      // cam_member_name: Yup.string().required("CAM member name is required"),
-      // feeder_name: Yup.string().required("Feeder name is required"),
-    }),
+    
     invoice_detail: Yup.object().shape({
       invoice_recipient: Yup.string().required("Invoice recipient is required"),
       invoicing_address: Yup.string().required("Invoicing address is required"),
-
-      invoicing_GST_no: Yup.string().when("invoicing_GST_status", {
-        is: "Yes",
-        then: Yup.string().required("Invoicing GST No. is required"),
-      }),
-      invoicing_GST_status: Yup.string().required(
-        "Invoicing GST status is required"
-      ),
     }),
   });
 
@@ -739,7 +723,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                Invoice To
+                Invoice To <span style={{ color: "red" }}>*</span>
               </Typography>
               <Input
                 fullWidth
@@ -805,7 +789,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                Invoicing Address
+                Invoicing Address<span style={{ color: "red" }}>*</span>
               </Typography>
               <Input
                 fullWidth
@@ -876,7 +860,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
 
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                Preliminary Design Sign-off Date{" "}
+                Preliminary Design Sign-off Date <span style={{ color: "red" }}>*</span>
               </Typography>
               <Input
                 type="date"

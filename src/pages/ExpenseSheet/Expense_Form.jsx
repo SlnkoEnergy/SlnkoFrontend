@@ -80,18 +80,19 @@ function Add_Expense() {
                 color="neutral"
                 href=""
                 sx={{ fontSize: 12, fontWeight: 500 }}
-                onClick={() => navigate("/all-project")}
+                onClick={() => navigate("/expense_dashboard")}
               >
-                All Projects
+                Expense Dashboard
               </Link>
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Add Project
+                Add Expense
               </Typography>
             </Breadcrumbs>
           </Box>
+          
           <Box
             sx={{
               display: "flex",
