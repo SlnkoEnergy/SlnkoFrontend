@@ -91,6 +91,8 @@ import ModuleSheet from "../pages/Eng/ModuleDashboard";
 import Update_Bill from "../pages/SCM/EditBill";
 import PrivateRoute from "./PrivateRoute";
 import Edit_Won_Leads from "../pages/BD/Leads/Won/Forms/won_edit";
+import Add_EXPENSE from "../pages/ExpenseSheet/Expense_Form";
+import Add_Expense from "../pages/ExpenseSheet/Expense_Form";
 
 function index() {
   return (
@@ -815,6 +817,17 @@ function index() {
           </PrivateRoute>
         }
       />
+
+      {/****** Expense Sheet */}
+      <Route
+        path="/add_expense"
+        element={
+          <PrivateRoute>
+            <Add_Expense />
+          </PrivateRoute>
+        }
+      />
+
     </Routes>
   );
 }
