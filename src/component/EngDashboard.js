@@ -32,9 +32,9 @@ import Typography from "@mui/joy/Typography";
 import * as React from "react";
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
-import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
-import TrackChangesIcon from '@mui/icons-material/TrackChanges';
+import DashboardCustomizeIcon from "@mui/icons-material/DashboardCustomize";
+import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
+import TrackChangesIcon from "@mui/icons-material/TrackChanges";
 
 import NoData from "../assets/alert-bell.svg";
 import animationData from "../assets/Lotties/animation-loading.json";
@@ -43,9 +43,11 @@ import { useGetHandOverQuery } from "../redux/camsSlice";
 import { CircularProgress } from "@mui/joy";
 
 import { useGetEntireLeadsQuery } from "../redux/leadsSlice";
+import { useTheme } from "@emotion/react";
 
 function Dash_eng() {
   const navigate = useNavigate();
+  const theme = useTheme();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   // const [error, setError] = useState(null);
@@ -64,74 +66,66 @@ function Dash_eng() {
   const [isUtrSubmitted, setIsUtrSubmitted] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const {
     data: getHandOverSheet = {},
     error,
     isLoading,
-  } = useGetHandOverQuery();
+    refetch,
+  } = useGetHandOverQuery(refreshKey);
 
-  const { data: getLead = {} } = useGetEntireLeadsQuery();
+  // const { data: getLead = {} } = useGetEntireLeadsQuery();
 
-  const leads = [
-    ...(getLead?.lead?.initialdata?.map((item) => ({
-      ...item,
-    })) || []),
-    ...(getLead?.lead?.followupdata?.map((item) => ({
-      ...item,
-    })) || []),
-    ...(getLead?.lead?.warmdata?.map((item) => ({ ...item })) || []),
-    ...(getLead?.lead?.wondata?.map((item) => ({ ...item })) || []),
-    ...(getLead?.lead?.deaddata?.map((item) => ({ ...item })) || []),
-  ];
-
-  // console.log("📦 All Combined Leads:", leads);
+  // const leads = [
+  //   ...(getLead?.lead?.initialdata?.map((item) => ({
+  //     ...item,
+  //   })) || []),
+  //   ...(getLead?.lead?.followupdata?.map((item) => ({
+  //     ...item,
+  //   })) || []),
+  //   ...(getLead?.lead?.warmdata?.map((item) => ({ ...item })) || []),
+  //   ...(getLead?.lead?.wondata?.map((item) => ({ ...item })) || []),
+  //   ...(getLead?.lead?.deaddata?.map((item) => ({ ...item })) || []),
+  // ];
 
   const HandOverSheet = Array.isArray(getHandOverSheet?.Data)
     ? getHandOverSheet.Data.map((entry) => ({
+        _id: entry._id,
         id: entry.id,
         ...entry.customer_details,
         ...entry.order_details,
         ...entry.project_detail,
         ...entry.commercial_details,
-        ...entry.attached_details,
+        ...entry.other_details,
         p_id: entry.p_id,
+        status_of_handoversheet: entry.status_of_handoversheet,
+        submitted_by: entry.submitted_by
       }))
     : [];
 
-  // console.log("📦 All Combined HandOverSheets:", HandOverSheet);
-
-  const combinedData = HandOverSheet.map((handoverItem) => {
-    const matchingLead = leads.find((lead) => lead.id === handoverItem.id);
-
-    return {
-      ...handoverItem,
-      scheme: matchingLead?.scheme || "-",
-    };
-  });
-
   // console.log(combinedData);
 
-  const StatusIcon = ({ isLocked }) => {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        {isLocked ? (
-          <LockClosedIcon style={{ width: 20, height: 20, color: "#f44336" }} />
-        ) : (
-          <LockOpenIcon style={{ width: 20, height: 20, color: "#4caf50" }} />
-        )}
-      </Box>
-    );
-  };
+  // const StatusIcon = ({ isLocked }) => {
+  //   return (
+  //     <Box
+  //       sx={{
+  //         display: "flex",
+  //         justifyContent: "center",
+  //         alignItems: "center",
+  //       }}
+  //     >
+  //       {isLocked ? (
+  //         <LockClosedIcon style={{ width: 20, height: 20, color: "#f44336" }} />
+  //       ) : (
+  //         <LockOpenIcon style={{ width: 20, height: 20, color: "#4caf50" }} />
+  //       )}
+  //     </Box>
+  //   );
+  // };
 
   const RowMenu = ({ currentPage, p_id }) => {
-    console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
+    // console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
 
     const [user, setUser] = useState(null);
 
@@ -161,21 +155,7 @@ function Dash_eng() {
           </MenuButton>
 
           {(user?.name === "IT Team" ||
-            user?.name === "admin" ||
-            [
-              "Navin Kumar Gautam",
-              "Mohd Shakir Khan",
-              "Shiv Ram Tathagat",
-              "Kana Sharma",
-              "Ketan Kumar Jha",
-              "Vibhav Upadhyay",
-              "Shantanu Sameer",
-              "Arnav Shahi",
-              "Shambhavi Gupta",
-              "Geeta",
-              "Anudeep Kumar",
-              "Ashish Jha",
-            ].includes(user?.name)) && (
+            user?.name === "admin".includes(user?.name)) && (
             <Menu size="sm" sx={{ minWidth: 200, p: 1 }}>
               <MenuItem
                 color="primary"
@@ -254,6 +234,54 @@ function Dash_eng() {
     );
   };
 
+    const ProjectCode = ({ currentPage, p_id, code }) => {
+    // console.log("currentPage:", currentPage, "p_id:", p_id);
+
+    return (
+      <>
+        <span
+          style={{
+            cursor: "pointer",
+            color: theme.vars.palette.text.primary,
+            textDecoration: "none",
+          }}
+           onClick={() => {
+            const page = currentPage;
+            const projectId = Number(p_id);
+            sessionStorage.setItem("view handover", projectId);
+            navigate(`/view_handover?page=${page}&p_id=${projectId}`);
+          }}
+        >
+          {code || "-"}
+        </span>
+      </>
+    );
+  };
+
+  const ProjectName = ({ currentPage, p_id, customer }) => {
+    // console.log("currentPage:", currentPage, "p_id:", p_id);
+
+    return (
+      <>
+        <span
+          style={{
+            cursor: "pointer",
+            color: theme.vars.palette.text.primary,
+            textDecoration: "none",
+          }}
+          onClick={() => {
+            const page = currentPage;
+            const projectId = Number(p_id);
+            sessionStorage.setItem("view handover", projectId);
+            navigate(`/view_handover?page=${page}&p_id=${projectId}`);
+          }}
+        >
+          {customer || "-"}
+        </span>
+      </>
+    );
+  };
+
   // const handleDelete = async () => {
   //   if (selected.length === 0) {
   //     toast.error("No offers selected for deletion.");
@@ -288,17 +316,18 @@ function Dash_eng() {
   };
 
   const filteredAndSortedData = useMemo(() => {
-    if (!Array.isArray(combinedData)) return [];
+    if (!Array.isArray(HandOverSheet)) return [];
 
-    return combinedData
+    return HandOverSheet
       .filter((project) => {
         if (!project) return false; // safeguard
 
-        const matchesSearchQuery = ["code", "customer", "state", "scheme"].some((key) =>
-          project[key]
-            ?.toString()
-            .toLowerCase()
-            .includes(searchQuery?.toLowerCase())
+        const matchesSearchQuery = ["code", "customer", "state", "scheme"].some(
+          (key) =>
+            project[key]
+              ?.toString()
+              .toLowerCase()
+              .includes(searchQuery?.toLowerCase())
         );
 
         return matchesSearchQuery;
@@ -308,7 +337,7 @@ function Dash_eng() {
         const dateB = new Date(b?.createdAt || 0);
         return dateB - dateA;
       });
-  }, [combinedData, searchQuery]);
+  }, [HandOverSheet, searchQuery]);
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -373,6 +402,10 @@ function Dash_eng() {
       setCurrentPage(page);
     }
   };
+
+  const draftPayments = paginatedPayments.filter(
+    (project) => project.status_of_handoversheet === "Approved"
+  );
 
   return (
     <>
@@ -470,22 +503,22 @@ function Dash_eng() {
               >
                 <Checkbox
                   size="sm"
-                  checked={selected.length === paginatedPayments.length}
+                  checked={selected.length === draftPayments.length}
                   onChange={handleSelectAll}
                   indeterminate={
                     selected.length > 0 &&
-                    selected.length < paginatedPayments.length
+                    selected.length < draftPayments.length
                   }
                 />
               </th>
               {[
                 "Project Id",
                 "Customer",
+                "Project Name",
                 "Mobile",
                 "State",
-                "Type",
                 "Capacity(AC/DC)",
-                "Progress",
+                // "Progress",
                 "Action",
               ].map((header, index) => (
                 <th
@@ -520,8 +553,8 @@ function Dash_eng() {
                   </Box>
                 </td>
               </tr>
-            ) : paginatedPayments.length > 0 ? (
-              paginatedPayments.map((project, index) => (
+            ) : draftPayments.length > 0 ? (
+              draftPayments.map((project, index) => (
                 <tr
                   key={index}
                   style={{
@@ -544,7 +577,7 @@ function Dash_eng() {
                     />
                   </td>
 
-                  <td
+                  {/* <td
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
@@ -552,8 +585,7 @@ function Dash_eng() {
                     }}
                   >
                     {project.code || "-"}
-                  </td>
-
+                  </td> */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -561,7 +593,59 @@ function Dash_eng() {
                       textAlign: "center",
                     }}
                   >
+                  <Tooltip title="View Handover" arrow>
+                    <span>
+                      <ProjectCode
+                        currentPage={currentPage}
+                        p_id={project.p_id}
+                        code={project.code}
+                      />
+                    </span>
+                  </Tooltip>
+                  </td>
+                  <td
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                  <Tooltip title="View Handover" arrow>
+                    <span>
+                      <ProjectName
+                        currentPage={currentPage}
+                        p_id={project.p_id}
+                        customer={project.customer}
+                      />
+                    </span>
+                  </Tooltip>
+                  </td>
+
+                  {/* <td
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
                     {project.customer || "-"}
+                  </td> */}
+                   <td
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                  <Tooltip title="View Handover" arrow>
+                    <span>
+                      <ProjectName
+                        currentPage={currentPage}
+                        p_id={project.p_id}
+                        customer={project.customer}
+                      />
+                    </span>
+                  </Tooltip>
                   </td>
 
                   <td
@@ -583,15 +667,6 @@ function Dash_eng() {
                   >
                     {project.state || "-"}
                   </td>
-                  <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {project.scheme || "-"}
-                  </td>
 
                   <td
                     style={{
@@ -605,7 +680,7 @@ function Dash_eng() {
                       : "-"}
                   </td>
 
-                  <td
+                  {/* <td
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
@@ -619,7 +694,7 @@ function Dash_eng() {
                     }}
                   >
                     {project.progress || "80%"}
-                  </td>
+                  </td> */}
 
                   <td
                     style={{
@@ -688,7 +763,7 @@ function Dash_eng() {
           Previous
         </Button>
         <Box>
-          Showing {paginatedPayments.length} of {filteredAndSortedData.length}{" "}
+          Showing {draftPayments.length} of {filteredAndSortedData.length}{" "}
           results
         </Box>
         <Box

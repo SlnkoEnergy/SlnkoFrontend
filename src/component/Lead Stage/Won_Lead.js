@@ -388,14 +388,14 @@ const filteredData = useMemo(() => {
       const leadState = lead.state?.trim() || "";
       const submittedBy = lead.submitted_by?.trim() || "";
 
-      // ✅ Allow if user is admin
+     
       if (isAdmin) return true;
 
-      // ✅ Allow if user is in the list for that state
+      
       const allowedUsers = stateUserMap[leadState] || [];
       const isAllowedForState = allowedUsers.includes(userName);
 
-      // ✅ Allow if user submitted this lead
+     
       const isSubmittedByUser = submittedBy === userName;
 
       return isAllowedForState || isSubmittedByUser;

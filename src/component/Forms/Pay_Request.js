@@ -281,7 +281,7 @@ function PaymentRequestForm() {
       const response = await Axios.post("/add-pay-requesT-IT", {
         ...formData,
         p_id: formData?.p_id, 
-        submitted_by: user?.name || getUserData()?.name || "", // Ensure it's always included
+        submitted_by: user?.name || getUserData()?.name || "",
       });
       const { message } = response.data;
 

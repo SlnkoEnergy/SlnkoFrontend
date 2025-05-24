@@ -34,9 +34,9 @@ import { toast } from "react-toastify";
 import {
   useDeleteProjectMutation,
   useGetProjectsQuery,
-} from "../redux/projectsSlice";
+} from "../../redux/projectsSlice";
 
-const AllExpense = forwardRef((props, ref) => {
+const ExpenseApproval = forwardRef((props, ref) => {
   const navigate = useNavigate();
 
   const [open, setOpen] = useState(false);
@@ -431,4 +431,4 @@ const AllExpense = forwardRef((props, ref) => {
     </>
   );
 });
-export default AllExpense;
+export default ExpenseApproval;

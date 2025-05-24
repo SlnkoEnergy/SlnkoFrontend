@@ -11,16 +11,18 @@ import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
 
-import Sidebar from '../../component/Partials/Sidebar';
+import Sidebar from '../../../component/Partials/Sidebar';
 // import OrderTable from '../../component/OrderTable';
 // import OrderList from '../../component/OrderList';
-import Header from '../../component/Partials/Header';
+import Header from '../../../component/Partials/Header';
+import AllProject from '../../component/AllProject';
 import { useNavigate } from 'react-router-dom';
-import AllExpense from '../../component/Expense Sheet/ExpenseDashboard';
+import AllExpense from '../../component/ExpenseDashboard';
+import ExpenseApproval from '../../../component/Expense Sheet/Expense_Approval';
 
-function Expense_Table() {
+function ApprovalExpense() {
     const navigate = useNavigate();
-      const allProjectRef = useRef();
+     
     
   
       
@@ -118,7 +120,7 @@ function Expense_Table() {
               Expense Dashboard
             </Typography>
            
-            <Box
+            {/* <Box
               sx={{
                 display: "flex",
                 mb: 1,
@@ -137,18 +139,11 @@ function Expense_Table() {
             >
               Add Expense +
             </Button> 
-              {/* <Button
-                color="primary"
-                startDecorator={<DownloadRoundedIcon />}
-                size="sm"
-                onClick={handleExportToCSV} 
-              >
-                Export to CSV
-              </Button> */}
-            </Box>
+             
+            </Box> */}
              
           </Box>
-          <AllExpense />
+          <ExpenseApproval />
           {/* <OrderTable /> */}
           {/* <OrderList /> */}
         </Box>
@@ -156,4 +151,4 @@ function Expense_Table() {
     </CssVarsProvider>
   );
 }
-export default Expense_Table;
+export default ApprovalExpense;

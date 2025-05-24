@@ -18,6 +18,7 @@ import { engsLTPanelApi } from "../redux/Eng/ltsSlice";
 import { engsHTPanelApi } from "../redux/Eng/htsSlice";
 import { engsAcCableApi } from "../redux/Eng/acsSlice";
 import { engsDcCableApi } from "../redux/Eng/dcsSlice";
+import { expensesApi } from "../redux/Expense/expenseSlice";
 
 export const store = configureStore({
     reducer: {
@@ -39,6 +40,7 @@ export const store = configureStore({
         [engsHTPanelApi.reducerPath]: engsHTPanelApi.reducer,
         [engsAcCableApi.reducerPath]: engsAcCableApi.reducer,   
         [engsDcCableApi.reducerPath]: engsDcCableApi.reducer,
+        [expensesApi.reducerPath] : expensesApi.reducer,
         taskWork: taskWorkReducer
     },
     middleware: (getDefaultMiddleware) =>
@@ -60,6 +62,7 @@ export const store = configureStore({
             engsLTPanelApi.middleware,
             engsPoolingApi.middleware,
             engsInverterApi.middleware,
-            engsTransformerApi.middleware        
+            engsTransformerApi.middleware,
+            expensesApi.middleware
         ),
 });
