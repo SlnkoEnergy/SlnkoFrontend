@@ -245,6 +245,8 @@ const ExpenseApproval = forwardRef((props, ref) => {
               </Box>
               {[
                 "Expense Code",
+                "Emp. Code",
+                "Site Engineer Name",
                 "Requested Amount",
                 "Approval Amount",
                 "Disburstment Date",

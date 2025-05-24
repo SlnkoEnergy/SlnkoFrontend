@@ -16,9 +16,10 @@ import Sidebar from '../../component/Partials/Sidebar';
 import Header from '../../component/Partials/Header';
 import AllProject from '../../component/AllProject';
 import { useNavigate } from 'react-router-dom';
-import ExpenseApproval from '../../component/Expense Sheet/Expense_Approval';
+import HrExpense from '../../component/Expense Sheet/HR_Expense_Approval';
 
-function ApprovalExpense() {
+
+function Accounts_Expense() {
     const navigate = useNavigate();
       
   return (
@@ -72,7 +73,7 @@ function ApprovalExpense() {
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Expense Approval Dashboard
+                Accounts Expense Approval Dashboard
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -89,16 +90,16 @@ function ApprovalExpense() {
             }}
           >
             <Typography level="h2" component="h1">
-              Expense Approval Dashboard
+              Accounts Expense Approval Dashboard
             </Typography>
            
              
           </Box>
-          <ExpenseApproval/>
+          <HrExpense/>
           
         </Box>
       </Box>
     </CssVarsProvider>
   );
 }
-export default ApprovalExpense;
+export default Accounts_Expense;
