@@ -112,7 +112,7 @@ function Dash_cam() {
   }, []);
 
   const StatusChip = ({ status, is_locked, _id, user, refetch }) => {
-    const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+    const isAdmin = user?.role === "admin" || user?.role === "superadmin" || user?.name === "Prachi Singh" || user?.name === "Sanjiv Kumar" || user?.name === "Sushant Ranjan Dubey";
     const [lockedState, setLockedState] = useState(is_locked === "locked");
 
     const [updateUnlockHandoversheet, { isLoading }] =

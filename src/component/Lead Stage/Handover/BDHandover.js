@@ -262,8 +262,8 @@ const HandoverSheetForm = () => {
       number: Yup.string().required("Phone number is required"),
       state: Yup.string().required("State is required"),
      site_address: Yup.object().shape({
-      village_name: Yup.string().required("Village name is required"),
-      district_name: Yup.string().required("District name is required"),
+      village_name: Yup.string().required("Village & District name is required"),
+      // district_name: Yup.string().required("District name is required"),
     }),
     }),
     order_details: Yup.object().shape({
@@ -549,8 +549,8 @@ const HandoverSheetForm = () => {
             Site Address with Pin Code <span style={{ color: "red" }}>*</span>
           </Typography>
           <Input
-            required
-            fullWidth
+           
+            fullWidths
             placeholder="e.g. Sunrise Village, 221001"
             value={`${formData?.customer_details?.site_address?.village_name || ""}${
               formData?.customer_details?.site_address?.district_name

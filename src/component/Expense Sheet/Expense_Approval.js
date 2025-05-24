@@ -30,11 +30,8 @@ import {
 } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
-// import Axios from "../utils/Axios";
-import {
-  useDeleteProjectMutation,
-  useGetProjectsQuery,
-} from "../../redux/projectsSlice";
+
+import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
 
 const ExpenseApproval = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -47,11 +44,10 @@ const ExpenseApproval = forwardRef((props, ref) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedProjects, setSelectedProjects] = useState([]);
 
-  const { data: getProject = [], isLoading, error } = useGetProjectsQuery();
+  const { data: getExpense = [], isLoading, error } = useGetAllExpenseQuery();
 
-  const [deleteProject] = useDeleteProjectMutation();
 
-  console.log("getProject: ", getProject);
+  console.log("getExpense: ", getExpense);
 
   const [user, setUser] = useState(null);
 
@@ -92,8 +88,8 @@ const ExpenseApproval = forwardRef((props, ref) => {
     setSearchQuery(query.toLowerCase());
   };
   const projects = useMemo(
-    () => (Array.isArray(getProject?.data) ? getProject.data : []),
-    [getProject]
+    () => (Array.isArray(getExpense?.data) ? getExpense.data : []),
+    [getExpense]
   );
 
   const filteredAndSortedData = projects
