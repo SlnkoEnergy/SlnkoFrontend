@@ -52,9 +52,6 @@ const AllExpense = forwardRef((props, ref) => {
 
   
 
-
-  console.log("getProject: ", getProject);
-
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -94,8 +91,8 @@ const AllExpense = forwardRef((props, ref) => {
     setSearchQuery(query.toLowerCase());
   };
   const projects = useMemo(
-    () => (Array.isArray(getProject?.data) ? getProject.data : []),
-    [getProject]
+    () => (Array.isArray(getExpense?.data) ? getExpense.data : []),
+    [getExpense]
   );
 
   const filteredAndSortedData = projects

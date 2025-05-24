@@ -15,7 +15,7 @@ import ModalDialog from "@mui/joy/ModalDialog";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import { useGetProjectsQuery } from "../../../redux/projectsSlice";
+import { useAddProjectMutation, useGetProjectsQuery } from "../../../redux/projectsSlice";
 
 const Expense_Form = () => {
   const [rows, setRows] = useState([
@@ -62,6 +62,9 @@ const Expense_Form = () => {
   const [addExpense] = useAddProjectMutation();
 
   const { data: getProject = [], isLoading, error } = useGetProjectsQuery();
+
+  console.log(getProject);
+  
 
 
   useEffect(() => {
