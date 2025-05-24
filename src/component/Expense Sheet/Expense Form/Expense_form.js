@@ -15,6 +15,7 @@ import ModalDialog from "@mui/joy/ModalDialog";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
+import { useGetProjectsQuery } from "../../../redux/projectsSlice";
 
 const Expense_Form = () => {
   const [rows, setRows] = useState([
@@ -58,6 +59,11 @@ const Expense_Form = () => {
     "Office expenses",
   ];
 
+  const [addExpense] = useAddProjectMutation();
+
+  const { data: getProject = [], isLoading, error } = useGetProjectsQuery();
+
+
   useEffect(() => {
     axios
       .get("https://api.slnkoprotrac.com/v1/get-all-project-IT")
@@ -68,6 +74,7 @@ const Expense_Form = () => {
       })
       .catch(() => setProjectCodes([]));
   }, []);
+  
 
   const handleAddRow = () => {
     setRows((prev) => [

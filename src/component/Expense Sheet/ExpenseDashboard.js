@@ -50,6 +50,8 @@ const AllExpense = forwardRef((props, ref) => {
 
   const { data: getExpense = [], isLoading, error } = useGetAllExpenseQuery();
 
+  
+
 
   console.log("getProject: ", getProject);
 
