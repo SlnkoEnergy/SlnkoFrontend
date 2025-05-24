@@ -93,6 +93,9 @@ import PrivateRoute from "./PrivateRoute";
 import Edit_Won_Leads from "../pages/BD/Leads/Won/Forms/won_edit";
 import Add_Expense from "../pages/ExpenseSheet/Expense_Form";
 import Expense_Table from "../pages/ExpenseSheet/Expense_Tab";
+import ApprovalExpense from "../pages/ExpenseSheet/Expense_Approval";
+import Hr_Expense from "../pages/ExpenseSheet/Expense_HR";
+import Accounts_Expense from "../pages/ExpenseSheet/Expense_Accounts";
 
 function index() {
   return (
@@ -832,6 +835,33 @@ function index() {
         element={
           <PrivateRoute>
             <Expense_Table />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/expense_approval"
+        element={
+          <PrivateRoute>
+            <ApprovalExpense />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/expense_hr"
+        element={
+          <PrivateRoute>
+            <Hr_Expense />
+          </PrivateRoute>
+        }
+      />
+
+<Route
+        path="/expense_accounts"
+        element={
+          <PrivateRoute>
+            <Accounts_Expense />
           </PrivateRoute>
         }
       />
