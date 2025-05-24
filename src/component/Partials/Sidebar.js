@@ -539,8 +539,18 @@ function Sidebar() {
                       </ListItemButton>
                     </ListItem>
                      <ListItem >
-                      <ListItemButton onClick={() => navigate("#")}>
+                      <ListItemButton onClick={() => navigate("/expense_approval")}>
                         Expense Approval 
+                      </ListItemButton>
+                    </ListItem>
+                    <ListItem >
+                      <ListItemButton onClick={() => navigate("/expense_hr")}>
+                        HR Expense Approval 
+                      </ListItemButton>
+                    </ListItem>
+                    <ListItem >
+                      <ListItemButton onClick={() => navigate("/expense_accounts")}>
+                        Accounts Expense Approval 
                       </ListItemButton>
                     </ListItem>
                   </List>
