@@ -33,7 +33,7 @@ import { forwardRef, useCallback, useImperativeHandle } from "react";
 import { toast } from "react-toastify";
 import NoData from "../../assets/alert-bell.svg";
 import { useGetEntireLeadsQuery } from "../../redux/leadsSlice";
-import { useGetTasksQuery } from "../../redux/tasksSlice";
+// import { useGetTasksQuery } from "../../redux/tasksSlice";
 
 const Overall_Leads = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -58,7 +58,7 @@ const Overall_Leads = forwardRef((props, ref) => {
   // });
 
   const { data: getLead = [], isLoading, error } = useGetEntireLeadsQuery();
-  const { data: getTask = [] } = useGetTasksQuery();
+  // const { data: getTask = [] } = useGetTasksQuery();
 
   const leads = [
     ...(getLead?.lead?.initialdata?.map((item) => ({
@@ -266,6 +266,12 @@ const Overall_Leads = forwardRef((props, ref) => {
     const [day, month, year] = date.split("-");
     return new Date(`${year}-${month}-${day}`);
   };
+   const toDMY = (isoDateStr) => {
+    if (!isoDateStr) return "";
+    const [year, month, day] = isoDateStr.split("-");
+    return `${day}-${month}-${year}`;
+  };
+
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value.toLowerCase());
@@ -285,13 +291,13 @@ const Overall_Leads = forwardRef((props, ref) => {
       userRole === "superadmin" ||
       userName === "Shiv Ram Tathagat";
 
-    const taskByWhomList =
-      getTask?.flatMap((task) => {
-        const byWhom = task.by_whom;
-        if (Array.isArray(byWhom)) return byWhom.map((s) => s.trim());
-        if (typeof byWhom === "string") return [byWhom.trim()];
-        return [];
-      }) || [];
+    // const taskByWhomList =
+    //   getTask?.flatMap((task) => {
+    //     const byWhom = task.by_whom;
+    //     if (Array.isArray(byWhom)) return byWhom.map((s) => s.trim());
+    //     if (typeof byWhom === "string") return [byWhom.trim()];
+    //     return [];
+    //   }) || [];
 
     const stateUserMap = {
       "Uttar Pradesh": [
@@ -300,7 +306,7 @@ const Overall_Leads = forwardRef((props, ref) => {
         "Vibhav Upadhyay",
         "Navin Kumar Gautam",
       ],
-      Rajasthan: ["Shantanu Sameer", "Vibhav Upadhyay", "Navin Kumar Gautam"],
+      "Rajasthan": ["Shantanu Sameer", "Vibhav Upadhyay", "Navin Kumar Gautam"],
       "Madhya Pradesh": ["Ketan Kumar Jha"],
     };
 
@@ -312,10 +318,11 @@ const Overall_Leads = forwardRef((props, ref) => {
         const allowedUsers = stateUserMap[leadState] || [];
         const isAllowedForState = allowedUsers.includes(userName);
         const isSubmittedByUser = submittedBy === userName;
-        const isLinkedByTask = taskByWhomList.includes(submittedBy);
+        // const isLinkedByTask = taskByWhomList.includes(submittedBy);
 
         return (
-          isAdmin || isAllowedForState || isSubmittedByUser || isLinkedByTask
+          isAdmin || isAllowedForState || isSubmittedByUser 
+          // || isLinkedByTask
         );
       })
       .filter((lead) => {
@@ -333,9 +340,8 @@ const Overall_Leads = forwardRef((props, ref) => {
             .includes(searchQuery.trim().toLowerCase())
         );
 
-        const matchesDate = selectedDate
-          ? formatDate(lead.entry_date).toLocaleDateString() ===
-            formatDate(selectedDate).toLocaleDateString()
+         const matchesDate = selectedDate
+          ? lead.entry_date === toDMY(selectedDate)
           : true;
 
         return matchesQuery && matchesDate;
@@ -345,7 +351,7 @@ const Overall_Leads = forwardRef((props, ref) => {
         const dateB = new Date(formatDate(b.entry_date));
         return dateB - dateA;
       });
-  }, [leads, searchQuery, selectedDate, user, getTask]);
+  }, [leads, searchQuery, selectedDate, user,]);
 
   // const filteredData = useMemo(() => {
   //   return leads

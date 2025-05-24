@@ -233,6 +233,11 @@ const StandByRequest = forwardRef((props, ref) => {
     const date = new Date(dateString);
     return isNaN(date.getTime()) ? "" : date.toISOString().split("T")[0]; // Validate date before formatting
   };
+   const toDMY = (isoDateStr) => {
+    if (!isoDateStr) return "";
+    const [year, month, day] = isoDateStr.split("-");
+    return `${day}-${month}-${year}`;
+  };
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value.toLowerCase());
@@ -308,9 +313,8 @@ const StandByRequest = forwardRef((props, ref) => {
         );
    
          const matchesDate = selectedDate
-           ? formatDate(lead.entry_date).toLocaleDateString() ===
-             formatDate(selectedDate).toLocaleDateString()
-           : true;
+          ? lead.entry_date === toDMY(selectedDate)
+          : true;
    
          return matchesQuery && matchesDate;
        })

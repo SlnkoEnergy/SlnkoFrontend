@@ -232,6 +232,12 @@ const StandByRequest = forwardRef((props, ref) => {
     return new Date(`${year}-${month}-${day}`);
   };
 
+   const toDMY = (isoDateStr) => {
+    if (!isoDateStr) return "";
+    const [year, month, day] = isoDateStr.split("-");
+    return `${day}-${month}-${year}`;
+  };
+
   const handleSearch = (e) => {
     setSearchQuery(e.target.value.toLowerCase());
   };
@@ -288,9 +294,8 @@ const filteredData = useMemo(() => {
         );
 
       const matchesDate = selectedDate
-        ? formatDate(lead.entry_date).toLocaleDateString() ===
-          formatDate(selectedDate).toLocaleDateString()
-        : true;
+          ? lead.entry_date === toDMY(selectedDate)
+          : true;
 
       return matchesQuery && matchesDate;
     })

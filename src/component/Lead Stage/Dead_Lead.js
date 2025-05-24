@@ -370,6 +370,12 @@ const StandByRequest = forwardRef((props, ref) => {
     return isNaN(date.getTime()) ? "" : date.toISOString().split("T")[0];
   };
 
+   const toDMY = (isoDateStr) => {
+    if (!isoDateStr) return "";
+    const [year, month, day] = isoDateStr.split("-");
+    return `${day}-${month}-${year}`;
+  };
+
   const handleSearch = (e) => {
     setSearchQuery(e.target.value.toLowerCase());
   };
@@ -426,9 +432,8 @@ const filteredData = useMemo(() => {
         );
 
       const matchesDate = selectedDate
-        ? formatDate(lead.entry_date).toLocaleDateString() ===
-          formatDate(selectedDate).toLocaleDateString()
-        : true;
+          ? lead.entry_date === toDMY(selectedDate)
+          : true;
 
       return matchesQuery && matchesDate;
     })

@@ -145,8 +145,8 @@ const StandByRequest = forwardRef((props, ref) => {
         >
           <Option value="">All</Option>
           <Option value="submitted">Submitted</Option>
-          <Option value="approved">Approved</Option>
-          <Option value="rejected">Rejected</Option>
+          <Option value="Approved">Approved</Option>
+          <Option value="Rejected">Rejected</Option>
           <Option value="draft">In Process</Option>
           <Option value="not_found">Pending</Option>
         </Select>
@@ -318,8 +318,18 @@ const StandByRequest = forwardRef((props, ref) => {
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
-    const date = new Date(dateString);
+
+    const [day, month, year] = dateString.split("-");
+    const isoString = `${year}-${month}-${day}`;
+
+    const date = new Date(isoString);
     return isNaN(date.getTime()) ? "" : date.toISOString().split("T")[0];
+  };
+
+  const toDMY = (isoDateStr) => {
+    if (!isoDateStr) return "";
+    const [year, month, day] = isoDateStr.split("-");
+    return `${day}-${month}-${year}`;
   };
 
   const handleSearch = (e) => {
@@ -369,40 +379,45 @@ const StandByRequest = forwardRef((props, ref) => {
   //     });
   // }, [leads, searchQuery, selectedDate, user]);
 
-const filteredData = useMemo(() => {
-  if (!user || !user.name) return [];
+  const filteredData = useMemo(() => {
+    if (!user || !user.name) return [];
 
-  const userName = user.name.trim();
-  const userRole = user.role?.trim();
-  const isAdmin = userRole === "admin" || userRole === "superadmin"|| userName === "Shiv Ram Tathagat" || userName === "Prachi Singh" || userName === "Guddu Rani Dubey";
+    const userName = user.name.trim();
+    const userRole = user.role?.trim();
+    const isAdmin =
+      userRole === "admin" ||
+      userRole === "superadmin" ||
+      userName === "Shiv Ram Tathagat" ||
+      userName === "Prachi Singh" ||
+      userName === "Guddu Rani Dubey";
 
-  // State-based user access
-   const stateUserMap = {
-    "Uttar Pradesh": ["Geeta", "Shambhavi Gupta", "Vibhav Upadhyay", "Navin Kumar Gautam"],
-    "Rajasthan": ["Shantanu Sameer", "Vibhav Upadhyay", "Navin Kumar Gautam"],
-    "Madhya Pradesh": ["Ketan Kumar Jha"],
-  };
+    const stateUserMap = {
+      "Uttar Pradesh": [
+        "Geeta",
+        "Shambhavi Gupta",
+        "Vibhav Upadhyay",
+        "Navin Kumar Gautam",
+      ],
+      Rajasthan: ["Shantanu Sameer", "Vibhav Upadhyay", "Navin Kumar Gautam"],
+      "Madhya Pradesh": ["Ketan Kumar Jha"],
+    };
 
-  return leads
-    .filter((lead) => {
-      const leadState = lead.state?.trim() || "";
-      const submittedBy = lead.submitted_by?.trim() || "";
+    return leads
+      .filter((lead) => {
+        const leadState = lead.state?.trim() || "";
+        const submittedBy = lead.submitted_by?.trim() || "";
 
-     
-      if (isAdmin) return true;
+        if (isAdmin) return true;
 
-      
-      const allowedUsers = stateUserMap[leadState] || [];
-      const isAllowedForState = allowedUsers.includes(userName);
+        const allowedUsers = stateUserMap[leadState] || [];
+        const isAllowedForState = allowedUsers.includes(userName);
+        const isSubmittedByUser = submittedBy === userName;
 
-     
-      const isSubmittedByUser = submittedBy === userName;
-
-      return isAllowedForState || isSubmittedByUser;
-    })
-    .filter((lead) => {
-      // Apply search and date filters after role filtering
-      const matchesQuery = [
+        return isAllowedForState || isSubmittedByUser;
+      })
+      .filter((lead) => {
+        // Search & date filters
+        const matchesQuery = [
           "id",
           "c_name",
           "mobile",
@@ -416,20 +431,25 @@ const filteredData = useMemo(() => {
             .includes(searchQuery.trim().toLowerCase())
         );
 
-      const matchesDate = selectedDate
-        ? formatDate(lead.entry_date).toLocaleDateString() ===
-          formatDate(selectedDate).toLocaleDateString()
-        : true;
+        const matchesDate = selectedDate
+          ? lead.entry_date === toDMY(selectedDate)
+          : true;
 
-      return matchesQuery && matchesDate;
-    })
-    .sort((a, b) => {
-      const dateA = new Date(formatDate(a.entry_date));
-      const dateB = new Date(formatDate(b.entry_date));
-      return dateB - dateA;
-    });
-}, [leads, searchQuery, selectedDate, user]);
+        return matchesQuery && matchesDate;
+      })
+      .filter((lead) => {
+        // Handover Status filter
+        const { status } = status_handOver(lead.id);
+        const normalizedStatus = status === "Not Found" ? "not_found" : status;
 
+        return selectedStatus ? normalizedStatus === selectedStatus : true;
+      })
+      .sort((a, b) => {
+        const dateA = new Date(formatDate(a.entry_date));
+        const dateB = new Date(formatDate(b.entry_date));
+        return dateB - dateA;
+      });
+  }, [leads, searchQuery, selectedDate, selectedStatus, user]);
 
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
@@ -761,7 +781,7 @@ const filteredData = useMemo(() => {
                               ? "In Process"
                               : "Pending"}
                       </Chip>,
-                     
+
                       status_handOver(lead.id).submittedBy || "-",
                       <RowMenu currentPage={currentPage} id={lead.id} />,
                     ].map((data, idx) => (

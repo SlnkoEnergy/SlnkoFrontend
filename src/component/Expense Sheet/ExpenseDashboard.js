@@ -35,6 +35,7 @@ import {
   useDeleteProjectMutation,
   useGetProjectsQuery,
 } from "../../redux/projectsSlice";
+import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
 
 const AllExpense = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -47,9 +48,8 @@ const AllExpense = forwardRef((props, ref) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedProjects, setSelectedProjects] = useState([]);
 
-  const { data: getProject = [], isLoading, error } = useGetProjectsQuery();
+  const { data: getExpense = [], isLoading, error } = useGetAllExpenseQuery();
 
-  const [deleteProject] = useDeleteProjectMutation();
 
   console.log("getProject: ", getProject);
 
