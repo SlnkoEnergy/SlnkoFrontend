@@ -3,7 +3,7 @@ import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { Box, Button, Grid, Paper, TextField, Typography } from "@mui/material";
 import { useFormik } from "formik";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Slider from "react-slick";
 import { toast } from "react-toastify";
@@ -15,16 +15,28 @@ import Img1 from "../../../assets/New_Solar3.png";
 import Img5 from "../../../assets/Protrac_blue.png";
 import ImgX from "../../../assets/slnko_white_logo.png";
 // import Img4 from "../../../assets/solar3.jpg";
-import Axios from "../../../utils/Axios";
+import axios from "axios";
 import Colors from "../../../utils/colors";
+import { useAddLoginsMutation, useGetLoginsQuery } from "../../../redux/loginSlice";
 
 const Login = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [addLogin] = useAddLoginsMutation();
+  const [token, setToken] = useState(null);
+  const [userID, setUserID] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  
+
+  
+
+
+  
 
   const handleTogglePassword = () => setShowPassword((prev) => !prev);
+  
 
   // const paperStyle = {
   //   background: Colors.palette.primary.main,
@@ -58,52 +70,86 @@ const Login = () => {
     arrows: false,
   };
 
-  const LoginUser = async (values) => {
+  const handleLogin = async (values) => {
     setIsSubmitting(true);
-    const postData = {
-      name: values.name,
-      password: values.password,
-    };
     try {
-      const response = await Axios.post("/logiN-IT", postData);
-      const user = response.data;
+      // Step 1: Call login mutation
+      const user = await addLogin(values).unwrap();
+  
+      // Step 2: Check if token is present
+      if (!user.token) {
+        toast.error("Login failed: Token not received.");
+        return;
+      }
+  
+      console.log("✅ Token received:", user.token);
+  
+      // Step 3: Save token and expiration
+      const expiration = new Date().getTime() + 3 * 24 * 60 * 60 * 1000;
+      localStorage.setItem("authToken", user.token);
+      // localStorage.setItem("userDetails", JSON.stringify({
+      //   ...user,
+      //   userID: user._id
+      // }));
+     
 
-      // console.log("Login successful:", user);
-
-      const response2 = await Axios.get("/get-all-useR-IT");
-      // console.log(response2.data?.data);
-
-      response2.data.data.map((item) => {
-        if (user.userID == item._id) {
-          const userdata = {
-            name: item.name,
-            email: item.email,
-            phone: item.phone,
-            emp_id: item.emp_id,
-            role: item.role,
-            department: item.department || "",
-            userID: item._id,
-          };
-
-          // console.log(userdata);
-          localStorage.setItem("userDetails", JSON.stringify(userdata));
-        }
+      localStorage.setItem("authTokenExpiration", expiration.toString());
+  
+      // Step 4: Get user list to match current user
+     
+      if (!user.token) {
+        toast.error("Missing token. Cannot fetch user data.");
+        return;
+      }
+      const response = await axios.get("https://dev.api.slnkoprotrac.com/v1/get-all-useR-IT", {
+        headers: {
+          "x-auth-token": user.token,
+        },
       });
-
-      const expirationTime = new Date().getTime() + 3 * 24 * 60 * 60 * 1000;
-      localStorage.setItem("authToken", user.token || "dummyToken");
-      localStorage.setItem("authTokenExpiration", expirationTime);
-
+  
+      const matchedUser = response?.data?.data.find(
+        (item) => String(item._id) === String(user.userId)
+      );
+      console.log(matchedUser);
+      
+  
+      if (!matchedUser) {
+        toast.error("Login failed: User details not found.");
+        return;
+      }
+  
+      // Step 5: Save matched user details
+      const userDetails = {
+        name: matchedUser.name,
+        email: matchedUser.email,
+        phone: matchedUser.phone,
+        emp_id: matchedUser.emp_id,
+        role: matchedUser.role,
+        department: matchedUser.department || "",
+        userID: matchedUser._id || "", // ✅ FIXED: use _id
+      };
+  
+      localStorage.setItem("userDetails", JSON.stringify(userDetails));
+      console.log("✅ User details stored:", userDetails);
+  
+      // Step 6: Success feedback and navigation
+      toast.success("Login successful!");
       navigate("/dashboard");
     } catch (error) {
-      const errorMessage = error.response
-        ? error.response.data.message
-        : "Internal Server Error.";
-      toast.error(`Login failed: ${errorMessage}`, { position: "top-right" });
+      console.error("❌ Login error:", error);
+      const message =
+        error?.response?.data?.message ||
+        error?.data?.message ||
+        error?.message ||
+        "Login failed.";
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
   };
+  
+  
+  
 
   const validationSchema = Yup.object({
     name: Yup.string().required("Name is required!"),
@@ -119,7 +165,7 @@ const Login = () => {
   const formik = useFormik({
     initialValues: { name: "", password: "" },
     validationSchema: validationSchema,
-    onSubmit: LoginUser,
+    onSubmit: handleLogin,
   });
   return (
     <Box

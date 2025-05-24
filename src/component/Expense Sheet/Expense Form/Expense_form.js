@@ -15,23 +15,57 @@ import ModalDialog from "@mui/joy/ModalDialog";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import { useAddProjectMutation, useGetProjectsQuery } from "../../../redux/projectsSlice";
+import {
+  useAddProjectMutation,
+  useGetProjectsQuery,
+} from "../../../redux/projectsSlice";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { useAddExpenseMutation } from "../../../redux/Expense/expenseSlice";
 
 const Expense_Form = () => {
+  const navigate = useNavigate();
   const [rows, setRows] = useState([
     {
-      code: "",
-      name: "",
-      category: "",
-      description: "",
-      date: "",
-      amount: "",
-      file: null,
-      approvalStatus: null,
-      approvedAmount: "",
-      rejectionComment: "",
-      invoice: "",
-      invoiceNumber: "",
+      items: [
+        {
+          category: "",
+          project_id: "",
+          description: "",
+          expense_date: "",
+          invoice: {
+            invoice_number: "",
+            invoice_amount: "",
+          },
+          attachment_url: "",
+          item_status_history: [
+            {
+              status: "",
+              remarks: "",
+              user_id: "",
+            },
+          ],
+          approved_amount: "",
+          remarks: "",
+          item_current_status: "",
+        },
+      ],
+      expense_term: {
+        from: "",
+        to: "",
+      },
+      status_history: [
+        {
+          status: "",
+          remarks: "",
+          user_id: "",
+        },
+      ],
+      // must be one of ["draft", "submitted", "hold", "rejected", "approved"]
+      total_requested_amount: "",
+      total_approved_amount: "",
+      disbursement_date: "",
+      comments: "",
     },
   ]);
 
@@ -59,42 +93,121 @@ const Expense_Form = () => {
     "Office expenses",
   ];
 
-  const [addExpense] = useAddProjectMutation();
+  const [addExpense] = useAddExpenseMutation();
 
-  const { data: getProject = [], isLoading, error } = useGetProjectsQuery();
+  // const { data: getProject = [], isLoading, error } = useGetProjectsQuery();
 
-  console.log(getProject);
-  
-
+  // console.log(getProject);
 
   useEffect(() => {
-    axios
-      .get("https://api.slnkoprotrac.com/v1/get-all-project-IT")
-      .then((response) => {
+    const fetchProjects = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+
+        const response = await axios.get(
+          "https://dev.api.slnkoprotrac.com/v1/get-all-project-IT",
+          {
+            headers: {
+              "x-auth-token": token,
+            },
+          }
+        );
+
         const data = response.data?.data;
-        if (Array.isArray(data)) setProjectCodes(data);
-        else setProjectCodes([]);
-      })
-      .catch(() => setProjectCodes([]));
+        if (Array.isArray(data)) {
+          setProjectCodes(data);
+        } else {
+          setProjectCodes([]);
+        }
+      } catch (error) {
+        console.error("❌ Error fetching project codes:", error);
+        setProjectCodes([]);
+      }
+    };
+
+    fetchProjects();
   }, []);
-  
+
+  const handleSubmit = async () => {
+    try {
+      const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
+
+      if (!userID) {
+        toast.error("User ID not found. Please login again.");
+        return;
+      }
+
+    
+      const cleanedData = {
+        ...rows[0],
+        current_status: rows[0].current_status || "submitted",
+        status_history: [
+          {
+            status: "submitted",
+            remarks: rows[0].status_history?.[0]?.remarks || "",
+            user_id: userID,
+          },
+        ],
+        items: [
+          {
+            ...rows[0].items[0], // ✅ Use items[0], not rows[0].items
+            project_id: rows[0].items[0]?.project_id || null,
+            invoice: {
+              ...rows[0].items[0]?.invoice,
+              invoice_amount: rows[0].items[0]?.invoice?.invoice_amount || "0",
+            },
+            item_status_history: [
+              {
+                status: "submitted",
+                remarks:
+                  rows[0].items[0]?.item_status_history?.[0]?.remarks || "",
+                user_id: userID,
+                updatedAt: new Date().toISOString(),
+              },
+            ],
+            item_current_status: "submitted",
+          },
+        ],
+        user_id: userID,
+      };
+
+      // Optional: Validate required fields
+      // if (!cleanedData.items[0].project_id || !cleanedData.items[0].invoice.invoice_amount) {
+      //   toast.error("Please fill all required fields.");
+      //   return;
+      // }
+
+      const payload = {
+        user_id: userID,
+        data: cleanedData,
+      };
+
+      await addExpense(payload).unwrap();
+
+      toast.success("Expense sheet submitted successfully!");
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("❌ Submission failed:", error);
+      toast.error("An error occurred while submitting the expense sheet.");
+    }
+  };
 
   const handleAddRow = () => {
     setRows((prev) => [
       ...prev,
       {
-        code: "",
-        name: "",
         category: "",
+        project_id: "",
         description: "",
-        date: "",
-        amount: "",
-        file: null,
-        approvalStatus: null,
-        approvedAmount: "",
-        rejectionComment: "",
-        invoice: "",
-        invoiceNumber: "",
+        expense_date: "",
+        invoice: {
+          invoice_number: "",
+          invoice_amount: "",
+        },
+        attachment_url: "",
+        approved_amount: "",
+        remarks: "",
+        item_current_status: "",
       },
     ]);
     setSearchInputs((prev) => [...prev, ""]);
@@ -109,6 +222,18 @@ const Expense_Form = () => {
     }
     setRows(updated);
   };
+
+  const handleItemChange = (rowIndex, field, value) => {
+    const updated = [...rows];
+    if (!updated[rowIndex].items || updated[rowIndex].items.length === 0) {
+      updated[rowIndex].items = [{}]; // Ensure items[0] exists
+    }
+    updated[rowIndex].items[0][field] = value;
+    setRows(updated);
+  };
+
+  
+  
 
   const handleFileChange = (index, file) => {
     const updated = [...rows];
@@ -126,16 +251,35 @@ const Expense_Form = () => {
     handleRowChange(index, "code", value);
   };
 
-  const handleSelectProject = (index, code, name) => {
+  // const handleSelectProject = (index, code, name) => {
+  //   const updated = [...rows];
+  //   updated[index]._id = _id;
+  //   updated[index].code = code;
+  //   updated[index].name = name;
+  //   setRows(updated);
+  //   setSearchInputs((prev) => {
+  //     const updated = [...prev];
+  //     updated[index] = code;
+  //     return updated;
+  //   });
+  //   setDropdownOpenIndex(null);
+  // };
+
+  const handleSelectProject = (index, code) => {
+    const selectedProject = projectCodes.find((p) => p.code === code);
+    if (!selectedProject) return;
+
     const updated = [...rows];
-    updated[index].code = code;
-    updated[index].name = name;
+    updated[index].items[0].project_id = selectedProject._id;
+    updated[index].items[0].project_name = selectedProject.name; // optional
     setRows(updated);
+
     setSearchInputs((prev) => {
-      const updated = [...prev];
-      updated[index] = code;
-      return updated;
+      const updatedInputs = [...prev];
+      updatedInputs[index] = code;
+      return updatedInputs;
     });
+
     setDropdownOpenIndex(null);
   };
 
@@ -143,7 +287,7 @@ const Expense_Form = () => {
     const updated = [...rows];
     updated[index].approvalStatus = status;
     if (status === "approved") {
-      updated[index].approvedAmount = updated[index].amount || "";
+      updated[index].approved_amount = updated[index].amount || "";
     } else {
       setCommentDialog({ open: true, rowIndex: index });
     }
@@ -168,28 +312,27 @@ const Expense_Form = () => {
     const updated = rows.map((row) => ({
       ...row,
       approvalStatus: "approved",
-      approvedAmount: row.amount || "",
+      approved_amount: row.total_requested_amount || "",
     }));
     setRows(updated);
   };
-  const showInvoiceNoColumn = rows.some(row => row.invoice === 'Yes');
-               const tableHeaders = [
-  "Project Code",
-  "Project Name",
-  "Category",
-  "Description",
-  "Date",
-  "Bill Amount",
-  "Attachment",
-  "Approval",
-  "Approved Amt",
-  "Invoice",
-];
+  const showInvoiceNoColumn = rows.some((row) => row.invoice === "Yes");
+  const tableHeaders = [
+    "Project Code",
+    "Project Name",
+    "Category",
+    "Description",
+    "Date",
+    "Bill Amount",
+    "Attachment",
+    "Approval",
+    "Approved Amt",
+    "Invoice",
+  ];
 
-if (showInvoiceNoColumn) {
-  tableHeaders.push("Invoice No");
-}
-
+  if (showInvoiceNoColumn) {
+    tableHeaders.push("Invoice No");
+  }
 
   return (
     <Box p={2}>
@@ -199,35 +342,35 @@ if (showInvoiceNoColumn) {
 
       <Box sx={{ maxWidth: "100%", overflowX: "auto", p: 1 }}>
         {/* Action Buttons */}
-       
+
         <Box
           sx={{
             marginLeft: { md: "15%" },
           }}
         >
           {/* Action Buttons */}
-        <Box
-          display="flex"
-          gap={2}
-          mb={2}
-          flexWrap="wrap"
-          justifyContent="flex-start"
-        >
-          <Button
-            color="success"
-            onClick={handleApproveAll}
-            sx={{ minWidth: 120 }}
+          <Box
+            display="flex"
+            gap={2}
+            mb={2}
+            flexWrap="wrap"
+            justifyContent="flex-start"
           >
-            Approve All
-          </Button>
-          <Button
-            color="danger"
-            onClick={handleRejectAll}
-            sx={{ minWidth: 120 }}
-          >
-            Reject All
-          </Button>
-        </Box>
+            <Button
+              color="success"
+              onClick={handleApproveAll}
+              sx={{ minWidth: 120 }}
+            >
+              Approve All
+            </Button>
+            <Button
+              color="danger"
+              onClick={handleRejectAll}
+              sx={{ minWidth: 120 }}
+            >
+              Reject All
+            </Button>
+          </Box>
           <table
             style={{
               borderCollapse: "collapse",
@@ -243,21 +386,17 @@ if (showInvoiceNoColumn) {
                 borderBottom: "2px solid #ccc",
               }}
             >
-             
-
-
-<tr>
-  {tableHeaders.map((header, idx) => (
-    <th key={idx}>{header}</th>
-  ))}
-</tr>
-
+              <tr>
+                {tableHeaders.map((header, idx) => (
+                  <th key={idx}>{header}</th>
+                ))}
+              </tr>
             </thead>
 
             <tbody>
               {rows.map((row, rowIndex) => {
                 const filteredProjects = projectCodes.filter((project) =>
-                  project.code
+                  (project.code || "")
                     .toLowerCase()
                     .includes((searchInputs[rowIndex] || "").toLowerCase())
                 );
@@ -349,63 +488,70 @@ if (showInvoiceNoColumn) {
 
                     {/* Category */}
                     <td style={{ padding: 8 }}>
-                      <Select
-                        size="sm"
-                        variant="outlined"
-                        value={row.category}
-                        onChange={(e, value) =>
-                          handleRowChange(rowIndex, "category", value)
-                        }
-                        placeholder="Select"
-                        slotProps={{
-                          listbox: {
-                            sx: { maxHeight: 160, overflowY: "auto" },
-                          },
-                        }}
-                        sx={{ width: 120 }}
-                      >
-                        {categoryOptions.map((cat, idx) => (
-                          <Option key={idx} value={cat}>
-                            {cat}
-                          </Option>
-                        ))}
-                      </Select>
+                    <Select
+  size="sm"
+  variant="outlined"
+  value={row.items?.[0]?.category || ""}
+  onChange={(e, value) =>
+    handleItemChange(rowIndex, "category", value)
+  }
+  placeholder="Select"
+  slotProps={{
+    listbox: {
+      sx: { maxHeight: 160, overflowY: "auto" },
+    },
+  }}
+  sx={{ width: 120 }}
+>
+  {categoryOptions.map((cat, idx) => (
+    <Option key={idx} value={cat}>
+      {cat}
+    </Option>
+  ))}
+</Select>
+
                     </td>
 
                     {/* Description */}
                     <td style={{ padding: 8, maxWidth: 250 }}>
-                      <Input
-                        size="sm"
-                        variant="outlined"
-                        value={row.description}
-                        placeholder="Description"
-                        onChange={(e) =>
-                          handleRowChange(
-                            rowIndex,
-                            "description",
-                            e.target.value
-                          )
-                        }
-                        multiline
-                        minRows={1}
-                        maxRows={3}
-                        sx={{ width: "100%" }}
-                      />
-                    </td>
+  <Input
+    size="sm"
+    variant="outlined"
+    value={row.items[0].description}
+    placeholder="Description"
+    onChange={(e) =>
+      handleItemChange(
+        rowIndex,
+        "description",
+        e.target.value
+      )
+    }
+    multiline
+    minRows={1}
+    maxRows={3}
+    sx={{ width: "100%" }}
+  />
+</td>
 
-                    {/* Date */}
-                    <td style={{ padding: 8 }}>
-                      <Input
-                        size="sm"
-                        variant="outlined"
-                        type="date"
-                        value={row.date}
-                        onChange={(e) =>
-                          handleRowChange(rowIndex, "date", e.target.value)
-                        }
-                        sx={{ minWidth: 120 }}
-                      />
-                    </td>
+
+                   {/* Date */}
+<td style={{ padding: 8 }}>
+  <Input
+    size="sm"
+    variant="outlined"
+    type="date"
+    value={row.items[0].expense_date}
+    onChange={(e) =>
+      handleItemChange(
+        rowIndex,
+        "expense_date",
+        e.target.value
+      )
+    }
+    sx={{ minWidth: 120 }}
+  />
+</td>
+
 
                     {/* Bill Amount */}
                     <td style={{ padding: 8 }}>
@@ -413,10 +559,14 @@ if (showInvoiceNoColumn) {
                         size="sm"
                         variant="outlined"
                         type="number"
-                        value={row.amount}
+                        value={row.invoice_amount}
                         placeholder="₹"
                         onChange={(e) =>
-                          handleRowChange(rowIndex, "amount", e.target.value)
+                          handleRowChange(
+                            rowIndex,
+                            "invoice_amount",
+                            e.target.value
+                          )
                         }
                         inputProps={{ min: 0 }}
                         sx={{ minWidth: 90 }}
@@ -432,7 +582,7 @@ if (showInvoiceNoColumn) {
                         variant="outlined"
                         sx={{ minWidth: 100 }}
                       >
-                        {row.fileName || "Upload"}
+                        {row.attachment_url || "Upload"}
                         <input
                           hidden
                           type="file"
@@ -483,12 +633,12 @@ if (showInvoiceNoColumn) {
                           size="sm"
                           variant="outlined"
                           type="number"
-                          value={row.approvedAmount}
+                          value={row.approved_amount}
                           placeholder="₹"
                           onChange={(e) =>
                             handleRowChange(
                               rowIndex,
-                              "approvedAmount",
+                              "approved_amount",
                               e.target.value
                             )
                           }
@@ -515,11 +665,11 @@ if (showInvoiceNoColumn) {
                       <td>
                         {row.invoice === "Yes" && (
                           <Input
-                            value={row.invoiceNumber}
+                            value={row.invoice_number}
                             onChange={(e) =>
                               handleRowChange(
                                 rowIndex,
-                                "invoiceNumber",
+                                "invoice_number",
                                 e.target.value
                               )
                             }
@@ -552,11 +702,14 @@ if (showInvoiceNoColumn) {
           <Input
             minRows={2}
             placeholder="Enter comment"
-            value={rows[commentDialog.rowIndex]?.rejectionComment || ""}
+            value={
+              rows[commentDialog.rowIndex]?.items?.[0]?.item_status_history?.[0]?.remarks || ""
+            }
+            
             onChange={(e) =>
               handleRowChange(
                 commentDialog.rowIndex,
-                "rejectionComment",
+                "item_status_history.remarks",
                 e.target.value
               )
             }
@@ -569,93 +722,129 @@ if (showInvoiceNoColumn) {
       </Modal>
 
       {/* Summary */}
-     <Box mt={4} sx={{marginLeft:"15%"}}>
-  <Typography level="h5" mb={1}>
-    Expense Summary
-  </Typography>
+      <Box mt={4} sx={{ margin: "0 auto", width: "60%" }}>
+        <Typography level="h5" mb={1}>
+          Expense Summary
+        </Typography>
 
-  <Sheet
-    variant="outlined"
-    sx={{
-      borderRadius: "md",
-      overflow: "auto", // Enables horizontal scroll on small screens
-      boxShadow: "sm",
-    }}
-  >
-    <Table
-      variant="soft"
-      borderAxis="both"
-      size="sm"
-      stickyHeader
-      hoverRow
-      sx={{
-        minWidth: 500,
-        "& th": {
-          backgroundColor: "background.level1",
-          fontWeight: "md",
-          fontSize: "sm",
-          textAlign: "left",
-        },
-        "& td": {
-          fontSize: "sm",
-          textAlign: "left",
-        },
-      }}
-    >
-      <thead>
-        <tr>
-          <th>Head</th>
-          <th>Amt</th>
-          <th>Approval Amt</th>
-        </tr>
-      </thead>
-      <tbody>
-        {categoryOptions.map((category, idx) => {
-          const total = rows
-            .filter((row) => row.category === category)
-            .reduce((sum, row) => sum + Number(row.amount || 0), 0);
+        <Sheet
+          variant="outlined"
+          sx={{
+            borderRadius: "md",
+            overflow: "auto",
+            boxShadow: "sm",
+          }}
+        >
+          <Table
+            variant="soft"
+            borderAxis="both"
+            size="sm"
+            stickyHeader
+            hoverRow
+            sx={{
+              minWidth: 500,
+              "& th": {
+                backgroundColor: "background.level1",
+                fontWeight: "md",
+                fontSize: "sm",
+                textAlign: "left",
+              },
+              "& td": {
+                fontSize: "sm",
+                textAlign: "left",
+              },
+            }}
+          >
+            <thead>
+              <tr>
+                <th>Head</th>
+                <th>Amt</th>
+                <th>Approval Amt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {categoryOptions.map((category, idx) => {
+                const total = rows
+                  .filter((row) => row.category === category)
+                  .reduce(
+                    (sum, row) => sum + Number(row.total_requested_amount || 0),
+                    0
+                  );
 
-          const approvedTotal = rows
-            .filter(
-              (row) =>
-                row.category === category && row.approvalStatus === "approved"
-            )
-            .reduce((sum, row) => sum + Number(row.approvedAmount || 0), 0);
+                const approvedTotal = rows
+                  .filter(
+                    (row) =>
+                      row.category === category &&
+                      row.approvalStatus === "approved"
+                  )
+                  .reduce(
+                    (sum, row) => sum + Number(row.approved_amount || 0),
+                    0
+                  );
 
-          return (
-            <tr key={idx}>
-              <td>{category}</td>
-              <td>{total > 0 ? total.toFixed(2) : "-"}</td>
-              <td>{approvedTotal > 0 ? approvedTotal.toFixed(2) : "-"}</td>
-            </tr>
-          );
-        })}
-        <tr>
-          <td>
-            <Typography level="body-md" fontWeight="lg">
-              Total
-            </Typography>
-          </td>
-          <td>
-            <Typography level="body-md" fontWeight="lg">
-              {rows
-                .reduce((sum, row) => sum + Number(row.amount || 0), 0)
-                .toFixed(2)}
-            </Typography>
-          </td>
-          <td>
-            <Typography level="body-md" fontWeight="lg">
-              {rows
-                .filter((row) => row.approvalStatus === "approved")
-                .reduce((sum, row) => sum + Number(row.approvedAmount || 0), 0)
-                .toFixed(2)}
-            </Typography>
-          </td>
-        </tr>
-      </tbody>
-    </Table>
-  </Sheet>
-</Box>
+                return (
+                  <tr key={idx}>
+                    <td>{category}</td>
+                    <td>{total > 0 ? total.toFixed(2) : "-"}</td>
+                    <td>
+                      {approvedTotal > 0 ? approvedTotal.toFixed(2) : "-"}
+                    </td>
+                  </tr>
+                );
+              })}
+              <tr>
+                <td>
+                  <Typography level="body-md" fontWeight="lg">
+                    Total
+                  </Typography>
+                </td>
+                <td>
+                  <Typography level="body-md" fontWeight="lg">
+                    {rows
+                      .reduce(
+                        (sum, row) =>
+                          sum + Number(row.total_requested_amount || 0),
+                        0
+                      )
+                      .toFixed(2)}
+                  </Typography>
+                </td>
+                <td>
+                  <Typography level="body-md" fontWeight="lg">
+                    {rows
+                      .filter((row) => row.approvalStatus === "approved")
+                      .reduce(
+                        (sum, row) => sum + Number(row.approved_amount || 0),
+                        0
+                      )
+                      .toFixed(2)}
+                  </Typography>
+                </td>
+              </tr>
+            </tbody>
+          </Table>
+        </Sheet>
+
+        {/* Submit & Back Buttons */}
+        <Box mt={2} display="flex" justifyContent="center">
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            maxWidth="400px"
+            width="100%"
+          >
+            <Button
+              variant="outlined"
+              onClick={() => navigate("/expense_dashboard")}
+            >
+              Back to Dashboard
+            </Button>
+            <Button variant="solid" color="primary" onClick={handleSubmit}>
+              Submit Expense Sheet
+            </Button>
+          </Box>
+        </Box>
+      </Box>
     </Box>
   );
 };

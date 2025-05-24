@@ -1,8 +1,22 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+
+const baseQuery = fetchBaseQuery({
+  baseUrl: "https://dev.api.slnkoprotrac.com/v1/",
+  prepareHeaders: (headers) => {
+    const token = localStorage.getItem("authToken");
+    console.log("Token:", token);
+    if (token) {
+      headers.set("x-auth-token", token);
+    }
+    return headers;
+  },
+});
+
+
 export const expensesApi = createApi({
   reducerPath: "expensesApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "https://api.slnkoprotrac.com/v1/" }),
+  baseQuery,
   tagTypes: ["Expense"],
   endpoints: (builder) => ({
     // GET: Fetch all expenses

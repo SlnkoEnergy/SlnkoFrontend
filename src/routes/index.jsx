@@ -105,7 +105,7 @@ function index() {
       {/*---------dashboard -------- */}
       <Route path="/" element={<Login />} />
       <Route
-        path="dashboard"
+        path="/dashboard"
         element={
           <PrivateRoute>
             <Dashboardz />
