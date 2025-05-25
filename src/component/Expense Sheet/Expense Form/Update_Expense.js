@@ -22,7 +22,7 @@ import {
   useUpdateExpenseSheetMutation,
 } from "../../../redux/Expense/expenseSlice";
 
-const Expense_Form = () => {
+const UpdateExpense = () => {
   const navigate = useNavigate();
   const [rows, setRows] = useState([
     {
@@ -956,4 +956,4 @@ const Expense_Form = () => {
   );
 };
 
-export default Expense_Form;
+export default UpdateExpense;

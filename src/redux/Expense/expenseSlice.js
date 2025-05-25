@@ -1,6 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-
 const baseQuery = fetchBaseQuery({
   baseUrl: "https://dev.api.slnkoprotrac.com/v1/",
   prepareHeaders: (headers) => {
@@ -12,7 +11,6 @@ const baseQuery = fetchBaseQuery({
     return headers;
   },
 });
-
 
 export const expensesApi = createApi({
   reducerPath: "expensesApi",
@@ -69,6 +67,14 @@ export const expensesApi = createApi({
       }),
       invalidatesTags: ["Expense"],
     }),
+    updateExpenseSheet: builder.mutation({
+      query: ({ _id, ...updatedData }) => ({
+        url: `update-expense/${_id}`,
+        method: "PUT",
+        body: updatedData,
+      }),
+      invalidatesTags: ["Expense"],
+    }),
   }),
 });
 
@@ -79,4 +85,5 @@ export const {
   useUpdateExpenseStatusOverallMutation,
   useUpdateExpenseStatusItemsMutation,
   useDeleteExpenseMutation,
+  useUpdateExpenseSheetMutation,
 } = expensesApi;
