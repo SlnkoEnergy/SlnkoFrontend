@@ -61,7 +61,7 @@ const Expense_Form = () => {
           user_id: "",
         },
       ],
-      // must be one of ["draft", "submitted", "hold", "rejected", "approved"]
+
       total_requested_amount: "",
       total_approved_amount: "",
       disbursement_date: "",
@@ -120,7 +120,7 @@ const Expense_Form = () => {
           setProjectCodes([]);
         }
       } catch (error) {
-        console.error("❌ Error fetching project codes:", error);
+        console.error("Error fetching project codes:", error);
         setProjectCodes([]);
       }
     };
@@ -137,44 +137,49 @@ const Expense_Form = () => {
         return;
       }
 
+      const items = rows.map((row) => {
+        const item = row.items?.[0] || {};
+        return {
+          ...item,
+          project_id: item.project_id || null,
+          invoice: {
+            ...item.invoice,
+            invoice_amount: item.invoice?.invoice_amount || "0",
+          },
+          item_status_history: [
+            {
+              status: "submitted",
+              remarks: item.item_status_history?.[0]?.remarks || "",
+              user_id: userID, // <--- important!
+              updatedAt: new Date().toISOString(),
+            },
+          ],
+          item_current_status: "submitted",
+        };
+      });
+
       const cleanedData = {
-        ...rows[0],
-        current_status: rows[0].current_status || "submitted",
+        expense_term: rows[0]?.expense_term || {},
+        items,
+        user_id: userID,
+        current_status: "submitted",
         status_history: [
           {
             status: "submitted",
-            remarks: rows[0].status_history?.[0]?.remarks || "",
+            remarks: rows[0]?.status_history?.[0]?.remarks || "",
             user_id: userID,
+            updatedAt: new Date().toISOString(),
           },
         ],
-        items: [
-          {
-            ...rows[0].items[0], // ✅ Use items[0], not rows[0].items
-            project_id: rows[0].items[0]?.project_id || null,
-            invoice: {
-              ...rows[0].items[0]?.invoice,
-              invoice_amount: rows[0].items[0]?.invoice?.invoice_amount || "0",
-            },
-            item_status_history: [
-              {
-                status: "submitted",
-                remarks:
-                  rows[0].items[0]?.item_status_history?.[0]?.remarks || "",
-                user_id: userID,
-                updatedAt: new Date().toISOString(),
-              },
-            ],
-            item_current_status: "submitted",
-          },
-        ],
-        user_id: userID,
+        total_requested_amount: items.reduce(
+          (sum, itm) => sum + Number(itm.invoice.invoice_amount || 0),
+          0
+        ),
+        total_approved_amount: items.reduce(
+          (sum, itm) => sum + Number(itm.approved_amount || 0),
+          0
+        ),
       };
-
-      // Optional: Validate required fields
-      // if (!cleanedData.items[0].project_id || !cleanedData.items[0].invoice.invoice_amount) {
-      //   toast.error("Please fill all required fields.");
-      //   return;
-      // }
 
       const payload = {
         user_id: userID,
@@ -184,7 +189,7 @@ const Expense_Form = () => {
       await addExpense(payload).unwrap();
 
       toast.success("Expense sheet submitted successfully!");
-      navigate("/dashboard");
+      navigate("/expense_dashboard");
     } catch (error) {
       console.error("❌ Submission failed:", error);
       toast.error("An error occurred while submitting the expense sheet.");
@@ -288,23 +293,42 @@ const Expense_Form = () => {
   //   setDropdownOpenIndex(null);
   // };
 
-  const handleSelectProject = (index, code) => {
-    const selectedProject = projectCodes.find((p) => p.code === code);
-    if (!selectedProject) return;
+  // const handleSelectProject = (index, code) => {
+  //   const selectedProject = projectCodes.find((p) => p.code === code);
+  //   if (!selectedProject) return;
 
-    const updated = [...rows];
-    updated[index].items[0].project_id = selectedProject._id;
-    updated[index].items[0].project_name = selectedProject.name; // optional
-    setRows(updated);
+  //   const updated = [...rows];
+  //   updated[index].items[0].project_id = selectedProject._id;
+  //   updated[index].items[0].project_name = selectedProject.name; // optional
+  //   setRows(updated);
 
-    setSearchInputs((prev) => {
-      const updatedInputs = [...prev];
-      updatedInputs[index] = code;
-      return updatedInputs;
-    });
+  //   setSearchInputs((prev) => {
+  //     const updatedInputs = [...prev];
+  //     updatedInputs[index] = code;
+  //     return updatedInputs;
+  //   });
 
-    setDropdownOpenIndex(null);
-  };
+  //   setDropdownOpenIndex(null);
+  // };
+
+  const handleSelectProject = (index, code, name) => {
+  const selectedProject = projectCodes.find((p) => p.code === code);
+  if (!selectedProject) return;
+
+  const updated = [...rows];
+  updated[index].items[0].project_id = selectedProject._id;
+  updated[index].items[0].project_name = name;
+  setRows(updated);
+
+  setSearchInputs((prev) => {
+    const updatedInputs = [...prev];
+    updatedInputs[index] = code;
+    return updatedInputs;
+  });
+
+  setDropdownOpenIndex(null);
+};
+
 
   const handleApproval = (index, status) => {
     const updated = [...rows];
@@ -458,7 +482,7 @@ const Expense_Form = () => {
                 const filteredProjects = projectCodes.filter((project) =>
                   (project.code || "")
                     .toLowerCase()
-                    .includes((searchInputs[rowIndex] || "").toLowerCase())
+                    .includes((searchInputs[rowIndex] || "").toLowerCase()),
                 );
 
                 return (
@@ -828,27 +852,29 @@ const Expense_Form = () => {
             </thead>
             <tbody>
               {categoryOptions.map((category, idx) => {
-                let total = 0;
-                let approvedTotal = 0;
+                const itemsInCategory = rows.flatMap((row) =>
+                  (row.items || []).filter((item) => item.category === category)
+                );
 
-                rows.forEach((row) => {
-                  row.items?.forEach((item) => {
-                    if (item.category === category) {
-                      total += Number(item.invoice?.invoice_amount || 0);
-                      if (item.item_current_status === "approved") {
-                        approvedTotal += Number(item.approved_amount || 0);
-                      }
-                    }
-                  });
-                });
+                const amt = itemsInCategory.reduce(
+                  (sum, item) =>
+                    sum + Number(item.invoice?.invoice_amount || 0),
+                  0
+                );
+
+                const approvedAmt = itemsInCategory.reduce(
+                  (sum, item) =>
+                    item.item_current_status === "approved"
+                      ? sum + Number(item.approved_amount || 0)
+                      : sum,
+                  0
+                );
 
                 return (
                   <tr key={idx}>
                     <td>{category}</td>
-                    <td>{total > 0 ? total.toFixed(2) : "-"}</td>
-                    <td>
-                      {approvedTotal > 0 ? approvedTotal.toFixed(2) : "-"}
-                    </td>
+                    <td>{amt > 0 ? amt.toFixed(2) : "-"}</td>
+                    <td>{approvedAmt > 0 ? approvedAmt.toFixed(2) : "-"}</td>
                   </tr>
                 );
               })}
