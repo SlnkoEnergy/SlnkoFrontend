@@ -169,6 +169,7 @@ const AddUserForm = () => {
                           "SCM Executive One",
                           "SCM Executive Two",
                           "Project Engineer",
+                          "Site",
                           "Team Lead",
                         ]
                       : [
@@ -177,7 +178,7 @@ const AddUserForm = () => {
                           "SCM",
                           "BD",
                           "Operation",
-                          "Project",
+                          "Projects",
                           "Accounts",
                         ]
                     ).map((option) => (
