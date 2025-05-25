@@ -1,41 +1,25 @@
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
-import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
-import Menu from "@mui/joy/Menu";
-import MenuButton from "@mui/joy/MenuButton";
-import MenuItem from "@mui/joy/MenuItem";
-import Option from "@mui/joy/Option";
-import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import * as React from "react";
-import DeleteIcon from "@mui/icons-material/Delete";
-import ModeEditIcon from "@mui/icons-material/ModeEdit";
-import Divider from "@mui/joy/Divider";
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useState,
-  useMemo,
-} from "react";
+import { forwardRef, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "react-toastify";
 
+import { Chip, useTheme } from "@mui/joy";
 import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
+import { useGetLoginsQuery } from "../../redux/loginSlice";
 
 const ExpenseApproval = forwardRef((props, ref) => {
   const navigate = useNavigate();
-
+  const theme = useTheme();
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
@@ -45,6 +29,8 @@ const ExpenseApproval = forwardRef((props, ref) => {
   const [selectedExpenses, setSelectedExpenses] = useState([]);
 
   const { data: getExpense = [], isLoading, error } = useGetAllExpenseQuery();
+
+  const { data: getAllUser = [] } = useGetLoginsQuery();
 
   // console.log("getExpense: ", getExpense);
 
@@ -86,6 +72,7 @@ const ExpenseApproval = forwardRef((props, ref) => {
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
+
   const expenses = useMemo(
     () => (Array.isArray(getExpense?.data) ? getExpense.data : []),
     [getExpense]
@@ -93,21 +80,52 @@ const ExpenseApproval = forwardRef((props, ref) => {
 
   const filteredAndSortedData = expenses
     .filter((expense) => {
-      const matchesSearchQuery = ["expense_code", "emp_id", "emp_name", "status"].some((key) =>
-        expense[key]?.toLowerCase().includes(searchQuery)
+      // Match user by ID
+      const matchedUser = getAllUser?.data?.find(
+        (user) => user._id === expense.user_id
       );
+
+      // Only continue if user exists and matches department criteria
+      if (!matchedUser || matchedUser.department !== "Projects") return false;
+
+      // Only include certain statuses
+      const allowedStatuses = [
+        "submitted",
+        "manager approval",
+        "hr approval",
+        "final approval",
+        "hold",
+        "rejected",
+      ];
+      const status = expense.current_status?.toLowerCase();
+      if (!allowedStatuses.includes(status)) return false;
+
+      // Filter based on search query (case-insensitive)
+      const search = searchQuery.toLowerCase();
+      const matchesSearchQuery = [
+        "expense_code",
+        "emp_id",
+        "emp_name",
+        "status",
+      ].some((key) => expense[key]?.toLowerCase().includes(search));
 
       return matchesSearchQuery;
     })
     .sort((a, b) => {
-      if (a.expense_code?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.expense_code?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.emp_id?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.emp_id?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.emp_name?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.emp_name?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.status?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.status?.toLowerCase().includes(searchQuery)) return 1;
+      const search = searchQuery.toLowerCase();
+
+      // Prioritize exact field matches
+      const fields = ["expense_code", "emp_id", "emp_name", "status"];
+      for (let field of fields) {
+        const aValue = a[field]?.toLowerCase() || "";
+        const bValue = b[field]?.toLowerCase() || "";
+        const aMatch = aValue.includes(search);
+        const bMatch = bValue.includes(search);
+        if (aMatch && !bMatch) return -1;
+        if (!aMatch && bMatch) return 1;
+      }
+
+      // Fallback: sort by createdAt descending
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
@@ -139,6 +157,50 @@ const ExpenseApproval = forwardRef((props, ref) => {
     }
 
     return pages;
+  };
+
+  const ExpenseCode = ({ currentPage, expense_code }) => {
+    // console.log("currentPage:", currentPage, "p_id:", p_id);
+
+    return (
+      <>
+        <span
+          style={{
+            cursor: "pointer",
+            color: theme.vars.palette.text.primary,
+            textDecoration: "none",
+          }}
+          onClick={() => {
+            localStorage.setItem("edit_expense", expense_code);
+            navigate(`/edit_expense?page=${currentPage}&code=${expense_code}`);
+          }}
+        >
+          {expense_code || "-"}
+        </span>
+      </>
+    );
+  };
+
+  const EmployeeName = ({ currentPage, expense_code, emp_name }) => {
+    // console.log("currentPage:", currentPage, "p_id:", p_id);
+
+    return (
+      <>
+        <span
+          style={{
+            cursor: "pointer",
+            color: theme.vars.palette.text.primary,
+            textDecoration: "none",
+          }}
+          onClick={() => {
+            localStorage.setItem("edit_expense", expense_code);
+            navigate(`/edit_expense?page=${currentPage}&code=${expense_code}`);
+          }}
+        >
+          {emp_name || "-"}
+        </span>
+      </>
+    );
   };
 
   useEffect(() => {
@@ -299,7 +361,10 @@ const ExpenseApproval = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                    {expense.expense_code || "-"}
+                    <ExpenseCode
+                      currentPage={currentPage}
+                      expense_code={expense.expense_code}
+                    />
                   </Box>
                   <Box
                     component="td"
@@ -319,7 +384,11 @@ const ExpenseApproval = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                    {expense.emp_name || "-"}
+                    <EmployeeName
+                      currentPage={currentPage}
+                      expense_code={expense.expense_code}
+                      emp_name={expense.emp_name}
+                    />
                   </Box>
                   <Box
                     component="td"
@@ -385,7 +454,49 @@ const ExpenseApproval = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                    {expense.current_status || "-"}
+                    {(() => {
+                      const status = expense.current_status?.toLowerCase();
+
+                      if (status === "submitted") {
+                        return (
+                          <Chip color="primary" variant="soft" size="sm">
+                            Pending
+                          </Chip>
+                        );
+                      } else if (
+                        ["manager approval", "hr approval"].includes(status)
+                      ) {
+                        return (
+                          <Chip color="warning" variant="soft" size="sm">
+                            In Process
+                          </Chip>
+                        );
+                      } else if (status === "final approval") {
+                        return (
+                          <Chip color="success" variant="soft" size="sm">
+                            Approved
+                          </Chip>
+                        );
+                      } else if (status === "hold") {
+                        return (
+                          <Chip color="neutral" variant="soft" size="sm">
+                            On Hold
+                          </Chip>
+                        );
+                      } else if (status === "rejected") {
+                        return (
+                          <Chip color="danger" variant="soft" size="sm">
+                            Rejected
+                          </Chip>
+                        );
+                      } else {
+                        return (
+                          <Chip variant="outlined" size="sm">
+                            -
+                          </Chip>
+                        );
+                      }
+                    })()}
                   </Box>
 
                   <Box
