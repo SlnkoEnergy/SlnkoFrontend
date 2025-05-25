@@ -137,7 +137,6 @@ const Expense_Form = () => {
         return;
       }
 
-    
       const cleanedData = {
         ...rows[0],
         current_status: rows[0].current_status || "submitted",
@@ -196,18 +195,45 @@ const Expense_Form = () => {
     setRows((prev) => [
       ...prev,
       {
-        category: "",
-        project_id: "",
-        description: "",
-        expense_date: "",
-        invoice: {
-          invoice_number: "",
-          invoice_amount: "",
+        items: [
+          {
+            category: "",
+            project_id: "",
+            description: "",
+            expense_date: "",
+            invoice: {
+              invoice_number: "",
+              invoice_amount: "",
+              status: "", // assuming you use this for Yes/No
+            },
+            attachment_url: "",
+            item_status_history: [
+              {
+                status: "",
+                remarks: "",
+                user_id: "",
+              },
+            ],
+            approved_amount: "",
+            remarks: "",
+            item_current_status: "",
+          },
+        ],
+        expense_term: {
+          from: "",
+          to: "",
         },
-        attachment_url: "",
-        approved_amount: "",
-        remarks: "",
-        item_current_status: "",
+        status_history: [
+          {
+            status: "",
+            remarks: "",
+            user_id: "",
+          },
+        ],
+        total_requested_amount: "",
+        total_approved_amount: "",
+        disbursement_date: "",
+        comments: "",
       },
     ]);
     setSearchInputs((prev) => [...prev, ""]);
@@ -231,9 +257,6 @@ const Expense_Form = () => {
     updated[rowIndex].items[0][field] = value;
     setRows(updated);
   };
-
-  
-  
 
   const handleFileChange = (index, file) => {
     const updated = [...rows];
@@ -316,7 +339,10 @@ const Expense_Form = () => {
     }));
     setRows(updated);
   };
-  const showInvoiceNoColumn = rows.some((row) => row.invoice === "Yes");
+  const showInvoiceNoColumn = rows.some(
+    (row) => row.items?.[0]?.invoice?.status === "Yes"
+  );
+
   const tableHeaders = [
     "Project Code",
     "Project Name",
@@ -371,6 +397,40 @@ const Expense_Form = () => {
               Reject All
             </Button>
           </Box>
+          <Box display="flex" alignItems="center" gap={2} mb={2}>
+            <Typography level="body-md" fontWeight="lg">
+              Select Expense Term:
+            </Typography>
+
+            {/* From Date */}
+            <Input
+              type="date"
+              size="sm"
+              value={rows[0].expense_term.from}
+              onChange={(e) =>
+                handleRowChange(0, "expense_term", {
+                  ...rows[0].expense_term,
+                  from: e.target.value,
+                })
+              }
+            />
+
+            <Typography level="body-sm">to</Typography>
+
+            {/* To Date */}
+            <Input
+              type="date"
+              size="sm"
+              value={rows[0].expense_term.to}
+              onChange={(e) =>
+                handleRowChange(0, "expense_term", {
+                  ...rows[0].expense_term,
+                  to: e.target.value,
+                })
+              }
+            />
+          </Box>
+
           <table
             style={{
               borderCollapse: "collapse",
@@ -488,85 +548,81 @@ const Expense_Form = () => {
 
                     {/* Category */}
                     <td style={{ padding: 8 }}>
-                    <Select
-  size="sm"
-  variant="outlined"
-  value={row.items?.[0]?.category || ""}
-  onChange={(e, value) =>
-    handleItemChange(rowIndex, "category", value)
-  }
-  placeholder="Select"
-  slotProps={{
-    listbox: {
-      sx: { maxHeight: 160, overflowY: "auto" },
-    },
-  }}
-  sx={{ width: 120 }}
->
-  {categoryOptions.map((cat, idx) => (
-    <Option key={idx} value={cat}>
-      {cat}
-    </Option>
-  ))}
-</Select>
-
+                      <Select
+                        size="sm"
+                        variant="outlined"
+                        value={row.items?.[0]?.category || ""}
+                        onChange={(e, value) =>
+                          handleItemChange(rowIndex, "category", value)
+                        }
+                        placeholder="Select"
+                        slotProps={{
+                          listbox: {
+                            sx: { maxHeight: 160, overflowY: "auto" },
+                          },
+                        }}
+                        sx={{ width: 120 }}
+                      >
+                        {categoryOptions.map((cat, idx) => (
+                          <Option key={idx} value={cat}>
+                            {cat}
+                          </Option>
+                        ))}
+                      </Select>
                     </td>
 
                     {/* Description */}
                     <td style={{ padding: 8, maxWidth: 250 }}>
-  <Input
-    size="sm"
-    variant="outlined"
-    value={row.items[0].description}
-    placeholder="Description"
-    onChange={(e) =>
-      handleItemChange(
-        rowIndex,
-        "description",
-        e.target.value
-      )
-    }
-    multiline
-    minRows={1}
-    maxRows={3}
-    sx={{ width: "100%" }}
-  />
-</td>
+                      <Input
+                        size="sm"
+                        variant="outlined"
+                        value={row.items?.[0]?.description || ""}
+                        placeholder="Description"
+                        onChange={(e) =>
+                          handleItemChange(
+                            rowIndex,
+                            "description",
+                            e.target.value
+                          )
+                        }
+                        multiline
+                        minRows={1}
+                        maxRows={3}
+                        sx={{ width: "100%" }}
+                      />
+                    </td>
 
+                    {/* Date */}
+                    <td style={{ padding: 8 }}>
+                      <Input
+                        size="sm"
+                        variant="outlined"
+                        type="date"
+                        value={row.items[0].expense_date}
+                        onChange={(e) =>
+                          handleItemChange(
+                            rowIndex,
+                            "expense_date",
+                            e.target.value
+                          )
+                        }
+                        sx={{ minWidth: 120 }}
+                      />
+                    </td>
 
-                   {/* Date */}
-<td style={{ padding: 8 }}>
-  <Input
-    size="sm"
-    variant="outlined"
-    type="date"
-    value={row.items[0].expense_date}
-    onChange={(e) =>
-      handleItemChange(
-        rowIndex,
-        "expense_date",
-        e.target.value
-      )
-    }
-    sx={{ minWidth: 120 }}
-  />
-</td>
-
-
-                    {/* Bill Amount */}
+                    {/* Invoice Amount */}
                     <td style={{ padding: 8 }}>
                       <Input
                         size="sm"
                         variant="outlined"
                         type="number"
-                        value={row.invoice_amount}
+                        value={row.items?.[0]?.invoice?.invoice_amount || ""}
                         placeholder="₹"
                         onChange={(e) =>
-                          handleRowChange(
-                            rowIndex,
-                            "invoice_amount",
-                            e.target.value
-                          )
+                          handleItemChange(rowIndex, "invoice", {
+                            ...row.items?.[0]?.invoice,
+                            invoice_amount: e.target.value,
+                          })
                         }
                         inputProps={{ min: 0 }}
                         sx={{ minWidth: 90 }}
@@ -582,7 +638,10 @@ const Expense_Form = () => {
                         variant="outlined"
                         sx={{ minWidth: 100 }}
                       >
-                        {row.attachment_url || "Upload"}
+                        {row.attachment_url
+                          ? row.attachment_url.split("/").pop()
+                          : "Upload"}
+
                         <input
                           hidden
                           type="file"
@@ -651,9 +710,12 @@ const Expense_Form = () => {
                     {/* Invoice */}
                     <td>
                       <Select
-                        value={row.invoice}
+                        value={row.items?.[0]?.invoice?.status || ""} // 'invoice' can be an object, so maybe status or yes/no
                         onChange={(e, value) =>
-                          handleRowChange(rowIndex, "invoice", value)
+                          handleItemChange(rowIndex, "invoice", {
+                            ...row.items?.[0]?.invoice,
+                            status: value,
+                          })
                         }
                         placeholder="Yes/No"
                       >
@@ -661,17 +723,19 @@ const Expense_Form = () => {
                         <Option value="No">No</Option>
                       </Select>
                     </td>
+
                     {showInvoiceNoColumn && (
                       <td>
-                        {row.invoice === "Yes" && (
+                        {row.items?.[0]?.invoice?.status === "Yes" && (
                           <Input
-                            value={row.invoice_number}
+                            value={
+                              row.items?.[0]?.invoice?.invoice_number || ""
+                            }
                             onChange={(e) =>
-                              handleRowChange(
-                                rowIndex,
-                                "invoice_number",
-                                e.target.value
-                              )
+                              handleItemChange(rowIndex, "invoice", {
+                                ...row.items?.[0]?.invoice,
+                                invoice_number: e.target.value,
+                              })
                             }
                             placeholder="Invoice No."
                             sx={{ width: "100%" }}
@@ -703,9 +767,9 @@ const Expense_Form = () => {
             minRows={2}
             placeholder="Enter comment"
             value={
-              rows[commentDialog.rowIndex]?.items?.[0]?.item_status_history?.[0]?.remarks || ""
+              rows[commentDialog.rowIndex]?.items?.[0]?.item_status_history?.[0]
+                ?.remarks || ""
             }
-            
             onChange={(e) =>
               handleRowChange(
                 commentDialog.rowIndex,
@@ -764,23 +828,19 @@ const Expense_Form = () => {
             </thead>
             <tbody>
               {categoryOptions.map((category, idx) => {
-                const total = rows
-                  .filter((row) => row.category === category)
-                  .reduce(
-                    (sum, row) => sum + Number(row.total_requested_amount || 0),
-                    0
-                  );
+                let total = 0;
+                let approvedTotal = 0;
 
-                const approvedTotal = rows
-                  .filter(
-                    (row) =>
-                      row.category === category &&
-                      row.approvalStatus === "approved"
-                  )
-                  .reduce(
-                    (sum, row) => sum + Number(row.approved_amount || 0),
-                    0
-                  );
+                rows.forEach((row) => {
+                  row.items?.forEach((item) => {
+                    if (item.category === category) {
+                      total += Number(item.invoice?.invoice_amount || 0);
+                      if (item.item_current_status === "approved") {
+                        approvedTotal += Number(item.approved_amount || 0);
+                      }
+                    }
+                  });
+                });
 
                 return (
                   <tr key={idx}>
@@ -792,6 +852,8 @@ const Expense_Form = () => {
                   </tr>
                 );
               })}
+
+              {/* Grand Total */}
               <tr>
                 <td>
                   <Typography level="body-md" fontWeight="lg">
@@ -801,9 +863,10 @@ const Expense_Form = () => {
                 <td>
                   <Typography level="body-md" fontWeight="lg">
                     {rows
+                      .flatMap((row) => row.items || [])
                       .reduce(
-                        (sum, row) =>
-                          sum + Number(row.total_requested_amount || 0),
+                        (sum, item) =>
+                          sum + Number(item.invoice?.invoice_amount || 0),
                         0
                       )
                       .toFixed(2)}
@@ -812,9 +875,10 @@ const Expense_Form = () => {
                 <td>
                   <Typography level="body-md" fontWeight="lg">
                     {rows
-                      .filter((row) => row.approvalStatus === "approved")
+                      .flatMap((row) => row.items || [])
+                      .filter((item) => item.item_current_status === "approved")
                       .reduce(
-                        (sum, row) => sum + Number(row.approved_amount || 0),
+                        (sum, item) => sum + Number(item.approved_amount || 0),
                         0
                       )
                       .toFixed(2)}
