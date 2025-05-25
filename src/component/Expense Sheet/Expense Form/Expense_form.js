@@ -1,24 +1,20 @@
-import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
-import Box from "@mui/joy/Box";
-import Button from "@mui/joy/Button";
-import Table from "@mui/joy/Table";
-import Input from "@mui/joy/Input";
-import Typography from "@mui/joy/Typography";
-import List from "@mui/joy/List";
-import ListItem from "@mui/joy/ListItem";
-import Sheet from "@mui/joy/Sheet";
-import Select from "@mui/joy/Select";
-import Option from "@mui/joy/Option";
-import Modal from "@mui/joy/Modal";
-import ModalDialog from "@mui/joy/ModalDialog";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import {
-  useAddProjectMutation,
-  useGetProjectsQuery,
-} from "../../../redux/projectsSlice";
+import Box from "@mui/joy/Box";
+import Button from "@mui/joy/Button";
+import Input from "@mui/joy/Input";
+import List from "@mui/joy/List";
+import ListItem from "@mui/joy/ListItem";
+import Modal from "@mui/joy/Modal";
+import ModalDialog from "@mui/joy/ModalDialog";
+import Option from "@mui/joy/Option";
+import Select from "@mui/joy/Select";
+import Sheet from "@mui/joy/Sheet";
+import Table from "@mui/joy/Table";
+import Typography from "@mui/joy/Typography";
+import axios from "axios";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useAddExpenseMutation } from "../../../redux/Expense/expenseSlice";
@@ -209,7 +205,7 @@ const Expense_Form = () => {
             invoice: {
               invoice_number: "",
               invoice_amount: "",
-              status: "", // assuming you use this for Yes/No
+              status: "",
             },
             attachment_url: "",
             item_status_history: [
@@ -312,23 +308,23 @@ const Expense_Form = () => {
   // };
 
   const handleSelectProject = (index, code, name) => {
-  const selectedProject = projectCodes.find((p) => p.code === code);
-  if (!selectedProject) return;
+    const selectedProject = projectCodes.find((p) => p.code === code);
+    if (!selectedProject) return;
 
-  const updated = [...rows];
-  updated[index].items[0].project_id = selectedProject._id;
-  updated[index].items[0].project_name = name;
-  setRows(updated);
+    const updated = [...rows];
+    updated[index].items[0].project_id = selectedProject._id;
+    updated[index].items[0].project_name = name;
+    setRows(updated);
 
-  setSearchInputs((prev) => {
-    const updatedInputs = [...prev];
-    updatedInputs[index] = code;
-    return updatedInputs;
-  });
+    setSearchInputs((prev) => {
+      const updatedInputs = [...prev];
+      updatedInputs[index] = code;
+      updated[index].name = name;
+      return updatedInputs;
+    });
 
-  setDropdownOpenIndex(null);
-};
-
+    setDropdownOpenIndex(null);
+  };
 
   const handleApproval = (index, status) => {
     const updated = [...rows];
@@ -482,7 +478,7 @@ const Expense_Form = () => {
                 const filteredProjects = projectCodes.filter((project) =>
                   (project.code || "")
                     .toLowerCase()
-                    .includes((searchInputs[rowIndex] || "").toLowerCase()),
+                    .includes((searchInputs[rowIndex] || "").toLowerCase())
                 );
 
                 return (
