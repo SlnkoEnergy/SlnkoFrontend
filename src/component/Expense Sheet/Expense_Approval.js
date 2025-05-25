@@ -42,12 +42,11 @@ const ExpenseApproval = forwardRef((props, ref) => {
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedProjects, setSelectedProjects] = useState([]);
+  const [selectedExpenses, setSelectedExpenses] = useState([]);
 
   const { data: getExpense = [], isLoading, error } = useGetAllExpenseQuery();
 
-
-  console.log("getExpense: ", getExpense);
+  // console.log("getExpense: ", getExpense);
 
   const [user, setUser] = useState(null);
 
@@ -66,48 +65,50 @@ const ExpenseApproval = forwardRef((props, ref) => {
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      const ids = paginatedProjects.map((row) => row._id);
-      setSelectedProjects((prevSelected) => [
+      const ids = paginatedExpenses.map((row) => row._id);
+      setSelectedExpenses((prevSelected) => [
         ...new Set([...prevSelected, ...ids]),
       ]);
     } else {
       // Remove only the IDs from current page
-      const ids = paginatedProjects.map((row) => row._id);
-      setSelectedProjects((prevSelected) =>
+      const ids = paginatedExpenses.map((row) => row._id);
+      setSelectedExpenses((prevSelected) =>
         prevSelected.filter((id) => !ids.includes(id))
       );
     }
   };
 
   const handleRowSelect = (_id) => {
-    setSelectedProjects((prev) =>
+    setSelectedExpenses((prev) =>
       prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
     );
   };
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
-  const projects = useMemo(
+  const expenses = useMemo(
     () => (Array.isArray(getExpense?.data) ? getExpense.data : []),
     [getExpense]
   );
 
-  const filteredAndSortedData = projects
-    .filter((project) => {
-      const matchesSearchQuery = ["code", "customer", "name"].some((key) =>
-        project[key]?.toLowerCase().includes(searchQuery)
+  const filteredAndSortedData = expenses
+    .filter((expense) => {
+      const matchesSearchQuery = ["expense_code", "emp_id", "emp_name", "status"].some((key) =>
+        expense[key]?.toLowerCase().includes(searchQuery)
       );
 
       return matchesSearchQuery;
     })
     .sort((a, b) => {
-      if (a.name?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.name?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.code?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.code?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.customer?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.customer?.toLowerCase().includes(searchQuery)) return 1;
-      return 0;
+      if (a.expense_code?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.expense_code?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.emp_id?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.emp_id?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.emp_name?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.emp_name?.toLowerCase().includes(searchQuery)) return 1;
+      if (a.status?.toLowerCase().includes(searchQuery)) return -1;
+      if (b.status?.toLowerCase().includes(searchQuery)) return 1;
+      return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
   const generatePageNumbers = (currentPage, totalPages) => {
@@ -149,7 +150,7 @@ const ExpenseApproval = forwardRef((props, ref) => {
     (filteredAndSortedData?.length || 0) / itemsPerPage
   );
 
-  const paginatedProjects = filteredAndSortedData.slice(
+  const paginatedExpenses = filteredAndSortedData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -182,7 +183,7 @@ const ExpenseApproval = forwardRef((props, ref) => {
           <FormLabel>Search</FormLabel>
           <Input
             size="sm"
-            placeholder="Search by Project ID, Customer, or Name"
+            placeholder="Search by Exp. Code, Emp. Code, Emp. Name, or Status"
             startDecorator={<SearchIcon />}
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
@@ -223,17 +224,17 @@ const ExpenseApproval = forwardRef((props, ref) => {
                 <Checkbox
                   size="sm"
                   checked={
-                    paginatedProjects.length > 0 &&
-                    paginatedProjects.every((project) =>
-                      selectedProjects.includes(project._id)
+                    paginatedExpenses.length > 0 &&
+                    paginatedExpenses.every((expense) =>
+                      selectedExpenses.includes(expense._id)
                     )
                   }
                   indeterminate={
-                    paginatedProjects.some((project) =>
-                      selectedProjects.includes(project._id)
+                    paginatedExpenses.some((expense) =>
+                      selectedExpenses.includes(expense._id)
                     ) &&
-                    !paginatedProjects.every((project) =>
-                      selectedProjects.includes(project._id)
+                    !paginatedExpenses.every((expense) =>
+                      selectedExpenses.includes(expense._id)
                     )
                   }
                   onChange={handleSelectAll}
@@ -241,11 +242,12 @@ const ExpenseApproval = forwardRef((props, ref) => {
               </Box>
               {[
                 "Expense Code",
-                "Emp. Code",
-                "Site Engineer Name",
+                "Employee Code",
+                "Employee Name",
                 "Requested Amount",
                 "Approval Amount",
-                "Disburstment Date",
+                "Rejected Amount",
+                "Disbursement Date",
                 "Status",
                 "",
               ].map((header, index) => (
@@ -265,8 +267,8 @@ const ExpenseApproval = forwardRef((props, ref) => {
             </Box>
           </Box>
           <Box component="tbody">
-            {paginatedProjects.length > 0 ? (
-              paginatedProjects.map((project, index) => (
+            {paginatedExpenses.length > 0 ? (
+              paginatedExpenses.map((expense, index) => (
                 <Box
                   component="tr"
                   key={index}
@@ -285,8 +287,8 @@ const ExpenseApproval = forwardRef((props, ref) => {
                     <Checkbox
                       size="sm"
                       color="primary"
-                      checked={selectedProjects.includes(project._id)}
-                      onChange={() => handleRowSelect(project._id)}
+                      checked={selectedExpenses.includes(expense._id)}
+                      onChange={() => handleRowSelect(expense._id)}
                     />
                   </Box>
                   <Box
@@ -297,7 +299,7 @@ const ExpenseApproval = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                    {project.code}
+                    {expense.expense_code || "-"}
                   </Box>
                   <Box
                     component="td"
@@ -307,7 +309,7 @@ const ExpenseApproval = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                    {project.customer}
+                    {expense.emp_id || "-"}
                   </Box>
                   <Box
                     component="td"
@@ -317,7 +319,7 @@ const ExpenseApproval = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                    {project.name}
+                    {expense.emp_name || "-"}
                   </Box>
                   <Box
                     component="td"
@@ -327,7 +329,7 @@ const ExpenseApproval = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                    {project.email}
+                    {expense.total_requested_amount || "0"}
                   </Box>
                   <Box
                     component="td"
@@ -337,7 +339,53 @@ const ExpenseApproval = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                    {project.number}
+                    {expense.total_approved_amount || "0"}
+                  </Box>
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {(() => {
+                      const requested = Number(
+                        expense.total_requested_amount || 0
+                      );
+                      const approved = Number(
+                        expense.total_approved_amount || 0
+                      );
+                      const rejected = requested - approved;
+                      return isNaN(rejected) ? "0" : rejected.toString();
+                    })()}
+                  </Box>
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {expense.disbursement_date
+                      ? new Date(expense.disbursement_date).toLocaleDateString(
+                          "en-GB"
+                        )
+                      : "-"}
+                  </Box>
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {expense.current_status || "-"}
                   </Box>
 
                   <Box

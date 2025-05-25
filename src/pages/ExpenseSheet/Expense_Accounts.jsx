@@ -17,6 +17,7 @@ import Header from '../../component/Partials/Header';
 import AllProject from '../../component/AllProject';
 import { useNavigate } from 'react-router-dom';
 import HrExpense from '../../component/Expense Sheet/HR_Expense_Approval';
+import AccountsExpense from '../../component/Expense Sheet/Accounts_Expense_Approval';
 
 
 function Accounts_Expense() {
@@ -95,7 +96,7 @@ function Accounts_Expense() {
            
              
           </Box>
-          <HrExpense/>
+          <AccountsExpense/>
           
         </Box>
       </Box>
