@@ -408,8 +408,8 @@ const UpdateExpense = () => {
   const handleCommentSave = () => {
     setCommentDialog({ open: false, rowIndex: null });
   };
-  const showInvoiceNoColumn = rows.some(
-    (row) => row.items?.[0]?.invoice?.status === "Yes"
+  const showInvoiceNoColumn = rows.some((row) =>
+    row.items?.some((item) => item.invoice?.invoice_number?.trim?.() !== "")
   );
 
   const handleRejectAll = () => {
@@ -547,313 +547,312 @@ const UpdateExpense = () => {
             </thead>
 
             <tbody>
-              {rows.map((row, rowIndex) => {
-                const filteredProjects = projectCodes.filter((project) =>
-                  (project.code || "")
-                    .toLowerCase()
-                    .includes((searchInputs[rowIndex] || "").toLowerCase())
-                );
+              {rows.map((row, rowIndex) =>
+                row.items.map((item, itemIndex) => {
+                  const filteredProjects = projectCodes.filter((project) =>
+                    (project.code || "")
+                      .toLowerCase()
+                      .includes((searchInputs[rowIndex] || "").toLowerCase())
+                  );
 
-                return (
-                  <tr
-                    key={rowIndex}
-                    style={{
-                      borderBottom: "1px solid #eee",
-                      backgroundColor: rowIndex % 2 === 0 ? "white" : "#fafafa",
-                    }}
-                  >
-                    {/* Project Code with autocomplete */}
-                    <td
-                      style={{ position: "relative", padding: 8, width: 150 }}
+                  const invoice = item.invoice || {};
+                  const hasInvoiceNumber =
+                    invoice.invoice_number?.trim?.() !== "";
+
+                  return (
+                    <tr
+                      key={`${rowIndex}-${itemIndex}`}
+                      style={{
+                        borderBottom: "1px solid #eee",
+                        backgroundColor:
+                          rowIndex % 2 === 0 ? "white" : "#fafafa",
+                      }}
                     >
-                      <Input
-                        size="sm"
-                        variant="outlined"
-                        value={searchInputs[rowIndex] || ""}
-                        placeholder="Search Project Code"
-                        onChange={(e) =>
-                          handleSearchInputChange(rowIndex, e.target.value)
-                        }
-                        onFocus={() => setDropdownOpenIndex(rowIndex)}
-                        inputRef={(el) => (inputRefs.current[rowIndex] = el)}
-                        autoComplete="off"
-                        sx={{ width: "100%" }}
-                      />
-                      {dropdownOpenIndex === rowIndex &&
-                        filteredProjects.length > 0 && (
-                          <Sheet
-                            variant="outlined"
-                            sx={{
-                              position: "absolute",
-                              top: "100%",
-                              left: 0,
-                              right: 0,
-                              zIndex: 20,
-                              maxHeight: 180,
-                              overflowY: "auto",
-                              bgcolor: "background.body",
-                              borderRadius: 1,
-                              boxShadow: "md",
-                              mt: 0.5,
-                            }}
-                          >
-                            <List size="sm" sx={{ p: 0 }}>
-                              {filteredProjects.map((project, i) => (
-                                <ListItem
-                                  key={i}
-                                  onClick={() =>
-                                    handleSelectProject(
-                                      rowIndex,
-                                      project.code,
-                                      project.name
-                                    )
-                                  }
-                                  sx={{
-                                    cursor: "pointer",
-                                    px: 2,
-                                    py: 1,
-                                    borderRadius: 1,
-                                    "&:hover": { bgcolor: "primary.softBg" },
-                                  }}
-                                >
-                                  <Typography level="body2" fontWeight="md">
-                                    {project.code}
-                                  </Typography>{" "}
-                                  - {project.name}
-                                </ListItem>
-                              ))}
-                            </List>
-                          </Sheet>
-                        )}
-                    </td>
-
-                    {/* Project Name */}
-                    <td style={{ padding: 8, maxWidth: 200 }}>
-                      <Input
-                        size="sm"
-                        variant="outlined"
-                        value={row.name}
-                        placeholder="Project Name"
-                        disabled
-                        sx={{ width: "100%" }}
-                      />
-                    </td>
-
-                    {/* Category */}
-                    <td style={{ padding: 8 }}>
-                      <Select
-                        size="sm"
-                        variant="outlined"
-                        value={row.items?.[0]?.category || ""}
-                        onChange={(e, value) =>
-                          handleItemChange(rowIndex, "category", value)
-                        }
-                        placeholder="Select"
-                        slotProps={{
-                          listbox: {
-                            sx: { maxHeight: 160, overflowY: "auto" },
-                          },
-                        }}
-                        sx={{ width: 120 }}
+                      {/* Project Code with autocomplete */}
+                      <td
+                        style={{ position: "relative", padding: 8, width: 150 }}
                       >
-                        {categoryOptions.map((cat, idx) => (
-                          <Option key={idx} value={cat}>
-                            {cat}
-                          </Option>
-                        ))}
-                      </Select>
-                    </td>
-
-                    {/* Description */}
-                    <td style={{ padding: 8, maxWidth: 250 }}>
-                      <Input
-                        size="sm"
-                        variant="outlined"
-                        value={row.items?.[0]?.description || ""}
-                        placeholder="Description"
-                        onChange={(e) =>
-                          handleItemChange(
-                            rowIndex,
-                            "description",
-                            e.target.value
-                          )
-                        }
-                        multiline
-                        minRows={1}
-                        maxRows={3}
-                        sx={{ width: "100%" }}
-                      />
-                    </td>
-
-                    {/* Date */}
-                    <td style={{ padding: 8 }}>
-                      <Input
-                        size="sm"
-                        variant="outlined"
-                        type="date"
-                        value={
-                          row.items[0].expense_date
-                            ? new Date(row.items[0].expense_date)
-                                .toISOString()
-                                .split("T")[0]
-                            : ""
-                        }
-                        onChange={(e) =>
-                          handleItemChange(
-                            rowIndex,
-                            "expense_date",
-                            e.target.value
-                          )
-                        }
-                        sx={{ minWidth: 120 }}
-                      />
-                    </td>
-
-                    {/* Invoice Amount */}
-                    <td style={{ padding: 8 }}>
-                      <Input
-                        size="sm"
-                        variant="outlined"
-                        type="number"
-                        value={row.items?.[0]?.invoice?.invoice_amount || ""}
-                        placeholder="₹"
-                        onChange={(e) =>
-                          handleItemChange(rowIndex, "invoice", {
-                            ...row.items?.[0]?.invoice,
-                            invoice_amount: e.target.value,
-                          })
-                        }
-                        inputProps={{ min: 0 }}
-                        sx={{ minWidth: 90 }}
-                      />
-                    </td>
-
-                    {/* Attachment */}
-                    <td style={{ padding: 8, width: 120 }}>
-                      <Button
-                        size="sm"
-                        component="label"
-                        startDecorator={<UploadFileIcon />}
-                        variant="outlined"
-                        sx={{ minWidth: 100 }}
-                      >
-                        {row.attachment_url
-                          ? row.attachment_url.split("/").pop()
-                          : "Upload"}
-
-                        <input
-                          hidden
-                          type="file"
+                        <Input
+                          size="sm"
+                          variant="outlined"
+                          value={searchInputs[rowIndex] || ""}
+                          placeholder="Search Project Code"
                           onChange={(e) =>
-                            e.target.files?.[0] &&
-                            handleFileChange(rowIndex, e.target.files[0])
+                            handleSearchInputChange(rowIndex, e.target.value)
                           }
+                          onFocus={() => setDropdownOpenIndex(rowIndex)}
+                          inputRef={(el) => (inputRefs.current[rowIndex] = el)}
+                          autoComplete="off"
+                          sx={{ width: "100%" }}
                         />
-                      </Button>
-                    </td>
+                        {dropdownOpenIndex === rowIndex &&
+                          filteredProjects.length > 0 && (
+                            <Sheet
+                              variant="outlined"
+                              sx={{
+                                position: "absolute",
+                                top: "100%",
+                                left: 0,
+                                right: 0,
+                                zIndex: 20,
+                                maxHeight: 180,
+                                overflowY: "auto",
+                                bgcolor: "background.body",
+                                borderRadius: 1,
+                                boxShadow: "md",
+                                mt: 0.5,
+                              }}
+                            >
+                              <List size="sm" sx={{ p: 0 }}>
+                                {filteredProjects.map((project, i) => (
+                                  <ListItem
+                                    key={i}
+                                    onClick={() =>
+                                      handleSelectProject(
+                                        rowIndex,
+                                        project.code,
+                                        project.name
+                                      )
+                                    }
+                                    sx={{
+                                      cursor: "pointer",
+                                      px: 2,
+                                      py: 1,
+                                      borderRadius: 1,
+                                      "&:hover": { bgcolor: "primary.softBg" },
+                                    }}
+                                  >
+                                    <Typography level="body2" fontWeight="md">
+                                      {project.code}
+                                    </Typography>{" "}
+                                    - {project.name}
+                                  </ListItem>
+                                ))}
+                              </List>
+                            </Sheet>
+                          )}
+                      </td>
 
-                    {/* Approval */}
-                    <td style={{ padding: 8 }}>
-                      <Box display="flex" gap={1} justifyContent="center">
-                        <Button
+                      {/* Project Name */}
+                      <td style={{ padding: 8, maxWidth: 200 }}>
+                        <Input
                           size="sm"
-                          variant={
-                            row.approvalStatus === "approved"
-                              ? "solid"
-                              : "outlined"
-                          }
-                          color="success"
-                          onClick={() => handleApproval(rowIndex, "approved")}
-                          aria-label="Approve"
-                        >
-                          <CheckIcon />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={
-                            row.approvalStatus === "rejected"
-                              ? "solid"
-                              : "outlined"
-                          }
-                          color="danger"
-                          onClick={() => handleApproval(rowIndex, "rejected")}
-                          aria-label="Reject"
-                        >
-                          <CloseIcon />
-                        </Button>
-                      </Box>
-                    </td>
+                          variant="outlined"
+                          value={row.name}
+                          placeholder="Project Name"
+                          disabled
+                          sx={{ width: "100%" }}
+                        />
+                      </td>
 
-                    {/* Approved Amount */}
-                    <td style={{ padding: 8, maxWidth: 110 }}>
-                      {row.approvalStatus === "approved" && (
+                      {/* Category */}
+                      <td style={{ padding: 8 }}>
+                        <Select
+                          size="sm"
+                          variant="outlined"
+                          value={item.category || ""}
+                          onChange={(e, value) =>
+                            handleItemChange(rowIndex, "category", value)
+                          }
+                          placeholder="Select"
+                          slotProps={{
+                            listbox: {
+                              sx: { maxHeight: 160, overflowY: "auto" },
+                            },
+                          }}
+                          sx={{ width: 120 }}
+                        >
+                          {categoryOptions.map((cat, idx) => (
+                            <Option key={idx} value={cat}>
+                              {cat}
+                            </Option>
+                          ))}
+                        </Select>
+                      </td>
+
+                      {/* Description */}
+                      <td style={{ padding: 8, maxWidth: 250 }}>
+                        <Input
+                          size="sm"
+                          variant="outlined"
+                          value={item.description || ""}
+                          placeholder="Description"
+                          onChange={(e) =>
+                            handleItemChange(
+                              rowIndex,
+                              "description",
+                              e.target.value
+                            )
+                          }
+                          multiline
+                          minRows={1}
+                          maxRows={3}
+                          sx={{ width: "100%" }}
+                        />
+                      </td>
+
+                      {/* Date */}
+                      <td style={{ padding: 8 }}>
+                        <Input
+                          size="sm"
+                          variant="outlined"
+                          type="date"
+                          value={
+                            item.expense_date
+                              ? new Date(item.expense_date)
+                                  .toISOString()
+                                  .split("T")[0]
+                              : ""
+                          }
+                          onChange={(e) =>
+                            handleItemChange(
+                              rowIndex,
+                              "expense_date",
+                              e.target.value
+                            )
+                          }
+                          sx={{ minWidth: 120 }}
+                        />
+                      </td>
+
+                      {/* Invoice Amount */}
+                      <td style={{ padding: 8 }}>
                         <Input
                           size="sm"
                           variant="outlined"
                           type="number"
-                          value={row.approved_amount}
+                          value={invoice.invoice_amount || ""}
                           placeholder="₹"
                           onChange={(e) =>
-                            handleRowChange(
-                              rowIndex,
-                              "approved_amount",
-                              e.target.value
-                            )
+                            handleItemChange(rowIndex, "invoice", {
+                              ...invoice,
+                              invoice_amount: e.target.value,
+                            })
                           }
                           inputProps={{ min: 0 }}
                           sx={{ minWidth: 90 }}
                         />
-                      )}
-                    </td>
+                      </td>
 
-                    {/* Invoice */}
-                    <td>
-                      <Select
-                        value={
-                          row.items?.[0]?.invoice?.invoice_number?.trim()
-                            ? "Yes"
-                            : "No"
-                        }
-                        onChange={(e, value) => {
-                          const isYes = value === "Yes";
-                          const currentInvoice = row.items?.[0]?.invoice || {};
-                          handleItemChange(rowIndex, "invoice", {
-                            ...currentInvoice,
-                            invoice_number: isYes
-                              ? currentInvoice.invoice_number || "" // keep existing or make blank
-                              : "", // clear if user selects "No"
-                          });
-                        }}
-                        placeholder="Yes/No"
-                      >
-                        <Option value="Yes">Yes</Option>
-                        <Option value="No">No</Option>
-                      </Select>
-                    </td>
-
-                    {showInvoiceNoColumn && (
-                      <td>
-                        {row.items?.[0]?.invoice?.invoice_number?.trim() !==
-                          "" && (
-                          <Input
-                            value={
-                              row.items?.[0]?.invoice?.invoice_number || ""
-                            }
+                      {/* Attachment */}
+                      <td style={{ padding: 8, width: 120 }}>
+                        <Button
+                          size="sm"
+                          component="label"
+                          startDecorator={<UploadFileIcon />}
+                          variant="outlined"
+                          sx={{ minWidth: 100 }}
+                        >
+                          {row.attachment_url
+                            ? row.attachment_url.split("/").pop()
+                            : "Upload"}
+                          <input
+                            hidden
+                            type="file"
                             onChange={(e) =>
-                              handleItemChange(rowIndex, "invoice", {
-                                ...row.items?.[0]?.invoice,
-                                invoice_number: e.target.value,
-                              })
+                              e.target.files?.[0] &&
+                              handleFileChange(rowIndex, e.target.files[0])
                             }
-                            placeholder="Invoice No."
-                            sx={{ width: "100%" }}
+                          />
+                        </Button>
+                      </td>
+
+                      {/* Approval Buttons */}
+                      <td style={{ padding: 8 }}>
+                        <Box display="flex" gap={1} justifyContent="center">
+                          <Button
+                            size="sm"
+                            variant={
+                              row.approvalStatus === "approved"
+                                ? "solid"
+                                : "outlined"
+                            }
+                            color="success"
+                            onClick={() => handleApproval(rowIndex, "approved")}
+                            aria-label="Approve"
+                          >
+                            <CheckIcon />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={
+                              row.approvalStatus === "rejected"
+                                ? "solid"
+                                : "outlined"
+                            }
+                            color="danger"
+                            onClick={() => handleApproval(rowIndex, "rejected")}
+                            aria-label="Reject"
+                          >
+                            <CloseIcon />
+                          </Button>
+                        </Box>
+                      </td>
+
+                      {/* Approved Amount */}
+                      <td style={{ padding: 8, maxWidth: 110 }}>
+                        {row.approvalStatus === "approved" && (
+                          <Input
+                            size="sm"
+                            variant="outlined"
+                            type="number"
+                            value={row.approved_amount || ""}
+                            placeholder="₹"
+                            onChange={(e) =>
+                              handleRowChange(
+                                rowIndex,
+                                "approved_amount",
+                                e.target.value
+                              )
+                            }
+                            inputProps={{ min: 0 }}
+                            sx={{ minWidth: 90 }}
                           />
                         )}
                       </td>
-                    )}
-                  </tr>
-                );
-              })}
+
+                      {/* Invoice Present: Yes/No */}
+                      <td>
+                        <Select
+                          value={hasInvoiceNumber ? "Yes" : "No"}
+                          onChange={(e, value) => {
+                            const isYes = value === "Yes";
+                            handleItemChange(rowIndex, "invoice", {
+                              ...invoice,
+                              invoice_number: isYes
+                                ? invoice.invoice_number || ""
+                                : "",
+                            });
+                          }}
+                          placeholder="Yes/No"
+                        >
+                          <Option value="Yes">Yes</Option>
+                          <Option value="No">No</Option>
+                        </Select>
+                      </td>
+
+                      {/* Invoice Number Input */}
+                      {showInvoiceNoColumn && (
+                        <td>
+                          {hasInvoiceNumber && (
+                            <Input
+                              value={invoice.invoice_number || ""}
+                              onChange={(e) =>
+                                handleItemChange(rowIndex, "invoice", {
+                                  ...invoice,
+                                  invoice_number: e.target.value,
+                                })
+                              }
+                              placeholder="Invoice No."
+                              sx={{ width: "100%" }}
+                            />
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </Box>
