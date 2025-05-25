@@ -456,8 +456,8 @@ const handleDelete = async () => {
               </Box>
             </Box>
             <Box component="tbody">
-              {paginatedProjects.length > 0 ? (
-                paginatedProjects.map((project, index) => (
+              {paginatedProjects.data.length > 0 ? (
+                paginatedProjects.data.map((project, index) => (
                   <Box
                     component="tr"
                     key={index}
