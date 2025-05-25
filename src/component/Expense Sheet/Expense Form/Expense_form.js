@@ -30,6 +30,8 @@ const Expense_Form = () => {
         {
           category: "",
           project_id: "",
+          project_code: "",
+          project_name: "",
           description: "",
           expense_date: "",
           invoice: {
@@ -93,8 +95,6 @@ const Expense_Form = () => {
   ];
 
   const [addExpense] = useAddExpenseMutation();
-  const [updateExpense, { isLoading: isUpdating }] =
-    useUpdateExpenseSheetMutation();
 
   // const { data: getProject = [], isLoading, error } = useGetProjectsQuery();
 
@@ -138,13 +138,13 @@ const Expense_Form = () => {
         return;
       }
 
-      const currentStatus = rows[0]?.current_status;
-
       const items = rows.map((row) => {
         const item = row.items?.[0] || {};
         return {
           ...item,
           project_id: item.project_id || null,
+          project_code: item.project_code || "",
+          project_name: item.project_name || "",
           invoice: {
             ...item.invoice,
             invoice_amount: item.invoice?.invoice_amount || "0",
@@ -189,16 +189,8 @@ const Expense_Form = () => {
         data: cleanedData,
       };
 
-      if (currentStatus === "submitted") {
-        // Use PUT to update
-        await updateExpense(payload).unwrap();
-        toast.success("Expense sheet updated successfully!");
-      } else {
-        // Use POST to create
-        await addExpense(payload).unwrap();
-        toast.success("Expense sheet submitted successfully!");
-      }
-
+      await addExpense(payload).unwrap();
+      toast.success("Expense sheet submitted successfully!");
       navigate("/expense_dashboard");
     } catch (error) {
       console.error("❌ Submission failed:", error);
@@ -340,39 +332,10 @@ const Expense_Form = () => {
     setDropdownOpenIndex(null);
   };
 
-  const handleApproval = (index, status) => {
-    const updated = [...rows];
-    updated[index].approvalStatus = status;
-    if (status === "approved") {
-      updated[index].approved_amount = updated[index].amount || "";
-    } else {
-      setCommentDialog({ open: true, rowIndex: index });
-    }
-    setRows(updated);
-  };
-
   const handleCommentSave = () => {
     setCommentDialog({ open: false, rowIndex: null });
   };
 
-  const handleRejectAll = () => {
-    const updated = rows.map((row, index) => ({
-      ...row,
-      approvalStatus: "rejected",
-      rejectionComment: "",
-    }));
-    setRows(updated);
-    setCommentDialog({ open: true, rowIndex: 0 });
-  };
-
-  const handleApproveAll = () => {
-    const updated = rows.map((row) => ({
-      ...row,
-      approvalStatus: "approved",
-      approved_amount: row.total_requested_amount || "",
-    }));
-    setRows(updated);
-  };
   const showInvoiceNoColumn = rows.some(
     (row) => row.items?.[0]?.invoice?.status === "Yes"
   );
@@ -385,8 +348,6 @@ const Expense_Form = () => {
     "Date",
     "Bill Amount",
     "Attachment",
-    "Approval",
-    "Approved Amt",
     "Invoice",
   ];
 
@@ -409,29 +370,14 @@ const Expense_Form = () => {
           }}
         >
           {/* Action Buttons */}
+
           <Box
             display="flex"
+            alignItems="center"
+            justifyContent={"flex-end"}
             gap={2}
             mb={2}
-            flexWrap="wrap"
-            justifyContent="flex-start"
           >
-            <Button
-              color="success"
-              onClick={handleApproveAll}
-              sx={{ minWidth: 120 }}
-            >
-              Approve All
-            </Button>
-            <Button
-              color="danger"
-              onClick={handleRejectAll}
-              sx={{ minWidth: 120 }}
-            >
-              Reject All
-            </Button>
-          </Box>
-          <Box display="flex" alignItems="center" gap={2} mb={2}>
             <Typography level="body-md" fontWeight="lg">
               Select Expense Term:
             </Typography>
@@ -687,60 +633,6 @@ const Expense_Form = () => {
                       </Button>
                     </td>
 
-                    {/* Approval */}
-                    <td style={{ padding: 8 }}>
-                      <Box display="flex" gap={1} justifyContent="center">
-                        <Button
-                          size="sm"
-                          variant={
-                            row.approvalStatus === "approved"
-                              ? "solid"
-                              : "outlined"
-                          }
-                          color="success"
-                          onClick={() => handleApproval(rowIndex, "approved")}
-                          aria-label="Approve"
-                        >
-                          <CheckIcon />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={
-                            row.approvalStatus === "rejected"
-                              ? "solid"
-                              : "outlined"
-                          }
-                          color="danger"
-                          onClick={() => handleApproval(rowIndex, "rejected")}
-                          aria-label="Reject"
-                        >
-                          <CloseIcon />
-                        </Button>
-                      </Box>
-                    </td>
-
-                    {/* Approved Amount */}
-                    <td style={{ padding: 8, maxWidth: 110 }}>
-                      {row.approvalStatus === "approved" && (
-                        <Input
-                          size="sm"
-                          variant="outlined"
-                          type="number"
-                          value={row.approved_amount}
-                          placeholder="₹"
-                          onChange={(e) =>
-                            handleRowChange(
-                              rowIndex,
-                              "approved_amount",
-                              e.target.value
-                            )
-                          }
-                          inputProps={{ min: 0 }}
-                          sx={{ minWidth: 90 }}
-                        />
-                      )}
-                    </td>
-
                     {/* Invoice */}
                     <td>
                       <Select
@@ -857,7 +749,6 @@ const Expense_Form = () => {
               <tr>
                 <th>Head</th>
                 <th>Amt</th>
-                <th>Approval Amt</th>
               </tr>
             </thead>
             <tbody>
@@ -884,7 +775,6 @@ const Expense_Form = () => {
                   <tr key={idx}>
                     <td>{category}</td>
                     <td>{amt > 0 ? amt.toFixed(2) : "-"}</td>
-                    <td>{approvedAmt > 0 ? approvedAmt.toFixed(2) : "-"}</td>
                   </tr>
                 );
               })}
@@ -908,18 +798,6 @@ const Expense_Form = () => {
                       .toFixed(2)}
                   </Typography>
                 </td>
-                <td>
-                  <Typography level="body-md" fontWeight="lg">
-                    {rows
-                      .flatMap((row) => row.items || [])
-                      .filter((item) => item.item_current_status === "approved")
-                      .reduce(
-                        (sum, item) => sum + Number(item.approved_amount || 0),
-                        0
-                      )
-                      .toFixed(2)}
-                  </Typography>
-                </td>
               </tr>
             </tbody>
           </Table>
@@ -929,7 +807,7 @@ const Expense_Form = () => {
         <Box mt={2} display="flex" justifyContent="center">
           <Box
             display="flex"
-            justifyContent="space-between"
+            justifyContent="center"
             maxWidth="400px"
             width="100%"
           >
@@ -939,15 +817,8 @@ const Expense_Form = () => {
             >
               Back to Dashboard
             </Button>
-            <Button
-              variant="solid"
-              color="primary"
-              onClick={handleSubmit}
-              disabled={isUpdating}
-            >
-              {rows[0]?.current_status === "submitted"
-                ? "Update Expense Sheet"
-                : "Submit Expense Sheet"}
+            <Button variant="solid" color="primary" onClick={handleSubmit}>
+              Submit Expense Sheet
             </Button>
           </Box>
         </Box>

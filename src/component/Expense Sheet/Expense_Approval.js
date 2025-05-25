@@ -160,7 +160,7 @@ const ExpenseApproval = forwardRef((props, ref) => {
   };
 
   const ExpenseCode = ({ currentPage, expense_code }) => {
-    // console.log("currentPage:", currentPage, "p_id:", p_id);
+    console.log("currentPage:", currentPage, "expense_code:", expense_code);
 
     return (
       <>
@@ -182,7 +182,12 @@ const ExpenseApproval = forwardRef((props, ref) => {
   };
 
   const EmployeeName = ({ currentPage, expense_code, emp_name }) => {
-    // console.log("currentPage:", currentPage, "p_id:", p_id);
+    console.log(
+      "currentPage:",
+      currentPage,
+      "expense_code:",
+      typeof expense_code
+    );
 
     return (
       <>

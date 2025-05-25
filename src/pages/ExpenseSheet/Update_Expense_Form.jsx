@@ -78,15 +78,14 @@ function Edit_Expense() {
                 color="neutral"
                 href=""
                 sx={{ fontSize: 12, fontWeight: 500 }}
-                onClick={() => navigate("/expense_dashboard")}
               >
-                Expense Dashboard
+                Expense Approval Dashboard
               </Link>
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Add Expense
+                Update Expense
               </Typography>
             </Breadcrumbs>
           </Box>

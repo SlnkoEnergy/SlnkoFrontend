@@ -36,6 +36,7 @@ import {
   useGetProjectsQuery,
 } from "../../redux/projectsSlice";
 import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
+import { Chip } from "@mui/joy";
 
 const AllExpense = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -93,24 +94,57 @@ const AllExpense = forwardRef((props, ref) => {
     [getExpense]
   );
 
-
   const filteredAndSortedData = expenses
     .filter((expense) => {
+      if (!user || !user.name) return false;
+
+      const userName = user.name.trim();
+      const userRole = user.role?.trim();
+      const isAdmin = userRole === "admin" || userRole === "superadmin";
+      const submittedBy = expense.emp_name?.trim() || "";
+
+      if (isAdmin) return true;
+
+      const isSubmittedByUser = submittedBy === userName;
+
+      // Only include certain statuses
+      const allowedStatuses = [
+        "submitted",
+        "manager approval",
+        "hr approval",
+        "final approval",
+        "hold",
+        "rejected",
+      ];
+      const status = expense.current_status?.toLowerCase();
+      if (!allowedStatuses.includes(status)) return false;
+
       const matchesSearchQuery = [
         "expense_code",
         "current_status",
         "disbursement_date",
-      ].some((key) => expense[key]?.toLowerCase().includes(searchQuery));
+      ].some((key) =>
+        expense[key]?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
 
-      return matchesSearchQuery;
+      return matchesSearchQuery && isSubmittedByUser;
     })
     .sort((a, b) => {
-      if (a.expense_code?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.expense_code?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.disbursement_date?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.disbursement_date?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.current_status?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.current_status?.toLowerCase().includes(searchQuery)) return 1;
+      const aMatches = [
+        a.expense_code,
+        a.disbursement_date,
+        a.current_status,
+      ].some((val) => val?.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      const bMatches = [
+        b.expense_code,
+        b.disbursement_date,
+        b.current_status,
+      ].some((val) => val?.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      if (aMatches && !bMatches) return -1;
+      if (!aMatches && bMatches) return 1;
+
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
@@ -367,7 +401,49 @@ const AllExpense = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                    {expense.current_status || "-"}
+                    {(() => {
+                      const status = expense.current_status?.toLowerCase();
+
+                      if (status === "submitted") {
+                        return (
+                          <Chip color="primary" variant="soft" size="sm">
+                            Pending
+                          </Chip>
+                        );
+                      } else if (
+                        ["manager approval", "hr approval"].includes(status)
+                      ) {
+                        return (
+                          <Chip color="warning" variant="soft" size="sm">
+                            In Process
+                          </Chip>
+                        );
+                      } else if (status === "final approval") {
+                        return (
+                          <Chip color="success" variant="soft" size="sm">
+                            Approved
+                          </Chip>
+                        );
+                      } else if (status === "hold") {
+                        return (
+                          <Chip color="neutral" variant="soft" size="sm">
+                            On Hold
+                          </Chip>
+                        );
+                      } else if (status === "rejected") {
+                        return (
+                          <Chip color="danger" variant="soft" size="sm">
+                            Rejected
+                          </Chip>
+                        );
+                      } else {
+                        return (
+                          <Chip variant="outlined" size="sm">
+                            -
+                          </Chip>
+                        );
+                      }
+                    })()}
                   </Box>
 
                   <Box
