@@ -1022,9 +1022,9 @@ const handleSubmit = async () => {
             ) && (
               <>
                 <Grid item xs={12} sm={6}>
-                  <Typography level="body1">
-                    
-                  </Typography>
+                 
+                     <Typography level="body1">Inverter Make</Typography>
+                
                   <Select
                     fullWidth
                     value={formData["project_detail"]?.["inverter_make"] || ""}
