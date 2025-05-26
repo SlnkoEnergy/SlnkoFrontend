@@ -22,6 +22,8 @@ import {
   useUpdateExpenseSheetMutation,
 } from "../../../redux/Expense/expenseSlice";
 import { useGetProjectsQuery } from "../../../redux/projectsSlice";
+import { Textarea } from "@mui/joy";
+import { Approval } from "@mui/icons-material";
 
 const UpdateExpense = () => {
   const navigate = useNavigate();
@@ -31,13 +33,15 @@ const UpdateExpense = () => {
         {
           category: "",
           project_id: "",
+          project_code: "",
+          project_name: "",
           description: "",
           expense_date: "",
           invoice: {
             invoice_number: "",
             invoice_amount: "",
           },
-          attachment_url: "",
+
           item_status_history: [
             {
               status: "",
@@ -103,9 +107,35 @@ const UpdateExpense = () => {
     useUpdateExpenseSheetMutation();
   console.log("🔄 getExpense Query Response:", expenses);
 
-  // const { data: getProject = [], isLoading, error } = useGetProjectsQuery();
-
-  // console.log(getProject);
+  const ApprovalButton = ({
+    rowIndex,
+    itemIndex,
+    itemStatus,
+    handleApproval,
+  }) => {
+    return (
+      <Box display="flex" gap={1} justifyContent="flex-start">
+        <Button
+          size="sm"
+          variant={itemStatus === "rejected" ? "solid" : "outlined"}
+          color="danger"
+          onClick={() => handleApproval(rowIndex, itemIndex, "rejected")}
+          aria-label="Reject"
+        >
+          <CloseIcon />
+        </Button>
+        <Button
+          size="sm"
+          variant={itemStatus === "manager approval" ? "solid" : "outlined"}
+          color="success"
+          onClick={() => handleApproval(rowIndex, itemIndex, "submitted")}
+          aria-label="Approve"
+        >
+          <CheckIcon />
+        </Button>
+      </Box>
+    );
+  };
 
   const ExpenseCode = localStorage.getItem("edit_expense");
 
@@ -182,7 +212,6 @@ const UpdateExpense = () => {
         return;
       }
 
-      // 🧠 Flatten all items and ensure amounts/status are clean
       const items = rows.flatMap((row) =>
         (row.items || []).map((item) => {
           const invoiceAmount = Number(item.invoice?.invoice_amount || 0);
@@ -210,7 +239,7 @@ const UpdateExpense = () => {
         })
       );
 
-      // ✅ Calculate totals safely
+      //  Calculate totals
       const totalRequested = items.reduce(
         (sum, itm) => sum + Number(itm.invoice?.invoice_amount || 0),
         0
@@ -238,7 +267,7 @@ const UpdateExpense = () => {
         data: cleanedData,
       };
 
-      // 🔥 Submit to backend
+      //  Submit to backend
       await updateExpense({
         _id: expenseSheetId,
         ...payload,
@@ -452,9 +481,6 @@ const UpdateExpense = () => {
   const handleCommentSave = () => {
     setCommentDialog({ open: false, rowIndex: null });
   };
-  const showInvoiceNoColumn = rows.some((row) =>
-    row.items?.some((item) => item.invoice?.invoice_number?.trim?.() !== "")
-  );
 
   const handleRejectAll = () => {
     const updated = rows.map((row) => {
@@ -505,21 +531,16 @@ const UpdateExpense = () => {
   };
 
   const tableHeaders = [
-    "Project Code",
+    "Project ID",
     "Project Name",
     "Category",
     "Description",
-    "Date",
+    "Submission Date",
     "Bill Amount",
-    "Attachment",
+    "Invoice Number",
+    "Approved Amount",
     "Approval",
-    "Approved Amt",
-    "Invoice",
   ];
-
-  if (showInvoiceNoColumn) {
-    tableHeaders.push("Invoice No");
-  }
 
   return (
     <Box p={2}>
@@ -532,405 +553,125 @@ const UpdateExpense = () => {
 
         <Box
           sx={{
-            marginLeft: { md: "15%" },
+            px: { xs: 2, md: 2 },
+            py: 3,
+            marginLeft: { md: "12%" },
+            maxWidth: "100%",
           }}
         >
-          {/* Action Buttons */}
+          {/* Action Controls */}
           <Box
-            display="flex"
-            gap={2}
             mb={2}
+            display="flex"
+            justifyContent="space-between"
             flexWrap="wrap"
-            justifyContent="flex-start"
+            alignItems="center"
+            gap={2}
           >
-            <Button
-              color="success"
-              onClick={handleApproveAll}
-              sx={{ minWidth: 120 }}
-            >
-              Approve All
-            </Button>
-            <Button
-              color="danger"
-              onClick={handleRejectAll}
-              sx={{ minWidth: 120 }}
-            >
-              Reject All
-            </Button>
-          </Box>
-          <Box display="flex" alignItems="center" gap={2} mb={2}>
-            <Typography level="body-md" fontWeight="lg">
-              Select Expense Term:
-            </Typography>
+            {/* Left: Date Range */}
+            <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
+              <Typography level="body-md" fontWeight="lg">
+                Select Expense Term:
+              </Typography>
+              <Input
+                type="date"
+                size="sm"
+                value={rows[0].expense_term.from}
+                onChange={(e) =>
+                  handleRowChange(0, "expense_term", {
+                    ...rows[0].expense_term,
+                    from: e.target.value,
+                  })
+                }
+              />
+              <Typography level="body-sm">to</Typography>
+              <Input
+                type="date"
+                size="sm"
+                value={rows[0].expense_term.to}
+                onChange={(e) =>
+                  handleRowChange(0, "expense_term", {
+                    ...rows[0].expense_term,
+                    to: e.target.value,
+                  })
+                }
+              />
+            </Box>
 
-            {/* From Date */}
-            <Input
-              type="date"
-              size="sm"
-              value={rows[0].expense_term.from}
-              onChange={(e) =>
-                handleRowChange(0, "expense_term", {
-                  ...rows[0].expense_term,
-                  from: e.target.value,
-                })
-              }
-            />
-
-            <Typography level="body-sm">to</Typography>
-
-            {/* To Date */}
-            <Input
-              type="date"
-              size="sm"
-              value={rows[0].expense_term.to}
-              onChange={(e) =>
-                handleRowChange(0, "expense_term", {
-                  ...rows[0].expense_term,
-                  to: e.target.value,
-                })
-              }
-            />
+            {/* Right: Bulk Actions */}
+            <Box display="flex" gap={2}>
+              <Button color="success" onClick={handleApproveAll} size="sm">
+                Approve All
+              </Button>
+              <Button color="danger" onClick={handleRejectAll} size="sm">
+                Reject All
+              </Button>
+            </Box>
           </Box>
 
-          <table
-            style={{
-              borderCollapse: "collapse",
-              width: "100%",
-              minWidth: 800,
-              fontSize: "0.9rem",
-              tableLayout: "fixed",
+          {/* Table */}
+          <Sheet
+            variant="outlined"
+            sx={{
+              borderRadius: "md",
+              overflow: "auto",
+              boxShadow: "sm",
+              maxHeight: "70vh",
             }}
           >
-            <thead
-              style={{
-                backgroundColor: "#f5f5f5",
-                borderBottom: "2px solid #ccc",
+            <Table
+              variant="soft"
+              size="sm"
+              stickyHeader
+              hoverRow
+              sx={{
+                minWidth: 900,
+                "& thead th": {
+                  backgroundColor: "neutral.softBg",
+                  fontWeight: "md",
+                  fontSize: "sm",
+                },
               }}
             >
-              <tr>
-                {tableHeaders.map((header, idx) => (
-                  <th key={idx}>{header}</th>
-                ))}
-              </tr>
-            </thead>
-
-            <tbody>
-              {rows.map((row, rowIndex) =>
-                row.items.map((item, itemIndex) => {
-                  const filteredProjects = projectCodes.filter((project) =>
-                    (project.code || "")
-                      .toLowerCase()
-                      .includes((searchInputs[rowIndex] || "").toLowerCase())
-                  );
-
-                  const invoice = item.invoice || {};
-                  const hasInvoiceNumber =
-                    invoice.invoice_number?.trim?.() !== "";
-
-                  return (
-                    <tr
-                      key={`${rowIndex}-${itemIndex}`}
-                      style={{
-                        borderBottom: "1px solid #eee",
-                        backgroundColor:
-                          rowIndex % 2 === 0 ? "white" : "#fafafa",
-                      }}
-                    >
-                      {/* Project Code with autocomplete */}
-                      <td
-                        style={{ position: "relative", padding: 8, width: 150 }}
-                      >
-                        <Input
-                          size="sm"
-                          variant="outlined"
-                          value={searchInputs[rowIndex] || ""}
-                          placeholder="Search Project Code"
-                          onChange={(e) =>
-                            handleSearchInputChange(rowIndex, e.target.value)
-                          }
-                          onFocus={() => setDropdownOpenIndex(rowIndex)}
-                          inputRef={(el) => (inputRefs.current[rowIndex] = el)}
-                          autoComplete="off"
-                          sx={{ width: "100%" }}
-                        />
-                        {dropdownOpenIndex === rowIndex &&
-                          filteredProjects.length > 0 && (
-                            <Sheet
-                              variant="outlined"
-                              sx={{
-                                position: "absolute",
-                                top: "100%",
-                                left: 0,
-                                right: 0,
-                                zIndex: 20,
-                                maxHeight: 180,
-                                overflowY: "auto",
-                                bgcolor: "background.body",
-                                borderRadius: 1,
-                                boxShadow: "md",
-                                mt: 0.5,
-                              }}
-                            >
-                              <List size="sm" sx={{ p: 0 }}>
-                                {filteredProjects.map((project, i) => (
-                                  <ListItem
-                                    key={i}
-                                    onClick={() =>
-                                      handleSelectProject(
-                                        rowIndex,
-                                        project.code,
-                                        project.name
-                                      )
-                                    }
-                                    sx={{
-                                      cursor: "pointer",
-                                      px: 2,
-                                      py: 1,
-                                      borderRadius: 1,
-                                      "&:hover": { bgcolor: "primary.softBg" },
-                                    }}
-                                  >
-                                    <Typography level="body2" fontWeight="md">
-                                      {project.code}
-                                    </Typography>{" "}
-                                    - {project.name}
-                                  </ListItem>
-                                ))}
-                              </List>
-                            </Sheet>
-                          )}
-                      </td>
-
-                      {/* Project Name */}
-                      <td style={{ padding: 8, maxWidth: 200 }}>
-                        <Input
-                          size="sm"
-                          variant="outlined"
-                          value={row.name}
-                          placeholder="Project Name"
-                          disabled
-                          sx={{ width: "100%" }}
-                        />
-                      </td>
-
-                      {/* Category */}
-                      <td style={{ padding: 8 }}>
-                        <Select
-                          size="sm"
-                          variant="outlined"
-                          value={item.category || ""}
-                          onChange={(e, value) =>
-                            handleItemChange(rowIndex, "category", value)
-                          }
-                          placeholder="Select"
-                          slotProps={{
-                            listbox: {
-                              sx: { maxHeight: 160, overflowY: "auto" },
-                            },
-                          }}
-                          sx={{ width: 120 }}
-                        >
-                          {categoryOptions.map((cat, idx) => (
-                            <Option key={idx} value={cat}>
-                              {cat}
-                            </Option>
-                          ))}
-                        </Select>
-                      </td>
-
-                      {/* Description */}
-                      <td style={{ padding: 8, maxWidth: 250 }}>
-                        <Input
-                          size="sm"
-                          variant="outlined"
-                          value={item.description || ""}
-                          placeholder="Description"
-                          onChange={(e) =>
-                            handleItemChange(
-                              rowIndex,
-                              "description",
-                              e.target.value
-                            )
-                          }
-                          multiline
-                          minRows={1}
-                          maxRows={3}
-                          sx={{ width: "100%" }}
-                        />
-                      </td>
-
-                      {/* Date */}
-                      <td style={{ padding: 8 }}>
-                        <Input
-                          size="sm"
-                          variant="outlined"
-                          type="date"
-                          value={
-                            item.expense_date
-                              ? new Date(item.expense_date)
-                                  .toISOString()
-                                  .split("T")[0]
-                              : ""
-                          }
-                          onChange={(e) =>
-                            handleItemChange(
-                              rowIndex,
-                              "expense_date",
-                              e.target.value
-                            )
-                          }
-                          sx={{ minWidth: 120 }}
-                        />
-                      </td>
-
-                      {/* Invoice Amount */}
-                      <td style={{ padding: 8 }}>
-                        <Input
-                          size="sm"
-                          variant="outlined"
-                          type="number"
-                          value={invoice.invoice_amount || ""}
-                          placeholder="₹"
-                          onChange={(e) =>
-                            handleItemChange(rowIndex, "invoice", {
-                              ...invoice,
-                              invoice_amount: e.target.value,
-                            })
-                          }
-                          inputProps={{ min: 0 }}
-                          sx={{ minWidth: 90 }}
-                        />
-                      </td>
-
-                      {/* Attachment */}
-                      <td style={{ padding: 8, width: 120 }}>
-                        <Button
-                          size="sm"
-                          component="label"
-                          startDecorator={<UploadFileIcon />}
-                          variant="outlined"
-                          sx={{ minWidth: 100 }}
-                        >
-                          {row.attachment_url
-                            ? row.attachment_url.split("/").pop()
-                            : "Upload"}
-                          <input
-                            hidden
-                            type="file"
-                            onChange={(e) =>
-                              e.target.files?.[0] &&
-                              handleFileChange(rowIndex, e.target.files[0])
-                            }
-                          />
-                        </Button>
-                      </td>
-
-                      {/* Approval Buttons */}
-                      <td style={{ padding: 8 }}>
-                        <Box display="flex" gap={1} justifyContent="center">
-                          <Button
-                            size="sm"
-                            variant={
-                              item.item_current_status === "manager approval"
-                                ? "solid"
-                                : "outlined"
-                            }
-                            color="success"
-                            onClick={() =>
-                              handleApproval(rowIndex, itemIndex, "submitted")
-                            }
-                            aria-label="Approve"
-                          >
-                            <CheckIcon />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant={
-                              item.item_current_status === "rejected"
-                                ? "solid"
-                                : "outlined"
-                            }
-                            color="danger"
-                            onClick={() =>
-                              handleApproval(rowIndex, itemIndex, "rejected")
-                            }
-                            aria-label="Reject"
-                          >
-                            <CloseIcon />
-                          </Button>
-                        </Box>
-                      </td>
-
-                      {/* Approved Amount per Item */}
-                      {/* Approved Amount per Item */}
-                      <td style={{ padding: 8, maxWidth: 110 }}>
-                        {item.item_current_status === "manager approval" && (
-                          <Input
-                            size="sm"
-                            variant="outlined"
-                            type="number"
-                            value={
-                              item.approved_amount === 0 || item.approved_amount
-                                ? String(item.approved_amount)
-                                : ""
-                            }
-                            onChange={(e) =>
-                              handleApprovedAmountChange(
-                                rowIndex,
-                                itemIndex,
-                                e.target.value
-                              )
-                            }
-                            inputProps={{ min: 0 }}
-                            sx={{ minWidth: 90 }}
-                          />
-                        )}
-                      </td>
-
-                      {/* Invoice Present: Yes/No */}
+              <thead>
+                <tr>
+                  {tableHeaders.map((header, idx) => (
+                    <th key={idx}>{header}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, rowIndex) =>
+                  row.items.map((item, itemIndex) => (
+                    <tr key={`${rowIndex}-${itemIndex}`}>
+                      <td>{item.project_code}</td>
+                      <td>{row.name}</td>
+                      <td>{item.category}</td>
+                      <td>{item.description}</td>
                       <td>
-                        <Select
-                          value={hasInvoiceNumber ? "Yes" : "No"}
-                          onChange={(e, value) => {
-                            const isYes = value === "Yes";
-                            handleItemChange(rowIndex, "invoice", {
-                              ...invoice,
-                              invoice_number: isYes
-                                ? invoice.invoice_number || ""
-                                : "",
-                            });
-                          }}
-                          placeholder="Yes/No"
-                        >
-                          <Option value="Yes">Yes</Option>
-                          <Option value="No">No</Option>
-                        </Select>
+                        {item.expense_date
+                          ? new Date(item.expense_date)
+                              .toISOString()
+                              .split("T")[0]
+                          : ""}
                       </td>
-
-                      {/* Invoice Number Input */}
-                      {showInvoiceNoColumn && (
-                        <td>
-                          {hasInvoiceNumber && (
-                            <Input
-                              value={invoice.invoice_number || ""}
-                              onChange={(e) =>
-                                handleItemChange(rowIndex, "invoice", {
-                                  ...invoice,
-                                  invoice_number: e.target.value,
-                                })
-                              }
-                              placeholder="Invoice No."
-                              sx={{ width: "100%" }}
-                            />
-                          )}
-                        </td>
-                      )}
+                      <td>{item.invoice?.invoice_amount}</td>
+                      <td>{item.invoice?.invoice_number}</td>
+                      <td>{item.approved_amount || "-"}</td>
+                      <td>
+                        <ApprovalButton
+                          rowIndex={rowIndex}
+                          itemIndex={itemIndex}
+                          itemStatus={item.item_current_status}
+                          handleApproval={handleApproval}
+                        />
+                      </td>
                     </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                  ))
+                )}
+              </tbody>
+            </Table>
+          </Sheet>
         </Box>
       </Box>
 
