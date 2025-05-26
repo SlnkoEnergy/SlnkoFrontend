@@ -2,17 +2,22 @@ import {
   Autocomplete,
   Button,
   Grid,
+  IconButton,
   Input,
   Option,
   Select,
   Sheet,
+  Switch,
   Textarea,
+  Tooltip,
   Typography,
 } from "@mui/joy";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import * as Yup from "yup";
+import AddCircleIcon from "@mui/icons-material/AddCircle";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import Img1 from "../../../assets/HandOverSheet_Icon.jpeg";
 import {
   useAddHandOverMutation,
@@ -110,6 +115,7 @@ const HandoverSheetForm = () => {
     },
     submitted_by: "",
   });
+  const [showVillage, setShowVillage] = useState(false);
 
   const [formErrors, setFormErrors] = useState({});
 
@@ -261,10 +267,16 @@ const HandoverSheetForm = () => {
       customer: Yup.string().required("Customer is required"),
       number: Yup.string().required("Phone number is required"),
       state: Yup.string().required("State is required"),
-     site_address: Yup.object().shape({
-      village_name: Yup.string().required("Village & District name is required"),
-      // district_name: Yup.string().required("District name is required"),
-    }),
+      site_address: Yup.object().shape({
+        district_name: Yup.string().required("District name is required"),
+        // village_name: Yup.string().when("district_name", {
+        //   is: (val) => val && val.trim() !== "",
+        //   then: Yup.string().required(
+        //     "Village name is required once district is entered"
+        //   ),
+        //   otherwise: Yup.string(),
+        // }),
+      }),
     }),
     order_details: Yup.object().shape({
       type_business: Yup.string().required("Business type is required"),
@@ -358,66 +370,69 @@ const HandoverSheetForm = () => {
   }, [handoverData]);
 
   const handleSubmit = async () => {
-  try {
-    if (!LeadId) {
-      toast.error("Lead ID is missing!");
-      return;
-    }
+    try {
+      if (!LeadId) {
+        toast.error("Lead ID is missing!");
+        return;
+      }
 
-    await handoverSchema.validate(formData, { abortEarly: false });
+      await handoverSchema.validate(formData, { abortEarly: false });
 
-    const updatedFormData = {
-      ...formData,
-      id: LeadId,
-      other_details: {
-        ...formData.other_details,
-      },
-      project_detail: {
-        ...formData.project_detail,
-      },
-    };
-
-    if (handoverData?.status_of_handoversheet === "Rejected") {
-      const dataToUpdate = {
-        ...updatedFormData,
-        status_of_handoversheet: "draft",
+      const updatedFormData = {
+        ...formData,
+        id: LeadId,
+        other_details: {
+          ...formData.other_details,
+        },
+        project_detail: {
+          ...formData.project_detail,
+        },
       };
-      await updateHandOver(dataToUpdate).unwrap();
-      toast.success("Form resubmitted successfully");
-    } else if (handoverData?.status_of_handoversheet === "draft") {
-      toast.info("Already submitted");
-      return;
-    } else if (!handoverData) {
-      // New submission
-      await addHandOver(updatedFormData).unwrap();
-      toast.success("Form submitted successfully");
-    } else {
-      toast.error("Form already handed over");
-      return;
-    }
 
-    localStorage.setItem("HandOver_Lead", LeadId);
-    navigate("/get_hand_over");
-  } catch (error) {
-    if (error.name === "ValidationError") {
-      error.inner.forEach((err) => {
-        toast.error(err.message);
-      });
-    } else {
-      const errorMessage =
-        error?.data?.message || error?.message || "Submission failed";
-
-      // Only show error if it's not a duplicate entry
-      if (!errorMessage.toLowerCase().includes("already exists")) {
-        console.error("Submission error:", error);
-        toast.error(errorMessage);
+      if (handoverData?.status_of_handoversheet === "Rejected") {
+        const dataToUpdate = {
+          ...updatedFormData,
+          status_of_handoversheet: "draft",
+        };
+        await updateHandOver(dataToUpdate).unwrap();
+        toast.success("Form resubmitted successfully");
+      } else if (
+        handoverData?.status_of_handoversheet === "draft" ||
+        handoverData?.status_of_handoversheet === "submitted" ||
+        handoverData?.status_of_handoversheet === "Approved"
+      ) {
+        toast.info("Already submitted");
+        return;
+      } else if (!handoverData) {
+        // New submission
+        await addHandOver(updatedFormData).unwrap();
+        toast.success("Form submitted successfully");
       } else {
-        toast.error("This handover has already been submitted.");
+        toast.error("Form already handed over");
+        return;
+      }
+
+      localStorage.setItem("HandOver_Lead", LeadId);
+      navigate("/get_hand_over");
+    } catch (error) {
+      if (error.name === "ValidationError") {
+        error.inner.forEach((err) => {
+          toast.error(err.message);
+        });
+      } else {
+        const errorMessage =
+          error?.data?.message || error?.message || "Submission failed";
+
+        // Only show error if it's not a duplicate entry
+        if (!errorMessage.toLowerCase().includes("already exists")) {
+          console.error("Submission error:", error);
+          toast.error(errorMessage);
+        } else {
+          toast.error("This handover has already been submitted.");
+        }
       }
     }
-  }
-};
-
+  };
 
   return (
     <Sheet
@@ -546,33 +561,61 @@ const HandoverSheetForm = () => {
           </Select>
         </Grid>
 
+        {/* District + PinCode with Switch */}
         <Grid item xs={12} sm={6}>
           <Typography
             level="body1"
-            sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              fontWeight: "bold",
+              mb: 0.5,
+            }}
           >
             Site Address with Pin Code <span style={{ color: "red" }}>*</span>
+            <Tooltip title="Enable to enter village name" placement="top">
+              <Switch
+                checked={showVillage}
+                onChange={(e) => setShowVillage(e.target.checked)}
+                sx={{ ml: 2 }}
+                size="sm"
+              />
+            </Tooltip>
           </Typography>
+
           <Input
-           
-            fullWidths
-            placeholder="e.g. Sunrise Village, 221001"
-            value={`${formData?.customer_details?.site_address?.village_name || ""}${
-              formData?.customer_details?.site_address?.district_name
-                ? `, ${formData?.customer_details?.site_address?.district_name}`
-                : ""
-            }`}
+            fullWidth
+            placeholder="e.g. Varanasi 221001"
+            value={formData.customer_details.site_address.district_name}
             onChange={(e) => {
-              const [village, district] = e.target.value
-                .split(",")
-                .map((s) => s.trim());
+              const newDistrict = e.target.value;
               handleChange("customer_details", "site_address", {
-                village_name: village || "",
-                district_name: district || "",
+                ...formData.customer_details.site_address,
+                district_name: newDistrict,
               });
             }}
           />
         </Grid>
+
+        {showVillage && (
+          <Grid item xs={12} sm={6}>
+            <Typography level="body1" sx={{ fontWeight: "bold", mb: 0.5 }}>
+              Village Name <span style={{ color: "red" }}>*</span>
+            </Typography>
+            <Input
+              fullWidth
+              placeholder="e.g. Chakia"
+              value={formData.customer_details.site_address.village_name}
+              onChange={(e) => {
+                handleChange("customer_details", "site_address", {
+                  ...formData.customer_details.site_address,
+                  village_name: e.target.value,
+                });
+              }}
+            />
+          </Grid>
+        )}
+
         <Grid item xs={12} sm={6}>
           <Typography
             level="body1"
@@ -952,7 +995,7 @@ const HandoverSheetForm = () => {
         </Grid>
         <Grid item xs={12} sm={6}>
           <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-           Total Slnko Service Charges (Without GST){" "}
+            Total Slnko Service Charges (Without GST){" "}
             <span style={{ color: "red" }}>*</span>
           </Typography>
           <Input
@@ -961,7 +1004,6 @@ const HandoverSheetForm = () => {
             readOnly
           />
         </Grid>
-       
 
         <Grid xs={12}>
           <Grid item xs={12} sm={6} mt={1}>
