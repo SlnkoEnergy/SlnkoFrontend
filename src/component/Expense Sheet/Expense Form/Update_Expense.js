@@ -134,7 +134,7 @@ const UpdateExpense = () => {
     if (matchedExpense) {
       console.log("✅ Matched Expense Found:", matchedExpense);
 
-      // Enrich each item in matchedExpense.items with project data
+      
       const enrichedItems = (matchedExpense.items || []).map((item) => {
         const matchedProject = project.find(
           (proj) => String(proj._id) === String(item.project_id)
@@ -147,7 +147,7 @@ const UpdateExpense = () => {
         };
       });
 
-      // Create the updated expense with enriched items
+   
       const enrichedExpense = {
         ...matchedExpense,
         items: enrichedItems,
@@ -155,7 +155,7 @@ const UpdateExpense = () => {
 
       setRows([enrichedExpense]);
     } else {
-      console.warn("⚠️ No matching expense_code found");
+      console.warn("No matching expense_code found");
     }
   }, [ExpenseCode, expenses, project]);
 
@@ -182,7 +182,7 @@ const UpdateExpense = () => {
         return;
       }
 
-      // 🧠 Flatten all items and ensure amounts/status are clean
+     
       const items = rows.flatMap((row) =>
         (row.items || []).map((item) => {
           const invoiceAmount = Number(item.invoice?.invoice_amount || 0);
@@ -191,7 +191,7 @@ const UpdateExpense = () => {
               ? Number(item.approved_amount)
               : invoiceAmount;
 
-          // Ensure item status is set to "manager approval" if not already
+          
           const updatedStatus =
             item.item_current_status === "submitted"
               ? "manager approval"
@@ -210,7 +210,7 @@ const UpdateExpense = () => {
         })
       );
 
-      // ✅ Calculate totals safely
+  
       const totalRequested = items.reduce(
         (sum, itm) => sum + Number(itm.invoice?.invoice_amount || 0),
         0
@@ -238,7 +238,7 @@ const UpdateExpense = () => {
         data: cleanedData,
       };
 
-      // 🔥 Submit to backend
+      
       await updateExpense({
         _id: expenseSheetId,
         ...payload,
