@@ -358,61 +358,66 @@ const HandoverSheetForm = () => {
   }, [handoverData]);
 
   const handleSubmit = async () => {
-    try {
-      if (!LeadId) {
-        toast.error("Lead ID is missing!");
-        return;
-      }
+  try {
+    if (!LeadId) {
+      toast.error("Lead ID is missing!");
+      return;
+    }
 
-      await handoverSchema.validate(formData, { abortEarly: false });
+    await handoverSchema.validate(formData, { abortEarly: false });
 
-      const updatedFormData = {
-        ...formData,
-        id: LeadId,
-        other_details: {
-          ...formData.other_details,
-        },
-        project_detail: {
-          ...formData.project_detail,
-        },
+    const updatedFormData = {
+      ...formData,
+      id: LeadId,
+      other_details: {
+        ...formData.other_details,
+      },
+      project_detail: {
+        ...formData.project_detail,
+      },
+    };
+
+    if (handoverData?.status_of_handoversheet === "Rejected") {
+      const dataToUpdate = {
+        ...updatedFormData,
+        status_of_handoversheet: "draft",
       };
+      await updateHandOver(dataToUpdate).unwrap();
+      toast.success("Form resubmitted successfully");
+    } else if (handoverData?.status_of_handoversheet === "draft") {
+      toast.info("Already submitted");
+      return;
+    } else if (!handoverData) {
+      // New submission
+      await addHandOver(updatedFormData).unwrap();
+      toast.success("Form submitted successfully");
+    } else {
+      toast.error("Form already handed over");
+      return;
+    }
 
-      if (handoverData?.status_of_handoversheet === "Rejected") {
-        // Allow editing, set status to draft
-        const dataToUpdate = {
-          ...updatedFormData,
-          status_of_handoversheet: "draft",
-        };
-        await updateHandOver(dataToUpdate).unwrap();
-        toast.success("Form submitted successfully");
-        localStorage.setItem("HandOver_Lead", LeadId);
-        navigate("/get_hand_over");
-      } else if (handoverData?.status_of_handoversheet === "draft") {
-        // Prevent editing if status is draft
-        toast.info("Already submitted");
-        return;
+    localStorage.setItem("HandOver_Lead", LeadId);
+    navigate("/get_hand_over");
+  } catch (error) {
+    if (error.name === "ValidationError") {
+      error.inner.forEach((err) => {
+        toast.error(err.message);
+      });
+    } else {
+      const errorMessage =
+        error?.data?.message || error?.message || "Submission failed";
+
+      // Only show error if it's not a duplicate entry
+      if (!errorMessage.toLowerCase().includes("already exists")) {
+        console.error("Submission error:", error);
+        toast.error(errorMessage);
       } else {
-        // For all other statuses (like new submission)
-        await addHandOver(updatedFormData).unwrap();
-        toast.success("Form submitted successfully");
-        localStorage.setItem("HandOver_Lead", LeadId);
-        navigate("/get_hand_over");
-      }
-    } catch (error) {
-      if (error.name === "ValidationError") {
-        error.inner.forEach((err) => {
-          toast.error(err.message);
-        });
-      } else {
-        const errorMessage =
-          error?.data?.message || error?.message || "Submission failed";
-        if (!errorMessage.toLowerCase().includes("already handed over")) {
-          console.error("Submission error:", error);
-          toast.error(errorMessage);
-        }
+        toast.error("This handover has already been submitted.");
       }
     }
-  };
+  }
+};
+
 
   return (
     <Sheet
