@@ -24,7 +24,7 @@ import {
 import { useGetProjectsQuery } from "../../../redux/projectsSlice";
 import { Textarea } from "@mui/joy";
 import { Approval } from "@mui/icons-material";
-
+import PieChartByCategory from "./Expense_Chart";
 const UpdateExpense = () => {
   const navigate = useNavigate();
   const [rows, setRows] = useState([
@@ -699,144 +699,160 @@ const UpdateExpense = () => {
         </ModalDialog>
       </Modal>
 
-      {/* Summary */}
-      <Box mt={4} sx={{ margin: "0 auto", width: "60%" }}>
-        <Typography level="h5" mb={1}>
-          Expense Summary
-        </Typography>
+      {/* Summary + Pie Chart Side by Side */}
+      <Box>
+        <Box mt={4} sx={{ margin: "0 auto", width: "70%", mt: 4 }}>
+          <Typography level="h5" mb={2}>
+            Expense Summary
+          </Typography>
 
-        <Sheet
-          variant="outlined"
-          sx={{
-            borderRadius: "md",
-            overflow: "auto",
-            boxShadow: "sm",
-          }}
-        >
-          <Table
-            variant="soft"
-            borderAxis="both"
-            size="sm"
-            stickyHeader
-            hoverRow
-            sx={{
-              minWidth: 500,
-              "& th": {
-                backgroundColor: "background.level1",
-                fontWeight: "md",
-                fontSize: "sm",
-                textAlign: "left",
-              },
-              "& td": {
-                fontSize: "sm",
-                textAlign: "left",
-              },
-            }}
-          >
-            <thead>
-              <tr>
-                <th>Head</th>
-                <th>Amt</th>
-                <th>Approval Amt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {categoryOptions.map((category, idx) => {
-                const itemsInCategory = rows.flatMap((row) =>
-                  (row.items || []).filter((item) => item.category === category)
-                );
-
-                const amt = itemsInCategory.reduce(
-                  (sum, item) =>
-                    sum + Number(item.invoice?.invoice_amount || 0),
-                  0
-                );
-
-                const approvedAmt = itemsInCategory.reduce((sum, item) => {
-                  if (item.item_current_status === "manager approval") {
-                    // Prefer approved_amount if available, else fallback to invoice amount
-                    return (
-                      sum +
-                      Number(
-                        item.approved_amount ??
-                          item.invoice?.invoice_amount ??
-                          0
+          <Box display="flex" gap={4} flexWrap="wrap">
+            {/* Summary Table */}
+            <Sheet
+              variant="outlined"
+              sx={{
+                borderRadius: "md",
+                boxShadow: "sm",
+                flex: 1,
+                minWidth: 400,
+                overflow: "auto",
+              }}
+            >
+              <Table
+                variant="soft"
+                borderAxis="both"
+                size="sm"
+                stickyHeader
+                hoverRow
+                sx={{
+                  minWidth: 500,
+                  "& th": {
+                    backgroundColor: "background.level1",
+                    fontWeight: "md",
+                    fontSize: "sm",
+                    textAlign: "left",
+                  },
+                  "& td": {
+                    fontSize: "sm",
+                    textAlign: "left",
+                  },
+                }}
+              >
+                <thead>
+                  <tr>
+                    <th>Head</th>
+                    <th>Amt</th>
+                    <th>Approval Amt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categoryOptions.map((category, idx) => {
+                    const itemsInCategory = rows.flatMap((row) =>
+                      (row.items || []).filter(
+                        (item) => item.category === category
                       )
                     );
-                  }
-                  return sum;
-                }, 0);
 
-                return (
-                  <tr key={idx}>
-                    <td>{category}</td>
-                    <td>{amt > 0 ? amt.toFixed(2) : "-"}</td>
-                    <td>{approvedAmt > 0 ? approvedAmt.toFixed(2) : "-"}</td>
+                    const amt = itemsInCategory.reduce(
+                      (sum, item) =>
+                        sum + Number(item.invoice?.invoice_amount || 0),
+                      0
+                    );
+
+                    const approvedAmt = itemsInCategory.reduce((sum, item) => {
+                      if (item.item_current_status === "manager approval") {
+                        return (
+                          sum +
+                          Number(
+                            item.approved_amount ??
+                              item.invoice?.invoice_amount ??
+                              0
+                          )
+                        );
+                      }
+                      return sum;
+                    }, 0);
+
+                    return (
+                      <tr key={idx}>
+                        <td>{category}</td>
+                        <td>{amt > 0 ? amt.toFixed(2) : "-"}</td>
+                        <td>
+                          {approvedAmt > 0 ? approvedAmt.toFixed(2) : "-"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                  {/* Grand Total */}
+                  <tr>
+                    <td>
+                      <Typography level="body-md" fontWeight="lg">
+                        Total
+                      </Typography>
+                    </td>
+                    <td>
+                      <Typography level="body-md" fontWeight="lg">
+                        {rows
+                          .flatMap((row) => row.items || [])
+                          .reduce(
+                            (sum, item) =>
+                              sum + Number(item.invoice?.invoice_amount || 0),
+                            0
+                          )
+                          .toFixed(2)}
+                      </Typography>
+                    </td>
+                    <td>
+                      <Typography level="body-md" fontWeight="lg">
+                        {rows
+                          .flatMap((row) => row.items || [])
+                          .filter(
+                            (item) =>
+                              item.item_current_status === "manager approval"
+                          )
+                          .reduce(
+                            (sum, item) =>
+                              sum + Number(item.approved_amount || 0),
+                            0
+                          )
+                          .toFixed(2)}
+                      </Typography>
+                    </td>
                   </tr>
-                );
-              })}
+                </tbody>
+              </Table>
+            </Sheet>
 
-              {/* Grand Total */}
-              <tr>
-                <td>
-                  <Typography level="body-md" fontWeight="lg">
-                    Total
-                  </Typography>
-                </td>
-                <td>
-                  <Typography level="body-md" fontWeight="lg">
-                    {rows
-                      .flatMap((row) => row.items || [])
-                      .reduce(
-                        (sum, item) =>
-                          sum + Number(item.invoice?.invoice_amount || 0),
-                        0
-                      )
-                      .toFixed(2)}
-                  </Typography>
-                </td>
-                <td>
-                  <Typography level="body-md" fontWeight="lg">
-                    {rows
-                      .flatMap((row) => row.items || [])
-                      .filter(
-                        (item) =>
-                          item.item_current_status === "manager approval"
-                      )
-                      .reduce(
-                        (sum, item) => sum + Number(item.approved_amount || 0),
-                        0
-                      )
-                      .toFixed(2)}
-                  </Typography>
-                </td>
-              </tr>
-            </tbody>
-          </Table>
-        </Sheet>
+            {/* Pie Chart on Right */}
+            <Box flex={1} minWidth={400}>
+              <PieChartByCategory rows={rows} />
+            </Box>
+          </Box>
 
-        {/* Submit & Back Buttons */}
-        <Box mt={2} display="flex" justifyContent="center">
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            maxWidth="400px"
-            width="100%"
-          >
-            <Button
-              variant="outlined"
-              onClick={() => navigate("/expense_dashboard")}
+          {/* Submit & Back Buttons */}
+          <Box mt={2} display="flex" justifyContent="center">
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              maxWidth="400px"
+              width="100%"
             >
-              Back to Dashboard
-            </Button>
-            <Button
-              variant="solid"
-              color="primary"
-              onClick={handleSubmit}
-              disabled={isUpdating}
-            >
-              "Update Expense Sheet"
-            </Button>
+              <Button
+                variant="outlined"
+                onClick={() => navigate("/expense_dashboard")}
+              >
+                Back
+              </Button>
+              <Button
+                variant="solid"
+                color="primary"
+                onClick={handleSubmit}
+                disabled={isUpdating}
+              >
+                Update Expense Sheet
+              </Button>
+            </Box>
           </Box>
         </Box>
       </Box>

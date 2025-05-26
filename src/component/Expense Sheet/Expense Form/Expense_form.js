@@ -815,7 +815,7 @@ const Expense_Form = () => {
               variant="outlined"
               onClick={() => navigate("/expense_dashboard")}
             >
-              Back to Dashboard
+              Back
             </Button>
             <Button variant="solid" color="primary" onClick={handleSubmit}>
               Submit Expense Sheet
