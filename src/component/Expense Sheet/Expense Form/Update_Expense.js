@@ -313,7 +313,6 @@ const UpdateExpense = () => {
         }
 
         console.log("Processing row:", row._id);
-        
 
         row.items.forEach((item) => {
           const itemId = item._id;
@@ -827,146 +826,149 @@ const UpdateExpense = () => {
           Expense Summary
         </Typography>
 
-          <Box display="flex" gap={4} flexWrap="wrap">
-            {/* Summary Table */}
-            <Sheet
-              variant="outlined"
+        <Box display="flex" gap={4} flexWrap="wrap">
+          {/* Summary Table */}
+          <Sheet
+            variant="outlined"
+            sx={{
+              borderRadius: "md",
+              boxShadow: "sm",
+              flex: 1,
+              minWidth: 400,
+              overflow: "auto",
+            }}
+          >
+            <Table
+              variant="soft"
+              borderAxis="both"
+              size="sm"
+              stickyHeader
+              hoverRow
               sx={{
-                borderRadius: "md",
-                boxShadow: "sm",
-                flex: 1,
-                minWidth: 400,
-                overflow: "auto",
+                minWidth: 500,
+                "& th": {
+                  backgroundColor: "background.level1",
+                  fontWeight: "md",
+                  fontSize: "sm",
+                  textAlign: "left",
+                },
+                "& td": {
+                  fontSize: "sm",
+                  textAlign: "left",
+                },
               }}
             >
-              <Table
-                variant="soft"
-                borderAxis="both"
-                size="sm"
-                stickyHeader
-                hoverRow
-                sx={{
-                  minWidth: 500,
-                  "& th": {
-                    backgroundColor: "background.level1",
-                    fontWeight: "md",
-                    fontSize: "sm",
-                    textAlign: "left",
-                  },
-                  "& td": {
-                    fontSize: "sm",
-                    textAlign: "left",
-                  },
-                }}
-              >
-                <thead>
-                  <tr>
-                    <th>Head</th>
-                    <th>Amt</th>
-                    <th>Approval Amt</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {categoryOptions.map((category, idx) => {
-                    const itemsInCategory = rows.flatMap((row) =>
-                      (row.items || []).filter(
-                        (item) => item.category === category
-                      )
-                    );
+              <thead>
+                <tr>
+                  <th>Head</th>
+                  <th>Amt</th>
+                  <th>Approval Amt</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categoryOptions.map((category, idx) => {
+                  const itemsInCategory = rows.flatMap((row) =>
+                    (row.items || []).filter(
+                      (item) => item.category === category
+                    )
+                  );
 
-                    const amt = itemsInCategory.reduce(
-                      (sum, item) =>
-                        sum + Number(item.invoice?.invoice_amount || 0),
-                      0
-                    );
+                  const amt = itemsInCategory.reduce(
+                    (sum, item) =>
+                      sum + Number(item.invoice?.invoice_amount || 0),
+                    0
+                  );
 
-                    const approvedAmt = itemsInCategory.reduce((sum, item) => {
-                      if (item.item_current_status === "manager approval") {
-                        return (
-                          sum +
-                          Number(
-                            item.approved_amount ??
-                              item.invoice?.invoice_amount ??
-                              0
-                          )
-                        );
-                      }
-                      return sum;
-                    }, 0);
+                  const approvedAmt = itemsInCategory.reduce((sum, item) => {
+                    if (item.item_current_status === "manager approval") {
+                      return (
+                        sum +
+                        Number(
+                          item.approved_amount ??
+                            item.invoice?.invoice_amount ??
+                            0
+                        )
+                      );
+                    }
+                    return sum;
+                  }, 0);
 
-                    return (
-                      <tr key={idx}>
-                        <td>{category}</td>
-                        <td>{amt > 0 ? amt.toFixed(2) : "-"}</td>
-                        <td>
-                          {approvedAmt > 0 ? approvedAmt.toFixed(2) : "-"}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  return (
+                    <tr key={idx}>
+                      <td>{category}</td>
+                      <td>{amt > 0 ? amt.toFixed(2) : "-"}</td>
+                      <td>{approvedAmt > 0 ? approvedAmt.toFixed(2) : "-"}</td>
+                    </tr>
+                  );
+                })}
 
-              {/* Grand Total */}
-              <tr>
-                <td>
-                  <Typography level="body-md" fontWeight="lg">
-                    Total
-                  </Typography>
-                </td>
-                <td>
-                  <Typography level="body-md" fontWeight="lg">
-                    {rows
-                      .flatMap((row) => row.items || [])
-                      .reduce(
-                        (sum, item) =>
-                          sum + Number(item.invoice?.invoice_amount || 0),
-                        0
-                      )
-                      .toFixed(2)}
-                  </Typography>
-                </td>
-                <td>
-                  <Typography level="body-md" fontWeight="lg">
-                    {rows
-                      .flatMap((row) => row.items || [])
-                      .filter(
-                        (item) =>
-                          item.item_current_status === "manager approval"
-                      )
-                      .reduce(
-                        (sum, item) => sum + Number(item.approved_amount || 0),
-                        0
-                      )
-                      .toFixed(2)}
-                  </Typography>
-                </td>
-              </tr>
-            </tbody>
-          </Table>
-        </Sheet>
+                {/* Grand Total */}
+                <tr>
+                  <td>
+                    <Typography level="body-md" fontWeight="lg">
+                      Total
+                    </Typography>
+                  </td>
+                  <td>
+                    <Typography level="body-md" fontWeight="lg">
+                      {rows
+                        .flatMap((row) => row.items || [])
+                        .reduce(
+                          (sum, item) =>
+                            sum + Number(item.invoice?.invoice_amount || 0),
+                          0
+                        )
+                        .toFixed(2)}
+                    </Typography>
+                  </td>
+                  <td>
+                    <Typography level="body-md" fontWeight="lg">
+                      {rows
+                        .flatMap((row) => row.items || [])
+                        .filter(
+                          (item) =>
+                            item.item_current_status === "manager approval"
+                        )
+                        .reduce(
+                          (sum, item) =>
+                            sum + Number(item.approved_amount || 0),
+                          0
+                        )
+                        .toFixed(2)}
+                    </Typography>
+                  </td>
+                </tr>
+              </tbody>
+            </Table>
+          </Sheet>
+
+          {/* Pie Chart on Right */}
+          <Box flex={1} minWidth={400}>
+            <PieChartByCategory rows={rows} />
+          </Box>
+        </Box>
 
         {/* Submit & Back Buttons */}
         <Box mt={2} display="flex" justifyContent="center">
           <Box
             display="flex"
-            justifyContent="center"
+            justifyContent="space-between"
             maxWidth="400px"
             width="100%"
           >
             <Button
               variant="outlined"
-              startDecorator={<ArrowBack />} // <-- Add left arrow
               onClick={() => navigate("/expense_dashboard")}
             >
-              Back
-            </Button>{" "}
-            &nbsp;&nbsp;
+              Back to Dashboard
+            </Button>
             <Button
               variant="solid"
               color="primary"
               onClick={handleSubmit}
               disabled={isUpdating}
             >
-              Update Expense Sheet
+              "Update Expense Sheet"
             </Button>
           </Box>
         </Box>
