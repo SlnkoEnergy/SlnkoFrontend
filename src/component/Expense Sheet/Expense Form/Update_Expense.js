@@ -224,7 +224,7 @@ const UpdateExpense = () => {
       const cleanedData = {
         expense_term: {
           ...(rows[0]?.expense_term || {}),
-          current_status: "manager approval", // ✅ Set status at sheet level
+          current_status: "manager approval",
         },
         items,
         user_id: userID,
