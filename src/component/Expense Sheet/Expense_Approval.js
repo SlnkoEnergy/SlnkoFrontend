@@ -82,8 +82,10 @@ const ExpenseApproval = forwardRef((props, ref) => {
     .filter((expense) => {
       // Match user by ID
       const matchedUser = getAllUser?.data?.find(
-        (user) => user._id === expense.user_id
+        (user) => user.name === expense.emp_name
       );
+
+      console.log(matchedUser);
 
       // Only continue if user exists and matches department criteria
       if (!matchedUser || matchedUser.department !== "Projects") return false;
@@ -160,7 +162,7 @@ const ExpenseApproval = forwardRef((props, ref) => {
   };
 
   const ExpenseCode = ({ currentPage, expense_code }) => {
-    console.log("currentPage:", currentPage, "expense_code:", expense_code);
+    // console.log("currentPage:", currentPage, "p_id:", p_id);
 
     return (
       <>
@@ -182,12 +184,7 @@ const ExpenseApproval = forwardRef((props, ref) => {
   };
 
   const EmployeeName = ({ currentPage, expense_code, emp_name }) => {
-    console.log(
-      "currentPage:",
-      currentPage,
-      "expense_code:",
-      typeof expense_code
-    );
+    // console.log("currentPage:", currentPage, "p_id:", p_id);
 
     return (
       <>

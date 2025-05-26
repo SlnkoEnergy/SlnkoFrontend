@@ -176,56 +176,60 @@ const UpdateExpense = () => {
         return;
       }
 
-      const currentStatus = rows[0]?.current_status;
       const expenseSheetId = rows[0]?._id;
-
       if (!expenseSheetId) {
         toast.error("Expense Sheet ID is missing. Please reload the page.");
         return;
       }
 
-      // ✅ Corrected: Flatten all items from each row
+      // 🧠 Flatten all items and ensure amounts/status are clean
       const items = rows.flatMap((row) =>
-        (row.items || []).map((item) => ({
-          ...item,
-          project_id: item.project_id || null,
-          invoice: {
-            ...item.invoice,
-            invoice_amount: item.invoice?.invoice_amount || "0",
-          },
-          item_status_history: [
-            {
-              status: "submitted",
-              remarks: item.item_status_history?.[0]?.remarks || "",
-              user_id: userID,
-              updatedAt: new Date().toISOString(),
+        (row.items || []).map((item) => {
+          const invoiceAmount = Number(item.invoice?.invoice_amount || 0);
+          const approvedAmount =
+            item.approved_amount !== "" && item.approved_amount !== undefined
+              ? Number(item.approved_amount)
+              : invoiceAmount;
+
+          // Ensure item status is set to "manager approval" if not already
+          const updatedStatus =
+            item.item_current_status === "submitted"
+              ? "manager approval"
+              : item.item_current_status;
+
+          return {
+            ...item,
+            item_current_status: updatedStatus,
+            project_id: item.project_id || null,
+            invoice: {
+              ...item.invoice,
+              invoice_amount: invoiceAmount.toString(),
             },
-          ],
-          item_current_status: "submitted",
-        }))
+            approved_amount: approvedAmount,
+          };
+        })
+      );
+
+      // ✅ Calculate totals safely
+      const totalRequested = items.reduce(
+        (sum, itm) => sum + Number(itm.invoice?.invoice_amount || 0),
+        0
+      );
+
+      const totalApproved = items.reduce(
+        (sum, itm) => sum + (Number(itm.approved_amount) || 0),
+        0
       );
 
       const cleanedData = {
-        expense_term: rows[0]?.expense_term || {},
+        expense_term: {
+          ...(rows[0]?.expense_term || {}),
+          current_status: "manager approval", // ✅ Set status at sheet level
+        },
         items,
         user_id: userID,
-        current_status: "submitted",
-        status_history: [
-          {
-            status: "submitted",
-            remarks: rows[0]?.status_history?.[0]?.remarks || "",
-            user_id: userID,
-            updatedAt: new Date().toISOString(),
-          },
-        ],
-        total_requested_amount: items.reduce(
-          (sum, itm) => sum + Number(itm.invoice.invoice_amount || 0),
-          0
-        ),
-        total_approved_amount: items.reduce(
-          (sum, itm) => sum + Number(itm.approved_amount || 0),
-          0
-        ),
+        total_requested_amount: totalRequested,
+        total_approved_amount: totalApproved,
         expense_code: ExpenseCode,
       };
 
@@ -234,28 +238,15 @@ const UpdateExpense = () => {
         data: cleanedData,
       };
 
-      const updateStatuses = [
-        "submitted",
-        "manager approval",
-        "hr approval",
-        "final approval",
-        "hold",
-      ];
+      // 🔥 Submit to backend
+      await updateExpense({
+        _id: expenseSheetId,
+        ...payload,
+      }).unwrap();
 
-      if (updateStatuses.includes(currentStatus?.toLowerCase())) {
-        await updateExpense({
-          _id: expenseSheetId,
-          ...payload,
-        }).unwrap();
-
-        toast.success("Expense sheet updated successfully!");
-        localStorage.removeItem("edit_expense");
-        navigate("/expense_dashboard");
-      } else {
-        toast.error(
-          "You are not allowed to create a new expense sheet in this state."
-        );
-      }
+      toast.success("Expense sheet updated successfully!");
+      localStorage.removeItem("edit_expense");
+      navigate("/expense_dashboard");
     } catch (error) {
       console.error("❌ Submission failed:", error);
       toast.error("An error occurred while submitting the expense sheet.");
@@ -377,32 +368,85 @@ const UpdateExpense = () => {
     setDropdownOpenIndex(null);
   };
 
-  const handleApproval = (index, status) => {
-    const updated = [...rows];
+  // const handleApproval = (rowIndex, itemIndex, status) => {
+  //   const updated = [...rows];
 
-    updated[index].approvalStatus = status;
+  //   const item = updated[rowIndex].items[itemIndex];
 
-    if (status === "approved") {
-      updated[index].items = updated[index].items.map((item) => ({
-        ...item,
-        item_current_status: "approved",
-        approved_amount: item.invoice?.invoice_amount || 0,
-      }));
+  //   if (status === "submitted") {
+  //     const approvedAmount = item.invoice?.invoice_amount || 0;
 
-      updated[index].approved_amount = updated[index].items.reduce(
-        (sum, item) => sum + Number(item.approved_amount || 0),
+  //     updated[rowIndex].items[itemIndex] = {
+  //       ...item,
+  //       item_current_status: "manager approval",
+  //       approved_amount: approvedAmount,
+  //     };
+  //   } else {
+  //     updated[rowIndex].items[itemIndex] = {
+  //       ...item,
+  //       item_current_status: "rejected",
+  //       approved_amount: 0, // Optional: clear approved amount
+  //     };
+
+  //     setCommentDialog({ open: true, rowIndex, itemIndex });
+  //   }
+
+  //   // Recalculate total approved amount for the row
+  //   updated[rowIndex].approved_amount = updated[rowIndex].items.reduce(
+  //     (sum, item) => sum + Number(item.approved_amount || 0),
+  //     0
+  //   );
+
+  //   setRows(updated);
+  // };
+
+  const handleApproval = (rowIndex, itemIndex, action) => {
+    setRows((prev) => {
+      const updated = [...prev];
+      const item = { ...updated[rowIndex].items[itemIndex] };
+
+      if (action === "submitted" && item.item_current_status === "submitted") {
+        // Approve only if current status is "submitted"
+        const approvedAmount = Number(item.invoice?.invoice_amount || 0);
+        item.item_current_status = "manager approval";
+        item.approved_amount = approvedAmount;
+      }
+
+      if (action === "rejected") {
+        item.item_current_status = "rejected";
+        item.approved_amount = 0;
+        setCommentDialog({ open: true, rowIndex, itemIndex });
+      }
+
+      updated[rowIndex].items[itemIndex] = item;
+
+      updated[rowIndex].approved_amount = updated[rowIndex].items.reduce(
+        (sum, itm) => sum + Number(itm.approved_amount || 0),
         0
       );
-    } else {
-      updated[index].items = updated[index].items.map((item) => ({
-        ...item,
-        item_current_status: "rejected",
-      }));
-      updated[index].approved_amount = "";
-      setCommentDialog({ open: true, rowIndex: index });
-    }
 
-    setRows(updated);
+      return updated;
+    });
+  };
+
+  const handleApprovedAmountChange = (rowIndex, itemIndex, value) => {
+    setRows((prev) => {
+      const updated = [...prev];
+      const item = { ...updated[rowIndex].items[itemIndex] };
+
+      // If the input is empty, keep it that way
+      item.approved_amount = value === "" ? "" : Number(value);
+
+      updated[rowIndex].items[itemIndex] = item;
+
+      // Update total only if it's a number
+      updated[rowIndex].approved_amount = updated[rowIndex].items.reduce(
+        (sum, itm) => sum + (Number(itm.approved_amount) || 0),
+        0
+      );
+
+      return updated;
+    });
   };
 
   const handleCommentSave = () => {
@@ -413,23 +457,47 @@ const UpdateExpense = () => {
   );
 
   const handleRejectAll = () => {
-    const updated = rows.map((row, index) => ({
-      ...row,
-      approvalStatus: "rejected",
-      rejectionComment: "",
-    }));
+    const updated = rows.map((row) => {
+      const updatedItems = row.items.map((item) => ({
+        ...item,
+        item_current_status: "rejected",
+        approved_amount: 0, // or "" if you prefer clearing it
+      }));
+
+      return {
+        ...row,
+        items: updatedItems,
+        approved_amount: "",
+        rejectionComment: "",
+      };
+    });
+
     setRows(updated);
+
+    // Optionally open the comment dialog for the first row
     setCommentDialog({ open: true, rowIndex: 0 });
   };
 
   const handleApproveAll = () => {
     const updated = rows.map((row) => {
-      const invoiceAmount = row.items?.[0]?.invoice?.invoice_amount || 0;
+      const updatedItems = row.items.map((item) => {
+        const invoiceAmount = item.invoice?.invoice_amount || 0;
+        return {
+          ...item,
+          item_current_status: "manager approval",
+          approved_amount: invoiceAmount,
+        };
+      });
+
+      const totalApprovedAmount = updatedItems.reduce(
+        (sum, item) => sum + Number(item.approved_amount || 0),
+        0
+      );
 
       return {
         ...row,
-        approvalStatus: "approved",
-        approved_amount: invoiceAmount, // use invoice amount instead of total_requested_amount
+        items: updatedItems,
+        approved_amount: totalApprovedAmount,
       };
     });
 
@@ -763,12 +831,14 @@ const UpdateExpense = () => {
                           <Button
                             size="sm"
                             variant={
-                              row.approvalStatus === "approved"
+                              item.item_current_status === "manager approval"
                                 ? "solid"
                                 : "outlined"
                             }
                             color="success"
-                            onClick={() => handleApproval(rowIndex, "approved")}
+                            onClick={() =>
+                              handleApproval(rowIndex, itemIndex, "submitted")
+                            }
                             aria-label="Approve"
                           >
                             <CheckIcon />
@@ -776,12 +846,14 @@ const UpdateExpense = () => {
                           <Button
                             size="sm"
                             variant={
-                              row.approvalStatus === "rejected"
+                              item.item_current_status === "rejected"
                                 ? "solid"
                                 : "outlined"
                             }
                             color="danger"
-                            onClick={() => handleApproval(rowIndex, "rejected")}
+                            onClick={() =>
+                              handleApproval(rowIndex, itemIndex, "rejected")
+                            }
                             aria-label="Reject"
                           >
                             <CloseIcon />
@@ -789,19 +861,23 @@ const UpdateExpense = () => {
                         </Box>
                       </td>
 
-                      {/* Approved Amount */}
+                      {/* Approved Amount per Item */}
+                      {/* Approved Amount per Item */}
                       <td style={{ padding: 8, maxWidth: 110 }}>
-                        {row.approvalStatus === "approved" && (
+                        {item.item_current_status === "manager approval" && (
                           <Input
                             size="sm"
                             variant="outlined"
                             type="number"
-                            value={row.approved_amount || ""}
-                            placeholder="₹"
+                            value={
+                              item.approved_amount === 0 || item.approved_amount
+                                ? String(item.approved_amount)
+                                : ""
+                            }
                             onChange={(e) =>
-                              handleRowChange(
+                              handleApprovedAmountChange(
                                 rowIndex,
-                                "approved_amount",
+                                itemIndex,
                                 e.target.value
                               )
                             }
@@ -941,7 +1017,7 @@ const UpdateExpense = () => {
                 );
 
                 const approvedAmt = itemsInCategory.reduce((sum, item) => {
-                  if (item.item_current_status === "approved") {
+                  if (item.item_current_status === "manager approval") {
                     // Prefer approved_amount if available, else fallback to invoice amount
                     return (
                       sum +
@@ -987,7 +1063,10 @@ const UpdateExpense = () => {
                   <Typography level="body-md" fontWeight="lg">
                     {rows
                       .flatMap((row) => row.items || [])
-                      .filter((item) => item.item_current_status === "approved")
+                      .filter(
+                        (item) =>
+                          item.item_current_status === "manager approval"
+                      )
                       .reduce(
                         (sum, item) => sum + Number(item.approved_amount || 0),
                         0
