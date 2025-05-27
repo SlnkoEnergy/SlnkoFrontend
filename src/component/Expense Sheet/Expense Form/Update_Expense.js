@@ -175,96 +175,151 @@ const UpdateExpense = () => {
     }
   }, [ExpenseCode, expenses]);
 
+  // const handleSubmit = async () => {
+  //   try {
+  //     const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
+  //     const ExpenseCode = localStorage.getItem("edit_expense");
+
+  //     if (!userID) {
+  //       toast.error("User ID not found. Please login again.");
+  //       return;
+  //     }
+
+  //     if (!ExpenseCode) {
+  //       toast.error(
+  //         "No Expense Code found. Please re-select the form to edit."
+  //       );
+  //       return;
+  //     }
+
+  //     const expenseSheetId = rows[0]?._id;
+  //     if (!expenseSheetId) {
+  //       toast.error("Expense Sheet ID is missing. Please reload the page.");
+  //       return;
+  //     }
+
+  //     const items = rows.flatMap((row) =>
+  //       (row.items || []).map((item) => {
+  //         const invoiceAmount = Number(item.invoice?.invoice_amount || 0);
+  //         const approvedAmount =
+  //           item.approved_amount !== "" && item.approved_amount !== undefined
+  //             ? Number(item.approved_amount)
+  //             : invoiceAmount;
+
+  //         const updatedStatus =
+  //           item.item_current_status === "submitted"
+  //             ? "manager approval"
+  //             : item.item_current_status;
+
+  //         return {
+  //           ...item,
+  //           item_current_status: updatedStatus,
+  //           project_id: item.project_id || null,
+  //           invoice: {
+  //             ...item.invoice,
+  //             invoice_amount: invoiceAmount.toString(),
+  //           },
+  //           approved_amount: approvedAmount,
+  //         };
+  //       })
+  //     );
+
+  //     const totalRequested = items.reduce(
+  //       (sum, itm) => sum + Number(itm.invoice?.invoice_amount || 0),
+  //       0
+  //     );
+
+  //     const totalApproved = items.reduce(
+  //       (sum, itm) => sum + (Number(itm.approved_amount) || 0),
+  //       0
+  //     );
+
+  //     const cleanedData = {
+  //       expense_term: {
+  //         ...(rows[0]?.expense_term || {}),
+  //         current_status: "manager approval",
+  //       },
+  //       items,
+  //       user_id: userID,
+  //       total_requested_amount: totalRequested,
+  //       total_approved_amount: totalApproved,
+  //       expense_code: ExpenseCode,
+  //     };
+
+  //     const payload = {
+  //       user_id: userID,
+  //       data: cleanedData,
+  //     };
+
+  //     await updateExpense({
+  //       _id: expenseSheetId,
+  //       ...payload,
+  //     }).unwrap();
+
+  //     toast.success("Expense sheet updated successfully!");
+  //     localStorage.removeItem("edit_expense");
+  //     navigate("/expense_dashboard");
+  //   } catch (error) {
+  //     console.error("❌ Submission failed:", error);
+  //     toast.error("An error occurred while submitting the expense sheet.");
+  //   }
+  // };
+
   const handleSubmit = async () => {
-    try {
-      const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
-      const ExpenseCode = localStorage.getItem("edit_expense");
+  try {
+    const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
+    const ExpenseCode = localStorage.getItem("edit_expense");
 
-      if (!userID) {
-        toast.error("User ID not found. Please login again.");
-        return;
-      }
+    if (!userID) {
+      toast.error("User ID not found. Please login again.");
+      return;
+    }
 
-      if (!ExpenseCode) {
-        toast.error(
-          "No Expense Code found. Please re-select the form to edit."
-        );
-        return;
-      }
+    if (!ExpenseCode) {
+      toast.error("No Expense Code found. Please re-select the form to edit.");
+      return;
+    }
 
-      const expenseSheetId = rows[0]?._id;
-      if (!expenseSheetId) {
-        toast.error("Expense Sheet ID is missing. Please reload the page.");
-        return;
-      }
+    const expenseSheetId = rows[0]?._id;
+    if (!expenseSheetId) {
+      toast.error("Expense Sheet ID is missing. Please reload the page.");
+      return;
+    }
 
-      const items = rows.flatMap((row) =>
-        (row.items || []).map((item) => {
-          const invoiceAmount = Number(item.invoice?.invoice_amount || 0);
-          const approvedAmount =
-            item.approved_amount !== "" && item.approved_amount !== undefined
-              ? Number(item.approved_amount)
-              : invoiceAmount;
+    const items = rows.flatMap((row) => row.items || []);
 
-          const updatedStatus =
-            item.item_current_status === "submitted"
-              ? "manager approval"
-              : item.item_current_status;
+    const totalApproved = items.reduce(
+      (sum, item) =>
+        sum + (item.approved_amount !== "" && item.approved_amount !== undefined
+          ? Number(item.approved_amount)
+          : Number(item.invoice?.invoice_amount || 0)),
+      0
+    );
 
-          return {
-            ...item,
-            item_current_status: updatedStatus,
-            project_id: item.project_id || null,
-            invoice: {
-              ...item.invoice,
-              invoice_amount: invoiceAmount.toString(),
-            },
-            approved_amount: approvedAmount,
-          };
-        })
-      );
-
-      const totalRequested = items.reduce(
-        (sum, itm) => sum + Number(itm.invoice?.invoice_amount || 0),
-        0
-      );
-
-      const totalApproved = items.reduce(
-        (sum, itm) => sum + (Number(itm.approved_amount) || 0),
-        0
-      );
-
-      const cleanedData = {
-        expense_term: {
-          ...(rows[0]?.expense_term || {}),
-          current_status: "manager approval",
-        },
-        items,
-        user_id: userID,
-        total_requested_amount: totalRequested,
+    const payload = {
+      user_id: userID,
+      data: {
         total_approved_amount: totalApproved,
         expense_code: ExpenseCode,
-      };
+      },
+    };
 
-      const payload = {
-        user_id: userID,
-        data: cleanedData,
-      };
+    await updateExpense({
+      _id: expenseSheetId,
+      ...payload,
+    }).unwrap();
 
-      await updateExpense({
-        _id: expenseSheetId,
-        ...payload,
-      }).unwrap();
+    toast.success("Total approved amount updated successfully!");
+    localStorage.removeItem("edit_expense");
+    navigate("/expense_dashboard");
+  } catch (error) {
+    console.error("Update failed:", error);
+    toast.error("An error occurred while updating the approved amount.");
+  }
+};
 
-      toast.success("Expense sheet updated successfully!");
-      localStorage.removeItem("edit_expense");
-      navigate("/expense_dashboard");
-    } catch (error) {
-      console.error("❌ Submission failed:", error);
-      toast.error("An error occurred while submitting the expense sheet.");
-    }
-  };
-
+  
+  
   const handleApprovedAmountChange = (rowIndex, itemIndex, newValue) => {
     // Update rows state immutably
     setRows((prevRows) => {
@@ -955,7 +1010,7 @@ const UpdateExpense = () => {
               variant="outlined"
               onClick={() => navigate("/expense_dashboard")}
             >
-              Back to Dashboard
+              Back
             </Button>
             <Button
               variant="solid"
@@ -963,7 +1018,7 @@ const UpdateExpense = () => {
               onClick={handleSubmit}
               disabled={isUpdating}
             >
-              "Update Expense Sheet"
+              Update Expense Sheet
             </Button>
           </Box>
         </Box>

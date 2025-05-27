@@ -158,9 +158,9 @@ const HrExpense = forwardRef((props, ref) => {
         setOpenModal(false);
         setRemarks("");
 
-        setTimeout(() => {
-          window.location.reload();
-        }, 100);
+        // setTimeout(() => {
+        //   window.location.reload();
+        // }, 100);
       } catch (err) {
         toast.error("Update failed");
         console.error(err);
