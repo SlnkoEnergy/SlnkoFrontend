@@ -600,7 +600,7 @@ const HandoverSheetForm = () => {
         {showVillage && (
           <Grid item xs={12} sm={6}>
             <Typography level="body1" sx={{ fontWeight: "bold", mb: 0.5 }}>
-              Village Name <span style={{ color: "red" }}>*</span>
+              Village Name
             </Typography>
             <Input
               fullWidth

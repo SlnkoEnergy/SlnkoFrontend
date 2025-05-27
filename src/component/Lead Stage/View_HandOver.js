@@ -245,6 +245,8 @@ const ViewHandoverSheetForm = ({ onBack }) => {
     }));
   };
 
+  
+
   useEffect(() => {
     const userData = getUserData();
     if (userData && userData.name) {
@@ -415,9 +417,6 @@ const ViewHandoverSheetForm = ({ onBack }) => {
     }));
   }, [handoverData]);
 
-
-   
-
   return (
     <Sheet
       variant="outlined"
@@ -552,7 +551,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                     newValue
                   );
                   if (newValue !== "Yes") {
-                    handleChange("invoice_detail", "invoicing_GST_no", ""); // Clear input
+                    handleChange("invoice_detail", "invoicing_GST_no", "");
                   }
                 }}
               >
@@ -698,9 +697,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
             ) && (
               <>
                 <Grid item xs={12} sm={6}>
-                  <Typography level="body1">
-                    Module Make
-                  </Typography>
+                  <Typography level="body1">Module Make</Typography>
                   <Select
                     fullWidth
                     value={formData?.project_detail?.module_make || ""}
@@ -739,9 +736,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
-                  <Typography level="body1">
-                    Module Capacity
-                  </Typography>
+                  <Typography level="body1">Module Capacity</Typography>
                   <Select
                     fullWidth
                     value={formData?.project_detail?.module_capacity || ""}
@@ -769,9 +764,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                 {/* Module Model No & Type */}
 
                 <Grid item xs={12} sm={6}>
-                  <Typography level="body1">
-                    Module Type
-                  </Typography>
+                  <Typography level="body1">Module Type</Typography>
                   <Select
                     fullWidth
                     value={formData?.project_detail?.module_type || ""}
@@ -793,7 +786,6 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
                 Solar Inverter Scope
-                
               </Typography>
               <Select
                 fullWidth
@@ -864,9 +856,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
-                  <Typography level="body1">
-                    Inverter Type
-                  </Typography>
+                  <Typography level="body1">Inverter Type</Typography>
                   <Select
                     fullWidth
                     value={formData["project_detail"]?.["inverter_type"] || ""}
@@ -907,7 +897,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
               >
                 <Option value="Yes">Yes</Option>
                 <Option value="No">No</Option>
-              </Select> 
+              </Select>
             </Grid>
 
             <Grid item xs={12} sm={6}>
@@ -1083,96 +1073,98 @@ const ViewHandoverSheetForm = ({ onBack }) => {
         </AccordionDetails>
       </Accordion>
 
-      <Accordion>
-        <AccordionSummary
-          expandIcon={<ExpandMoreIcon />}
-          sx={{
-            backgroundColor: "#e0e0e0",
-            padding: 1.5,
-            marginBottom: "1.5rem",
-            marginTop: "1.0rem",
-          }}
-        >
-          <Typography level="h4">Internal Ops</Typography>
-        </AccordionSummary>
-
-        <AccordionDetails>
-          <Grid
-            sm={{ display: "flex", justifyContent: "center" }}
-            container
-            spacing={2}
+      {!["Ranvijay Singh", "Rishav Mahato", "Dhruv Choudhary"].includes(user?.name) && (
+        <Accordion>
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            sx={{
+              backgroundColor: "#e0e0e0",
+              padding: 1.5,
+              marginBottom: "1.5rem",
+              marginTop: "1.0rem",
+            }}
           >
-            <Grid item xs={12} sm={6}>
-              <Typography
-                level="body1"
-                sx={{ fontWeight: "bold", marginBottom: 0.5 }}
-              >
-                Project ID <span style={{ color: "red" }}>*</span>
-              </Typography>
-              <Input
-                required
-                fullWidth
-                placeholder="Project ID"
-                value={formData.customer_details.code}
-                onChange={(e) =>
-                  handleChange("customer_details", "code", e.target.value)
-                }
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                Tariff Rate<span style={{ color: "red" }}>*</span>
-              </Typography>
-              <Input
-                value={formData.project_detail.tarrif}
-                placeholder="Tariff Rate"
-                required
-                onChange={(e) =>
-                  handleChange("project_detail", "tarrif", e.target.value)
-                }
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                Billing Type
-              </Typography>
-              <Autocomplete
-                options={BillingTypes}
-                value={formData?.other_details?.billing_type}
-                onChange={(e, value) =>
-                  handleAutocompleteChange(
-                    "other_details",
-                    "billing_type",
-                    value
-                  )
-                }
-                getOptionLabel={(option) => option || ""}
-                isOptionEqualToValue={(option, value) => option === value}
-                placeholder="Billing Type"
-                sx={{ width: "100%" }}
-              />
-            </Grid>
+            <Typography level="h4">Internal Ops</Typography>
+          </AccordionSummary>
 
-            <Grid item xs={12} sm={6}>
-              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                {formData?.other_details?.billing_type === "Composite"
-                  ? "Total Slnko Service Charge(with GST)"
-                  : formData?.other_details?.billing_type === "Individual"
-                    ? "Total Slnko Service Charge (with GST)"
-                    : "Total Slnko Service Charge(with GST)"}
-              </Typography>
-              <Input
-                fullWidth
-                value={formData?.other_details?.total_gst || ""}
-                InputProps={{
-                  readOnly: true,
-                }}
-                placeholder="Calculated Total GST"
-              />
+          <AccordionDetails>
+            <Grid
+              sm={{ display: "flex", justifyContent: "center" }}
+              container
+              spacing={2}
+            >
+              <Grid item xs={12} sm={6}>
+                <Typography
+                  level="body1"
+                  sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                >
+                  Project ID <span style={{ color: "red" }}>*</span>
+                </Typography>
+                <Input
+                  required
+                  fullWidth
+                  placeholder="Project ID"
+                  value={formData.customer_details.code}
+                  onChange={(e) =>
+                    handleChange("customer_details", "code", e.target.value)
+                  }
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                  Tariff Rate<span style={{ color: "red" }}>*</span>
+                </Typography>
+                <Input
+                  value={formData.project_detail.tarrif}
+                  placeholder="Tariff Rate"
+                  required
+                  onChange={(e) =>
+                    handleChange("project_detail", "tarrif", e.target.value)
+                  }
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                  Billing Type
+                </Typography>
+                <Autocomplete
+                  options={BillingTypes}
+                  value={formData?.other_details?.billing_type}
+                  onChange={(e, value) =>
+                    handleAutocompleteChange(
+                      "other_details",
+                      "billing_type",
+                      value
+                    )
+                  }
+                  getOptionLabel={(option) => option || ""}
+                  isOptionEqualToValue={(option, value) => option === value}
+                  placeholder="Billing Type"
+                  sx={{ width: "100%" }}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                  {formData?.other_details?.billing_type === "Composite"
+                    ? "Total Slnko Service Charge(with GST)"
+                    : formData?.other_details?.billing_type === "Individual"
+                      ? "Total Slnko Service Charge (with GST)"
+                      : "Total Slnko Service Charge(with GST)"}
+                </Typography>
+                <Input
+                  fullWidth
+                  value={formData?.other_details?.total_gst || ""}
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  placeholder="Calculated Total GST"
+                />
+              </Grid>
             </Grid>
-          </Grid>
-        </AccordionDetails>
-      </Accordion>
+          </AccordionDetails>
+        </Accordion>
+      )}
 
       <Accordion>
         <AccordionSummary
@@ -1714,30 +1706,38 @@ const ViewHandoverSheetForm = ({ onBack }) => {
               </Select>
             </Grid>
 
-            <Grid item xs={12} sm={6}>
-              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                Slnko Service Charges (Without GST)/W{" "}
-                <span style={{ color: "red" }}>*</span>
-              </Typography>
-              <Input
-                value={formData.other_details.slnko_basic}
-                placeholder="Slnko Service Charges (Without GST)/Wp"
-                onChange={(e) =>
-                  handleChange("other_details", "slnko_basic", e.target.value)
-                }
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                Slnko Service Charges (Without GST)/MWp{" "}
-                <span style={{ color: "red" }}>*</span>
-              </Typography>
-              <Input
-                value={formData.other_details.service}
-                placeholder="Slnko Service Charge"
-                readOnly
-              />
-            </Grid>
+            {!["Ranvijay Singh", "Rishav Mahato", "Dhruv Choudhary"].includes(user?.name) && (
+              <>
+                <Grid item xs={12} sm={6}>
+                  <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                    Slnko Service Charges (Without GST)/W{" "}
+                    <span style={{ color: "red" }}>*</span>
+                  </Typography>
+                  <Input
+                    value={formData.other_details.slnko_basic}
+                    placeholder="Slnko Service Charges (Without GST)/Wp"
+                    onChange={(e) =>
+                      handleChange(
+                        "other_details",
+                        "slnko_basic",
+                        e.target.value
+                      )
+                    }
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                    Slnko Service Charges (Without GST)/MWp{" "}
+                    <span style={{ color: "red" }}>*</span>
+                  </Typography>
+                  <Input
+                    value={formData.other_details.service}
+                    placeholder="Slnko Service Charge"
+                    readOnly
+                  />
+                </Grid>
+              </>
+            )}
 
             <Grid xs={12}>
               <Grid item xs={12} sm={6}>
@@ -1784,31 +1784,36 @@ const ViewHandoverSheetForm = ({ onBack }) => {
       </Accordion>
 
       {/* Buttons */}
-      <Grid container spacing={2} sx={{ marginTop: 2 }} display={"flex"} alignItems={"center"} justifyContent={"center"}>
+      <Grid
+        container
+        spacing={2}
+        sx={{ marginTop: 2 }}
+        display={"flex"}
+        alignItems={"center"}
+        justifyContent={"center"}
+      >
         <Grid
-  sx={{
-    '@media print': {
-      display: 'none',
-    },
-  }}
->
-  <Button
-    onClick={() => navigate("/eng_dash")}
-    variant="solid"
-    color="neutral"
-    fullWidth
-    sx={{
-      padding: 1.5,
-      fontSize: "1rem",
-      fontWeight: "bold",
-      textAlign: "center",
-    }}
-  >
-    Back
-  </Button>
-</Grid>
-
-       
+          sx={{
+            "@media print": {
+              display: "none",
+            },
+          }}
+        >
+          <Button
+            onClick={() => navigate("/eng_dash")}
+            variant="solid"
+            color="neutral"
+            fullWidth
+            sx={{
+              padding: 1.5,
+              fontSize: "1rem",
+              fontWeight: "bold",
+              textAlign: "center",
+            }}
+          >
+            Back
+          </Button>
+        </Grid>
       </Grid>
     </Sheet>
   );
