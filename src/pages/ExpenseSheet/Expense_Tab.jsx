@@ -98,7 +98,7 @@ function Expense_Table() {
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Expense Dashboard
+                User Expense
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -115,7 +115,7 @@ function Expense_Table() {
             }}
           >
             <Typography level="h2" component="h1">
-              Expense Dashboard
+              User Expense
             </Typography>
            
             <Box

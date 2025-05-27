@@ -1,6 +1,6 @@
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
-import { Checkbox, IconButton, Textarea, Tooltip } from "@mui/joy";
+import { IconButton, Textarea } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Input from "@mui/joy/Input";
@@ -71,6 +71,8 @@ const UpdateExpense = () => {
   const [dropdownOpenIndex, setDropdownOpenIndex] = useState(null);
   const [searchInputs, setSearchInputs] = useState([""]);
   const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
+const [rejectConfirmOpen, setRejectConfirmOpen] = useState(false);
+const [holdConfirmOpen, setHoldConfirmOpen] = useState(false);
 
   const [sharedRejectionComment, setSharedRejectionComment] = useState("");
   const [showRejectAllDialog, setShowRejectAllDialog] = useState(false);
@@ -81,6 +83,21 @@ const UpdateExpense = () => {
   });
 
   const inputRefs = useRef([]);
+
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
 
   const categoryOptions = [
     "Travelling Expenses",
@@ -195,52 +212,67 @@ const UpdateExpense = () => {
     }
   }, [ExpenseCode, expenses]);
 
-  const [allApproved, setAllApproved] = useState(false);
-  const [indeterminate, setIndeterminate] = useState(false);
+  // const handleSubmit = async () => {
+  //   try {
+  //     const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
+  //     const ExpenseCode = localStorage.getItem("edit_expense");
 
-  // Update header checkbox state based on rows approval status
-  useEffect(() => {
-    const totalItems = rows.reduce((acc, row) => acc + row.items.length, 0);
-    const approvedCount = rows.reduce(
-      (acc, row) =>
-        acc +
-        row.items.filter((item) => item.item_current_status === "approved")
-          .length,
-      0
-    );
+  //     if (!userID) {
+  //       toast.error("User ID not found. Please login again.");
+  //       return;
+  //     }
 
-    if (approvedCount === 0) {
-      setAllApproved(false);
-      setIndeterminate(false);
-    } else if (approvedCount === totalItems) {
-      setAllApproved(true);
-      setIndeterminate(false);
-    } else {
-      setAllApproved(false);
-      setIndeterminate(true);
-    }
-  }, [rows]);
+  //     if (!ExpenseCode) {
+  //       toast.error(
+  //         "No Expense Code found. Please re-select the form to edit."
+  //       );
+  //       return;
+  //     }
 
-  // Handler for header checkbox toggle (approve/reject all)
-  const handleToggleAll = (checked) => {
-    const newRows = rows.map((row) => ({
-      ...row,
-      items: row.items.map((item) => ({
-        ...item,
-        item_current_status: checked ? "approved" : "rejected",
-      })),
-    }));
-    setRows(newRows);
-  };
+  //     const expenseSheetId = rows[0]?._id;
+  //     if (!expenseSheetId) {
+  //       toast.error("Expense Sheet ID is missing. Please reload the page.");
+  //       return;
+  //     }
 
-  // Handler for individual checkbox toggle
-  const handleToggleItem = (rowIndex, itemIndex, checked) => {
-    const newRows = [...rows];
-    newRows[rowIndex].items[itemIndex].item_current_status = checked
-      ? "approved"
-      : "rejected";
-    setRows(newRows);
-  };
+  //     const items = rows.flatMap((row) => row.items || []);
+
+  //     const totalApproved = items.reduce(
+  //       (sum, item) =>
+  //         sum +
+  //         (item.approved_amount !== "" && item.approved_amount !== undefined
+  //           ? Number(item.approved_amount)
+  //           : Number(item.invoice?.invoice_amount || 0)),
+  //       0
+  //     );
+
+  //     const currentStatus = "manager approval";
+
+  //     console.log("Total Approved Amount:", totalApproved);
+  //     console.log("Status:", currentStatus);
+
+  //     const payload = {
+  //       user_id: userID,
+  //       data: {
+  //         total_approved_amount: totalApproved,
+  //         expense_code: ExpenseCode,
+  //         current_status: currentStatus,
+  //       },
+  //     };
+
+  //     await updateExpense({
+  //       _id: expenseSheetId,
+  //       ...payload,
+  //     }).unwrap();
+
+  //     toast.success("Total approved amount and status updated successfully!");
+  //     // localStorage.removeItem("edit_expense");
+  //     navigate("/expense_dashboard");
+  //   } catch (error) {
+  //     console.error("Update failed:", error);
+  //     toast.error("An error occurred while updating the approved amount.");
+  //   }
+  // };
 
   const handleApprovedAmountChange = (rowIndex, itemIndex, newValue) => {
     const sanitizedValue = newValue.replace(/^0+(?=\d)/, "");
@@ -430,6 +462,125 @@ const UpdateExpense = () => {
       toast.error("Failed to approve all items");
     }
   };
+  const handleHrApproveAll = () => {
+    setApproveConfirmOpen(true);
+  };
+
+  const applyHrApproveAll = async () => {
+    try {
+      const updated = rows.map((row) => {
+        const updatedItems = row.items.map((item) => {
+          const invoiceAmount = Number(item.invoice?.invoice_amount) || 0;
+
+          return {
+            ...item,
+            item_current_status: "hr approval",
+            approved_amount: invoiceAmount,
+          };
+        });
+
+        const totalApprovedAmount = updatedItems.reduce(
+          (sum, item) => sum + Number(item.approved_amount || 0),
+          0
+        );
+
+        return {
+          ...row,
+          items: updatedItems,
+          approved_amount: totalApprovedAmount,
+        };
+      });
+
+      setRows(updated);
+
+      await Promise.all(
+        updated.map((row) =>
+          updateStatus({
+            _id: row._id,
+            status: "hr approval",
+            approved_amount: row.approved_amount,
+          }).unwrap()
+        )
+      );
+
+      toast.success("All items HR approved successfully");
+      setApproveConfirmOpen(false);
+    } catch (error) {
+      console.error("Failed to HR approve all items:", error);
+      toast.error("Failed to HR approve all items");
+    }
+  };
+
+  const handleHrRejectAll = () => {
+    setRejectConfirmOpen(true); // optionally trigger a confirm modal
+  };
+
+  const applyHrRejectAll = async () => {
+    try {
+      const updated = rows.map((row) => ({
+        ...row,
+        current_status: "rejected",
+        items: row.items.map((item) => ({
+          ...item,
+          item_current_status: "rejected",
+          approved_amount: 0,
+        })),
+        approved_amount: 0,
+      }));
+
+      setRows(updated);
+
+      await Promise.all(
+        updated.map((row) =>
+          updateStatus({
+            _id: row._id,
+            status: "rejected",
+            approved_amount: 0,
+          }).unwrap()
+        )
+      );
+
+      toast.success("All items rejected successfully");
+      setRejectConfirmOpen(false);
+    } catch (error) {
+      console.error("Failed to reject all items:", error);
+      toast.error("Failed to reject all items");
+    }
+  };
+
+  const handleHrHoldAll = () => {
+    setHoldConfirmOpen(true); // optional confirmation
+  };
+
+  const applyHrHoldAll = async () => {
+    try {
+      const updated = rows.map((row) => ({
+        ...row,
+        current_status: "hold",
+        items: row.items.map((item) => ({
+          ...item,
+          item_current_status: "hold",
+        })),
+      }));
+
+      setRows(updated);
+
+      await Promise.all(
+        updated.map((row) =>
+          updateStatus({
+            _id: row._id,
+            status: "hold",
+          }).unwrap()
+        )
+      );
+
+      toast.success("All items put on hold successfully");
+      setHoldConfirmOpen(false);
+    } catch (error) {
+      console.error("Failed to hold all items:", error);
+      toast.error("Failed to hold all items");
+    }
+  };
 
   const tableHeaders = [
     "Project ID",
@@ -440,7 +591,7 @@ const UpdateExpense = () => {
     "Bill Amount",
     "Invoice Number",
     "Approved Amount",
-    "Approval",
+    ...(user?.name !== "Shruti Tripathi" ? ["Approval"] : []),
   ];
 
   return (
@@ -501,30 +652,51 @@ const UpdateExpense = () => {
 
             {/* Right: Bulk Actions */}
             <Box display="flex" gap={2}>
-              <Button
-                color="danger"
-                onClick={handleRejectAll}
-                size="sm"
-                disabled={rows.every(
-                  (row) =>
-                    row.current_status === "rejected" ||
-                    row.current_status === "manager approval"
-                )}
-              >
-                Reject All
-              </Button>
-              <Button
-                color="success"
-                onClick={handleApproveAll}
-                size="sm"
-                disabled={rows.every(
-                  (row) =>
-                    row.current_status === "rejected" ||
-                    row.current_status === "manager approval"
-                )}
-              >
-                Approve All
-              </Button>
+              {user?.name === "Shruti Tripathi" &&
+              rows.some((row) => row.current_status === "manager approval") ? (
+                <>
+                  <Button color="danger" size="sm" onClick={handleHrRejectAll}>
+                    Reject
+                  </Button>
+                  <Button color="warning" size="sm" onClick={handleHrHoldAll}>
+                    Hold
+                  </Button>
+                  <Button
+                    color="success"
+                    size="sm"
+                    onClick={handleHrApproveAll}
+                  >
+                    Approve
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    color="danger"
+                    onClick={handleRejectAll}
+                    size="sm"
+                    disabled={rows.every(
+                      (row) =>
+                        row.current_status === "rejected" ||
+                        row.current_status === "manager approval"
+                    )}
+                  >
+                    Reject All
+                  </Button>
+                  <Button
+                    color="success"
+                    onClick={handleApproveAll}
+                    size="sm"
+                    disabled={rows.every(
+                      (row) =>
+                        row.current_status === "rejected" ||
+                        row.current_status === "manager approval"
+                    )}
+                  >
+                    Approve All
+                  </Button>
+                </>
+              )}
             </Box>
           </Box>
 
@@ -554,40 +726,11 @@ const UpdateExpense = () => {
             >
               <thead>
                 <tr>
-                  {tableHeaders.map((header, idx) => {
-                    if (header === "Approval") {
-                      return (
-                        <th key={idx} style={{ textAlign: "center" }}>
-                          <Box display="flex" justifyContent="center" gap={1}>
-                            <Tooltip title="Approve All">
-                              <IconButton
-                                size="sm"
-                                variant="soft"
-                                color="success"
-                                onClick={() => handleToggleAll(true)}
-                              >
-                                <CheckIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Reject All">
-                              <IconButton
-                                size="sm"
-                                variant="soft"
-                                color="danger"
-                                onClick={() => handleToggleAll(false)}
-                              >
-                                <CloseIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          </Box>
-                        </th>
-                      );
-                    }
-                    return <th key={idx}>{header}</th>;
-                  })}
+                  {tableHeaders.map((header, idx) => (
+                    <th key={idx}>{header}</th>
+                  ))}
                 </tr>
               </thead>
-
               <tbody>
                 {rows.map((row, rowIndex) =>
                   row.items.map((item, itemIndex) => (
@@ -605,6 +748,7 @@ const UpdateExpense = () => {
                       </td>
                       <td>{item.invoice?.invoice_amount}</td>
                       <td>{item.invoice?.invoice_number || "NA"}</td>
+                      {/* <td>{item.approved_amount || "-"}</td> */}
                       <td>
                         <Input
                           size="sm"
@@ -625,30 +769,16 @@ const UpdateExpense = () => {
                           min={0}
                         />
                       </td>
-                      <td style={{ textAlign: "center" }}>
-                        <IconButton
-                          size="sm"
-                          variant="plain"
-                          color={
-                            item.item_current_status === "approved"
-                              ? "success"
-                              : "danger"
-                          }
-                          onClick={() =>
-                            handleToggleItem(
-                              rowIndex,
-                              itemIndex,
-                              item.item_current_status !== "approved"
-                            )
-                          }
-                        >
-                          {item.item_current_status === "approved" ? (
-                            <CheckIcon fontSize="small" />
-                          ) : (
-                            <CloseIcon fontSize="small" />
-                          )}
-                        </IconButton>
-                      </td>
+                      {user?.name !== "Shruti Tripathi" && (
+                        <td>
+                          <ApprovalButton
+                            rowIndex={rowIndex}
+                            itemIndex={itemIndex}
+                            itemCurrentStatus={item.item_current_status}
+                            handleApproval={handleApproval}
+                          />
+                        </td>
+                      )}
                     </tr>
                   ))
                 )}
@@ -932,7 +1062,12 @@ const UpdateExpense = () => {
                 maxWidth="400px"
                 width="100%"
               >
-          
+               <Button
+              variant="outlined"
+              onClick={() => navigate("/expense_dashboard")}
+            >
+              Back
+            </Button> 
                 <Button
                   variant="solid"
                   color="primary"
@@ -942,7 +1077,7 @@ const UpdateExpense = () => {
                   Update Expense Sheet
                 </Button>
               </Box>
-            </Box>  */}
+            </Box> */}
           </Sheet>
 
           {/* Pie Chart on Right */}
