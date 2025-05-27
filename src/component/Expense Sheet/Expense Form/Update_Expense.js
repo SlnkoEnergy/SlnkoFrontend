@@ -625,6 +625,8 @@ const UpdateExpense = () => {
                           min={0}
                         />
                       </td>
+
+                      {/*Checkbox td*/}
                       <td style={{ textAlign: "center" }}>
                         <IconButton
                           size="sm"
