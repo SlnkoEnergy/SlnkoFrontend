@@ -319,13 +319,13 @@ const Expense_Form = () => {
 
     const updated = [...rows];
     updated[index].items[0].project_id = selectedProject._id;
+    updated[index].items[0].project_code = code;
     updated[index].items[0].project_name = name;
     setRows(updated);
 
     setSearchInputs((prev) => {
       const updatedInputs = [...prev];
       updatedInputs[index] = code;
-      updated[index].name = name;
       return updatedInputs;
     });
 
@@ -519,7 +519,7 @@ const Expense_Form = () => {
                       <Input
                         size="sm"
                         variant="outlined"
-                        value={row.name}
+                        value={row.items?.[0]?.project_name || ""}
                         placeholder="Project Name"
                         disabled
                         sx={{ width: "100%" }}
