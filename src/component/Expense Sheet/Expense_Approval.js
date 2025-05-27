@@ -80,17 +80,16 @@ const ExpenseApproval = forwardRef((props, ref) => {
 
   const filteredAndSortedData = expenses
     .filter((expense) => {
-      // Match user by ID
+ 
       const matchedUser = getAllUser?.data?.find(
         (user) => user.name === expense.emp_name
       );
 
-      console.log(matchedUser);
+      // console.log(matchedUser);
 
-      // Only continue if user exists and matches department criteria
       if (!matchedUser || matchedUser.department !== "Projects") return false;
 
-      // Only include certain statuses
+   
       const allowedStatuses = [
         "submitted",
         "manager approval",
@@ -102,7 +101,7 @@ const ExpenseApproval = forwardRef((props, ref) => {
       const status = expense.current_status?.toLowerCase();
       if (!allowedStatuses.includes(status)) return false;
 
-      // Filter based on search query (case-insensitive)
+     
       const search = searchQuery.toLowerCase();
       const matchesSearchQuery = [
         "expense_code",
@@ -116,7 +115,7 @@ const ExpenseApproval = forwardRef((props, ref) => {
     .sort((a, b) => {
       const search = searchQuery.toLowerCase();
 
-      // Prioritize exact field matches
+      
       const fields = ["expense_code", "emp_id", "emp_name", "status"];
       for (let field of fields) {
         const aValue = a[field]?.toLowerCase() || "";
@@ -127,7 +126,6 @@ const ExpenseApproval = forwardRef((props, ref) => {
         if (!aMatch && bMatch) return 1;
       }
 
-      // Fallback: sort by createdAt descending
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
 

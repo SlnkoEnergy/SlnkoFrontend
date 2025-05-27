@@ -1,6 +1,6 @@
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
-import { IconButton, Textarea } from "@mui/joy";
+import { Checkbox, IconButton, Textarea, Tooltip } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Input from "@mui/joy/Input";
@@ -113,10 +113,30 @@ const UpdateExpense = () => {
     itemCurrentStatus,
     handleApproval,
   }) => {
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    // Consider item rejected if either status shows rejected
     const isRejected =
       itemStatus === "rejected" || itemCurrentStatus === "rejected";
 
+    // Consider item approved if current status is 'manager approval'
     const isApprovedToManager = itemCurrentStatus === "manager approval";
+
+    // Disable Reject button if approved or processing
+    const disableReject = isApprovedToManager || isProcessing;
+
+    // Disable Approve button if rejected or processing
+    const disableApprove = isRejected || isProcessing;
+
+    const handleClick = async (action) => {
+      setIsProcessing(true);
+      try {
+        await handleApproval(rowIndex, itemIndex, action);
+      } catch (err) {
+        // Optionally handle error here
+      }
+      setIsProcessing(false);
+    };
 
     return (
       <Box display="flex" gap={1} justifyContent="flex-start">
@@ -124,9 +144,9 @@ const UpdateExpense = () => {
           size="sm"
           variant={isRejected ? "solid" : "outlined"}
           color="danger"
-          onClick={() => handleApproval(rowIndex, itemIndex, "rejected")}
+          onClick={() => handleClick("rejected")}
           aria-label="Reject"
-          disabled={isRejected}
+          disabled={disableReject}
         >
           <CloseIcon />
         </Button>
@@ -135,9 +155,9 @@ const UpdateExpense = () => {
           size="sm"
           variant={isApprovedToManager ? "solid" : "outlined"}
           color="success"
-          onClick={() => handleApproval(rowIndex, itemIndex, "submitted")}
+          onClick={() => handleClick("submitted")}
           aria-label="Approve"
-          disabled={isRejected || isApprovedToManager}
+          disabled={disableApprove}
         >
           <CheckIcon />
         </Button>
@@ -163,7 +183,7 @@ const UpdateExpense = () => {
     );
 
     if (matchedExpense) {
-      // console.log("✅ Matched Expense Found:", matchedExpense);
+      console.log("✅ Matched Expense Found:", matchedExpense);
 
       const enrichedExpense = {
         ...matchedExpense,
@@ -175,165 +195,71 @@ const UpdateExpense = () => {
     }
   }, [ExpenseCode, expenses]);
 
-  // const handleSubmit = async () => {
-  //   try {
-  //     const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
-  //     const ExpenseCode = localStorage.getItem("edit_expense");
+  const [allApproved, setAllApproved] = useState(false);
+  const [indeterminate, setIndeterminate] = useState(false);
 
-  //     if (!userID) {
-  //       toast.error("User ID not found. Please login again.");
-  //       return;
-  //     }
-
-  //     if (!ExpenseCode) {
-  //       toast.error(
-  //         "No Expense Code found. Please re-select the form to edit."
-  //       );
-  //       return;
-  //     }
-
-  //     const expenseSheetId = rows[0]?._id;
-  //     if (!expenseSheetId) {
-  //       toast.error("Expense Sheet ID is missing. Please reload the page.");
-  //       return;
-  //     }
-
-  //     const items = rows.flatMap((row) =>
-  //       (row.items || []).map((item) => {
-  //         const invoiceAmount = Number(item.invoice?.invoice_amount || 0);
-  //         const approvedAmount =
-  //           item.approved_amount !== "" && item.approved_amount !== undefined
-  //             ? Number(item.approved_amount)
-  //             : invoiceAmount;
-
-  //         const updatedStatus =
-  //           item.item_current_status === "submitted"
-  //             ? "manager approval"
-  //             : item.item_current_status;
-
-  //         return {
-  //           ...item,
-  //           item_current_status: updatedStatus,
-  //           project_id: item.project_id || null,
-  //           invoice: {
-  //             ...item.invoice,
-  //             invoice_amount: invoiceAmount.toString(),
-  //           },
-  //           approved_amount: approvedAmount,
-  //         };
-  //       })
-  //     );
-
-  //     const totalRequested = items.reduce(
-  //       (sum, itm) => sum + Number(itm.invoice?.invoice_amount || 0),
-  //       0
-  //     );
-
-  //     const totalApproved = items.reduce(
-  //       (sum, itm) => sum + (Number(itm.approved_amount) || 0),
-  //       0
-  //     );
-
-  //     const cleanedData = {
-  //       expense_term: {
-  //         ...(rows[0]?.expense_term || {}),
-  //         current_status: "manager approval",
-  //       },
-  //       items,
-  //       user_id: userID,
-  //       total_requested_amount: totalRequested,
-  //       total_approved_amount: totalApproved,
-  //       expense_code: ExpenseCode,
-  //     };
-
-  //     const payload = {
-  //       user_id: userID,
-  //       data: cleanedData,
-  //     };
-
-  //     await updateExpense({
-  //       _id: expenseSheetId,
-  //       ...payload,
-  //     }).unwrap();
-
-  //     toast.success("Expense sheet updated successfully!");
-  //     localStorage.removeItem("edit_expense");
-  //     navigate("/expense_dashboard");
-  //   } catch (error) {
-  //     console.error("❌ Submission failed:", error);
-  //     toast.error("An error occurred while submitting the expense sheet.");
-  //   }
-  // };
-
-  const handleSubmit = async () => {
-  try {
-    const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
-    const ExpenseCode = localStorage.getItem("edit_expense");
-
-    if (!userID) {
-      toast.error("User ID not found. Please login again.");
-      return;
-    }
-
-    if (!ExpenseCode) {
-      toast.error("No Expense Code found. Please re-select the form to edit.");
-      return;
-    }
-
-    const expenseSheetId = rows[0]?._id;
-    if (!expenseSheetId) {
-      toast.error("Expense Sheet ID is missing. Please reload the page.");
-      return;
-    }
-
-    const items = rows.flatMap((row) => row.items || []);
-
-    const totalApproved = items.reduce(
-      (sum, item) =>
-        sum + (item.approved_amount !== "" && item.approved_amount !== undefined
-          ? Number(item.approved_amount)
-          : Number(item.invoice?.invoice_amount || 0)),
+  // Update header checkbox state based on rows approval status
+  useEffect(() => {
+    const totalItems = rows.reduce((acc, row) => acc + row.items.length, 0);
+    const approvedCount = rows.reduce(
+      (acc, row) =>
+        acc +
+        row.items.filter((item) => item.item_current_status === "approved")
+          .length,
       0
     );
 
-    const payload = {
-      user_id: userID,
-      data: {
-        total_approved_amount: totalApproved,
-        expense_code: ExpenseCode,
-      },
-    };
+    if (approvedCount === 0) {
+      setAllApproved(false);
+      setIndeterminate(false);
+    } else if (approvedCount === totalItems) {
+      setAllApproved(true);
+      setIndeterminate(false);
+    } else {
+      setAllApproved(false);
+      setIndeterminate(true);
+    }
+  }, [rows]);
 
-    await updateExpense({
-      _id: expenseSheetId,
-      ...payload,
-    }).unwrap();
+  // Handler for header checkbox toggle (approve/reject all)
+  const handleToggleAll = (checked) => {
+    const newRows = rows.map((row) => ({
+      ...row,
+      items: row.items.map((item) => ({
+        ...item,
+        item_current_status: checked ? "approved" : "rejected",
+      })),
+    }));
+    setRows(newRows);
+  };
 
-    toast.success("Total approved amount updated successfully!");
-    localStorage.removeItem("edit_expense");
-    navigate("/expense_dashboard");
-  } catch (error) {
-    console.error("Update failed:", error);
-    toast.error("An error occurred while updating the approved amount.");
-  }
-};
+  // Handler for individual checkbox toggle
+  const handleToggleItem = (rowIndex, itemIndex, checked) => {
+    const newRows = [...rows];
+    newRows[rowIndex].items[itemIndex].item_current_status = checked
+      ? "approved"
+      : "rejected";
+    setRows(newRows);
+  };
 
-  
-  
   const handleApprovedAmountChange = (rowIndex, itemIndex, newValue) => {
-    // Update rows state immutably
+    const sanitizedValue = newValue.replace(/^0+(?=\d)/, "");
+
     setRows((prevRows) => {
-      const updatedRows = [...prevRows];
-      const updatedItem = { ...updatedRows[rowIndex].items[itemIndex] };
+      const updated = [...prevRows];
+      const updatedRow = { ...updated[rowIndex] };
+      const updatedItems = [...updatedRow.items];
 
-      // Convert to number, or empty string if invalid input
-      const parsedValue = newValue === "" ? "" : Number(newValue);
+      const updatedItem = {
+        ...updatedItems[itemIndex],
+        approved_amount: Number(sanitizedValue),
+      };
 
-      updatedItem.approved_amount = parsedValue;
+      updatedItems[itemIndex] = updatedItem;
+      updatedRow.items = updatedItems;
+      updated[rowIndex] = updatedRow;
 
-      updatedRows[rowIndex].items[itemIndex] = updatedItem;
-
-      return updatedRows;
+      return updated;
     });
   };
 
@@ -349,101 +275,66 @@ const UpdateExpense = () => {
 
   const handleApproval = async (rowIndex, itemIndex, action) => {
     try {
-      const requests = [];
+      const row = rows[rowIndex];
+      const item = row?.items[itemIndex];
 
-      rows.forEach((row) => {
-        const sheetId = row._id;
-        if (!sheetId) {
-          console.error("❌ Missing sheetId for row:", row);
-          return;
-        }
+      if (!row || !item) {
+        console.error("Row or item not found.");
+        return;
+      }
 
-        console.log("Processing row:", row._id);
+      const sheetId = row._id;
+      const itemId = item._id;
 
-        row.items.forEach((item) => {
-          const itemId = item._id;
-          if (!itemId) {
-            console.error("❌ Missing itemId for item:", item);
-            return;
-          }
+      if (!sheetId || !itemId) {
+        console.error("Missing sheetId or itemId.");
+        return;
+      }
 
-          let newStatus = "";
-          let remarks = "";
+      let newStatus = "";
+      let remarks = "";
 
-          if (action === "rejected") {
-            newStatus = "rejected";
-            remarks = sharedRejectionComment || "Rejected without comment";
-          } else if (
-            action === "submitted" &&
-            item.item_current_status === "submitted"
-          ) {
-            newStatus = "manager approval";
-            remarks = "Auto-approved";
-          } else {
-            return; // Skip if not eligible
-          }
+      if (action === "rejected") {
+        newStatus = "rejected";
+        remarks = sharedRejectionComment || "Rejected without comment";
+      } else if (
+        action === "submitted" &&
+        item.item_current_status === "submitted"
+      ) {
+        newStatus = "manager approval";
+        remarks = "Auto-approved";
+      } else {
+        return;
+      }
 
-          requests.push(
-            updateStatusItems({
-              sheetId,
-              itemId,
-              status: newStatus,
-              remarks,
-            }).unwrap()
-          );
-        });
-      });
+      await updateStatusItems({
+        sheetId,
+        itemId,
+        status: newStatus,
+        remarks,
+      }).unwrap();
 
-      await Promise.all(requests);
+      const updatedRows = [...rows];
+      const updatedItem = {
+        ...item,
+        item_current_status: newStatus,
+        approved_amount:
+          newStatus === "rejected"
+            ? 0
+            : Number(item.invoice?.invoice_amount || 0),
+      };
 
-      toast.success(
-        action === "rejected"
-          ? "All items rejected successfully"
-          : "All items approved to manager successfully"
+      updatedRows[rowIndex].items[itemIndex] = updatedItem;
+
+      const approvedAmount = updatedRows[rowIndex].items.reduce(
+        (sum, itm) => sum + Number(itm.approved_amount || 0),
+        0
       );
+      updatedRows[rowIndex].approved_amount = approvedAmount;
 
-      const updated = rows.map((row, rIndex) => {
-        const updatedItems = row.items.map((item, iIndex) => {
-          const isTargetItem = rIndex === rowIndex && iIndex === itemIndex;
-
-          if (
-            (action === "submitted" &&
-              item.item_current_status === "submitted" &&
-              isTargetItem) ||
-            (action === "rejected" && isTargetItem)
-          ) {
-            return {
-              ...item,
-              item_current_status:
-                action === "rejected" ? "rejected" : "manager approval",
-              approved_amount:
-                action === "rejected"
-                  ? 0
-                  : Number(item.invoice?.invoice_amount || 0),
-            };
-          }
-
-          return item;
-        });
-
-        const approvedAmount = updatedItems.reduce(
-          (sum, itm) => sum + Number(itm.approved_amount || 0),
-          0
-        );
-
-        return {
-          ...row,
-          items: updatedItems,
-          approved_amount: approvedAmount,
-        };
-      });
-
-      setRows(updated);
-      setShowRejectAllDialog(false);
-      setSharedRejectionComment("");
+      setRows(updatedRows);
     } catch (error) {
-      console.error("❌ Failed to update items:", error);
-      toast.error("Failed to update items");
+      console.error("Failed to update single item:", error);
     }
   };
 
@@ -497,20 +388,17 @@ const UpdateExpense = () => {
 
   const applyApproveAll = async () => {
     try {
-      // Update local rows state first
       const updated = rows.map((row) => {
         const updatedItems = row.items.map((item) => {
-          // Parse invoice amount as number, fallback to 0 if missing or invalid
           const invoiceAmount = Number(item.invoice?.invoice_amount) || 0;
 
           return {
             ...item,
             item_current_status: "manager approval",
-            approved_amount: invoiceAmount, // keep as number, convert to string if needed by backend
+            approved_amount: invoiceAmount,
           };
         });
 
-        // Sum approved_amounts safely as numbers
         const totalApprovedAmount = updatedItems.reduce(
           (sum, item) => sum + Number(item.approved_amount || 0),
           0
@@ -525,7 +413,6 @@ const UpdateExpense = () => {
 
       setRows(updated);
 
-      // Optionally call your updateStatus mutation for each row to sync with backend
       await Promise.all(
         updated.map((row) =>
           updateStatus({
@@ -667,11 +554,40 @@ const UpdateExpense = () => {
             >
               <thead>
                 <tr>
-                  {tableHeaders.map((header, idx) => (
-                    <th key={idx}>{header}</th>
-                  ))}
+                  {tableHeaders.map((header, idx) => {
+                    if (header === "Approval") {
+                      return (
+                        <th key={idx} style={{ textAlign: "center" }}>
+                          <Box display="flex" justifyContent="center" gap={1}>
+                            <Tooltip title="Approve All">
+                              <IconButton
+                                size="sm"
+                                variant="soft"
+                                color="success"
+                                onClick={() => handleToggleAll(true)}
+                              >
+                                <CheckIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Reject All">
+                              <IconButton
+                                size="sm"
+                                variant="soft"
+                                color="danger"
+                                onClick={() => handleToggleAll(false)}
+                              >
+                                <CloseIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        </th>
+                      );
+                    }
+                    return <th key={idx}>{header}</th>;
+                  })}
                 </tr>
               </thead>
+
               <tbody>
                 {rows.map((row, rowIndex) =>
                   row.items.map((item, itemIndex) => (
@@ -688,18 +604,17 @@ const UpdateExpense = () => {
                           : ""}
                       </td>
                       <td>{item.invoice?.invoice_amount}</td>
-                      <td>{item.invoice?.invoice_number}</td>
-                      {/* <td>{item.approved_amount || "-"}</td> */}
+                      <td>{item.invoice?.invoice_number || "NA"}</td>
                       <td>
                         <Input
                           size="sm"
                           type="number"
-                          value={
+                          value={String(
                             item.approved_amount !== undefined &&
-                            item.approved_amount !== null
+                              item.approved_amount !== ""
                               ? item.approved_amount
-                              : item.invoice?.invoice_amount || ""
-                          }
+                              : (item.invoice?.invoice_amount ?? "")
+                          ).replace(/^0+(?=\d)/, "")}
                           onChange={(e) =>
                             handleApprovedAmountChange(
                               rowIndex,
@@ -707,18 +622,32 @@ const UpdateExpense = () => {
                               e.target.value
                             )
                           }
-                          // Optional: min=0 to prevent negative amounts
                           min={0}
                         />
                       </td>
-
-                      <td>
-                        <ApprovalButton
-                          rowIndex={rowIndex}
-                          itemIndex={itemIndex}
-                          itemCurrentStatus={item.current_status}
-                          handleApproval={handleApproval}
-                        />
+                      <td style={{ textAlign: "center" }}>
+                        <IconButton
+                          size="sm"
+                          variant="plain"
+                          color={
+                            item.item_current_status === "approved"
+                              ? "success"
+                              : "danger"
+                          }
+                          onClick={() =>
+                            handleToggleItem(
+                              rowIndex,
+                              itemIndex,
+                              item.item_current_status !== "approved"
+                            )
+                          }
+                        >
+                          {item.item_current_status === "approved" ? (
+                            <CheckIcon fontSize="small" />
+                          ) : (
+                            <CloseIcon fontSize="small" />
+                          )}
+                        </IconButton>
                       </td>
                     </tr>
                   ))
@@ -931,14 +860,13 @@ const UpdateExpense = () => {
 
                   const approvedAmt = itemsInCategory.reduce((sum, item) => {
                     if (item.item_current_status === "manager approval") {
-                      return (
-                        sum +
-                        Number(
-                          item.approved_amount ??
-                            item.invoice?.invoice_amount ??
-                            0
-                        )
-                      );
+                      const value =
+                        item.approved_amount !== undefined &&
+                        item.approved_amount !== ""
+                          ? Number(item.approved_amount)
+                          : Number(item.invoice?.invoice_amount ?? 0);
+
+                      return sum + value;
                     }
                     return sum;
                   }, 0);
@@ -981,7 +909,13 @@ const UpdateExpense = () => {
                         )
                         .reduce(
                           (sum, item) =>
-                            sum + Number(item.approved_amount || 0),
+                            sum +
+                            Number(
+                              item.approved_amount !== undefined &&
+                                item.approved_amount !== ""
+                                ? item.approved_amount
+                                : (item.invoice?.invoice_amount ?? 0)
+                            ),
                           0
                         )
                         .toFixed(2)}
@@ -990,36 +924,30 @@ const UpdateExpense = () => {
                 </tr>
               </tbody>
             </Table>
+            {/* Submit & Back Buttons */}
+            {/* <Box display="flex" justifyContent="center" p={2}>
+              <Box
+                display="flex"
+                justifyContent="center"
+                maxWidth="400px"
+                width="100%"
+              >
+          
+                <Button
+                  variant="solid"
+                  color="primary"
+                  onClick={handleSubmit}
+                  disabled={isUpdating}
+                >
+                  Update Expense Sheet
+                </Button>
+              </Box>
+            </Box>  */}
           </Sheet>
 
           {/* Pie Chart on Right */}
           <Box flex={1} minWidth={400}>
             <PieChartByCategory rows={rows} />
-          </Box>
-        </Box>
-
-        {/* Submit & Back Buttons */}
-        <Box mt={2} display="flex" justifyContent="center">
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            maxWidth="400px"
-            width="100%"
-          >
-            <Button
-              variant="outlined"
-              onClick={() => navigate("/expense_dashboard")}
-            >
-              Back
-            </Button>
-            <Button
-              variant="solid"
-              color="primary"
-              onClick={handleSubmit}
-              disabled={isUpdating}
-            >
-              Update Expense Sheet
-            </Button>
           </Box>
         </Box>
       </Box>

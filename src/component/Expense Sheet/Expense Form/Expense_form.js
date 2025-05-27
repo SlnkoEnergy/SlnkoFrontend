@@ -21,6 +21,7 @@ import {
   useAddExpenseMutation,
   useUpdateExpenseSheetMutation,
 } from "../../../redux/Expense/expenseSlice";
+import { Textarea } from "@mui/joy";
 
 const Expense_Form = () => {
   const navigate = useNavigate();
@@ -78,7 +79,29 @@ const Expense_Form = () => {
     rowIndex: null,
   });
 
-  const inputRefs = useRef([]);
+  const inputRefs = useRef({});
+  const dropdownRefs = useRef({});
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      const isClickInside =
+        Object.values(inputRefs.current).some((ref) =>
+          ref?.contains(event.target)
+        ) ||
+        Object.values(dropdownRefs.current).some((ref) =>
+          ref?.contains(event.target)
+        );
+
+      if (!isClickInside) {
+        setDropdownOpenIndex(null);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const categoryOptions = [
     "Travelling Expenses",
@@ -193,7 +216,7 @@ const Expense_Form = () => {
       toast.success("Expense sheet submitted successfully!");
       navigate("/expense_dashboard");
     } catch (error) {
-      console.error("❌ Submission failed:", error);
+      console.error("Submission failed:", error);
       toast.error("An error occurred while submitting the expense sheet.");
     }
   };
@@ -246,6 +269,16 @@ const Expense_Form = () => {
     setSearchInputs((prev) => [...prev, ""]);
   };
 
+  const handleRemoveRow = () => {
+    if (rows.length <= 1) {
+      toast.warning("❗ You must have at least one row.");
+      return;
+    }
+
+    setRows((prev) => prev.slice(0, -1));
+    setSearchInputs((prev) => prev.slice(0, -1));
+  };
+
   const handleRowChange = (index, field, value) => {
     const updated = [...rows];
     updated[index][field] = value;
@@ -259,7 +292,7 @@ const Expense_Form = () => {
   const handleItemChange = (rowIndex, field, value) => {
     const updated = [...rows];
     if (!updated[rowIndex].items || updated[rowIndex].items.length === 0) {
-      updated[rowIndex].items = [{}]; // Ensure items[0] exists
+      updated[rowIndex].items = [{}];
     }
     updated[rowIndex].items[0][field] = value;
     setRows(updated);
@@ -281,56 +314,33 @@ const Expense_Form = () => {
     handleRowChange(index, "code", value);
   };
 
-  // const handleSelectProject = (index, code, name) => {
-  //   const updated = [...rows];
-  //   updated[index]._id = _id;
-  //   updated[index].code = code;
-  //   updated[index].name = name;
-  //   setRows(updated);
-  //   setSearchInputs((prev) => {
-  //     const updated = [...prev];
-  //     updated[index] = code;
-  //     return updated;
-  //   });
-  //   setDropdownOpenIndex(null);
-  // };
-
-  // const handleSelectProject = (index, code) => {
-  //   const selectedProject = projectCodes.find((p) => p.code === code);
-  //   if (!selectedProject) return;
-
-  //   const updated = [...rows];
-  //   updated[index].items[0].project_id = selectedProject._id;
-  //   updated[index].items[0].project_name = selectedProject.name; // optional
-  //   setRows(updated);
-
-  //   setSearchInputs((prev) => {
-  //     const updatedInputs = [...prev];
-  //     updatedInputs[index] = code;
-  //     return updatedInputs;
-  //   });
-
-  //   setDropdownOpenIndex(null);
-  // };
-
   const handleSelectProject = (index, code, name) => {
-    const selectedProject = projectCodes.find((p) => p.code === code);
-    if (!selectedProject) return;
+  const selectedProject = projectCodes.find((p) => p.code === code);
+  if (!selectedProject) return;
 
-    const updated = [...rows];
-    updated[index].items[0].project_id = selectedProject._id;
-    updated[index].items[0].project_code = code;
-    updated[index].items[0].project_name = name;
-    setRows(updated);
+  const updated = [...rows];
 
-    setSearchInputs((prev) => {
-      const updatedInputs = [...prev];
-      updatedInputs[index] = code;
-      return updatedInputs;
-    });
+  if (updated[index]?.items?.[0]) {
+    updated[index].items[0] = {
+      ...updated[index].items[0],
+      project_id: selectedProject._id,
+      project_code: code,
+      project_name: name,
+      // projectSelected: true,
+    };
+  }
 
-    setDropdownOpenIndex(null);
-  };
+  setRows(updated);
+
+  setSearchInputs((prev) => {
+    const updatedInputs = [...prev];
+    updatedInputs[index] = code;
+    return updatedInputs;
+  });
+
+  setDropdownOpenIndex(null); // ✅ Close the dropdown
+};
+
 
   const handleCommentSave = () => {
     setCommentDialog({ open: false, rowIndex: null });
@@ -449,7 +459,7 @@ const Expense_Form = () => {
                       backgroundColor: rowIndex % 2 === 0 ? "white" : "#fafafa",
                     }}
                   >
-                    {/* Project Code with autocomplete */}
+                  
                     <td
                       style={{ position: "relative", padding: 8, width: 150 }}
                     >
@@ -465,10 +475,13 @@ const Expense_Form = () => {
                         inputRef={(el) => (inputRefs.current[rowIndex] = el)}
                         autoComplete="off"
                         sx={{ width: "100%" }}
+                        // disabled={rows[rowIndex]?.items?.[0]?.projectSelected}
+
                       />
                       {dropdownOpenIndex === rowIndex &&
                         filteredProjects.length > 0 && (
                           <Sheet
+                            ref={(el) => (dropdownRefs.current[rowIndex] = el)}
                             variant="outlined"
                             sx={{
                               position: "absolute",
@@ -553,7 +566,7 @@ const Expense_Form = () => {
 
                     {/* Description */}
                     <td style={{ padding: 8, maxWidth: 250 }}>
-                      <Input
+                      <Textarea
                         size="sm"
                         variant="outlined"
                         value={row.items?.[0]?.description || ""}
@@ -674,9 +687,18 @@ const Expense_Form = () => {
               })}
             </tbody>
           </table>
-          <Box mt={2} textAlign="left">
+          <Box mt={2} textAlign="left" display="flex" gap={1}>
             <Button onClick={handleAddRow} variant="soft" size="sm">
               + Add Row
+            </Button>
+            <Button
+              onClick={handleRemoveRow}
+              variant="soft"
+              size="sm"
+              color="danger"
+              disabled={rows.length <= 1}
+            >
+              - Remove Row
             </Button>
           </Box>
         </Box>
