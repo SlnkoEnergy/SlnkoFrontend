@@ -1,6 +1,5 @@
-import CheckIcon from "@mui/icons-material/Check";
-import CloseIcon from "@mui/icons-material/Close";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
+import { Textarea } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Input from "@mui/joy/Input";
@@ -17,11 +16,7 @@ import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import {
-  useAddExpenseMutation,
-  useUpdateExpenseSheetMutation,
-} from "../../../redux/Expense/expenseSlice";
-import { Textarea } from "@mui/joy";
+import { useAddExpenseMutation } from "../../../redux/Expense/expenseSlice";
 
 const Expense_Form = () => {
   const navigate = useNavigate();
@@ -74,6 +69,7 @@ const Expense_Form = () => {
   const [projectCodes, setProjectCodes] = useState([]);
   const [dropdownOpenIndex, setDropdownOpenIndex] = useState(null);
   const [searchInputs, setSearchInputs] = useState([""]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [commentDialog, setCommentDialog] = useState({
     open: false,
     rowIndex: null,
@@ -153,6 +149,8 @@ const Expense_Form = () => {
   }, []);
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
 
@@ -161,11 +159,10 @@ const Expense_Form = () => {
         return;
       }
 
-      const items = rows.map((row) => {
-        const item = row.items?.[0] || {};
-        return {
+      const items = rows.flatMap((row) =>
+        (row.items || []).map((item) => ({
           ...item,
-          project_id: item.project_id || null,
+          project_id: item.project_id || "",
           project_code: item.project_code || "",
           project_name: item.project_name || "",
           invoice: {
@@ -181,8 +178,8 @@ const Expense_Form = () => {
             },
           ],
           item_current_status: "submitted",
-        };
-      });
+        }))
+      );
 
       const cleanedData = {
         expense_term: rows[0]?.expense_term || {},
@@ -216,17 +213,20 @@ const Expense_Form = () => {
       toast.success("Expense sheet submitted successfully!");
       navigate("/expense_dashboard");
     } catch (error) {
-    const errMsg =
-      error?.data?.message || "An error occurred while submitting the expense sheet.";
+      const errMsg =
+        error?.data?.message ||
+        "An error occurred while submitting the expense sheet.";
 
-    if (errMsg.includes("Expense Code already exists")) {
-      toast.error("Expense already exists. Please try new.");
-    } else {
-      toast.error(errMsg);
+      if (errMsg.includes("Expense Code already exists")) {
+        toast.error("Expense already exists. Please try new.");
+      } else {
+        toast.error(errMsg);
+      }
+
+      console.error("Submission failed:", error);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    console.error("Submission failed:", error);
-  }
   };
 
   const handleAddRow = () => {
@@ -323,32 +323,31 @@ const Expense_Form = () => {
   };
 
   const handleSelectProject = (index, code, name) => {
-  const selectedProject = projectCodes.find((p) => p.code === code);
-  if (!selectedProject) return;
+    const selectedProject = projectCodes.find((p) => p.code === code);
+    if (!selectedProject) return;
 
-  const updated = [...rows];
+    const updated = [...rows];
 
-  if (updated[index]?.items?.[0]) {
-    updated[index].items[0] = {
-      ...updated[index].items[0],
-      project_id: selectedProject._id,
-      project_code: code,
-      project_name: name,
-      // projectSelected: true,
-    };
-  }
+    if (updated[index]?.items?.[0]) {
+      updated[index].items[0] = {
+        ...updated[index].items[0],
+        project_id: selectedProject._id,
+        project_code: code,
+        project_name: name,
+        // projectSelected: true,
+      };
+    }
 
-  setRows(updated);
+    setRows(updated);
 
-  setSearchInputs((prev) => {
-    const updatedInputs = [...prev];
-    updatedInputs[index] = code;
-    return updatedInputs;
-  });
+    setSearchInputs((prev) => {
+      const updatedInputs = [...prev];
+      updatedInputs[index] = code;
+      return updatedInputs;
+    });
 
-  setDropdownOpenIndex(null); // ✅ Close the dropdown
-};
-
+    setDropdownOpenIndex(null); // ✅ Close the dropdown
+  };
 
   const handleCommentSave = () => {
     setCommentDialog({ open: false, rowIndex: null });
@@ -467,7 +466,6 @@ const Expense_Form = () => {
                       backgroundColor: rowIndex % 2 === 0 ? "white" : "#fafafa",
                     }}
                   >
-                  
                     <td
                       style={{ position: "relative", padding: 8, width: 150 }}
                     >
@@ -484,7 +482,6 @@ const Expense_Form = () => {
                         autoComplete="off"
                         sx={{ width: "100%" }}
                         // disabled={rows[rowIndex]?.items?.[0]?.projectSelected}
-
                       />
                       {dropdownOpenIndex === rowIndex &&
                         filteredProjects.length > 0 && (
@@ -846,8 +843,14 @@ const Expense_Form = () => {
               onClick={() => navigate("/expense_dashboard")}
             >
               Back
-            </Button>
-            <Button variant="solid" color="primary" onClick={handleSubmit}>
+            </Button>{" "}
+            &nbsp;&nbsp;
+            <Button
+              variant="solid"
+              color="primary"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
               Submit Expense Sheet
             </Button>
           </Box>
