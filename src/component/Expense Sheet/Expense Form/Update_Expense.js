@@ -677,7 +677,7 @@ const UpdateExpense = () => {
                   row.items.map((item, itemIndex) => (
                     <tr key={`${rowIndex}-${itemIndex}`}>
                       <td>{item.project_code}</td>
-                      <td>{row.name}</td>
+                      <td>{item.project_name}</td>
                       <td>{item.category}</td>
                       <td>{item.description}</td>
                       <td>
