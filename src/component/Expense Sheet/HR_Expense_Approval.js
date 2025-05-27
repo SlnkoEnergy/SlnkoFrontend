@@ -84,9 +84,9 @@ const HrExpense = forwardRef((props, ref) => {
 
   const filteredAndSortedData = expenses
     .filter((expense) => {
-      // Match user by ID
+   
 
-      // Only include certain statuses
+      
       const allowedStatuses = [
         "manager approval",
         "hr approval",
@@ -97,7 +97,7 @@ const HrExpense = forwardRef((props, ref) => {
       const status = expense.current_status?.toLowerCase();
       if (!allowedStatuses.includes(status)) return false;
 
-      // Filter based on search query (case-insensitive)
+     
       const search = searchQuery.toLowerCase();
       const matchesSearchQuery = [
         "expense_code",

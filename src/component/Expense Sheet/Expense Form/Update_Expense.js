@@ -123,64 +123,55 @@ const [holdConfirmOpen, setHoldConfirmOpen] = useState(false);
 
   const [updateStatus] = useUpdateExpenseStatusOverallMutation();
 
-  const ApprovalButton = ({
-    rowIndex,
-    itemIndex,
-    itemStatus,
-    itemCurrentStatus,
-    handleApproval,
-  }) => {
-    const [isProcessing, setIsProcessing] = useState(false);
+ const ApprovalButton = ({
+  rowIndex,
+  itemIndex,
+  itemStatus,
+  itemCurrentStatus,
+  handleApproval,
+}) => {
+  const [isProcessing, setIsProcessing] = useState(false);
 
-    // Consider item rejected if either status shows rejected
-    const isRejected =
-      itemStatus === "rejected" || itemCurrentStatus === "rejected";
+  const isRejected =
+    itemStatus === "rejected" || itemCurrentStatus === "rejected";
 
-    // Consider item approved if current status is 'manager approval'
-    const isApprovedToManager = itemCurrentStatus === "manager approval";
+  const isApprovedToManager = itemCurrentStatus === "manager approval";
 
-    // Disable Reject button if approved or processing
-    const disableReject = isApprovedToManager || isProcessing;
-
-    // Disable Approve button if rejected or processing
-    const disableApprove = isRejected || isProcessing;
-
-    const handleClick = async (action) => {
-      setIsProcessing(true);
-      try {
-        await handleApproval(rowIndex, itemIndex, action);
-      } catch (err) {
-        // Optionally handle error here
-      }
-      setIsProcessing(false);
-    };
-
-    return (
-      <Box display="flex" gap={1} justifyContent="flex-start">
-        <Button
-          size="sm"
-          variant={isRejected ? "solid" : "outlined"}
-          color="danger"
-          onClick={() => handleClick("rejected")}
-          aria-label="Reject"
-          disabled={disableReject}
-        >
-          <CloseIcon />
-        </Button>
-
-        <Button
-          size="sm"
-          variant={isApprovedToManager ? "solid" : "outlined"}
-          color="success"
-          onClick={() => handleClick("submitted")}
-          aria-label="Approve"
-          disabled={disableApprove}
-        >
-          <CheckIcon />
-        </Button>
-      </Box>
-    );
+  const handleClick = async (action) => {
+    setIsProcessing(true);
+    try {
+      await handleApproval(rowIndex, itemIndex, action);
+    } catch (err) {
+      // Optionally handle error here
+    }
+    setIsProcessing(false);
   };
+
+  return (
+    <Box display="flex" gap={1} justifyContent="flex-start">
+      <Button
+        size="sm"
+        variant={isRejected ? "solid" : "outlined"}
+        color="danger"
+        onClick={() => handleClick("rejected")}
+        aria-label="Reject"
+      >
+        <CloseIcon />
+      </Button>
+
+      <Button
+        size="sm"
+        variant={isApprovedToManager ? "solid" : "outlined"}
+        color="success"
+        onClick={() => handleClick("submitted")}
+        aria-label="Approve"
+      >
+        <CheckIcon />
+      </Button>
+    </Box>
+  );
+};
+
 
   const ExpenseCode = localStorage.getItem("edit_expense");
 
@@ -212,67 +203,67 @@ const [holdConfirmOpen, setHoldConfirmOpen] = useState(false);
     }
   }, [ExpenseCode, expenses]);
 
-  // const handleSubmit = async () => {
-  //   try {
-  //     const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
-  //     const ExpenseCode = localStorage.getItem("edit_expense");
+  const handleSubmit = async () => {
+    try {
+      const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
+      const ExpenseCode = localStorage.getItem("edit_expense");
 
-  //     if (!userID) {
-  //       toast.error("User ID not found. Please login again.");
-  //       return;
-  //     }
+      if (!userID) {
+        toast.error("User ID not found. Please login again.");
+        return;
+      }
 
-  //     if (!ExpenseCode) {
-  //       toast.error(
-  //         "No Expense Code found. Please re-select the form to edit."
-  //       );
-  //       return;
-  //     }
+      if (!ExpenseCode) {
+        toast.error(
+          "No Expense Code found. Please re-select the form to edit."
+        );
+        return;
+      }
 
-  //     const expenseSheetId = rows[0]?._id;
-  //     if (!expenseSheetId) {
-  //       toast.error("Expense Sheet ID is missing. Please reload the page.");
-  //       return;
-  //     }
+      const expenseSheetId = rows[0]?._id;
+      if (!expenseSheetId) {
+        toast.error("Expense Sheet ID is missing. Please reload the page.");
+        return;
+      }
 
-  //     const items = rows.flatMap((row) => row.items || []);
+      const items = rows.flatMap((row) => row.items || []);
 
-  //     const totalApproved = items.reduce(
-  //       (sum, item) =>
-  //         sum +
-  //         (item.approved_amount !== "" && item.approved_amount !== undefined
-  //           ? Number(item.approved_amount)
-  //           : Number(item.invoice?.invoice_amount || 0)),
-  //       0
-  //     );
+      const totalApproved = items.reduce(
+        (sum, item) =>
+          sum +
+          (item.approved_amount !== "" && item.approved_amount !== undefined
+            ? Number(item.approved_amount)
+            : Number(item.invoice?.invoice_amount || 0)),
+        0
+      );
 
-  //     const currentStatus = "manager approval";
+      const currentStatus = "manager approval";
 
-  //     console.log("Total Approved Amount:", totalApproved);
-  //     console.log("Status:", currentStatus);
+      console.log("Total Approved Amount:", totalApproved);
+      console.log("Status:", currentStatus);
 
-  //     const payload = {
-  //       user_id: userID,
-  //       data: {
-  //         total_approved_amount: totalApproved,
-  //         expense_code: ExpenseCode,
-  //         current_status: currentStatus,
-  //       },
-  //     };
+      const payload = {
+        user_id: userID,
+        data: {
+          total_approved_amount: totalApproved,
+          expense_code: ExpenseCode,
+          current_status: currentStatus,
+        },
+      };
 
-  //     await updateExpense({
-  //       _id: expenseSheetId,
-  //       ...payload,
-  //     }).unwrap();
+      await updateExpense({
+        _id: expenseSheetId,
+        ...payload,
+      }).unwrap();
 
-  //     toast.success("Total approved amount and status updated successfully!");
-  //     // localStorage.removeItem("edit_expense");
-  //     navigate("/expense_dashboard");
-  //   } catch (error) {
-  //     console.error("Update failed:", error);
-  //     toast.error("An error occurred while updating the approved amount.");
-  //   }
-  // };
+      toast.success("Total approved amount and status updated successfully!");
+      // localStorage.removeItem("edit_expense");
+      navigate("/expense_dashboard");
+    } catch (error) {
+      console.error("Update failed:", error);
+      toast.error("An error occurred while updating the approved amount.");
+    }
+  };
 
   const handleApprovedAmountChange = (rowIndex, itemIndex, newValue) => {
     const sanitizedValue = newValue.replace(/^0+(?=\d)/, "");
@@ -1055,19 +1046,19 @@ const [holdConfirmOpen, setHoldConfirmOpen] = useState(false);
               </tbody>
             </Table>
             {/* Submit & Back Buttons */}
-            {/* <Box display="flex" justifyContent="center" p={2}>
+            <Box display="flex" justifyContent="center" p={2}>
               <Box
                 display="flex"
                 justifyContent="center"
                 maxWidth="400px"
                 width="100%"
               >
-               <Button
+               {/* <Button
               variant="outlined"
               onClick={() => navigate("/expense_dashboard")}
             >
               Back
-            </Button> 
+            </Button>  */}
                 <Button
                   variant="solid"
                   color="primary"
@@ -1077,7 +1068,7 @@ const [holdConfirmOpen, setHoldConfirmOpen] = useState(false);
                   Update Expense Sheet
                 </Button>
               </Box>
-            </Box> */}
+            </Box>
           </Sheet>
 
           {/* Pie Chart on Right */}

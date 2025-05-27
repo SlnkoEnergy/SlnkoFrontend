@@ -1665,6 +1665,41 @@ function Sidebar() {
                 </Toggler>
               </ListItem>
             </List>
+            ) : user?.role === "manager" && user?.name === "Shruti Tripathi" ? (
+              <ListItem nested>
+                <Toggler
+                  renderToggle={({ open, setOpen }) => (
+                    <ListItemButton onClick={() => setOpen(!open)}>
+                      <AccountBalanceWalletIcon />
+                      <ListItemContent>
+                        <Typography level="title-sm">Expense Sheet</Typography>
+                      </ListItemContent>
+                      <KeyboardArrowDownIcon
+                        sx={[
+                          open
+                            ? {
+                                transform: "rotate(180deg)",
+                              }
+                            : {
+                                transform: "none",
+                              },
+                        ]}
+                      />
+                    </ListItemButton>
+                  )}
+                >
+                  <List sx={{ gap: 0.5 }}>
+                   
+                  
+                    <ListItem>
+                      <ListItemButton onClick={() => navigate("/expense_hr")}>
+                        HR Expense Approval
+                      </ListItemButton>
+                    </ListItem>
+                   
+                  </List>
+                </Toggler>
+              </ListItem>
           ) : user?.department === "eng" &&
             (user?.name === "Rishav Mahato" ||
               user?.name === "Dhruv Choudhary") ? (
@@ -1723,6 +1758,8 @@ function Sidebar() {
               </ListItem>
             </List>
           ) : null}
+
+          
         </List>
 
         <List

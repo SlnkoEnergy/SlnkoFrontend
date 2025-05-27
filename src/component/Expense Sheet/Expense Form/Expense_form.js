@@ -216,9 +216,17 @@ const Expense_Form = () => {
       toast.success("Expense sheet submitted successfully!");
       navigate("/expense_dashboard");
     } catch (error) {
-      console.error("Submission failed:", error);
-      toast.error("An error occurred while submitting the expense sheet.");
+    const errMsg =
+      error?.data?.message || "An error occurred while submitting the expense sheet.";
+
+    if (errMsg.includes("Expense Code already exists")) {
+      toast.error("Expense already exists. Please try new.");
+    } else {
+      toast.error(errMsg);
     }
+
+    console.error("Submission failed:", error);
+  }
   };
 
   const handleAddRow = () => {
