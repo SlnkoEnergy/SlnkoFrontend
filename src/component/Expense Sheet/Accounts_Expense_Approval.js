@@ -1,42 +1,27 @@
+import BlockIcon from "@mui/icons-material/Block";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
+import PauseCircleIcon from "@mui/icons-material/PauseCircle";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
-import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
-import Menu from "@mui/joy/Menu";
-import MenuButton from "@mui/joy/MenuButton";
-import MenuItem from "@mui/joy/MenuItem";
-import Option from "@mui/joy/Option";
-import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import * as React from "react";
-import DeleteIcon from "@mui/icons-material/Delete";
-import ModeEditIcon from "@mui/icons-material/ModeEdit";
-import Divider from "@mui/joy/Divider";
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useState,
-  useMemo,
-} from "react";
+import { forwardRef, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 // import Axios from "../utils/Axios";
+import { Chip, Modal, ModalDialog, Textarea, useTheme } from "@mui/joy";
 import {
-  useDeleteProjectMutation,
-  useGetProjectsQuery,
-} from "../../redux/projectsSlice";
-import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
-import { Chip, useTheme } from "@mui/joy";
+  useGetAllExpenseQuery,
+  useUpdateExpenseStatusOverallMutation,
+} from "../../redux/Expense/expenseSlice";
 
 const AccountsExpense = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -138,6 +123,105 @@ const AccountsExpense = forwardRef((props, ref) => {
       // Fallback: sort by createdAt descending
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
+
+  const RowMenu = ({ _id, status }) => {
+    const [openModal, setOpenModal] = useState(false);
+    const [selectedStatus, setSelectedStatus] = useState("");
+    const [remarks, setRemarks] = useState("");
+    const [updateStatus] = useUpdateExpenseStatusOverallMutation();
+
+    // Disable all chips if current status is "hr approval"
+    const disableActions = ["hr approval", "rejected", "hold"].includes(
+      status.toLowerCase()
+    );
+
+    const handleOpenModal = (status) => {
+      setSelectedStatus(status);
+      setOpenModal(true);
+    };
+
+    const handleSubmit = async () => {
+      if (!remarks.trim()) {
+        toast.error("Please enter remarks.");
+        return;
+      }
+
+      try {
+        await updateStatus({
+          _id,
+          status: selectedStatus,
+          remarks,
+        }).unwrap();
+
+        toast.success(`Status updated to ${selectedStatus}`);
+        setOpenModal(false);
+        setRemarks("");
+
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
+      } catch (err) {
+        toast.error("Update failed");
+        console.error(err);
+      }
+    };
+
+    return (
+      <>
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Chip
+            color="danger"
+            onClick={() => handleOpenModal("rejected")}
+            startDecorator={<BlockIcon />}
+            label="Reject"
+            disabled={disableActions}
+            sx={{ cursor: disableActions ? "not-allowed" : "pointer" }}
+          />
+          <Chip
+            color="warning"
+            onClick={() => handleOpenModal("hold")}
+            startDecorator={<PauseCircleIcon />}
+            label="Hold"
+            disabled={disableActions}
+            sx={{ cursor: disableActions ? "not-allowed" : "pointer" }}
+          />
+          <Chip
+            color="success"
+            onClick={() => handleOpenModal("hr approval")}
+            startDecorator={<CheckCircleIcon />}
+            label="HR Approval"
+            disabled={disableActions}
+            sx={{ cursor: disableActions ? "not-allowed" : "pointer" }}
+          />
+        </Box>
+
+        <Modal open={openModal} onClose={() => setOpenModal(false)}>
+          <ModalDialog>
+            <Typography level="h5">Remarks for {selectedStatus}</Typography>
+            <Textarea
+              placeholder="Enter your remarks"
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              sx={{ mt: 2 }}
+            />
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 1,
+                mt: 2,
+              }}
+            >
+              <Button onClick={() => setOpenModal(false)}>Cancel</Button>
+              <Button color="primary" onClick={handleSubmit}>
+                Submit
+              </Button>
+            </Box>
+          </ModalDialog>
+        </Modal>
+      </>
+    );
+  };
 
   const ExpenseCode = ({ currentPage, expense_code }) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
@@ -321,7 +405,7 @@ const AccountsExpense = forwardRef((props, ref) => {
                 "Rejected Amount",
                 "Disbursement Date",
                 "Status",
-                "",
+                "Actions",
               ].map((header, index) => (
                 <Box
                   component="th"
@@ -506,7 +590,12 @@ const AccountsExpense = forwardRef((props, ref) => {
                       padding: "8px",
                       textAlign: "center",
                     }}
-                  ></Box>
+                  >
+                    <RowMenu
+                      _id={expense._id}
+                      status={expense.current_status}
+                    />
+                  </Box>
                 </Box>
               ))
             ) : (

@@ -4,7 +4,7 @@ const baseQuery = fetchBaseQuery({
   baseUrl: "https://dev.api.slnkoprotrac.com/v1/",
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("authToken");
-    console.log("Token:", token);
+    // console.log("Token:", token);
     if (token) {
       headers.set("x-auth-token", token);
     }
@@ -42,7 +42,7 @@ export const expensesApi = createApi({
     // PUT: Update overall status by _id
     updateExpenseStatusOverall: builder.mutation({
       query: ({ _id, ...data }) => ({
-        url: `${_id}/status/overall`,
+        url: `/${_id}/status/overall`,
         method: "PUT",
         body: data,
       }),

@@ -1,20 +1,14 @@
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
-import UploadFileIcon from "@mui/icons-material/UploadFile";
+import { IconButton, Textarea } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Input from "@mui/joy/Input";
-import List from "@mui/joy/List";
-import ListItem from "@mui/joy/ListItem";
 import Modal from "@mui/joy/Modal";
 import ModalDialog from "@mui/joy/ModalDialog";
-import Option from "@mui/joy/Option";
-import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
-import ArrowBack from "@mui/icons-material/ArrowBack";
 import Table from "@mui/joy/Table";
 import Typography from "@mui/joy/Typography";
-import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -24,9 +18,6 @@ import {
   useUpdateExpenseStatusItemsMutation,
   useUpdateExpenseStatusOverallMutation,
 } from "../../../redux/Expense/expenseSlice";
-import { useGetProjectsQuery } from "../../../redux/projectsSlice";
-import { IconButton, Textarea } from "@mui/joy";
-import { Approval } from "@mui/icons-material";
 import PieChartByCategory from "./Expense_Chart";
 const UpdateExpense = () => {
   const navigate = useNavigate();
@@ -301,7 +292,7 @@ const UpdateExpense = () => {
     setRows(updated);
   };
 
-  const handleApproval = async (action) => {
+  const handleApproval = async (rowIndex, itemIndex, action) => {
     try {
       const requests = [];
 
@@ -356,12 +347,15 @@ const UpdateExpense = () => {
           : "All items approved to manager successfully"
       );
 
-      const updated = rows.map((row) => {
-        const updatedItems = row.items.map((item) => {
+      const updated = rows.map((row, rIndex) => {
+        const updatedItems = row.items.map((item, iIndex) => {
+          const isTargetItem = rIndex === rowIndex && iIndex === itemIndex;
+
           if (
             (action === "submitted" &&
-              item.item_current_status === "submitted") ||
-            action === "rejected"
+              item.item_current_status === "submitted" &&
+              isTargetItem) ||
+            (action === "rejected" && isTargetItem)
           ) {
             return {
               ...item,
@@ -373,6 +367,7 @@ const UpdateExpense = () => {
                   : Number(item.invoice?.invoice_amount || 0),
             };
           }
+
           return item;
         });
 
