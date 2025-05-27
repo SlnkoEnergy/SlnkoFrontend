@@ -456,11 +456,29 @@ const CamHandoverSheetForm = ({ onBack }) => {
     }));
   }, [handoverData]);
 
-  const calculateDcCapacity = (ac, overloadingPercent) => {
+  // const calculateDcCapacity = (ac, overloadingPercent) => {
+  //   const acValue = parseFloat(ac);
+  //   const overloadingValue = parseFloat(overloadingPercent) / 100;
+  //   if (!isNaN(acValue) && !isNaN(overloadingValue)) {
+  //     return Math.round(acValue * (1 + overloadingValue));
+  //   }
+  //   return "";
+  // };
+
+  // const calculateSlnkoBasic = (kwp, slnko_basic) => {
+  //   const kwpValue = parseFloat(kwp);
+  //   const serviceValue = parseFloat(slnko_basic);
+  //   if (!isNaN(kwpValue) && !isNaN(serviceValue)) {
+  //     return (kwpValue * serviceValue * 1000).toFixed(0);
+  //   }
+  //   return "";
+  // };
+
+    const calculateDcCapacity = (ac, overloadingPercent) => {
     const acValue = parseFloat(ac);
     const overloadingValue = parseFloat(overloadingPercent) / 100;
     if (!isNaN(acValue) && !isNaN(overloadingValue)) {
-      return Math.round(acValue * (1 + overloadingValue));
+      return (acValue * (1 + overloadingValue)).toFixed(2);
     }
     return "";
   };
@@ -469,7 +487,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
     const kwpValue = parseFloat(kwp);
     const serviceValue = parseFloat(slnko_basic);
     if (!isNaN(kwpValue) && !isNaN(serviceValue)) {
-      return (kwpValue * serviceValue * 1000).toFixed(0);
+      return (kwpValue * serviceValue * 1000).toFixed(2);
     }
     return "";
   };

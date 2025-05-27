@@ -157,7 +157,7 @@ const HandoverSheetForm = () => {
     const acValue = parseFloat(ac);
     const overloadingValue = parseFloat(overloadingPercent) / 100;
     if (!isNaN(acValue) && !isNaN(overloadingValue)) {
-      return (acValue * (1 + overloadingValue)).toFixed(0);
+      return (acValue * (1 + overloadingValue)).toFixed(2);
     }
     return "";
   };
@@ -166,7 +166,7 @@ const HandoverSheetForm = () => {
     const kwpValue = parseFloat(kwp);
     const serviceValue = parseFloat(slnko_basic);
     if (!isNaN(kwpValue) && !isNaN(serviceValue)) {
-      return (kwpValue * serviceValue * 1000).toFixed(0);
+      return (kwpValue * serviceValue * 1000).toFixed(2);
     }
     return "";
   };
