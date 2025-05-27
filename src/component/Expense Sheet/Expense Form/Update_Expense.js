@@ -125,20 +125,12 @@ const UpdateExpense = () => {
 
   const ApprovalButton = ({ rowIndex, itemIndex, item, handleApproval }) => {
     const [isProcessing, setIsProcessing] = useState(false);
-  const ApprovalButton = ({
-    rowIndex,
-    itemIndex,
-    itemStatus,
-    itemCurrentStatus,
-    handleApproval,
-  }) => {
-    const [isProcessing, setIsProcessing] = useState(false);
 
     const isRejected =
       item.item_status === "rejected" ||
       item.item_current_status === "rejected";
-    const isRejected =
-      itemStatus === "rejected" || itemCurrentStatus === "rejected";
+    // const isRejected =
+    //   itemStatus === "rejected" || itemCurrentStatus === "rejected";
 
     const isApprovedToManager = item.item_current_status === "manager approval";
 
@@ -146,7 +138,7 @@ const UpdateExpense = () => {
     const approvedAmount = item.approved_amount ?? 0;
 
     const isApproveDisabled = approvedAmount > invoiceAmount || isProcessing;
-    const isApprovedToManager = itemCurrentStatus === "manager approval";
+    // const isApprovedToManager = itemCurrentStatus === "manager approval";
 
     const handleClick = async (action) => {
       setIsProcessing(true);
@@ -154,15 +146,6 @@ const UpdateExpense = () => {
         await handleApproval(rowIndex, itemIndex, action);
       } catch (err) {
         console.error("Approval action failed:", err);
-      }
-      setIsProcessing(false);
-    };
-    const handleClick = async (action) => {
-      setIsProcessing(true);
-      try {
-        await handleApproval(rowIndex, itemIndex, action);
-      } catch (err) {
-        // Optionally handle error here
       }
       setIsProcessing(false);
     };
@@ -179,7 +162,7 @@ const UpdateExpense = () => {
         >
           <CloseIcon />
         </Button>
-    return (
+        {/* return (
       <Box display="flex" gap={1} justifyContent="flex-start">
         <Button
           size="sm"
@@ -189,7 +172,7 @@ const UpdateExpense = () => {
           aria-label="Reject"
         >
           <CloseIcon />
-        </Button>
+        </Button> */}
 
         <Button
           size="sm"
@@ -204,18 +187,18 @@ const UpdateExpense = () => {
       </Box>
     );
   };
-        <Button
-          size="sm"
-          variant={isApprovedToManager ? "solid" : "outlined"}
-          color="success"
-          onClick={() => handleClick("submitted")}
-          aria-label="Approve"
-        >
-          <CheckIcon />
-        </Button>
-      </Box>
-    );
-  };
+  //       <Button
+  //         size="sm"
+  //         variant={isApprovedToManager ? "solid" : "outlined"}
+  //         color="success"
+  //         onClick={() => handleClick("submitted")}
+  //         aria-label="Approve"
+  //       >
+  //         <CheckIcon />
+  //       </Button>
+  //     </Box>
+  //   );
+  // };
 
   const ExpenseCode = localStorage.getItem("edit_expense");
 
