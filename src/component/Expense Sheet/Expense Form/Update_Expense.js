@@ -183,26 +183,29 @@ const UpdateExpense = () => {
 
   const [updateStatus] = useUpdateExpenseStatusOverallMutation();
 
-  const ApprovalButton = ({
-    rowIndex,
-    itemIndex,
-    itemStatus,
-    itemCurrentStatus,
-    handleApproval,
-  }) => {
+  const ApprovalButton = ({ rowIndex, itemIndex, item, handleApproval }) => {
     const [isProcessing, setIsProcessing] = useState(false);
 
     const isRejected =
-      itemStatus === "rejected" || itemCurrentStatus === "rejected";
+      item.item_status === "rejected" ||
+      item.item_current_status === "rejected";
+    // const isRejected =
+    //   itemStatus === "rejected" || itemCurrentStatus === "rejected";
 
-    const isApprovedToManager = itemCurrentStatus === "manager approval";
+    const isApprovedToManager = item.item_current_status === "manager approval";
+
+    const invoiceAmount = item.invoice?.invoice_amount ?? 0;
+    const approvedAmount = item.approved_amount ?? 0;
+
+    const isApproveDisabled = approvedAmount > invoiceAmount || isProcessing;
+    // const isApprovedToManager = itemCurrentStatus === "manager approval";
 
     const handleClick = async (action) => {
       setIsProcessing(true);
       try {
         await handleApproval(rowIndex, itemIndex, action);
       } catch (err) {
-        // Optionally handle error here
+        console.error("Approval action failed:", err);
       }
       setIsProcessing(false);
     };
@@ -215,9 +218,21 @@ const UpdateExpense = () => {
           color="danger"
           onClick={() => handleClick("rejected")}
           aria-label="Reject"
+          disabled={isProcessing}
         >
           <CloseIcon />
         </Button>
+        {/* return (
+      <Box display="flex" gap={1} justifyContent="flex-start">
+        <Button
+          size="sm"
+          variant={isRejected ? "solid" : "outlined"}
+          color="danger"
+          onClick={() => handleClick("rejected")}
+          aria-label="Reject"
+        >
+          <CloseIcon />
+        </Button> */}
 
         <Button
           size="sm"
@@ -225,23 +240,36 @@ const UpdateExpense = () => {
           color="success"
           onClick={() => handleClick("submitted")}
           aria-label="Approve"
+          disabled={isApproveDisabled}
         >
           <CheckIcon />
         </Button>
       </Box>
     );
   };
+  //       <Button
+  //         size="sm"
+  //         variant={isApprovedToManager ? "solid" : "outlined"}
+  //         color="success"
+  //         onClick={() => handleClick("submitted")}
+  //         aria-label="Approve"
+  //       >
+  //         <CheckIcon />
+  //       </Button>
+  //     </Box>
+  //   );
+  // };
 
   const ExpenseCode = localStorage.getItem("edit_expense");
 
   useEffect(() => {
     if (!ExpenseCode) {
-      console.warn("❌ No expense_code in localStorage");
+      console.warn("No expense_code in localStorage");
       return;
     }
 
     if (!Array.isArray(expenses) || expenses.length === 0) {
-      console.warn("❌ No expenses available");
+      console.warn("No expenses available");
       return;
     }
 
@@ -250,7 +278,7 @@ const UpdateExpense = () => {
     );
 
     if (matchedExpense) {
-      console.log("✅ Matched Expense Found:", matchedExpense);
+      console.log("Matched Expense Found:", matchedExpense);
 
       const enrichedExpense = {
         ...matchedExpense,
@@ -303,11 +331,9 @@ const UpdateExpense = () => {
 
       const payload = {
         user_id: userID,
-        data: {
-          total_approved_amount: totalApproved,
-          expense_code: ExpenseCode,
-          current_status: currentStatus,
-        },
+        total_approved_amount: totalApproved,
+        expense_code: ExpenseCode,
+        current_status: currentStatus,
       };
 
       await updateExpense({
@@ -316,7 +342,6 @@ const UpdateExpense = () => {
       }).unwrap();
 
       toast.success("Total approved amount and status updated successfully!");
-      // localStorage.removeItem("edit_expense");
       navigate("/expense_dashboard");
     } catch (error) {
       console.error("Update failed:", error);
@@ -331,10 +356,19 @@ const UpdateExpense = () => {
       const updated = [...prevRows];
       const updatedRow = { ...updated[rowIndex] };
       const updatedItems = [...updatedRow.items];
+      const invoiceAmount =
+        updatedItems[itemIndex].invoice?.invoice_amount ?? 0;
+
+      let approvedAmountNum = Number(sanitizedValue);
+
+      // Enforce max limit
+      if (approvedAmountNum > invoiceAmount) {
+        approvedAmountNum = invoiceAmount;
+      }
 
       const updatedItem = {
         ...updatedItems[itemIndex],
-        approved_amount: Number(sanitizedValue),
+        approved_amount: approvedAmountNum,
       };
 
       updatedItems[itemIndex] = updatedItem;
@@ -375,17 +409,24 @@ const UpdateExpense = () => {
 
       let newStatus = "";
       let remarks = "";
+      let approvedAmount = item.approved_amount ?? 0;
+      const invoiceAmount = item.invoice?.invoice_amount ?? 0;
 
       if (action === "rejected") {
         newStatus = "rejected";
         remarks = sharedRejectionComment || "Rejected without comment";
+        approvedAmount = 0;
       } else if (
         action === "submitted" &&
         item.item_current_status === "submitted"
       ) {
         newStatus = "manager approval";
-        remarks = "Auto-approved";
       } else {
+        return;
+      }
+
+      if (approvedAmount > invoiceAmount) {
+        alert("Approved amount cannot be greater than invoice amount.");
         return;
       }
 
@@ -394,25 +435,29 @@ const UpdateExpense = () => {
         itemId,
         status: newStatus,
         remarks,
+        approved_amount: approvedAmount,
       }).unwrap();
 
-      const updatedRows = [...rows];
-      const updatedItem = {
-        ...item,
-        item_current_status: newStatus,
-        approved_amount:
-          newStatus === "rejected"
-            ? 0
-            : Number(item.invoice?.invoice_amount || 0),
-      };
+      // Deep copy rows and items to avoid reference issues
+      const updatedRows = rows.map((r, rIdx) => ({
+        ...r,
+        items: r.items.map((itm, iIdx) =>
+          rIdx === rowIndex && iIdx === itemIndex
+            ? {
+                ...itm,
+                item_current_status: newStatus,
+                approved_amount: approvedAmount,
+              }
+            : { ...itm }
+        ),
+      }));
 
-      updatedRows[rowIndex].items[itemIndex] = updatedItem;
-
-      const approvedAmount = updatedRows[rowIndex].items.reduce(
+      // Recalculate total approved amount for that row
+      const updatedRowItems = updatedRows[rowIndex].items;
+      updatedRows[rowIndex].approved_amount = updatedRowItems.reduce(
         (sum, itm) => sum + Number(itm.approved_amount || 0),
         0
       );
-      updatedRows[rowIndex].approved_amount = approvedAmount;
 
       setRows(updatedRows);
     } catch (error) {
@@ -426,6 +471,14 @@ const UpdateExpense = () => {
 
   const handleRejectAllSubmit = async () => {
     try {
+      const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
+
+      if (!userID) {
+        toast.error("User ID not found. Please login again.");
+        return;
+      }
+
+      // Send one request per row to reject with remarks
       const requests = rows.map((row) =>
         updateStatus({
           _id: row._id,
@@ -437,17 +490,36 @@ const UpdateExpense = () => {
       await Promise.all(requests);
       toast.success("All sheets rejected successfully");
 
-      // Update local state visually only (not sent to backend)
+      // Locally update the UI state (just for immediate feedback)
       const updated = rows.map((row) => {
         const updatedItems = row.items.map((item) => ({
           ...item,
           item_current_status: "rejected",
+          remarks: sharedRejectionComment || "Rejected without comment", // ✅ Update remarks locally
+          item_status_history: [
+            ...(item.item_status_history || []),
+            {
+              status: "rejected",
+              remarks: sharedRejectionComment || "Rejected without comment",
+              user_id: userID,
+              updatedAt: new Date().toISOString(),
+            },
+          ],
         }));
 
         return {
           ...row,
           items: updatedItems,
           row_current_status: "rejected",
+          status_history: [
+            ...(row.status_history || []),
+            {
+              status: "rejected",
+              remarks: sharedRejectionComment || "Rejected without comment",
+              user_id: userID,
+              updatedAt: new Date().toISOString(),
+            },
+          ],
         };
       });
 
@@ -824,7 +896,7 @@ const UpdateExpense = () => {
                           <ApprovalButton
                             rowIndex={rowIndex}
                             itemIndex={itemIndex}
-                            itemCurrentStatus={item.item_current_status}
+                            item={item}
                             handleApproval={handleApproval}
                           />
                         </td>
@@ -1122,7 +1194,11 @@ const UpdateExpense = () => {
                   variant="solid"
                   color="primary"
                   onClick={handleSubmit}
-                  disabled={isUpdating}
+                  disabled={
+                    isUpdating ||
+                    rows[0]?.current_status === "manager approval" ||
+                    rows[0]?.current_status === "rejected"
+                  }
                 >
                   Update Expense Sheet
                 </Button>
