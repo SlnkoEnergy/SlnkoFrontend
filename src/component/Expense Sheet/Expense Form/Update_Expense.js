@@ -76,6 +76,7 @@ const UpdateExpense = () => {
 
   const [sharedRejectionComment, setSharedRejectionComment] = useState("");
   const [showRejectAllDialog, setShowRejectAllDialog] = useState(false);
+  const [showHoldAllDialog, setShowHoldAllDialog] = useState(false);
   const [showDisbursement, setShowDisbursement] = useState(false);
   const [disbursementData, setDisbursementData] = useState("");
 
