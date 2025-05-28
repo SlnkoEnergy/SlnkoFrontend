@@ -300,13 +300,20 @@ const UpdateExpense = () => {
     }
   };
 
-  const handleRowChange = (rowIndex, itemIndex, field, value) => {
+  const handleRowChange = (rowIndex, field, value, itemIndex = null) => {
     const updatedRows = [...rows];
-    const updatedRow = {
-      ...updatedRows[rowIndex],
-      items: [...updatedRows[rowIndex].items],
-    };
+    const updatedRow = { ...updatedRows[rowIndex] };
 
+    // ✅ Handle updating top-level expense_term
+    if (field === "expense_term") {
+      updatedRow.expense_term = value;
+      updatedRows[rowIndex] = updatedRow;
+      setRows(updatedRows);
+      return;
+    }
+
+    // ✅ Existing logic for updating item-level fields
+    updatedRow.items = [...updatedRow.items];
     const item = { ...updatedRow.items[itemIndex] };
 
     if (field === "approved_amount") {
@@ -319,13 +326,11 @@ const UpdateExpense = () => {
       }
       item[field] = value;
     } else if (field.startsWith("item_status_history")) {
-      // Handle nested update: e.g. "item_status_history.0.remarks"
-      const pathParts = field.split("."); // ["item_status_history", "0", "remarks"]
+      const pathParts = field.split(".");
       if (pathParts.length === 3) {
         const [arrKey, indexStr, key] = pathParts;
         const index = parseInt(indexStr, 10);
         const arr = item[arrKey] ? [...item[arrKey]] : [];
-        // ensure index exists
         if (!arr[index]) arr[index] = {};
         arr[index] = { ...arr[index], [key]: value };
         item[arrKey] = arr;
@@ -673,7 +678,7 @@ const UpdateExpense = () => {
               <Input
                 type="date"
                 size="sm"
-                value={rows[0].expense_term.from}
+                value={rows[0].expense_term.from?.slice(0, 10) || ""}
                 onChange={(e) =>
                   handleRowChange(0, "expense_term", {
                     ...rows[0].expense_term,
@@ -685,7 +690,7 @@ const UpdateExpense = () => {
               <Input
                 type="date"
                 size="sm"
-                value={rows[0].expense_term.to}
+                value={rows[0].expense_term.to?.slice(0, 10) || ""}
                 onChange={(e) =>
                   handleRowChange(0, "expense_term", {
                     ...rows[0].expense_term,
