@@ -1136,8 +1136,8 @@ const UpdateExpense = () => {
                   onClick={handleSubmit}
                   disabled={
                     isUpdating ||
-                    rows?.current_status === "manager approval" ||
-                    rows?.current_status === "rejected"
+                    rows[0]?.current_status === "manager approval" ||
+                    rows[0]?.current_status === "rejected"
                   }
                 >
                   Update Expense Sheet
