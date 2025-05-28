@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   useGetAllExpenseQuery,
+  useUpdateDisbursementDateMutation,
   useUpdateExpenseSheetMutation,
   useUpdateExpenseStatusOverallMutation,
 } from "../../../redux/Expense/expenseSlice";
@@ -190,6 +191,8 @@ const UpdateExpense = () => {
 
   const [updateStatus] = useUpdateExpenseStatusOverallMutation();
 
+  const [updateDisbursement] = useUpdateDisbursementDateMutation();
+
   const ExpenseCode = localStorage.getItem("edit_expense");
 
   useEffect(() => {
@@ -304,7 +307,6 @@ const UpdateExpense = () => {
     const updatedRows = [...rows];
     const updatedRow = { ...updatedRows[rowIndex] };
 
-    // ✅ Handle updating top-level expense_term
     if (field === "expense_term") {
       updatedRow.expense_term = value;
       updatedRows[rowIndex] = updatedRow;
@@ -312,7 +314,6 @@ const UpdateExpense = () => {
       return;
     }
 
-    // ✅ Existing logic for updating item-level fields
     updatedRow.items = [...updatedRow.items];
     const item = { ...updatedRow.items[itemIndex] };
 

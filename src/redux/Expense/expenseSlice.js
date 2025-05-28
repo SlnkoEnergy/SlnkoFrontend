@@ -75,6 +75,15 @@ export const expensesApi = createApi({
       }),
       invalidatesTags: ["Expense"],
     }),
+
+    updateDisbursementDate: builder.mutation({
+      query: ({ _id, ...data }) => ({
+        url: `update-disbursement-date/${_id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["Expense"],
+    }),
   }),
 });
 
@@ -86,4 +95,5 @@ export const {
   useUpdateExpenseStatusItemsMutation,
   useDeleteExpenseMutation,
   useUpdateExpenseSheetMutation,
+  useUpdateDisbursementDateMutation,
 } = expensesApi;
