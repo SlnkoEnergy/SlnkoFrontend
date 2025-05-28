@@ -216,17 +216,18 @@ const Expense_Form = () => {
       toast.success("Expense sheet submitted successfully!");
       navigate("/expense_dashboard");
     } catch (error) {
-    const errMsg =
-      error?.data?.message || "An error occurred while submitting the expense sheet.";
+      const errMsg =
+        error?.data?.message ||
+        "An error occurred while submitting the expense sheet.";
 
-    if (errMsg.includes("Expense Code already exists")) {
-      toast.error("Expense already exists. Please try new.");
-    } else {
-      toast.error(errMsg);
+      if (errMsg.includes("Expense Code already exists")) {
+        toast.error("Expense already exists. Please try new.");
+      } else {
+        toast.error(errMsg);
+      }
+
+      console.error("Submission failed:", error);
     }
-
-    console.error("Submission failed:", error);
-  }
   };
 
   const handleAddRow = () => {
@@ -306,10 +307,13 @@ const Expense_Form = () => {
     setRows(updated);
   };
 
-  const handleFileChange = (index, file) => {
-    const updated = [...rows];
-    updated[index].file = file;
-    setRows(updated);
+  const handleFileChange = (rowIndex, files) => {
+    const fileName = files.name;
+
+    // Update rows state with file name
+    const updatedRows = [...rows];
+    updatedRows[rowIndex].attachment_url = fileName;
+    setRows(updatedRows);
   };
 
   const handleSearchInputChange = (index, value) => {
@@ -323,32 +327,31 @@ const Expense_Form = () => {
   };
 
   const handleSelectProject = (index, code, name) => {
-  const selectedProject = projectCodes.find((p) => p.code === code);
-  if (!selectedProject) return;
+    const selectedProject = projectCodes.find((p) => p.code === code);
+    if (!selectedProject) return;
 
-  const updated = [...rows];
+    const updated = [...rows];
 
-  if (updated[index]?.items?.[0]) {
-    updated[index].items[0] = {
-      ...updated[index].items[0],
-      project_id: selectedProject._id,
-      project_code: code,
-      project_name: name,
-      // projectSelected: true,
-    };
-  }
+    if (updated[index]?.items?.[0]) {
+      updated[index].items[0] = {
+        ...updated[index].items[0],
+        project_id: selectedProject._id,
+        project_code: code,
+        project_name: name,
+        // projectSelected: true,
+      };
+    }
 
-  setRows(updated);
+    setRows(updated);
 
-  setSearchInputs((prev) => {
-    const updatedInputs = [...prev];
-    updatedInputs[index] = code;
-    return updatedInputs;
-  });
+    setSearchInputs((prev) => {
+      const updatedInputs = [...prev];
+      updatedInputs[index] = code;
+      return updatedInputs;
+    });
 
-  setDropdownOpenIndex(null); // ✅ Close the dropdown
-};
-
+    setDropdownOpenIndex(null); // ✅ Close the dropdown
+  };
 
   const handleCommentSave = () => {
     setCommentDialog({ open: false, rowIndex: null });
@@ -467,7 +470,6 @@ const Expense_Form = () => {
                       backgroundColor: rowIndex % 2 === 0 ? "white" : "#fafafa",
                     }}
                   >
-                  
                     <td
                       style={{ position: "relative", padding: 8, width: 150 }}
                     >
@@ -484,7 +486,6 @@ const Expense_Form = () => {
                         autoComplete="off"
                         sx={{ width: "100%" }}
                         // disabled={rows[rowIndex]?.items?.[0]?.projectSelected}
-
                       />
                       {dropdownOpenIndex === rowIndex &&
                         filteredProjects.length > 0 && (
@@ -631,27 +632,44 @@ const Expense_Form = () => {
                     </td>
 
                     {/* Attachment */}
-                    <td style={{ padding: 8, width: 120 }}>
-                      <Button
-                        size="sm"
-                        component="label"
-                        startDecorator={<UploadFileIcon />}
-                        variant="outlined"
-                        sx={{ minWidth: 100 }}
+                    <td style={{ padding: 8, width: 200 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 4,
+                        }}
                       >
-                        {row.attachment_url
-                          ? row.attachment_url.split("/").pop()
-                          : "Upload"}
+                        <Button
+                          size="sm"
+                          component="label"
+                          startDecorator={<UploadFileIcon />}
+                          variant="outlined"
+                          sx={{ minWidth: 120 }}
+                        >
+                          {row.attachment_url ? "Change File" : "Upload File"}
+                          <input
+                            hidden
+                            type="file"
+                            onChange={(e) =>
+                              e.target.files?.[0] &&
+                              handleFileChange(rowIndex, e.target.files[0])
+                            }
+                          />
+                        </Button>
 
-                        <input
-                          hidden
-                          type="file"
-                          onChange={(e) =>
-                            e.target.files?.[0] &&
-                            handleFileChange(rowIndex, e.target.files[0])
-                          }
-                        />
-                      </Button>
+                        {row.attachment_url && (
+                          <div
+                            style={{
+                              fontSize: 12,
+                              wordBreak: "break-word",
+                              color: "#444",
+                            }}
+                          >
+                            📎 {row.attachment_url}
+                          </div>
+                        )}
+                      </div>
                     </td>
 
                     {/* Invoice */}

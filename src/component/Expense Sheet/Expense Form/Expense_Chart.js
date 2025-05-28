@@ -19,7 +19,7 @@ const PieChartStatic = () => {
   if (selectedExpense) {
     selectedExpense.items.forEach((item) => {
       const category = item.category;
-      const amount = item.invoice?.invoice_amount || 0;
+      const amount = Number(item.invoice?.invoice_amount) || 0;
 
       if (categoryMap[category]) {
         categoryMap[category] += amount;
