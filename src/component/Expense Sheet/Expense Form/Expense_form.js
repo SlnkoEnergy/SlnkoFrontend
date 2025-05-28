@@ -306,10 +306,13 @@ const Expense_Form = () => {
     setRows(updated);
   };
 
-  const handleFileChange = (index, file) => {
-    const updated = [...rows];
-    updated[index].file = file;
-    setRows(updated);
+  const handleFileChange = (rowIndex, files) => {
+    const fileName = files.name;
+
+    // Update rows state with file name
+    const updatedRows = [...rows];
+    updatedRows[rowIndex].attachment_url = fileName;
+    setRows(updatedRows);
   };
 
   const handleSearchInputChange = (index, value) => {
@@ -628,27 +631,44 @@ const Expense_Form = () => {
                     </td>
 
                     {/* Attachment */}
-                    <td style={{ padding: 8, width: 120 }}>
-                      <Button
-                        size="sm"
-                        component="label"
-                        startDecorator={<UploadFileIcon />}
-                        variant="outlined"
-                        sx={{ minWidth: 100 }}
+                    <td style={{ padding: 8, width: 200 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 4,
+                        }}
                       >
-                        {row.attachment_url
-                          ? row.attachment_url.split("/").pop()
-                          : "Upload"}
+                        <Button
+                          size="sm"
+                          component="label"
+                          startDecorator={<UploadFileIcon />}
+                          variant="outlined"
+                          sx={{ minWidth: 120 }}
+                        >
+                          {row.attachment_url ? "Change File" : "Upload File"}
+                          <input
+                            hidden
+                            type="file"
+                            onChange={(e) =>
+                              e.target.files?.[0] &&
+                              handleFileChange(rowIndex, e.target.files[0])
+                            }
+                          />
+                        </Button>
 
-                        <input
-                          hidden
-                          type="file"
-                          onChange={(e) =>
-                            e.target.files?.[0] &&
-                            handleFileChange(rowIndex, e.target.files[0])
-                          }
-                        />
-                      </Button>
+                        {row.attachment_url && (
+                          <div
+                            style={{
+                              fontSize: 12,
+                              wordBreak: "break-word",
+                              color: "#444",
+                            }}
+                          >
+                            📎 {row.attachment_url}
+                          </div>
+                        )}
+                      </div>
                     </td>
 
                     {/* Invoice */}

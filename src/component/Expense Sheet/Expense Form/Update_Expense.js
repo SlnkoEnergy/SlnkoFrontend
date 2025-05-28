@@ -76,7 +76,66 @@ const UpdateExpense = () => {
 
   const [sharedRejectionComment, setSharedRejectionComment] = useState("");
   const [showRejectAllDialog, setShowRejectAllDialog] = useState(false);
-  const [showHoldAllDialog, setShowHoldAllDialog] = useState(false);
+  const [showDisbursement, setShowDisbursement] = useState(false);
+  const [disbursementData, setDisbursementData] = useState("");
+
+  const handleFinalApproval = async () => {
+    try {
+      const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
+      const ExpenseCode = localStorage.getItem("edit_expense");
+
+      if (!userID) {
+        toast.error("User ID not found. Please login again.");
+        return;
+      }
+
+      if (!ExpenseCode) {
+        toast.error(
+          "No Expense Code found. Please re-select the form to edit."
+        );
+        return;
+      }
+
+      const expenseSheetId = rows[0]?._id;
+      if (!expenseSheetId) {
+        toast.error("Expense Sheet ID is missing. Please reload the page.");
+        return;
+      }
+
+      const items = rows.flatMap((row) => row.items || []);
+      const totalApproved = items.reduce(
+        (sum, item) =>
+          sum +
+          (item.approved_amount !== "" && item.approved_amount !== undefined
+            ? Number(item.approved_amount)
+            : Number(item.invoice?.invoice_amount || 0)),
+        0
+      );
+
+      const currentStatus = "final approval";
+
+      const payload = {
+        user_id: userID,
+        data: {
+          total_approved_amount: totalApproved,
+          expense_code: ExpenseCode,
+          current_status: currentStatus,
+          disbursement_details: disbursementData,
+        },
+      };
+
+      await updateExpense({
+        _id: expenseSheetId,
+        ...payload,
+      }).unwrap();
+
+      toast.success("Final approval submitted successfully!");
+      navigate("/expense_dashboard");
+    } catch (error) {
+      console.error("Final approval failed:", error);
+      toast.error("An error occurred while submitting final approval.");
+    }
+  };
 
   const [commentDialog, setCommentDialog] = useState({
     open: false,
@@ -1181,6 +1240,23 @@ const UpdateExpense = () => {
                 >
                   Update Expense Sheet
                 </Button>
+                <Button
+                  variant="solid"
+                  color="success"
+                  onClick={handleFinalApproval}
+                  sx={{ ml: 2 }} // optional margin to separate buttons
+                >
+                  Final Approval
+                </Button>
+
+                {showDisbursement && (
+                  <Input
+                    placeholder="Enter Disbursement Details"
+                    value={disbursementData}
+                    onChange={(e) => setDisbursementData(e.target.value)}
+                    sx={{ mt: 2 }}
+                  />
+                )}
               </Box>
             </Box>
           </Sheet>
