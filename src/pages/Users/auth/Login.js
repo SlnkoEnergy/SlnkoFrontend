@@ -81,7 +81,7 @@ const Login = () => {
         return;
       }
   
-      // console.log("✅ Token received:", user.token);
+      console.log("✅ Token received:", user.token);
   
   
       const expiration = new Date().getTime() + 3 * 24 * 60 * 60 * 1000;
@@ -99,7 +99,7 @@ const Login = () => {
         toast.error("Missing token. Cannot fetch user data.");
         return;
       }
-      const response = await axios.get("https://dev.api.slnkoprotrac.com/v1/get-all-useR-IT", {
+      const response = await axios.get("https://api.slnkoprotrac.com/v1/get-all-useR-IT", {
         headers: {
           "x-auth-token": user.token,
         },

@@ -57,6 +57,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
   ];
   const BillingTypes = ["Composite", "Individual"];
   const landTypes = ["Leased", "Owned"];
+  const [showVillage, setShowVillage] = useState(false);
   const [formData, setFormData] = useState({
     id: "",
     customer_details: {
@@ -244,8 +245,6 @@ const ViewHandoverSheetForm = ({ onBack }) => {
       },
     }));
   };
-
-  
 
   useEffect(() => {
     const userData = getUserData();
@@ -460,6 +459,27 @@ const ViewHandoverSheetForm = ({ onBack }) => {
             container
             spacing={2}
           >
+            {["Ranvijay Singh", "Rishav Mahato", "Dhruv Choudhary"].includes(
+              user?.name
+            ) && (
+              <Grid item xs={12} sm={6}>
+                <Typography
+                  level="body1"
+                  sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                >
+                  Project ID <span style={{ color: "red" }}>*</span>
+                </Typography>
+                <Input
+                  required
+                  fullWidth
+                  placeholder="Project ID"
+                  value={formData.customer_details.code}
+                  onChange={(e) =>
+                    handleChange("customer_details", "code", e.target.value)
+                  }
+                />
+              </Grid>
+            )}
             <Grid item xs={12} sm={6}>
               <Typography
                 level="body1"
@@ -1073,7 +1093,9 @@ const ViewHandoverSheetForm = ({ onBack }) => {
         </AccordionDetails>
       </Accordion>
 
-      {!["Ranvijay Singh", "Rishav Mahato", "Dhruv Choudhary"].includes(user?.name) && (
+      {!["Ranvijay Singh", "Rishav Mahato", "Dhruv Choudhary"].includes(
+        user?.name
+      ) && (
         <Accordion>
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
@@ -1280,7 +1302,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                 <Option value="Developer">Developer</Option>
               </Select>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            {/* <Grid item xs={12} sm={6}>
               <Typography
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
@@ -1288,7 +1310,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                 Site Address with Pin Code{" "}
                 <span style={{ color: "red" }}>*</span>
               </Typography>
-              <Input
+              <Textarea
                 required
                 fullWidth
                 placeholder="e.g. Sunrise Village, 221001"
@@ -1307,7 +1329,64 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                   });
                 }}
               />
+            </Grid> */}
+
+            <Grid item xs={12} sm={6}>
+              <Typography
+                level="body1"
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  fontWeight: "bold",
+                  mb: 0.5,
+                }}
+              >
+                Site Address with Pin Code{" "}
+                <span style={{ color: "red" }}>*</span>
+                <Tooltip title="Enable to enter village name" placement="top">
+                  <Switch
+                    checked={showVillage}
+                    onChange={(e) => setShowVillage(e.target.checked)}
+                    sx={{ ml: 2 }}
+                    size="sm"
+                  />
+                </Tooltip>
+              </Typography>
+
+              <Textarea
+                fullWidth
+                placeholder="e.g. Varanasi 221001"
+                value={formData.customer_details.site_address.district_name}
+                onChange={(e) => {
+                  const newDistrict = e.target.value;
+                  handleChange("customer_details", "site_address", {
+                    ...formData.customer_details.site_address,
+                    district_name: newDistrict,
+                  });
+                }}
+              />
             </Grid>
+
+            {(showVillage ||
+              formData.customer_details.site_address.village_name) && (
+              <Grid item xs={12} sm={6}>
+                <Typography level="body1" sx={{ fontWeight: "bold", mb: 0.5 }}>
+                  Village Name
+                </Typography>
+                <Input
+                  fullWidth
+                  placeholder="e.g. Chakia"
+                  value={formData.customer_details.site_address.village_name}
+                  onChange={(e) => {
+                    handleChange("customer_details", "site_address", {
+                      ...formData.customer_details.site_address,
+                      village_name: e.target.value,
+                    });
+                  }}
+                />
+              </Grid>
+            )}
+
             <Grid item xs={12} sm={6}>
               <Typography
                 level="body1"
@@ -1706,7 +1785,9 @@ const ViewHandoverSheetForm = ({ onBack }) => {
               </Select>
             </Grid>
 
-            {!["Ranvijay Singh", "Rishav Mahato", "Dhruv Choudhary"].includes(user?.name) && (
+            {!["Ranvijay Singh", "Rishav Mahato", "Dhruv Choudhary"].includes(
+              user?.name
+            ) && (
               <>
                 <Grid item xs={12} sm={6}>
                   <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
