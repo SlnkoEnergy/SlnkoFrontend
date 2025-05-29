@@ -173,12 +173,8 @@ function Sidebar() {
           },
         }}
       >
-        <List sx={{ gap: 0.5 }}>
-          <ListItem sx={{ mt: 0.5 }}>
-            <ListItemButton onClick={() => navigate("/add_expense")}>
-              Expense Sheet
-            </ListItemButton>
-          </ListItem>
+       
+         
 
           {user?.name === "IT Team" || user?.name === "admin" ? (
             <List>
@@ -1665,7 +1661,75 @@ function Sidebar() {
                 </Toggler>
               </ListItem>
             </List>
-            ) : user?.role === "manager" && user?.name === "Shruti Tripathi" ? (
+          ) : user?.role === "manager" && user?.name === "Shruti Tripathi" ? (
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <AccountBalanceWalletIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">Expense Sheet</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem>
+                    <ListItemButton onClick={() => navigate("/expense_hr")}>
+                      HR Expense Approval
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+          ) : user?.department === "Accounts" &&
+            user?.name === "Kailash Chand" ? (
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <AccountBalanceWalletIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">Expense Sheet</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/expense_accounts")}
+                    >
+                      Accounts Expense Approval
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+          ) : user?.department === "Projects" ? (
+            
               <ListItem nested>
                 <Toggler
                   renderToggle={({ open, setOpen }) => (
@@ -1689,11 +1753,11 @@ function Sidebar() {
                   )}
                 >
                   <List sx={{ gap: 0.5 }}>
-                   
-                  
-                    <ListItem>
-                      <ListItemButton onClick={() => navigate("/expense_hr")}>
-                        HR Expense Approval
+                    <ListItem sx={{ mt: 0.5 }}>
+                      <ListItemButton
+                        onClick={() => navigate("/expense_dashboard")}
+                      >
+                        User Dashboard
                       </ListItemButton>
                     </ListItem>
                    
@@ -1758,9 +1822,7 @@ function Sidebar() {
               </ListItem>
             </List>
           ) : null}
-
-          
-        </List>
+     
 
         <List
           size="sm"
