@@ -3,13 +3,13 @@ import { Navigate, useNavigate } from 'react-router-dom';
 
 const PrivateRoute = ({ children }) => {
   const navigate = useNavigate();
-  const authToken = localStorage.getItem('authToken');
-  const authTokenExpiration = localStorage.getItem('authTokenExpiration');
+  const authToken = sessionStorage.getItem('authToken');
+  const authTokenExpiration = sessionStorage.getItem('authTokenExpiration');
   const currentTime = new Date().getTime();
 
   const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('authTokenExpiration');
+    sessionStorage.removeItem('authToken');
+    sessionStorage.removeItem('authTokenExpiration');
     localStorage.removeItem('name');
     localStorage.removeItem('email');
     navigate("/login");

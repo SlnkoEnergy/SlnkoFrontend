@@ -16,6 +16,11 @@ import "react-toastify/dist/ReactToastify.css";
 import loadingAnimation from "../../../assets/Lotties/animation-loading.json";
 import Axios from "../../../utils/Axios";
 import Colors from "../../../utils/colors";
+import {
+  useAddEmailMutation,
+  useAddForgetPasswordMutation,
+  useResetPasswordMutation,
+} from "../../../redux/loginSlice";
 
 // const Lottie = lazy(() => import("lottie-react"));
 // const loadingAnimation = lazy(
@@ -38,6 +43,10 @@ const PasswordReset = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [emailError, setEmailError] = useState("");
+  const [passwordStage, setPasswordStage] = useState(false);
+const [newPassword, setNewPassword] = useState("");
+const [confirmPassword, setConfirmPassword] = useState("");
+const [passwordError, setPasswordError] = useState("");
   const textInputRefs = useRef(
     Array.from({ length: 6 }).map(() => React.createRef())
   );
@@ -72,6 +81,55 @@ const PasswordReset = () => {
   //   }
   // };
 
+  const [addForgetPassword] = useAddForgetPasswordMutation();
+  const [addEmail] = useAddEmailMutation();
+  const [resetPassword] = useResetPasswordMutation();
+
+  // const handleFormSubmit = async (e) => {
+  //   e.preventDefault();
+
+  //   if (!otpSent) {
+  //     if (!validateEmail(email)) {
+  //       setEmailError("Please enter a valid email address.");
+  //       return;
+  //     }
+
+  //     setLoading(true);
+  //     setEmailError("");
+
+  //     try {
+  //       await Axios.post("/forget-password-send-otP-IT", { email });
+  //       toast.success("OTP sent to your email");
+  //       setOtpSent(true);
+  //     } catch (error) {
+  //       toast.error(
+  //         error.response?.data?.message ||
+  //           "Error sending OTP. Check your Email ID."
+  //       );
+  //       setOtpSent(false);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   } else {
+  //     setLoading(true);
+
+  //     try {
+  //       await Axios.post("/received-emaiL-IT", { email, otp: enteredOtp });
+  //       toast.success("Password sent successfully to your email");
+
+  //       setTimeout(() => {
+  //         navigate("/login");
+  //       }, 2000);
+  //     } catch (error) {
+  //       toast.error(
+  //         error.response?.data?.message || "Invalid OTP. Please try again."
+  //       );
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   }
+  // };
+
   const handleFormSubmit = async (e) => {
     e.preventDefault();
 
@@ -85,33 +143,47 @@ const PasswordReset = () => {
       setEmailError("");
 
       try {
-        await Axios.post("/forget-password-send-otP-IT", { email });
+        await addForgetPassword({ email }).unwrap();
         toast.success("OTP sent to your email");
         setOtpSent(true);
       } catch (error) {
-        toast.error(
-          error.response?.data?.message ||
-            "Error sending OTP. Check your Email ID."
-        );
+        toast.error(error?.data?.message || "Error sending OTP.");
         setOtpSent(false);
       } finally {
         setLoading(false);
       }
+    } else if (!passwordStage) {
+      setLoading(true);
+      try {
+        await addEmail({ email, otp: enteredOtp }).unwrap();
+        toast.success("OTP Verified. Set your new password.");
+        setPasswordStage(true);
+      } catch (error) {
+        toast.error(error?.data?.message || "Invalid OTP. Please try again.");
+      } finally {
+        setLoading(false);
+      }
     } else {
+     
+      if (newPassword.length < 6) {
+        setPasswordError("Password must be at least 6 characters.");
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        setPasswordError("Passwords do not match.");
+        return;
+      }
+
+      setPasswordError("");
       setLoading(true);
 
       try {
-        await Axios.post("/received-emaiL-IT", { email, otp: enteredOtp });
-        toast.success("Password sent successfully to your email");
-
-       
-        setTimeout(() => {
-          navigate("/login");
-        }, 2000);
+        await resetPassword({ email, newPassword }).unwrap();
+        toast.success("Password reset successfully");
+        navigate("/login");
       } catch (error) {
-        toast.error(
-          error.response?.data?.message || "Invalid OTP. Please try again."
-        );
+        toast.error(error?.data?.message || "Failed to reset password.");
       } finally {
         setLoading(false);
       }
@@ -226,7 +298,7 @@ const PasswordReset = () => {
                     )}
                   </Button>
                 </>
-              ) : (
+              ) : !passwordStage ? (
                 <>
                   <Typography>Enter OTP sent to your email:</Typography>
                   <Box
@@ -288,6 +360,53 @@ const PasswordReset = () => {
                         Submit
                         <ArrowForwardIos sx={{ fontSize: "20px", ml: 1 }} />
                       </>
+                    )}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Typography>Enter New Password:</Typography>
+                  <TextField
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    fullWidth
+                    size="small"
+                    placeholder="New Password"
+                    sx={{ mt: 1 }}
+                  />
+                  <TextField
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    fullWidth
+                    size="small"
+                    placeholder="Confirm Password"
+                    sx={{ mt: 2 }}
+                    error={!!passwordError}
+                    helperText={passwordError}
+                  />
+                  <Button
+                    type="submit"
+                    sx={{
+                      mt: 2,
+                      width: "100%",
+                      padding: 1.5,
+                      borderRadius: 2,
+                      backgroundColor: "#1F476A",
+                      color: "white",
+                      display: "flex",
+                      justifyContent: "center",
+                    }}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <Lottie
+                        animationData={loadingAnimation}
+                        style={{ width: 50, height: 50 }}
+                      />
+                    ) : (
+                      "Reset Password"
                     )}
                   </Button>
                 </>
