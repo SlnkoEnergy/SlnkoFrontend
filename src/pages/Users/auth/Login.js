@@ -84,7 +84,7 @@ const Login = () => {
   
       console.log("✅ Token received:", user.token);
   
-      // Step 3: Save token and expiration
+  
       const expiration = new Date().getTime() + 3 * 24 * 60 * 60 * 1000;
       localStorage.setItem("authToken", user.token);
       // localStorage.setItem("userDetails", JSON.stringify({
