@@ -151,9 +151,9 @@ const Expense_Form = () => {
   const handleSubmit = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
+
     try {
       const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
-
       if (!userID) {
         toast.error("User ID not found. Please login again.");
         return;
@@ -162,9 +162,6 @@ const Expense_Form = () => {
       const items = rows.flatMap((row) =>
         (row.items || []).map((item) => ({
           ...item,
-          project_id: item.project_id || "",
-          project_code: item.project_code || "",
-          project_name: item.project_name || "",
           invoice: {
             ...item.invoice,
             invoice_amount: item.invoice?.invoice_amount || "0",
@@ -204,25 +201,28 @@ const Expense_Form = () => {
         ),
       };
 
-      const payload = {
-        user_id: userID,
-        data: cleanedData,
-      };
+      const formData = new FormData();
 
-      await addExpense(payload).unwrap();
+      items.forEach((item) => {
+        if (item.file) {
+          formData.append("files", item.file); // For backend file handling
+        }
+      });
+
+      formData.append("data", JSON.stringify(cleanedData));
+      formData.append("user_id", userID);
+
+      // ✅ Send via RTK Query mutation
+      await addExpense(formData).unwrap();
+
       toast.success("Expense sheet submitted successfully!");
       navigate("/expense_dashboard");
     } catch (error) {
       const errMsg =
         error?.data?.message ||
+        error?.response?.data?.message ||
         "An error occurred while submitting the expense sheet.";
-
-      if (errMsg.includes("Expense Code already exists")) {
-        toast.error("Expense already exists. Please try new.");
-      } else {
-        toast.error(errMsg);
-      }
-
+      toast.error(errMsg);
       console.error("Submission failed:", error);
     } finally {
       setIsSubmitting(false);
@@ -279,7 +279,7 @@ const Expense_Form = () => {
 
   const handleRemoveRow = () => {
     if (rows.length <= 1) {
-      toast.warning("❗ You must have at least one row.");
+      toast.warning("You must have at least one row.");
       return;
     }
 
@@ -306,12 +306,10 @@ const Expense_Form = () => {
     setRows(updated);
   };
 
-  const handleFileChange = (rowIndex, files) => {
-    const fileName = files.name;
-
-    // Update rows state with file name
+  const handleFileChange = (rowIndex, itemIndex, file) => {
     const updatedRows = [...rows];
-    updatedRows[rowIndex].attachment_url = fileName;
+    updatedRows[rowIndex].items[itemIndex].file = file; // Keep the actual File
+    updatedRows[rowIndex].items[itemIndex].attachment_url = file.name; // Optional, UI only
     setRows(updatedRows);
   };
 
@@ -646,18 +644,21 @@ const Expense_Form = () => {
                           variant="outlined"
                           sx={{ minWidth: 120 }}
                         >
-                          {row.attachment_url ? "Change File" : "Upload File"}
+                          {row.items?.[0]?.attachment_url
+                            ? "Change File"
+                            : "Upload File"}
                           <input
                             hidden
                             type="file"
-                            onChange={(e) =>
-                              e.target.files?.[0] &&
-                              handleFileChange(rowIndex, e.target.files[0])
+                            onChange={
+                              (e) =>
+                                e.target.files?.[0] &&
+                                handleFileChange(rowIndex, 0, e.target.files[0]) // Index 0 for items[0]
                             }
                           />
                         </Button>
 
-                        {row.attachment_url && (
+                        {row.items?.[0]?.attachment_url && (
                           <div
                             style={{
                               fontSize: 12,
@@ -665,7 +666,7 @@ const Expense_Form = () => {
                               color: "#444",
                             }}
                           >
-                            📎 {row.attachment_url}
+                            📎 {row.items[0].attachment_url}
                           </div>
                         )}
                       </div>
