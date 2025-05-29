@@ -1,53 +1,38 @@
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
-import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
-import Menu from "@mui/joy/Menu";
-import MenuButton from "@mui/joy/MenuButton";
-import MenuItem from "@mui/joy/MenuItem";
-import Option from "@mui/joy/Option";
-import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import * as React from "react";
-import DeleteIcon from "@mui/icons-material/Delete";
-import ModeEditIcon from "@mui/icons-material/ModeEdit";
-import Divider from "@mui/joy/Divider";
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useState,
-  useMemo,
-} from "react";
+import { forwardRef, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "react-toastify";
 
+import { Chip, useTheme } from "@mui/joy";
 import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
+import { useGetLoginsQuery } from "../../redux/loginSlice";
 
 const ExpenseApproval = forwardRef((props, ref) => {
   const navigate = useNavigate();
-
+  const theme = useTheme();
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedProjects, setSelectedProjects] = useState([]);
+  const [selectedExpenses, setSelectedExpenses] = useState([]);
 
   const { data: getExpense = [], isLoading, error } = useGetAllExpenseQuery();
 
+  const { data: getAllUser = [] } = useGetLoginsQuery();
 
-  console.log("getExpense: ", getExpense);
+  // console.log("getExpense: ", getExpense);
 
   const [user, setUser] = useState(null);
 
@@ -66,48 +51,82 @@ const ExpenseApproval = forwardRef((props, ref) => {
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      const ids = paginatedProjects.map((row) => row._id);
-      setSelectedProjects((prevSelected) => [
+      const ids = paginatedExpenses.map((row) => row._id);
+      setSelectedExpenses((prevSelected) => [
         ...new Set([...prevSelected, ...ids]),
       ]);
     } else {
       // Remove only the IDs from current page
-      const ids = paginatedProjects.map((row) => row._id);
-      setSelectedProjects((prevSelected) =>
+      const ids = paginatedExpenses.map((row) => row._id);
+      setSelectedExpenses((prevSelected) =>
         prevSelected.filter((id) => !ids.includes(id))
       );
     }
   };
 
   const handleRowSelect = (_id) => {
-    setSelectedProjects((prev) =>
+    setSelectedExpenses((prev) =>
       prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
     );
   };
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
-  const projects = useMemo(
+
+  const expenses = useMemo(
     () => (Array.isArray(getExpense?.data) ? getExpense.data : []),
     [getExpense]
   );
 
-  const filteredAndSortedData = projects
-    .filter((project) => {
-      const matchesSearchQuery = ["code", "customer", "name"].some((key) =>
-        project[key]?.toLowerCase().includes(searchQuery)
+  const filteredAndSortedData = expenses
+    .filter((expense) => {
+ 
+      const matchedUser = getAllUser?.data?.find(
+        (user) => user.name === expense.emp_name
       );
+
+      // console.log(matchedUser);
+
+      if (!matchedUser || matchedUser.department !== "Projects") return false;
+
+   
+      const allowedStatuses = [
+        "submitted",
+        "manager approval",
+        "hr approval",
+        "final approval",
+        "hold",
+        "rejected",
+      ];
+      const status = expense.current_status?.toLowerCase();
+      if (!allowedStatuses.includes(status)) return false;
+
+     
+      const search = searchQuery.toLowerCase();
+      const matchesSearchQuery = [
+        "expense_code",
+        "emp_id",
+        "emp_name",
+        "status",
+      ].some((key) => expense[key]?.toLowerCase().includes(search));
 
       return matchesSearchQuery;
     })
     .sort((a, b) => {
-      if (a.name?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.name?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.code?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.code?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.customer?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.customer?.toLowerCase().includes(searchQuery)) return 1;
-      return 0;
+      const search = searchQuery.toLowerCase();
+
+      
+      const fields = ["expense_code", "emp_id", "emp_name", "status"];
+      for (let field of fields) {
+        const aValue = a[field]?.toLowerCase() || "";
+        const bValue = b[field]?.toLowerCase() || "";
+        const aMatch = aValue.includes(search);
+        const bMatch = bValue.includes(search);
+        if (aMatch && !bMatch) return -1;
+        if (!aMatch && bMatch) return 1;
+      }
+
+      return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
   const generatePageNumbers = (currentPage, totalPages) => {
@@ -140,6 +159,50 @@ const ExpenseApproval = forwardRef((props, ref) => {
     return pages;
   };
 
+  const ExpenseCode = ({ currentPage, expense_code }) => {
+    // console.log("currentPage:", currentPage, "p_id:", p_id);
+
+    return (
+      <>
+        <span
+          style={{
+            cursor: "pointer",
+            color: theme.vars.palette.text.primary,
+            textDecoration: "none",
+          }}
+          onClick={() => {
+            localStorage.setItem("edit_expense", expense_code);
+            navigate(`/edit_expense?page=${currentPage}&code=${expense_code}`);
+          }}
+        >
+          {expense_code || "-"}
+        </span>
+      </>
+    );
+  };
+
+  const EmployeeName = ({ currentPage, expense_code, emp_name }) => {
+    // console.log("currentPage:", currentPage, "p_id:", p_id);
+
+    return (
+      <>
+        <span
+          style={{
+            cursor: "pointer",
+            color: theme.vars.palette.text.primary,
+            textDecoration: "none",
+          }}
+          onClick={() => {
+            localStorage.setItem("edit_expense", expense_code);
+            navigate(`/edit_expense?page=${currentPage}&code=${expense_code}`);
+          }}
+        >
+          {emp_name || "-"}
+        </span>
+      </>
+    );
+  };
+
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
@@ -149,7 +212,7 @@ const ExpenseApproval = forwardRef((props, ref) => {
     (filteredAndSortedData?.length || 0) / itemsPerPage
   );
 
-  const paginatedProjects = filteredAndSortedData.slice(
+  const paginatedExpenses = filteredAndSortedData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -182,7 +245,7 @@ const ExpenseApproval = forwardRef((props, ref) => {
           <FormLabel>Search</FormLabel>
           <Input
             size="sm"
-            placeholder="Search by Project ID, Customer, or Name"
+            placeholder="Search by Exp. Code, Emp. Code, Emp. Name, or Status"
             startDecorator={<SearchIcon />}
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
@@ -223,17 +286,17 @@ const ExpenseApproval = forwardRef((props, ref) => {
                 <Checkbox
                   size="sm"
                   checked={
-                    paginatedProjects.length > 0 &&
-                    paginatedProjects.every((project) =>
-                      selectedProjects.includes(project._id)
+                    paginatedExpenses.length > 0 &&
+                    paginatedExpenses.every((expense) =>
+                      selectedExpenses.includes(expense._id)
                     )
                   }
                   indeterminate={
-                    paginatedProjects.some((project) =>
-                      selectedProjects.includes(project._id)
+                    paginatedExpenses.some((expense) =>
+                      selectedExpenses.includes(expense._id)
                     ) &&
-                    !paginatedProjects.every((project) =>
-                      selectedProjects.includes(project._id)
+                    !paginatedExpenses.every((expense) =>
+                      selectedExpenses.includes(expense._id)
                     )
                   }
                   onChange={handleSelectAll}
@@ -241,11 +304,12 @@ const ExpenseApproval = forwardRef((props, ref) => {
               </Box>
               {[
                 "Expense Code",
-                "Emp. Code",
-                "Site Engineer Name",
+                "Employee Code",
+                "Employee Name",
                 "Requested Amount",
                 "Approval Amount",
-                "Disburstment Date",
+                "Rejected Amount",
+                "Disbursement Date",
                 "Status",
                 "",
               ].map((header, index) => (
@@ -265,8 +329,8 @@ const ExpenseApproval = forwardRef((props, ref) => {
             </Box>
           </Box>
           <Box component="tbody">
-            {paginatedProjects.length > 0 ? (
-              paginatedProjects.map((project, index) => (
+            {paginatedExpenses.length > 0 ? (
+              paginatedExpenses.map((expense, index) => (
                 <Box
                   component="tr"
                   key={index}
@@ -285,8 +349,8 @@ const ExpenseApproval = forwardRef((props, ref) => {
                     <Checkbox
                       size="sm"
                       color="primary"
-                      checked={selectedProjects.includes(project._id)}
-                      onChange={() => handleRowSelect(project._id)}
+                      checked={selectedExpenses.includes(expense._id)}
+                      onChange={() => handleRowSelect(expense._id)}
                     />
                   </Box>
                   <Box
@@ -297,7 +361,10 @@ const ExpenseApproval = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                    {project.code}
+                    <ExpenseCode
+                      currentPage={currentPage}
+                      expense_code={expense.expense_code}
+                    />
                   </Box>
                   <Box
                     component="td"
@@ -307,7 +374,7 @@ const ExpenseApproval = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                    {project.customer}
+                    {expense.emp_id || "-"}
                   </Box>
                   <Box
                     component="td"
@@ -317,7 +384,11 @@ const ExpenseApproval = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                    {project.name}
+                    <EmployeeName
+                      currentPage={currentPage}
+                      expense_code={expense.expense_code}
+                      emp_name={expense.emp_name}
+                    />
                   </Box>
                   <Box
                     component="td"
@@ -327,7 +398,7 @@ const ExpenseApproval = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                    {project.email}
+                    {expense.total_requested_amount || "0"}
                   </Box>
                   <Box
                     component="td"
@@ -337,7 +408,95 @@ const ExpenseApproval = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                    {project.number}
+                    {expense.total_approved_amount || "0"}
+                  </Box>
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {(() => {
+                      const requested = Number(
+                        expense.total_requested_amount || 0
+                      );
+                      const approved = Number(
+                        expense.total_approved_amount || 0
+                      );
+                      const rejected = requested - approved;
+                      return isNaN(rejected) ? "0" : rejected.toString();
+                    })()}
+                  </Box>
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {expense.disbursement_date
+                      ? new Date(expense.disbursement_date).toLocaleDateString(
+                          "en-GB"
+                        )
+                      : "-"}
+                  </Box>
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {(() => {
+                      const status = expense.current_status?.toLowerCase();
+
+                      if (status === "submitted") {
+                        return (
+                          <Chip color="primary" variant="soft" size="sm">
+                            Pending
+                          </Chip>
+                        );
+                      } else if (
+                        ["manager approval", "hr approval"].includes(status)
+                      ) {
+                        return (
+                          <Chip color="warning" variant="soft" size="sm">
+                            In Process
+                          </Chip>
+                        );
+                      } else if (status === "final approval") {
+                        return (
+                          <Chip color="success" variant="soft" size="sm">
+                            Approved
+                          </Chip>
+                        );
+                      } else if (status === "hold") {
+                        return (
+                          <Chip color="neutral" variant="soft" size="sm">
+                            On Hold
+                          </Chip>
+                        );
+                      } else if (status === "rejected") {
+                        return (
+                          <Chip color="danger" variant="soft" size="sm">
+                            Rejected
+                          </Chip>
+                        );
+                      } else {
+                        return (
+                          <Chip variant="outlined" size="sm">
+                            -
+                          </Chip>
+                        );
+                      }
+                    })()}
                   </Box>
 
                   <Box

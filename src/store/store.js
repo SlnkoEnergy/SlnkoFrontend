@@ -6,7 +6,6 @@ import { leadsApi } from "../redux/leadsSlice";
 import { tasksApi } from "../redux/tasksSlice";
 import { loginsApi } from "../redux/loginSlice";
 import { commsApi } from "../redux/commsSlice";
-import taskWorkReducer from "../redux/TaskDate_Manipulation/task_workSlice";
 import { camsApi } from "../redux/camsSlice";
 import { engsApi } from "../redux/engsSlice";
 import { engsModuleApi } from "../redux/Eng/modulesSlice";
@@ -41,7 +40,7 @@ export const store = configureStore({
         [engsAcCableApi.reducerPath]: engsAcCableApi.reducer,   
         [engsDcCableApi.reducerPath]: engsDcCableApi.reducer,
         [expensesApi.reducerPath] : expensesApi.reducer,
-        taskWork: taskWorkReducer
+        
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware().concat(

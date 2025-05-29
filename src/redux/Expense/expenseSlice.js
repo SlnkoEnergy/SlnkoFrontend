@@ -1,8 +1,23 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { BASE_URL, getAuthToken } from "../auth/auth_variable";
+
+
+
+const baseQuery = fetchBaseQuery({
+  baseUrl: BASE_URL,
+  prepareHeaders: (headers) => {
+    const token = getAuthToken();
+    // console.log("Token:", token);
+    if (token) {
+      headers.set("x-auth-token", token);
+    }
+    return headers;
+  },
+});
 
 export const expensesApi = createApi({
   reducerPath: "expensesApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "https://api.slnkoprotrac.com/v1/" }),
+  baseQuery,
   tagTypes: ["Expense"],
   endpoints: (builder) => ({
     // GET: Fetch all expenses
@@ -25,12 +40,12 @@ export const expensesApi = createApi({
         body: newExpense,
       }),
       invalidatesTags: ["Expense"],
-    }),
+    }), 
 
     // PUT: Update overall status by _id
     updateExpenseStatusOverall: builder.mutation({
       query: ({ _id, ...data }) => ({
-        url: `${_id}/status/overall`,
+        url: `/${_id}/status/overall`,
         method: "PUT",
         body: data,
       }),
@@ -55,6 +70,23 @@ export const expensesApi = createApi({
       }),
       invalidatesTags: ["Expense"],
     }),
+    updateExpenseSheet: builder.mutation({
+      query: ({ _id, ...updatedData }) => ({
+        url: `update-expense/${_id}`,
+        method: "PUT",
+        body: updatedData,
+      }),
+      invalidatesTags: ["Expense"],
+    }),
+
+    updateDisbursementDate: builder.mutation({
+      query: ({ _id, ...data }) => ({
+        url: `update-disbursement-date/${_id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["Expense"],
+    }),
   }),
 });
 
@@ -65,4 +97,6 @@ export const {
   useUpdateExpenseStatusOverallMutation,
   useUpdateExpenseStatusItemsMutation,
   useDeleteExpenseMutation,
+  useUpdateExpenseSheetMutation,
+  useUpdateDisbursementDateMutation,
 } = expensesApi;

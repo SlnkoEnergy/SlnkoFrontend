@@ -1,49 +1,103 @@
-import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
+import { Textarea } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
-import Table from "@mui/joy/Table";
 import Input from "@mui/joy/Input";
-import Typography from "@mui/joy/Typography";
 import List from "@mui/joy/List";
 import ListItem from "@mui/joy/ListItem";
-import Sheet from "@mui/joy/Sheet";
-import Select from "@mui/joy/Select";
-import Option from "@mui/joy/Option";
 import Modal from "@mui/joy/Modal";
 import ModalDialog from "@mui/joy/ModalDialog";
-import CheckIcon from "@mui/icons-material/Check";
-import CloseIcon from "@mui/icons-material/Close";
-import UploadFileIcon from "@mui/icons-material/UploadFile";
-import { useAddProjectMutation, useGetProjectsQuery } from "../../../redux/projectsSlice";
+import Option from "@mui/joy/Option";
+import Select from "@mui/joy/Select";
+import Sheet from "@mui/joy/Sheet";
+import Table from "@mui/joy/Table";
+import Typography from "@mui/joy/Typography";
+import axios from "axios";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { useAddExpenseMutation } from "../../../redux/Expense/expenseSlice";
 
 const Expense_Form = () => {
+  const navigate = useNavigate();
   const [rows, setRows] = useState([
     {
-      code: "",
-      name: "",
-      category: "",
-      description: "",
-      date: "",
-      amount: "",
-      file: null,
-      approvalStatus: null,
-      approvedAmount: "",
-      rejectionComment: "",
-      invoice: "",
-      invoiceNumber: "",
+      items: [
+        {
+          category: "",
+          project_id: "",
+          project_code: "",
+          project_name: "",
+          description: "",
+          expense_date: "",
+          invoice: {
+            invoice_number: "",
+            invoice_amount: "",
+          },
+          attachment_url: "",
+          item_status_history: [
+            {
+              status: "",
+              remarks: "",
+              user_id: "",
+            },
+          ],
+          approved_amount: "",
+          remarks: "",
+          item_current_status: "",
+        },
+      ],
+      expense_term: {
+        from: "",
+        to: "",
+      },
+      status_history: [
+        {
+          status: "",
+          remarks: "",
+          user_id: "",
+        },
+      ],
+
+      total_requested_amount: "",
+      total_approved_amount: "",
+      disbursement_date: "",
+      comments: "",
     },
   ]);
 
   const [projectCodes, setProjectCodes] = useState([]);
   const [dropdownOpenIndex, setDropdownOpenIndex] = useState(null);
   const [searchInputs, setSearchInputs] = useState([""]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [commentDialog, setCommentDialog] = useState({
     open: false,
     rowIndex: null,
   });
 
-  const inputRefs = useRef([]);
+  const inputRefs = useRef({});
+  const dropdownRefs = useRef({});
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      const isClickInside =
+        Object.values(inputRefs.current).some((ref) =>
+          ref?.contains(event.target)
+        ) ||
+        Object.values(dropdownRefs.current).some((ref) =>
+          ref?.contains(event.target)
+        );
+
+      if (!isClickInside) {
+        setDropdownOpenIndex(null);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const categoryOptions = [
     "Travelling Expenses",
@@ -59,45 +113,179 @@ const Expense_Form = () => {
     "Office expenses",
   ];
 
-  const [addExpense] = useAddProjectMutation();
+  const [addExpense] = useAddExpenseMutation();
 
-  const { data: getProject = [], isLoading, error } = useGetProjectsQuery();
+  // const { data: getProject = [], isLoading, error } = useGetProjectsQuery();
 
-  console.log(getProject);
-  
-
+  // console.log(getProject);
 
   useEffect(() => {
-    axios
-      .get("https://api.slnkoprotrac.com/v1/get-all-project-IT")
-      .then((response) => {
+    const fetchProjects = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+
+        const response = await axios.get(
+          "https://dev.api.slnkoprotrac.com/v1/get-all-project-IT",
+          {
+            headers: {
+              "x-auth-token": token,
+            },
+          }
+        );
+
         const data = response.data?.data;
-        if (Array.isArray(data)) setProjectCodes(data);
-        else setProjectCodes([]);
-      })
-      .catch(() => setProjectCodes([]));
+        if (Array.isArray(data)) {
+          setProjectCodes(data);
+        } else {
+          setProjectCodes([]);
+        }
+      } catch (error) {
+        console.error("Error fetching project codes:", error);
+        setProjectCodes([]);
+      }
+    };
+
+    fetchProjects();
   }, []);
-  
+
+  const handleSubmit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
+    try {
+      const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
+      if (!userID) {
+        toast.error("User ID not found. Please login again.");
+        return;
+      }
+
+      const items = rows.flatMap((row) =>
+        (row.items || []).map((item) => ({
+          ...item,
+          invoice: {
+            ...item.invoice,
+            invoice_amount: item.invoice?.invoice_amount || "0",
+          },
+          item_status_history: [
+            {
+              status: "submitted",
+              remarks: item.item_status_history?.[0]?.remarks || "",
+              user_id: userID,
+              updatedAt: new Date().toISOString(),
+            },
+          ],
+          item_current_status: "submitted",
+        }))
+      );
+
+      const cleanedData = {
+        expense_term: rows[0]?.expense_term || {},
+        disbursement_date: rows[0]?.disbursement_date || "",
+        items,
+        user_id: userID,
+        current_status: "submitted",
+        status_history: [
+          {
+            status: "submitted",
+            remarks: rows[0]?.status_history?.[0]?.remarks || "",
+            user_id: userID,
+            updatedAt: new Date().toISOString(),
+          },
+        ],
+        total_requested_amount: items.reduce(
+          (sum, itm) => sum + Number(itm.invoice.invoice_amount || 0),
+          0
+        ),
+        total_approved_amount: items.reduce(
+          (sum, itm) => sum + Number(itm.approved_amount || 0),
+          0
+        ),
+      };
+
+      const formData = new FormData();
+
+      items.forEach((item) => {
+        if (item.file) {
+          formData.append("files", item.file); // For backend file handling
+        }
+      });
+
+      formData.append("data", JSON.stringify(cleanedData));
+      formData.append("user_id", userID);
+
+      // ✅ Send via RTK Query mutation
+      await addExpense(formData).unwrap();
+
+      toast.success("Expense sheet submitted successfully!");
+      navigate("/expense_dashboard");
+    } catch (error) {
+      const errMsg =
+        error?.data?.message ||
+        error?.response?.data?.message ||
+        "An error occurred while submitting the expense sheet.";
+      toast.error(errMsg);
+      console.error("Submission failed:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleAddRow = () => {
     setRows((prev) => [
       ...prev,
       {
-        code: "",
-        name: "",
-        category: "",
-        description: "",
-        date: "",
-        amount: "",
-        file: null,
-        approvalStatus: null,
-        approvedAmount: "",
-        rejectionComment: "",
-        invoice: "",
-        invoiceNumber: "",
+        items: [
+          {
+            category: "",
+            project_id: "",
+            description: "",
+            expense_date: "",
+            invoice: {
+              invoice_number: "",
+              invoice_amount: "",
+              status: "",
+            },
+            attachment_url: "",
+            item_status_history: [
+              {
+                status: "",
+                remarks: "",
+                user_id: "",
+              },
+            ],
+            approved_amount: "",
+            remarks: "",
+            item_current_status: "",
+          },
+        ],
+        expense_term: {
+          from: "",
+          to: "",
+        },
+        status_history: [
+          {
+            status: "",
+            remarks: "",
+            user_id: "",
+          },
+        ],
+        total_requested_amount: "",
+        total_approved_amount: "",
+        disbursement_date: "",
+        comments: "",
       },
     ]);
     setSearchInputs((prev) => [...prev, ""]);
+  };
+
+  const handleRemoveRow = () => {
+    if (rows.length <= 1) {
+      toast.warning("You must have at least one row.");
+      return;
+    }
+
+    setRows((prev) => prev.slice(0, -1));
+    setSearchInputs((prev) => prev.slice(0, -1));
   };
 
   const handleRowChange = (index, field, value) => {
@@ -110,10 +298,20 @@ const Expense_Form = () => {
     setRows(updated);
   };
 
-  const handleFileChange = (index, file) => {
+  const handleItemChange = (rowIndex, field, value) => {
     const updated = [...rows];
-    updated[index].file = file;
+    if (!updated[rowIndex].items || updated[rowIndex].items.length === 0) {
+      updated[rowIndex].items = [{}];
+    }
+    updated[rowIndex].items[0][field] = value;
     setRows(updated);
+  };
+
+  const handleFileChange = (rowIndex, itemIndex, file) => {
+    const updatedRows = [...rows];
+    updatedRows[rowIndex].items[itemIndex].file = file; // Keep the actual File
+    updatedRows[rowIndex].items[itemIndex].attachment_url = file.name; // Optional, UI only
+    setRows(updatedRows);
   };
 
   const handleSearchInputChange = (index, value) => {
@@ -127,69 +325,54 @@ const Expense_Form = () => {
   };
 
   const handleSelectProject = (index, code, name) => {
-    const updated = [...rows];
-    updated[index].code = code;
-    updated[index].name = name;
-    setRows(updated);
-    setSearchInputs((prev) => {
-      const updated = [...prev];
-      updated[index] = code;
-      return updated;
-    });
-    setDropdownOpenIndex(null);
-  };
+    const selectedProject = projectCodes.find((p) => p.code === code);
+    if (!selectedProject) return;
 
-  const handleApproval = (index, status) => {
     const updated = [...rows];
-    updated[index].approvalStatus = status;
-    if (status === "approved") {
-      updated[index].approvedAmount = updated[index].amount || "";
-    } else {
-      setCommentDialog({ open: true, rowIndex: index });
+
+    if (updated[index]?.items?.[0]) {
+      updated[index].items[0] = {
+        ...updated[index].items[0],
+        project_id: selectedProject._id,
+        project_code: code,
+        project_name: name,
+        // projectSelected: true,
+      };
     }
+
     setRows(updated);
+
+    setSearchInputs((prev) => {
+      const updatedInputs = [...prev];
+      updatedInputs[index] = code;
+      return updatedInputs;
+    });
+
+    setDropdownOpenIndex(null); // ✅ Close the dropdown
   };
 
   const handleCommentSave = () => {
     setCommentDialog({ open: false, rowIndex: null });
   };
 
-  const handleRejectAll = () => {
-    const updated = rows.map((row, index) => ({
-      ...row,
-      approvalStatus: "rejected",
-      rejectionComment: "",
-    }));
-    setRows(updated);
-    setCommentDialog({ open: true, rowIndex: 0 });
-  };
+  const showInvoiceNoColumn = rows.some(
+    (row) => row.items?.[0]?.invoice?.status === "Yes"
+  );
 
-  const handleApproveAll = () => {
-    const updated = rows.map((row) => ({
-      ...row,
-      approvalStatus: "approved",
-      approvedAmount: row.amount || "",
-    }));
-    setRows(updated);
-  };
-  const showInvoiceNoColumn = rows.some(row => row.invoice === 'Yes');
-               const tableHeaders = [
-  "Project Code",
-  "Project Name",
-  "Category",
-  "Description",
-  "Date",
-  "Bill Amount",
-  "Attachment",
-  "Approval",
-  "Approved Amt",
-  "Invoice",
-];
+  const tableHeaders = [
+    "Project Code",
+    "Project Name",
+    "Category",
+    "Description",
+    "Date",
+    "Bill Amount",
+    "Attachment",
+    "Invoice",
+  ];
 
-if (showInvoiceNoColumn) {
-  tableHeaders.push("Invoice No");
-}
-
+  if (showInvoiceNoColumn) {
+    tableHeaders.push("Invoice No");
+  }
 
   return (
     <Box p={2}>
@@ -199,35 +382,54 @@ if (showInvoiceNoColumn) {
 
       <Box sx={{ maxWidth: "100%", overflowX: "auto", p: 1 }}>
         {/* Action Buttons */}
-       
+
         <Box
           sx={{
             marginLeft: { md: "15%" },
           }}
         >
           {/* Action Buttons */}
-        <Box
-          display="flex"
-          gap={2}
-          mb={2}
-          flexWrap="wrap"
-          justifyContent="flex-start"
-        >
-          <Button
-            color="success"
-            onClick={handleApproveAll}
-            sx={{ minWidth: 120 }}
+
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent={"flex-end"}
+            gap={2}
+            mb={2}
           >
-            Approve All
-          </Button>
-          <Button
-            color="danger"
-            onClick={handleRejectAll}
-            sx={{ minWidth: 120 }}
-          >
-            Reject All
-          </Button>
-        </Box>
+            <Typography level="body-md" fontWeight="lg">
+              Select Expense Term:
+            </Typography>
+
+            {/* From Date */}
+            <Input
+              type="date"
+              size="sm"
+              value={rows[0].expense_term.from}
+              onChange={(e) =>
+                handleRowChange(0, "expense_term", {
+                  ...rows[0].expense_term,
+                  from: e.target.value,
+                })
+              }
+            />
+
+            <Typography level="body-sm">to</Typography>
+
+            {/* To Date */}
+            <Input
+              type="date"
+              size="sm"
+              value={rows[0].expense_term.to}
+              onChange={(e) =>
+                handleRowChange(0, "expense_term", {
+                  ...rows[0].expense_term,
+                  to: e.target.value,
+                })
+              }
+            />
+          </Box>
+
           <table
             style={{
               borderCollapse: "collapse",
@@ -243,21 +445,17 @@ if (showInvoiceNoColumn) {
                 borderBottom: "2px solid #ccc",
               }}
             >
-             
-
-
-<tr>
-  {tableHeaders.map((header, idx) => (
-    <th key={idx}>{header}</th>
-  ))}
-</tr>
-
+              <tr>
+                {tableHeaders.map((header, idx) => (
+                  <th key={idx}>{header}</th>
+                ))}
+              </tr>
             </thead>
 
             <tbody>
               {rows.map((row, rowIndex) => {
                 const filteredProjects = projectCodes.filter((project) =>
-                  project.code
+                  (project.code || "")
                     .toLowerCase()
                     .includes((searchInputs[rowIndex] || "").toLowerCase())
                 );
@@ -270,7 +468,6 @@ if (showInvoiceNoColumn) {
                       backgroundColor: rowIndex % 2 === 0 ? "white" : "#fafafa",
                     }}
                   >
-                    {/* Project Code with autocomplete */}
                     <td
                       style={{ position: "relative", padding: 8, width: 150 }}
                     >
@@ -286,10 +483,12 @@ if (showInvoiceNoColumn) {
                         inputRef={(el) => (inputRefs.current[rowIndex] = el)}
                         autoComplete="off"
                         sx={{ width: "100%" }}
+                        // disabled={rows[rowIndex]?.items?.[0]?.projectSelected}
                       />
                       {dropdownOpenIndex === rowIndex &&
                         filteredProjects.length > 0 && (
                           <Sheet
+                            ref={(el) => (dropdownRefs.current[rowIndex] = el)}
                             variant="outlined"
                             sx={{
                               position: "absolute",
@@ -340,7 +539,7 @@ if (showInvoiceNoColumn) {
                       <Input
                         size="sm"
                         variant="outlined"
-                        value={row.name}
+                        value={row.items?.[0]?.project_name || ""}
                         placeholder="Project Name"
                         disabled
                         sx={{ width: "100%" }}
@@ -352,9 +551,9 @@ if (showInvoiceNoColumn) {
                       <Select
                         size="sm"
                         variant="outlined"
-                        value={row.category}
+                        value={row.items?.[0]?.category || ""}
                         onChange={(e, value) =>
-                          handleRowChange(rowIndex, "category", value)
+                          handleItemChange(rowIndex, "category", value)
                         }
                         placeholder="Select"
                         slotProps={{
@@ -369,18 +568,19 @@ if (showInvoiceNoColumn) {
                             {cat}
                           </Option>
                         ))}
+                        
                       </Select>
                     </td>
 
                     {/* Description */}
                     <td style={{ padding: 8, maxWidth: 250 }}>
-                      <Input
+                      <Textarea
                         size="sm"
                         variant="outlined"
-                        value={row.description}
+                        value={row.items?.[0]?.description || ""}
                         placeholder="Description"
                         onChange={(e) =>
-                          handleRowChange(
+                          handleItemChange(
                             rowIndex,
                             "description",
                             e.target.value
@@ -399,24 +599,31 @@ if (showInvoiceNoColumn) {
                         size="sm"
                         variant="outlined"
                         type="date"
-                        value={row.date}
+                        value={row.items[0].expense_date}
                         onChange={(e) =>
-                          handleRowChange(rowIndex, "date", e.target.value)
+                          handleItemChange(
+                            rowIndex,
+                            "expense_date",
+                            e.target.value
+                          )
                         }
                         sx={{ minWidth: 120 }}
                       />
                     </td>
 
-                    {/* Bill Amount */}
+                    {/* Invoice Amount */}
                     <td style={{ padding: 8 }}>
                       <Input
                         size="sm"
                         variant="outlined"
                         type="number"
-                        value={row.amount}
+                        value={row.items?.[0]?.invoice?.invoice_amount || ""}
                         placeholder="₹"
                         onChange={(e) =>
-                          handleRowChange(rowIndex, "amount", e.target.value)
+                          handleItemChange(rowIndex, "invoice", {
+                            ...row.items?.[0]?.invoice,
+                            invoice_amount: e.target.value,
+                          })
                         }
                         inputProps={{ min: 0 }}
                         sx={{ minWidth: 90 }}
@@ -424,86 +631,58 @@ if (showInvoiceNoColumn) {
                     </td>
 
                     {/* Attachment */}
-                    <td style={{ padding: 8, width: 120 }}>
-                      <Button
-                        size="sm"
-                        component="label"
-                        startDecorator={<UploadFileIcon />}
-                        variant="outlined"
-                        sx={{ minWidth: 100 }}
+                    <td style={{ padding: 8, width: 200 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 4,
+                        }}
                       >
-                        {row.fileName || "Upload"}
-                        <input
-                          hidden
-                          type="file"
-                          onChange={(e) =>
-                            e.target.files?.[0] &&
-                            handleFileChange(rowIndex, e.target.files[0])
-                          }
-                        />
-                      </Button>
-                    </td>
-
-                    {/* Approval */}
-                    <td style={{ padding: 8 }}>
-                      <Box display="flex" gap={1} justifyContent="center">
                         <Button
                           size="sm"
-                          variant={
-                            row.approvalStatus === "approved"
-                              ? "solid"
-                              : "outlined"
-                          }
-                          color="success"
-                          onClick={() => handleApproval(rowIndex, "approved")}
-                          aria-label="Approve"
-                        >
-                          <CheckIcon />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={
-                            row.approvalStatus === "rejected"
-                              ? "solid"
-                              : "outlined"
-                          }
-                          color="danger"
-                          onClick={() => handleApproval(rowIndex, "rejected")}
-                          aria-label="Reject"
-                        >
-                          <CloseIcon />
-                        </Button>
-                      </Box>
-                    </td>
-
-                    {/* Approved Amount */}
-                    <td style={{ padding: 8, maxWidth: 110 }}>
-                      {row.approvalStatus === "approved" && (
-                        <Input
-                          size="sm"
+                          component="label"
+                          startDecorator={<UploadFileIcon />}
                           variant="outlined"
-                          type="number"
-                          value={row.approvedAmount}
-                          placeholder="₹"
-                          onChange={(e) =>
-                            handleRowChange(
-                              rowIndex,
-                              "approvedAmount",
-                              e.target.value
-                            )
-                          }
-                          inputProps={{ min: 0 }}
-                          sx={{ minWidth: 90 }}
-                        />
-                      )}
+                          sx={{ minWidth: 120 }}
+                        >
+                          {row.items?.[0]?.attachment_url
+                            ? "Change File"
+                            : "Upload File"}
+                          <input
+                            hidden
+                            type="file"
+                            onChange={
+                              (e) =>
+                                e.target.files?.[0] &&
+                                handleFileChange(rowIndex, 0, e.target.files[0]) // Index 0 for items[0]
+                            }
+                          />
+                        </Button>
+
+                        {row.items?.[0]?.attachment_url && (
+                          <div
+                            style={{
+                              fontSize: 12,
+                              wordBreak: "break-word",
+                              color: "#444",
+                            }}
+                          >
+                            📎 {row.items[0].attachment_url}
+                          </div>
+                        )}
+                      </div>
                     </td>
 
                     {/* Invoice */}
                     <td>
                       <Select
-                        value={row.invoice}
+                        value={row.items?.[0]?.invoice?.status || ""} // 'invoice' can be an object, so maybe status or yes/no
                         onChange={(e, value) =>
-                          handleRowChange(rowIndex, "invoice", value)
+                          handleItemChange(rowIndex, "invoice", {
+                            ...row.items?.[0]?.invoice,
+                            status: value,
+                          })
                         }
                         placeholder="Yes/No"
                       >
@@ -511,17 +690,19 @@ if (showInvoiceNoColumn) {
                         <Option value="No">No</Option>
                       </Select>
                     </td>
+
                     {showInvoiceNoColumn && (
                       <td>
-                        {row.invoice === "Yes" && (
+                        {row.items?.[0]?.invoice?.status === "Yes" && (
                           <Input
-                            value={row.invoiceNumber}
+                            value={
+                              row.items?.[0]?.invoice?.invoice_number || ""
+                            }
                             onChange={(e) =>
-                              handleRowChange(
-                                rowIndex,
-                                "invoiceNumber",
-                                e.target.value
-                              )
+                              handleItemChange(rowIndex, "invoice", {
+                                ...row.items?.[0]?.invoice,
+                                invoice_number: e.target.value,
+                              })
                             }
                             placeholder="Invoice No."
                             sx={{ width: "100%" }}
@@ -534,9 +715,18 @@ if (showInvoiceNoColumn) {
               })}
             </tbody>
           </table>
-          <Box mt={2} textAlign="left">
+          <Box mt={2} textAlign="left" display="flex" gap={1}>
             <Button onClick={handleAddRow} variant="soft" size="sm">
               + Add Row
+            </Button>
+            <Button
+              onClick={handleRemoveRow}
+              variant="soft"
+              size="sm"
+              color="danger"
+              disabled={rows.length <= 1}
+            >
+              - Remove Row
             </Button>
           </Box>
         </Box>
@@ -552,11 +742,14 @@ if (showInvoiceNoColumn) {
           <Input
             minRows={2}
             placeholder="Enter comment"
-            value={rows[commentDialog.rowIndex]?.rejectionComment || ""}
+            value={
+              rows[commentDialog.rowIndex]?.items?.[0]?.item_status_history?.[0]
+                ?.remarks || ""
+            }
             onChange={(e) =>
               handleRowChange(
                 commentDialog.rowIndex,
-                "rejectionComment",
+                "item_status_history.remarks",
                 e.target.value
               )
             }
@@ -569,93 +762,123 @@ if (showInvoiceNoColumn) {
       </Modal>
 
       {/* Summary */}
-     <Box mt={4} sx={{marginLeft:"15%"}}>
-  <Typography level="h5" mb={1}>
-    Expense Summary
-  </Typography>
+      <Box mt={4} sx={{ margin: "0 auto", width: "60%" }}>
+        <Typography level="h5" mb={1}>
+          Expense Summary
+        </Typography>
 
-  <Sheet
-    variant="outlined"
-    sx={{
-      borderRadius: "md",
-      overflow: "auto", // Enables horizontal scroll on small screens
-      boxShadow: "sm",
-    }}
-  >
-    <Table
-      variant="soft"
-      borderAxis="both"
-      size="sm"
-      stickyHeader
-      hoverRow
-      sx={{
-        minWidth: 500,
-        "& th": {
-          backgroundColor: "background.level1",
-          fontWeight: "md",
-          fontSize: "sm",
-          textAlign: "left",
-        },
-        "& td": {
-          fontSize: "sm",
-          textAlign: "left",
-        },
-      }}
-    >
-      <thead>
-        <tr>
-          <th>Head</th>
-          <th>Amt</th>
-          <th>Approval Amt</th>
-        </tr>
-      </thead>
-      <tbody>
-        {categoryOptions.map((category, idx) => {
-          const total = rows
-            .filter((row) => row.category === category)
-            .reduce((sum, row) => sum + Number(row.amount || 0), 0);
+        <Sheet
+          variant="outlined"
+          sx={{
+            borderRadius: "md",
+            overflow: "auto",
+            boxShadow: "sm",
+          }}
+        >
+          <Table
+            variant="soft"
+            borderAxis="both"
+            size="sm"
+            stickyHeader
+            hoverRow
+            sx={{
+              minWidth: 500,
+              "& th": {
+                backgroundColor: "background.level1",
+                fontWeight: "md",
+                fontSize: "sm",
+                textAlign: "left",
+              },
+              "& td": {
+                fontSize: "sm",
+                textAlign: "left",
+              },
+            }}
+          >
+            <thead>
+              <tr>
+                <th>Head</th>
+                <th>Amt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {categoryOptions.map((category, idx) => {
+                const itemsInCategory = rows.flatMap((row) =>
+                  (row.items || []).filter((item) => item.category === category)
+                );
 
-          const approvedTotal = rows
-            .filter(
-              (row) =>
-                row.category === category && row.approvalStatus === "approved"
-            )
-            .reduce((sum, row) => sum + Number(row.approvedAmount || 0), 0);
+                const amt = itemsInCategory.reduce(
+                  (sum, item) =>
+                    sum + Number(item.invoice?.invoice_amount || 0),
+                  0
+                );
 
-          return (
-            <tr key={idx}>
-              <td>{category}</td>
-              <td>{total > 0 ? total.toFixed(2) : "-"}</td>
-              <td>{approvedTotal > 0 ? approvedTotal.toFixed(2) : "-"}</td>
-            </tr>
-          );
-        })}
-        <tr>
-          <td>
-            <Typography level="body-md" fontWeight="lg">
-              Total
-            </Typography>
-          </td>
-          <td>
-            <Typography level="body-md" fontWeight="lg">
-              {rows
-                .reduce((sum, row) => sum + Number(row.amount || 0), 0)
-                .toFixed(2)}
-            </Typography>
-          </td>
-          <td>
-            <Typography level="body-md" fontWeight="lg">
-              {rows
-                .filter((row) => row.approvalStatus === "approved")
-                .reduce((sum, row) => sum + Number(row.approvedAmount || 0), 0)
-                .toFixed(2)}
-            </Typography>
-          </td>
-        </tr>
-      </tbody>
-    </Table>
-  </Sheet>
-</Box>
+                const approvedAmt = itemsInCategory.reduce(
+                  (sum, item) =>
+                    item.item_current_status === "approved"
+                      ? sum + Number(item.approved_amount || 0)
+                      : sum,
+                  0
+                );
+
+                return (
+                  <tr key={idx}>
+                    <td>{category}</td>
+                    <td>{amt > 0 ? amt.toFixed(2) : "-"}</td>
+                  </tr>
+                );
+              })}
+
+              {/* Grand Total */}
+              <tr>
+                <td>
+                  <Typography level="body-md" fontWeight="lg">
+                    Total
+                  </Typography>
+                </td>
+                <td>
+                  <Typography level="body-md" fontWeight="lg">
+                    {rows
+                      .flatMap((row) => row.items || [])
+                      .reduce(
+                        (sum, item) =>
+                          sum + Number(item.invoice?.invoice_amount || 0),
+                        0
+                      )
+                      .toFixed(2)}
+                  </Typography>
+                </td>
+              </tr>
+            </tbody>
+          </Table>
+        </Sheet>
+
+        {/* Submit & Back Buttons */}
+        <Box mt={2} display="flex" justifyContent="center">
+          <Box
+            display="flex"
+            justifyContent="center"
+            maxWidth="400px"
+            width="100%"
+          >
+            <Button
+              variant="outlined"
+              onClick={() => navigate("/expense_dashboard")}
+            >
+              Back
+            </Button>{" "}
+            &nbsp;&nbsp;
+            <Button
+              variant="solid"
+              color="primary"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
+              Submit Expense Sheet
+            </Button>
+          </Box>
+        </Box>
+      </Box>
     </Box>
   );
 };

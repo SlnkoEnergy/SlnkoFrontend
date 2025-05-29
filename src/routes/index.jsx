@@ -60,6 +60,7 @@ import WarmUpSummary from "../pages/BD/Leads/Warm/Forms/warm_Summary";
 import Add_Task_Warm from "../pages/BD/Leads/Warm/Forms/WarmTask";
 import CheckboxModal3 from "../pages/BD/Leads/Warm/Forms/WarmToAll";
 import Warm_History from "../pages/BD/Leads/Warm/Warm_History";
+import Edit_Won_Leads from "../pages/BD/Leads/Won/Forms/won_edit";
 import WONSummary from "../pages/BD/Leads/Won/Forms/won_Summary";
 import Add_Task_Won from "../pages/BD/Leads/Won/Forms/WonTask";
 import Sum_Won_Leads from "../pages/BD/Leads/Won/Forms/WonToAll";
@@ -88,14 +89,14 @@ import Add_Pooling from "../pages/Eng/Forms/Add_Pooling";
 import Add_Transformer from "../pages/Eng/Forms/Add_Transformer";
 import Add_BOM from "../pages/Eng/Forms/BOM_Addn";
 import ModuleSheet from "../pages/Eng/ModuleDashboard";
+import Accounts_Expense from "../pages/ExpenseSheet/Expense_Accounts";
+import ApprovalExpense from "../pages/ExpenseSheet/Expense_Approval";
+import Add_Expense from "../pages/ExpenseSheet/Expense_Form";
+import Hr_Expense from "../pages/ExpenseSheet/Expense_HR";
+import Expense_Table from "../pages/ExpenseSheet/Expense_Tab";
+import Edit_Expense from "../pages/ExpenseSheet/Update_Expense_Form";
 import Update_Bill from "../pages/SCM/EditBill";
 import PrivateRoute from "./PrivateRoute";
-import Edit_Won_Leads from "../pages/BD/Leads/Won/Forms/won_edit";
-import Add_Expense from "../pages/ExpenseSheet/Expense_Form";
-import Expense_Table from "../pages/ExpenseSheet/Expense_Tab";
-import ApprovalExpense from "../pages/ExpenseSheet/Expense_Approval";
-import Hr_Expense from "../pages/ExpenseSheet/Expense_HR";
-import Accounts_Expense from "../pages/ExpenseSheet/Expense_Accounts";
 
 function index() {
   return (
@@ -105,7 +106,7 @@ function index() {
       {/*---------dashboard -------- */}
       <Route path="/" element={<Login />} />
       <Route
-        path="dashboard"
+        path="/dashboard"
         element={
           <PrivateRoute>
             <Dashboardz />
@@ -830,6 +831,15 @@ function index() {
           </PrivateRoute>
         }
       />
+
+      <Route
+        path="/edit_expense"
+        element={
+          <PrivateRoute>
+            <Edit_Expense />
+          </PrivateRoute>
+        }
+      />
       <Route
         path="/expense_dashboard"
         element={
@@ -857,7 +867,7 @@ function index() {
         }
       />
 
-<Route
+      <Route
         path="/expense_accounts"
         element={
           <PrivateRoute>
@@ -865,7 +875,6 @@ function index() {
           </PrivateRoute>
         }
       />
-
     </Routes>
   );
 }
