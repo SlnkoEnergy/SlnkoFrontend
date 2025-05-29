@@ -568,6 +568,7 @@ const Expense_Form = () => {
                             {cat}
                           </Option>
                         ))}
+                        
                       </Select>
                     </td>
 
