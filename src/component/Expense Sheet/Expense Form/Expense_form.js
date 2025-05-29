@@ -180,6 +180,7 @@ const Expense_Form = () => {
 
       const cleanedData = {
         expense_term: rows[0]?.expense_term || {},
+        disbursement_date: rows[0]?.disbursement_date || "",
         items,
         user_id: userID,
         current_status: "submitted",
