@@ -792,7 +792,7 @@ const UpdateExpense = () => {
             alignItems="center"
             gap={2}
           >
-            {/* Left: Date Range */}
+            {/* Expense Term (from-to) */}
             <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
               <Typography level="body-md" fontWeight="lg">
                 Select Expense Term:
