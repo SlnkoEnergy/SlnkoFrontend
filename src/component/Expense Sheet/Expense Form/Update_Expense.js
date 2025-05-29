@@ -83,16 +83,20 @@ const UpdateExpense = () => {
     useState(false);
 
   const [rejectConfirmOpen, setRejectConfirmOpen] = useState(false);
-  const [rejectAccountsConfirmOpen, setRejectAccountsConfirmOpen] =
-    useState(false);
+  // const [rejectAccountsConfirmOpen, setRejectAccountsConfirmOpen] =
+  //   useState(false);
 
-  const [holdConfirmOpen, setHoldConfirmOpen] = useState(false);
-  const [holdAccountsConfirmOpen, setHoldAccountsConfirmOpen] = useState(false);
+  // const [holdConfirmOpen, setHoldConfirmOpen] = useState(false);
+  // const [holdAccountsConfirmOpen, setHoldAccountsConfirmOpen] = useState(false);
 
   const [sharedRejectionComment, setSharedRejectionComment] = useState("");
   const [showRejectAllDialog, setShowRejectAllDialog] = useState(false);
+  const [showAccountsRejectAllDialog, setAccountsShowRejectAllDialog] =
+    useState(false);
   const [showHoldAllDialog, setShowHoldAllDialog] = useState(false);
-  const [showDisbursement, setShowDisbursement] = useState(false);
+  const [showAccountsHoldAllDialog, setAccountsShowHoldAllDialog] =
+    useState(false);
+
   const [disbursementData, setDisbursementData] = useState("");
 
   // const showDisbursement =
@@ -545,7 +549,7 @@ const UpdateExpense = () => {
   };
 
   const handleHrHoldAll = () => {
-    setHoldConfirmOpen(true);
+    setShowHoldAllDialog(true);
   };
 
   const applyHrHoldAll = async () => {
@@ -626,7 +630,7 @@ const UpdateExpense = () => {
         )
       );
 
-      toast.success("All items HR approved successfully");
+      toast.success("All items Accounts approved successfully");
       setApproveConfirmOpen(false);
     } catch (error) {
       console.error("Failed to HR approve all items:", error);
@@ -635,7 +639,7 @@ const UpdateExpense = () => {
   };
 
   const handleAccountsRejectAll = () => {
-    setRejectAccountsConfirmOpen(true);
+    setAccountsShowRejectAllDialog(true);
   };
 
   const applyAccountsRejectAll = async () => {
@@ -671,7 +675,7 @@ const UpdateExpense = () => {
       );
 
       toast.success("All items rejected successfully");
-      setShowRejectAllDialog(false);
+      setAccountsShowRejectAllDialog(false);
     } catch (error) {
       console.error("Failed to reject all items:", error);
       toast.error("Failed to reject all items");
@@ -679,7 +683,7 @@ const UpdateExpense = () => {
   };
 
   const handleAccountsHoldAll = () => {
-    setHoldAccountsConfirmOpen(true);
+    setAccountsShowHoldAllDialog(true);
   };
 
   const applyAccountsHoldAll = async () => {
@@ -712,7 +716,7 @@ const UpdateExpense = () => {
       );
 
       toast.success("All items put on hold successfully");
-      setShowHoldAllDialog(false);
+      setAccountsShowHoldAllDialog(false);
     } catch (error) {
       console.error("Failed to hold all items:", error);
       toast.error("Failed to hold all items");
@@ -763,7 +767,9 @@ const UpdateExpense = () => {
     "Bill Amount",
     "Invoice Number",
     "Approved Amount",
-    ...(user?.name !== "Shruti Tripathi" ? ["Approval"] : []),
+    ...(user?.name === "Shruti Tripathi" || user?.department === "Accounts"
+      ? []
+      : ["Approval"]),
   ];
 
   return (
@@ -870,9 +876,13 @@ const UpdateExpense = () => {
                     size="sm"
                     onClick={handleAccountsRejectAll}
                     disabled={rows.every((row) =>
-                      ["rejected", "hold", "final approval"].includes(
-                        row.current_status
-                      )
+                      [
+                        "rejected",
+                        "hold",
+                        "final approval",
+                        "submitted",
+                        "manager approval",
+                      ].includes(row.current_status)
                     )}
                   >
                     Reject All
@@ -882,9 +892,13 @@ const UpdateExpense = () => {
                     size="sm"
                     onClick={handleAccountsHoldAll}
                     disabled={rows.every((row) =>
-                      ["rejected", "hold", "final approval"].includes(
-                        row.current_status
-                      )
+                      [
+                        "rejected",
+                        "hold",
+                        "final approval",
+                        "submitted",
+                        "manager approval",
+                      ].includes(row.current_status)
                     )}
                   >
                     Hold All
@@ -894,9 +908,13 @@ const UpdateExpense = () => {
                     size="sm"
                     onClick={handleAccountsApproveAll}
                     disabled={rows.every((row) =>
-                      ["rejected", "hold", "final approval"].includes(
-                        row.current_status
-                      )
+                      [
+                        "rejected",
+                        "hold",
+                        "final approval",
+                        "submitted",
+                        "manager approval",
+                      ].includes(row.current_status)
                     )}
                   >
                     Approve All
@@ -1016,7 +1034,10 @@ const UpdateExpense = () => {
                         />
                       </td>
 
-                      {user?.name !== "Shruti Tripathi" && (
+                      {!(
+                        user?.name === "Shruti Tripathi" ||
+                        user?.department === "Accounts"
+                      ) && (
                         <td style={{ padding: 8 }}>
                           <Box display="flex" gap={1} justifyContent="center">
                             <Button
@@ -1274,8 +1295,8 @@ const UpdateExpense = () => {
       </Modal>
       {/* HR hOLD All Confirmation Modal */}
       <Modal
-        open={holdAccountsConfirmOpen}
-        onClose={() => setHoldConfirmOpen(false)}
+        open={showHoldAllDialog}
+        onClose={() => setShowHoldAllDialog(false)}
       >
         <ModalDialog>
           <DialogTitle>Confirm Hold</DialogTitle>
@@ -1283,12 +1304,12 @@ const UpdateExpense = () => {
             Are you sure you want to put all items on hold?
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setHoldConfirmOpen(false)}>Cancel</Button>
+            <Button onClick={() => setShowHoldAllDialog(false)}>Cancel</Button>
             <Button
               color="warning"
               onClick={() => {
                 applyHrHoldAll();
-                setHoldConfirmOpen(false);
+                setShowHoldAllDialog(false);
               }}
             >
               Confirm
@@ -1341,8 +1362,8 @@ const UpdateExpense = () => {
 
       {/* Accounts Reject All Confirmation Modal */}
       <Modal
-        open={rejectAccountsConfirmOpen}
-        onClose={() => setRejectAccountsConfirmOpen(false)}
+        open={showAccountsRejectAllDialog}
+        onClose={() => setAccountsShowRejectAllDialog(false)}
       >
         <ModalDialog>
           <DialogTitle>Confirm Rejection</DialogTitle>
@@ -1350,14 +1371,14 @@ const UpdateExpense = () => {
             Are you sure you want to reject all items?
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setRejectAccountsConfirmOpen(false)}>
+            <Button onClick={() => setAccountsShowRejectAllDialog(false)}>
               Cancel
             </Button>
             <Button
               color="danger"
               onClick={() => {
                 applyAccountsRejectAll();
-                setRejectAccountsConfirmOpen(false);
+                setAccountsShowRejectAllDialog(false);
               }}
             >
               Confirm
@@ -1367,8 +1388,8 @@ const UpdateExpense = () => {
       </Modal>
       {/* Accounts hOLD All Confirmation Modal */}
       <Modal
-        open={holdConfirmOpen}
-        onClose={() => setHoldAccountsConfirmOpen(false)}
+        open={showAccountsHoldAllDialog}
+        onClose={() => setAccountsShowHoldAllDialog(false)}
       >
         <ModalDialog>
           <DialogTitle>Confirm Hold</DialogTitle>
@@ -1376,14 +1397,14 @@ const UpdateExpense = () => {
             Are you sure you want to put all items on hold?
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setHoldAccountsConfirmOpen(false)}>
+            <Button onClick={() => setAccountsShowHoldAllDialog(false)}>
               Cancel
             </Button>
             <Button
               color="warning"
               onClick={() => {
                 applyAccountsHoldAll();
-                setHoldAccountsConfirmOpen(false);
+                setAccountsShowHoldAllDialog(false);
               }}
             >
               Confirm
@@ -1549,7 +1570,9 @@ const UpdateExpense = () => {
                       sx={{ mt: 2 }}
                     >
                       <Box>
-                        <FormLabel sx={{justifyContent:"center"}}>Disbursement Date</FormLabel>
+                        <FormLabel sx={{ justifyContent: "center" }}>
+                          Disbursement Date
+                        </FormLabel>
                         <Input
                           size="sm"
                           variant="outlined"
@@ -1567,14 +1590,13 @@ const UpdateExpense = () => {
                       </Box>
                       <Box mt={2}>
                         <Button
-                        variant="solid"
-                        color="success"
-                        onClick={handleFinalApproval}
-                      >
-                        Final Approval
-                      </Button>
-                        </Box>
-                      
+                          variant="solid"
+                          color="success"
+                          onClick={handleFinalApproval}
+                        >
+                          Final Approval
+                        </Button>
+                      </Box>
                     </Box>
                   )}
 
