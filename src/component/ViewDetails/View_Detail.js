@@ -13,12 +13,11 @@ import {
 import Sheet from "@mui/joy/Sheet";
 import Table from "@mui/joy/Table";
 import { saveAs } from "file-saver";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import Img12 from "../../assets/slnko_blue_logo.png";
 import Axios from "../../utils/Axios";
-import axios from "axios";
 
 const Customer_Payment_Summary = () => {
   const [error, setError] = useState("");
@@ -401,16 +400,16 @@ const Customer_Payment_Summary = () => {
       const fetchCreditHistory = async () => {
         try {
           // console.log("Fetching credit history for p_id:", projectData.p_id);
-const token = localStorage.getItem("authToken");
+          const token = localStorage.getItem("authToken");
 
-const response = await axios.get(
-  `/all-bilL-IT?p_id=${projectData.p_id}`,
-  {
-    headers: {
-      "x-auth-token": token,
-    },
-  }
-);
+          const response = await Axios.get(
+            `/all-bilL-IT?p_id=${projectData.p_id}`,
+            {
+              headers: {
+                "x-auth-token": token,
+              },
+            }
+          );
 
           // console.log("Credit History Response:", response);
 
@@ -439,26 +438,26 @@ const response = await axios.get(
       const fetchDebitHistory = async () => {
         try {
           // console.log("Fetching debit history for p_id:", projectData.p_id);
-const token = localStorage.getItem("authToken");
+          const token = localStorage.getItem("authToken");
           // Fetch debit history data from the API
           const response = await Axios.get(
             `/get-subtract-amounT-IT?p_id=${projectData.p_id}`,
-  {
-    headers: {
-      "x-auth-token": token,
-    },
-  }
-);
+            {
+              headers: {
+                "x-auth-token": token,
+              },
+            }
+          );
           // console.log("Debit History Response:", response.data);
 
           const data = response.data?.data ?? [];
 
           // Fetch purchase orders (PO) data
           const poResponse = await Axios.get("/get-all-pO-IT", {
-          headers: {
-            "x-auth-token": token,
-          },
-        });
+            headers: {
+              "x-auth-token": token,
+            },
+          });
           // console.log("PO Response:", poResponse.data);
 
           const poData = poResponse.data?.data || [];
@@ -502,15 +501,15 @@ const token = localStorage.getItem("authToken");
       }
 
       // console.log("Deleting selected debits:", selectedDebits);
-const token = localStorage.getItem("authToken");
+      const token = localStorage.getItem("authToken");
       // Perform all deletions in parallel
       await Promise.all(
         selectedDebits.map((_id) =>
-          Axios.delete(`/delete-subtract-moneY/${_id}`,{
-          headers: {
-            "x-auth-token": token,
-          },
-        })
+          Axios.delete(`/delete-subtract-moneY/${_id}`, {
+            headers: {
+              "x-auth-token": token,
+            },
+          })
         )
       );
 
@@ -590,21 +589,21 @@ const token = localStorage.getItem("authToken");
         try {
           const token = localStorage.getItem("authToken");
 
-    const response = await Axios.get("/get-all-projecT-IT", {
-      headers: { "x-auth-token": token },
-    });
+          const response = await Axios.get("/get-all-projecT-IT", {
+            headers: { "x-auth-token": token },
+          });
 
-    const payResponse = await Axios.get("/get-pay-summarY-IT", {
-      headers: { "x-auth-token": token },
-    });
+          const payResponse = await Axios.get("/get-pay-summarY-IT", {
+            headers: { "x-auth-token": token },
+          });
 
-    const poResponse = await Axios.get("/get-all-pO-IT", {
-      headers: { "x-auth-token": token },
-    });
+          const poResponse = await Axios.get("/get-all-pO-IT", {
+            headers: { "x-auth-token": token },
+          });
 
-    const billResponse = await Axios.get("/get-all-bilL-IT", {
-      headers: { "x-auth-token": token },
-    });
+          const billResponse = await Axios.get("/get-all-bilL-IT", {
+            headers: { "x-auth-token": token },
+          });
 
           const payData = payResponse.data?.data || [];
           const poData = poResponse.data?.data || [];
@@ -672,15 +671,17 @@ const token = localStorage.getItem("authToken");
         toast.error("No debits selected for deletion.");
         return;
       }
-const token = localStorage.getItem("authToken");
+      const token = localStorage.getItem("authToken");
       // console.log("Deleting selected clients:", selectedClients);
 
       await Promise.all(
-        selectedClients.map((_id) => Axios.delete(`/delete-pO-IT/${_id}`,{
-          headers: {
-            "x-auth-token": token,
-          },
-        }))
+        selectedClients.map((_id) =>
+          Axios.delete(`/delete-pO-IT/${_id}`, {
+            headers: {
+              "x-auth-token": token,
+            },
+          })
+        )
       );
 
       toast.success("PO Deleted successfully.");
@@ -723,16 +724,16 @@ const token = localStorage.getItem("authToken");
         toast.error("No debits selected for deletion.");
         return;
       }
-const token = localStorage.getItem("authToken");
+      const token = localStorage.getItem("authToken");
       // console.log("Deleting selected clients:", selectedCredits);
 
       await Promise.all(
         selectedCredits.map((_id) =>
           Axios.delete(`/delete-crdit-amount/${_id}`, {
-          headers: {
-            "x-auth-token": token,
-          },
-        })
+            headers: {
+              "x-auth-token": token,
+            },
+          })
         )
       );
 
@@ -812,20 +813,21 @@ const token = localStorage.getItem("authToken");
         try {
           const token = localStorage.getItem("authToken");
           const response = await Axios.get(
-            `/get-all-projecT-IT?p_id=${projectData.p_id}`,{
-          headers: {
-            "x-auth-token": token,
-          },
-        }
+            `/get-all-projecT-IT?p_id=${projectData.p_id}`,
+            {
+              headers: {
+                "x-auth-token": token,
+              },
+            }
           );
           // const payResponse = await Axios.get("/get-pay-summarY-IT");
           // const poResponse = await Axios.get("/get-all-pO-IT");
           // const billResponse = await Axios.get("/get-all-bilL-IT");
-          const adjustResponse = await Axios.get("/get-adjustment-request",{
-          headers: {
-            "x-auth-token": token,
-          },
-        });
+          const adjustResponse = await Axios.get("/get-adjustment-request", {
+            headers: {
+              "x-auth-token": token,
+            },
+          });
 
           // const payData = payResponse.data?.data || [];
           // const poData = poResponse.data?.data || [];
@@ -873,16 +875,16 @@ const token = localStorage.getItem("authToken");
         toast.error("No adjustment selected for deletion.");
         return;
       }
-const token = localStorage.getItem("authToken");
+      const token = localStorage.getItem("authToken");
       // console.log("Deleting selected clients:", selectedAdjust);
 
       await Promise.all(
         selectedAdjust.map((_id) =>
-          Axios.delete(`/delete-adjustment-request/${_id}`,{
-          headers: {
-            "x-auth-token": token,
-          },
-        })
+          Axios.delete(`/delete-adjustment-request/${_id}`, {
+            headers: {
+              "x-auth-token": token,
+            },
+          })
         )
       );
 

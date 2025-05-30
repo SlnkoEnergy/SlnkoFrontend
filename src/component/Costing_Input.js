@@ -1,12 +1,11 @@
-import { Box, Button, Grid, Sheet, Table, Typography } from "@mui/joy";
-import React from "react";
-import { useState , useEffect} from "react";
-import "./Commercial Offer/CSS/offer.css";
-import { useNavigate } from "react-router-dom";
-import Axios from "../utils/Axios";
 import SaveIcon from "@mui/icons-material/Save";
+import { Box, Button, Grid, Sheet, Table } from "@mui/joy";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Axios from "../utils/Axios";
+import "./Commercial Offer/CSS/offer.css";
 
 const Costing_Input = () => {
   const navigate = useNavigate();
@@ -51,18 +50,28 @@ const Costing_Input = () => {
       machinery: "",
       civil_material: "",
     },
-    submitted_by_scm:""
+    submitted_by_scm: "",
   });
 
   const [id, setId] = useState(""); // Store `_id` dynamically from GET API
 
   useEffect(() => {
-    Axios
-      .get("/get-comm-scm-rate")
+    const token = localStorage.getItem("authToken");
+    console.log(token);
+
+    if (!token) {
+      throw new Error("No auth token found in localStorage.");
+    }
+
+    Axios.get("/get-comm-scm-rate", {
+      headers: {
+        "x-auth-token": token,
+      },
+    })
       .then((response) => {
         if (response.data && response.data.length > 0) {
           console.log("Fetched data:", response.data[0]); // Debugging fetched data
-          setscmData(response.data[0]); 
+          setscmData(response.data[0]);
           setId(response.data[0]._id); // Store `_id` dynamically
         } else {
           console.error("No data found in API response");
@@ -101,17 +110,28 @@ const Costing_Input = () => {
     console.log("Submitting data to PUT API:", { id, scmData });
 
     try {
-      const response = await Axios.put(
-        `/edit-scm-rate/${id}`,
-        scmData
-      );
-     
+      const token = localStorage.getItem("authToken");
+      console.log(token);
+
+      if (!token) {
+        throw new Error("No auth token found in localStorage.");
+      }
+
+      const response = await Axios.put(`/edit-scm-rate/${id}`, scmData, {
+        headers: {
+          "x-auth-token": token,
+        },
+      });
+
       toast.success("Data updated successfully!");
       console.log("Data updated successfully:", response.data);
-       navigate("/comm_offer");
+      navigate("/comm_offer");
     } catch (error) {
-        toast.error("Error updating data!");
-      console.error("Error updating data:", error.response ? error.response.data : error);
+      toast.error("Error updating data!");
+      console.error(
+        "Error updating data:",
+        error.response ? error.response.data : error
+      );
     }
   };
 
@@ -156,12 +176,14 @@ const Costing_Input = () => {
                 overflowX: "auto",
               }}
             >
-              <Table sx={{
-                width: "100%",
-                borderCollapse: "collapse!important",
-                tableLayout: "auto",
-                border: "1px solid #dee2e6 !important"
-              }}>
+              <Table
+                sx={{
+                  width: "100%",
+                  borderCollapse: "collapse!important",
+                  tableLayout: "auto",
+                  border: "1px solid #dee2e6 !important",
+                }}
+              >
                 <thead>
                   <tr>
                     <th style={{ width: "5%" }}>S.NO.</th>
@@ -1674,41 +1696,48 @@ const Costing_Input = () => {
                 <tfoot>
                   <tr>
                     <td colSpan={6}>
-               <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-        <Button
-          type="submit"
-          variant="contained"
-          startIcon={<SaveIcon />}
-          sx={{
-            background: "linear-gradient(135deg, #007bff, #0056b3)",
-            color: "white",
-            fontSize: "16px",
-            fontWeight: "600",
-            padding: "8px 16px",
-            borderRadius: "6px",
-            textTransform: "none",
-            boxShadow: "0px 3px 8px rgba(0, 123, 255, 0.3)",
-            transition: "all 0.3s ease-in-out",
-            minWidth: "150px",
-            "&:hover": {
-              background: "linear-gradient(135deg, #0056b3, #003580)",
-              transform: "translateY(-2px)",
-              boxShadow: "0px 6px 15px rgba(0, 123, 255, 0.5)",
-            },
-            "&:active": {
-              transform: "translateY(1px)",
-              boxShadow: "0px 2px 8px rgba(0, 123, 255, 0.3)",
-            },
-          }}
-        >
-          Update Data
-        </Button>
-      </Box>
-<ToastContainer />
-               </td>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "center",
+                          mt: 2,
+                        }}
+                      >
+                        <Button
+                          type="submit"
+                          variant="contained"
+                          startIcon={<SaveIcon />}
+                          sx={{
+                            background:
+                              "linear-gradient(135deg, #007bff, #0056b3)",
+                            color: "white",
+                            fontSize: "16px",
+                            fontWeight: "600",
+                            padding: "8px 16px",
+                            borderRadius: "6px",
+                            textTransform: "none",
+                            boxShadow: "0px 3px 8px rgba(0, 123, 255, 0.3)",
+                            transition: "all 0.3s ease-in-out",
+                            minWidth: "150px",
+                            "&:hover": {
+                              background:
+                                "linear-gradient(135deg, #0056b3, #003580)",
+                              transform: "translateY(-2px)",
+                              boxShadow: "0px 6px 15px rgba(0, 123, 255, 0.5)",
+                            },
+                            "&:active": {
+                              transform: "translateY(1px)",
+                              boxShadow: "0px 2px 8px rgba(0, 123, 255, 0.3)",
+                            },
+                          }}
+                        >
+                          Update Data
+                        </Button>
+                      </Box>
+                      <ToastContainer />
+                    </td>
                   </tr>
-               
-             </tfoot>
+                </tfoot>
               </Table>
             </Sheet>
           </form>

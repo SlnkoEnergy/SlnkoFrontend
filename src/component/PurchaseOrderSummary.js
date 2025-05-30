@@ -2,7 +2,6 @@ import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import EditNoteIcon from "@mui/icons-material/EditNote";
-import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import HistoryIcon from "@mui/icons-material/History";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
@@ -22,17 +21,12 @@ import Input from "@mui/joy/Input";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
-import Modal from "@mui/joy/Modal";
-import ModalClose from "@mui/joy/ModalClose";
-import ModalDialog from "@mui/joy/ModalDialog";
-import Option from "@mui/joy/Option";
-import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
+import axios from "axios";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
-import Axios from "../utils/Axios";
 
 // function descendingComparator(a, b, orderBy) {
 //   if (b[orderBy] < a[orderBy]) {
@@ -65,48 +59,66 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const [total_Billed, setTotal_Billed] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const renderFilters = () => (
-    <>
-      <FormControl size="sm">
-        <FormLabel>State</FormLabel>
-        <Select
-          size="sm"
-          placeholder="Filter by state"
-          onChange={(e) => setStateFilter(e.target.value)}
-          slotProps={{ button: { sx: { whiteSpace: "nowrap" } } }}
-        >
-          <Option value="">All</Option>
-          <Option value="A">A</Option>
-          <Option value="B">B</Option>
-          <Option value="C">C</Option>
-          <Option value="D">D</Option>
-        </Select>
-      </FormControl>
-      <FormControl size="sm">
-        <FormLabel>Customer</FormLabel>
-        <Select size="sm" placeholder="All">
-          <Option value="all">All</Option>
-          <Option value="olivia">Olivia Rhye</Option>
-          <Option value="steve">Steve Hampton</Option>
-          <Option value="ciaran">Ciaran Murray</Option>
-          <Option value="marina">Marina Macdonald</Option>
-          <Option value="charles">Charles Fulton</Option>
-          <Option value="jay">Jay Hoper</Option>
-        </Select>
-      </FormControl>
-    </>
-  );
+  // const renderFilters = () => (
+  //   <>
+  //     <FormControl size="sm">
+  //       <FormLabel>State</FormLabel>
+  //       <Select
+  //         size="sm"
+  //         placeholder="Filter by state"
+  //         onChange={(e) => setStateFilter(e.target.value)}
+  //         slotProps={{ button: { sx: { whiteSpace: "nowrap" } } }}
+  //       >
+  //         <Option value="">All</Option>
+  //         <Option value="A">A</Option>
+  //         <Option value="B">B</Option>
+  //         <Option value="C">C</Option>
+  //         <Option value="D">D</Option>
+  //       </Select>
+  //     </FormControl>
+  //     <FormControl size="sm">
+  //       <FormLabel>Customer</FormLabel>
+  //       <Select size="sm" placeholder="All">
+  //         <Option value="all">All</Option>
+  //         <Option value="olivia">Olivia Rhye</Option>
+  //         <Option value="steve">Steve Hampton</Option>
+  //         <Option value="ciaran">Ciaran Murray</Option>
+  //         <Option value="marina">Marina Macdonald</Option>
+  //         <Option value="charles">Charles Fulton</Option>
+  //         <Option value="jay">Jay Hoper</Option>
+  //       </Select>
+  //     </FormControl>
+  //   </>
+  // );
 
   useEffect(() => {
     const fetchTableData = async () => {
       try {
-        
-        const [PoResponse, BillResponse, payResponse] = await Promise.all([
-          Axios.get("get-all-pO-IT"),
-          Axios.get("get-all-bilL-IT"),
-          Axios.get("get-pay-summarY-IT"),
-        ]);
+        const token = localStorage.getItem("authToken");
+        console.log(token);
 
+        if (!token) {
+          throw new Error("No auth token found in localStorage.");
+        }
+      
+        const [PoResponse, BillResponse, payResponse] = await Promise.all([
+          axios.get("https://api.slnkoprotrac.com/v1/get-all-pO-IT", {
+            headers: {
+              "x-auth-token": token,
+            },
+          }),
+          axios.get("https://api.slnkoprotrac.com/v1/get-all-bilL-IT", {
+            headers: {
+              "x-auth-token": token,
+            },
+          }),
+          axios.get("https://api.slnkoprotrac.com/v1/get-pay-summarY-IT", {
+            headers: {
+              "x-auth-token": token,
+            },
+          }),
+        ]);
+        
         const PoData = PoResponse.data.data || [];
         const BillData = BillResponse.data.data || [];
         const payData = payResponse.data.data || [];
@@ -514,7 +526,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   return (
     <>
       {/* Mobile Filters */}
-      <Sheet
+      {/* <Sheet
         className="SearchAndFilters-mobile"
         sx={{ display: { xs: "flex", sm: "none" }, my: 1, gap: 1 }}
       >
@@ -547,7 +559,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             </Sheet>
           </ModalDialog>
         </Modal>
-      </Sheet>
+      </Sheet> */}
 
       {/* Tablet and Up Filters */}
       <Box

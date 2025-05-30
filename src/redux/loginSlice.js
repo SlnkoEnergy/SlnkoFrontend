@@ -1,5 +1,4 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { BASE_URL, getAuthToken } from "./auth/auth_variable";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: "https://api.slnkoprotrac.com/v1/",
@@ -64,6 +63,5 @@ export const {
   useAddLoginsMutation,
   // useAddForgetPasswordMutation,
   useVerifyOtpMutation,
-  useResetPasswordMutation
-
+  useResetPasswordMutation,
 } = loginsApi;

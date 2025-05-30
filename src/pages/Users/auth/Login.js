@@ -3,7 +3,7 @@ import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { Box, Button, Grid, Paper, TextField, Typography } from "@mui/material";
 import { useFormik } from "formik";
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Slider from "react-slick";
 import { toast } from "react-toastify";
@@ -16,8 +16,8 @@ import Img5 from "../../../assets/Protrac_blue.png";
 import ImgX from "../../../assets/slnko_white_logo.png";
 // import Img4 from "../../../assets/solar3.jpg";
 import axios from "axios";
+import { useAddLoginsMutation } from "../../../redux/loginSlice";
 import Colors from "../../../utils/colors";
-import { useAddLoginsMutation, useGetLoginsQuery } from "../../../redux/loginSlice";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -27,16 +27,8 @@ const Login = () => {
   const [token, setToken] = useState(null);
   const [userID, setUserID] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  
-
-  
-
-
-  
 
   const handleTogglePassword = () => setShowPassword((prev) => !prev);
-  
 
   // const paperStyle = {
   //   background: Colors.palette.primary.main,
@@ -70,119 +62,110 @@ const Login = () => {
     arrows: false,
   };
 
-//  const handleLogin = async (values) => {
-//   setIsSubmitting(true);
+  //  const handleLogin = async (values) => {
+  //   setIsSubmitting(true);
 
-//   try {
-    
-//     const user = await addLogin(values).unwrap();
+  //   try {
 
- 
-//     if (!user.token) {
-//       toast.error("Login failed: Token not received.");
-//       return;
-//     }
+  //     const user = await addLogin(values).unwrap();
 
-//     console.log("✅ Token received:", user.token);
+  //     if (!user.token) {
+  //       toast.error("Login failed: Token not received.");
+  //       return;
+  //     }
 
-  
-//     const expiration = new Date().getTime() + 3 * 24 * 60 * 60 * 1000;
-//     sessionStorage.setItem("authToken", user.token);
-//     sessionStorage.setItem("authTokenExpiration", expiration.toString());
+  //     console.log("✅ Token received:", user.token);
 
- 
-//     const response = await axios.get("https://api.slnkoprotrac.com/v1/get-all-useR-IT", {
-//       headers: {
-//         "x-auth-token": user.token,
-//       },
-//     });
+  //     const expiration = new Date().getTime() + 3 * 24 * 60 * 60 * 1000;
+  //     sessionStorage.setItem("authToken", user.token);
+  //     sessionStorage.setItem("authTokenExpiration", expiration.toString());
 
-//     const matchedUser = response?.data?.data.find(
-//       (item) => String(item._id) === String(user.userId)
-//     );
+  //     const response = await axios.get("https://api.slnkoprotrac.com/v1/get-all-useR-IT", {
+  //       headers: {
+  //         "x-auth-token": user.token,
+  //       },
+  //     });
 
-//     if (!matchedUser) {
-//       toast.error("Login failed: User details not found.");
-//       return;
-//     }
+  //     const matchedUser = response?.data?.data.find(
+  //       (item) => String(item._id) === String(user.userId)
+  //     );
 
- 
-//     const userDetails = {
-//       name: matchedUser.name,
-//       email: matchedUser.email,
-//       phone: matchedUser.phone,
-//       emp_id: matchedUser.emp_id,
-//       role: matchedUser.role,
-//       department: matchedUser.department || "",
-//       userID: matchedUser._id || "",
-//     };
+  //     if (!matchedUser) {
+  //       toast.error("Login failed: User details not found.");
+  //       return;
+  //     }
 
-//     localStorage.setItem("userDetails", JSON.stringify(userDetails));
-//     toast.success("Login successful!");
+  //     const userDetails = {
+  //       name: matchedUser.name,
+  //       email: matchedUser.email,
+  //       phone: matchedUser.phone,
+  //       emp_id: matchedUser.emp_id,
+  //       role: matchedUser.role,
+  //       department: matchedUser.department || "",
+  //       userID: matchedUser._id || "",
+  //     };
 
-//     navigate("/dashboard");
-//   } catch (error) {
-//     console.error("Login error:", error);
-//     const message =
-//       error?.response?.data?.message ||
-//       error?.data?.message ||
-//       error?.message ||
-//       "Login failed.";
-//     toast.error(message);
-//   } finally {
-//     setIsSubmitting(false);
-//   }
-// };
+  //     localStorage.setItem("userDetails", JSON.stringify(userDetails));
+  //     toast.success("Login successful!");
 
- const handleLogin = async (values) => {
+  //     navigate("/dashboard");
+  //   } catch (error) {
+  //     console.error("Login error:", error);
+  //     const message =
+  //       error?.response?.data?.message ||
+  //       error?.data?.message ||
+  //       error?.message ||
+  //       "Login failed.";
+  //     toast.error(message);
+  //   } finally {
+  //     setIsSubmitting(false);
+  //   }
+  // };
+
+  const handleLogin = async (values) => {
     setIsSubmitting(true);
     try {
-      // Step 1: Call login mutation
       const user = await addLogin(values).unwrap();
-  
-      // Step 2: Check if token is present
+
       if (!user.token) {
         toast.error("Login failed: Token not received.");
         return;
       }
-  
+
       console.log("✅ Token received:", user.token);
-  
-  
+
       const expiration = new Date().getTime() + 3 * 24 * 60 * 60 * 1000;
       localStorage.setItem("authToken", user.token);
       // sessionStorage.setItem("userDetails", JSON.stringify({
       //   ...user,
       //   userID: user._id
       // }));
-     
 
       localStorage.setItem("authTokenExpiration", expiration.toString());
-  
-      // Step 4: Get user list to match current user
-     
+
       if (!user.token) {
         toast.error("Missing token. Cannot fetch user data.");
         return;
       }
-      const response = await axios.get("https://api.slnkoprotrac.com/v1/get-all-useR-IT", {
-        headers: {
-          "x-auth-token": user.token,
-        },
-      });
-  
+      const response = await axios.get(
+        "https://api.slnkoprotrac.com/v1/get-all-useR-IT",
+        {
+          headers: {
+            "x-auth-token": user.token,
+          },
+        }
+      );
+
       const matchedUser = response?.data?.data.find(
         (item) => String(item._id) === String(user.userId)
       );
       console.log(matchedUser);
-      
-  
+
       if (!matchedUser) {
         toast.error("Login failed: User details not found.");
         return;
       }
-  
-      // Step 5: Save matched user details
+
       const userDetails = {
         name: matchedUser.name,
         email: matchedUser.email,
@@ -190,13 +173,12 @@ const Login = () => {
         emp_id: matchedUser.emp_id,
         role: matchedUser.role,
         department: matchedUser.department || "",
-        userID: matchedUser._id || "", // ✅ FIXED: use _id
+        userID: matchedUser._id || "",
       };
-  
+
       localStorage.setItem("userDetails", JSON.stringify(userDetails));
       console.log("✅ User details stored:", userDetails);
-  
-      // Step 6: Success feedback and navigation
+
       toast.success("Login successful!");
       navigate("/dashboard");
     } catch (error) {
@@ -233,7 +215,7 @@ const Login = () => {
       sx={{
         background:
           "radial-gradient(circle at 100% 100%, #023159, #1F476A, #F5F5F5)",
-        height: {md:"100%",xs:"100vh"},
+        height: { md: "100%", xs: "100vh" },
         width: "100%",
         display: "flex",
         justifyContent: "center",
@@ -259,7 +241,7 @@ const Login = () => {
             <img
               src={ImgX}
               alt="Solar 2"
-              style={{ width: "100%", height: "auto", marginTop:"20%" }}
+              style={{ width: "100%", height: "auto", marginTop: "20%" }}
             />
             <img
               src={Img1}
@@ -294,7 +276,7 @@ const Login = () => {
               // background: `linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8))`,
               width: { sm: "60%", xl: "60%", md: "85%" },
               background: Colors.palette.primary.main,
-              marginTop: {xl:"20%",sm:"0%"},
+              marginTop: { xl: "20%", sm: "0%" },
               height: "auto",
               padding: "20px",
               display: "flex",

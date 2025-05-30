@@ -1,11 +1,9 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-import { BASE_URL, getAuthToken } from "./auth/auth_variable";
-
 const baseQuery = fetchBaseQuery({
   baseUrl: "https://api.slnkoprotrac.com/v1/",
   prepareHeaders: (headers) => {
-   const token = localStorage.getItem("authToken");
+    const token = localStorage.getItem("authToken");
     console.log("Token:", token);
     if (token) {
       headers.set("x-auth-token", token);
@@ -21,12 +19,12 @@ export const purchasesApi = createApi({
     getPurchases: builder.query({
       query: () => "get-all-pO-IT",
       providesTags: ["Purchase"],
-      transformResponse: (response) => response.data || [],
-    }), 
+      // transformResponse: (response) => response.data || [],
+    }),
     getItems: builder.query({
       query: () => "get-iteM-IT",
       providesTags: ["Purchase"],
-    }), 
+    }),
     // deleteProject: builder.mutation({
     //   query: (_id) => ({
     //     url: `delete-by-id-IT/${_id}`,
@@ -53,10 +51,10 @@ export const purchasesApi = createApi({
   }),
 });
 
-export const { 
-  useGetPurchasesQuery, 
-  useGetItemsQuery, 
-//   useDeleteProjectMutation,
+export const {
+  useGetPurchasesQuery,
+  useGetItemsQuery,
+  //   useDeleteProjectMutation,
   useAddPurchasesMutation,
-  useUpdatePurchasesMutation
+  useUpdatePurchasesMutation,
 } = purchasesApi;

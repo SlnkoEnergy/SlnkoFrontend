@@ -6,6 +6,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
+import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
@@ -21,13 +22,11 @@ import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
-import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import Typography from "@mui/joy/Typography";
-import * as React from "react";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import Axios from "../utils/Axios";
 import NoData from "../assets/alert-bell.svg";
+import Axios from "../utils/Axios";
 
 const PaymentRequest = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -53,18 +52,14 @@ const PaymentRequest = forwardRef((props, ref) => {
     const fetchTableData = async () => {
       try {
         const token = localStorage.getItem("authToken");
+        const config = { headers: { "x-auth-token": token } };
+        console.log(token);
+
         const [paymentResponse, projectResponse] = await Promise.all([
-          Axios.get("/get-pay-summarY-IT",{
-          headers: {
-            "x-auth-token": token,
-          },
-        }),
-          Axios.get("/get-all-projecT-IT",{
-          headers: {
-            "x-auth-token": token,
-          },
-        }),
+          Axios.get("/get-pay-summarY-IT", config),
+          Axios.get("/get-all-projecT-IT", config),
         ]);
+
         setPayments(paymentResponse.data.data);
         console.log("Payment Data are:", paymentResponse.data.data);
 
@@ -91,12 +86,25 @@ const PaymentRequest = forwardRef((props, ref) => {
       } catch (err) {
         console.error("API Error:", err);
         setError(
-          <span style={{ display: "flex", alignItems: "center", gap: "5px", color: "red", justifyContent:"center", flexDirection:"column" , padding: "20px"}}>
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              color: "red",
+              justifyContent: "center",
+              flexDirection: "column",
+              padding: "20px",
+            }}
+          >
             <PermScanWifiIcon />
-            <Typography fontStyle={"italic"} fontWeight={"600"} sx={{color:"#0a6bcc"}} >
-            Hang tight! Internet Connection will be back soon..
+            <Typography
+              fontStyle={"italic"}
+              fontWeight={"600"}
+              sx={{ color: "#0a6bcc" }}
+            >
+              Hang tight! Internet Connection will be back soon..
             </Typography>
-            
           </span>
         );
       } finally {
@@ -462,8 +470,8 @@ const PaymentRequest = forwardRef((props, ref) => {
           borderRadius: "sm",
           py: 2,
           // display: { xs: "none", sm: "flex" },
-          display:"flex",
-          flexDirection:{xs:"column", md:"row"},
+          display: "flex",
+          flexDirection: { xs: "column", md: "row" },
           flexWrap: "wrap",
           gap: 1.5,
           "& > *": {
@@ -722,19 +730,24 @@ const PaymentRequest = forwardRef((props, ref) => {
                       // justifyContent:"center"
                     }}
                   >
-                    <Box sx={{
-                      fontStyle: "italic",
-                      display:"flex",
-                      flexDirection:"column",
-                      alignItems:"center",
-                      justifyContent:"center"
-                    }}>
-                      <img src = {NoData} alt="No data Image" style={{width:"50px", height:'50px'}}/>
-                    <Typography fontStyle={"italic"}>
-                      No records available
+                    <Box
+                      sx={{
+                        fontStyle: "italic",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <img
+                        src={NoData}
+                        alt="No data Image"
+                        style={{ width: "50px", height: "50px" }}
+                      />
+                      <Typography fontStyle={"italic"}>
+                        No records available
                       </Typography>
-                      </Box>
-                    
+                    </Box>
                   </Box>
                 </Box>
               )}
@@ -751,8 +764,8 @@ const PaymentRequest = forwardRef((props, ref) => {
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           // display: { xs: "none", md: "flex" },
-          display:"flex",
-          flexDirection:{xs: "column", sm: "row"},
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
           marginLeft: { xl: "15%", lg: "18%" },
         }}

@@ -144,7 +144,7 @@ const ProjectBalances = forwardRef((props, ref) => {
           Axios.get("/all-bilL-IT", configWithToken),
           Axios.get("/get-subtract-amounT-IT", configWithToken),
           Axios.get("/get-all-pO-IT", configWithToken),
-          Axios.get("/get-all-bilL-IT", configWithToken), // Note: duplicate of billResponse? Confirm if intentional
+          Axios.get("/get-all-bilL-IT", configWithToken),
           Axios.get("/get-pay-summarY-IT", configWithToken),
           Axios.get("/get-adjustment-request", configWithToken),
         ]);
