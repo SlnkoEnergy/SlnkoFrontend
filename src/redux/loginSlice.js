@@ -31,18 +31,17 @@ export const loginsApi = createApi({
       invalidatesTags: ["Login"],
     }),
 
-    addForgetPassword: builder.mutation({
-      query: (newForget) => ({
-        url: "forget-password-send-otP-IT",
+    verifyOtp: builder.mutation({
+      query: (otpPayload) => ({
+        url: "verifyOtp",
         method: "POST",
-        body: newForget,
+        body: otpPayload,
       }),
-      invalidatesTags: ["Login"],
     }),
 
     addEmail: builder.mutation({
       query: (newEmail) => ({
-        url: "received-emaiL-IT",
+        url: "sendOtp",
         method: "POST",
         body: newEmail,
       }),
@@ -51,7 +50,7 @@ export const loginsApi = createApi({
 
     resetPassword: builder.mutation({
       query: (payload) => ({
-        url: "reset-password-IT",
+        url: "resetPassword",
         method: "POST",
         body: payload,
       }),
@@ -63,7 +62,8 @@ export const {
   useGetLoginsQuery,
   useAddEmailMutation,
   useAddLoginsMutation,
-  useAddForgetPasswordMutation,
+  // useAddForgetPasswordMutation,
+  useVerifyOtpMutation,
   useResetPasswordMutation
 
 } = loginsApi;

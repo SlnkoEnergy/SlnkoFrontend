@@ -14,18 +14,14 @@ import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import loadingAnimation from "../../../assets/Lotties/animation-loading.json";
-import Axios from "../../../utils/Axios";
+// import Axios from "../../../utils/Axios";
 import Colors from "../../../utils/colors";
 import {
   useAddEmailMutation,
-  useAddForgetPasswordMutation,
   useResetPasswordMutation,
+  useVerifyOtpMutation,
 } from "../../../redux/loginSlice";
 
-// const Lottie = lazy(() => import("lottie-react"));
-// const loadingAnimation = lazy(
-//   () => import("../../../assets/Lotties/animation-loading.json")
-// );
 
 const PasswordReset = () => {
   const navigate = useNavigate();
@@ -43,10 +39,11 @@ const PasswordReset = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [emailError, setEmailError] = useState("");
-  const [passwordStage, setPasswordStage] = useState(false);
-const [newPassword, setNewPassword] = useState("");
-const [confirmPassword, setConfirmPassword] = useState("");
-const [passwordError, setPasswordError] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [otpVerified, setOtpVerified] = useState(false);
+
   const textInputRefs = useRef(
     Array.from({ length: 6 }).map(() => React.createRef())
   );
@@ -71,64 +68,9 @@ const [passwordError, setPasswordError] = useState("");
 
   const enteredOtp = number.join("").trim();
 
-  // const resendOtp = async () => {
-  //   try {
-  //     await axios.post("https://backendslnko.onrender.com/v1/forget-password-send-otp", { email: email });
-  //     toast.success("OTP Resent Successfully");
-  //   } catch (error) {
-  //     console.error("Error resending OTP:", error);
-  //     toast.error("Error resending OTP. Please try again.");
-  //   }
-  // };
-
-  const [addForgetPassword] = useAddForgetPasswordMutation();
   const [addEmail] = useAddEmailMutation();
   const [resetPassword] = useResetPasswordMutation();
-
-  // const handleFormSubmit = async (e) => {
-  //   e.preventDefault();
-
-  //   if (!otpSent) {
-  //     if (!validateEmail(email)) {
-  //       setEmailError("Please enter a valid email address.");
-  //       return;
-  //     }
-
-  //     setLoading(true);
-  //     setEmailError("");
-
-  //     try {
-  //       await Axios.post("/forget-password-send-otP-IT", { email });
-  //       toast.success("OTP sent to your email");
-  //       setOtpSent(true);
-  //     } catch (error) {
-  //       toast.error(
-  //         error.response?.data?.message ||
-  //           "Error sending OTP. Check your Email ID."
-  //       );
-  //       setOtpSent(false);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   } else {
-  //     setLoading(true);
-
-  //     try {
-  //       await Axios.post("/received-emaiL-IT", { email, otp: enteredOtp });
-  //       toast.success("Password sent successfully to your email");
-
-  //       setTimeout(() => {
-  //         navigate("/login");
-  //       }, 2000);
-  //     } catch (error) {
-  //       toast.error(
-  //         error.response?.data?.message || "Invalid OTP. Please try again."
-  //       );
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   }
-  // };
+  const [verifyOtp] = useVerifyOtpMutation();
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
@@ -143,28 +85,33 @@ const [passwordError, setPasswordError] = useState("");
       setEmailError("");
 
       try {
-        await addForgetPassword({ email }).unwrap();
-        toast.success("OTP sent to your email");
+        await addEmail({ email }).unwrap();
+        toast.success("OTP sent to your email.");
         setOtpSent(true);
       } catch (error) {
-        toast.error(error?.data?.message || "Error sending OTP.");
-        setOtpSent(false);
+        toast.error(error?.data?.message || "Failed to send OTP.");
       } finally {
         setLoading(false);
       }
-    } else if (!passwordStage) {
+    } else if (!otpVerified) {
+      const enteredOtp = number.join("").trim();
+      if (enteredOtp.length !== 6) {
+        toast.error("Please enter the complete 6-digit OTP.");
+        return;
+      }
+
       setLoading(true);
       try {
-        await addEmail({ email, otp: enteredOtp }).unwrap();
-        toast.success("OTP Verified. Set your new password.");
-        setPasswordStage(true);
+        await verifyOtp({ email, otp: enteredOtp }).unwrap();
+        toast.success("OTP verified successfully.");
+        setOtpVerified(true);
       } catch (error) {
-        toast.error(error?.data?.message || "Invalid OTP. Please try again.");
+        toast.error(error?.data?.message || "Invalid or expired OTP.");
       } finally {
         setLoading(false);
       }
     } else {
-     
+      
       if (newPassword.length < 6) {
         setPasswordError("Password must be at least 6 characters.");
         return;
@@ -179,8 +126,8 @@ const [passwordError, setPasswordError] = useState("");
       setLoading(true);
 
       try {
-        await resetPassword({ email, newPassword }).unwrap();
-        toast.success("Password reset successfully");
+        await resetPassword({ email, newPassword, confirmPassword }).unwrap();
+        toast.success("Password reset successfully.");
         navigate("/login");
       } catch (error) {
         toast.error(error?.data?.message || "Failed to reset password.");
@@ -242,6 +189,7 @@ const [passwordError, setPasswordError] = useState("");
                 <Button
                   sx={{ color: Colors.palette.secondary.main }}
                   onClick={() => navigate("/login")}
+                  type="button"
                 >
                   <ArrowBackIos />
                 </Button>
@@ -253,7 +201,11 @@ const [passwordError, setPasswordError] = useState("");
                     textAlign: "center",
                   }}
                 >
-                  Forgot Password?
+                  {otpSent
+                    ? otpVerified
+                      ? "Reset Password"
+                      : "Verify OTP"
+                    : "Forgot Password?"}
                 </Typography>
               </Box>
 
@@ -271,6 +223,7 @@ const [passwordError, setPasswordError] = useState("");
                     error={!!emailError}
                     helperText={emailError}
                     required
+                    sx={{ mt: 1 }}
                   />
                   <Button
                     type="submit"
@@ -298,9 +251,11 @@ const [passwordError, setPasswordError] = useState("");
                     )}
                   </Button>
                 </>
-              ) : !passwordStage ? (
+              ) : !otpVerified ? (
                 <>
-                  <Typography>Enter OTP sent to your email:</Typography>
+                  <Typography>
+                    Enter the 6-digit OTP sent to your email:
+                  </Typography>
                   <Box
                     sx={{
                       display: "flex",
@@ -316,26 +271,18 @@ const [passwordError, setPasswordError] = useState("");
                         variant="outlined"
                         value={number[index] || ""}
                         onChange={(e) => onChange(e, index)}
-                        sx={{ width: "40px", textAlign: "center" }}
+                        sx={{
+                          width: "40px",
+                          "& input": {
+                            textAlign: "center",
+                            fontSize: "20px",
+                          },
+                        }}
                         inputRef={textInputRefs.current[index]}
+                        inputProps={{ maxLength: 1 }}
                       />
                     ))}
                   </Box>
-                  {/* <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", mt: 2 }}>
-                    <Typography>
-                      Didn’t receive the OTP?{" "}
-                      <span
-                        onClick={resendOtp}
-                        style={{
-                          color: Colors.palette.secondary.blue,
-                          cursor: "pointer",
-                        }}
-                      >
-                        Resend
-                      </span>
-                      <TimerOutlined /> 00:45
-                    </Typography>
-                  </Box> */}
                   <Button
                     type="submit"
                     sx={{
@@ -357,7 +304,7 @@ const [passwordError, setPasswordError] = useState("");
                       />
                     ) : (
                       <>
-                        Submit
+                        Verify OTP
                         <ArrowForwardIos sx={{ fontSize: "20px", ml: 1 }} />
                       </>
                     )}
