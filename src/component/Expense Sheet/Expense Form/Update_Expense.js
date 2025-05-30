@@ -774,11 +774,9 @@ const UpdateExpense = () => {
 
   return (
     <Box p={2}>
-      <Typography level="h4" mb={2}>
-        Expense Sheet
-      </Typography>
+    
 
-      <Box sx={{ maxWidth: "100%", overflowX: "auto", p: 1 }}>
+      {/* <Box sx={{ maxWidth: "100%", overflowX: "auto", p: 1 }}> */}
         {/* Action Buttons */}
 
         <Box
@@ -1084,7 +1082,7 @@ const UpdateExpense = () => {
             </Table>
           </Sheet>
         </Box>
-      </Box>
+      {/* </Box> */}
 
       {/* Joy UI Modal for Comment */}
       <Modal

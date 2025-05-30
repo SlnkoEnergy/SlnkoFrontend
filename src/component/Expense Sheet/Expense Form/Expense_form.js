@@ -1,5 +1,5 @@
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import { Textarea } from "@mui/joy";
+import { Autocomplete, Stack, Textarea } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Input from "@mui/joy/Input";
@@ -309,8 +309,8 @@ const Expense_Form = () => {
 
   const handleFileChange = (rowIndex, itemIndex, file) => {
     const updatedRows = [...rows];
-    updatedRows[rowIndex].items[itemIndex].file = file; // Keep the actual File
-    updatedRows[rowIndex].items[itemIndex].attachment_url = file.name; // Optional, UI only
+    updatedRows[rowIndex].items[itemIndex].file = file;
+    updatedRows[rowIndex].items[itemIndex].attachment_url = file.name;
     setRows(updatedRows);
   };
 
@@ -351,9 +351,12 @@ const Expense_Form = () => {
     setDropdownOpenIndex(null); // ✅ Close the dropdown
   };
 
-  const handleCommentSave = () => {
-    setCommentDialog({ open: false, rowIndex: null });
-  };
+const getProjectName = (code) => {
+  const match = projectCodes.find(p => p.code === code);
+  return match ? match.name : "";
+};
+
+
 
   const showInvoiceNoColumn = rows.some(
     (row) => row.items?.[0]?.invoice?.status === "Yes"
@@ -374,34 +377,33 @@ const Expense_Form = () => {
     tableHeaders.push("Invoice No");
   }
 
+
+
+
   return (
     <Box p={2}>
       <Typography level="h4" mb={2}>
         Expense Sheet
       </Typography>
 
+      
+
       <Box sx={{ maxWidth: "100%", overflowX: "auto", p: 1 }}>
         {/* Action Buttons */}
 
-        <Box
-          sx={{
-            marginLeft: { md: "15%" },
-          }}
-        >
-          {/* Action Buttons */}
-
+        <Box sx={{ ml: { md: "15%" }, px: 2 }}>
+          {/* Date Range Selection */}
           <Box
             display="flex"
+            flexWrap="wrap"
             alignItems="center"
-            justifyContent={"flex-end"}
-            gap={2}
+            justifyContent="flex-end"
+            gap={1.5}
             mb={2}
           >
             <Typography level="body-md" fontWeight="lg">
               Select Expense Term:
             </Typography>
-
-            {/* From Date */}
             <Input
               type="date"
               size="sm"
@@ -413,10 +415,7 @@ const Expense_Form = () => {
                 })
               }
             />
-
             <Typography level="body-sm">to</Typography>
-
-            {/* To Date */}
             <Input
               type="date"
               size="sm"
@@ -430,292 +429,299 @@ const Expense_Form = () => {
             />
           </Box>
 
-          <table
-            style={{
-              borderCollapse: "collapse",
-              width: "100%",
-              minWidth: 800,
-              fontSize: "0.9rem",
-              tableLayout: "fixed",
+          {/* Responsive Table Container */}
+          <Box
+            sx={{
+              overflowX: "auto",
+              border: "1px solid #e0e0e0",
+              borderRadius: 8,
+              boxShadow: "sm",
+              display:{md:"flex", sm:"none"}
             }}
           >
-            <thead
+            <table
               style={{
-                backgroundColor: "#f5f5f5",
-                borderBottom: "2px solid #ccc",
+                width: "100%",
+                minWidth: 800,
+                borderCollapse: "collapse",
+                tableLayout: "fixed",
               }}
             >
-              <tr>
-                {tableHeaders.map((header, idx) => (
-                  <th key={idx}>{header}</th>
-                ))}
-              </tr>
-            </thead>
-
-            <tbody>
-              {rows.map((row, rowIndex) => {
-                const filteredProjects = projectCodes.filter((project) =>
-                  (project.code || "")
-                    .toLowerCase()
-                    .includes((searchInputs[rowIndex] || "").toLowerCase())
-                );
-
-                return (
-                  <tr
-                    key={rowIndex}
-                    style={{
-                      borderBottom: "1px solid #eee",
-                      backgroundColor: rowIndex % 2 === 0 ? "white" : "#fafafa",
-                    }}
-                  >
-                    <td
-                      style={{ position: "relative", padding: 8, width: 150 }}
+              <thead
+                style={{
+                  backgroundColor: "#f5f5f5",
+                  borderBottom: "2px solid #ccc",
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 10,
+                }}
+              >
+                <tr>
+                  {tableHeaders.map((header, idx) => (
+                    <th
+                      key={idx}
+                      style={{
+                        textAlign: "left",
+                        padding: 8,
+                        fontSize: 13,
+                        fontWeight: 600,
+                      }}
                     >
-                      <Input
-                        size="sm"
-                        variant="outlined"
-                        value={searchInputs[rowIndex] || ""}
-                        placeholder="Search Project Code"
-                        onChange={(e) =>
-                          handleSearchInputChange(rowIndex, e.target.value)
-                        }
-                        onFocus={() => setDropdownOpenIndex(rowIndex)}
-                        inputRef={(el) => (inputRefs.current[rowIndex] = el)}
-                        autoComplete="off"
-                        sx={{ width: "100%" }}
-                        // disabled={rows[rowIndex]?.items?.[0]?.projectSelected}
-                      />
-                      {dropdownOpenIndex === rowIndex &&
-                        filteredProjects.length > 0 && (
-                          <Sheet
-                            ref={(el) => (dropdownRefs.current[rowIndex] = el)}
-                            variant="outlined"
-                            sx={{
-                              position: "absolute",
-                              top: "100%",
-                              left: 0,
-                              right: 0,
-                              zIndex: 20,
-                              maxHeight: 180,
-                              overflowY: "auto",
-                              bgcolor: "background.body",
-                              borderRadius: 1,
-                              boxShadow: "md",
-                              mt: 0.5,
-                            }}
-                          >
-                            <List size="sm" sx={{ p: 0 }}>
-                              {filteredProjects.map((project, i) => (
-                                <ListItem
-                                  key={i}
-                                  onClick={() =>
-                                    handleSelectProject(
-                                      rowIndex,
-                                      project.code,
-                                      project.name
-                                    )
-                                  }
-                                  sx={{
-                                    cursor: "pointer",
-                                    px: 2,
-                                    py: 1,
-                                    borderRadius: 1,
-                                    "&:hover": { bgcolor: "primary.softBg" },
-                                  }}
-                                >
-                                  <Typography level="body2" fontWeight="md">
-                                    {project.code}
-                                  </Typography>{" "}
-                                  - {project.name}
-                                </ListItem>
-                              ))}
-                            </List>
-                          </Sheet>
-                        )}
-                    </td>
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
 
-                    {/* Project Name */}
-                    <td style={{ padding: 8, maxWidth: 200 }}>
-                      <Input
-                        size="sm"
-                        variant="outlined"
-                        value={row.items?.[0]?.project_name || ""}
-                        placeholder="Project Name"
-                        disabled
-                        sx={{ width: "100%" }}
-                      />
-                    </td>
+              <tbody>
+                {rows.map((row, rowIndex) => {
+                  const filteredProjects = projectCodes.filter((project) =>
+                    (project.code || "")
+                      .toLowerCase()
+                      .includes((searchInputs[rowIndex] || "").toLowerCase())
+                  );
 
-                    {/* Category */}
-                    <td style={{ padding: 8 }}>
-                      <Select
-                        size="sm"
-                        variant="outlined"
-                        value={row.items?.[0]?.category || ""}
-                        onChange={(e, value) =>
-                          handleItemChange(rowIndex, "category", value)
-                        }
-                        placeholder="Select"
-                        slotProps={{
-                          listbox: {
-                            sx: { maxHeight: 160, overflowY: "auto" },
-                          },
-                        }}
-                        sx={{ width: 120 }}
-                      >
-                        {categoryOptions.map((cat, idx) => (
-                          <Option key={idx} value={cat}>
-                            {cat}
-                          </Option>
-                        ))}
-                        
-                      </Select>
-                    </td>
-
-                    {/* Description */}
-                    <td style={{ padding: 8, maxWidth: 250 }}>
-                      <Textarea
-                        size="sm"
-                        variant="outlined"
-                        value={row.items?.[0]?.description || ""}
-                        placeholder="Description"
-                        onChange={(e) =>
-                          handleItemChange(
-                            rowIndex,
-                            "description",
-                            e.target.value
-                          )
-                        }
-                        multiline
-                        minRows={1}
-                        maxRows={3}
-                        sx={{ width: "100%" }}
-                      />
-                    </td>
-
-                    {/* Date */}
-                    <td style={{ padding: 8 }}>
-                      <Input
-                        size="sm"
-                        variant="outlined"
-                        type="date"
-                        value={row.items[0].expense_date}
-                        onChange={(e) =>
-                          handleItemChange(
-                            rowIndex,
-                            "expense_date",
-                            e.target.value
-                          )
-                        }
-                        sx={{ minWidth: 120 }}
-                      />
-                    </td>
-
-                    {/* Invoice Amount */}
-                    <td style={{ padding: 8 }}>
-                      <Input
-                        size="sm"
-                        variant="outlined"
-                        type="number"
-                        value={row.items?.[0]?.invoice?.invoice_amount || ""}
-                        placeholder="₹"
-                        onChange={(e) =>
-                          handleItemChange(rowIndex, "invoice", {
-                            ...row.items?.[0]?.invoice,
-                            invoice_amount: e.target.value,
-                          })
-                        }
-                        inputProps={{ min: 0 }}
-                        sx={{ minWidth: 90 }}
-                      />
-                    </td>
-
-                    {/* Attachment */}
-                    <td style={{ padding: 8, width: 200 }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 4,
-                        }}
-                      >
-                        <Button
+                  return (
+                    <tr
+                      key={rowIndex}
+                      style={{
+                        borderBottom: "1px solid #eee",
+                        backgroundColor:
+                          rowIndex % 2 === 0 ? "white" : "#fafafa",
+                      }}
+                    >
+                      {/* Project Code Input with Dropdown */}
+                      <td style={{ position: "relative", padding: 8 }}>
+                        <Input
                           size="sm"
-                          component="label"
-                          startDecorator={<UploadFileIcon />}
-                          variant="outlined"
-                          sx={{ minWidth: 120 }}
-                        >
-                          {row.items?.[0]?.attachment_url
-                            ? "Change File"
-                            : "Upload File"}
-                          <input
-                            hidden
-                            type="file"
-                            onChange={
-                              (e) =>
-                                e.target.files?.[0] &&
-                                handleFileChange(rowIndex, 0, e.target.files[0]) // Index 0 for items[0]
-                            }
-                          />
-                        </Button>
-
-                        {row.items?.[0]?.attachment_url && (
-                          <div
-                            style={{
-                              fontSize: 12,
-                              wordBreak: "break-word",
-                              color: "#444",
-                            }}
-                          >
-                            📎 {row.items[0].attachment_url}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Invoice */}
-                    <td>
-                      <Select
-                        value={row.items?.[0]?.invoice?.status || ""} // 'invoice' can be an object, so maybe status or yes/no
-                        onChange={(e, value) =>
-                          handleItemChange(rowIndex, "invoice", {
-                            ...row.items?.[0]?.invoice,
-                            status: value,
-                          })
-                        }
-                        placeholder="Yes/No"
-                      >
-                        <Option value="Yes">Yes</Option>
-                        <Option value="No">No</Option>
-                      </Select>
-                    </td>
-
-                    {showInvoiceNoColumn && (
-                      <td>
-                        {row.items?.[0]?.invoice?.status === "Yes" && (
-                          <Input
-                            value={
-                              row.items?.[0]?.invoice?.invoice_number || ""
-                            }
-                            onChange={(e) =>
-                              handleItemChange(rowIndex, "invoice", {
-                                ...row.items?.[0]?.invoice,
-                                invoice_number: e.target.value,
-                              })
-                            }
-                            placeholder="Invoice No."
-                            sx={{ width: "100%" }}
-                          />
-                        )}
+                          value={searchInputs[rowIndex] || ""}
+                          placeholder="Search Project Code"
+                          onChange={(e) =>
+                            handleSearchInputChange(rowIndex, e.target.value)
+                          }
+                          onFocus={() => setDropdownOpenIndex(rowIndex)}
+                          inputRef={(el) => (inputRefs.current[rowIndex] = el)}
+                          autoComplete="off"
+                          sx={{ width: "100%" }}
+                        />
+                        {dropdownOpenIndex === rowIndex &&
+                          filteredProjects.length > 0 && (
+                            <Sheet
+                              ref={(el) =>
+                                (dropdownRefs.current[rowIndex] = el)
+                              }
+                              variant="outlined"
+                              sx={{
+                                position: "absolute",
+                                top: "100%",
+                                left: 0,
+                                right: 0,
+                                zIndex: 20,
+                                maxHeight: 180,
+                                overflowY: "auto",
+                                mt: 0.5,
+                                bgcolor: "background.body",
+                                borderRadius: 1,
+                                boxShadow: "md",
+                              }}
+                            >
+                              <List size="sm" sx={{ p: 0 }}>
+                                {filteredProjects.map((project, i) => (
+                                  <ListItem
+                                    key={i}
+                                    onClick={() =>
+                                      handleSelectProject(
+                                        rowIndex,
+                                        project.code,
+                                        project.name
+                                      )
+                                    }
+                                    sx={{
+                                      cursor: "pointer",
+                                      px: 2,
+                                      py: 1,
+                                      "&:hover": { bgcolor: "primary.softBg" },
+                                    }}
+                                  >
+                                    <Typography level="body2" fontWeight="md">
+                                      {project.code}
+                                    </Typography>{" "}
+                                    - {project.name}
+                                  </ListItem>
+                                ))}
+                              </List>
+                            </Sheet>
+                          )}
                       </td>
-                    )}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          <Box mt={2} textAlign="left" display="flex" gap={1}>
+
+                      {/* Project Name */}
+                      <td style={{ padding: 8 }}>
+                        <Input
+                          size="sm"
+                          value={row.items?.[0]?.project_name || ""}
+                          disabled
+                          placeholder="Project Name"
+                          sx={{ width: "100%" }}
+                        />
+                      </td>
+
+                      {/* Category */}
+                      <td style={{ padding: 8 }}>
+                        <Select
+                          size="sm"
+                          value={row.items?.[0]?.category || ""}
+                          onChange={(e, value) =>
+                            handleItemChange(rowIndex, "category", value)
+                          }
+                          placeholder="Select"
+                          slotProps={{
+                            listbox: {
+                              sx: { maxHeight: 160, overflowY: "auto" },
+                            },
+                          }}
+                          sx={{ width: 120 }}
+                        >
+                          {categoryOptions.map((cat, idx) => (
+                            <Option key={idx} value={cat}>
+                              {cat}
+                            </Option>
+                          ))}
+                        </Select>
+                      </td>
+
+                      {/* Description */}
+                      <td style={{ padding: 8 }}>
+                        <Textarea
+                          size="sm"
+                          value={row.items?.[0]?.description || ""}
+                          onChange={(e) =>
+                            handleItemChange(
+                              rowIndex,
+                              "description",
+                              e.target.value
+                            )
+                          }
+                          placeholder="Description"
+                          minRows={1}
+                          maxRows={3}
+                          sx={{ width: "100%" }}
+                        />
+                      </td>
+
+                      {/* Expense Date */}
+                      <td style={{ padding: 8 }}>
+                        <Input
+                          size="sm"
+                          type="date"
+                          value={row.items[0].expense_date}
+                          onChange={(e) =>
+                            handleItemChange(
+                              rowIndex,
+                              "expense_date",
+                              e.target.value
+                            )
+                          }
+                          sx={{ minWidth: 120 }}
+                        />
+                      </td>
+
+                      {/* Invoice Amount */}
+                      <td style={{ padding: 8 }}>
+                        <Input
+                          size="sm"
+                          type="number"
+                          placeholder="₹"
+                          value={row.items?.[0]?.invoice?.invoice_amount || ""}
+                          onChange={(e) =>
+                            handleItemChange(rowIndex, "invoice", {
+                              ...row.items?.[0]?.invoice,
+                              invoice_amount: e.target.value,
+                            })
+                          }
+                          sx={{ minWidth: 90 }}
+                        />
+                      </td>
+
+                      {/* File Upload */}
+                      <td style={{ padding: 8 }}>
+                        <Box display="flex" flexDirection="column" gap={0.5}>
+                          <Button
+                            size="sm"
+                            component="label"
+                            startDecorator={<UploadFileIcon />}
+                            variant="outlined"
+                            sx={{ minWidth: 120 }}
+                          >
+                            {row.items?.[0]?.attachment_url
+                              ? "Change File"
+                              : "Upload File"}
+                            <input
+                              hidden
+                              type="file"
+                              onChange={(e) =>
+                                e.target.files?.[0] &&
+                                handleFileChange(rowIndex, 0, e.target.files[0])
+                              }
+                            />
+                          </Button>
+                          {row.items?.[0]?.attachment_url && (
+                            <Typography
+                              level="body-sm"
+                              sx={{ wordBreak: "break-word" }}
+                            >
+                              📎 {row.items[0].attachment_url}
+                            </Typography>
+                          )}
+                        </Box>
+                      </td>
+
+                      {/* Invoice Yes/No */}
+                      <td style={{ padding: 8 }}>
+                        <Select
+                          size="sm"
+                          value={row.items?.[0]?.invoice?.status || ""}
+                          onChange={(e, value) =>
+                            handleItemChange(rowIndex, "invoice", {
+                              ...row.items?.[0]?.invoice,
+                              status: value,
+                            })
+                          }
+                          placeholder="Yes/No"
+                        >
+                          <Option value="Yes">Yes</Option>
+                          <Option value="No">No</Option>
+                        </Select>
+                      </td>
+
+                      {/* Invoice No Field */}
+                      {showInvoiceNoColumn && (
+                        <td style={{ padding: 8 }}>
+                          {row.items?.[0]?.invoice?.status === "Yes" && (
+                            <Input
+                              value={
+                                row.items?.[0]?.invoice?.invoice_number || ""
+                              }
+                              onChange={(e) =>
+                                handleItemChange(rowIndex, "invoice", {
+                                  ...row.items?.[0]?.invoice,
+                                  invoice_number: e.target.value,
+                                })
+                              }
+                              placeholder="Invoice No."
+                              sx={{ width: "100%" }}
+                            />
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </Box>
+
+          {/* Add/Remove Buttons */}
+          <Box mt={2} display="flex" gap={1} flexWrap="wrap">
             <Button onClick={handleAddRow} variant="soft" size="sm">
               + Add Row
             </Button>
@@ -730,36 +736,170 @@ const Expense_Form = () => {
             </Button>
           </Box>
         </Box>
-      </Box>
 
-      {/* Joy UI Modal for Comment */}
-      <Modal
-        open={commentDialog.open}
-        onClose={() => setCommentDialog({ open: false, rowIndex: null })}
-      >
-        <ModalDialog>
-          <Typography level="h6">Rejection Comment</Typography>
-          <Input
-            minRows={2}
-            placeholder="Enter comment"
-            value={
-              rows[commentDialog.rowIndex]?.items?.[0]?.item_status_history?.[0]
-                ?.remarks || ""
-            }
-            onChange={(e) =>
-              handleRowChange(
-                commentDialog.rowIndex,
-                "item_status_history.remarks",
-                e.target.value
-              )
-            }
-            sx={{ mt: 1 }}
-          />
-          <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
-            <Button onClick={handleCommentSave}>Save</Button>
-          </Box>
-        </ModalDialog>
-      </Modal>
+        <Stack spacing={2} sx={{ px: 2,  display:{md:"none", xs:"flex"} }}>
+          {rows.map((row, index) => (
+            <Sheet
+              key={index}
+              variant="outlined"
+              sx={{
+                borderRadius: "lg",
+                p: 2,
+                boxShadow: "sm",
+              }}
+            >
+              <Stack spacing={1.5}>
+                {/* Project Code Search */}
+                <Autocomplete
+                  placeholder="Project Code"
+                  options={projectCodes.map((p) => p.code)}
+                  value={searchInputs[index] || ""}
+                  onChange={(e, value) =>
+                    handleSelectProject(index, value, getProjectName(value))
+                  }
+                  onInputChange={(e, value) =>
+                    handleSearchInputChange(index, value)
+                  }
+                  size="sm"
+                />
+
+                {/* Project Name (disabled) */}
+                <Input
+                  size="sm"
+                  value={row.items?.[0]?.project_name || ""}
+                  disabled
+                  placeholder="Project Name"
+                />
+
+                {/* Category */}
+                <Select
+                  placeholder="Category"
+                  value={row.items?.[0]?.category || ""}
+                  onChange={(e, value) =>
+                    handleItemChange(index, "category", value)
+                  }
+                  size="sm"
+                >
+                  {categoryOptions.map((cat, i) => (
+                    <Option key={i} value={cat}>
+                      {cat}
+                    </Option>
+                  ))}
+                </Select>
+
+                {/* Expense Date */}
+                <Input
+                  size="sm"
+                  type="date"
+                  value={row.items?.[0]?.expense_date || ""}
+                  onChange={(e) =>
+                    handleItemChange(index, "expense_date", e.target.value)
+                  }
+                />
+
+                {/* Description */}
+                <Textarea
+                  minRows={2}
+                  placeholder="Description"
+                  value={row.items?.[0]?.description || ""}
+                  onChange={(e) =>
+                    handleItemChange(index, "description", e.target.value)
+                  }
+                />
+
+                {/* Invoice Amount */}
+                <Input
+                  type="number"
+                  size="sm"
+                  placeholder="Invoice Amount ₹"
+                  value={row.items?.[0]?.invoice?.invoice_amount || ""}
+                  onChange={(e) =>
+                    handleItemChange(index, "invoice", {
+                      ...row.items?.[0]?.invoice,
+                      invoice_amount: e.target.value,
+                    })
+                  }
+                />
+
+                {/* Upload File */}
+                <Box>
+                  <Button
+                    component="label"
+                    size="sm"
+                    variant="outlined"
+                    startDecorator={<UploadFileIcon />}
+                    fullWidth
+                  >
+                    {row.items?.[0]?.attachment_url
+                      ? "Change File"
+                      : "Upload File"}
+                    <input
+                      type="file"
+                      hidden
+                      onChange={(e) =>
+                        e.target.files?.[0] &&
+                        handleFileChange(index, 0, e.target.files[0])
+                      }
+                    />
+                  </Button>
+                  {row.items?.[0]?.attachment_url && (
+                    <Typography level="body-sm" mt={0.5}>
+                      📎 {row.items?.[0]?.attachment_url}
+                    </Typography>
+                  )}
+                </Box>
+
+                {/* Invoice status (Yes/No) */}
+                <Select
+                  size="sm"
+                  placeholder="Invoice Available?"
+                  value={row.items?.[0]?.invoice?.status || ""}
+                  onChange={(e, value) =>
+                    handleItemChange(index, "invoice", {
+                      ...row.items?.[0]?.invoice,
+                      status: value,
+                    })
+                  }
+                >
+                  <Option value="Yes">Yes</Option>
+                  <Option value="No">No</Option>
+                </Select>
+
+                {/* Invoice Number */}
+                {row.items?.[0]?.invoice?.status === "Yes" && (
+                  <Input
+                    size="sm"
+                    placeholder="Invoice Number"
+                    value={row.items?.[0]?.invoice?.invoice_number || ""}
+                    onChange={(e) =>
+                      handleItemChange(index, "invoice", {
+                        ...row.items?.[0]?.invoice,
+                        invoice_number: e.target.value,
+                      })
+                    }
+                  />
+                )}
+              </Stack>
+            </Sheet>
+          ))}
+
+          {/* Add/Remove Buttons */}
+          <Stack direction="row" spacing={1} justifyContent="center">
+            <Button onClick={handleAddRow} variant="soft" size="sm">
+              + Add Row
+            </Button>
+            <Button
+              onClick={handleRemoveRow}
+              variant="soft"
+              size="sm"
+              color="danger"
+              disabled={rows.length <= 1}
+            >
+              - Remove Row
+            </Button>
+          </Stack>
+        </Stack>
+      </Box>
 
       {/* Summary */}
       <Box mt={4} sx={{ margin: "0 auto", width: "60%" }}>
