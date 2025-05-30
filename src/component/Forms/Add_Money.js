@@ -58,7 +58,12 @@ const Add_Money = () => {
   useEffect(() => {
     const fetchProjectData = async () => {
       try {
-        const response = await Axios.get("/get-all-projecT-IT");
+        const token = localStorage.getItem("authToken");
+        const response = await Axios.get("/get-all-projecT-IT", {
+          headers: {
+            "x-auth-token": token,
+          },
+        });
         let project = localStorage.getItem("add_money");
 
         project = Number.parseInt(project);

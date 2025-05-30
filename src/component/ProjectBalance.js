@@ -128,6 +128,9 @@ const ProjectBalances = forwardRef((props, ref) => {
       setLoading(true);
       try {
         // Fetch all required data in parallel
+        const token = localStorage.getItem("authToken");
+        const configWithToken = { headers: { "x-auth-token": token } };
+
         const [
           projectsResponse,
           creditResponse,
@@ -137,13 +140,13 @@ const ProjectBalances = forwardRef((props, ref) => {
           payResponse,
           adjResponse,
         ] = await Promise.all([
-          Axios.get("/get-all-projecT-IT"),
-          Axios.get("/all-bilL-IT"),
-          Axios.get("/get-subtract-amounT-IT"),
-          Axios.get("/get-all-pO-IT"),
-          Axios.get("/get-all-bilL-IT"),
-          Axios.get("/get-pay-summarY-IT"),
-          Axios.get("/get-adjustment-request"),
+          Axios.get("/get-all-projecT-IT", configWithToken),
+          Axios.get("/all-bilL-IT", configWithToken),
+          Axios.get("/get-subtract-amounT-IT", configWithToken),
+          Axios.get("/get-all-pO-IT", configWithToken),
+          Axios.get("/get-all-bilL-IT", configWithToken), // Note: duplicate of billResponse? Confirm if intentional
+          Axios.get("/get-pay-summarY-IT", configWithToken),
+          Axios.get("/get-adjustment-request", configWithToken),
         ]);
 
         // Extract data from responses
@@ -671,10 +674,9 @@ const ProjectBalances = forwardRef((props, ref) => {
     setSearchQuery(query.toLowerCase());
   };
 
-const DEBOUNCE_DELAY = 300;
+  const DEBOUNCE_DELAY = 300;
 
-
-const [debouncedSearch, setDebouncedSearch] = useState(searchQuery)
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
 
   // const filteredAndSortedData = useMemo(() => {
   //   return mergedData.sort((a, b) => {
@@ -694,23 +696,27 @@ const [debouncedSearch, setDebouncedSearch] = useState(searchQuery)
     const handler = setTimeout(() => {
       setDebouncedSearch(searchQuery);
     }, DEBOUNCE_DELAY);
-  
+
     return () => {
       clearTimeout(handler);
     };
   }, [searchQuery]);
-  
+
   const filteredAndSortedData = useMemo(() => {
     return mergedData.sort((a, b) => {
-      const aFields = [a.name, a.code, a.p_group, a.customer].map(field => field?.toLowerCase() || '');
-      const bFields = [b.name, b.code, b.p_group, b.customer].map(field => field?.toLowerCase() || '');
-  
-      const aMatch = aFields.some(field => field.includes(debouncedSearch));
-      const bMatch = bFields.some(field => field.includes(debouncedSearch));
-  
+      const aFields = [a.name, a.code, a.p_group, a.customer].map(
+        (field) => field?.toLowerCase() || ""
+      );
+      const bFields = [b.name, b.code, b.p_group, b.customer].map(
+        (field) => field?.toLowerCase() || ""
+      );
+
+      const aMatch = aFields.some((field) => field.includes(debouncedSearch));
+      const bMatch = bFields.some((field) => field.includes(debouncedSearch));
+
       if (aMatch && !bMatch) return -1;
       if (!aMatch && bMatch) return 1;
-  
+
       return 0;
     });
   }, [mergedData, debouncedSearch]);

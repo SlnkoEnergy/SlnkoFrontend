@@ -70,70 +70,147 @@ const Login = () => {
     arrows: false,
   };
 
- const handleLogin = async (values) => {
-  setIsSubmitting(true);
+//  const handleLogin = async (values) => {
+//   setIsSubmitting(true);
 
-  try {
+//   try {
     
-    const user = await addLogin(values).unwrap();
+//     const user = await addLogin(values).unwrap();
 
  
-    if (!user.token) {
-      toast.error("Login failed: Token not received.");
-      return;
-    }
+//     if (!user.token) {
+//       toast.error("Login failed: Token not received.");
+//       return;
+//     }
 
-    console.log("✅ Token received:", user.token);
+//     console.log("✅ Token received:", user.token);
 
   
-    const expiration = new Date().getTime() + 3 * 24 * 60 * 60 * 1000;
-    sessionStorage.setItem("authToken", user.token);
-    sessionStorage.setItem("authTokenExpiration", expiration.toString());
+//     const expiration = new Date().getTime() + 3 * 24 * 60 * 60 * 1000;
+//     sessionStorage.setItem("authToken", user.token);
+//     sessionStorage.setItem("authTokenExpiration", expiration.toString());
 
  
-    const response = await axios.get("https://api.slnkoprotrac.com/v1/get-all-useR-IT", {
-      headers: {
-        "x-auth-token": user.token,
-      },
-    });
+//     const response = await axios.get("https://api.slnkoprotrac.com/v1/get-all-useR-IT", {
+//       headers: {
+//         "x-auth-token": user.token,
+//       },
+//     });
 
-    const matchedUser = response?.data?.data.find(
-      (item) => String(item._id) === String(user.userId)
-    );
+//     const matchedUser = response?.data?.data.find(
+//       (item) => String(item._id) === String(user.userId)
+//     );
 
-    if (!matchedUser) {
-      toast.error("Login failed: User details not found.");
-      return;
+//     if (!matchedUser) {
+//       toast.error("Login failed: User details not found.");
+//       return;
+//     }
+
+ 
+//     const userDetails = {
+//       name: matchedUser.name,
+//       email: matchedUser.email,
+//       phone: matchedUser.phone,
+//       emp_id: matchedUser.emp_id,
+//       role: matchedUser.role,
+//       department: matchedUser.department || "",
+//       userID: matchedUser._id || "",
+//     };
+
+//     localStorage.setItem("userDetails", JSON.stringify(userDetails));
+//     toast.success("Login successful!");
+
+//     navigate("/dashboard");
+//   } catch (error) {
+//     console.error("Login error:", error);
+//     const message =
+//       error?.response?.data?.message ||
+//       error?.data?.message ||
+//       error?.message ||
+//       "Login failed.";
+//     toast.error(message);
+//   } finally {
+//     setIsSubmitting(false);
+//   }
+// };
+
+ const handleLogin = async (values) => {
+    setIsSubmitting(true);
+    try {
+      // Step 1: Call login mutation
+      const user = await addLogin(values).unwrap();
+  
+      // Step 2: Check if token is present
+      if (!user.token) {
+        toast.error("Login failed: Token not received.");
+        return;
+      }
+  
+      console.log("✅ Token received:", user.token);
+  
+  
+      const expiration = new Date().getTime() + 3 * 24 * 60 * 60 * 1000;
+      localStorage.setItem("authToken", user.token);
+      // sessionStorage.setItem("userDetails", JSON.stringify({
+      //   ...user,
+      //   userID: user._id
+      // }));
+     
+
+      localStorage.setItem("authTokenExpiration", expiration.toString());
+  
+      // Step 4: Get user list to match current user
+     
+      if (!user.token) {
+        toast.error("Missing token. Cannot fetch user data.");
+        return;
+      }
+      const response = await axios.get("https://api.slnkoprotrac.com/v1/get-all-useR-IT", {
+        headers: {
+          "x-auth-token": user.token,
+        },
+      });
+  
+      const matchedUser = response?.data?.data.find(
+        (item) => String(item._id) === String(user.userId)
+      );
+      console.log(matchedUser);
+      
+  
+      if (!matchedUser) {
+        toast.error("Login failed: User details not found.");
+        return;
+      }
+  
+      // Step 5: Save matched user details
+      const userDetails = {
+        name: matchedUser.name,
+        email: matchedUser.email,
+        phone: matchedUser.phone,
+        emp_id: matchedUser.emp_id,
+        role: matchedUser.role,
+        department: matchedUser.department || "",
+        userID: matchedUser._id || "", // ✅ FIXED: use _id
+      };
+  
+      localStorage.setItem("userDetails", JSON.stringify(userDetails));
+      console.log("✅ User details stored:", userDetails);
+  
+      // Step 6: Success feedback and navigation
+      toast.success("Login successful!");
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("❌ Login error:", error);
+      const message =
+        error?.response?.data?.message ||
+        error?.data?.message ||
+        error?.message ||
+        "Login failed.";
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
     }
-
- 
-    const userDetails = {
-      name: matchedUser.name,
-      email: matchedUser.email,
-      phone: matchedUser.phone,
-      emp_id: matchedUser.emp_id,
-      role: matchedUser.role,
-      department: matchedUser.department || "",
-      userID: matchedUser._id || "",
-    };
-
-    localStorage.setItem("userDetails", JSON.stringify(userDetails));
-    toast.success("Login successful!");
-
-    navigate("/dashboard");
-  } catch (error) {
-    console.error("Login error:", error);
-    const message =
-      error?.response?.data?.message ||
-      error?.data?.message ||
-      error?.message ||
-      "Login failed.";
-    toast.error(message);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-
+  };
 
   const validationSchema = Yup.object({
     name: Yup.string().required("Name is required!"),

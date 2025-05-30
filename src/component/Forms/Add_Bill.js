@@ -64,8 +64,12 @@ const getUserData = () => {
         const po = localStorage.getItem("po_no");
         const po_Number = po ? String(po) : null;
         // console.log("PO from localStorage:", po_Number);
-
-        const response = await Axios.get("/get-all-pO-IT");
+const token = localStorage.getItem("authToken");
+        const response = await Axios.get("/get-all-pO-IT", {
+          headers: {
+            "x-auth-token": token,
+          },
+        });
         const pos = response.data?.data || [];
         // console.log("Fetched PO data:", pos);
 
@@ -135,7 +139,13 @@ const handleSubmit = async (e) => {
   };
 
   try {
-    const response = await Axios.post("/add-bilL-IT", dataToPost);
+    const token = localStorage.getItem("authToken");
+
+  const response = await Axios.post("/add-bilL-IT", dataToPost, {
+    headers: {
+      "x-auth-token": token,
+    },
+  });
     
     // Check if the response indicates that the bill number already exists
     if (response.status === 400 && response.data.message === "Bill Number already used!") {

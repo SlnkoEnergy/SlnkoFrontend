@@ -8,8 +8,8 @@ const PrivateRoute = ({ children }) => {
   const currentTime = new Date().getTime();
 
   const handleLogout = () => {
-    sessionStorage.removeItem('authToken');
-    sessionStorage.removeItem('authTokenExpiration');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('authTokenExpiration');
     localStorage.removeItem('name');
     localStorage.removeItem('email');
     navigate("/login");

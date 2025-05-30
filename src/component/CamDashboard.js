@@ -56,6 +56,9 @@ function Dash_cam() {
     refetch,
   } = useGetHandOverQuery();
 
+  console.log(getHandOverSheet);
+  
+
   const { data: getLead = {} } = useGetEntireLeadsQuery();
 
   const leads = [
@@ -112,7 +115,12 @@ function Dash_cam() {
   }, []);
 
   const StatusChip = ({ status, is_locked, _id, user, refetch }) => {
-    const isAdmin = user?.role === "admin" || user?.role === "superadmin" || user?.name === "Prachi Singh" || user?.name === "Sanjiv Kumar" || user?.name === "Sushant Ranjan Dubey";
+    const isAdmin =
+      user?.role === "admin" ||
+      user?.role === "superadmin" ||
+      user?.name === "Prachi Singh" ||
+      user?.name === "Sanjiv Kumar" ||
+      user?.name === "Sushant Ranjan Dubey";
     const [lockedState, setLockedState] = useState(is_locked === "locked");
 
     const [updateUnlockHandoversheet, { isLoading }] =

@@ -45,24 +45,24 @@ const FormOffer = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [submitTrigger, setSubmitTrigger] = useState(false);
-    const [user, setUser] = useState(null);
-  
-    useEffect(() => {
-      const userData = getUserData();
-      if (userData && userData.name) {
-        setFormData((prev) => ({
-          ...prev,
-          prepared_by: userData.name,
-        }));
-      }
-      setUser(userData);
-    }, []);
-  
-    const getUserData = () => {
-      const userData = localStorage.getItem("userDetails");
-      console.log("offer form:", userData);
-      return userData ? JSON.parse(userData) : null;
-    };
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    if (userData && userData.name) {
+      setFormData((prev) => ({
+        ...prev,
+        prepared_by: userData.name,
+      }));
+    }
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    console.log("offer form:", userData);
+    return userData ? JSON.parse(userData) : null;
+  };
 
   // Handle form submission
   const handleSubmit = async (e) => {
@@ -70,18 +70,24 @@ const FormOffer = () => {
     console.log("Submitting form data:", formData);
     setLoading(true);
     try {
+      const token = localStorage.getItem("authToken");
+
       const response = await Axios.post("/create-offer", formData, {
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-token": token,
+        },
       });
-      console.log("Response from server:", response);
+
+      // console.log("Response from server:", response);
       if (response.status === 200 || response.status === 201) {
         if (response.data.data && response.data.data._id) {
           console.log("Generated _id:", response.data.data._id);
         }
-      
+
         toast.success("Offer created successfully!");
         navigate("/comm_offer");
-       
+
         setFormData((prev) => ({
           ...Object.keys(prev).reduce((acc, key) => {
             acc[key] = "";
@@ -116,14 +122,12 @@ const FormOffer = () => {
 
   const handleChange = (e, newValue) => {
     if (e && e.target) {
- 
       const { name, value } = e.target;
       setFormData((prev) => ({
         ...prev,
         [name]: value,
       }));
     } else if (newValue !== undefined) {
-  
       setFormData((prev) => ({
         ...prev,
         [e]: newValue,
@@ -153,8 +157,14 @@ const FormOffer = () => {
   }, [formData.ac_capacity, formData.dc_overloading]);
 
   return (
-    <Box sx={{ maxWidth: { xs: "100%", sm: 800 }, width: "100%", mx: "auto", p: 3 }}>
-
+    <Box
+      sx={{
+        maxWidth: { xs: "100%", sm: 800 },
+        width: "100%",
+        mx: "auto",
+        p: 3,
+      }}
+    >
       <Typography
         level="h3"
         mb={2}

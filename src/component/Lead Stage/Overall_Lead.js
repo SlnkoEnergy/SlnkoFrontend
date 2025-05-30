@@ -58,6 +58,9 @@ const Overall_Leads = forwardRef((props, ref) => {
   // });
 
   const { data: getLead = [], isLoading, error } = useGetEntireLeadsQuery();
+
+  // console.log(getLead);
+  
   // const { data: getTask = [] } = useGetTasksQuery();
 
   const leads = [

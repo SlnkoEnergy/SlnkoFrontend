@@ -94,16 +94,22 @@ function PaymentRequest() {
       setLoading(true);
       try {
         // Fetch all required data in parallel
+        const token = localStorage.getItem("authToken");
+        const configWithToken = { headers: { "x-auth-token": token } };
+
         const [
           paymentResponse,
           projectResponse,
           creditResponse,
           debitResponse,
         ] = await Promise.all([
-          Axios.get("/get-pay-summarY-IT", { params: { approved: "Pending" } }),
-          Axios.get("/get-all-projecT-IT"),
-          Axios.get("/all-bilL-IT"),
-          Axios.get("/get-subtract-amounT-IT"),
+          Axios.get("/get-pay-summarY-IT", {
+            params: { approved: "Pending" },
+            ...configWithToken,
+          }),
+          Axios.get("/get-all-projecT-IT", configWithToken),
+          Axios.get("/all-bilL-IT", configWithToken),
+          Axios.get("/get-subtract-amounT-IT", configWithToken),
         ]);
 
         // Handle payments data
@@ -152,12 +158,25 @@ function PaymentRequest() {
       } catch (error) {
         console.error("Error fetching data:", error);
         setError(
-          <span style={{ display: "flex", alignItems: "center", gap: "5px", color: "red", justifyContent:"center", flexDirection:"column" , padding: "20px"}}>
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              color: "red",
+              justifyContent: "center",
+              flexDirection: "column",
+              padding: "20px",
+            }}
+          >
             <PermScanWifiIcon />
-            <Typography fontStyle={"italic"} fontWeight={"600"} sx={{color:"#0a6bcc"}} >
-            Hang tight! Internet Connection will be back soon..
+            <Typography
+              fontStyle={"italic"}
+              fontWeight={"600"}
+              sx={{ color: "#0a6bcc" }}
+            >
+              Hang tight! Internet Connection will be back soon..
             </Typography>
-            
           </span>
         );
       } finally {
@@ -363,7 +382,7 @@ function PaymentRequest() {
       >
         {/* Approve Chip */}
         <Chip
-          variant="solid" 
+          variant="solid"
           color="success"
           label="Approved"
           onClick={() => handleChipClick("Approved")} // Pass a function reference, not invoke it directly
@@ -547,10 +566,10 @@ function PaymentRequest() {
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
-          marginLeft: { xl: "15%", lg: "18%",},
+          marginLeft: { xl: "15%", lg: "18%" },
           borderRadius: "sm",
           py: 2,
-          display:"flex",
+          display: "flex",
           flexWrap: "wrap",
           gap: 1.5,
           "& > *": {
@@ -583,7 +602,7 @@ function PaymentRequest() {
           overflow: "auto",
           minHeight: 0,
           marginLeft: { xl: "15%", lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%"},
+          maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
         {error ? (
@@ -764,7 +783,7 @@ function PaymentRequest() {
                         textAlign: "center",
                       }}
                     >
-                     {Number(payment.amt_for_customer).toLocaleString("en-IN")}
+                      {Number(payment.amt_for_customer).toLocaleString("en-IN")}
                     </Box>
                     <Box
                       component="td"
@@ -813,18 +832,24 @@ function PaymentRequest() {
                       fontStyle: "italic",
                     }}
                   >
-                     <Box sx={{
-                      fontStyle: "italic",
-                      display:"flex",
-                      flexDirection:"column",
-                      alignItems:"center",
-                      justifyContent:"center"
-                    }}>
-                      <img src = {NoData} alt="No data Image" style={{width:"50px", height:'50px'}}/>
-                    <Typography fontStyle={"italic"}>
-                      No approval available
+                    <Box
+                      sx={{
+                        fontStyle: "italic",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <img
+                        src={NoData}
+                        alt="No data Image"
+                        style={{ width: "50px", height: "50px" }}
+                      />
+                      <Typography fontStyle={"italic"}>
+                        No approval available
                       </Typography>
-                      </Box>
+                    </Box>
                   </Box>
                 </Box>
               )}
@@ -841,8 +866,8 @@ function PaymentRequest() {
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           // display: { xs: "none", md: "flex" },
-          display:"flex",
-          flexDirection:{xs: "column", sm: "row"},
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
           marginLeft: { xl: "15%", lg: "18%" },
         }}

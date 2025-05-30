@@ -24,14 +24,15 @@ import Divider from "@mui/joy/Divider";
 import { forwardRef, useEffect, useImperativeHandle, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
-// import Axios from "../utils/Axios";
+// import {Axios} from "../utils/Axios";
+import Axios from "../utils/Axios";
 import { useDeleteProjectMutation, useGetProjectsQuery } from "../redux/projectsSlice";
 
 const AllProjects = forwardRef((props, ref) => {
   const navigate = useNavigate();
-  // const [projects, setProjects] = useState([]);
-  // const [loading, setLoading] = useState(true);
-  // const [error, setError] = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
@@ -42,33 +43,41 @@ const AllProjects = forwardRef((props, ref) => {
 
   // const states = ["California", "Texas", "New York", "Florida"];
 
-  
+  const token = localStorage.getItem("x-auth-token");
 
-  // useEffect(() => {
-  //   const fetchTableData = async () => {
-  //     try {
-  //       const response = await Axios.get("/get-all-projecT-IT");
+useEffect(() => {
+  const fetchTableData = async () => {
+    // setLoading(true);
+    try {
+      const response = await Axios.get("https://api.slnkoprotrac.com/v1/get-all-projecT-IT", {
+    
+        headers: {
+          "x-auth-token": token 
+        },
+      });
+console.log(response);
 
-  //       const projectsData = Array.isArray(response.data.data)
-  //         ? response.data.data
-  //         : [];
-  //       setProjects(projectsData);
-  //     } catch (err) {
-  //       console.error("API Error:", err);
-  //       setError("Failed to fetch table data.");
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
+      const projectsData = Array.isArray(response?.data?.data)
+        ? response?.data?.data
+        : [];
+      setProjects(projectsData);
+      setError(null);
+    } catch (err) {
+      console.error("API Error:", err);
+      setError("Failed to fetch table data.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  //   fetchTableData();
-  // }, []);
+  fetchTableData();
+}, []);
 
-  const { data: getProject = [], isLoading, error } = useGetProjectsQuery();
+  // const { data: getProject = [], isLoading, error } = useGetProjectsQuery();
 
   const [deleteProject] = useDeleteProjectMutation();
 
-console.log("getProject: ", getProject);
+// console.log("getProject: ", getProject);
 
 
     const [user, setUser] = useState(null);
@@ -87,6 +96,15 @@ console.log("getProject: ", getProject);
     };
 
 
+useEffect(() => {
+  console.log("Projects:", projects);
+  console.log("Loading:", loading);
+  console.log("Error:", error);
+  console.log("User:", user);
+  console.log("Selected Projects:", selectedProjects);
+  console.log("Search Query:", searchQuery);
+  console.log("Current Page:", currentPage);
+}, [projects, loading, error, user, selectedProjects, searchQuery, currentPage]);
 
 
   const RowMenu = ({ currentPage, p_id, _id }) => {
@@ -168,7 +186,7 @@ console.log("getProject: ", getProject);
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelectedProjects(getProject.map((row) => row._id));
+      setSelectedProjects(projects.map((row) => row._id));
     } else {
       setSelectedProjects([]);
     }
@@ -207,7 +225,7 @@ const handleDelete = async () => {
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
-  const projects = useMemo(() => Array.isArray(getProject?.data) ? getProject.data : [], [getProject]);
+  // const projects = useMemo(() => Array.isArray(getProject?.data) ? getProject.data : [], [getProject]);
 
   const filteredAndSortedData = projects.filter((project) => {
       const matchesSearchQuery = ["code", "customer", "name"].some((key) =>
@@ -422,10 +440,10 @@ const handleDelete = async () => {
                 >
                   <Checkbox
   size="sm"
-  checked={selectedProjects.length === getProject.length}
+  checked={selectedProjects.length === projects.length}
   onChange={handleSelectAll}
   indeterminate={
-    selectedProjects.length > 0 && selectedProjects.length < getProject.length
+    selectedProjects.length > 0 && selectedProjects.length < projects.length
   }
 />
 

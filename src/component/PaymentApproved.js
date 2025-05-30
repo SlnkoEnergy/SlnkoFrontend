@@ -77,12 +77,17 @@ function PaymentRequest() {
     const fetchPaymentsAndProjects = async () => {
       setLoading(true);
       try {
-        const [paymentResponse, projectResponse] = await Promise.all([
-          Axios.get("/get-pay-summarY-IT", {
-            params: { approved: "Approved", acc_match: "" },
-          }),
-          Axios.get("/get-all-projecT-IT"),
-        ]);
+          const token = localStorage.getItem("authToken");
+
+    const [paymentResponse, projectResponse] = await Promise.all([
+      Axios.get("/get-pay-summarY-IT", {
+        params: { approved: "Approved", acc_match: "" },
+        headers: { "x-auth-token": token },
+      }),
+      Axios.get("/get-all-projecT-IT", {
+        headers: { "x-auth-token": token },
+      }),
+    ]);
 
         const approvedPayments = paymentResponse.data.data.filter(
           (payment) =>

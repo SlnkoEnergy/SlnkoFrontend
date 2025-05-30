@@ -52,9 +52,18 @@ const PaymentRequest = forwardRef((props, ref) => {
   useEffect(() => {
     const fetchTableData = async () => {
       try {
+        const token = localStorage.getItem("authToken");
         const [paymentResponse, projectResponse] = await Promise.all([
-          Axios.get("/get-pay-summarY-IT"),
-          Axios.get("/get-all-projecT-IT"),
+          Axios.get("/get-pay-summarY-IT",{
+          headers: {
+            "x-auth-token": token,
+          },
+        }),
+          Axios.get("/get-all-projecT-IT",{
+          headers: {
+            "x-auth-token": token,
+          },
+        }),
         ]);
         setPayments(paymentResponse.data.data);
         console.log("Payment Data are:", paymentResponse.data.data);

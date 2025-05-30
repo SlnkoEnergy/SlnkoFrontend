@@ -23,14 +23,18 @@ const PaymentDetail = forwardRef((props, ref) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const token = localStorage.getItem("authToken");
+        const configWithToken = {
+          headers: { "x-auth-token": token },
+        };
+
         const [paySummaryRes, projectRes, purchaseRes] = await Promise.all([
           Axios.get("/get-exceldata", {
-            params: {
-              status: "Not-paid",
-            },
+            params: { status: "Not-paid" },
+            ...configWithToken,
           }),
-          Axios.get("/get-all-projecT-IT"),
-          Axios.get("/get-pay-summarY-IT"),
+          Axios.get("/get-all-projecT-IT", configWithToken),
+          Axios.get("/get-pay-summarY-IT", configWithToken),
         ]);
 
         const paySummary = paySummaryRes.data?.data || [];
@@ -39,7 +43,11 @@ const PaymentDetail = forwardRef((props, ref) => {
 
         // console.log(projects);
 
-        if (Array.isArray(paySummary) && Array.isArray(projects) && Array.isArray(purchase)) {
+        if (
+          Array.isArray(paySummary) &&
+          Array.isArray(projects) &&
+          Array.isArray(purchase)
+        ) {
           const structuredData = paySummary.map((item) => {
             const project = projects.find(
               (proj) => String(proj.p_id) === String(item.p_id)
@@ -97,7 +105,7 @@ const PaymentDetail = forwardRef((props, ref) => {
     if (isAccountNumber) {
       return `'${stringValue}`;
     }
-  
+
     return `${stringValue}`;
   };
   const downloadSelectedRows = async () => {

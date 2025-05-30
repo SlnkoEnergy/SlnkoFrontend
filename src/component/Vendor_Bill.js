@@ -44,7 +44,7 @@ function VendorBillSummary() {
     async function fetchPoData() {
       try {
         const response = await Axios.get("/get-all-pO-IT");
-        console.log("PO Data:", response.data.data); // Check PO Data
+        // console.log("PO Data:", response.data.data);
         setPoData(response.data.data);
       } catch (error) {
         console.error("Error fetching PO data:", error);

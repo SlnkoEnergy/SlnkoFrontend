@@ -2,9 +2,9 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { BASE_URL, getAuthToken } from "./auth/auth_variable";
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: BASE_URL,
+  baseUrl: "https://api.slnkoprotrac.com/v1/",
   prepareHeaders: (headers) => {
-    const token = getAuthToken();
+    const token = localStorage.getItem("authToken");
     // console.log("Token:", token);
     if (token) {
       headers.set("x-auth-token", token);

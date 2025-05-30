@@ -2,13 +2,23 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export const engsBOSApi = createApi({
   reducerPath: "engsBOSApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "https://api.slnkoprotrac.com/v1/" }),
+  baseQuery: fetchBaseQuery({
+    baseUrl: "https://api.slnkoprotrac.com/v1/",
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem("authToken");
+
+      if (token) {
+        headers.set("x-auth-token", token);
+      }
+
+      return headers;
+    },
+  }),
   tagTypes: ["BOS"],
   endpoints: (builder) => ({
     getBOS: builder.query({
       query: () => "get-bos-master",
       providesTags: ["BOS"],
-      
     }),
     addBOS: builder.mutation({
       query: (addBOS) => ({
@@ -18,16 +28,10 @@ export const engsBOSApi = createApi({
       }),
       invalidatesTags: ["BOS"],
     }),
-    // getTasksHistory: builder.query({
-    //   query: () => "get-task-history",
-    //   providesTags: ["Task"],
-      
-    // }),
   }),
 });
 
 export const {
-useAddBOSMutation,
-useGetBOSQuery
+  useAddBOSMutation,
+  useGetBOSQuery,
 } = engsBOSApi;
-

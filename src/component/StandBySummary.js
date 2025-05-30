@@ -56,10 +56,14 @@ const StandByRequest = () => {
   useEffect(() => {
     const fetchTableData = async () => {
       try {
-     const [paymentResponse, projectResponse] = await Promise.all([
-          Axios.get("/hold-pay-summary-IT"),
-          Axios.get("/get-all-projecT-IT"),
-        ]);
+     const token = localStorage.getItem("authToken");
+const config = { headers: { "x-auth-token": token } };
+
+const [paymentResponse, projectResponse] = await Promise.all([
+  Axios.get("/hold-pay-summary-IT", config),
+  Axios.get("/get-all-projecT-IT", config),
+]);
+
         setPayments(paymentResponse.data.data);
         console.log("Payment Data are:", paymentResponse.data.data);
 

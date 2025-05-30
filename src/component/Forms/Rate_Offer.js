@@ -99,7 +99,14 @@ const Rate_Offer = () => {
         return;
       }
   
-      const { data: commercialOffers } = await Axios.get("/get-comm-offer");
+      const token = localStorage.getItem("authToken");
+
+const { data: commercialOffers } = await Axios.get("/get-comm-offer", {
+  headers: {
+    "x-auth-token": token,
+  },
+});
+
       setOfferData(commercialOffers);
   
       const offerData = commercialOffers.find((item) => item.offer_id === OfferRate);
@@ -116,7 +123,14 @@ const Rate_Offer = () => {
         return;
       }
   
-      const { data: existingBDRates } = await Axios.get("/get-comm-bd-rate");
+    
+
+const { data: existingBDRates } = await Axios.get("/get-comm-bd-rate", {
+  headers: {
+    "x-auth-token": token,
+  },
+});
+
       const existingRate = existingBDRates.find((item) => item.offer_id === offerData.offer_id);
   
       if (existingRate) {
@@ -130,10 +144,15 @@ const Rate_Offer = () => {
         submitted_by_BD: user.name,
       };
   
-      const response = await Axios.post("/create-bd-rate", scmPayload, {
-        headers: { "Content-Type": "application/json" },
-      });
-  
+
+
+const response = await Axios.post("/create-bd-rate", scmPayload, {
+  headers: {
+    "Content-Type": "application/json",
+    "x-auth-token": token,
+  },
+});
+
       console.log("Response:", response?.data);
       toast.success("Costing submitted successfully!");
   

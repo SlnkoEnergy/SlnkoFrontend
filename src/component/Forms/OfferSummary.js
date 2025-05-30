@@ -42,7 +42,14 @@ const PaymentRequestSummary = () => {
           return;
         }
 
-        const { data } = await Axios.get("/get-comm-bd-rate");
+        const token = localStorage.getItem("authToken");
+
+        const { data } = await Axios.get("/get-comm-bd-rate", {
+          headers: {
+            "x-auth-token": token,
+          },
+        });
+
         const offerData = data.find((item) => item.offer_id === offerRate);
 
         if (!offerData) {

@@ -2,7 +2,18 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export const engsPoolingApi = createApi({
   reducerPath: "engsPoolingApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "https://api.slnkoprotrac.com/v1/" }),
+    baseQuery: fetchBaseQuery({
+    baseUrl: "https://api.slnkoprotrac.com/v1/",
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem("authToken");
+
+      if (token) {
+        headers.set("x-auth-token", token);
+      }
+
+      return headers;
+    },
+  }),
   tagTypes: ["Pooling"],
   endpoints: (builder) => ({
     getPoolings: builder.query({

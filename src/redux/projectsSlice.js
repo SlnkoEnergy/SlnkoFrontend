@@ -1,26 +1,37 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-import { BASE_URL, getAuthToken } from "./auth/auth_variable";
+
+// const baseQuery = fetchBaseQuery({
+//   baseUrl: "https://api.slnkoprotrac.com/v1",
+//   prepareHeaders: (headers) => {
+//     const token = localStorage.getItem("authToken");
+//     console.log("Token:", token);
+//     if (token) {
+//       headers.set("x-auth-token", token);
+//     }
+//     return headers;
+//   },
+// });
 
 
-const baseQuery = fetchBaseQuery({
-  baseUrl: BASE_URL,
-  prepareHeaders: (headers) => {
-    const token = getAuthToken();
-    // console.log("Token:", token);
-    if (token) {
-      headers.set("x-auth-token", token);
-    }
-    return headers;
-  },
-});
 export const projectsApi = createApi({
   reducerPath: "projectsApi",
-  baseQuery,
+   baseQuery: fetchBaseQuery({
+    baseUrl: "https://api.slnkoprotrac.com/v1/",
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem("authToken");
+
+      if (token) {
+        headers.set("x-auth-token", token);
+      }
+
+      return headers;
+    },
+  }),
   tagTypes: ["Project"],
   endpoints: (builder) => ({
     getProjects: builder.query({
-      query: () => "get-all-project-IT",
+      query: () => "get-all-projecT-IT",
       providesTags: ["Project"],
       
     }),
@@ -33,7 +44,7 @@ export const projectsApi = createApi({
     }),
     addProject: builder.mutation({
       query: (newProject) => ({
-        url: "/add-new-project-IT",
+        url: "add-new-project-IT",
         method: "POST",
         body: newProject,
       }),

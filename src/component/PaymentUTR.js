@@ -77,9 +77,18 @@ function UTRPayment() {
     const fetchPaymentsAndProjects = async () => {
       setLoading(true);
       try {
+        const token = localStorage.getItem("authToken");
         const [paymentResponse, projectResponse] = await Promise.all([
-          Axios.get("/get-pay-summarY-IT"),
-          Axios.get("/get-all-projecT-IT"),
+          Axios.get("/get-pay-summarY-IT",{
+          headers: {
+            "x-auth-token": token,
+          },
+        }),
+          Axios.get("/get-all-projecT-IT",{
+          headers: {
+            "x-auth-token": token,
+          },
+        }),
         ]);
 
         const approvedPayments = paymentResponse.data.data.filter(

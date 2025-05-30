@@ -46,7 +46,14 @@ const Page5 = () => {
 
         console.log("Fetched Offer ID from localStorage:", offerRate);
 
-        const { data: commercialOffers } = await Axios.get("/get-comm-offer");
+        const token = localStorage.getItem("authToken");
+
+        const { data: commercialOffers } = await Axios.get("/get-comm-offer", {
+          headers: {
+            "x-auth-token": token,
+          },
+        });
+
         console.log("API Response:", commercialOffers);
 
         const matchedOffer = commercialOffers.find(

@@ -72,24 +72,24 @@ const AddPurchaseOrder = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch projects
-        const projectsRes = await Axios.get("/get-all-projecT-IT");
+        const token = localStorage.getItem("authToken");
+        const config = { headers: { "x-auth-token": token } };
+
+        const projectsRes = await Axios.get("/get-all-projecT-IT", config);
         console.log("Project Data: ", projectsRes.data.data);
         setProjectIDs(projectsRes.data.data || []);
 
-        // Fetch vendors
-        const vendorsRes = await Axios.get("/get-all-vendoR-IT");
+        const vendorsRes = await Axios.get("/get-all-vendoR-IT", config);
         console.log("Vendor Data: ", vendorsRes.data.data);
         setVendors(vendorsRes.data.data || []);
 
-        // Fetch items
-        const itemsRes = await Axios.get("/get-iteM-IT");
+        const itemsRes = await Axios.get("/get-iteM-IT", config);
         const itemsData = itemsRes.data.Data || [];
         const transformedItems = itemsData.map((item) => ({
           value: item.item,
           label: item.item,
         }));
-        // Add "Other" as an additional option
+
         setItems([...transformedItems, { value: "Other", label: "Other" }]);
 
         console.log("Items Data: ", transformedItems);
@@ -103,29 +103,29 @@ const AddPurchaseOrder = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-  
+
     // Don't allow negative manual entry for po_value
     if (name === "po_value" && parseFloat(value) < 0) {
       toast.warning("PO Value can't be Negative !!");
       return;
     }
-  
+
     setFormData((prev) => {
       const updated = { ...prev, [name]: value };
-  
+
       // Auto-calculate po_value only if po_basic or gst is updated
       if (name === "po_basic" || name === "gst") {
-        const poBasic = parseFloat(name === "po_basic" ? value : updated.po_basic) || 0;
+        const poBasic =
+          parseFloat(name === "po_basic" ? value : updated.po_basic) || 0;
         const gst = parseFloat(name === "gst" ? value : updated.gst) || 0;
         const calculatedPoValue = poBasic + gst;
-  
+
         updated.po_value = calculatedPoValue;
       }
-  
+
       return updated;
     });
   };
-  
 
   const handleAutocompleteChange = (field, newValue, index) => {
     setFormData((prev) => ({
@@ -165,8 +165,15 @@ const AddPurchaseOrder = () => {
     };
 
     try {
-      const response = await Axios.post("/Add-purchase-ordeR-IT", dataToPost);
-      console.log("Add Po:", response);
+      const token = localStorage.getItem("authToken");
+
+      await Axios.post("/Add-purchase-ordeR-IT", dataToPost, {
+        headers: {
+          "x-auth-token": token,
+        },
+      });
+
+      // console.log("Add Po:", response);
       toast.success("Purchase Order Successfully !!");
       navigate("/purchase-order");
       // alert("PO added successfully!");
@@ -330,7 +337,7 @@ const AddPurchaseOrder = () => {
 
             <Grid xs={12} md={4}>
               <Typography level="body1" fontWeight="bold" mb={1}>
-              Total Tax
+                Total Tax
               </Typography>
               <Input
                 name="gst"
