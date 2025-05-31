@@ -19,13 +19,22 @@ import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import * as React from "react";
 import DeleteIcon from "@mui/icons-material/Delete";
-import ModeEditIcon from '@mui/icons-material/ModeEdit';
+import ModeEditIcon from "@mui/icons-material/ModeEdit";
 import Divider from "@mui/joy/Divider";
-import { forwardRef, useEffect, useImperativeHandle, useState, useMemo } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useState,
+  useMemo,
+} from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 // import Axios from "../utils/Axios";
-import { useDeleteProjectMutation, useGetProjectsQuery } from "../redux/projectsSlice";
+import {
+  useDeleteProjectMutation,
+  useGetProjectsQuery,
+} from "../redux/projectsSlice";
 
 const AllProjects = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -42,15 +51,13 @@ const AllProjects = forwardRef((props, ref) => {
 
   // const states = ["California", "Texas", "New York", "Florida"];
 
-  
-
   // useEffect(() => {
   //   const fetchTableData = async () => {
   //     try {
   //       const response = await Axios.get("/get-all-projecT-IT");
 
   //       const projectsData = Array.isArray(response.data.data)
-  //         ? response.data.data
+  // ? response.data.data
   //         : [];
   //       setProjects(projectsData);
   //     } catch (err) {
@@ -68,26 +75,22 @@ const AllProjects = forwardRef((props, ref) => {
 
   const [deleteProject] = useDeleteProjectMutation();
 
-console.log("getProject: ", getProject);
+  console.log("getProject: ", getProject);
 
+  const [user, setUser] = useState(null);
 
-    const [user, setUser] = useState(null);
-  
-    useEffect(() => {
-      const userData = getUserData();
-      setUser(userData);
-    }, []);
-  
-    const getUserData = () => {
-      const userData = localStorage.getItem("userDetails");
-      if (userData) {
-        return JSON.parse(userData);
-      }
-      return null;
-    };
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
 
-
-
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
 
   const RowMenu = ({ currentPage, p_id, _id }) => {
     // console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
@@ -114,29 +117,28 @@ console.log("getProject: ", getProject);
               }}
             >
               <ModeEditIcon />
-              <Typography>
-                 Edit
-              </Typography>
-             
+              <Typography>Edit</Typography>
             </MenuItem>
             <Divider sx={{ backgroundColor: "lightblue" }} />
             {(user?.name === "IT Team" ||
-            user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Prachi Singh" ||
-            user?.name === "admin") && (
-            <MenuItem color="danger" disabled={selectedProjects.length === 0}
-            onClick={handleDelete}>
-                
-                  <DeleteIcon />
-                  <Typography>Delete</Typography>
-                </MenuItem>
-                )}
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Prachi Singh" ||
+              user?.name === "admin") && (
+              <MenuItem
+                color="danger"
+                disabled={selectedProjects.length === 0}
+                onClick={handleDelete}
+              >
+                <DeleteIcon />
+                <Typography>Delete</Typography>
+              </MenuItem>
+            )}
           </Menu>
         </Dropdown>
       </>
     );
   };
-// Delete Api 
+  // Delete Api
 
   // const handleDelete = async () => {
   //   if (selectedProjects.length === 0) {
@@ -148,14 +150,14 @@ console.log("getProject: ", getProject);
   //     await Promise.all(
   //       selectedProjects.map((_id) => Axios.delete(`/delete-by-iD-IT/${_id}`))
   //     );
-      
+
   //     toast.success("Deleted successfully.");
-  
+
   //     // Remove deleted projects from state
   //     setProjects((prevProjects) =>
   //       prevProjects.filter((project) => !selectedProjects.includes(project._id))
   //     );
-  
+
   //     // Clear selection after deletion
   //     setSelectedProjects([]);
   //   } catch (error) {
@@ -163,8 +165,6 @@ console.log("getProject: ", getProject);
   //     toast.error("Failed to delete projects.");
   //   }
   // };
-  
-
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -173,31 +173,29 @@ console.log("getProject: ", getProject);
       setSelectedProjects([]);
     }
   };
-  
 
-const handleDelete = async () => {
-  if (selectedProjects.length === 0) {
-    toast.error("No projects selected for deletion.");
-    return;
-  }
+  const handleDelete = async () => {
+    if (selectedProjects.length === 0) {
+      toast.error("No projects selected for deletion.");
+      return;
+    }
 
-  try {
-    await Promise.all(
-      selectedProjects.map(async (_id) => {
-        await deleteProject(_id).unwrap();
-      })
-    );
+    try {
+      await Promise.all(
+        selectedProjects.map(async (_id) => {
+          await deleteProject(_id).unwrap();
+        })
+      );
 
-    toast.success("Selected projects deleted successfully.");
+      toast.success("Selected projects deleted successfully.");
 
-    // Clear selection after successful deletion
-    setSelectedProjects([]);
-  } catch (err) {
-    console.error("Failed to delete selected projects:", err);
-    toast.error("Failed to delete selected projects.");
-  }
-};
-
+      // Clear selection after successful deletion
+      setSelectedProjects([]);
+    } catch (err) {
+      console.error("Failed to delete selected projects:", err);
+      toast.error("Failed to delete selected projects.");
+    }
+  };
 
   const handleRowSelect = (_id) => {
     setSelectedProjects((prev) =>
@@ -207,9 +205,13 @@ const handleDelete = async () => {
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
-  const projects = useMemo(() => Array.isArray(getProject?.data) ? getProject.data : [], [getProject]);
+  const projects = useMemo(
+    () => (Array.isArray(getProject?.data) ? getProject.data : []),
+    [getProject]
+  );
 
-  const filteredAndSortedData = projects.filter((project) => {
+  const filteredAndSortedData = projects
+    .filter((project) => {
       const matchesSearchQuery = ["code", "customer", "name"].some((key) =>
         project[key]?.toLowerCase().includes(searchQuery)
       );
@@ -269,7 +271,9 @@ const handleDelete = async () => {
     setCurrentPage(page);
   }, [searchParams]);
 
-  const totalPages = Math.ceil((filteredAndSortedData?.length || 0) / itemsPerPage);
+  const totalPages = Math.ceil(
+    (filteredAndSortedData?.length || 0) / itemsPerPage
+  );
 
   const paginatedProjects = filteredAndSortedData.slice(
     (currentPage - 1) * itemsPerPage,
@@ -366,7 +370,7 @@ const handleDelete = async () => {
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
-          marginLeft: { xl: "15%", lg: "18%", },
+          marginLeft: { xl: "15%", lg: "18%" },
           borderRadius: "sm",
           py: 2,
           display: "flex",
@@ -401,185 +405,183 @@ const handleDelete = async () => {
           flexShrink: 1,
           overflow: "auto",
           minHeight: 0,
-          marginLeft: { xl: "15%",lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%", },
+          marginLeft: { xl: "15%", lg: "18%" },
+          maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
-     
-          <Box
-            component="table"
-            sx={{ width: "100%", borderCollapse: "collapse" }}
-          >
-            <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
-              <Box component="tr">
+        <Box
+          component="table"
+          sx={{ width: "100%", borderCollapse: "collapse" }}
+        >
+          <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
+            <Box component="tr">
+              <Box
+                component="th"
+                sx={{
+                  borderBottom: "1px solid #ddd",
+                  padding: "8px",
+                  textAlign: "center",
+                }}
+              >
+                <Checkbox
+                  size="sm"
+                  checked={selectedProjects.length === getProject.length}
+                  onChange={handleSelectAll}
+                  indeterminate={
+                    selectedProjects.length > 0 &&
+                    selectedProjects.length < getProject.length
+                  }
+                />
+              </Box>
+              {[
+                "Project ID",
+                "Customer",
+                "Project Name",
+                "Email",
+                "Mobile",
+                "State",
+                "Slnko Service Charges (with GST)",
+                "",
+              ].map((header, index) => (
                 <Box
                   component="th"
+                  key={index}
                   sx={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
                     textAlign: "center",
+                    fontWeight: "bold",
                   }}
                 >
-                  <Checkbox
-  size="sm"
-  checked={selectedProjects.length === getProject.length}
-  onChange={handleSelectAll}
-  indeterminate={
-    selectedProjects.length > 0 && selectedProjects.length < getProject.length
-  }
-/>
-
+                  {header}
                 </Box>
-                {[
-                  "Project ID",
-                  "Customer",
-                  "Project Name",
-                  "Email",
-                  "Mobile",
-                  "State",
-                  "Slnko Service Charges (with GST)",
-                  "",
-                ].map((header, index) => (
+              ))}
+            </Box>
+          </Box>
+          <Box component="tbody">
+            {paginatedProjects.data.length > 0 ? (
+              paginatedProjects.data.map((project, index) => (
+                <Box
+                  component="tr"
+                  key={index}
+                  sx={{
+                    "&:hover": { backgroundColor: "neutral.plainHoverBg" },
+                  }}
+                >
                   <Box
-                    component="th"
-                    key={index}
+                    component="td"
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
                       textAlign: "center",
-                      fontWeight: "bold",
                     }}
                   >
-                    {header}
+                    <Checkbox
+                      size="sm"
+                      color="primary"
+                      checked={selectedProjects.includes(project._id)}
+                      onChange={() => handleRowSelect(project._id)}
+                    />
                   </Box>
-                ))}
-              </Box>
-            </Box>
-            <Box component="tbody">
-              {paginatedProjects.data.length > 0 ? (
-                paginatedProjects.data.map((project, index) => (
-                  <Box
-                    component="tr"
-                    key={index}
-                    sx={{
-                      "&:hover": { backgroundColor: "neutral.plainHoverBg" },
-                    }}
-                  >
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <Checkbox
-                        size="sm"
-                        color="primary"
-                        checked={selectedProjects.includes(project._id)}
-                        onChange={() => handleRowSelect(project._id)}
-                      />
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.code}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.customer}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.name}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.email}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.number}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.state}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {project.service}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <RowMenu currentPage={currentPage} p_id={project.p_id} />
-                    </Box>
-                  </Box>
-                ))
-              ) : (
-                <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={9}
                     sx={{
+                      borderBottom: "1px solid #ddd",
                       padding: "8px",
                       textAlign: "center",
-                      fontStyle: "italic",
                     }}
                   >
-                    No data available
+                    {project.code}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.customer}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.name}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.email}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.number}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.state}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.service}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <RowMenu currentPage={currentPage} p_id={project.p_id} />
                   </Box>
                 </Box>
-              )}
-            </Box>
+              ))
+            ) : (
+              <Box component="tr">
+                <Box
+                  component="td"
+                  colSpan={9}
+                  sx={{
+                    padding: "8px",
+                    textAlign: "center",
+                    fontStyle: "italic",
+                  }}
+                >
+                  No data available
+                </Box>
+              </Box>
+            )}
           </Box>
-      
+        </Box>
       </Sheet>
 
       {/* Pagination */}
@@ -591,7 +593,7 @@ const handleDelete = async () => {
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
           alignItems: "center",
-          flexDirection:{xs:"column", md:"row"},
+          flexDirection: { xs: "column", md: "row" },
           marginLeft: { xl: "15%", lg: "18%" },
         }}
       >

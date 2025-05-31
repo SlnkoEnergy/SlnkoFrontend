@@ -15,7 +15,7 @@ import Sidebar from "../../component/Partials/Sidebar";
 
 import Header from "../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
-import Dash_eng from "../../component/EngDashboard";
+import Template_Dashboard from "../../component/Forms/Engineering/Eng_Templtes/Template_Dashboard";
 
 function TempDashboard() {
   const navigate = useNavigate();
@@ -90,7 +90,7 @@ function TempDashboard() {
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Engineering Dashboard
+                Template Dashboard
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -107,7 +107,7 @@ function TempDashboard() {
             }}
           >
             <Typography level="h2" component="h1">
-              Engineering Dashboard
+              Template Dashboard
             </Typography>
             {/* <Box
               sx={{
@@ -154,13 +154,13 @@ function TempDashboard() {
                 color="primary"
                 startDecorator={<ViewModuleRoundedIcon />}
                 size="md"
-                onClick={() => navigate("/module_sheet")}
+                onClick={() => navigate("/add_folder")}
               >
-                Module Sheet Dashboard
+                Create Folder
               </Button>
             </Box>
           </Box>
-          <Dash_eng />
+          <Template_Dashboard />
           {/* <OrderTable />
           <OrderList /> */}
         </Box>

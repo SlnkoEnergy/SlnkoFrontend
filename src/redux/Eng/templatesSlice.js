@@ -1,0 +1,90 @@
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+
+const baseQuery = fetchBaseQuery({
+  baseUrl: "https://dev.api.slnkoprotrac.com/v1/",
+  prepareHeaders: (headers) => {
+    const token = localStorage.getItem("authToken");
+    // console.log("Token:", token);
+    if (token) {
+      headers.set("x-auth-token", token);
+    }
+    return headers;
+  },
+});
+
+export const templatesApi = createApi({
+  reducerPath: "templatesApi",
+  baseQuery,
+  tagTypes: ["Template"],
+  endpoints: (builder) => ({
+    // GET: Fetch all Templatess
+    getAllTemplates: builder.query({
+      query: () => "get-module",
+      providesTags: ["Template"],
+    }),
+
+    // GET: Fetch single Templates by ID
+    getTemplatesById: builder.query({
+      query: (_id) => `get-module-by-id/${_id}`,
+      providesTags: ["Templates"],
+    }),
+
+    // POST: Create new Templates
+    addTemplates: builder.mutation({
+      query: (newTemplates) => ({
+        url: "create-module",
+        method: "POST",
+        body: newTemplates,
+      }),
+      invalidatesTags: ["Templates"],
+    }),
+
+    // PUT: Update overall status by _id
+    updateTemplatesStatusOverall: builder.mutation({
+      query: ({ _id, ...data }) => ({
+        url: `/${_id}/status/overall`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["Templates"],
+    }),
+
+    // PUT: Update status of an item in a specific sheet
+    updateTemplatesStatusItems: builder.mutation({
+      query: ({ sheetId, itemId, ...data }) => ({
+        url: `${sheetId}/item/${itemId}/status`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["Templates"],
+    }),
+
+    // DELETE: Delete an Templates
+    deleteTemplates: builder.mutation({
+      query: (_id) => ({
+        url: `delete-module/${_id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Templates"],
+    }),
+    updateTemplatesSheet: builder.mutation({
+      query: ({ _id, ...updatedData }) => ({
+        url: `update-module/${_id}`,
+        method: "PUT",
+        body: updatedData,
+      }),
+      invalidatesTags: ["Templates"],
+    }),
+  }),
+});
+
+export const {
+  useGetAllTemplatesQuery,
+  useGetTemplatesByIdQuery,
+  useAddTemplatesMutation,
+  useUpdateTemplatesStatusOverallMutation,
+  useUpdateTemplatesStatusItemsMutation,
+  useDeleteTemplatesMutation,
+  useUpdateTemplatesSheetMutation,
+  useUpdateDisbursementDateMutation,
+} = templatesApi;
