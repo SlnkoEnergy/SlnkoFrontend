@@ -152,16 +152,16 @@ function Dash_cam() {
       }
     };
 
-    // New conditions for colors and icons
+
     const showUnlockIcon = !lockedState && status === "Approved";
     const showSuccessLockIcon = lockedState && status === "submitted";
 
-    // Color logic:
-    // success color if (unlocked & Approved) OR (locked & Submitted)
+  
+   
     const color = showUnlockIcon || showSuccessLockIcon ? "success" : "danger";
 
-    // Icon logic:
-    // Unlock icon if showUnlockIcon, else lock icon always
+   
+   
     const IconComponent = showUnlockIcon ? LockOpenIcon : LockIcon;
 
     return (

@@ -43,7 +43,17 @@ function VendorBillSummary() {
   useEffect(() => {
     async function fetchPoData() {
       try {
-        const response = await Axios.get("/get-all-pO-IT");
+          const token = localStorage.getItem("authToken");
+        console.log(token);
+
+        if (!token) {
+          throw new Error("No auth token found in localStorage.");
+        }
+        const response = await Axios.get("/get-all-pO-IT", {
+            headers: {
+              "x-auth-token": token,
+            },
+          });
         // console.log("PO Data:", response.data.data);
         setPoData(response.data.data);
       } catch (error) {
@@ -57,7 +67,17 @@ function VendorBillSummary() {
   useEffect(() => {
     async function fetchBillData() {
       try {
-        const response = await Axios.get("/get-all-bilL-IT");
+           const token = localStorage.getItem("authToken");
+        console.log(token);
+
+        if (!token) {
+          throw new Error("No auth token found in localStorage.");
+        }
+        const response = await Axios.get("/get-all-bilL-IT", {
+            headers: {
+              "x-auth-token": token,
+            },
+          });
         // console.log("Bill Data:", response.data.data); // Check Bill Data
         setBillData(response.data.data);
       } catch (error) {
@@ -128,10 +148,20 @@ function VendorBillSummary() {
 
     const handleAcceptance = async () => {
       try {
+           const token = localStorage.getItem("authToken");
+        console.log(token);
+
+        if (!token) {
+          throw new Error("No auth token found in localStorage.");
+        }
         const response = await Axios.put("/accepted-by", {
           bill_number: billNumber,
           approved_by: user?.name,
-        });
+        },{
+            headers: {
+              "x-auth-token": token,
+            },
+          });
 
         if (response.status === 200) {
           setIsAccepted(true);

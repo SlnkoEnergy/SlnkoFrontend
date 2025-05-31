@@ -77,11 +77,11 @@ function Dash_cam() {
         ...entry.other_details,
         p_id: entry.p_id,
         status_of_handoversheet: entry.status_of_handoversheet,
-        submitted_by: entry.submitted_by
+        submitted_by: entry.submitted_by,
       }))
     : [];
 
-    // console.log("HandOverSheet:", HandOverSheet);
+  // console.log("HandOverSheet:", HandOverSheet);
 
   const combinedData = HandOverSheet.map((handoverItem) => {
     const matchingLead = leads.find((lead) => lead.id === handoverItem.id);
@@ -89,7 +89,6 @@ function Dash_cam() {
     return {
       ...handoverItem,
       scheme: matchingLead?.scheme || "-",
-     
     };
   });
 
@@ -199,7 +198,7 @@ function Dash_cam() {
   const RowMenu1 = ({ currentPage, p_id, _id }) => {
     const [openModal, setOpenModal] = useState(false);
     const [comment, setComment] = useState("");
-    
+
     const handleReject = async () => {
       if (!comment.trim()) {
         toast.error("Please enter a comment before submitting.");
@@ -209,10 +208,20 @@ function Dash_cam() {
       const ID = String(_id);
 
       try {
-        await Axios.put(`/update-status/${ID}`, {
-          status_of_handoversheet: "Rejected",
-          comment: comment,
-        });
+        const token = localStorage.getItem("authToken");
+
+        await Axios.put(
+          `/update-status/${ID}`,
+          {
+            status_of_handoversheet: "Rejected",
+            comment: comment,
+          },
+          {
+            headers: {
+              "x-auth-token": token,
+            },
+          }
+        );
 
         toast.success("Handover sent back to BD");
         setOpenModal(false);
@@ -509,7 +518,6 @@ function Dash_cam() {
 
   return (
     <>
-
       {/* Tablet and Up Filters */}
       <Box
         className="SearchAndFilters-tabletUp"

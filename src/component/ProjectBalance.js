@@ -1823,8 +1823,8 @@ const ProjectBalances = forwardRef((props, ref) => {
                               ...cellStyle,
                               display: "flex",
                               alignItems: "center",
-                              justifyContent: "center", // center it within the td
-                              minWidth: "40px", // ensure space
+                              justifyContent: "center",
+                              minWidth: "40px",
                             }}
                           >
                             <AddMoney
