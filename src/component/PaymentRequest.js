@@ -26,7 +26,8 @@ import Typography from "@mui/joy/Typography";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
-import Axios from "../utils/Axios";
+import { useGetPaymentsQuery } from "../redux/paymentsSlice";
+import { useGetProjectsQuery } from "../redux/projectsSlice";
 
 const PaymentRequest = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -48,90 +49,169 @@ const PaymentRequest = forwardRef((props, ref) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // useEffect(() => {
+  //   const fetchTableData = async () => {
+  //     try {
+  //       const token = localStorage.getItem("authToken");
+  //       const config = { headers: { "x-auth-token": token } };
+  //       console.log(token);
+
+  //       const [paymentResponse, projectResponse] = await Promise.all([
+  //         Axios.get("/get-pay-summarY-IT", config),
+  //         Axios.get("/get-all-projecT-IT", config),
+  //       ]);
+
+  //       setPayments(paymentResponse.data.data);
+  //       console.log("Payment Data are:", paymentResponse.data.data);
+
+  //       setProjects(projectResponse.data.data);
+  //       console.log("Project Data are:", projectResponse.data.data);
+
+  //       const uniqueVendors = [
+  //         ...new Set(
+  //           paymentResponse.data.data.map((payment) => payment.vendor)
+  //         ),
+  //       ].filter(Boolean);
+
+  //       // console.log("Vendors are: ", uniqueVendors);
+  //       const uniqueStatuses = [
+  //         ...new Set(
+  //           paymentResponse.data.data.map((payment) => payment.approved)
+  //         ),
+  //       ].filter(Boolean);
+
+  //       // console.log("Vendors are: ", uniqueVendors);
+
+  //       setStatuses(uniqueStatuses);
+  //       setVendors(uniqueVendors);
+  //     } catch (err) {
+  //       console.error("API Error:", err);
+  //       setError(
+  //         <span
+  //           style={{
+  //             display: "flex",
+  //             alignItems: "center",
+  //             gap: "5px",
+  //             color: "red",
+  //             justifyContent: "center",
+  //             flexDirection: "column",
+  //             padding: "20px",
+  //           }}
+  //         >
+  //           <PermScanWifiIcon />
+  //           <Typography
+  //             fontStyle={"italic"}
+  //             fontWeight={"600"}
+  //             sx={{ color: "#0a6bcc" }}
+  //           >
+  //             Hang tight! Internet Connection will be back soon..
+  //           </Typography>
+  //         </span>
+  //       );
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchTableData();
+  // }, []);
+
+  // useEffect(() => {
+  //   if (payments.length > 0 && projects.length > 0) {
+  //     const merged = payments.map((payment) => {
+  //       const matchingProject = projects.find(
+  //         (project) => Number(project.p_id) === Number(payment.p_id)
+  //       );
+  //       return {
+  //         ...payment,
+  //         // projectCode: matchingProject?.code || "-",
+  //         // projectName: matchingProject?.name || "-",
+  //         projectCustomer: matchingProject?.customer || "-",
+  //         // projectGroup: matchingProject?.p_group || "-",
+  //       };
+  //     });
+  //     setMergedData(merged);
+  //   }
+  // }, [payments, projects]);
+
+  const {
+    data: paymentsData,
+    error: paymentsError,
+    isLoading: isPaymentsLoading,
+  } = useGetPaymentsQuery();
+
+  const {
+    data: projectsData,
+    error: projectsError,
+    isLoading: isProjectsLoading,
+  } = useGetProjectsQuery();
+
   useEffect(() => {
-    const fetchTableData = async () => {
-      try {
-        const token = localStorage.getItem("authToken");
-        const config = { headers: { "x-auth-token": token } };
-        console.log(token);
+    if (isPaymentsLoading || isProjectsLoading) return;
 
-        const [paymentResponse, projectResponse] = await Promise.all([
-          Axios.get("/get-pay-summarY-IT", config),
-          Axios.get("/get-all-projecT-IT", config),
-        ]);
+    if (paymentsData?.data?.data && projectsData?.data?.data) {
+      console.log("✅ Payments Data:", paymentsData.data);
+      console.log("✅ Projects Data:", projectsData.data);
 
-        setPayments(paymentResponse.data.data);
-        console.log("Payment Data are:", paymentResponse.data.data);
-
-        setProjects(projectResponse.data.data);
-        console.log("Project Data are:", projectResponse.data.data);
-
-        const uniqueVendors = [
-          ...new Set(
-            paymentResponse.data.data.map((payment) => payment.vendor)
-          ),
-        ].filter(Boolean);
-
-        // console.log("Vendors are: ", uniqueVendors);
-        const uniqueStatuses = [
-          ...new Set(
-            paymentResponse.data.data.map((payment) => payment.approved)
-          ),
-        ].filter(Boolean);
-
-        // console.log("Vendors are: ", uniqueVendors);
-
-        setStatuses(uniqueStatuses);
-        setVendors(uniqueVendors);
-      } catch (err) {
-        console.error("API Error:", err);
-        setError(
-          <span
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "5px",
-              color: "red",
-              justifyContent: "center",
-              flexDirection: "column",
-              padding: "20px",
-            }}
-          >
-            <PermScanWifiIcon />
-            <Typography
-              fontStyle={"italic"}
-              fontWeight={"600"}
-              sx={{ color: "#0a6bcc" }}
-            >
-              Hang tight! Internet Connection will be back soon..
-            </Typography>
-          </span>
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTableData();
-  }, []);
-
-  useEffect(() => {
-    if (payments.length > 0 && projects.length > 0) {
-      const merged = payments.map((payment) => {
-        const matchingProject = projects.find(
+      const merged = paymentsData.data.map((payment) => {
+        const matchingProject = projectsData.data.find(
           (project) => Number(project.p_id) === Number(payment.p_id)
         );
+
         return {
           ...payment,
-          // projectCode: matchingProject?.code || "-",
-          // projectName: matchingProject?.name || "-",
           projectCustomer: matchingProject?.customer || "-",
-          // projectGroup: matchingProject?.p_group || "-",
         };
       });
+
       setMergedData(merged);
+
+      const uniqueVendors = [
+        ...new Set(paymentsData.data.map((p) => p.vendor)),
+      ].filter(Boolean);
+
+      const uniqueStatuses = [
+        ...new Set(paymentsData.data.map((p) => p.approved)),
+      ].filter(Boolean);
+
+      setVendors(uniqueVendors);
+      setStatuses(uniqueStatuses);
+    } else {
+      console.error("❌ paymentsData or projectsData is missing or invalid");
+      setError(
+        <span style={{ color: "red", textAlign: "center", padding: "10px" }}>
+          Failed to load data. Please refresh the page or try again later.
+        </span>
+      );
     }
-  }, [payments, projects]);
+  }, [paymentsData, projectsData, isPaymentsLoading, isProjectsLoading]);
+
+  useEffect(() => {
+    if (paymentsError || projectsError) {
+      setError(
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "5px",
+            color: "red",
+            justifyContent: "center",
+            flexDirection: "column",
+            padding: "20px",
+          }}
+        >
+          <PermScanWifiIcon />
+          <Typography
+            fontStyle="italic"
+            fontWeight="600"
+            sx={{ color: "#0a6bcc" }}
+          >
+            Hang tight! Internet Connection will be back soon..
+          </Typography>
+        </span>
+      );
+    }
+  }, [paymentsError, projectsError]);
 
   const renderFilters = () => (
     <>
