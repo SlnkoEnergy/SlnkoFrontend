@@ -15,7 +15,7 @@ import Sidebar from "../../component/Partials/Sidebar";
 
 import Header from "../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
-import Template_Dashboard from "../../component/Forms/Engineering/Eng_Templtes/Template_Dashboard";
+import Template_Dashboard from "../../component/Forms/Engineering/Eng_Templtes/Template_dashboard";
 
 function TempDashboard() {
   const navigate = useNavigate();

@@ -99,6 +99,7 @@ import Update_Bill from "../pages/SCM/EditBill";
 import PrivateRoute from "./PrivateRoute";
 import TempDashboard from "../pages/Eng/Template_Dashboard";
 import AddFolder from "../pages/Eng/Forms/Add_folder";
+import AddTemplate from "../pages/Eng/Forms/Add_Template";
 
 function index() {
   return (
@@ -434,6 +435,15 @@ function index() {
         element={
           <PrivateRoute>
             <AddFolder />
+          </PrivateRoute>
+        }
+      />
+
+<Route
+        path="/add_folder"
+        element={
+          <PrivateRoute>
+            <AddTemplate/>
           </PrivateRoute>
         }
       />
