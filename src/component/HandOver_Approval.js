@@ -47,7 +47,6 @@ function Dash_cam() {
 
   const {
     data: getHandOverSheet = {},
-    error,
     isLoading,
     refetch,
   } = useGetHandOverQuery(refreshKey);
@@ -67,30 +66,30 @@ function Dash_cam() {
   ];
 
   const HandOverSheet = Array.isArray(getHandOverSheet?.Data)
-    ? getHandOverSheet.Data.map((entry) => ({
-        _id: entry._id,
-        id: entry.id,
-        ...entry.customer_details,
-        ...entry.order_details,
-        ...entry.project_detail,
-        ...entry.commercial_details,
-        ...entry.other_details,
-        p_id: entry.p_id,
-        status_of_handoversheet: entry.status_of_handoversheet,
-        submitted_by: entry.submitted_by,
-      }))
+    ? getHandOverSheet.Data.map((entry) => {
+        const matchingLead = leads.find((lead) => lead.id === entry.id);
+        return {
+          ...entry,
+          ...entry.customer_details,
+          ...entry.order_details,
+          ...entry.project_detail,
+          ...entry.commercial_details,
+          ...entry.other_details,
+          scheme: matchingLead?.scheme || "-",
+        };
+      })
     : [];
 
   // console.log("HandOverSheet:", HandOverSheet);
 
-  const combinedData = HandOverSheet.map((handoverItem) => {
-    const matchingLead = leads.find((lead) => lead.id === handoverItem.id);
+  // const combinedData = HandOverSheet.map((handoverItem) => {
+  //   const matchingLead = leads.find((lead) => lead.id === handoverItem.id);
 
-    return {
-      ...handoverItem,
-      scheme: matchingLead?.scheme || "-",
-    };
-  });
+  //   return {
+  //     ...handoverItem,
+  //     scheme: matchingLead?.scheme || "-",
+  //   };
+  // });
 
   // console.log(combinedData);
   // const [updateUnlockHandoversheet, { isLoading: isUpdating }] =
@@ -426,27 +425,19 @@ function Dash_cam() {
   };
 
   const filteredAndSortedData = useMemo(() => {
-    if (!Array.isArray(combinedData)) return [];
-
-    return combinedData
-      .filter((project) => {
-        if (!project) return false; // safeguard
-
-        const matchesSearchQuery = ["code", "customer", "state"].some((key) =>
-          project[key]
-            ?.toString()
-            .toLowerCase()
-            .includes(searchQuery?.toLowerCase())
-        );
-
-        return matchesSearchQuery;
-      })
-      .sort((a, b) => {
-        const dateA = new Date(a?.createdAt || 0);
-        const dateB = new Date(b?.createdAt || 0);
-        return dateB - dateA;
-      });
-  }, [combinedData, searchQuery]);
+    return HandOverSheet.filter((project) =>
+      ["code", "customer", "state"].some((key) =>
+        project[key]
+          ?.toString()
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase())
+      )
+    ).sort((a, b) => {
+      const dateA = new Date(a?.updatedAt || a?.createdAt || 0);
+      const dateB = new Date(b?.updatedAt || b?.createdAt || 0);
+      return dateB - dateA;
+    });
+  }, [HandOverSheet, searchQuery]);
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -496,17 +487,19 @@ function Dash_cam() {
     setCurrentPage(page);
   }, [searchParams]);
 
+  const paginatedPayments = filteredAndSortedData;
+
   const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
 
-  const paginatedPayments = filteredAndSortedData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  // const paginatedPayments = filteredAndSortedData.slice(
+  //   (currentPage - 1) * itemsPerPage,
+  //   currentPage * itemsPerPage
+  // );
   // console.log(paginatedPayments);
   // console.log("Filtered and Sorted Data:", filteredAndSortedData);
 
   const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
+    if (page >= 1) {
       setSearchParams({ page });
       setCurrentPage(page);
     }
@@ -788,13 +781,13 @@ function Dash_cam() {
           pt: 2,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
-          // display: { xs: "none", md: "flex" },
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
           marginLeft: { lg: "18%", xl: "15%" },
         }}
       >
+        {/* Previous Button */}
         <Button
           size="sm"
           variant="outlined"
@@ -805,51 +798,51 @@ function Dash_cam() {
         >
           Previous
         </Button>
-        <Box>
-          Showing {draftPayments.length} of {draftPayments.length} results
-        </Box>
+
+        {/* Showing X Results (no total because backend paginates) */}
+        <Box>Showing {draftPayments.length} results</Box>
+
+        {/* Page Numbers: Only show current, prev, next for backend-driven pagination */}
+        {/* Page Numbers: Only show current, prev, next for backend-driven pagination */}
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
-          {generatePageNumbers(currentPage, totalPages).map((page, index) =>
-            typeof page === "number" ? (
-              <IconButton
-                key={index}
-                size="sm"
-                variant={page === currentPage ? "contained" : "outlined"}
-                color="neutral"
-                onClick={() => handlePageChange(page)}
-              >
-                {page}
-              </IconButton>
-            ) : (
-              <Typography key={index} sx={{ px: 1, alignSelf: "center" }}>
-                {page}
-              </Typography>
-            )
+          {currentPage > 1 && (
+            <IconButton
+              size="sm"
+              variant="outlined"
+              color="neutral"
+              onClick={() => handlePageChange(currentPage - 1)}
+            >
+              {currentPage - 1}
+            </IconButton>
+          )}
+
+          <IconButton size="sm" variant="contained" color="neutral">
+            {currentPage}
+          </IconButton>
+
+          {/* Show next page button if current page has any data (not empty) */}
+          {draftPayments.length > 0 && (
+            <IconButton
+              size="sm"
+              variant="outlined"
+              color="neutral"
+              onClick={() => handlePageChange(currentPage + 1)}
+            >
+              {currentPage + 1}
+            </IconButton>
           )}
         </Box>
-        {/* <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
-    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-      <IconButton
-        key={page}
-        size="sm"
-        variant={page === currentPage ? "contained" : "outlined"}
-        color="neutral"
-        onClick={() => handlePageChange(page)}
-      >
-        {page}
-      </IconButton>
-    ))}
-  </Box> */}
 
+        {/* Next Button */}
         <Button
           size="sm"
           variant="outlined"
           color="neutral"
           endDecorator={<KeyboardArrowRightIcon />}
           onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
+          disabled={draftPayments.length === 0} // disable next if no data at all on this page
         >
           Next
         </Button>

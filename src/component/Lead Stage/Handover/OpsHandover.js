@@ -10,7 +10,9 @@ import {
   Option,
   Select,
   Sheet,
+  Switch,
   Textarea,
+  Tooltip,
   Typography,
 } from "@mui/joy";
 import { useEffect, useMemo, useState } from "react";
@@ -30,6 +32,7 @@ import {
 const OpsHandoverSheetForm = ({ onBack }) => {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(null);
+  const [showVillage, setShowVillage] = useState(false);
   const states = [
     "Andhra Pradesh",
     "Arunachal Pradesh",
@@ -295,24 +298,23 @@ const OpsHandoverSheetForm = ({ onBack }) => {
     }));
   }, [handoverData]);
 
-const calculateDcCapacity = (ac, overloadingPercent) => {
-  const acValue = parseFloat(ac);
-  const overloadingValue = parseFloat(overloadingPercent) / 100;
-  if (!isNaN(acValue) && !isNaN(overloadingValue)) {
-    return Math.round(acValue * (1 + overloadingValue));
-  }
-  return "";
-};
+  const calculateDcCapacity = (ac, overloadingPercent) => {
+    const acValue = parseFloat(ac);
+    const overloadingValue = parseFloat(overloadingPercent) / 100;
+    if (!isNaN(acValue) && !isNaN(overloadingValue)) {
+      return Math.round(acValue * (1 + overloadingValue));
+    }
+    return "";
+  };
 
-const calculateSlnkoBasic = (kwp, slnko_basic) => {
-  const kwpValue = parseFloat(kwp);
-  const serviceValue = parseFloat(slnko_basic);
-  if (!isNaN(kwpValue) && !isNaN(serviceValue)) {
-    return (kwpValue * serviceValue * 1000).toFixed(0);
-  }
-  return "";
-};
-
+  const calculateSlnkoBasic = (kwp, slnko_basic) => {
+    const kwpValue = parseFloat(kwp);
+    const serviceValue = parseFloat(slnko_basic);
+    if (!isNaN(kwpValue) && !isNaN(serviceValue)) {
+      return (kwpValue * serviceValue * 1000).toFixed(0);
+    }
+    return "";
+  };
 
   useEffect(() => {
     const serviceAmount = parseFloat(formData?.other_details?.service);
@@ -337,27 +339,27 @@ const calculateSlnkoBasic = (kwp, slnko_basic) => {
         service: calculated,
       },
     }));
-//    if (!isNaN(serviceAmount)) {
-//   let gstPercentage = 0;
-//   if (billingType === "Composite") {
-//     gstPercentage = 13.8;
-//   } else if (billingType === "Individual") {
-//     gstPercentage = 18;
-//   }
+    //    if (!isNaN(serviceAmount)) {
+    //   let gstPercentage = 0;
+    //   if (billingType === "Composite") {
+    //     gstPercentage = 13.8;
+    //   } else if (billingType === "Individual") {
+    //     gstPercentage = 18;
+    //   }
 
-//   if (gstPercentage > 0) {
-//     const totalGST = Math.round(serviceAmount * (1 + gstPercentage / 100));
-//     setFormData((prev) => ({
-//       ...prev,
-//       other_details: {
-//         ...prev.other_details,
-//         total_gst: totalGST,
-//       },
-//     }));
-//   }
-// }
+    //   if (gstPercentage > 0) {
+    //     const totalGST = Math.round(serviceAmount * (1 + gstPercentage / 100));
+    //     setFormData((prev) => ({
+    //       ...prev,
+    //       other_details: {
+    //         ...prev.other_details,
+    //         total_gst: totalGST,
+    //       },
+    //     }));
+    //   }
+    // }
 
-  if (!isNaN(serviceAmount)) {
+    if (!isNaN(serviceAmount)) {
       let gstPercentage = 0;
       if (billingType === "Composite") {
         gstPercentage = 13.8;
@@ -376,7 +378,6 @@ const calculateSlnkoBasic = (kwp, slnko_basic) => {
         }));
       }
     }
-
   }, [
     formData.project_detail.project_kwp,
     formData.project_detail.overloading,
@@ -683,31 +684,57 @@ const calculateSlnkoBasic = (kwp, slnko_basic) => {
             <Grid item xs={12} sm={6}>
               <Typography
                 level="body1"
-                sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  fontWeight: "bold",
+                  mb: 0.5,
+                }}
               >
                 Site Address with Pin Code{" "}
                 <span style={{ color: "red" }}>*</span>
+                <Tooltip title="Enable to enter village name" placement="top">
+                  <Switch
+                    checked={showVillage}
+                    onChange={(e) => setShowVillage(e.target.checked)}
+                    sx={{ ml: 2 }}
+                    size="sm"
+                  />
+                </Tooltip>
               </Typography>
+
               <Input
-                required
                 fullWidth
-                placeholder="e.g. Sunrise Village, 221001"
-                value={`${formData?.customer_details?.site_address?.village_name || ""}${
-                  formData?.customer_details?.site_address?.district_name
-                    ? `, ${formData?.customer_details?.site_address?.district_name}`
-                    : ""
-                }`}
+                placeholder="e.g. Varanasi 221001"
+                value={formData.customer_details.site_address.district_name}
                 onChange={(e) => {
-                  const [village, district] = e.target.value
-                    .split(",")
-                    .map((s) => s.trim());
+                  const newDistrict = e.target.value;
                   handleChange("customer_details", "site_address", {
-                    village_name: village || "",
-                    district_name: district || "",
+                    ...formData.customer_details.site_address,
+                    district_name: newDistrict,
                   });
                 }}
               />
             </Grid>
+
+            {showVillage && (
+              <Grid item xs={12} sm={6}>
+                <Typography level="body1" sx={{ fontWeight: "bold", mb: 0.5 }}>
+                  Village Name
+                </Typography>
+                <Input
+                  fullWidth
+                  placeholder="e.g. Chakia"
+                  value={formData.customer_details.site_address.village_name}
+                  onChange={(e) => {
+                    handleChange("customer_details", "site_address", {
+                      ...formData.customer_details.site_address,
+                      village_name: e.target.value,
+                    });
+                  }}
+                />
+              </Grid>
+            )}
             <Grid item xs={12} sm={6}>
               <Typography
                 level="body1"
