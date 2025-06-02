@@ -26,7 +26,7 @@ export const templatesApi = createApi({
     // GET: Fetch single Templates by ID
     getTemplatesById: builder.query({
       query: (_id) => `get-module-by-id/${_id}`,
-      providesTags: ["Templates"],
+      providesTags: ["Template"],
     }),
 
     // POST: Create new Templates
@@ -36,7 +36,7 @@ export const templatesApi = createApi({
         method: "POST",
         body: newTemplates,
       }),
-      invalidatesTags: ["Templates"],
+      invalidatesTags: ["Template"],
     }),
 
     // PUT: Update overall status by _id
@@ -46,7 +46,7 @@ export const templatesApi = createApi({
         method: "PUT",
         body: data,
       }),
-      invalidatesTags: ["Templates"],
+      invalidatesTags: ["Template"],
     }),
 
     // PUT: Update status of an item in a specific sheet
@@ -56,7 +56,7 @@ export const templatesApi = createApi({
         method: "PUT",
         body: data,
       }),
-      invalidatesTags: ["Templates"],
+      invalidatesTags: ["Template"],
     }),
 
     // DELETE: Delete an Templates
@@ -65,7 +65,7 @@ export const templatesApi = createApi({
         url: `delete-module/${_id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Templates"],
+      invalidatesTags: ["Template"],
     }),
     updateTemplatesSheet: builder.mutation({
       query: ({ _id, ...updatedData }) => ({
@@ -73,7 +73,7 @@ export const templatesApi = createApi({
         method: "PUT",
         body: updatedData,
       }),
-      invalidatesTags: ["Templates"],
+      invalidatesTags: ["Template"],
     }),
   }),
 });
@@ -86,5 +86,4 @@ export const {
   useUpdateTemplatesStatusItemsMutation,
   useDeleteTemplatesMutation,
   useUpdateTemplatesSheetMutation,
-  useUpdateDisbursementDateMutation,
 } = templatesApi;

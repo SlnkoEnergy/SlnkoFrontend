@@ -106,8 +106,8 @@ const TemplateDashboard = () => {
     e.preventDefault();
     try {
       await updateTemplate({
-        id: editTemplateId,
-        updatedData: formData,
+        _id: editTemplateId, // ✅ Correct key
+        ...formData, // ✅ Flattened formData
       }).unwrap();
       toast.success("Template updated successfully!");
       setOpen(false);
