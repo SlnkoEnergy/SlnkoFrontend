@@ -138,8 +138,7 @@ const TemplateDashboard = () => {
             <Grid xs={12} sm={4} md={1.5} key={template._id}>
               <Card
                 onClick={() => {
-                  sessionStorage.setItem("select_temp", template._id);
-                  navigate(`/temp_dash?id=${template._id}`);
+                  navigate(`/temp_pages?id=${template._id}`);
                 }}
                 variant="outlined"
                 sx={{

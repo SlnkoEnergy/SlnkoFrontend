@@ -12,8 +12,9 @@ import Sidebar from '../../../component/Partials/Sidebar';
 import Header from '../../../component/Partials/Header';
 
 import { useNavigate } from 'react-router-dom';
+import AddTemplatesPage from '../../../component/Forms/Engineering/Eng_Templtes/Add_templates';
 
-function AddTemplate() {
+function AddTemplates() {
     const navigate = useNavigate();
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -65,7 +66,7 @@ function AddTemplate() {
                 Template Dashboard
               </Link>
               <Typography color="primary" sx={{ fontWeight: 500, fontSize: 12 }}>
-                Add Template
+                Add Templates
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -80,7 +81,7 @@ function AddTemplate() {
               justifyContent: 'space-between',
             }}
           >
-           <AddTemplate />
+           <AddTemplatesPage />
            
           </Box>
           
@@ -92,4 +93,4 @@ function AddTemplate() {
     </CssVarsProvider>
   );
 }
-export default AddTemplate;
+export default AddTemplates;

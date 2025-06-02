@@ -59,6 +59,26 @@ export const templatesApi = createApi({
       invalidatesTags: ["Template"],
     }),
 
+    // POST: Step 1 - Create BOQ Category (template with headers)
+    createBoqCategory: builder.mutation({
+      query: (categoryData) => ({
+        url: "create-boq-category",
+        method: "POST",
+        body: categoryData,
+      }),
+      invalidatesTags: ["Template"],
+    }),
+
+    // POST: Step 2 - Create BOQ Template Row
+    createBoqTemplateRow: builder.mutation({
+      query: (rowData) => ({
+        url: "create-boq-template",
+        method: "POST",
+        body: rowData,
+      }),
+      invalidatesTags: ["Template"],
+    }),
+
     // DELETE: Delete an Templates
     deleteTemplates: builder.mutation({
       query: (_id) => ({
@@ -86,4 +106,6 @@ export const {
   useUpdateTemplatesStatusItemsMutation,
   useDeleteTemplatesMutation,
   useUpdateTemplatesSheetMutation,
+  useCreateBoqCategoryMutation,
+  useCreateBoqTemplateRowMutation,
 } = templatesApi;
