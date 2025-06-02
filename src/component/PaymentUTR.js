@@ -175,12 +175,16 @@ function UTRPayment() {
     setIsSubmitting(true);
   
     try {
-      console.log("Submitting UTR...");
+      const token = localStorage.getItem("authToken");
+      // console.log("Submitting UTR...");
       const utrResponse = await Axios.put("/utr-update", {
         pay_id: paymentId,
         utr: utr,
         utr_submitted_by: user?.name,
-      });
+      },
+    {
+      headers: {"x-auth-token" : token}
+    });
   
       console.log("UTR Response:", utrResponse);
   

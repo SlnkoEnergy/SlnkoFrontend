@@ -644,7 +644,7 @@ function Offer() {
                   sx={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
-                    textAlign: "center",
+                    textAlign: "left",
                   }}
                 >
                   <Checkbox
@@ -676,7 +676,7 @@ function Offer() {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                       fontWeight: "bold",
                     }}
                   >
@@ -700,7 +700,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       <Checkbox
@@ -716,7 +716,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.offer_id}
@@ -726,7 +726,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.client_name}
@@ -736,7 +736,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.state || "-"}
@@ -746,7 +746,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.ac_capacity || "-"}
@@ -756,7 +756,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.scheme || "-"}
@@ -766,7 +766,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.component || "-"}
@@ -777,7 +777,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.slnkoCharges.toLocaleString("en-IN")}
@@ -787,7 +787,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       <AddMenu
@@ -800,7 +800,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.prepared_by || "-"}
@@ -810,7 +810,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       <RowMenu

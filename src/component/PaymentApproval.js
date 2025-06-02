@@ -340,9 +340,12 @@ function PaymentRequest() {
 
   const handleApprovalUpdate = async (paymentId, newStatus) => {
     try {
+      const token = localStorage.getItem("authToken");
       const response = await Axios.put("/account-approve", {
         pay_id: paymentId,
         status: newStatus,
+      }, {
+        headers: {"x-auth-token" : token}
       });
 
       if (response.status === 200) {

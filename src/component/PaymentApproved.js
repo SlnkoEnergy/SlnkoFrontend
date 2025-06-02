@@ -190,12 +190,16 @@ function PaymentRequest() {
       setError(null);
 
       try {
-        console.log("Sending account match request...");
+        // console.log("Sending account match request...");
+        const token = localStorage.getItem("authToken");
         const response = await Axios.put("/acc-matched", {
           pay_id: paymentId,
           acc_number: accountMatch,
           ifsc: ifsc,
-        });
+        },
+      {
+        headers: {"x-auth-token" : token}
+      });
 
         console.log("Account match response:", response);
 
