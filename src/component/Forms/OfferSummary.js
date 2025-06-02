@@ -101,6 +101,7 @@ const PaymentRequestSummary = () => {
       }
 
       try {
+        const token = localStorage.getItem("authToken");
         const response = await Axios.put(`/edit-bd-rate/${scmData._id}`, {
           _id: scmData._id,
           spv_modules: scmData.spv_modules,
@@ -109,7 +110,9 @@ const PaymentRequestSummary = () => {
           slnko_charges: scmData.slnko_charges,
           comment: scmData.comment || "",
           submitted_by_BD: user.name,
-        });
+        }, { headers: {
+            "x-auth-token": token,
+      }});
 
         if (response.status === 200) {
           setResponse(response.data);

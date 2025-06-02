@@ -76,11 +76,11 @@ const AddPurchaseOrder = () => {
         const config = { headers: { "x-auth-token": token } };
 
         const projectsRes = await Axios.get("/get-all-projecT-IT", config);
-        console.log("Project Data: ", projectsRes.data.data);
+        // console.log("Project Data: ", projectsRes.data.data);
         setProjectIDs(projectsRes.data.data || []);
 
         const vendorsRes = await Axios.get("/get-all-vendoR-IT", config);
-        console.log("Vendor Data: ", vendorsRes.data.data);
+        // console.log("Vendor Data: ", vendorsRes.data.data);
         setVendors(vendorsRes.data.data || []);
 
         const itemsRes = await Axios.get("/get-iteM-IT", config);

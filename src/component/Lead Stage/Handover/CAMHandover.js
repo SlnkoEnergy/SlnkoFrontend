@@ -808,7 +808,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
               >
                 Invoicing Address<span style={{ color: "red" }}>*</span>
               </Typography>
-              <Input
+              <Textarea
                 fullWidth
                 placeholder="Invoicing Address"
                 value={formData.invoice_detail.invoicing_address}
@@ -819,6 +819,16 @@ const CamHandoverSheetForm = ({ onBack }) => {
                     e.target.value
                   )
                 }
+                  sx={{
+                  minHeight: 80,
+                  "@media print": {
+                    height: "auto",
+                    overflow: "visible",
+                    whiteSpace: "pre-wrap",
+                   
+                    WebkitPrintColorAdjust: "exact",
+                  },
+                }}
               />
             </Grid>
 
@@ -867,11 +877,21 @@ const CamHandoverSheetForm = ({ onBack }) => {
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 DISCOM Name <span style={{ color: "red" }}>*</span>
               </Typography>
-              <Input
+              <Textarea
                 value={formData.order_details.discom_name}
                 onChange={(e) =>
                   handleChange("order_details", "discom_name", e.target.value)
                 }
+                  sx={{
+                  minHeight: 80,
+                  "@media print": {
+                    height: "auto",
+                    overflow: "visible",
+                    whiteSpace: "pre-wrap",
+                   
+                    WebkitPrintColorAdjust: "exact",
+                  },
+                }}
               />
             </Grid>
 
@@ -1523,7 +1543,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 </Tooltip>
               </Typography>
 
-              <Input
+              <Textarea
                 fullWidth
                 placeholder="e.g. Varanasi 221001"
                 value={formData.customer_details.site_address.district_name}
@@ -1534,6 +1554,16 @@ const CamHandoverSheetForm = ({ onBack }) => {
                     district_name: newDistrict,
                   });
                 }}
+                  sx={{
+                  minHeight: 80,
+                  "@media print": {
+                    height: "auto",
+                    overflow: "visible",
+                    whiteSpace: "pre-wrap",
+                   
+                    WebkitPrintColorAdjust: "exact",
+                  },
+                }}
               />
             </Grid>
 
@@ -1542,7 +1572,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 <Typography level="body1" sx={{ fontWeight: "bold", mb: 0.5 }}>
                   Village Name
                 </Typography>
-                <Input
+                <Textarea
                   fullWidth
                   placeholder="e.g. Chakia"
                   value={formData.customer_details.site_address.village_name}
@@ -1552,6 +1582,16 @@ const CamHandoverSheetForm = ({ onBack }) => {
                       village_name: e.target.value,
                     });
                   }}
+                    sx={{
+                  minHeight: 80,
+                  "@media print": {
+                    height: "auto",
+                    overflow: "visible",
+                    whiteSpace: "pre-wrap",
+                   
+                    WebkitPrintColorAdjust: "exact",
+                  },
+                }}
                 />
               </Grid>
             )}
