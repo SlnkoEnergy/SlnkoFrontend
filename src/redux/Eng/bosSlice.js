@@ -1,19 +1,9 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+
 export const engsBOSApi = createApi({
   reducerPath: "engsBOSApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "https://api.slnkoprotrac.com/v1/",
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem("authToken");
-
-      if (token) {
-        headers.set("x-auth-token", token);
-      }
-
-      return headers;
-    },
-  }),
+  baseQuery,
   tagTypes: ["BOS"],
   endpoints: (builder) => ({
     getBOS: builder.query({

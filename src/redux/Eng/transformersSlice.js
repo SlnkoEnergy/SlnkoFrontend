@@ -1,19 +1,9 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { baseQuery } from "../auth/auth_variable";
 
 export const engsTransformerApi = createApi({
   reducerPath: "engsTransformerApi",
-    baseQuery: fetchBaseQuery({
-    baseUrl: "https://api.slnkoprotrac.com/v1/",
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem("authToken");
-
-      if (token) {
-        headers.set("x-auth-token", token);
-      }
-
-      return headers;
-    },
-  }),
+    baseQuery,
   tagTypes: ["Transformer"],
   endpoints: (builder) => ({
     getTransformers: builder.query({
