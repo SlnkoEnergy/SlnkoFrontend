@@ -221,9 +221,9 @@ const TemplateDashboard = () => {
                         : template.description
                       : "No description"}
                   </Typography>
-                  <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
+                  {/* <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
                     Order: {template.order || "N/A"}
-                  </Typography>
+                  </Typography> */}
                 </CardContent>
               </Card>
             </Grid>
