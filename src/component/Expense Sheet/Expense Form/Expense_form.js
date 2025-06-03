@@ -148,7 +148,7 @@ const Expense_Form = () => {
         const token = localStorage.getItem("authToken");
 
         const response = await axios.get(
-          "https://dev.api.slnkoprotrac.com/v1/get-all-project-IT",
+          "https://api.slnkoprotrac.com/v1/get-all-project-IT",
           {
             headers: {
               "x-auth-token": token,
@@ -236,7 +236,6 @@ const Expense_Form = () => {
       formData.append("data", JSON.stringify(cleanedData));
       formData.append("user_id", userID);
 
-    
       await addExpense(formData).unwrap();
 
       toast.success("Expense sheet submitted successfully!");
@@ -348,6 +347,31 @@ const Expense_Form = () => {
   };
 
   const handleSelectProject = (index, code, name) => {
+    if (code === "Other") {
+      const updated = [...rows];
+      if (updated[index]?.items?.[0]) {
+        updated[index].items[0] = {
+          ...updated[index].items[0],
+          project_id: null,
+          project_code: "Other",
+          project_name: "NA",
+          projectSelected: true,
+        };
+      }
+
+      setRows(updated);
+
+      setSearchInputs((prev) => {
+        const updatedInputs = [...prev];
+        updatedInputs[index] = "Other";
+        return updatedInputs;
+      });
+
+      setDropdownOpenIndex(null);
+      return;
+    }
+
+    // For DB projects
     const selectedProject = projectCodes.find((p) => p.code === code);
     if (!selectedProject) return;
 
@@ -521,11 +545,19 @@ const Expense_Form = () => {
 
             <tbody>
               {rows.map((row, rowIndex) => {
-                const filteredProjects = projectCodes.filter((project) =>
-                  (project.code || "")
-                    .toLowerCase()
-                    .includes((searchInputs[rowIndex] || "").toLowerCase())
-                );
+                const searchValue = (searchInputs[rowIndex] || "").toLowerCase();
+
+let filteredProjects = projectCodes.filter((project) =>
+  (project.code || "").toLowerCase().includes(searchValue)
+);
+
+if ("other".includes(searchValue) && !filteredProjects.some(p => p.code === "Other")) {
+  filteredProjects = [
+    ...filteredProjects,
+    { code: "Other", name: "NA" }
+  ];
+}
+
 
                 return (
                   <tr
@@ -536,7 +568,7 @@ const Expense_Form = () => {
                     }}
                   >
                     <td
-                      style={{ position: "absolute", padding: 8, width: 180 }}
+                      style={{ position: "relative", padding: 8, width: 150 }}
                     >
                       <Input
                         size="sm"
@@ -550,7 +582,7 @@ const Expense_Form = () => {
                         inputRef={(el) => (inputRefs.current[rowIndex] = el)}
                         autoComplete="off"
                         sx={{ width: "100%" }}
-                        disabled={rows[rowIndex]?.items?.[0]?.projectSelected}
+                        // disabled={rows[rowIndex]?.items?.[0]?.projectSelected}
                       />
                       {dropdownOpenIndex === rowIndex &&
                         filteredProjects.length > 0 && (
@@ -558,11 +590,11 @@ const Expense_Form = () => {
                             ref={(el) => (dropdownRefs.current[rowIndex] = el)}
                             variant="outlined"
                             sx={{
-                              position: "absolute",
-                              top: "100%",
-                              left: 0,
-                              right: 0,
-                              zIndex: 20,
+                              // position: "absolute",
+                              // top: "100%",
+                              // left: 0,
+                              // right: 0,
+                              // zIndex: 20,
                               maxHeight: 180,
                               overflowY: "auto",
                               bgcolor: "background.body",
@@ -575,7 +607,7 @@ const Expense_Form = () => {
                               {filteredProjects.map((project, i) => (
                                 <ListItem
                                   key={i}
-                                  onClick={() =>
+                                  onMouseDown={() =>
                                     handleSelectProject(
                                       rowIndex,
                                       project.code,
