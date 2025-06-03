@@ -120,11 +120,7 @@ const AddTemplatesPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("handleSubmit called");
-    console.log("Template Rows (templateData.boqRows):", templateData.boqRows);
 
-    console.log("Headers:", templateData.boqHeaders);
-    console.log("Rows:", templateData.boqRows);
     if (
       !templateData.name ||
       !templateData.description ||
@@ -151,36 +147,38 @@ const AddTemplatesPage = () => {
 
       const categoryResponse =
         await createBoqCategory(categoryPayload).unwrap();
-      console.log("Category Response:", categoryResponse);
       const boqCategoryId = categoryResponse._id || categoryResponse.data?._id;
+
       if (!boqCategoryId) {
         throw new Error("boq_category ID not returned from API");
       }
 
-      // Step 2: Format row data according to expected API
-      const rowData = templateData.boqRows.map((row) => ({
-        boq_category: boqCategoryId,
-        data: templateData.boqHeaders.map((header) => ({
-          name: header.keyName,
-          value: row[header.keyName] || "",
+      // Step 2: Filter rows that have any non-empty value
+      const filteredBoqRows = templateData.boqRows.filter((row) =>
+        Object.values(row).some((val) => val !== "")
+      );
+
+      // Step 3: Build column-wise data array for all rows
+      const dataForAllRows = templateData.boqHeaders.map((header) => ({
+        name: header.columnName,
+        values: filteredBoqRows.map((row) => ({
+          input_values: row[header.keyName] || "",
         })),
       }));
 
-      // Step 3: Submit each row
-      console.log(
-        "Unique rows count:",
-        new Set(rowData.map((r) => JSON.stringify(r))).size
-      );
+      // Step 4: Build payload with category and all rows (column-wise)
+      const payload = {
+        boq_category: boqCategoryId,
+        data: dataForAllRows,
+      };
 
-      console.log("Final rowData to post:", JSON.stringify(rowData, null, 2));
+      console.log("Posting payload:", JSON.stringify(payload, null, 2));
 
-      for (const row of rowData) {
-        console.log("Posting row:", row);
-        await createBoqTemplateRow(row).unwrap();
-      }
+      // Step 5: Post ONE document with all rows (column-wise)
+      await createBoqTemplateRow(payload).unwrap();
 
       alert("Template submitted successfully!");
-      // Optionally reset form here if needed
+      // Optionally reset form state here
     } catch (error) {
       console.error("Submission error:", error);
       alert("Failed to submit template. Please try again.");

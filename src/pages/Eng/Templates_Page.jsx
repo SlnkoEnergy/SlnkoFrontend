@@ -98,7 +98,7 @@ function Template_Pages() {
             }}
           >
             <Typography level="h2" component="h1">
-              Tempaltes
+              Templates
             </Typography>
 
             <Box

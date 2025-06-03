@@ -79,6 +79,18 @@ export const templatesApi = createApi({
       invalidatesTags: ["Template"],
     }),
 
+    // GET: Fetch all BOQ Categories
+    getAllBoqCategories: builder.query({
+      query: () => "get-boq-category",
+      providesTags: ["Template"],
+    }),
+
+    // GET: Fetch all BOQ Templates
+    getAllBoqTemplates: builder.query({
+      query: () => "get-boq-template",
+      providesTags: ["Template"],
+    }),
+
     // DELETE: Delete an Templates
     deleteTemplates: builder.mutation({
       query: (_id) => ({
@@ -108,4 +120,6 @@ export const {
   useUpdateTemplatesSheetMutation,
   useCreateBoqCategoryMutation,
   useCreateBoqTemplateRowMutation,
+  useGetAllBoqCategoriesQuery,
+  useGetAllBoqTemplatesQuery,
 } = templatesApi;
