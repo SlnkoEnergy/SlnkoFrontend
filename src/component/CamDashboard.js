@@ -124,7 +124,7 @@ function Dash_cam() {
 
   const StatusChip = ({ status, is_locked, _id, user, refetch }) => {
     const isAdmin =
-      user?.role === "admin" ||
+      user?.department === "admin" ||
       user?.role === "superadmin" ||
       user?.name === "Prachi Singh" ||
       user?.name === "Sanjiv Kumar" ||

@@ -266,7 +266,7 @@ const StandByRequest = forwardRef((props, ref) => {
      if (!user || !user.name) return [];
    
      const userName = user.name.trim();
-     const userRole = user.role?.trim();
+     const userRole = user.department?.trim();
      const isAdmin = userRole === "admin" || userRole === "superadmin"|| userName === "Shiv Ram Tathagat";
    
      // State-based user access

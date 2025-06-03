@@ -573,8 +573,8 @@ const ProjectBalances = forwardRef((props, ref) => {
             {(user?.name === "IT Team" ||
               user?.name === "Guddu Rani Dubey" ||
               user?.name === "Prachi Singh" ||
-              user?.name === "admin" ||
-              user?.name === "Accounts Department") && (
+              user?.department === "admin" ||
+              user?.department === "Accounts") && (
               <MenuItem
                 color="primary"
                 onClick={() => {
