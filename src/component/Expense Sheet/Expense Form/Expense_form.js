@@ -98,17 +98,16 @@ const Expense_Form = () => {
   }, []);
 
   const categoryOptions = [
-    "Travelling Expenses",
-    "Lodging",
-    "Meal Expenses",
-    "Project Expenses",
-    "Repair and Maintenance",
-    "Telephone Expenses",
-    "Courier Charges(porter)",
-    "Staff welfare expenses",
-    "Medical Expenses",
-    "Printing and stationary",
-    "Office expenses",
+    "Site Meal Per-diem Allowance",
+    "Site Lodging and Accommodation Expense",
+    "Site Travelling Expenses",
+    "Site Labour Charges",
+    "Site Staff Telephone Expenses",
+    "Site Courier and Parcel Expense",
+    "Site Material Purchases",
+    "Site Stationery Expenses",
+    "Site Miscellaneous Expenses",
+    "Office Expenses",
   ];
 
   const [addExpense] = useAddExpenseMutation();
@@ -123,7 +122,7 @@ const Expense_Form = () => {
         const token = localStorage.getItem("authToken");
 
         const response = await axios.get(
-          "https://api.slnkoprotrac.com/v1/get-all-project-IT",
+          "https://dev.api.slnkoprotrac.com/v1/get-all-project-IT",
           {
             headers: {
               "x-auth-token": token,
