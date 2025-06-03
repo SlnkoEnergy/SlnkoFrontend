@@ -1,32 +1,26 @@
 import BlockIcon from "@mui/icons-material/Block";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
+import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
 import Chip from "@mui/joy/Chip";
-import Divider from "@mui/joy/Divider";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
-import Modal from "@mui/joy/Modal";
-import ModalClose from "@mui/joy/ModalClose";
-import ModalDialog from "@mui/joy/ModalDialog";
 import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
-import * as React from "react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import Axios from "../utils/Axios";
 import NoData from "../assets/alert-bell.svg";
+import Axios from "../utils/Axios";
 
 function PaymentRequest() {
   const [payments, setPayments] = useState([]);
@@ -340,10 +334,19 @@ function PaymentRequest() {
 
   const handleApprovalUpdate = async (paymentId, newStatus) => {
     try {
-      const response = await Axios.put("/account-approve", {
-        pay_id: paymentId,
-        status: newStatus,
-      });
+      const token = localStorage.getItem("authToken");
+      const response = await Axios.put(
+        "/account-approve",
+        {
+          pay_id: paymentId,
+          status: newStatus,
+        },
+        {
+          headers: {
+            "x-auth-token": token,
+          },
+        }
+      );
 
       if (response.status === 200) {
         // Update the payments state to remove the row

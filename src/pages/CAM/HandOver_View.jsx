@@ -40,7 +40,11 @@ function ViewHandSheet() {
             gap: 1,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', marginLeft:{xl:"17%",lg:"20%"}}}>
+          <Box sx={{ display: 'flex', alignItems: 'center', marginLeft:{xl:"17%",lg:"20%"}, 
+            "@media print": {
+              display: "none",
+            },
+         }}>
             <Breadcrumbs
               size="sm"
               aria-label="breadcrumbs"

@@ -74,7 +74,6 @@ const FormOffer = () => {
 
       const response = await Axios.post("/create-offer", formData, {
         headers: {
-          "Content-Type": "application/json",
           "x-auth-token": token,
         },
       });

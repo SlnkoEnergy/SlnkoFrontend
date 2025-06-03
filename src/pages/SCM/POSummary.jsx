@@ -123,7 +123,7 @@ function POSummary() {
             {(user?.name === "IT Team" ||
               user?.name === "Guddu Rani Dubey" ||
               user?.name === "Prachi Singh" ||
-              user?.name === "admin" ||
+              user?.department === "admin" ||
               user?.name === "Ajay Singh" ||
               user?.name === "Aryan Maheshwari" ||
               user?.name === "Sarthak Sharma" ||

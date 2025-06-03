@@ -583,7 +583,7 @@ const HandoverSheetForm = () => {
             </Tooltip>
           </Typography>
 
-          <Input
+          <Textarea
             fullWidth
             placeholder="e.g. Varanasi 221001"
             value={formData.customer_details.site_address.district_name}
@@ -602,7 +602,7 @@ const HandoverSheetForm = () => {
             <Typography level="body1" sx={{ fontWeight: "bold", mb: 0.5 }}>
               Village Name
             </Typography>
-            <Input
+            <Textarea
               fullWidth
               placeholder="e.g. Chakia"
               value={formData.customer_details.site_address.village_name}

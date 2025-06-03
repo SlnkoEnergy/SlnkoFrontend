@@ -40,7 +40,7 @@ export const expensesApi = createApi({
         body: newExpense,
       }),
       invalidatesTags: ["Expense"],
-    }), 
+    }),
 
     // PUT: Update overall status by _id
     updateExpenseStatusOverall: builder.mutation({

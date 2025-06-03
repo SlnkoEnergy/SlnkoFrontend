@@ -608,7 +608,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
               >
                 Invoicing Address<span style={{ color: "red" }}>*</span>
               </Typography>
-              <Input
+              <Textarea
                 fullWidth
                 placeholder="Invoicing Address"
                 value={formData.invoice_detail.invoicing_address}
@@ -619,6 +619,16 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                     e.target.value
                   )
                 }
+                sx={{
+                  minHeight: 80,
+                  "@media print": {
+                    height: "auto",
+                    overflow: "visible",
+                    whiteSpace: "pre-wrap",
+                   
+                    WebkitPrintColorAdjust: "exact",
+                  },
+                }}
               />
             </Grid>
 
@@ -667,11 +677,21 @@ const ViewHandoverSheetForm = ({ onBack }) => {
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 DISCOM Name <span style={{ color: "red" }}>*</span>
               </Typography>
-              <Input
+              <Textarea
                 value={formData.order_details.discom_name}
                 onChange={(e) =>
                   handleChange("order_details", "discom_name", e.target.value)
                 }
+                  sx={{
+                  minHeight: 80,
+                  "@media print": {
+                    height: "auto",
+                    overflow: "visible",
+                    whiteSpace: "pre-wrap",
+                   
+                    WebkitPrintColorAdjust: "exact",
+                  },
+                }}
               />
             </Grid>
 
@@ -1369,16 +1389,14 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                   });
                 }}
                 // minRows={3}
-                sx={{
-                  overflow: "hidden",
-                  whiteSpace: "pre-wrap",
-                  wordWrap: "break-word",
+                  sx={{
+                  minHeight: 80,
                   "@media print": {
-                    height: "auto !important",
-                    overflow: "visible !important",
+                    height: "auto",
+                    overflow: "visible",
                     whiteSpace: "pre-wrap",
-                    wordWrap: "break-word",
-                    display: "block",
+                   
+                    WebkitPrintColorAdjust: "exact",
                   },
                 }}
               />
@@ -1402,17 +1420,15 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                   }}
                   // minRows={3}
                   sx={{
-                    overflow: "hidden",
+                  minHeight: 80,
+                  "@media print": {
+                    height: "auto",
+                    overflow: "visible",
                     whiteSpace: "pre-wrap",
-                    wordWrap: "break-word",
-                    "@media print": {
-                      height: "auto !important",
-                      overflow: "visible !important",
-                      whiteSpace: "pre-wrap",
-                      wordWrap: "break-word",
-                      display: "block",
-                    },
-                  }}
+                   
+                    WebkitPrintColorAdjust: "exact",
+                  },
+                }}
                 />
               </Grid>
             )}
@@ -1849,7 +1865,10 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                 </Grid>
               </>
             )}
-
+{!["Ranvijay Singh", "Rishav Mahato", "Dhruv Choudhary"].includes(
+              user?.name
+            ) && (
+              <>
             <Grid xs={12}>
               <Grid item xs={12} sm={6}>
                 <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
@@ -1890,6 +1909,8 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                 />
               </Grid>
             </Grid>
+            </>
+            )}
           </Grid>
         </AccordionDetails>
       </Accordion>

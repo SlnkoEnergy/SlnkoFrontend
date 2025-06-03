@@ -10,7 +10,6 @@ import {
   Typography,
 } from "@mui/joy";
 import React, { useEffect, useState } from "react";
-import Axios from "../../utils/Axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import {

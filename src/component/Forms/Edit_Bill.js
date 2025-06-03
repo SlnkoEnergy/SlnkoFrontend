@@ -178,9 +178,12 @@ const [poRes, billRes] = await Promise.all([
     try {
       setLoading(true);
       setError("");
+       const token = localStorage.getItem("authToken");
 
       const endpoint = `https://api.slnkoprotrac.com/v1/update-bill/${formValues._id}`;
-      const response = await Axios.put(endpoint, dataToPost);
+      const response = await Axios.put(endpoint, dataToPost,  { headers: {
+            "x-auth-token": token,
+      }});
 
       if (response.status === 200) {
         setResponse(response.data);
