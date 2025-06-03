@@ -148,7 +148,7 @@ const Login = () => {
         return;
       }
       const response = await axios.get(
-        "https://api.slnkoprotrac.com/v1/get-all-useR-IT",
+        "https://dev.api.slnkoprotrac.com/v1/get-all-useR-IT",
         {
           headers: {
             "x-auth-token": user.token,
