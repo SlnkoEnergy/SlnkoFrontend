@@ -10,10 +10,12 @@ import {
   Option,
   Select,
   Sheet,
+  Switch,
   Textarea,
+  Tooltip,
   Typography,
 } from "@mui/joy";
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
 import { useGetHandOverQuery } from "../../redux/camsSlice";
@@ -57,6 +59,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
   ];
   const BillingTypes = ["Composite", "Individual"];
   const landTypes = ["Leased", "Owned"];
+  const [showVillage, setShowVillage] = useState(false);
   const [formData, setFormData] = useState({
     id: "",
     customer_details: {
@@ -415,9 +418,6 @@ const ViewHandoverSheetForm = ({ onBack }) => {
     }));
   }, [handoverData]);
 
-
-   
-
   return (
     <Sheet
       variant="outlined"
@@ -461,6 +461,27 @@ const ViewHandoverSheetForm = ({ onBack }) => {
             container
             spacing={2}
           >
+            {["Ranvijay Singh", "Rishav Mahato", "Dhruv Choudhary"].includes(
+              user?.name
+            ) && (
+              <Grid item xs={12} sm={6}>
+                <Typography
+                  level="body1"
+                  sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                >
+                  Project ID <span style={{ color: "red" }}>*</span>
+                </Typography>
+                <Input
+                  required
+                  fullWidth
+                  placeholder="Project ID"
+                  value={formData.customer_details.code}
+                  onChange={(e) =>
+                    handleChange("customer_details", "code", e.target.value)
+                  }
+                />
+              </Grid>
+            )}
             <Grid item xs={12} sm={6}>
               <Typography
                 level="body1"
@@ -552,7 +573,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                     newValue
                   );
                   if (newValue !== "Yes") {
-                    handleChange("invoice_detail", "invoicing_GST_no", ""); // Clear input
+                    handleChange("invoice_detail", "invoicing_GST_no", "");
                   }
                 }}
               >
@@ -587,7 +608,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
               >
                 Invoicing Address<span style={{ color: "red" }}>*</span>
               </Typography>
-              <Input
+              <Textarea
                 fullWidth
                 placeholder="Invoicing Address"
                 value={formData.invoice_detail.invoicing_address}
@@ -598,6 +619,16 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                     e.target.value
                   )
                 }
+                sx={{
+                  minHeight: 80,
+                  "@media print": {
+                    height: "auto",
+                    overflow: "visible",
+                    whiteSpace: "pre-wrap",
+                   
+                    WebkitPrintColorAdjust: "exact",
+                  },
+                }}
               />
             </Grid>
 
@@ -646,11 +677,21 @@ const ViewHandoverSheetForm = ({ onBack }) => {
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 DISCOM Name <span style={{ color: "red" }}>*</span>
               </Typography>
-              <Input
+              <Textarea
                 value={formData.order_details.discom_name}
                 onChange={(e) =>
                   handleChange("order_details", "discom_name", e.target.value)
                 }
+                  sx={{
+                  minHeight: 80,
+                  "@media print": {
+                    height: "auto",
+                    overflow: "visible",
+                    whiteSpace: "pre-wrap",
+                   
+                    WebkitPrintColorAdjust: "exact",
+                  },
+                }}
               />
             </Grid>
 
@@ -698,9 +739,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
             ) && (
               <>
                 <Grid item xs={12} sm={6}>
-                  <Typography level="body1">
-                    Module Make
-                  </Typography>
+                  <Typography level="body1">Module Make</Typography>
                   <Select
                     fullWidth
                     value={formData?.project_detail?.module_make || ""}
@@ -739,9 +778,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
-                  <Typography level="body1">
-                    Module Capacity
-                  </Typography>
+                  <Typography level="body1">Module Capacity</Typography>
                   <Select
                     fullWidth
                     value={formData?.project_detail?.module_capacity || ""}
@@ -769,9 +806,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                 {/* Module Model No & Type */}
 
                 <Grid item xs={12} sm={6}>
-                  <Typography level="body1">
-                    Module Type
-                  </Typography>
+                  <Typography level="body1">Module Type</Typography>
                   <Select
                     fullWidth
                     value={formData?.project_detail?.module_type || ""}
@@ -793,7 +828,6 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
                 Solar Inverter Scope
-                
               </Typography>
               <Select
                 fullWidth
@@ -819,9 +853,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
             ) && (
               <>
                 <Grid item xs={12} sm={6}>
-                  <Typography level="body1">
-                    
-                  </Typography>
+                  <Typography level="body1">Inverter Make</Typography>
                   <Select
                     fullWidth
                     value={formData["project_detail"]?.["inverter_make"] || ""}
@@ -866,9 +898,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
-                  <Typography level="body1">
-                    Inverter Type
-                  </Typography>
+                  <Typography level="body1">Inverter Type</Typography>
                   <Select
                     fullWidth
                     value={formData["project_detail"]?.["inverter_type"] || ""}
@@ -909,7 +939,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
               >
                 <Option value="Yes">Yes</Option>
                 <Option value="No">No</Option>
-              </Select> 
+              </Select>
             </Grid>
 
             <Grid item xs={12} sm={6}>
@@ -1121,57 +1151,63 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                 }
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                Tariff Rate<span style={{ color: "red" }}>*</span>
-              </Typography>
-              <Input
-                value={formData.project_detail.tarrif}
-                placeholder="Tariff Rate"
-                required
-                onChange={(e) =>
-                  handleChange("project_detail", "tarrif", e.target.value)
-                }
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                Billing Type
-              </Typography>
-              <Autocomplete
-                options={BillingTypes}
-                value={formData?.other_details?.billing_type}
-                onChange={(e, value) =>
-                  handleAutocompleteChange(
-                    "other_details",
-                    "billing_type",
-                    value
-                  )
-                }
-                getOptionLabel={(option) => option || ""}
-                isOptionEqualToValue={(option, value) => option === value}
-                placeholder="Billing Type"
-                sx={{ width: "100%" }}
-              />
-            </Grid>
+            {!["Ranvijay Singh", "Rishav Mahato", "Dhruv Choudhary"].includes(
+              user?.name
+            ) && (
+              <>
+                <Grid item xs={12} sm={6}>
+                  <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                    Tariff Rate<span style={{ color: "red" }}>*</span>
+                  </Typography>
+                  <Input
+                    value={formData.project_detail.tarrif}
+                    placeholder="Tariff Rate"
+                    required
+                    onChange={(e) =>
+                      handleChange("project_detail", "tarrif", e.target.value)
+                    }
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                    Billing Type
+                  </Typography>
+                  <Autocomplete
+                    options={BillingTypes}
+                    value={formData?.other_details?.billing_type}
+                    onChange={(e, value) =>
+                      handleAutocompleteChange(
+                        "other_details",
+                        "billing_type",
+                        value
+                      )
+                    }
+                    getOptionLabel={(option) => option || ""}
+                    isOptionEqualToValue={(option, value) => option === value}
+                    placeholder="Billing Type"
+                    sx={{ width: "100%" }}
+                  />
+                </Grid>
 
-            <Grid item xs={12} sm={6}>
-              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                {formData?.other_details?.billing_type === "Composite"
-                  ? "Total Slnko Service Charge(with GST)"
-                  : formData?.other_details?.billing_type === "Individual"
-                    ? "Total Slnko Service Charge (with GST)"
-                    : "Total Slnko Service Charge(with GST)"}
-              </Typography>
-              <Input
-                fullWidth
-                value={formData?.other_details?.total_gst || ""}
-                InputProps={{
-                  readOnly: true,
-                }}
-                placeholder="Calculated Total GST"
-              />
-            </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                    {formData?.other_details?.billing_type === "Composite"
+                      ? "Total Slnko Service Charge(with GST)"
+                      : formData?.other_details?.billing_type === "Individual"
+                        ? "Total Slnko Service Charge (with GST)"
+                        : "Total Slnko Service Charge(with GST)"}
+                  </Typography>
+                  <Input
+                    fullWidth
+                    value={formData?.other_details?.total_gst || ""}
+                    InputProps={{
+                      readOnly: true,
+                    }}
+                    placeholder="Calculated Total GST"
+                  />
+                </Grid>
+              </>
+            )}
           </Grid>
         </AccordionDetails>
       </Accordion>
@@ -1290,7 +1326,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                 <Option value="Developer">Developer</Option>
               </Select>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            {/* <Grid item xs={12} sm={6}>
               <Typography
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
@@ -1298,7 +1334,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                 Site Address with Pin Code{" "}
                 <span style={{ color: "red" }}>*</span>
               </Typography>
-              <Input
+              <Textarea
                 required
                 fullWidth
                 placeholder="e.g. Sunrise Village, 221001"
@@ -1317,7 +1353,86 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                   });
                 }}
               />
+            </Grid> */}
+
+            <Grid item xs={12} sm={6}>
+              <Typography
+                level="body1"
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  fontWeight: "bold",
+                  mb: 0.5,
+                }}
+              >
+                Site Address with Pin Code{" "}
+                <span style={{ color: "red" }}>*</span>
+                <Tooltip title="Enable to enter village name" placement="top">
+                  <Switch
+                    checked={showVillage}
+                    onChange={(e) => setShowVillage(e.target.checked)}
+                    sx={{ ml: 2 }}
+                    size="sm"
+                  />
+                </Tooltip>
+              </Typography>
+
+              <Textarea
+                fullWidth
+                placeholder="e.g. Varanasi 221001"
+                value={formData.customer_details.site_address.district_name}
+                onChange={(e) => {
+                  const newDistrict = e.target.value;
+                  handleChange("customer_details", "site_address", {
+                    ...formData.customer_details.site_address,
+                    district_name: newDistrict,
+                  });
+                }}
+                // minRows={3}
+                  sx={{
+                  minHeight: 80,
+                  "@media print": {
+                    height: "auto",
+                    overflow: "visible",
+                    whiteSpace: "pre-wrap",
+                   
+                    WebkitPrintColorAdjust: "exact",
+                  },
+                }}
+              />
             </Grid>
+
+            {(showVillage ||
+              formData.customer_details.site_address.village_name) && (
+              <Grid item xs={12} sm={6}>
+                <Typography level="body1" sx={{ fontWeight: "bold", mb: 0.5 }}>
+                  Village Name
+                </Typography>
+                <Textarea
+                  fullWidth
+                  placeholder="e.g. Chakia"
+                  value={formData.customer_details.site_address.village_name}
+                  onChange={(e) => {
+                    handleChange("customer_details", "site_address", {
+                      ...formData.customer_details.site_address,
+                      village_name: e.target.value,
+                    });
+                  }}
+                  // minRows={3}
+                  sx={{
+                  minHeight: 80,
+                  "@media print": {
+                    height: "auto",
+                    overflow: "visible",
+                    whiteSpace: "pre-wrap",
+                   
+                    WebkitPrintColorAdjust: "exact",
+                  },
+                }}
+                />
+              </Grid>
+            )}
+
             <Grid item xs={12} sm={6}>
               <Typography
                 level="body1"
@@ -1716,31 +1831,44 @@ const ViewHandoverSheetForm = ({ onBack }) => {
               </Select>
             </Grid>
 
-            <Grid item xs={12} sm={6}>
-              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                Slnko Service Charges (Without GST)/W{" "}
-                <span style={{ color: "red" }}>*</span>
-              </Typography>
-              <Input
-                value={formData.other_details.slnko_basic}
-                placeholder="Slnko Service Charges (Without GST)/Wp"
-                onChange={(e) =>
-                  handleChange("other_details", "slnko_basic", e.target.value)
-                }
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                Slnko Service Charges (Without GST)/MWp{" "}
-                <span style={{ color: "red" }}>*</span>
-              </Typography>
-              <Input
-                value={formData.other_details.service}
-                placeholder="Slnko Service Charge"
-                readOnly
-              />
-            </Grid>
-
+            {!["Ranvijay Singh", "Rishav Mahato", "Dhruv Choudhary"].includes(
+              user?.name
+            ) && (
+              <>
+                <Grid item xs={12} sm={6}>
+                  <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                    Slnko Service Charges (Without GST)/W{" "}
+                    <span style={{ color: "red" }}>*</span>
+                  </Typography>
+                  <Input
+                    value={formData.other_details.slnko_basic}
+                    placeholder="Slnko Service Charges (Without GST)/Wp"
+                    onChange={(e) =>
+                      handleChange(
+                        "other_details",
+                        "slnko_basic",
+                        e.target.value
+                      )
+                    }
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                    Slnko Service Charges (Without GST)/MWp{" "}
+                    <span style={{ color: "red" }}>*</span>
+                  </Typography>
+                  <Input
+                    value={formData.other_details.service}
+                    placeholder="Slnko Service Charge"
+                    readOnly
+                  />
+                </Grid>
+              </>
+            )}
+{!["Ranvijay Singh", "Rishav Mahato", "Dhruv Choudhary"].includes(
+              user?.name
+            ) && (
+              <>
             <Grid xs={12}>
               <Grid item xs={12} sm={6}>
                 <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
@@ -1781,36 +1909,43 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                 />
               </Grid>
             </Grid>
+            </>
+            )}
           </Grid>
         </AccordionDetails>
       </Accordion>
 
       {/* Buttons */}
-      <Grid container spacing={2} sx={{ marginTop: 2 }} display={"flex"} alignItems={"center"} justifyContent={"center"}>
+      <Grid
+        container
+        spacing={2}
+        sx={{ marginTop: 2 }}
+        display={"flex"}
+        alignItems={"center"}
+        justifyContent={"center"}
+      >
         <Grid
-  sx={{
-    '@media print': {
-      display: 'none',
-    },
-  }}
->
-  <Button
-    onClick={() => navigate("/eng_dash")}
-    variant="solid"
-    color="neutral"
-    fullWidth
-    sx={{
-      padding: 1.5,
-      fontSize: "1rem",
-      fontWeight: "bold",
-      textAlign: "center",
-    }}
-  >
-    Back
-  </Button>
-</Grid>
-
-       
+          sx={{
+            "@media print": {
+              display: "none",
+            },
+          }}
+        >
+          <Button
+            onClick={() => navigate("/eng_dash")}
+            variant="solid"
+            color="neutral"
+            fullWidth
+            sx={{
+              padding: 1.5,
+              fontSize: "1rem",
+              fontWeight: "bold",
+              textAlign: "center",
+            }}
+          >
+            Back
+          </Button>
+        </Grid>
       </Grid>
     </Sheet>
   );

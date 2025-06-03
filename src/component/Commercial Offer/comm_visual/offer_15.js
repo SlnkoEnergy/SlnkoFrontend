@@ -100,11 +100,14 @@ const Summary = () => {
         }
 
         // Fetch all data simultaneously
-        const [offerRes, result, bdRes] = await Promise.all([
-          Axios.get("/get-comm-offer"),
-          Axios.get("/get-comm-scm-rate"),
-          Axios.get("/get-bd-rate-history"),
-        ]);
+        const token = localStorage.getItem("authToken");
+const config = { headers: { "x-auth-token": token } };
+
+const [offerRes, result, bdRes] = await Promise.all([
+  Axios.get("/get-comm-offer", config),
+  Axios.get("/get-comm-scm-rate", config),
+  Axios.get("/get-bd-rate-history", config),
+]);
 
         const offerDataList = offerRes?.data ?? [];
         const fetchedScmData = result.data[0];

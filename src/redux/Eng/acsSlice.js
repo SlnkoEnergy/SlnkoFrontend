@@ -1,8 +1,9 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { baseQuery } from "../auth/auth_variable";
 
 export const engsAcCableApi = createApi({
   reducerPath: "engsAcCableApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "https://api.slnkoprotrac.com/v1/" }),
+    baseQuery,
   tagTypes: ["AcCable"],
   endpoints: (builder) => ({
     getAcCable: builder.query({

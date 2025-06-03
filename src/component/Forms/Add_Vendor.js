@@ -26,7 +26,6 @@ const AddVendor = () => {
     Account_No: "",
     IFSC_Code: "",
     Bank_Name: "",
-    
   };
 
   const [responseMessage, setResponseMessage] = useState("");
@@ -39,22 +38,28 @@ const AddVendor = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Form Submitted with Data:", formData); 
+    console.log("Form Submitted with Data:", formData);
 
     try {
-      const response = await Axios.post(
-        "/Add-vendoR-IT",
-        formData
-      );
+      const token = localStorage.getItem("authToken");
+
+      const response = await Axios.post("/Add-vendoR-IT", formData, {
+        headers: {
+          "x-auth-token": token,
+        },
+      });
       setResponseMessage("Vendor added successfully!");
       console.log("Response from Server:", response.data);
       setFormData(initialFormData);
       toast.success("Vendor Added Successfully !!");
-      navigate("/purchase-order");        
+      navigate("/purchase-order");
     } catch (error) {
-      console.error("Error adding vendor:", error.response?.data || error.message);
+      console.error(
+        "Error adding vendor:",
+        error.response?.data || error.message
+      );
       setResponseMessage("Failed to add vendor. Please try again.");
-      toast.error("Failed to add vendor..")
+      toast.error("Failed to add vendor..");
     }
   };
 
@@ -137,7 +142,14 @@ const AddVendor = () => {
           </Button>
         </Box>
         {responseMessage && (
-          <Typography sx={{ mt: 2, color: responseMessage.includes("successfully") ? "success.main" : "danger.main" }}>
+          <Typography
+            sx={{
+              mt: 2,
+              color: responseMessage.includes("successfully")
+                ? "success.main"
+                : "danger.main",
+            }}
+          >
             {responseMessage}
           </Typography>
         )}

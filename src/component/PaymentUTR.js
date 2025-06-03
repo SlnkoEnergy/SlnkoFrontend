@@ -19,16 +19,12 @@ import ModalDialog from "@mui/joy/ModalDialog";
 import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
-import Tooltip from "@mui/joy/Tooltip";
-import { toast } from "react-toastify";
 import Typography from "@mui/joy/Typography";
 import { useSnackbar } from "notistack";
-import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
-import * as React from "react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import Axios from "../utils/Axios";
 import NoData from "../assets/alert-bell.svg";
+import Axios from "../utils/Axios";
 
 function UTRPayment() {
   const [payments, setPayments] = useState([]);
@@ -77,14 +73,22 @@ function UTRPayment() {
     const fetchPaymentsAndProjects = async () => {
       setLoading(true);
       try {
+        const token = localStorage.getItem("authToken");
         const [paymentResponse, projectResponse] = await Promise.all([
-          Axios.get("/get-pay-summarY-IT"),
-          Axios.get("/get-all-projecT-IT"),
+          Axios.get("/get-pay-summarY-IT", {
+            headers: {
+              "x-auth-token": token,
+            },
+          }),
+          Axios.get("/get-all-projecT-IT", {
+            headers: {
+              "x-auth-token": token,
+            },
+          }),
         ]);
 
         const approvedPayments = paymentResponse.data.data.filter(
-          (payment) =>
-            payment.acc_match === "matched" && payment.utr === ""
+          (payment) => payment.acc_match === "matched" && payment.utr === ""
         );
 
         setPayments(approvedPayments);
@@ -131,8 +135,6 @@ function UTRPayment() {
     }
   }, [payments, projects]);
 
- 
-
   const UTRRow = ({ paymentId, onAccountMatchSuccess }) => {
     const [utr, setUtr] = useState("");
     const [error, setError] = useState(null);
@@ -140,61 +142,74 @@ function UTRPayment() {
     const [isUtrSubmitted, setIsUtrSubmitted] = useState(false);
     const { enqueueSnackbar } = useSnackbar();
 
-    
-  const [user, setUser] = useState(null);
-  useEffect(() => {
-    const userData = getUserData();
-    setUser(userData);
-  }, []);
+    const [user, setUser] = useState(null);
+    useEffect(() => {
+      const userData = getUserData();
+      setUser(userData);
+    }, []);
 
-  const getUserData = () => {
-    const userData = localStorage.getItem("userDetails");
-    return userData ? JSON.parse(userData) : null;
-  };
+    const getUserData = () => {
+      const userData = localStorage.getItem("userDetails");
+      return userData ? JSON.parse(userData) : null;
+    };
 
-
-  const handleUtrSubmit = async () => {
-    if (!utr) {
-      enqueueSnackbar("Please enter a valid UTR.", { variant: "warning" });
-      return;
-    }
-    if (!user || !user?.name) {
-      enqueueSnackbar("User details not found. Please login again.", { variant: "error" });
-      return;
-    }
-  
-    setIsSubmitting(true);
-  
-    try {
-      console.log("Submitting UTR...");
-      const utrResponse = await Axios.put("/utr-update", {
-        pay_id: paymentId,
-        utr: utr,
-        utr_submitted_by: user?.name,
-      });
-  
-      console.log("UTR Response:", utrResponse);
-  
-      if (utrResponse.status === 200 && utrResponse.data) {
-        enqueueSnackbar("😊 UTR submitted and money debited successfully!", { variant: "success" });
-        setIsUtrSubmitted(true);
-  
-       
-        if (onAccountMatchSuccess) {
-          onAccountMatchSuccess(utr);
-        }
-      } else {
-        enqueueSnackbar("Failed to submit UTR. Please try again.", { variant: "error" });
+    const handleUtrSubmit = async () => {
+      if (!utr) {
+        enqueueSnackbar("Please enter a valid UTR.", { variant: "warning" });
+        return;
       }
-    } catch (error) {
-      console.error("Error during UTR submission:", error);
-      enqueueSnackbar("Something went wrong. Please try again.", { variant: "error" });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-  
-  
+      if (!user || !user?.name) {
+        enqueueSnackbar("User details not found. Please login again.", {
+          variant: "error",
+        });
+        return;
+      }
+
+      setIsSubmitting(true);
+
+      try {
+        // console.log("Submitting UTR...");
+        const token = localStorage.getItem("authToken");
+        const utrResponse = await Axios.put(
+          "/utr-update",
+          {
+            pay_id: paymentId,
+            utr: utr,
+            utr_submitted_by: user?.name,
+          },
+          {
+            headers: {
+              "x-auth-token": token,
+            },
+          }
+        );
+
+        // console.log("UTR Response:", utrResponse);
+
+        if (utrResponse.status === 200 && utrResponse.data) {
+          enqueueSnackbar("😊 UTR submitted and money debited successfully!", {
+            variant: "success",
+          });
+          setIsUtrSubmitted(true);
+
+          if (onAccountMatchSuccess) {
+            onAccountMatchSuccess(utr);
+          }
+        } else {
+          enqueueSnackbar("Failed to submit UTR. Please try again.", {
+            variant: "error",
+          });
+        }
+      } catch (error) {
+        console.error("Error during UTR submission:", error);
+        enqueueSnackbar("Something went wrong. Please try again.", {
+          variant: "error",
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
     return (
       <div style={{ marginTop: "1rem" }}>
         {!isUtrSubmitted ? (
@@ -403,12 +418,12 @@ function UTRPayment() {
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
-          marginLeft: { xl: "15%", lg: "18%", },
+          marginLeft: { xl: "15%", lg: "18%" },
           borderRadius: "sm",
           py: 2,
           // display: { xs: "none", sm: "flex" },
-          display:"flex",
-          flexDirection:{xs: "column", sm: "row"},
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           flexWrap: "wrap",
           gap: 1.5,
           "& > *": {
@@ -440,7 +455,7 @@ function UTRPayment() {
           flexShrink: 1,
           overflow: "auto",
           minHeight: 0,
-          marginLeft: {lg: "18%", xl: "15%" },
+          marginLeft: { lg: "18%", xl: "15%" },
           maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
@@ -506,14 +521,10 @@ function UTRPayment() {
             </Box>
             <Box component="tbody">
               {paginatedPayments.filter(
-                (payment) =>
-                  payment.acc_match === "matched"
+                (payment) => payment.acc_match === "matched"
               ).length > 0 ? (
                 paginatedPayments
-                  .filter(
-                    (payment) =>
-                      payment.acc_match === "matched"
-                  )
+                  .filter((payment) => payment.acc_match === "matched")
                   .map((payment, index) => (
                     <Box
                       component="tr"
@@ -609,7 +620,9 @@ function UTRPayment() {
                           textAlign: "center",
                         }}
                       >
-                        {Number(payment.amt_for_customer).toLocaleString("en-IN")}
+                        {Number(payment.amt_for_customer).toLocaleString(
+                          "en-IN"
+                        )}
                       </Box>
                       <Box
                         component="td"
@@ -629,7 +642,10 @@ function UTRPayment() {
                           textAlign: "center",
                         }}
                       >
-                         <UTRRow paymentId={payment.pay_id} onAccountMatchSuccess={handleAccountMatchSuccess} />
+                        <UTRRow
+                          paymentId={payment.pay_id}
+                          onAccountMatchSuccess={handleAccountMatchSuccess}
+                        />
                       </Box>
                     </Box>
                   ))
@@ -644,18 +660,24 @@ function UTRPayment() {
                       fontStyle: "italic",
                     }}
                   >
-                     <Box sx={{
-                      fontStyle: "italic",
-                      display:"flex",
-                      flexDirection:"column",
-                      alignItems:"center",
-                      justifyContent:"center"
-                    }}>
-                      <img src = {NoData} alt="No data Image" style={{width:"50px", height:'50px'}}/>
-                    <Typography fontStyle={"italic"}>
-                      No UTR available
+                    <Box
+                      sx={{
+                        fontStyle: "italic",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <img
+                        src={NoData}
+                        alt="No data Image"
+                        style={{ width: "50px", height: "50px" }}
+                      />
+                      <Typography fontStyle={"italic"}>
+                        No UTR available
                       </Typography>
-                      </Box>
+                    </Box>
                   </Box>
                 </Box>
               )}
@@ -671,8 +693,8 @@ function UTRPayment() {
           pt: 2,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
-          display:"flex",
-          flexDirection:{xs: "column", sm: "row"},
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
           marginLeft: { lg: "18%", xl: "15%" },
         }}

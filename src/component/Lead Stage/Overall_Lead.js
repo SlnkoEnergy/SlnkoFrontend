@@ -58,6 +58,9 @@ const Overall_Leads = forwardRef((props, ref) => {
   // });
 
   const { data: getLead = [], isLoading, error } = useGetEntireLeadsQuery();
+
+  // console.log(getLead);
+  
   // const { data: getTask = [] } = useGetTasksQuery();
 
   const leads = [
@@ -285,7 +288,7 @@ const Overall_Leads = forwardRef((props, ref) => {
     if (!user || !user.name) return [];
 
     const userName = user.name.trim();
-    const userRole = user.role?.trim();
+    const userRole = user.department?.trim();
     const isAdmin =
       userRole === "admin" ||
       userRole === "superadmin" ||

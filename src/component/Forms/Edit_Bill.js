@@ -78,11 +78,13 @@ const UpdateBillForm = () => {
         const po = localStorage.getItem("edit_bill");
         const poNumberFromStorage = po ? String(po) : null;
 
-        const [poRes, billRes] = await Promise.all([
-          Axios.get("/get-all-pO-IT"),
-          Axios.get("/get-all-bilL-IT"),
-        ]);
+        const token = localStorage.getItem("authToken");
+const config = { headers: { "x-auth-token": token } };
 
+const [poRes, billRes] = await Promise.all([
+  Axios.get("/get-all-pO-IT", config),
+  Axios.get("/get-all-bilL-IT", config),
+]);
         const allPOs = poRes.data?.data || [];
         const allBills = billRes.data?.data || [];
 
@@ -176,9 +178,12 @@ const UpdateBillForm = () => {
     try {
       setLoading(true);
       setError("");
+       const token = localStorage.getItem("authToken");
 
       const endpoint = `https://api.slnkoprotrac.com/v1/update-bill/${formValues._id}`;
-      const response = await Axios.put(endpoint, dataToPost);
+      const response = await Axios.put(endpoint, dataToPost,  { headers: {
+            "x-auth-token": token,
+      }});
 
       if (response.status === 200) {
         setResponse(response.data);

@@ -9,7 +9,7 @@ import {
 } from "@mui/joy";
 import { toast } from "react-toastify";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Axios from "../../utils/Axios";
 
@@ -42,7 +42,14 @@ const PaymentRequestSummary = () => {
           return;
         }
 
-        const { data } = await Axios.get("/get-comm-bd-rate");
+        const token = localStorage.getItem("authToken");
+
+        const { data } = await Axios.get("/get-comm-bd-rate", {
+          headers: {
+            "x-auth-token": token,
+          },
+        });
+
         const offerData = data.find((item) => item.offer_id === offerRate);
 
         if (!offerData) {
@@ -94,15 +101,28 @@ const PaymentRequestSummary = () => {
       }
 
       try {
-        const response = await Axios.put(`/edit-bd-rate/${scmData._id}`, {
-          _id: scmData._id,
-          spv_modules: scmData.spv_modules,
-          module_mounting_structure: scmData.module_mounting_structure,
-          transmission_line: scmData.transmission_line,
-          slnko_charges: scmData.slnko_charges,
-          comment: scmData.comment || "",
-          submitted_by_BD: user.name,
-        });
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          toast.error("Authentication token is missing!");
+          return;
+        }
+        const response = await Axios.put(
+          `/edit-bd-rate/${scmData._id}`,
+          {
+            _id: scmData._id,
+            spv_modules: scmData.spv_modules,
+            module_mounting_structure: scmData.module_mounting_structure,
+            transmission_line: scmData.transmission_line,
+            slnko_charges: scmData.slnko_charges,
+            comment: scmData.comment || "",
+            submitted_by_BD: user.name,
+          },
+          {
+            headers: {
+              "x-auth-token": token,
+            },
+          }
+        );
 
         if (response.status === 200) {
           setResponse(response.data);

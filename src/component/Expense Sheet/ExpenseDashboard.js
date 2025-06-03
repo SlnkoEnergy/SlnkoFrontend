@@ -1,42 +1,20 @@
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
-import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
-import Menu from "@mui/joy/Menu";
-import MenuButton from "@mui/joy/MenuButton";
-import MenuItem from "@mui/joy/MenuItem";
-import Option from "@mui/joy/Option";
-import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import * as React from "react";
-import DeleteIcon from "@mui/icons-material/Delete";
-import ModeEditIcon from "@mui/icons-material/ModeEdit";
-import Divider from "@mui/joy/Divider";
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useState,
-  useMemo,
-} from "react";
+import { forwardRef, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "react-toastify";
 // import Axios from "../utils/Axios";
-import {
-  useDeleteProjectMutation,
-  useGetProjectsQuery,
-} from "../../redux/projectsSlice";
+import { Card, CardContent, Chip } from "@mui/joy";
 import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
-import { Chip } from "@mui/joy";
 
 const AllExpense = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -44,10 +22,15 @@ const AllExpense = forwardRef((props, ref) => {
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
-  const [selected, setSelected] = useState([]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedExpenses, setSelectedExpenses] = useState([]);
+  const [expandedCard, setExpandedCard] = useState(null);
+
+  const toggleExpand = (id) => {
+    setExpandedCard(expandedCard === id ? null : id);
+  };
 
   const { data: getExpense = [], isLoading, error } = useGetAllExpenseQuery();
 
@@ -99,7 +82,7 @@ const AllExpense = forwardRef((props, ref) => {
       if (!user || !user.name) return false;
 
       const userName = user.name.trim();
-      const userRole = user.role?.trim();
+      const userRole = user.department?.trim();
       const isAdmin = userRole === "admin" || userRole === "superadmin";
       const submittedBy = expense.emp_name?.trim() || "";
 
@@ -234,7 +217,7 @@ const AllExpense = forwardRef((props, ref) => {
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: "flex",
+          display: { xs: "none", md: "flex" },
           width: "100%",
           borderRadius: "sm",
           flexShrink: 1,
@@ -474,6 +457,121 @@ const AllExpense = forwardRef((props, ref) => {
           </Box>
         </Box>
       </Sheet>
+
+      {/* Mobile view */}
+      <Box
+        sx={{
+          display: { xs: "flex", md: "none" },
+          flexDirection: "column",
+          gap: 2,
+          p: 2,
+        }}
+      >
+        {paginatedExpenses.length > 0 ? (
+          paginatedExpenses.map((expense) => {
+            const requested = Number(expense.total_requested_amount || 0);
+            const approved = Number(expense.total_approved_amount || 0);
+            const rejected = requested - approved;
+            const disbursement = expense.disbursement_date
+              ? new Date(expense.disbursement_date).toLocaleDateString("en-GB")
+              : "-";
+            const status = expense.current_status?.toLowerCase();
+
+            const getStatusChip = () => {
+              switch (status) {
+                case "submitted":
+                  return (
+                    <Chip color="primary" variant="soft" size="sm">
+                      Pending
+                    </Chip>
+                  );
+                case "manager approval":
+                case "hr approval":
+                  return (
+                    <Chip color="warning" variant="soft" size="sm">
+                      In Process
+                    </Chip>
+                  );
+                case "final approval":
+                  return (
+                    <Chip color="success" variant="soft" size="sm">
+                      Approved
+                    </Chip>
+                  );
+                case "hold":
+                  return (
+                    <Chip color="neutral" variant="soft" size="sm">
+                      On Hold
+                    </Chip>
+                  );
+                case "rejected":
+                  return (
+                    <Chip color="danger" variant="soft" size="sm">
+                      Rejected
+                    </Chip>
+                  );
+                default:
+                  return (
+                    <Chip variant="outlined" size="sm">
+                      -
+                    </Chip>
+                  );
+              }
+            };
+
+            return (
+              <Card key={expense._id} variant="outlined">
+                <CardContent>
+                  <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    mb={1}
+                  >
+                    <Typography level="title-md">
+                      {expense.expense_code}
+                    </Typography>
+                    {getStatusChip()}
+                  </Box>
+
+                  <Button
+                    size="sm"
+                    onClick={() => toggleExpand(expense._id)}
+                    variant="soft"
+                    fullWidth
+                  >
+                    {expandedCard === expense._id
+                      ? "Hide Details"
+                      : "View Details"}
+                  </Button>
+
+                  {expandedCard === expense._id && (
+                    <Box mt={1} pl={1}>
+                      <Typography level="body-sm">
+                        <strong>Requested:</strong> {requested}
+                      </Typography>
+                      <Typography level="body-sm">
+                        <strong>Approved:</strong> {approved}
+                      </Typography>
+                      <Typography level="body-sm">
+                        <strong>Rejected:</strong>{" "}
+                        {isNaN(rejected) ? "0" : rejected}
+                      </Typography>
+                      <Typography level="body-sm">
+                        <strong>Disbursement Date:</strong> {disbursement}
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })
+        ) : (
+          <Typography textAlign="center" fontStyle="italic">
+            No data available
+          </Typography>
+        )}
+      </Box>
 
       {/* Pagination */}
       <Box

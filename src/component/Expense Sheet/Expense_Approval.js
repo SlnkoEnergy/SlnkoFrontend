@@ -78,18 +78,41 @@ const ExpenseApproval = forwardRef((props, ref) => {
     [getExpense]
   );
 
+  // if (!user) return [];
+
   const filteredAndSortedData = expenses
     .filter((expense) => {
- 
       const matchedUser = getAllUser?.data?.find(
-        (user) => user.name === expense.emp_name
+        (u) => u.name === expense.emp_name
       );
+      if (!matchedUser) return false;
 
-      // console.log(matchedUser);
+      // Role and department-based access
+      const allowedDepartments = [
+        "Accounts",
+        "Projects",
+        "BD",
+        "OPS",
+        "CAM",
+        "HR",
+        "SCM",
+        "Engineering",
+      ];
 
-      if (!matchedUser || matchedUser.department !== "Projects") return false;
+      const isManager =
+        user?.role === "manager" &&
+        allowedDepartments.includes(user?.department);
 
-   
+      const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+
+      if (
+        !isAdmin &&
+        !(isManager && matchedUser.department === user?.department)
+      ) {
+        return false; // Access denied
+      }
+
+      // Status filter
       const allowedStatuses = [
         "submitted",
         "manager approval",
@@ -101,7 +124,7 @@ const ExpenseApproval = forwardRef((props, ref) => {
       const status = expense.current_status?.toLowerCase();
       if (!allowedStatuses.includes(status)) return false;
 
-     
+      // Search filter
       const search = searchQuery.toLowerCase();
       const matchesSearchQuery = [
         "expense_code",
@@ -114,18 +137,19 @@ const ExpenseApproval = forwardRef((props, ref) => {
     })
     .sort((a, b) => {
       const search = searchQuery.toLowerCase();
-
-      
       const fields = ["expense_code", "emp_id", "emp_name", "status"];
+
       for (let field of fields) {
         const aValue = a[field]?.toLowerCase() || "";
         const bValue = b[field]?.toLowerCase() || "";
         const aMatch = aValue.includes(search);
         const bMatch = bValue.includes(search);
+
         if (aMatch && !bMatch) return -1;
         if (!aMatch && bMatch) return 1;
       }
 
+      // Fallback sort by created date (descending)
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
 

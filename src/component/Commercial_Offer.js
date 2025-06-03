@@ -2,6 +2,8 @@ import { Player } from "@lottiefiles/react-lottie-player";
 import AddIcon from "@mui/icons-material/Add";
 import BlockIcon from "@mui/icons-material/Block";
 import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditNoteIcon from "@mui/icons-material/EditNote";
 import HistoryIcon from "@mui/icons-material/History";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
@@ -11,26 +13,23 @@ import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
+import Divider from "@mui/joy/Divider";
 import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
-import DeleteIcon from "@mui/icons-material/Delete";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
-import Divider from "@mui/joy/Divider";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
 import Option from "@mui/joy/Option";
-import EditNoteIcon from '@mui/icons-material/EditNote';
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
-import { toast } from "react-toastify";
 import Tooltip from "@mui/joy/Tooltip";
 import Typography from "@mui/joy/Typography";
-import * as React from "react";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
 import NoData from "../assets/alert-bell.svg";
 import animationData from "../assets/Lotties/animation-loading.json";
 import Axios from "../utils/Axios";
@@ -132,10 +131,24 @@ function Offer() {
     const fetchCommAndBdRate = async () => {
       setLoading(true);
       try {
+        const token = localStorage.getItem("authToken");
+        console.log(token);
+
+        if (!token) {
+          throw new Error("No auth token found in localStorage.");
+        }
         // Fetch commercial offer and BD rate
         const [commResponse, bdRateResponse] = await Promise.all([
-          Axios.get("/get-comm-offer"),
-          Axios.get("/get-comm-bd-rate"),
+          Axios.get("/get-comm-offer", {
+            headers: {
+              "x-auth-token": token,
+            },
+          }),
+          Axios.get("/get-comm-bd-rate", {
+            headers: {
+              "x-auth-token": token,
+            },
+          }),
         ]);
 
         const newCommRate = commResponse.data;
@@ -201,13 +214,13 @@ function Offer() {
     }
   }, [commRate, bdRateData]);
 
-    useEffect(() => {
-      const storedUser = localStorage.getItem("userDetails");
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-        // console.log("User Loaded:", JSON.parse(storedUser)); 
-      }
-    }, []);
+  useEffect(() => {
+    const storedUser = localStorage.getItem("userDetails");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+      // console.log("User Loaded:", JSON.parse(storedUser));
+    }
+  }, []);
 
   const RowMenu = ({ currentPage, offer_id }) => {
     // console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
@@ -239,7 +252,7 @@ function Offer() {
             <MoreHorizRoundedIcon />
           </MenuButton>
           {(user?.name === "IT Team" ||
-            user?.name === "admin" ||
+            user?.department === "admin" ||
             user?.name === "Navin Kumar Gautam" ||
             user?.name === "Mohd Shakir Khan" ||
             user?.name === "Shiv Ram Tathagat" ||
@@ -253,7 +266,7 @@ function Offer() {
             user?.name === "Anudeep Kumar" ||
             user?.name === "Ashish Jha") && (
             <Menu size="sm" sx={{ minWidth: 140 }}>
-               <MenuItem
+              <MenuItem
                 color="primary"
                 onClick={() => {
                   const page = currentPage;
@@ -291,7 +304,7 @@ function Offer() {
                 <Typography>Offer History</Typography>
               </MenuItem>
               <Divider sx={{ backgroundColor: "lightblue" }} />
-              {(user?.name === "IT Team" || user?.name === "admin") && (
+              {(user?.name === "IT Team" || user?.department === "admin") && (
                 <MenuItem
                   color="danger"
                   disabled={selected.length === 0}
@@ -327,7 +340,7 @@ function Offer() {
     return (
       <>
         {user?.name === "IT Team" ||
-        user?.name === "admin" ||
+        user?.department === "admin" ||
         user?.name === "Navin Kumar Gautam" ||
         user?.name === "Mohd Shakir Khan" ||
         user?.name === "Shiv Ram Tathagat" ||
@@ -391,9 +404,19 @@ function Offer() {
     try {
       setLoading(true);
       setError("");
+      const token = localStorage.getItem("authToken");
+      console.log(token);
+
+      if (!token) {
+        throw new Error("No auth token found in localStorage.");
+      }
 
       for (const _id of selected) {
-        await Axios.delete(`/delete-offer/${_id}`);
+        await Axios.delete(`/delete-offer/${_id}`, {
+          headers: {
+            "x-auth-token": token,
+          },
+        });
 
         setCommRate((prev) => prev.filter((item) => item._id !== _id));
         setBdRateData((prev) => prev.filter((item) => item.offer_id !== _id));
@@ -417,31 +440,33 @@ function Offer() {
 
   const filteredAndSortedData = useMemo(() => {
     if (!user || !user.name) return [];
-  
+
     return mergedData
       .filter((project) => {
-        const preparedBy = project.prepared_by?.trim().toLowerCase() || "unassigned";
+        const preparedBy =
+          project.prepared_by?.trim().toLowerCase() || "unassigned";
         const userName = user.name.trim().toLowerCase();
-        const userRole = user.role?.toLowerCase();
-  
-      
+        const userRole = user.department?.toLowerCase();
+
         const isAdmin = userRole === "admin" || userRole === "superadmin";
         const matchesUser = isAdmin || preparedBy === userName;
-  
-        const matchesSearchQuery = ["offer_id", "client_name", "state", "prepared_by"]
-          .some((key) => project[key]?.toLowerCase().includes(searchQuery));
-  
+
+        const matchesSearchQuery = [
+          "offer_id",
+          "client_name",
+          "state",
+          "prepared_by",
+        ].some((key) => project[key]?.toLowerCase().includes(searchQuery));
+
         return matchesUser && matchesSearchQuery;
       })
       .sort((a, b) => {
         const dateA = new Date(a.createdAt || 0);
         const dateB = new Date(b.createdAt || 0);
-  
+
         return dateB - dateA;
       });
   }, [mergedData, searchQuery, user]);
-  
-  
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {

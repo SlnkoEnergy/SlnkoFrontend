@@ -24,12 +24,21 @@ function PoHistoryTable() {
               return;
             }
       
-            const poResponse = await Axios.get("/get-all-pO-IT");
+            const token = localStorage.getItem("authToken");
+        const poResponse = await Axios.get("/get-all-pO-IT", {
+          headers: {
+            "x-auth-token": token,
+          },
+        });
             const fetchedPoNumber = poResponse.data;
             setPoNumber(fetchedPoNumber);
-            console.log("Enriched POs are:", fetchedPoNumber);
+            // console.log("Enriched POs are:", fetchedPoNumber);
       
-            const historyResponse = await Axios.get("get-po-historY-IT");
+            const historyResponse = await Axios.get("get-po-historY-IT" , {
+          headers: {
+            "x-auth-token": token,
+          },
+        });
             console.log("PO History API Response:", historyResponse.data);
       
             const historyData = Array.isArray(historyResponse.data) ? historyResponse.data : historyResponse.data.data;
