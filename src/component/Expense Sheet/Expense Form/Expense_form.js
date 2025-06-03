@@ -348,7 +348,7 @@ const Expense_Form = () => {
       return updatedInputs;
     });
 
-    setDropdownOpenIndex(null); // ✅ Close the dropdown
+    setDropdownOpenIndex(null);
   };
 
 const getProjectName = (code) => {
@@ -475,11 +475,11 @@ const getProjectName = (code) => {
 
               <tbody>
                 {rows.map((row, rowIndex) => {
-                  const filteredProjects = projectCodes.filter((project) =>
-                    (project.code || "")
-                      .toLowerCase()
-                      .includes((searchInputs[rowIndex] || "").toLowerCase())
-                  );
+                      const filteredProjects = projectCodes.filter((project) =>
+                  (project.code || "")
+                    .toLowerCase()
+                    .includes((searchInputs[rowIndex] || "").toLowerCase())
+                );
 
                   return (
                     <tr
@@ -491,69 +491,71 @@ const getProjectName = (code) => {
                       }}
                     >
                       {/* Project Code Input with Dropdown */}
-                      <td style={{ position: "relative", padding: 8 }}>
-                        <Input
-                          size="sm"
-                          value={searchInputs[rowIndex] || ""}
-                          placeholder="Search Project Code"
-                          onChange={(e) =>
-                            handleSearchInputChange(rowIndex, e.target.value)
-                          }
-                          onFocus={() => setDropdownOpenIndex(rowIndex)}
-                          inputRef={(el) => (inputRefs.current[rowIndex] = el)}
-                          autoComplete="off"
-                          sx={{ width: "100%" }}
-                        />
-                        {dropdownOpenIndex === rowIndex &&
-                          filteredProjects.length > 0 && (
-                            <Sheet
-                              ref={(el) =>
-                                (dropdownRefs.current[rowIndex] = el)
-                              }
-                              variant="outlined"
-                              sx={{
-                                position: "absolute",
-                                top: "100%",
-                                left: 0,
-                                right: 0,
-                                zIndex: 20,
-                                maxHeight: 180,
-                                overflowY: "auto",
-                                mt: 0.5,
-                                bgcolor: "background.body",
-                                borderRadius: 1,
-                                boxShadow: "md",
-                              }}
-                            >
-                              <List size="sm" sx={{ p: 0 }}>
-                                {filteredProjects.map((project, i) => (
-                                  <ListItem
-                                    key={i}
-                                    onClick={() =>
-                                      handleSelectProject(
-                                        rowIndex,
-                                        project.code,
-                                        project.name
-                                      )
-                                    }
-                                    sx={{
-                                      cursor: "pointer",
-                                      px: 2,
-                                      py: 1,
-                                      "&:hover": { bgcolor: "primary.softBg" },
-                                    }}
-                                  >
-                                    <Typography level="body2" fontWeight="md">
-                                      {project.code}
-                                    </Typography>{" "}
-                                    - {project.name}
-                                  </ListItem>
-                                ))}
-                              </List>
-                            </Sheet>
-                          )}
-                      </td>
-
+                       <td
+                      style={{ position: "relative", padding: 8, width: 150 }}
+                    >
+                      <Input
+                        size="sm"
+                        variant="outlined"
+                        value={searchInputs[rowIndex] || ""}
+                        placeholder="Search Project Code"
+                        onChange={(e) =>
+                          handleSearchInputChange(rowIndex, e.target.value)
+                        }
+                        onFocus={() => setDropdownOpenIndex(rowIndex)}
+                        inputRef={(el) => (inputRefs.current[rowIndex] = el)}
+                        autoComplete="off"
+                        sx={{ width: "100%" }}
+                        // disabled={rows[rowIndex]?.items?.[0]?.projectSelected}
+                      />
+                      {dropdownOpenIndex === rowIndex &&
+                        filteredProjects.length > 0 && (
+                          <Sheet
+                            ref={(el) => (dropdownRefs.current[rowIndex] = el)}
+                            variant="outlined"
+                            sx={{
+                              position: "absolute",
+                              top: "100%",
+                              left: 0,
+                              right: 0,
+                              zIndex: 20,
+                              maxHeight: 180,
+                              overflowY: "auto",
+                              bgcolor: "background.body",
+                              borderRadius: 1,
+                              boxShadow: "md",
+                              mt: 0.5,
+                            }}
+                          >
+                            <List size="sm" sx={{ p: 0 }}>
+                              {filteredProjects.map((project, i) => (
+                                <ListItem
+                                  key={i}
+                                  onClick={() =>
+                                    handleSelectProject(
+                                      rowIndex,
+                                      project.code,
+                                      project.name
+                                    )
+                                  }
+                                  sx={{
+                                    cursor: "pointer",
+                                    px: 2,
+                                    py: 1,
+                                    borderRadius: 1,
+                                    "&:hover": { bgcolor: "primary.softBg" },
+                                  }}
+                                >
+                                  <Typography level="body2" fontWeight="md">
+                                    {project.code}
+                                  </Typography>{" "}
+                                  - {project.name}
+                                </ListItem>
+                              ))}
+                            </List>
+                          </Sheet>
+                        )}
+                    </td>
                       {/* Project Name */}
                       <td style={{ padding: 8 }}>
                         <Input
