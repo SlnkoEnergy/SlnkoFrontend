@@ -1,5 +1,5 @@
 import { Box, Button } from "@mui/joy";
-import React, { forwardRef, useEffect, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import Axios from "../utils/Axios";
 
 const PaymentDetail = forwardRef((props, ref) => {
@@ -126,8 +126,15 @@ const PaymentDetail = forwardRef((props, ref) => {
 
       for (let row of selectedData) {
         try {
+          const token = localStorage.getItem("authToken");
           // console.log("Updating row with ID:", row.id);
-          await Axios.put("/update-excel", { _id: row.id });
+          await Axios.put(
+            "/update-excel",
+            { _id: row.id },
+            {
+              headers: { "x-auth-token": token },
+            }
+          );
         } catch (err) {
           console.error(
             `Failed to update status for row ${row.id}: ${err.message}`

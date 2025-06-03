@@ -9,7 +9,7 @@ import {
 } from "@mui/joy";
 import { toast } from "react-toastify";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Axios from "../../utils/Axios";
 
@@ -102,17 +102,27 @@ const PaymentRequestSummary = () => {
 
       try {
         const token = localStorage.getItem("authToken");
-        const response = await Axios.put(`/edit-bd-rate/${scmData._id}`, {
-          _id: scmData._id,
-          spv_modules: scmData.spv_modules,
-          module_mounting_structure: scmData.module_mounting_structure,
-          transmission_line: scmData.transmission_line,
-          slnko_charges: scmData.slnko_charges,
-          comment: scmData.comment || "",
-          submitted_by_BD: user.name,
-        }, { headers: {
-            "x-auth-token": token,
-      }});
+        if (!token) {
+          toast.error("Authentication token is missing!");
+          return;
+        }
+        const response = await Axios.put(
+          `/edit-bd-rate/${scmData._id}`,
+          {
+            _id: scmData._id,
+            spv_modules: scmData.spv_modules,
+            module_mounting_structure: scmData.module_mounting_structure,
+            transmission_line: scmData.transmission_line,
+            slnko_charges: scmData.slnko_charges,
+            comment: scmData.comment || "",
+            submitted_by_BD: user.name,
+          },
+          {
+            headers: {
+              "x-auth-token": token,
+            },
+          }
+        );
 
         if (response.status === 200) {
           setResponse(response.data);
