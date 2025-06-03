@@ -8,6 +8,7 @@ import {
   FormLabel,
   IconButton,
   Textarea,
+  Tooltip,
 } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
@@ -127,18 +128,43 @@ const UpdateExpense = () => {
   };
 
   const categoryOptions = [
-    "Travelling Expenses",
-    "Lodging",
-    "Meal Expenses",
-    "Project Expenses",
-    "Repair and Maintenance",
-    "Telephone Expenses",
-    "Courier Charges(porter)",
-    "Staff welfare expenses",
-    "Medical Expenses",
-    "Printing and stationary",
-    "Office expenses",
+    "Site Meal Per-diem Allowance",
+    "Site Lodging and Accommodation Expense",
+    "Site Travelling Expenses",
+    "Site Labour Charges",
+    "Site Staff Telephone Expenses",
+    "Site Courier and Parcel Expense",
+    "Site Material Purchases",
+    "Site Stationery Expenses",
+    "Site Miscellaneous Expenses",
+    "Site Vehicle Repair and Maintenance Expense",
+    "Office Expenses",
   ];
+
+  const categoryDescriptions = {
+    "Site Meal Per-diem Allowance":
+      "Please select this head to book allowance for personnel at project site given as per company policy for meals at project site.",
+    "Site Lodging and Accommodation Expense":
+      "Please select this head to book all lodging related expenses incurred by personnel at project site such as hotel, rentals of places and likewise. Please make sure to collect receipts or bills",
+    "Site Travelling Expenses":
+      "Please select this head to book all travelling related expenses incurred by personnel at project site such as bus-ticket, train-ticket, flight-ticket, reimbursements for fuel, hire of bikes or cabs and likewise. Please make sure to collect receipts or bills",
+    "Site Staff Telephone Expenses":
+      "Please select this head to book all telephone related expenses incurred by personnel at project site that happens for project at site. Please make sure to collect receipts or bills",
+    "Site Courier and Parcel Expense":
+      "Please select this head to book all expenses for parcels and couriers from project sites incurred by personnel at project sites. Please make sure to collect receipts or bills",
+    "Site Labour Charges":
+      "Please select this head to book all labour related expenses incurred by personnel at project site that happens for project at site. Please make sure to collect receipts or bills",
+    "Site Material Purchases":
+      "Please select this head to book all purchases incurred by personnel at project site that happens for project at site such as for cements, mechanical parts, modules and likewise chargeable to project clients. Please make sure to collect receipts or bills",
+    "Site Stationery Expenses":
+      "Please select this head to book all stationery items related expenses incurred by personnel at project site such as pens, papers and likewise. Please make sure to collect receipts or bills",
+    "Site Miscellaneous Expenses":
+      "Please select this head to book all other related expenses incurred by personnel at project site that happens for project at site which are not covered in the above heads. Please make sure to collect receipts or bills",
+    "Site Vehicle Repair and Maintenance Expense":
+      "Please select this head to book all vehicle repair and maintenance related expenses incurred by personnel at project site that happens for project at site. Please make sure to collect receipts or bills",
+    "Office Expenses":
+      "Please select this head to book general office expenses unrelated to project site.",
+  };
 
   const { data: response = {} } = useGetAllExpenseQuery();
   const expenses = response.data || [];
@@ -1506,7 +1532,37 @@ const UpdateExpense = () => {
 
                   return (
                     <tr key={idx}>
-                      <td>{category}</td>
+                       <td>
+                      <Tooltip
+                        placement="right"
+                        arrow
+                        title={
+                          <Sheet
+                            variant="soft"
+                            sx={{
+                              p: 1,
+                              maxWidth: 300,
+                              borderRadius: "md",
+                              boxShadow: "md",
+                              bgcolor: "background.surface",
+                            }}
+                          >
+                            <Typography level="body-sm">
+                              {categoryDescriptions[category]}
+                            </Typography>
+                          </Sheet>
+                        }
+                      >
+                        <span
+                          style={{
+                            cursor: "help",
+                            textDecoration: "underline dotted",
+                          }}
+                        >
+                          {category}
+                        </span>
+                      </Tooltip>
+                    </td>
                       <td>{total > 0 ? total.toFixed(2) : "-"}</td>
                       <td>
                         {approvedTotal > 0 ? approvedTotal.toFixed(2) : "-"}
