@@ -203,7 +203,8 @@ const Expense_Form = () => {
 
       const cleanedData = {
         expense_term: rows[0]?.expense_term || {},
-        disbursement_date: rows[0]?.disbursement_date || "",
+        disbursement_date: rows[0]?.disbursement_date ?? null,
+
         items,
         user_id: userID,
         current_status: "submitted",
@@ -433,7 +434,7 @@ const Expense_Form = () => {
           maxWidth: "100%",
           overflowX: "auto",
           p: 1,
-          marginLeft: { md: "15%" },
+          marginLeft: { lg: "20%", md: "0%", xl: "15%" },
         }}
       >
         {/* Action Buttons */}
@@ -545,19 +546,23 @@ const Expense_Form = () => {
 
             <tbody>
               {rows.map((row, rowIndex) => {
-                const searchValue = (searchInputs[rowIndex] || "").toLowerCase();
+                const searchValue = (
+                  searchInputs[rowIndex] || ""
+                ).toLowerCase();
 
-let filteredProjects = projectCodes.filter((project) =>
-  (project.code || "").toLowerCase().includes(searchValue)
-);
+                let filteredProjects = projectCodes.filter((project) =>
+                  (project.code || "").toLowerCase().includes(searchValue)
+                );
 
-if ("other".includes(searchValue) && !filteredProjects.some(p => p.code === "Other")) {
-  filteredProjects = [
-    ...filteredProjects,
-    { code: "Other", name: "NA" }
-  ];
-}
-
+                if (
+                  "other".includes(searchValue) &&
+                  !filteredProjects.some((p) => p.code === "Other")
+                ) {
+                  filteredProjects = [
+                    ...filteredProjects,
+                    { code: "Other", name: "NA" },
+                  ];
+                }
 
                 return (
                   <tr

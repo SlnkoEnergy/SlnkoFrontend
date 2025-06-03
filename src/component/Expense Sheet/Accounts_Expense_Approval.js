@@ -405,7 +405,7 @@ const AccountsExpense = forwardRef((props, ref) => {
                 "Rejected Amount",
                 "Disbursement Date",
                 "Status",
-                "Actions",
+                // "Actions",
               ].map((header, index) => (
                 <Box
                   component="th"
@@ -583,7 +583,7 @@ const AccountsExpense = forwardRef((props, ref) => {
                       }
                     })()}
                   </Box>
-                  <Box
+                  {/* <Box
                     component="td"
                     sx={{
                       borderBottom: "1px solid #ddd",
@@ -595,7 +595,7 @@ const AccountsExpense = forwardRef((props, ref) => {
                       _id={expense._id}
                       status={expense.current_status}
                     />
-                  </Box>
+                  </Box> */}
                 </Box>
               ))
             ) : (

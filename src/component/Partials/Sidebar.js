@@ -173,7 +173,7 @@ function Sidebar() {
           },
         }}
       >
-        {(user?.name === "IT Team" || user?.department === "admin") ? (
+        {user?.name === "IT Team" || user?.department === "admin" ? (
           <List>
             {/* Dashboard */}
             <ListItem>
