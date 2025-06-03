@@ -97,6 +97,10 @@ import Expense_Table from "../pages/ExpenseSheet/Expense_Tab";
 import Edit_Expense from "../pages/ExpenseSheet/Update_Expense_Form";
 import Update_Bill from "../pages/SCM/EditBill";
 import PrivateRoute from "./PrivateRoute";
+import TempDashboard from "../pages/Eng/Template_Dashboard";
+import AddFolder from "../pages/Eng/Forms/Add_folder";
+import Template_Pages from "../pages/Eng/Templates_Page";
+import AddTemplates from "../pages/Eng/Forms/Add_Templates";
 
 function index() {
   return (
@@ -324,6 +328,14 @@ function index() {
         }
       />
       <Route
+        path="/temp_dash"
+        element={
+          <PrivateRoute>
+            <TempDashboard />
+          </PrivateRoute>
+        }
+      />
+      <Route
         path="/module_sheet"
         element={
           <PrivateRoute>
@@ -416,6 +428,32 @@ function index() {
         element={
           <PrivateRoute>
             <Add_LT_Panel />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/add_folder"
+        element={
+          <PrivateRoute>
+            <AddFolder />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/temp_pages"
+        element={
+          <PrivateRoute>
+            <Template_Pages />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/add_templates"
+        element={
+          <PrivateRoute>
+            <AddTemplates />
           </PrivateRoute>
         }
       />
