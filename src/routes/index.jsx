@@ -101,6 +101,7 @@ import TempDashboard from "../pages/Eng/Template_Dashboard";
 import AddFolder from "../pages/Eng/Forms/Add_folder";
 import Template_Pages from "../pages/Eng/Templates_Page";
 import AddTemplates from "../pages/Eng/Forms/Add_Templates";
+import Overview from "../component/Forms/Engineering/Eng_Overview/Overview";
 
 function index() {
   return (
@@ -454,6 +455,15 @@ function index() {
         element={
           <PrivateRoute>
             <AddTemplates />
+          </PrivateRoute>
+        }
+      />
+
+<Route
+        path="/overview"
+        element={
+          <PrivateRoute>
+            <Overview />
           </PrivateRoute>
         }
       />
