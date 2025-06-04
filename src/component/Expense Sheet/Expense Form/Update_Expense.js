@@ -794,7 +794,7 @@ const UpdateExpense = () => {
 
   const tableHeaders = [
     "Project ID",
-    "Project Name",
+    "Project Name / Location",
     "Category",
     "Description",
     "Submission Date",

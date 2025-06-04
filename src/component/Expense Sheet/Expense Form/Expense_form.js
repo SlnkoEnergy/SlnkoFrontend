@@ -1,5 +1,14 @@
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import { Card, CardContent, Textarea, Tooltip } from "@mui/joy";
+import {
+  Card,
+  CardContent,
+  IconButton,
+  Modal,
+  ModalClose,
+  ModalDialog,
+  Textarea,
+  Tooltip,
+} from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Input from "@mui/joy/Input";
@@ -9,6 +18,8 @@ import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Table from "@mui/joy/Table";
+import DeleteIcon from "@mui/icons-material/Delete";
+
 import Typography from "@mui/joy/Typography";
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
@@ -72,6 +83,31 @@ const Expense_Form = () => {
     open: false,
     rowIndex: null,
   });
+  const [submitModalOpen, setSubmitModalOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  const handlePreviewOpen = () => {
+    setPreviewOpen(true);
+  };
+
+  const handlePreviewClose = () => {
+    setPreviewOpen(false);
+  };
+
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
 
   const inputRefs = useRef({});
   const dropdownRefs = useRef({});
@@ -177,6 +213,8 @@ const Expense_Form = () => {
 
     try {
       const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
+      console.log("userID:", userID);
+
       if (!userID) {
         toast.error("User ID not found. Please login again.");
         return;
@@ -301,14 +339,14 @@ const Expense_Form = () => {
     setSearchInputs((prev) => [...prev, ""]);
   };
 
-  const handleRemoveRow = () => {
+  const handleDeleteRow = (index) => {
     if (rows.length <= 1) {
-      toast.warning("You must have at least one row.");
+      toast.warning("At least one row must remain.");
       return;
     }
 
-    setRows((prev) => prev.slice(0, -1));
-    setSearchInputs((prev) => prev.slice(0, -1));
+    setRows((prev) => prev.filter((_, i) => i !== index));
+    setSearchInputs((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleRowChange = (index, field, value) => {
@@ -332,8 +370,8 @@ const Expense_Form = () => {
 
   const handleFileChange = (rowIndex, itemIndex, file) => {
     const updatedRows = [...rows];
-    updatedRows[rowIndex].items[itemIndex].file = file; // Keep the actual File
-    updatedRows[rowIndex].items[itemIndex].attachment_url = file.name; // Optional, UI only
+    updatedRows[rowIndex].items[itemIndex].file = file;
+    updatedRows[rowIndex].items[itemIndex].attachment_url = file.name;
     setRows(updatedRows);
   };
 
@@ -355,7 +393,7 @@ const Expense_Form = () => {
           ...updated[index].items[0],
           project_id: null,
           project_code: "Other",
-          project_name: "NA",
+          project_name: "", // Allow empty so user can type
           projectSelected: true,
         };
       }
@@ -372,7 +410,6 @@ const Expense_Form = () => {
       return;
     }
 
-    // For DB projects
     const selectedProject = projectCodes.find((p) => p.code === code);
     if (!selectedProject) return;
 
@@ -409,7 +446,7 @@ const Expense_Form = () => {
 
   const tableHeaders = [
     "Project Code",
-    "Project Name",
+    "Project Name / Location",
     "Category",
     "Description",
     "Date",
@@ -491,34 +528,6 @@ const Expense_Form = () => {
           </Box>
 
           {/* Action Buttons – below on mobile */}
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "row",
-              gap: 1,
-            }}
-          >
-            <Button
-              onClick={handleAddRow}
-              variant="solid"
-              size="sm"
-              title="Add Row"
-              color="primary"
-            >
-              +Add Row
-            </Button>
-
-            <Button
-              onClick={handleRemoveRow}
-              variant="solid"
-              size="sm"
-              title="Remove Row"
-              color="danger"
-              disabled={rows.length <= 1}
-            >
-              -Remove Row
-            </Button>
-          </Box>
         </Box>
 
         <Box sx={{ display: { xs: "none", md: "block" } }}>
@@ -550,18 +559,29 @@ const Expense_Form = () => {
                   searchInputs[rowIndex] || ""
                 ).toLowerCase();
 
-                let filteredProjects = projectCodes.filter((project) =>
-                  (project.code || "").toLowerCase().includes(searchValue)
-                );
+                const isProjects = user?.department === "Projects";
+                const isExecutive = user?.role === "executive";
+                const isSurveyor = user?.role === "surveyor";
 
-                if (
-                  "other".includes(searchValue) &&
-                  !filteredProjects.some((p) => p.code === "Other")
-                ) {
-                  filteredProjects = [
-                    ...filteredProjects,
-                    { code: "Other", name: "NA" },
-                  ];
+                let filteredProjects = [];
+
+                if (isProjects) {
+                  filteredProjects = projectCodes.filter((project) =>
+                    (project.code || "").toLowerCase().includes(searchValue)
+                  );
+
+                  if (isSurveyor) {
+                    if (
+                      searchValue.includes("other") &&
+                      !filteredProjects.some((p) => p.code === "Other")
+                    ) {
+                      filteredProjects.push({ code: "Other", name: "" });
+                    }
+                  }
+                } else {
+                  if ("other".includes(searchValue)) {
+                    filteredProjects = [{ code: "Other", name: "" }];
+                  }
                 }
 
                 return (
@@ -575,20 +595,34 @@ const Expense_Form = () => {
                     <td
                       style={{ position: "relative", padding: 8, width: 150 }}
                     >
-                      <Input
-                        size="sm"
-                        variant="outlined"
-                        value={searchInputs[rowIndex] || ""}
-                        placeholder="Search Project Code"
-                        onChange={(e) =>
-                          handleSearchInputChange(rowIndex, e.target.value)
-                        }
-                        onFocus={() => setDropdownOpenIndex(rowIndex)}
-                        inputRef={(el) => (inputRefs.current[rowIndex] = el)}
-                        autoComplete="off"
-                        sx={{ width: "100%" }}
-                        // disabled={rows[rowIndex]?.items?.[0]?.projectSelected}
-                      />
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <IconButton
+                          size="sm"
+                          variant="soft"
+                          color="danger"
+                          onClick={() => handleDeleteRow(rowIndex)}
+                          title="Delete Row"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+
+                        <Input
+                          size="sm"
+                          variant="outlined"
+                          value={searchInputs[rowIndex] || ""}
+                          placeholder="Search Project Code"
+                          onChange={(e) =>
+                            handleSearchInputChange(rowIndex, e.target.value)
+                          }
+                          onFocus={() => setDropdownOpenIndex(rowIndex)}
+                          inputRef={(el) => (inputRefs.current[rowIndex] = el)}
+                          autoComplete="off"
+                          sx={{ width: "100%" }}
+                          // disabled={rows[rowIndex]?.items?.[0]?.projectSelected}
+                        />
+                      </Box>
                       {dropdownOpenIndex === rowIndex &&
                         filteredProjects.length > 0 && (
                           <Sheet
@@ -644,8 +678,16 @@ const Expense_Form = () => {
                         size="sm"
                         variant="outlined"
                         value={row.items?.[0]?.project_name || ""}
-                        placeholder="Project Name"
-                        disabled
+                        placeholder="Location (if 'Other') / Project Name"
+                        disabled={row.items?.[0]?.project_code !== "Other"}
+                        onChange={(e) => {
+                          const updated = [...rows];
+                          if (updated[rowIndex]?.items?.[0]) {
+                            updated[rowIndex].items[0].project_name =
+                              e.target.value;
+                          }
+                          setRows(updated);
+                        }}
                         sx={{ width: "100%" }}
                       />
                     </td>
@@ -850,15 +892,46 @@ const Expense_Form = () => {
 
         <Box sx={{ display: { xs: "block", md: "none" } }}>
           {rows.map((row, rowIndex) => {
-            const filteredProjects = projectCodes.filter((project) =>
-              (project.code || "")
-                .toLowerCase()
-                .includes((searchInputs[rowIndex] || "").toLowerCase())
-            );
+            const searchValue = (searchInputs[rowIndex] || "").toLowerCase();
+
+            const isProjects = user?.department === "Projects";
+            const isExecutive = user?.role === "executive";
+            const isSurveyor = user?.role === "surveyor";
+
+            let filteredProjects = [];
+
+            if (isProjects) {
+              filteredProjects = projectCodes.filter((project) =>
+                (project.code || "").toLowerCase().includes(searchValue)
+              );
+
+              if (isSurveyor) {
+                if (
+                  searchValue.includes("other") &&
+                  !filteredProjects.some((p) => p.code === "Other")
+                ) {
+                  filteredProjects.push({ code: "Other", name: "" });
+                }
+              }
+            } else {
+              if ("other".includes(searchValue)) {
+                filteredProjects = [{ code: "Other", name: "" }];
+              }
+            }
 
             return (
-              <Card key={rowIndex} variant="outlined" sx={{ p: 2 }}>
+              <Card key={rowIndex} variant="outlined" sx={{ p: 2, mt: 1 }}>
                 <CardContent>
+                  <IconButton
+                    size="sm"
+                    variant="soft"
+                    color="danger"
+                    onClick={() => handleDeleteRow(rowIndex)}
+                    sx={{ position: "absolute", top: 8, right: 8 }}
+                    title="Delete Row"
+                  >
+                    <DeleteIcon />
+                  </IconButton>
                   {/* Project Code Search */}
                   <Input
                     size="sm"
@@ -869,7 +942,7 @@ const Expense_Form = () => {
                     }
                     onFocus={() => setDropdownOpenIndex(rowIndex)}
                     inputRef={(el) => (inputRefs.current[rowIndex] = el)}
-                    sx={{ mb: 1 }}
+                    sx={{ mb: 1, mt: 5 }}
                   />
                   {/* Project Dropdown */}
                   {dropdownOpenIndex === rowIndex &&
@@ -914,9 +987,21 @@ const Expense_Form = () => {
 
                   <Input
                     size="sm"
-                    value={row.items?.[0]?.project_name || ""}
-                    placeholder="Project Name"
-                    disabled
+                    value={
+                      row.items?.[0]?.project_code === "Other"
+                        ? row.items[0]?.project_name || ""
+                        : row.items[0]?.project_name || ""
+                    }
+                    placeholder="Location (if 'Other') / Project Name"
+                    disabled={row.items?.[0]?.project_code !== "Other"}
+                    onChange={(e) => {
+                      const updated = [...rows];
+                      if (updated[rowIndex]?.items?.[0]) {
+                        updated[rowIndex].items[0].project_name =
+                          e.target.value;
+                      }
+                      setRows(updated);
+                    }}
                     sx={{ mt: 1 }}
                   />
 
@@ -929,7 +1014,7 @@ const Expense_Form = () => {
                     placeholder="Category"
                     sx={{
                       mt: 1,
-                      minWidth: 200, // mobile-optimized width
+                      minWidth: 200,
                     }}
                     slotProps={{
                       listbox: {
@@ -1080,6 +1165,37 @@ const Expense_Form = () => {
             );
           })}
         </Box>
+
+        <Box
+          mt={1}
+          sx={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: { md: "flex-start", xs: "center" },
+            gap: 1,
+          }}
+        >
+          <Button
+            onClick={handleAddRow}
+            variant="solid"
+            size="sm"
+            title="Add Row"
+            color="primary"
+          >
+            +Add Row
+          </Button>
+
+          {/* <Button
+              onClick={handleRemoveRow}
+              variant="solid"
+              size="sm"
+              title="Remove Row"
+              color="danger"
+              disabled={rows.length <= 1}
+            >
+              -Remove Row
+            </Button> */}
+        </Box>
       </Box>
 
       {/* Summary */}
@@ -1204,6 +1320,130 @@ const Expense_Form = () => {
           </Table>
         </Sheet>
 
+        <Modal open={previewOpen} onClose={handlePreviewClose}>
+          <ModalDialog
+            size="lg"
+            variant="outlined"
+            sx={{
+              width: {
+                xs: "90vw",
+                sm: "80vw",
+                md: "600px",
+              },
+              maxHeight: "90vh",
+              overflowY: "auto",
+              p: 2,
+            }}
+          >
+            <ModalClose />
+            <Typography level="h5" mb={2}>
+              Preview Expense Entry
+            </Typography>
+
+            <Box>
+              {rows.map((row, rowIndex) => {
+                const item = row.items?.[0] || {};
+                return (
+                  <Box
+                    key={rowIndex}
+                    sx={{
+                      mb: 2,
+                      p: 2,
+                      border: "1px solid #ddd",
+                      borderRadius: 2,
+                      backgroundColor: "#f9f9f9",
+                    }}
+                  >
+                    <Typography level="body-sm">
+                      <b>Project:</b> {item.project_code} - {item.project_name}
+                    </Typography>
+                    <Typography level="body-sm">
+                      <b>Category:</b> {item.category}
+                    </Typography>
+                    <Typography level="body-sm">
+                      <b>Description:</b> {item.description}
+                    </Typography>
+                    <Typography level="body-sm">
+                      <b>Date:</b> {item.expense_date}
+                    </Typography>
+                    <Typography level="body-sm">
+                      <b>Invoice Amount:</b> ₹
+                      {item.invoice?.invoice_amount || "—"}
+                    </Typography>
+                    <Typography level="body-sm">
+                      <b>Invoice Status:</b> {item.invoice?.status || "—"}
+                    </Typography>
+                    {item.invoice?.status === "Yes" && (
+                      <Typography level="body-sm">
+                        <b>Invoice No:</b> {item.invoice?.invoice_number}
+                      </Typography>
+                    )}
+                    <Typography level="body-sm">
+                      <b>Attachment:</b>{" "}
+                      {item.attachment_url ? (
+                        <a
+                          href={item.attachment_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ wordBreak: "break-all" }}
+                        >
+                          📎 {item.attachment_url}
+                        </a>
+                      ) : (
+                        "None"
+                      )}
+                    </Typography>
+                  </Box>
+                );
+              })}
+            </Box>
+
+            <Box sx={{ textAlign: "center", mt: 2 }}>
+              <Button onClick={handlePreviewClose} variant="soft">
+                Close
+              </Button>
+            </Box>
+          </ModalDialog>
+        </Modal>
+
+        <Modal open={submitModalOpen} onClose={() => setSubmitModalOpen(false)}>
+          <ModalDialog
+            variant="outlined"
+            size="md"
+            sx={{ maxWidth: 500, p: 2 }}
+          >
+            <ModalClose />
+
+            <Typography level="h5" mb={1}>
+              Confirm Submission
+            </Typography>
+
+            <Typography level="body-md" mb={2}>
+              Are you sure you want to submit the filled expense sheet?
+              <br />
+              Once submitted, changes may not be allowed.
+            </Typography>
+
+            <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
+              <Button variant="plain" onClick={() => setSubmitModalOpen(false)}>
+                Cancel
+              </Button>
+
+              <Button
+                variant="solid"
+                color="primary"
+                loading={isSubmitting}
+                onClick={() => {
+                  setSubmitModalOpen(false);
+                  handleSubmit();
+                }}
+              >
+                Confirm & Submit
+              </Button>
+            </Box>
+          </ModalDialog>
+        </Modal>
+
         {/* Submit & Back Buttons */}
         <Box mt={2} display="flex" justifyContent="center">
           <Box
@@ -1211,18 +1451,21 @@ const Expense_Form = () => {
             justifyContent="center"
             maxWidth="400px"
             width="100%"
+            gap={2}
           >
             <Button
               variant="outlined"
               onClick={() => navigate("/expense_dashboard")}
             >
               Back
-            </Button>{" "}
-            &nbsp;&nbsp;
+            </Button>
+            <Button variant="soft" color="primary" onClick={handlePreviewOpen}>
+              Preview
+            </Button>
             <Button
               variant="solid"
               color="primary"
-              onClick={handleSubmit}
+              onClick={() => setSubmitModalOpen(true)}
               disabled={isSubmitting}
             >
               Submit Expense Sheet

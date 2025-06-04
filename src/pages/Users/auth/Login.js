@@ -308,7 +308,7 @@ const Login = () => {
               <Typography>Username:</Typography>
               <TextField
                 variant="outlined"
-                placeholder="Enter your name"
+                placeholder="Enter your name / Employee Code(SE-0XX)"
                 id="name"
                 name="name"
                 fullWidth
