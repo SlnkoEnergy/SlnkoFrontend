@@ -1,5 +1,5 @@
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import { Card, CardContent, Textarea } from "@mui/joy";
+import { Card, CardContent, Textarea, Tooltip } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Input from "@mui/joy/Input";
@@ -98,18 +98,43 @@ const Expense_Form = () => {
   }, []);
 
   const categoryOptions = [
-    "Travelling Expenses",
-    "Lodging",
-    "Meal Expenses",
-    "Project Expenses",
-    "Repair and Maintenance",
-    "Telephone Expenses",
-    "Courier Charges(porter)",
-    "Staff welfare expenses",
-    "Medical Expenses",
-    "Printing and stationary",
-    "Office expenses",
+    "Site Meal Per-diem Allowance",
+    "Site Lodging and Accommodation Expense",
+    "Site Travelling Expenses",
+    "Site Labour Charges",
+    "Site Staff Telephone Expenses",
+    "Site Courier and Parcel Expense",
+    "Site Material Purchases",
+    "Site Stationery Expenses",
+    "Site Miscellaneous Expenses",
+    "Site Vehicle Repair and Maintenance Expense",
+    "Office Expenses",
   ];
+
+  const categoryDescriptions = {
+    "Site Meal Per-diem Allowance":
+      "Please select this head to book allowance for personnel at project site given as per company policy for meals at project site.",
+    "Site Lodging and Accommodation Expense":
+      "Please select this head to book all lodging related expenses incurred by personnel at project site such as hotel, rentals of places and likewise. Please make sure to collect receipts or bills",
+    "Site Travelling Expenses":
+      "Please select this head to book all travelling related expenses incurred by personnel at project site such as bus-ticket, train-ticket, flight-ticket, reimbursements for fuel, hire of bikes or cabs and likewise. Please make sure to collect receipts or bills",
+    "Site Staff Telephone Expenses":
+      "Please select this head to book all telephone related expenses incurred by personnel at project site that happens for project at site. Please make sure to collect receipts or bills",
+    "Site Courier and Parcel Expense":
+      "Please select this head to book all expenses for parcels and couriers from project sites incurred by personnel at project sites. Please make sure to collect receipts or bills",
+    "Site Labour Charges":
+      "Please select this head to book all labour related expenses incurred by personnel at project site that happens for project at site. Please make sure to collect receipts or bills",
+    "Site Material Purchases":
+      "Please select this head to book all purchases incurred by personnel at project site that happens for project at site such as for cements, mechanical parts, modules and likewise chargeable to project clients. Please make sure to collect receipts or bills",
+    "Site Stationery Expenses":
+      "Please select this head to book all stationery items related expenses incurred by personnel at project site such as pens, papers and likewise. Please make sure to collect receipts or bills",
+    "Site Miscellaneous Expenses":
+      "Please select this head to book all other related expenses incurred by personnel at project site that happens for project at site which are not covered in the above heads. Please make sure to collect receipts or bills",
+    "Site Vehicle Repair and Maintenance Expense":
+      "Please select this head to book all vehicle repair and maintenance related expenses incurred by personnel at project site that happens for project at site. Please make sure to collect receipts or bills",
+    "Office Expenses":
+      "Please select this head to book general office expenses unrelated to project site.",
+  };
 
   const [addExpense] = useAddExpenseMutation();
 
@@ -178,7 +203,8 @@ const Expense_Form = () => {
 
       const cleanedData = {
         expense_term: rows[0]?.expense_term || {},
-        disbursement_date: rows[0]?.disbursement_date || "",
+        disbursement_date: rows[0]?.disbursement_date ?? null,
+
         items,
         user_id: userID,
         current_status: "submitted",
@@ -204,14 +230,13 @@ const Expense_Form = () => {
 
       items.forEach((item) => {
         if (item.file) {
-          formData.append("files", item.file); // For backend file handling
+          formData.append("files", item.file);
         }
       });
 
       formData.append("data", JSON.stringify(cleanedData));
       formData.append("user_id", userID);
 
-      // ✅ Send via RTK Query mutation
       await addExpense(formData).unwrap();
 
       toast.success("Expense sheet submitted successfully!");
@@ -323,6 +348,31 @@ const Expense_Form = () => {
   };
 
   const handleSelectProject = (index, code, name) => {
+    if (code === "Other") {
+      const updated = [...rows];
+      if (updated[index]?.items?.[0]) {
+        updated[index].items[0] = {
+          ...updated[index].items[0],
+          project_id: null,
+          project_code: "Other",
+          project_name: "NA",
+          projectSelected: true,
+        };
+      }
+
+      setRows(updated);
+
+      setSearchInputs((prev) => {
+        const updatedInputs = [...prev];
+        updatedInputs[index] = "Other";
+        return updatedInputs;
+      });
+
+      setDropdownOpenIndex(null);
+      return;
+    }
+
+    // For DB projects
     const selectedProject = projectCodes.find((p) => p.code === code);
     if (!selectedProject) return;
 
@@ -334,7 +384,7 @@ const Expense_Form = () => {
         project_id: selectedProject._id,
         project_code: code,
         project_name: name,
-        // projectSelected: true,
+        projectSelected: true,
       };
     }
 
@@ -384,7 +434,7 @@ const Expense_Form = () => {
           maxWidth: "100%",
           overflowX: "auto",
           p: 1,
-          marginLeft: { md: "15%" },
+          marginLeft: { lg: "20%", md: "0%", xl: "15%" },
         }}
       >
         {/* Action Buttons */}
@@ -496,11 +546,23 @@ const Expense_Form = () => {
 
             <tbody>
               {rows.map((row, rowIndex) => {
-                const filteredProjects = projectCodes.filter((project) =>
-                  (project.code || "")
-                    .toLowerCase()
-                    .includes((searchInputs[rowIndex] || "").toLowerCase())
+                const searchValue = (
+                  searchInputs[rowIndex] || ""
+                ).toLowerCase();
+
+                let filteredProjects = projectCodes.filter((project) =>
+                  (project.code || "").toLowerCase().includes(searchValue)
                 );
+
+                if (
+                  "other".includes(searchValue) &&
+                  !filteredProjects.some((p) => p.code === "Other")
+                ) {
+                  filteredProjects = [
+                    ...filteredProjects,
+                    { code: "Other", name: "NA" },
+                  ];
+                }
 
                 return (
                   <tr
@@ -533,11 +595,11 @@ const Expense_Form = () => {
                             ref={(el) => (dropdownRefs.current[rowIndex] = el)}
                             variant="outlined"
                             sx={{
-                              position: "absolute",
-                              top: "100%",
-                              left: 0,
-                              right: 0,
-                              zIndex: 20,
+                              // position: "absolute",
+                              // top: "100%",
+                              // left: 0,
+                              // right: 0,
+                              // zIndex: 20,
                               maxHeight: 180,
                               overflowY: "auto",
                               bgcolor: "background.body",
@@ -550,7 +612,7 @@ const Expense_Form = () => {
                               {filteredProjects.map((project, i) => (
                                 <ListItem
                                   key={i}
-                                  onClick={() =>
+                                  onMouseDown={() =>
                                     handleSelectProject(
                                       rowIndex,
                                       project.code,
@@ -597,17 +659,45 @@ const Expense_Form = () => {
                         onChange={(e, value) =>
                           handleItemChange(rowIndex, "category", value)
                         }
-                        placeholder="Select"
+                        placeholder="Select Expense"
                         slotProps={{
                           listbox: {
                             sx: { maxHeight: 160, overflowY: "auto" },
                           },
                         }}
-                        sx={{ width: 120 }}
+                        // sx={{ width: "100%" }}
                       >
                         {categoryOptions.map((cat, idx) => (
                           <Option key={idx} value={cat}>
-                            {cat}
+                            <Tooltip
+                              arrow
+                              placement="right"
+                              title={
+                                <Sheet
+                                  variant="soft"
+                                  sx={{
+                                    p: 1,
+                                    maxWidth: 300,
+                                    borderRadius: "md",
+                                    boxShadow: "md",
+                                    bgcolor: "background.surface",
+                                  }}
+                                >
+                                  <Typography level="body-sm">
+                                    {categoryDescriptions[cat]}
+                                  </Typography>
+                                </Sheet>
+                              }
+                            >
+                              <span
+                                style={{
+                                  cursor: "help",
+                                  textDecoration: "underline dotted",
+                                }}
+                              >
+                                {cat}
+                              </span>
+                            </Tooltip>
                           </Option>
                         ))}
                       </Select>
@@ -837,11 +927,57 @@ const Expense_Form = () => {
                       handleItemChange(rowIndex, "category", value)
                     }
                     placeholder="Category"
-                    sx={{ mt: 1 }}
+                    sx={{
+                      mt: 1,
+                      minWidth: 200, // mobile-optimized width
+                    }}
+                    slotProps={{
+                      listbox: {
+                        sx: {
+                          maxHeight: 200,
+                          overflowY: "auto",
+                        },
+                      },
+                    }}
                   >
                     {categoryOptions.map((cat, idx) => (
                       <Option key={idx} value={cat}>
-                        {cat}
+                        <Tooltip
+                          arrow
+                          placement="left"
+                          variant="soft"
+                          enterTouchDelay={0}
+                          leaveTouchDelay={3000}
+                          title={
+                            <Sheet
+                              variant="soft"
+                              sx={{
+                                p: 1,
+                                maxWidth: 260,
+                                borderRadius: "md",
+                                boxShadow: "md",
+                                bgcolor: "background.surface",
+                              }}
+                            >
+                              <Typography level="body-sm">
+                                {categoryDescriptions[cat]}
+                              </Typography>
+                            </Sheet>
+                          }
+                        >
+                          <span
+                            style={{
+                              cursor: "help",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              display: "inline-block",
+                              maxWidth: "100%",
+                            }}
+                          >
+                            {cat}
+                          </span>
+                        </Tooltip>
                       </Option>
                     ))}
                   </Select>
@@ -1008,7 +1144,37 @@ const Expense_Form = () => {
 
                 return (
                   <tr key={idx}>
-                    <td>{category}</td>
+                    <td>
+                      <Tooltip
+                        placement="right"
+                        arrow
+                        title={
+                          <Sheet
+                            variant="soft"
+                            sx={{
+                              p: 1,
+                              maxWidth: 300,
+                              borderRadius: "md",
+                              boxShadow: "md",
+                              bgcolor: "background.surface",
+                            }}
+                          >
+                            <Typography level="body-sm">
+                              {categoryDescriptions[category]}
+                            </Typography>
+                          </Sheet>
+                        }
+                      >
+                        <span
+                          style={{
+                            cursor: "help",
+                            textDecoration: "underline dotted",
+                          }}
+                        >
+                          {category}
+                        </span>
+                      </Tooltip>
+                    </td>
                     <td>{amt > 0 ? amt.toFixed(2) : "-"}</td>
                   </tr>
                 );

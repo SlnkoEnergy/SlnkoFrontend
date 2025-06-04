@@ -13,13 +13,12 @@ import Typography from "@mui/joy/Typography";
 import { forwardRef, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 // import Axios from "../utils/Axios";
-import { Card, CardContent, Chip } from "@mui/joy";
+import { Card, CardContent, Chip, useTheme } from "@mui/joy";
 import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
 
 const AllExpense = forwardRef((props, ref) => {
   const navigate = useNavigate();
-
-  const [open, setOpen] = useState(false);
+  const theme = useTheme();
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
 
@@ -182,6 +181,28 @@ const AllExpense = forwardRef((props, ref) => {
     }
   };
 
+  const ExpenseCode = ({ currentPage, expense_code }) => {
+    // console.log("currentPage:", currentPage, "p_id:", p_id);
+
+    return (
+      <>
+        <span
+          style={{
+            cursor: "pointer",
+            color: theme.vars.palette.text.primary,
+            textDecoration: "none",
+          }}
+          onClick={() => {
+            localStorage.setItem("edit_expense", expense_code);
+            navigate(`/edit_expense?page=${currentPage}&code=${expense_code}`);
+          }}
+        >
+          {expense_code || "-"}
+        </span>
+      </>
+    );
+  };
+
   return (
     <>
       {/* Tablet and Up Filters */}
@@ -317,7 +338,10 @@ const AllExpense = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                    {expense.expense_code}
+                    <ExpenseCode
+                      currentPage={currentPage}
+                      expense_code={expense.expense_code}
+                    />
                   </Box>
                   <Box
                     component="td"

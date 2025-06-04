@@ -84,9 +84,6 @@ const HrExpense = forwardRef((props, ref) => {
 
   const filteredAndSortedData = expenses
     .filter((expense) => {
-   
-
-      
       const allowedStatuses = [
         "manager approval",
         "hr approval",
@@ -97,7 +94,6 @@ const HrExpense = forwardRef((props, ref) => {
       const status = expense.current_status?.toLowerCase();
       if (!allowedStatuses.includes(status)) return false;
 
-     
       const search = searchQuery.toLowerCase();
       const matchesSearchQuery = [
         "expense_code",
@@ -132,9 +128,12 @@ const HrExpense = forwardRef((props, ref) => {
     const [updateStatus] = useUpdateExpenseStatusOverallMutation();
 
     // Disable all chips if current status is "hr approval"
-    const disableActions = ["hr approval", "rejected", "hold"].includes(
-      status.toLowerCase()
-    );
+    const disableActions = [
+      "hr approval",
+      "rejected",
+      "hold",
+      "final approval",
+    ].includes(status.toLowerCase());
 
     const handleOpenModal = (status) => {
       setSelectedStatus(status);
@@ -405,7 +404,7 @@ const HrExpense = forwardRef((props, ref) => {
                 "Approval Amount",
                 "Rejected Amount",
                 "Disbursement Date",
-                "Status",
+                "Current Status",
                 "Actions",
               ].map((header, index) => (
                 <Box

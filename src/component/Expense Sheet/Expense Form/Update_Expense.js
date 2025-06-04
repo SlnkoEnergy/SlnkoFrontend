@@ -8,6 +8,7 @@ import {
   FormLabel,
   IconButton,
   Textarea,
+  Tooltip,
 } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
@@ -127,18 +128,43 @@ const UpdateExpense = () => {
   };
 
   const categoryOptions = [
-    "Travelling Expenses",
-    "Lodging",
-    "Meal Expenses",
-    "Project Expenses",
-    "Repair and Maintenance",
-    "Telephone Expenses",
-    "Courier Charges(porter)",
-    "Staff welfare expenses",
-    "Medical Expenses",
-    "Printing and stationary",
-    "Office expenses",
+    "Site Meal Per-diem Allowance",
+    "Site Lodging and Accommodation Expense",
+    "Site Travelling Expenses",
+    "Site Labour Charges",
+    "Site Staff Telephone Expenses",
+    "Site Courier and Parcel Expense",
+    "Site Material Purchases",
+    "Site Stationery Expenses",
+    "Site Miscellaneous Expenses",
+    "Site Vehicle Repair and Maintenance Expense",
+    "Office Expenses",
   ];
+
+  const categoryDescriptions = {
+    "Site Meal Per-diem Allowance":
+      "Please select this head to book allowance for personnel at project site given as per company policy for meals at project site.",
+    "Site Lodging and Accommodation Expense":
+      "Please select this head to book all lodging related expenses incurred by personnel at project site such as hotel, rentals of places and likewise. Please make sure to collect receipts or bills",
+    "Site Travelling Expenses":
+      "Please select this head to book all travelling related expenses incurred by personnel at project site such as bus-ticket, train-ticket, flight-ticket, reimbursements for fuel, hire of bikes or cabs and likewise. Please make sure to collect receipts or bills",
+    "Site Staff Telephone Expenses":
+      "Please select this head to book all telephone related expenses incurred by personnel at project site that happens for project at site. Please make sure to collect receipts or bills",
+    "Site Courier and Parcel Expense":
+      "Please select this head to book all expenses for parcels and couriers from project sites incurred by personnel at project sites. Please make sure to collect receipts or bills",
+    "Site Labour Charges":
+      "Please select this head to book all labour related expenses incurred by personnel at project site that happens for project at site. Please make sure to collect receipts or bills",
+    "Site Material Purchases":
+      "Please select this head to book all purchases incurred by personnel at project site that happens for project at site such as for cements, mechanical parts, modules and likewise chargeable to project clients. Please make sure to collect receipts or bills",
+    "Site Stationery Expenses":
+      "Please select this head to book all stationery items related expenses incurred by personnel at project site such as pens, papers and likewise. Please make sure to collect receipts or bills",
+    "Site Miscellaneous Expenses":
+      "Please select this head to book all other related expenses incurred by personnel at project site that happens for project at site which are not covered in the above heads. Please make sure to collect receipts or bills",
+    "Site Vehicle Repair and Maintenance Expense":
+      "Please select this head to book all vehicle repair and maintenance related expenses incurred by personnel at project site that happens for project at site. Please make sure to collect receipts or bills",
+    "Office Expenses":
+      "Please select this head to book general office expenses unrelated to project site.",
+  };
 
   const { data: response = {} } = useGetAllExpenseQuery();
   const expenses = response.data || [];
@@ -407,17 +433,17 @@ const UpdateExpense = () => {
         return;
       }
 
-      // Send updates for all rows
       const requests = rows.map((row) => {
         const approved_items = row.items.map((item) => ({
           _id: item._id,
-          approved_amount: Number(item.invoice?.invoice_amount) || 0,
+          approved_amount: Number(item?.approved_amount) || 0,
         }));
 
         return updateStatus({
           _id: row._id,
           status: "manager approval",
           approved_items,
+
           remarks: "",
         }).unwrap();
       });
@@ -442,7 +468,7 @@ const UpdateExpense = () => {
           ...row,
           items: updatedItems,
           row_current_status: "manager approval",
-          current_status: "manager approval", // add this
+          current_status: "manager approval",
           approved_amount: total_approved_amount,
         };
       });
@@ -731,14 +757,21 @@ const UpdateExpense = () => {
         toast.error("Expense Sheet ID is missing. Please reload the page.");
         return;
       }
-      console.log(expenseSheetId);
 
-      const disbursement_date = disbursementData?.disbursement_date;
+      const rawDate = disbursementData?.disbursement_date;
 
-      if (!disbursement_date) {
-        toast.error("Disbursement date is missing in disbursement details.");
+      // ✅ Ensure a valid date is selected before submission
+      if (!rawDate || isNaN(new Date(rawDate).getTime())) {
+        toast.error("Please select a valid disbursement date.");
         return;
       }
+
+      const disbursement_date = new Date(rawDate).toISOString();
+
+      console.log("Updating disbursement with:", {
+        _id: expenseSheetId,
+        disbursement_date,
+      });
 
       await updateDisbursement({
         _id: expenseSheetId,
@@ -775,19 +808,26 @@ const UpdateExpense = () => {
   ];
 
   return (
-    <Box p={2}>
-      <Typography level="h4" mb={2}>
-        Expense Sheet
-      </Typography>
-
-      <Box sx={{ maxWidth: "100%", overflowX: "auto", p: 1 }}>
+    <Box
+      p={2}
+      sx={{
+        width: "-webkit-fill-available",
+      }}
+    >
+      <Box
+        sx={{
+          maxWidth: "100%",
+          overflowX: "auto",
+          p: 1,
+        }}
+      >
         {/* Action Buttons */}
 
         <Box
           sx={{
-            px: { xs: 2, md: 2 },
-            py: 3,
-            marginLeft: { md: "12%" },
+            // px: { xs: 2, md: 2 },
+            // py: 3,
+            marginLeft: { lg: "20%", md: "0%", xl: "15%" },
             maxWidth: "100%",
           }}
         >
@@ -871,7 +911,8 @@ const UpdateExpense = () => {
                     Approve All
                   </Button>
                 </>
-              ) : user?.department === "Accounts" ? (
+              ) : user?.department === "Accounts" &&
+                user?.role === "manager" ? (
                 <>
                   <Button
                     color="danger"
@@ -923,40 +964,53 @@ const UpdateExpense = () => {
                   </Button>
                 </>
               ) : (
-                <>
-                  <Button
-                    color="danger"
-                    size="sm"
-                    onClick={handleRejectAll}
-                    disabled={rows.every((row) =>
-                      [
-                        "rejected",
-                        "hold",
-                        "hr approval",
-                        "manager approval",
-                        "final approval",
-                      ].includes(row.current_status)
-                    )}
-                  >
-                    Reject All
-                  </Button>
-                  <Button
-                    color="success"
-                    size="sm"
-                    onClick={handleApproveAll}
-                    disabled={rows.every((row) =>
-                      [
-                        "rejected",
-                        "hold",
-                        "hr approval",
-                        "manager approval",
-                        "final approval",
-                      ].includes(row.current_status)
-                    )}
-                  >
-                    Approve All
-                  </Button>
-                </>
+                (([
+                  "Engineering",
+                  "BD",
+                  "Projects",
+                  "OPS",
+                  "CAM",
+                  "Accounts",
+                  "HR",
+                ].includes(user?.department) &&
+                  user?.role === "manager") ||
+                  user?.name === "IT Team" ||
+                  user?.department === "admin") && (
+                  <>
+                    <Button
+                      color="danger"
+                      size="sm"
+                      onClick={handleRejectAll}
+                      disabled={rows.every((row) =>
+                        [
+                          "rejected",
+                          "hold",
+                          "hr approval",
+                          "manager approval",
+                          "final approval",
+                        ].includes(row.current_status)
+                      )}
+                    >
+                      Reject All
+                    </Button>
+                    <Button
+                      color="success"
+                      size="sm"
+                      onClick={handleApproveAll}
+                      disabled={rows.every((row) =>
+                        [
+                          "rejected",
+                          "hold",
+                          "hr approval",
+                          "manager approval",
+                          "final approval",
+                        ].includes(row.current_status)
+                      )}
+                    >
+                      Approve All
+                    </Button>
+                  </>
+                )
               )}
             </Box>
           </Box>
@@ -971,141 +1025,303 @@ const UpdateExpense = () => {
               maxHeight: "70vh",
             }}
           >
-            <Table
-              variant="soft"
-              size="sm"
-              stickyHeader
-              hoverRow
+            {/* Desktop Table View */}
+            <Box
               sx={{
-                minWidth: 900,
-                "& thead th": {
-                  backgroundColor: "neutral.softBg",
-                  fontWeight: "md",
-                  fontSize: "sm",
+                display: {
+                  xs: "none",
+                  sm: "block",
                 },
               }}
             >
-              <thead>
-                <tr>
-                  {tableHeaders.map((header, idx) => (
-                    <th key={idx}>{header}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, rowIndex) =>
-                  row.items.map((item, itemIndex) => (
-                    <tr key={`${rowIndex}-${itemIndex}`}>
-                      <td>{item.project_code}</td>
-                      <td>{item.project_name}</td>
-                      <td>{item.category}</td>
-                      <td>{item.description}</td>
-                      <td>
-                        {item.expense_date
-                          ? new Date(item.expense_date)
-                              .toISOString()
-                              .split("T")[0]
-                          : ""}
-                      </td>
-                      <td>{item.invoice?.invoice_amount}</td>
-                      <td>
-                        {item.attachment_url ? (
-                          <Button
-                            component="a"
-                            href={item.attachment_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            download
-                            variant="soft"
-                            color="primary"
-                            startDecorator={<DownloadIcon />}
-                            size="sm"
-                            sx={{ textTransform: "none" }}
-                          >
-                            Download
-                          </Button>
-                        ) : (
-                          <span style={{ color: "#999", fontStyle: "italic" }}>
-                            No Attachment
-                          </span>
-                        )}
-                      </td>
-                      <td>{item.invoice?.invoice_number || "NA"}</td>
-                      {/* <td>{item.approved_amount || "-"}</td> */}
+              <Table
+                variant="soft"
+                size="sm"
+                stickyHeader
+                hoverRow
+                sx={{
+                  // minWidth: 900,
+                  "& thead th": {
+                    backgroundColor: "neutral.softBg",
+                    fontWeight: "md",
+                    fontSize: "sm",
+                  },
+                }}
+              >
+                <thead>
+                  <tr>
+                    {tableHeaders.map((header, idx) => (
+                      <th key={idx}>{header}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, rowIndex) =>
+                    row.items.map((item, itemIndex) => (
+                      <tr key={`${rowIndex}-${itemIndex}`}>
+                        <td>{item.project_code}</td>
+                        <td>{item.project_name}</td>
+                        <td>{item.category}</td>
+                        <td>{item.description}</td>
+                        <td>
+                          {item.expense_date
+                            ? new Date(item.expense_date)
+                                .toISOString()
+                                .split("T")[0]
+                            : ""}
+                        </td>
+                        <td>{item.invoice?.invoice_amount}</td>
+                        <td>
+                          {item.attachment_url ? (
+                            <Button
+                              component="a"
+                              href={item.attachment_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              download
+                              variant="soft"
+                              color="primary"
+                              startDecorator={<DownloadIcon />}
+                              size="sm"
+                              sx={{ textTransform: "none" }}
+                            >
+                              Download
+                            </Button>
+                          ) : (
+                            <span
+                              style={{ color: "#999", fontStyle: "italic" }}
+                            >
+                              No Attachment
+                            </span>
+                          )}
+                        </td>
+                        <td>{item.invoice?.invoice_number || "NA"}</td>
+                        {/* <td>{item.approved_amount || "-"}</td> */}
 
-                      <td>
-                        <Input
+                        <td>
+                          <Input
+                            size="sm"
+                            variant="outlined"
+                            type="number"
+                            value={
+                              item.approved_amount !== undefined &&
+                              item.approved_amount !== null
+                                ? item.approved_amount
+                                : item.invoice?.invoice_amount?.toString() || ""
+                            }
+                            placeholder="₹"
+                            onChange={(e) =>
+                              handleRowChange(
+                                rowIndex,
+                                "approved_amount",
+                                e.target.value,
+                                itemIndex
+                              )
+                            }
+                            inputProps={{ min: 0 }}
+                            sx={{ minWidth: 90 }}
+                          />
+                        </td>
+
+                        {!(
+                          user?.name === "Shruti Tripathi" ||
+                          user?.department === "Accounts"
+                        ) && (
+                          <td style={{ padding: 8 }}>
+                            <Box display="flex" gap={1} justifyContent="center">
+                              <Button
+                                size="sm"
+                                variant={
+                                  item.item_current_status ===
+                                  "manager approval"
+                                    ? "solid"
+                                    : "outlined"
+                                }
+                                color="success"
+                                onClick={() =>
+                                  handleApproval(
+                                    rowIndex,
+                                    itemIndex,
+                                    "manager approval"
+                                  )
+                                }
+                                aria-label="Approve"
+                              >
+                                <CheckIcon />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant={
+                                  item.item_current_status === "rejected"
+                                    ? "solid"
+                                    : "outlined"
+                                }
+                                color="danger"
+                                onClick={() =>
+                                  handleApproval(
+                                    rowIndex,
+                                    itemIndex,
+                                    "rejected"
+                                  )
+                                }
+                                aria-label="Reject"
+                              >
+                                <CloseIcon />
+                              </Button>
+                            </Box>
+                          </td>
+                        )}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </Table>
+            </Box>
+            <Box
+              sx={{
+                display: {
+                  xs: "flex",
+                  sm: "none",
+                },
+                flexDirection: "column",
+                gap: 2,
+              }}
+            >
+              {rows.map((row, rowIndex) =>
+                row.items.map((item, itemIndex) => (
+                  <Box
+                    key={`${rowIndex}-${itemIndex}`}
+                    sx={{
+                      border: "1px solid #ddd",
+                      borderRadius: 2,
+                      p: 2,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 1,
+                      boxShadow: "sm",
+                    }}
+                  >
+                    <strong>{item.project_name}</strong>
+                    <span>
+                      <b>Project Code:</b> {item.project_code}
+                    </span>
+                    <span>
+                      <b>Category:</b> {item.category}
+                    </span>
+                    <span>
+                      <b>Description:</b> {item.description}
+                    </span>
+                    <span>
+                      <b>Expense Date:</b>{" "}
+                      {item.expense_date
+                        ? new Date(item.expense_date)
+                            .toISOString()
+                            .split("T")[0]
+                        : "N/A"}
+                    </span>
+                    <span>
+                      <b>Invoice Amount:</b> ₹{item.invoice?.invoice_amount}
+                    </span>
+                    <span>
+                      <b>Invoice Number:</b>{" "}
+                      {item.invoice?.invoice_number || "NA"}
+                    </span>
+                    <Box>
+                      <b>Attachment:</b>{" "}
+                      {item.attachment_url ? (
+                        <Button
+                          component="a"
+                          href={item.attachment_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          download
+                          variant="soft"
+                          color="primary"
+                          startDecorator={<DownloadIcon />}
                           size="sm"
-                          variant="outlined"
-                          type="number"
-                          value={
-                            item.approved_amount !== undefined &&
-                            item.approved_amount !== null
-                              ? item.approved_amount
-                              : item.invoice?.invoice_amount?.toString() || ""
+                          sx={{ textTransform: "none" }}
+                        >
+                          Download
+                        </Button>
+                      ) : (
+                        <span style={{ color: "#999", fontStyle: "italic" }}>
+                          No Attachment
+                        </span>
+                      )}
+                    </Box>
+                    <Box>
+                      <b>Approved Amount:</b>
+                      <Input
+                        size="sm"
+                        variant="outlined"
+                        type="number"
+                        value={
+                          (
+                            item.approved_amount ?? item.invoice?.invoice_amount
+                          )?.toString() || ""
+                        }
+                        placeholder="₹"
+                        onChange={(e) =>
+                          handleRowChange(
+                            rowIndex,
+                            "approved_amount",
+                            e.target.value,
+                            itemIndex
+                          )
+                        }
+                        inputProps={{ min: 0 }}
+                        sx={{ mt: 1, minWidth: 100 }}
+                      />
+                    </Box>
+
+                    {!(
+                      user?.name === "Shruti Tripathi" ||
+                      user?.department === "Accounts"
+                    ) && (
+                      <Box
+                        display="flex"
+                        justifyContent="center"
+                        gap={1}
+                        mt={1}
+                      >
+                        <Button
+                          size="sm"
+                          variant={
+                            item.item_current_status === "manager approval"
+                              ? "solid"
+                              : "outlined"
                           }
-                          placeholder="₹"
-                          onChange={(e) =>
-                            handleRowChange(
+                          color="success"
+                          onClick={() =>
+                            handleApproval(
                               rowIndex,
                               itemIndex,
-                              "approved_amount",
-                              e.target.value
+                              "manager approval"
                             )
                           }
-                          inputProps={{ min: 0 }}
-                          sx={{ minWidth: 90 }}
-                        />
-                      </td>
-
-                      {!(
-                        user?.name === "Shruti Tripathi" ||
-                        user?.department === "Accounts"
-                      ) && (
-                        <td style={{ padding: 8 }}>
-                          <Box display="flex" gap={1} justifyContent="center">
-                            <Button
-                              size="sm"
-                              variant={
-                                item.item_current_status === "manager approval"
-                                  ? "solid"
-                                  : "outlined"
-                              }
-                              color="success"
-                              onClick={() =>
-                                handleApproval(
-                                  rowIndex,
-                                  itemIndex,
-                                  "manager approval"
-                                )
-                              }
-                              aria-label="Approve"
-                            >
-                              <CheckIcon />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant={
-                                item.item_current_status === "rejected"
-                                  ? "solid"
-                                  : "outlined"
-                              }
-                              color="danger"
-                              onClick={() =>
-                                handleApproval(rowIndex, itemIndex, "rejected")
-                              }
-                              aria-label="Reject"
-                            >
-                              <CloseIcon />
-                            </Button>
-                          </Box>
-                        </td>
-                      )}
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </Table>
+                        >
+                          <CheckIcon />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={
+                            item.item_current_status === "rejected"
+                              ? "solid"
+                              : "outlined"
+                          }
+                          color="danger"
+                          onClick={() =>
+                            handleApproval(rowIndex, itemIndex, "rejected")
+                          }
+                        >
+                          <CloseIcon />
+                        </Button>
+                      </Box>
+                    )}
+                  </Box>
+                ))
+              )}
+            </Box>
           </Sheet>
         </Box>
       </Box>
@@ -1438,7 +1654,7 @@ const UpdateExpense = () => {
       </Modal>
 
       {/* Summary */}
-      <Box mt={4} sx={{ margin: "0 auto", width: "60%" }}>
+      <Box mt={4} sx={{ margin: "0 auto", width: { md: "60%", sm: "100%" } }}>
         <Typography level="h5" mb={1}>
           Expense Summary
         </Typography>
@@ -1506,7 +1722,37 @@ const UpdateExpense = () => {
 
                   return (
                     <tr key={idx}>
-                      <td>{category}</td>
+                      <td>
+                        <Tooltip
+                          placement="right"
+                          arrow
+                          title={
+                            <Sheet
+                              variant="soft"
+                              sx={{
+                                p: 1,
+                                maxWidth: 300,
+                                borderRadius: "md",
+                                boxShadow: "md",
+                                bgcolor: "background.surface",
+                              }}
+                            >
+                              <Typography level="body-sm">
+                                {categoryDescriptions[category]}
+                              </Typography>
+                            </Sheet>
+                          }
+                        >
+                          <span
+                            style={{
+                              cursor: "help",
+                              textDecoration: "underline dotted",
+                            }}
+                          >
+                            {category}
+                          </span>
+                        </Tooltip>
+                      </td>
                       <td>{total > 0 ? total.toFixed(2) : "-"}</td>
                       <td>
                         {approvedTotal > 0 ? approvedTotal.toFixed(2) : "-"}
@@ -1565,20 +1811,23 @@ const UpdateExpense = () => {
                 width="100%"
                 gap={2}
               >
-                {user?.department !== "Accounts" && (
+                {!(
+                  user?.department === "Accounts" || user?.department === "HR"
+                ) && (
                   <Button
                     variant="solid"
                     color="primary"
                     onClick={handleSubmit}
                     disabled={
                       isUpdating ||
-                      [
-                        "manager approval",
-                        "rejected",
-                        "hr approval",
-                        "final approval",
-                        "hold",
-                      ].includes(rows[0]?.current_status)
+                      (rows[0]?.total_approved_amount === 0 &&
+                        [
+                          "manager approval",
+                          "rejected",
+                          "hr approval",
+                          "final approval",
+                          "hold",
+                        ].includes(rows[0]?.current_status))
                     }
                   >
                     Update Expense Sheet
@@ -1598,18 +1847,20 @@ const UpdateExpense = () => {
                           Disbursement Date
                         </FormLabel>
                         <Input
-                          size="sm"
-                          variant="outlined"
                           type="date"
-                          value={rows[0]?.disbursement_date || ""}
-                          onChange={(e) =>
-                            handleItemChange(
-                              0,
-                              "disbursement_date",
-                              e.target.value
-                            )
+                          value={
+                            disbursementData?.disbursement_date
+                              ? new Date(disbursementData.disbursement_date)
+                                  .toISOString()
+                                  .split("T")[0]
+                              : ""
                           }
-                          sx={{ minWidth: 160 }}
+                          onChange={(e) =>
+                            setDisbursementData((prev) => ({
+                              ...prev,
+                              disbursement_date: e.target.value,
+                            }))
+                          }
                         />
                       </Box>
                       <Box mt={2}>
@@ -1623,16 +1874,6 @@ const UpdateExpense = () => {
                       </Box>
                     </Box>
                   )}
-
-                {/* {rows[0]?.current_status === "final approval" &&
-                  user?.department === "Accounts" && (
-                    <Input
-                      placeholder="Enter Disbursement Details"
-                      value={disbursementData}
-                      onChange={(e) => setDisbursementData(e.target.value)}
-                      sx={{ mt: 2 }}
-                    />
-                  )} */}
               </Box>
             </Box>
           </Sheet>
