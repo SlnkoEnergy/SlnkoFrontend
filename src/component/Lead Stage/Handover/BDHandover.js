@@ -2,7 +2,6 @@ import {
   Autocomplete,
   Button,
   Grid,
-  IconButton,
   Input,
   Option,
   Select,
@@ -16,12 +15,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import * as Yup from "yup";
-import AddCircleIcon from "@mui/icons-material/AddCircle";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import Img1 from "../../../assets/HandOverSheet_Icon.jpeg";
 import {
   useAddHandOverMutation,
-  useGetHandOverQuery,
+  useGetHandOverByIdQuery,
   useUpdateHandOverMutation,
 } from "../../../redux/camsSlice";
 import {
@@ -253,13 +250,20 @@ const HandoverSheetForm = () => {
   const [addHandOver] = useAddHandOverMutation();
   const [updateHandOver] = useUpdateHandOverMutation();
 
-  const { data: getHandOverSheet = { Data: [] } } = useGetHandOverQuery();
+  const { data, error, isLoading } = useGetHandOverByIdQuery(LeadId, {
+    skip: !LeadId,
+  });
+  const handoverData = data?.Data ?? null;
 
-  const handOverSheetsArray = getHandOverSheet?.Data ?? [];
+  useEffect(() => {
+    if (!handoverData && !isLoading) {
+      console.warn("No matching handover data found.");
+    } else if (handoverData) {
+      console.log("Fetched handover data:", handoverData);
+    }
+  }, [handoverData, isLoading]);
 
-  const handoverData = useMemo(() => {
-    return handOverSheetsArray.find((item) => item.id === LeadId);
-  }, [handOverSheetsArray, LeadId]);
+  console.log("handoverData:", handoverData);
 
   const handoverSchema = Yup.object().shape({
     customer_details: Yup.object().shape({

@@ -107,7 +107,7 @@ function Dash_eng() {
   //   );
   // };
 
-  const RowMenu = ({ currentPage, p_id }) => {
+  const RowMenu = ({ currentPage, p_id, _id }) => {
     // console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
 
     const [user, setUser] = useState(null);
@@ -144,9 +144,9 @@ function Dash_eng() {
                 color="primary"
                 onClick={() => {
                   const page = currentPage;
-                  const projectId = Number(p_id);
+                  const projectId = _id;
                   sessionStorage.setItem("view handover", projectId);
-                  navigate(`/view_handover?page=${page}&p_id=${projectId}`);
+                  navigate(`/view_handover?page=${page}&_id=${projectId}`);
                 }}
               >
                 <ContentPasteGoIcon sx={{ mr: 1 }} />
@@ -217,7 +217,7 @@ function Dash_eng() {
     );
   };
 
-  const ProjectCode = ({ currentPage, p_id, code }) => {
+  const ProjectCode = ({ currentPage, _id, code }) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
 
     return (
@@ -230,9 +230,9 @@ function Dash_eng() {
           }}
           onClick={() => {
             const page = currentPage;
-            const projectId = Number(p_id);
+            const projectId = _id;
             sessionStorage.setItem("view handover", projectId);
-            navigate(`/view_handover?page=${page}&p_id=${projectId}`);
+            navigate(`/view_handover?page=${page}&_id=${projectId}`);
           }}
         >
           {code || "-"}
@@ -571,7 +571,7 @@ function Dash_eng() {
                       <span>
                         <ProjectCode
                           currentPage={currentPage}
-                          p_id={project.p_id}
+                          _id={project._id}
                           code={project.code}
                         />
                       </span>

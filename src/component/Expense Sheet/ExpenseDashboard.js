@@ -20,7 +20,7 @@ const AllExpense = forwardRef((props, ref) => {
   const navigate = useNavigate();
   const theme = useTheme();
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -82,7 +82,8 @@ const AllExpense = forwardRef((props, ref) => {
 
       const userName = user.name.trim();
       const userRole = user.department?.trim();
-      const isAdmin = userRole === "admin" || userRole === "superadmin";
+      const isAdmin =
+        userRole === "admin" || userRole === "superadmin" || userRole === "HR";
       const submittedBy = expense.emp_name?.trim() || "";
 
       if (isAdmin) return true;
@@ -103,26 +104,25 @@ const AllExpense = forwardRef((props, ref) => {
 
       const matchesSearchQuery = [
         "expense_code",
+        "emp_name",
         "current_status",
-        "disbursement_date",
       ].some((key) =>
-        expense[key]?.toLowerCase().includes(searchQuery.toLowerCase())
+        String(expense[key] || "")
+          .trim()
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase())
       );
 
       return matchesSearchQuery && isSubmittedByUser;
     })
     .sort((a, b) => {
-      const aMatches = [
-        a.expense_code,
-        a.disbursement_date,
-        a.current_status,
-      ].some((val) => val?.toLowerCase().includes(searchQuery.toLowerCase()));
+      const aMatches = [a.expense_code, a.emp_name, a.current_status].some(
+        (val) => val?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
 
-      const bMatches = [
-        b.expense_code,
-        b.disbursement_date,
-        b.current_status,
-      ].some((val) => val?.toLowerCase().includes(searchQuery.toLowerCase()));
+      const bMatches = [b.expense_code, b.emp_name, b.current_status].some(
+        (val) => val?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
 
       if (aMatches && !bMatches) return -1;
       if (!aMatches && bMatches) return 1;
@@ -224,7 +224,7 @@ const AllExpense = forwardRef((props, ref) => {
           <FormLabel>Search</FormLabel>
           <Input
             size="sm"
-            placeholder="Search by Expense Code, Disbursement Date, or Status"
+            placeholder="Search by Expense Code, Name or Status"
             startDecorator={<SearchIcon />}
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
@@ -283,6 +283,7 @@ const AllExpense = forwardRef((props, ref) => {
               </Box>
               {[
                 "Expense Code",
+                "Employee Name",
                 "Requested Amount",
                 "Approval Amount",
                 "Rejected Amount",
@@ -342,6 +343,16 @@ const AllExpense = forwardRef((props, ref) => {
                       currentPage={currentPage}
                       expense_code={expense.expense_code}
                     />
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {expense.emp_name || "0"}
                   </Box>
                   <Box
                     component="td"
@@ -554,9 +565,9 @@ const AllExpense = forwardRef((props, ref) => {
                   >
                     <Typography level="title-md">
                       <ExpenseCode
-                      currentPage={currentPage}
-                      expense_code={expense.expense_code}
-                    />
+                        currentPage={currentPage}
+                        expense_code={expense.expense_code}
+                      />
                     </Typography>
                     {getStatusChip()}
                   </Box>
@@ -623,7 +634,10 @@ const AllExpense = forwardRef((props, ref) => {
         >
           Previous
         </Button>
-
+        <Box>
+          Showing {paginatedExpenses.length} of {filteredAndSortedData.length}{" "}
+          results
+        </Box>
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >

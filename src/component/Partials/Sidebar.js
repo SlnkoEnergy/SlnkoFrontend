@@ -173,7 +173,7 @@ function Sidebar() {
           },
         }}
       >
-        {(user?.name === "IT Team" || user?.department === "admin") ? (
+        {user?.name === "IT Team" || user?.department === "admin" ? (
           <List>
             {/* Dashboard */}
             <ListItem>
@@ -927,7 +927,13 @@ function Sidebar() {
                       User Dashboard
                     </ListItemButton>
                   </ListItem> */}
-
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/expense_approval")}
+                    >
+                      Expense Manager Approval
+                    </ListItemButton>
+                  </ListItem>
                   <ListItem>
                     <ListItemButton
                       onClick={() => navigate("/expense_accounts")}
@@ -1975,10 +1981,54 @@ function Sidebar() {
             >
               <List sx={{ gap: 0.5 }}>
                 <ListItem>
+                  <ListItemButton onClick={() => navigate("/expense_approval")}>
+                    Expense Manager Approval
+                  </ListItemButton>
+                </ListItem>
+                <ListItem>
                   <ListItemButton onClick={() => navigate("/expense_hr")}>
                     HR Expense Approval
                   </ListItemButton>
                 </ListItem>
+              </List>
+            </Toggler>
+          </ListItem>
+        ) : user?.department === "HR" && user?.name === "Neetika Panwar" ? (
+          <ListItem nested>
+            <Toggler
+              renderToggle={({ open, setOpen }) => (
+                <ListItemButton onClick={() => setOpen(!open)}>
+                  <AccountBalanceWalletIcon />
+                  <ListItemContent>
+                    <Typography level="title-sm">Expense Sheet</Typography>
+                  </ListItemContent>
+                  <KeyboardArrowDownIcon
+                    sx={[
+                      open
+                        ? {
+                            transform: "rotate(180deg)",
+                          }
+                        : {
+                            transform: "none",
+                          },
+                    ]}
+                  />
+                </ListItemButton>
+              )}
+            >
+              <List sx={{ gap: 0.5 }}>
+                <ListItem>
+                  <ListItemButton
+                    onClick={() => navigate("/expense_dashboard")}
+                  >
+                    User Dashboard
+                  </ListItemButton>
+                </ListItem>
+                {/* <ListItem>
+                  <ListItemButton onClick={() => navigate("/expense_hr")}>
+                    HR Expense Approval
+                  </ListItemButton>
+                </ListItem> */}
               </List>
             </Toggler>
           </ListItem>

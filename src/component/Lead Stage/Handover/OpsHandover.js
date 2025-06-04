@@ -21,6 +21,7 @@ import { toast } from "react-toastify";
 import * as Yup from "yup";
 import Img1 from "../../../assets/HandOverSheet_Icon.jpeg";
 import {
+  useGetHandOverByIdQuery,
   useGetHandOverQuery,
   useUpdateHandOverMutation,
 } from "../../../redux/camsSlice";
@@ -206,15 +207,19 @@ const OpsHandoverSheetForm = ({ onBack }) => {
 
   // console.log("LeadId:", LeadId);
 
-  const { data: getHandOverSheet = [] } = useGetHandOverQuery();
-  const HandOverSheet = useMemo(
-    () => getHandOverSheet?.Data ?? [],
-    [getHandOverSheet]
-  );
+  const { data, error, isLoading } = useGetHandOverByIdQuery(LeadId, {
+    skip: !LeadId,
+  });
+  const handoverData = data?.Data ?? null;
+  useEffect(() => {
+    if (!handoverData && !isLoading) {
+      console.warn("No matching handover data found.");
+    } else if (handoverData) {
+      console.log("Fetched handover data:", handoverData);
+    }
+  }, [handoverData, isLoading]);
 
-  const handoverData = useMemo(() => {
-    return HandOverSheet.find((item) => item._id === LeadId);
-  }, [HandOverSheet, LeadId]);
+  console.log("handoverData:", handoverData);
 
   // console.log("handoverData:", handoverData);
 

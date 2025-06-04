@@ -1,6 +1,4 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { BASE_URL, getAuthToken } from "./auth/auth_variable";
-
 
 const baseQuery = fetchBaseQuery({
   baseUrl: "https://api.slnkoprotrac.com/v1/",
@@ -28,6 +26,11 @@ export const camsApi = createApi({
     //   query: () => "get-all-bd-handoversheet",
     //   providesTags: ["CAM"],
     // }),
+
+    getHandOverById: builder.query({
+      query: (_id) => `get-handoversheet/${_id}`,
+      providesTags: ["CAM"],
+    }),
 
     addHandOver: builder.mutation({
       query: (newHandOver) => ({
@@ -69,6 +72,7 @@ export const camsApi = createApi({
 export const {
   useGetHandOverQuery,
   // useGetBDHandOverQuery,
+  useGetHandOverByIdQuery,
   useAddHandOverMutation,
   useUpdateHandOverMutation,
   useUpdateUnlockHandoversheetMutation,

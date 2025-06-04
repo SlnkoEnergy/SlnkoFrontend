@@ -646,7 +646,10 @@ const HrExpense = forwardRef((props, ref) => {
         >
           Previous
         </Button>
-
+        <Box>
+          Showing {paginatedExpenses.length} of {filteredAndSortedData.length}{" "}
+          results
+        </Box>
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >

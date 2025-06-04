@@ -21,7 +21,7 @@ import { toast } from "react-toastify";
 import * as Yup from "yup";
 import Img1 from "../../../assets/HandOverSheet_Icon.jpeg";
 import {
-  useGetHandOverQuery,
+  useGetHandOverByIdQuery,
   useUpdateHandOverMutation,
   useUpdateStatusHandOverMutation,
 } from "../../../redux/camsSlice";
@@ -278,17 +278,19 @@ const CamHandoverSheetForm = ({ onBack }) => {
 
   // console.log("LeadId:", LeadId);
 
-  const { data: getHandOverSheet = [] } = useGetHandOverQuery();
-  const HandOverSheet = useMemo(
-    () => getHandOverSheet?.Data ?? [],
-    [getHandOverSheet]
-  );
+  const { data, error, isLoading } = useGetHandOverByIdQuery(LeadId, {
+    skip: !LeadId,
+  });
+  const handoverData = data?.Data ?? null;
+  useEffect(() => {
+    if (!handoverData && !isLoading) {
+      console.warn("No matching handover data found.");
+    } else if (handoverData) {
+      console.log("Fetched handover data:", handoverData);
+    }
+  }, [handoverData, isLoading]);
 
-  const handoverData = useMemo(() => {
-    return HandOverSheet.find((item) => item._id === LeadId);
-  }, [HandOverSheet, LeadId]);
-
-  // console.log("handoverData:", handoverData);
+  console.log("handoverData:", handoverData);
 
   const handoverSchema = Yup.object().shape({
     customer_details: Yup.object().shape({
@@ -819,13 +821,13 @@ const CamHandoverSheetForm = ({ onBack }) => {
                     e.target.value
                   )
                 }
-                  sx={{
+                sx={{
                   minHeight: 80,
                   "@media print": {
                     height: "auto",
                     overflow: "visible",
                     whiteSpace: "pre-wrap",
-                   
+
                     WebkitPrintColorAdjust: "exact",
                   },
                 }}
@@ -882,13 +884,13 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 onChange={(e) =>
                   handleChange("order_details", "discom_name", e.target.value)
                 }
-                  sx={{
+                sx={{
                   minHeight: 80,
                   "@media print": {
                     height: "auto",
                     overflow: "visible",
                     whiteSpace: "pre-wrap",
-                   
+
                     WebkitPrintColorAdjust: "exact",
                   },
                 }}
@@ -1554,13 +1556,13 @@ const CamHandoverSheetForm = ({ onBack }) => {
                     district_name: newDistrict,
                   });
                 }}
-                  sx={{
+                sx={{
                   minHeight: 80,
                   "@media print": {
                     height: "auto",
                     overflow: "visible",
                     whiteSpace: "pre-wrap",
-                   
+
                     WebkitPrintColorAdjust: "exact",
                   },
                 }}
@@ -1582,16 +1584,16 @@ const CamHandoverSheetForm = ({ onBack }) => {
                       village_name: e.target.value,
                     });
                   }}
-                    sx={{
-                  minHeight: 80,
-                  "@media print": {
-                    height: "auto",
-                    overflow: "visible",
-                    whiteSpace: "pre-wrap",
-                   
-                    WebkitPrintColorAdjust: "exact",
-                  },
-                }}
+                  sx={{
+                    minHeight: 80,
+                    "@media print": {
+                      height: "auto",
+                      overflow: "visible",
+                      whiteSpace: "pre-wrap",
+
+                      WebkitPrintColorAdjust: "exact",
+                    },
+                  }}
                 />
               </Grid>
             )}

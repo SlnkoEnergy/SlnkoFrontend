@@ -18,7 +18,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
-import { useGetHandOverQuery } from "../../redux/camsSlice";
+import { useGetHandOverByIdQuery } from "../../redux/camsSlice";
 import {
   useGetMasterInverterQuery,
   useGetModuleMasterQuery,
@@ -268,19 +268,19 @@ const ViewHandoverSheetForm = ({ onBack }) => {
     return userData ? JSON.parse(userData) : null;
   };
   const LeadId = sessionStorage.getItem("view handover");
-  const { data: getHandOverSheet = [] } = useGetHandOverQuery();
-  const HandOverSheet = useMemo(
-    () => getHandOverSheet?.Data ?? [],
-    [getHandOverSheet]
-  );
+  const { data, error, isLoading } = useGetHandOverByIdQuery(LeadId, {
+    skip: !LeadId,
+  });
+  const handoverData = data?.Data ?? null;
+  useEffect(() => {
+    if (!handoverData && !isLoading) {
+      console.warn("No matching handover data found.");
+    } else if (handoverData) {
+      console.log("Fetched handover data:", handoverData);
+    }
+  }, [handoverData, isLoading]);
 
-  console.log("HandOverSheet", HandOverSheet);
-
-  const handoverData = useMemo(() => {
-    return HandOverSheet.find((item) => item.p_id === Number(LeadId));
-  }, [HandOverSheet, LeadId]);
-
-  console.log("✅ Found handoverData:", handoverData);
+  // console.log("handoverData:", handoverData);
 
   // 🎯 Populate Data from Handover if Available
   useEffect(() => {
@@ -625,7 +625,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                     height: "auto",
                     overflow: "visible",
                     whiteSpace: "pre-wrap",
-                   
+
                     WebkitPrintColorAdjust: "exact",
                   },
                 }}
@@ -682,13 +682,13 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                 onChange={(e) =>
                   handleChange("order_details", "discom_name", e.target.value)
                 }
-                  sx={{
+                sx={{
                   minHeight: 80,
                   "@media print": {
                     height: "auto",
                     overflow: "visible",
                     whiteSpace: "pre-wrap",
-                   
+
                     WebkitPrintColorAdjust: "exact",
                   },
                 }}
@@ -1389,13 +1389,13 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                   });
                 }}
                 // minRows={3}
-                  sx={{
+                sx={{
                   minHeight: 80,
                   "@media print": {
                     height: "auto",
                     overflow: "visible",
                     whiteSpace: "pre-wrap",
-                   
+
                     WebkitPrintColorAdjust: "exact",
                   },
                 }}
@@ -1420,15 +1420,15 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                   }}
                   // minRows={3}
                   sx={{
-                  minHeight: 80,
-                  "@media print": {
-                    height: "auto",
-                    overflow: "visible",
-                    whiteSpace: "pre-wrap",
-                   
-                    WebkitPrintColorAdjust: "exact",
-                  },
-                }}
+                    minHeight: 80,
+                    "@media print": {
+                      height: "auto",
+                      overflow: "visible",
+                      whiteSpace: "pre-wrap",
+
+                      WebkitPrintColorAdjust: "exact",
+                    },
+                  }}
                 />
               </Grid>
             )}
@@ -1865,51 +1865,49 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                 </Grid>
               </>
             )}
-{!["Ranvijay Singh", "Rishav Mahato", "Dhruv Choudhary"].includes(
+            {!["Ranvijay Singh", "Rishav Mahato", "Dhruv Choudhary"].includes(
               user?.name
             ) && (
               <>
-            <Grid xs={12}>
-              <Grid item xs={12} sm={6}>
-                <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                  Remarks for Slnko Service Charge{" "}
-                  <span style={{ color: "red" }}>*</span>
-                </Typography>
-                <Textarea
-                  value={formData.other_details.remarks_for_slnko || ""}
-                  placeholder="Enter Remarks for Slnko Service Charge"
-                  onChange={(e) =>
-                    handleChange(
-                      "other_details",
-                      "remarks_for_slnko",
-                      e.target.value
-                    )
-                  }
-                  multiline
-                  minRows={2}
-                  fullWidth
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} mt={1}>
-                <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                  Remarks (Any Other Commitments to Client){" "}
-                  <span style={{ color: "red" }}>*</span>
-                </Typography>
-                <Textarea
-                  value={formData.other_details.remark || ""}
-                  placeholder="Enter Remarks"
-                  onChange={(e) =>
-                    handleChange("other_details", "remark", e.target.value)
-                  }
-                  multiline
-                  minRows={2}
-                  fullWidth
-                  required
-                />
-              </Grid>
-            </Grid>
-            </>
+                <Grid item xs={12} sm={12}>
+                  <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                    Remarks for Slnko Service Charge{" "}
+                    <span style={{ color: "red" }}>*</span>
+                  </Typography>
+                  <Textarea
+                    value={formData.other_details.remarks_for_slnko || ""}
+                    placeholder="Enter Remarks for Slnko Service Charge"
+                    onChange={(e) =>
+                      handleChange(
+                        "other_details",
+                        "remarks_for_slnko",
+                        e.target.value
+                      )
+                    }
+                    multiline
+                    minRows={2}
+                    fullWidth
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} sm={12} mt={1}>
+                  <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                    Remarks (Any Other Commitments to Client){" "}
+                    <span style={{ color: "red" }}>*</span>
+                  </Typography>
+                  <Textarea
+                    value={formData.other_details.remark || ""}
+                    placeholder="Enter Remarks"
+                    onChange={(e) =>
+                      handleChange("other_details", "remark", e.target.value)
+                    }
+                    multiline
+                    minRows={2}
+                    fullWidth
+                    required
+                  />
+                </Grid>
+              </>
             )}
           </Grid>
         </AccordionDetails>

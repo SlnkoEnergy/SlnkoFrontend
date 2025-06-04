@@ -1,8 +1,4 @@
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
   Autocomplete,
   Button,
   Grid,
@@ -13,7 +9,7 @@ import {
   Textarea,
   Typography,
 } from "@mui/joy";
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
 import { useGetHandOverQuery } from "../../redux/camsSlice";
 import {
@@ -121,10 +117,9 @@ const GetHandoverSheetForm = ({ onBack }) => {
       land: { type: "", acres: "" },
       agreement_date: "",
       project_component: "",
-      project_component_other:"",
-      transmission_scope:"",
-      loan_scope:"",
-
+      project_component_other: "",
+      transmission_scope: "",
+      loan_scope: "",
     },
 
     commercial_details: {
@@ -141,7 +136,7 @@ const GetHandoverSheetForm = ({ onBack }) => {
       project_status: "incomplete",
       loa_number: "",
       ppa_number: "",
-      remark:"",
+      remark: "",
       remarks_for_slnko: "",
       submitted_by_BD: "",
     },
@@ -150,7 +145,7 @@ const GetHandoverSheetForm = ({ onBack }) => {
       invoicing_GST_no: "",
       invoicing_address: "",
       delivery_address: "",
-      msme_reg:"",
+      msme_reg: "",
     },
     submitted_by: "",
   });
@@ -419,9 +414,11 @@ const GetHandoverSheetForm = ({ onBack }) => {
         agreement_date: handoverData?.project_detail?.agreement_date || "",
         project_component:
           handoverData?.project_detail?.project_component || "",
-          project_component_other: handoverData?.project_detail?.project_component_other || "",
-          transmission_scope: handoverData?.project_detail?.transmission_scope || "",
-          loan_scope: handoverData?.project_detail?.loan_scope || "",
+        project_component_other:
+          handoverData?.project_detail?.project_component_other || "",
+        transmission_scope:
+          handoverData?.project_detail?.transmission_scope || "",
+        loan_scope: handoverData?.project_detail?.loan_scope || "",
       },
       commercial_details: {
         ...prev.commercial_details,
@@ -457,8 +454,6 @@ const GetHandoverSheetForm = ({ onBack }) => {
     }));
   }, [handoverData]);
 
-
-
   return (
     <Sheet
       variant="outlined"
@@ -485,8 +480,8 @@ const GetHandoverSheetForm = ({ onBack }) => {
         Handover Sheet
       </Typography>
 
-            {/* Dynamic Sections */}
-     <Grid
+      {/* Dynamic Sections */}
+      <Grid
         sm={{ display: "flex", justifyContent: "center" }}
         container
         spacing={2}
@@ -1067,7 +1062,7 @@ const GetHandoverSheetForm = ({ onBack }) => {
       <Grid container justifyContent="center" sx={{ marginTop: 2 }}>
         <Grid item xs={6} sm={4} md={3}>
           <Button
-            onClick={handlePrint} 
+            onClick={handlePrint}
             variant="solid"
             color="primary"
             fullWidth
