@@ -99,11 +99,21 @@ export const templatesApi = createApi({
       }),
       invalidatesTags: ["Template"],
     }),
+
     updateTemplatesSheet: builder.mutation({
       query: ({ _id, ...updatedData }) => ({
         url: `update-module/${_id}`,
         method: "PUT",
         body: updatedData,
+      }),
+      invalidatesTags: ["Template"],
+    }),
+
+    updateModuleTemplateId: builder.mutation({
+      query: ({ _id, template_category }) => ({
+        url: `update-template-category/${_id}`,
+        method: "PUT",
+        body: { template_category },
       }),
       invalidatesTags: ["Template"],
     }),
@@ -122,4 +132,5 @@ export const {
   useCreateBoqTemplateRowMutation,
   useGetAllBoqCategoriesQuery,
   useGetAllBoqTemplatesQuery,
+  useUpdateModuleTemplateIdMutation,
 } = templatesApi;
