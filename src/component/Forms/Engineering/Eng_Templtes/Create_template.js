@@ -11,6 +11,8 @@ import {
   Stack,
   Typography,
   Grid,
+  Option,
+  Select,
 } from "@mui/joy";
 import { useNavigate } from "react-router-dom";
 import { useAddTemplatesMutation } from "../../../../redux/Eng/templatesSlice";
@@ -32,6 +34,7 @@ const CreateTemplate = () => {
     boq: {
       enabled: false,
     },
+    engineering_category: "",
   });
 
   const [addFolder] = useAddTemplatesMutation();
@@ -66,6 +69,7 @@ const CreateTemplate = () => {
         boq: {
           enabled: formData.boq.enabled,
         },
+        engineering_category: formData.engineering_category,
       };
 
       const response = await addFolder(payload).unwrap();
@@ -96,7 +100,6 @@ const CreateTemplate = () => {
 
       <form onSubmit={handleSubmit}>
         <Grid container spacing={2}>
-          {/* Left Column */}
           <Grid xs={12} sm={6}>
             <FormControl required>
               <FormLabel>Template Name</FormLabel>
@@ -119,7 +122,7 @@ const CreateTemplate = () => {
             </FormControl>
           </Grid>
 
-          <Grid xs={12} sm={12}>
+          <Grid xs={12}>
             <FormControl>
               <FormLabel>Blockage ID (optional)</FormLabel>
               <Input
@@ -135,17 +138,6 @@ const CreateTemplate = () => {
           <Grid xs={12} sm={6}>
             <FormControl>
               <Checkbox
-                checked={formData.boq.enabled}
-                onChange={(e) =>
-                  handleNestedChange("boq", "enabled", e.target.checked)
-                }
-                label="Enable BOQ"
-              />
-            </FormControl>
-          </Grid>
-          <Grid xs={12} sm={6}>
-            <FormControl>
-              <Checkbox
                 checked={formData.file_upload.enabled}
                 onChange={(e) =>
                   handleNestedChange("file_upload", "enabled", e.target.checked)
@@ -157,49 +149,72 @@ const CreateTemplate = () => {
 
           {formData.file_upload.enabled && (
             <Grid xs={12} sm={6}>
-              <FormControl required>
+              <FormControl>
                 <FormLabel>Max Files</FormLabel>
                 <Input
                   type="number"
-                  min={0}
                   value={formData.file_upload.max_files}
                   onChange={(e) =>
                     handleNestedChange(
                       "file_upload",
                       "max_files",
-                      Math.max(0, Number(e.target.value))
+                      Number(e.target.value)
                     )
                   }
-                  placeholder="0"
+                  placeholder="Enter max files"
                 />
               </FormControl>
             </Grid>
           )}
+
+          <Grid xs={12}>
+            <FormControl>
+              <Checkbox
+                checked={formData.boq.enabled}
+                onChange={(e) =>
+                  handleNestedChange("boq", "enabled", e.target.checked)
+                }
+                label="Enable BOQ"
+              />
+            </FormControl>
+          </Grid>
+
+          {/* Engineering Category Dropdown */}
           <Grid xs={12}>
             <FormControl required>
+              <FormLabel>Engineering Category</FormLabel>
+              <Select
+                value={formData.engineering_category}
+                onChange={(_, value) =>
+                  handleChange("engineering_category", value)
+                }
+                placeholder="Select a category"
+              >
+                <Option value="civil">Civil</Option>
+                <Option value="mechanical">Mechanical</Option>
+                <Option value="electrical">Electrical</Option>
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid xs={12}>
+            <FormControl>
               <FormLabel>Description</FormLabel>
               <Textarea
                 value={formData.description}
                 onChange={(e) => handleChange("description", e.target.value)}
+                placeholder="Enter template description"
                 minRows={3}
-                placeholder="Enter description"
               />
             </FormControl>
           </Grid>
 
           <Grid xs={12}>
-            <Stack direction="row" spacing={2} justifyContent="center">
-              <Button
-                variant="outlined"
-                color="neutral"
-                onClick={() => navigate("/temp_dash")}
-              >
-                Back
+            <Box textAlign="center" mt={2}>
+              <Button type="submit" color="primary">
+                Create Template
               </Button>
-              <Button type="submit" size="lg">
-                Submit Template
-              </Button>
-            </Stack>
+            </Box>
           </Grid>
         </Grid>
       </form>

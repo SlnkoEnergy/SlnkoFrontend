@@ -10,6 +10,8 @@ import {
   Modal,
   Input,
   Textarea,
+  Select,
+  Option,
   Button,
   Checkbox,
   FormControl,
@@ -59,6 +61,7 @@ const TemplateDashboard = () => {
     boq: {
       enabled: false,
     },
+    engineering_category: "",
   });
 
   const handleEditClick = (template) => {
@@ -76,6 +79,7 @@ const TemplateDashboard = () => {
       boq: {
         enabled: template.boq?.enabled || false,
       },
+      engineering_category: template.engineering_category || "",
     });
     setOpen(true);
   };
@@ -338,6 +342,24 @@ const TemplateDashboard = () => {
                   </FormControl>
                 </Grid>
               )}
+
+              {/* Engineering Category Dropdown */}
+              <Grid xs={12}>
+                <FormControl required>
+                  <FormLabel>Engineering Category</FormLabel>
+                  <Select
+                    value={formData.engineering_category}
+                    onChange={(_, value) =>
+                      handleChange("engineering_category", value)
+                    }
+                    placeholder="Select a category"
+                  >
+                    <Option value="civil">Civil</Option>
+                    <Option value="mechanical">Mechanical</Option>
+                    <Option value="electrical">Electrical</Option>
+                  </Select>
+                </FormControl>
+              </Grid>
 
               <Grid xs={12}>
                 <FormControl required>
