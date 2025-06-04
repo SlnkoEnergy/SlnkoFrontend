@@ -553,7 +553,10 @@ const AllExpense = forwardRef((props, ref) => {
                     mb={1}
                   >
                     <Typography level="title-md">
-                      {expense.expense_code}
+                      <ExpenseCode
+                      currentPage={currentPage}
+                      expense_code={expense.expense_code}
+                    />
                     </Typography>
                     {getStatusChip()}
                   </Box>

@@ -159,7 +159,7 @@ const Login = () => {
       const matchedUser = response?.data?.data.find(
         (item) => String(item._id) === String(user.userId)
       );
-      console.log(matchedUser);
+      // console.log(matchedUser);
 
       if (!matchedUser) {
         toast.error("Login failed: User details not found.");
@@ -177,7 +177,7 @@ const Login = () => {
       };
 
       localStorage.setItem("userDetails", JSON.stringify(userDetails));
-      console.log("✅ User details stored:", userDetails);
+      // console.log("✅ User details stored:", userDetails);
 
       toast.success("Login successful!");
       navigate("/dashboard");
