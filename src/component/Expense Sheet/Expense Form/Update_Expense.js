@@ -1,5 +1,6 @@
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import DownloadIcon from "@mui/icons-material/Download";
 import {
   DialogActions,
   DialogContent,
@@ -16,7 +17,7 @@ import ModalDialog from "@mui/joy/ModalDialog";
 import Sheet from "@mui/joy/Sheet";
 import Table from "@mui/joy/Table";
 import Typography from "@mui/joy/Typography";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
@@ -765,6 +766,7 @@ const UpdateExpense = () => {
     "Description",
     "Submission Date",
     "Bill Amount",
+    "Attachment",
     "Invoice Number",
     "Approved Amount",
     ...(user?.name === "Shruti Tripathi" || user?.department === "Accounts"
@@ -1006,6 +1008,28 @@ const UpdateExpense = () => {
                           : ""}
                       </td>
                       <td>{item.invoice?.invoice_amount}</td>
+                      <td>
+                        {item.attachment_url ? (
+                          <Button
+                            component="a"
+                            href={item.attachment_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                            variant="soft"
+                            color="primary"
+                            startDecorator={<DownloadIcon />}
+                            size="sm"
+                            sx={{ textTransform: "none" }}
+                          >
+                            Download
+                          </Button>
+                        ) : (
+                          <span style={{ color: "#999", fontStyle: "italic" }}>
+                            No Attachment
+                          </span>
+                        )}
+                      </td>
                       <td>{item.invoice?.invoice_number || "NA"}</td>
                       {/* <td>{item.approved_amount || "-"}</td> */}
 

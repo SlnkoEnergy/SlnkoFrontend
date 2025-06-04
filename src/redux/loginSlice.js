@@ -1,16 +1,17 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { baseQuery } from "./auth/auth_variable";
 
-const baseQuery = fetchBaseQuery({
-  baseUrl: "https://dev.api.slnkoprotrac.com/v1/",
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem("authToken");
-    console.log("Token:", token);
-    if (token) {
-      headers.set("x-auth-token", token);
-    }
-    return headers;
-  },
-});
+// const baseQuery = fetchBaseQuery({
+//   baseUrl: "https://api.slnkoprotrac.com/v1/",
+//   prepareHeaders: (headers) => {
+//     const token = localStorage.getItem("authToken");
+//     // console.log("Token:", token);
+//     if (token) {
+//       headers.set("x-auth-token", token);
+//     }
+//     return headers;
+//   },
+// });
 export const loginsApi = createApi({
   reducerPath: "loginsApi",
   baseQuery,
@@ -30,22 +31,29 @@ export const loginsApi = createApi({
       invalidatesTags: ["Login"],
     }),
 
-    addForgetPassword: builder.mutation({
-      query: (newForget) => ({
-        url: "forget-password-send-otP-IT",
+    verifyOtp: builder.mutation({
+      query: (otpPayload) => ({
+        url: "verifyOtp",
         method: "POST",
-        body: newForget,
+        body: otpPayload,
       }),
-      invalidatesTags: ["Login"],
     }),
 
     addEmail: builder.mutation({
       query: (newEmail) => ({
-        url: "received-emaiL-IT",
+        url: "sendOtp",
         method: "POST",
         body: newEmail,
       }),
       invalidatesTags: ["Login"],
+    }),
+
+    resetPassword: builder.mutation({
+      query: (payload) => ({
+        url: "resetPassword",
+        method: "POST",
+        body: payload,
+      }),
     }),
   }),
 });
@@ -54,5 +62,7 @@ export const {
   useGetLoginsQuery,
   useAddEmailMutation,
   useAddLoginsMutation,
-  useAddForgetPasswordMutation,
+  // useAddForgetPasswordMutation,
+  useVerifyOtpMutation,
+  useResetPasswordMutation,
 } = loginsApi;

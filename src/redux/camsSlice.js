@@ -1,17 +1,19 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { BASE_URL, getAuthToken } from "./auth/auth_variable";
+import { baseQuery } from "./auth/auth_variable";
 
 
-const baseQuery = fetchBaseQuery({
-  baseUrl: "https://dev.api.slnkoprotrac.com/v1/",
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem("authToken");
-    console.log("Token:", token);
-    if (token) {
-      headers.set("x-auth-token", token); // ✅ Match backend expectation
-    }
-    return headers;
-  },
-});
+// const baseQuery = fetchBaseQuery({
+//   baseUrl: "https://api.slnkoprotrac.com/v1/",
+//   prepareHeaders: (headers) => {
+//     const token = localStorage.getItem("authToken");
+//     // console.log("Token:", token);
+//     if (token) {
+//       headers.set("x-auth-token", token);
+//     }
+//     return headers;
+//   },
+// });
 
 export const camsApi = createApi({
   reducerPath: "camsApi",

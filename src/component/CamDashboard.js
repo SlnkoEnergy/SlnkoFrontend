@@ -34,7 +34,6 @@ function Dash_cam() {
   const [vendors, setVendors] = useState([]);
   const [vendorFilter, setVendorFilter] = useState("");
   const [open, setOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
   // const [projects, setProjects] = useState([]);
@@ -47,14 +46,13 @@ function Dash_cam() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
 
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const {
     data: getHandOverSheet = {},
-    error,
     isLoading,
     refetch,
-  } = useGetHandOverQuery();
+  } = useGetHandOverQuery({ page: currentPage });
 
   const { data: getLead = {} } = useGetEntireLeadsQuery();
 
@@ -70,34 +68,47 @@ function Dash_cam() {
     ...(getLead?.lead?.deaddata?.map((item) => ({ ...item })) || []),
   ];
 
-  // console.log("📦 All Combined Leads:", leads);
-
-  const HandOverSheet = Array.isArray(getHandOverSheet?.Data)
-    ? getHandOverSheet.Data.map((entry) => ({
-        _id: entry._id,
-        id: entry.id,
-        ...entry.customer_details,
-        ...entry.order_details,
-        ...entry.project_detail,
-        ...entry.commercial_details,
-        ...entry.other_details,
-        p_id: entry.p_id,
-        status_of_handoversheet: entry.status_of_handoversheet,
-        submitted_by: entry.submitted_by,
-        is_locked: entry.is_locked,
-      }))
-    : [];
+  // const HandOverSheet = Array.isArray(getHandOverSheet?.Data)
+  //   ? getHandOverSheet.Data.map((entry) => ({
+  //       _id: entry._id,
+  //       id: entry.id,
+  //       ...entry.customer_details,
+  //       ...entry.order_details,
+  //       ...entry.project_detail,
+  //       ...entry.commercial_details,
+  //       ...entry.other_details,
+  //       p_id: entry.p_id,
+  //       status_of_handoversheet: entry.status_of_handoversheet,
+  //       submitted_by: entry.submitted_by,
+  //       is_locked: entry.is_locked,
+  //     }))
+  //   : [];
 
   // console.log("📦 All Combined HandOverSheets:", HandOverSheet);
 
-  const combinedData = HandOverSheet.map((handoverItem) => {
-    const matchingLead = leads.find((lead) => lead.id === handoverItem.id);
+  // const combinedData = HandOverSheet.map((handoverItem) => {
+  //   const matchingLead = leads.find((lead) => lead.id === handoverItem.id);
 
-    return {
-      ...handoverItem,
-      scheme: matchingLead?.scheme || "-",
-    };
-  });
+  //   return {
+  //     ...handoverItem,
+  //     scheme: matchingLead?.scheme || "-",
+  //   };
+  // });
+
+  const HandOverSheet = Array.isArray(getHandOverSheet?.Data)
+    ? getHandOverSheet.Data.map((entry) => {
+        const matchingLead = leads.find((lead) => lead.id === entry.id);
+        return {
+          ...entry,
+          ...entry.customer_details,
+          ...entry.order_details,
+          ...entry.project_detail,
+          ...entry.commercial_details,
+          ...entry.other_details,
+          scheme: matchingLead?.scheme || "-",
+        };
+      })
+    : [];
 
   // console.log(combinedData);
   // const [updateUnlockHandoversheet, { isLoading: isUpdating }] =
@@ -112,7 +123,12 @@ function Dash_cam() {
   }, []);
 
   const StatusChip = ({ status, is_locked, _id, user, refetch }) => {
-    const isAdmin = user?.role === "admin" || user?.role === "superadmin" || user?.name === "Prachi Singh" || user?.name === "Sanjiv Kumar" || user?.name === "Sushant Ranjan Dubey";
+    const isAdmin =
+      user?.department === "admin" ||
+      user?.role === "superadmin" ||
+      user?.name === "Prachi Singh" ||
+      user?.name === "Sanjiv Kumar" ||
+      user?.name === "Sushant Ranjan Dubey";
     const [lockedState, setLockedState] = useState(is_locked === "locked");
 
     const [updateUnlockHandoversheet, { isLoading }] =
@@ -144,16 +160,11 @@ function Dash_cam() {
       }
     };
 
-    // New conditions for colors and icons
     const showUnlockIcon = !lockedState && status === "Approved";
     const showSuccessLockIcon = lockedState && status === "submitted";
 
-    // Color logic:
-    // success color if (unlocked & Approved) OR (locked & Submitted)
     const color = showUnlockIcon || showSuccessLockIcon ? "success" : "danger";
 
-    // Icon logic:
-    // Unlock icon if showUnlockIcon, else lock icon always
     const IconComponent = showUnlockIcon ? LockOpenIcon : LockIcon;
 
     return (
@@ -216,36 +227,19 @@ function Dash_cam() {
   };
 
   const filteredAndSortedData = useMemo(() => {
-    if (!Array.isArray(combinedData)) return [];
-
-    if (!user || !user.name) return [];
-
-    return combinedData
-      .filter((project) => {
-        if (!project) return false;
-        // const submittedBy = project.submitted_by?.trim() || "";
-        // const userName = user.name.trim();
-        // const userRole = user.role?.toLowerCase();
-
-        // const isAdmin = userRole === "admin" || userRole === "superadmin";
-        // const isCAM = userName === "Prachi Singh" || userName === "Guddu Rani Dubey" || userName === "Sanjiv Kumar"  || userName === "Sushant Ranjan Dubey";
-        // const matchesUser = isAdmin || submittedBy === userName;
-
-        const matchesSearchQuery = ["code", "customer", "state"].some((key) =>
-          project[key]
-            ?.toString()
-            .toLowerCase()
-            .includes(searchQuery?.toLowerCase())
-        );
-
-        return matchesSearchQuery;
-      })
-      .sort((a, b) => {
-        const dateA = new Date(a?.updatedAt || a?.createdAt || 0);
-        const dateB = new Date(b?.updatedAt || b?.createdAt || 0);
-        return dateB - dateA;
-      });
-  }, [combinedData, searchQuery, user]);
+    return HandOverSheet.filter((project) =>
+      ["code", "customer", "state"].some((key) =>
+        project[key]
+          ?.toString()
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase())
+      )
+    ).sort((a, b) => {
+      const dateA = new Date(a?.updatedAt || a?.createdAt || 0);
+      const dateB = new Date(b?.updatedAt || b?.createdAt || 0);
+      return dateB - dateA;
+    });
+  }, [HandOverSheet, searchQuery]);
 
   // const filteredAndSortedData = useMemo(() => {
   //   if (!Array.isArray(combinedData) || !user?.name) return [];
@@ -288,35 +282,35 @@ function Dash_cam() {
       prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
     );
   };
-  const generatePageNumbers = (currentPage, totalPages) => {
-    const pages = [];
+  // const generatePageNumbers = (currentPage, totalPages) => {
+  //   const pages = [];
 
-    if (totalPages <= 5) {
-      // If 5 or fewer pages, show all
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-      return pages;
-    }
+  //   if (totalPages <= 5) {
+  //     // If 5 or fewer pages, show all
+  //     for (let i = 1; i <= totalPages; i++) {
+  //       pages.push(i);
+  //     }
+  //     return pages;
+  //   }
 
-    if (currentPage > 2) pages.push(1);
-    if (currentPage > 3) pages.push("...");
+  //   if (currentPage > 2) pages.push(1);
+  //   if (currentPage > 3) pages.push("...");
 
-    for (
-      let i = Math.max(1, currentPage - 1);
-      i <= Math.min(totalPages, currentPage + 1);
-      i++
-    ) {
-      pages.push(i);
-    }
+  //   for (
+  //     let i = Math.max(1, currentPage - 1);
+  //     i <= Math.min(totalPages, currentPage + 1);
+  //     i++
+  //   ) {
+  //     pages.push(i);
+  //   }
 
-    if (currentPage < totalPages - 2) pages.push("...");
-    if (currentPage < totalPages - 1) pages.push(totalPages);
+  //   if (currentPage < totalPages - 2) pages.push("...");
+  //   if (currentPage < totalPages - 1) pages.push(totalPages);
 
-    return pages;
-  };
+  //   return pages;
+  // };
 
-  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
+  // const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
   // const startIndex = (currentPage - 1) * itemsPerPage;
   // const endIndex = startIndex + itemsPerPage;
   // const paginatedPayments = filteredAndSortedData.slice(startIndex, endIndex);
@@ -326,10 +320,7 @@ function Dash_cam() {
     setCurrentPage(page);
   }, [searchParams]);
 
-  const paginatedPayments = filteredAndSortedData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedPayments = filteredAndSortedData;
 
   // const totalPages = Math.ceil(currentPage / (1000 / itemsPerPage));
 
@@ -343,7 +334,7 @@ function Dash_cam() {
   // console.log("Filtered and Sorted Data:", filteredAndSortedData);
 
   const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
+    if (page >= 1) {
       setSearchParams({ page });
       setCurrentPage(page);
     }
@@ -681,32 +672,38 @@ function Dash_cam() {
           Previous
         </Button>
 
-        {/* Showing X of Y Results */}
-        <Box>
-          Showing {paginatedPayments.length} of {filteredAndSortedData.length}{" "}
-          results
-        </Box>
+        {/* Showing X Results (no total because backend paginates) */}
+        <Box>Showing {draftPayments.length} results</Box>
 
-        {/* Page Numbers */}
+        {/* Page Numbers: Only show current, prev, next for backend-driven pagination */}
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
-          {generatePageNumbers(currentPage, totalPages).map((page, index) =>
-            typeof page === "number" ? (
-              <IconButton
-                key={index}
-                size="sm"
-                variant={page === currentPage ? "contained" : "outlined"}
-                color="neutral"
-                onClick={() => handlePageChange(page)}
-              >
-                {page}
-              </IconButton>
-            ) : (
-              <Typography key={index} sx={{ px: 1, alignSelf: "center" }}>
-                {page}
-              </Typography>
-            )
+          {currentPage > 1 && (
+            <IconButton
+              size="sm"
+              variant="outlined"
+              color="neutral"
+              onClick={() => handlePageChange(currentPage - 1)}
+            >
+              {currentPage - 1}
+            </IconButton>
+          )}
+
+          <IconButton size="sm" variant="contained" color="neutral">
+            {currentPage}
+          </IconButton>
+
+          {/* Show next page button if current page has any data (not empty) */}
+          {draftPayments.length > 0 && (
+            <IconButton
+              size="sm"
+              variant="outlined"
+              color="neutral"
+              onClick={() => handlePageChange(currentPage + 1)}
+            >
+              {currentPage + 1}
+            </IconButton>
           )}
         </Box>
 
@@ -717,7 +714,7 @@ function Dash_cam() {
           color="neutral"
           endDecorator={<KeyboardArrowRightIcon />}
           onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
+          disabled={draftPayments.length === 0} // disable next if no data at all on this page
         >
           Next
         </Button>

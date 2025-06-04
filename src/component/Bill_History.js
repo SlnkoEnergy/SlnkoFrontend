@@ -19,14 +19,22 @@ const navigate = useNavigate();
     
         const poNumberFromStorage = localStorage.getItem("get-po");
 
-   
-        const poResponse = await Axios.get("/get-all-pO-IT");
+   const token = localStorage.getItem("authToken");
+        const poResponse = await Axios.get("/get-all-pO-IT", {
+          headers: {
+            "x-auth-token": token,
+          },
+        });
         const fetchedPoNumber = poResponse.data;
         setPoNumber(fetchedPoNumber);
         console.log("Enriched POs are:", fetchedPoNumber);
         
 
-        const billResponse = await Axios.get("/get-all-bilL-IT");
+        const billResponse = await Axios.get("/get-all-bilL-IT",{
+          headers: {
+            "x-auth-token": token,
+          },
+        });
         const billData = Array.isArray(billResponse.data)
           ? billResponse.data
           : billResponse.data.data;

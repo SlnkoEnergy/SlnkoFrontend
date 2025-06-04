@@ -80,12 +80,15 @@ const UpdatePurchaseOrder = () => {
           return;
         }
 
-        const [projectsRes, vendorsRes, itemsRes, poRes] = await Promise.all([
-          Axios.get("/get-all-projecT-IT"),
-          Axios.get("/get-all-vendoR-IT"),
-          Axios.get("/get-iteM-IT"),
-          Axios.get("/get-all-pO-IT"),
-        ]);
+       const token = localStorage.getItem("authToken");
+const config = { headers: { "x-auth-token": token } };
+
+const [projectsRes, vendorsRes, itemsRes, poRes] = await Promise.all([
+  Axios.get("/get-all-projecT-IT", config),
+  Axios.get("/get-all-vendoR-IT", config),
+  Axios.get("/get-iteM-IT", config),
+  Axios.get("/get-all-pO-IT", config),
+]);
 
         setGetFormData({
           projectIDs: projectsRes.data.data || [],
@@ -196,8 +199,14 @@ const UpdatePurchaseOrder = () => {
     try {
       setLoading(true);
       setError("");
-      const endpoint = `https://api.slnkoprotrac.com/v1/edit-pO-IT/${formData._id}`;
-      const response = await axios.put(endpoint, formData);
+      const token = localStorage.getItem("authToken");
+  const endpoint = `https://api.slnkoprotrac.com/v1/edit-pO-IT/${formData._id}`;
+
+  const response = await axios.put(endpoint, formData, {
+    headers: {
+      "x-auth-token": token,
+    },
+  });
 
       if (response.status === 200) {
         setResponse(response.data);

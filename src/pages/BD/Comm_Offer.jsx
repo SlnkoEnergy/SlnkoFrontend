@@ -120,7 +120,7 @@ function Comm_Offer() {
               }}
             >
               {(user?.name === "IT Team" ||
-                user?.name === "admin" ||
+                user?.department === "admin" ||
                 user?.name === "Naresh Kumar") && (
                 <Button
                   color="primary"
@@ -133,7 +133,7 @@ function Comm_Offer() {
               )}
 
               {(user?.name === "IT Team" ||
-                user?.name === "admin" ||
+                user?.department === "admin" ||
                 user?.name === "Navin Kumar Gautam" ||
                 user?.name === "Mohd Shakir Khan" ||
                 user?.name === "Shiv Ram Tathagat" ||

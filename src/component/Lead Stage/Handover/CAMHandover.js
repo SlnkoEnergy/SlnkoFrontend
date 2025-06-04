@@ -10,7 +10,9 @@ import {
   Option,
   Select,
   Sheet,
+  Switch,
   Textarea,
+  Tooltip,
   Typography,
 } from "@mui/joy";
 import { useEffect, useMemo, useState } from "react";
@@ -31,6 +33,7 @@ import {
 const CamHandoverSheetForm = ({ onBack }) => {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(null);
+  const [showVillage, setShowVillage] = useState(false);
   const states = [
     "Andhra Pradesh",
     "Arunachal Pradesh",
@@ -314,7 +317,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
     commercial_details: Yup.object().shape({
       type: Yup.string().required("Commercial type is required"),
     }),
-    
+
     invoice_detail: Yup.object().shape({
       // invoice_recipient: Yup.string().required("Invoice recipient is required"),
       invoicing_address: Yup.string().required("Invoicing address is required"),
@@ -456,11 +459,29 @@ const CamHandoverSheetForm = ({ onBack }) => {
     }));
   }, [handoverData]);
 
+  // const calculateDcCapacity = (ac, overloadingPercent) => {
+  //   const acValue = parseFloat(ac);
+  //   const overloadingValue = parseFloat(overloadingPercent) / 100;
+  //   if (!isNaN(acValue) && !isNaN(overloadingValue)) {
+  //     return Math.round(acValue * (1 + overloadingValue));
+  //   }
+  //   return "";
+  // };
+
+  // const calculateSlnkoBasic = (kwp, slnko_basic) => {
+  //   const kwpValue = parseFloat(kwp);
+  //   const serviceValue = parseFloat(slnko_basic);
+  //   if (!isNaN(kwpValue) && !isNaN(serviceValue)) {
+  //     return (kwpValue * serviceValue * 1000).toFixed(0);
+  //   }
+  //   return "";
+  // };
+
   const calculateDcCapacity = (ac, overloadingPercent) => {
     const acValue = parseFloat(ac);
     const overloadingValue = parseFloat(overloadingPercent) / 100;
     if (!isNaN(acValue) && !isNaN(overloadingValue)) {
-      return Math.round(acValue * (1 + overloadingValue));
+      return (acValue * (1 + overloadingValue)).toFixed(2);
     }
     return "";
   };
@@ -469,7 +490,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
     const kwpValue = parseFloat(kwp);
     const serviceValue = parseFloat(slnko_basic);
     if (!isNaN(kwpValue) && !isNaN(serviceValue)) {
-      return (kwpValue * serviceValue * 1000).toFixed(0);
+      return (kwpValue * serviceValue * 1000).toFixed(2);
     }
     return "";
   };
@@ -548,78 +569,75 @@ const CamHandoverSheetForm = ({ onBack }) => {
     useUpdateHandOverMutation();
   const [updateStatusHandOver] = useUpdateStatusHandOverMutation();
 
-const handleSubmit = async () => {
-  if (!LeadId || !formData._id) {
-    toast.error("Invalid or missing ID!");
-    return;
-  }
-
-  try {
-    
-    await handoverSchema.validate(formData, { abortEarly: false });
-
-   
-    if (
-      formData.status_of_handoversheet === "Approved" &&
-      formData.is_locked === "locked"
-    ) {
-      toast.error("This handover sheet cannot be updated because it is locked.");
+  const handleSubmit = async () => {
+    if (!LeadId || !formData._id) {
+      toast.error("Invalid or missing ID!");
       return;
     }
 
-  
-    const land =
-      typeof formData.project_detail?.land === "string"
-        ? formData.project_detail.land
-        : JSON.stringify(formData.project_detail?.land || { type: "", acres: "" });
+    try {
+      await handoverSchema.validate(formData, { abortEarly: false });
 
-    const updatedFormData = {
-      _id: LeadId,
-      customer_details: { ...formData.customer_details },
-      order_details: { ...formData.order_details },
-      project_detail: {
-        ...formData.project_detail,
-        land,
-      },
-      commercial_details: { ...formData.commercial_details },
-      other_details: { ...formData.other_details },
-      invoice_detail: { ...formData.invoice_detail },
-      status_of_handoversheet: "Approved",
-      is_locked: "locked",
-      submitted_by: user?.name,
-    };
+      if (
+        formData.status_of_handoversheet === "Approved" &&
+        formData.is_locked === "locked"
+      ) {
+        toast.error(
+          "This handover sheet cannot be updated because it is locked."
+        );
+        return;
+      }
 
-    const statusPayload = {
-      _id: formData._id,
-      status_of_handoversheet: "Approved",
-    };
+      const land =
+        typeof formData.project_detail?.land === "string"
+          ? formData.project_detail.land
+          : JSON.stringify(
+              formData.project_detail?.land || { type: "", acres: "" }
+            );
 
-    
-    // console.log("Updating status...");
-    await updateStatusHandOver(statusPayload).unwrap();
-    toast.success("Handover sheet locked.");
+      const updatedFormData = {
+        _id: LeadId,
+        customer_details: { ...formData.customer_details },
+        order_details: { ...formData.order_details },
+        project_detail: {
+          ...formData.project_detail,
+          land,
+        },
+        commercial_details: { ...formData.commercial_details },
+        other_details: { ...formData.other_details },
+        invoice_detail: { ...formData.invoice_detail },
+        status_of_handoversheet: "Approved",
+        is_locked: "locked",
+        submitted_by: user?.name,
+      };
 
-    // console.log("Updating form data...");
-    await updateHandOver(updatedFormData).unwrap();
-    toast.success("Project updated successfully.");
+      const statusPayload = {
+        _id: formData._id,
+        status_of_handoversheet: "Approved",
+      };
 
-    
-    navigate("/cam_dash");
-  } catch (error) {
-    if (error.name === "ValidationError") {
-      error.inner.forEach((err) => {
-        toast.error(err.message);
-      });
-    } else {
-      console.error("Submission Error:", error);
-      const errorMessage =
-        error?.data?.message || error?.message || "Submission failed";
-      toast.error(errorMessage);
+      // console.log("Updating status...");
+      await updateStatusHandOver(statusPayload).unwrap();
+      toast.success("Handover sheet locked.");
+
+      // console.log("Updating form data...");
+      await updateHandOver(updatedFormData).unwrap();
+      toast.success("Project updated successfully.");
+
+      navigate("/cam_dash");
+    } catch (error) {
+      if (error.name === "ValidationError") {
+        error.inner.forEach((err) => {
+          toast.error(err.message);
+        });
+      } else {
+        console.error("Submission Error:", error);
+        const errorMessage =
+          error?.data?.message || error?.message || "Submission failed";
+        toast.error(errorMessage);
+      }
     }
-  }
-};
-
-
+  };
 
   return (
     <Sheet
@@ -790,7 +808,7 @@ const handleSubmit = async () => {
               >
                 Invoicing Address<span style={{ color: "red" }}>*</span>
               </Typography>
-              <Input
+              <Textarea
                 fullWidth
                 placeholder="Invoicing Address"
                 value={formData.invoice_detail.invoicing_address}
@@ -801,6 +819,16 @@ const handleSubmit = async () => {
                     e.target.value
                   )
                 }
+                  sx={{
+                  minHeight: 80,
+                  "@media print": {
+                    height: "auto",
+                    overflow: "visible",
+                    whiteSpace: "pre-wrap",
+                   
+                    WebkitPrintColorAdjust: "exact",
+                  },
+                }}
               />
             </Grid>
 
@@ -849,11 +877,21 @@ const handleSubmit = async () => {
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 DISCOM Name <span style={{ color: "red" }}>*</span>
               </Typography>
-              <Input
+              <Textarea
                 value={formData.order_details.discom_name}
                 onChange={(e) =>
                   handleChange("order_details", "discom_name", e.target.value)
                 }
+                  sx={{
+                  minHeight: 80,
+                  "@media print": {
+                    height: "auto",
+                    overflow: "visible",
+                    whiteSpace: "pre-wrap",
+                   
+                    WebkitPrintColorAdjust: "exact",
+                  },
+                }}
               />
             </Grid>
 
@@ -901,9 +939,7 @@ const handleSubmit = async () => {
             ) && (
               <>
                 <Grid item xs={12} sm={6}>
-                  <Typography level="body1">
-                    Module Make
-                  </Typography>
+                  <Typography level="body1">Module Make</Typography>
                   <Select
                     fullWidth
                     value={formData?.project_detail?.module_make || ""}
@@ -942,9 +978,7 @@ const handleSubmit = async () => {
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
-                  <Typography level="body1">
-                    Module Capacity
-                  </Typography>
+                  <Typography level="body1">Module Capacity</Typography>
                   <Select
                     fullWidth
                     value={formData?.project_detail?.module_capacity || ""}
@@ -972,9 +1006,7 @@ const handleSubmit = async () => {
                 {/* Module Model No & Type */}
 
                 <Grid item xs={12} sm={6}>
-                  <Typography level="body1">
-                    Module Type
-                  </Typography>
+                  <Typography level="body1">Module Type</Typography>
                   <Select
                     fullWidth
                     value={formData?.project_detail?.module_type || ""}
@@ -996,7 +1028,6 @@ const handleSubmit = async () => {
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
                 Solar Inverter Scope
-                
               </Typography>
               <Select
                 fullWidth
@@ -1022,9 +1053,8 @@ const handleSubmit = async () => {
             ) && (
               <>
                 <Grid item xs={12} sm={6}>
-                  <Typography level="body1">
-                    
-                  </Typography>
+                  <Typography level="body1">Inverter Make</Typography>
+
                   <Select
                     fullWidth
                     value={formData["project_detail"]?.["inverter_make"] || ""}
@@ -1069,9 +1099,7 @@ const handleSubmit = async () => {
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
-                  <Typography level="body1">
-                    Inverter Type
-                  </Typography>
+                  <Typography level="body1">Inverter Type</Typography>
                   <Select
                     fullWidth
                     value={formData["project_detail"]?.["inverter_type"] || ""}
@@ -1112,7 +1140,7 @@ const handleSubmit = async () => {
               >
                 <Option value="Yes">Yes</Option>
                 <Option value="No">No</Option>
-              </Select> 
+              </Select>
             </Grid>
 
             <Grid item xs={12} sm={6}>
@@ -1496,31 +1524,77 @@ const handleSubmit = async () => {
             <Grid item xs={12} sm={6}>
               <Typography
                 level="body1"
-                sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  fontWeight: "bold",
+                  mb: 0.5,
+                }}
               >
                 Site Address with Pin Code{" "}
                 <span style={{ color: "red" }}>*</span>
+                <Tooltip title="Enable to enter village name" placement="top">
+                  <Switch
+                    checked={showVillage}
+                    onChange={(e) => setShowVillage(e.target.checked)}
+                    sx={{ ml: 2 }}
+                    size="sm"
+                  />
+                </Tooltip>
               </Typography>
-              <Input
-                required
+
+              <Textarea
                 fullWidth
-                placeholder="e.g. Sunrise Village, 221001"
-                value={`${formData?.customer_details?.site_address?.village_name || ""}${
-                  formData?.customer_details?.site_address?.district_name
-                    ? `, ${formData?.customer_details?.site_address?.district_name}`
-                    : ""
-                }`}
+                placeholder="e.g. Varanasi 221001"
+                value={formData.customer_details.site_address.district_name}
                 onChange={(e) => {
-                  const [village, district] = e.target.value
-                    .split(",")
-                    .map((s) => s.trim());
+                  const newDistrict = e.target.value;
                   handleChange("customer_details", "site_address", {
-                    village_name: village || "",
-                    district_name: district || "",
+                    ...formData.customer_details.site_address,
+                    district_name: newDistrict,
                   });
+                }}
+                  sx={{
+                  minHeight: 80,
+                  "@media print": {
+                    height: "auto",
+                    overflow: "visible",
+                    whiteSpace: "pre-wrap",
+                   
+                    WebkitPrintColorAdjust: "exact",
+                  },
                 }}
               />
             </Grid>
+
+            {showVillage && (
+              <Grid item xs={12} sm={6}>
+                <Typography level="body1" sx={{ fontWeight: "bold", mb: 0.5 }}>
+                  Village Name
+                </Typography>
+                <Textarea
+                  fullWidth
+                  placeholder="e.g. Chakia"
+                  value={formData.customer_details.site_address.village_name}
+                  onChange={(e) => {
+                    handleChange("customer_details", "site_address", {
+                      ...formData.customer_details.site_address,
+                      village_name: e.target.value,
+                    });
+                  }}
+                    sx={{
+                  minHeight: 80,
+                  "@media print": {
+                    height: "auto",
+                    overflow: "visible",
+                    whiteSpace: "pre-wrap",
+                   
+                    WebkitPrintColorAdjust: "exact",
+                  },
+                }}
+                />
+              </Grid>
+            )}
             <Grid item xs={12} sm={6}>
               <Typography
                 level="body1"

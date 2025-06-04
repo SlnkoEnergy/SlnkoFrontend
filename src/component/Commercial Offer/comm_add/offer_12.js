@@ -93,11 +93,15 @@ const Reference3 = () => {
           return;
         }
 
-        const [response, result, answer] = await Promise.all([
-          Axios.get("/get-comm-offer"),
-          Axios.get("/get-comm-scm-rate"),
-          Axios.get("/get-comm-bd-rate"),
-        ]);
+       const token = localStorage.getItem("authToken");
+const config = { headers: { "x-auth-token": token } };
+
+const [response, result, answer] = await Promise.all([
+  Axios.get("/get-comm-offer", config),
+  Axios.get("/get-comm-scm-rate", config),
+  Axios.get("/get-comm-bd-rate", config),
+]);
+
 
         const fetchedData = response.data;
         const fetchedScmData = result.data[0];

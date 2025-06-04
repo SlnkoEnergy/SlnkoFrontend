@@ -6,6 +6,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
+import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
@@ -21,100 +22,80 @@ import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
-import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import Typography from "@mui/joy/Typography";
-import * as React from "react";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import Axios from "../utils/Axios";
 import NoData from "../assets/alert-bell.svg";
+import Axios from "../utils/Axios";
+import { Tooltip, useTheme } from "@mui/joy";
+// import { useGetPaymentsQuery } from "../redux/paymentsSlice";
+// import { useGetProjectsQuery } from "../redux/projectsSlice";
 
 const PaymentRequest = forwardRef((props, ref) => {
+  const theme = useTheme();
   const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [open, setOpen] = useState(false);
-  const [vendors, setVendors] = useState([]);
-  const [vendorFilter, setVendorFilter] = useState("");
   const [statuses, setStatuses] = useState([]);
-  const [statusFilter, setStatusFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
-  const [dateFilter, setDateFilter] = useState("");
-  const [projects, setProjects] = useState([]);
-  const [mergedData, setMergedData] = useState([]);
+  // const [mergedData, setMergedData] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // const [totalItems, setTotalItems] = useState(0);
+
   const [searchParams, setSearchParams] = useSearchParams();
 
-  useEffect(() => {
-    const fetchTableData = async () => {
-      try {
-        const [paymentResponse, projectResponse] = await Promise.all([
-          Axios.get("/get-pay-summarY-IT"),
-          Axios.get("/get-all-projecT-IT"),
-        ]);
-        setPayments(paymentResponse.data.data);
-        console.log("Payment Data are:", paymentResponse.data.data);
+  const [totalCount, setTotalCount] = useState(10);
 
-        setProjects(projectResponse.data.data);
-        console.log("Project Data are:", projectResponse.data.data);
+  const fetchTableData = async (page = 1) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("authToken");
+      const config = { headers: { "x-auth-token": token } };
 
-        const uniqueVendors = [
-          ...new Set(
-            paymentResponse.data.data.map((payment) => payment.vendor)
-          ),
-        ].filter(Boolean);
-
-        // console.log("Vendors are: ", uniqueVendors);
-        const uniqueStatuses = [
-          ...new Set(
-            paymentResponse.data.data.map((payment) => payment.approved)
-          ),
-        ].filter(Boolean);
-
-        // console.log("Vendors are: ", uniqueVendors);
-
-        setStatuses(uniqueStatuses);
-        setVendors(uniqueVendors);
-      } catch (err) {
-        console.error("API Error:", err);
-        setError(
-          <span style={{ display: "flex", alignItems: "center", gap: "5px", color: "red", justifyContent:"center", flexDirection:"column" , padding: "20px"}}>
-            <PermScanWifiIcon />
-            <Typography fontStyle={"italic"} fontWeight={"600"} sx={{color:"#0a6bcc"}} >
-            Hang tight! Internet Connection will be back soon..
-            </Typography>
-            
-          </span>
-        );
-      } finally {
-        setLoading(false);
+      const params = new URLSearchParams();
+      params.append("page", page);
+      if (searchQuery) {
+        params.append("query", searchQuery);
       }
-    };
 
-    fetchTableData();
-  }, []);
+      const response = await Axios.get(
+        `/get-pay-sumrY-IT?${params.toString()}`,
+        config
+      );
 
-  useEffect(() => {
-    if (payments.length > 0 && projects.length > 0) {
-      const merged = payments.map((payment) => {
-        const matchingProject = projects.find(
-          (project) => Number(project.p_id) === Number(payment.p_id)
-        );
-        return {
-          ...payment,
-          // projectCode: matchingProject?.code || "-",
-          // projectName: matchingProject?.name || "-",
-          projectCustomer: matchingProject?.customer || "-",
-          // projectGroup: matchingProject?.p_group || "-",
-        };
-      });
-      setMergedData(merged);
+      const { data, meta } = response.data;
+
+      setPayments(data);
+      setTotalCount(meta?.total || 0);
+      setItemsPerPage(meta?.count || 10);
+
+      const uniqueStatuses = [
+        ...new Set(data.map((payment) => payment.approved)),
+      ].filter(Boolean);
+      setStatuses(uniqueStatuses);
+    } catch (err) {
+      console.error("API Error:", err);
+      setError(
+        <span style={{ color: "red", textAlign: "center" }}>
+          <PermScanWifiIcon />
+          <Typography
+            fontStyle="italic"
+            fontWeight="600"
+            sx={{ color: "#0a6bcc" }}
+          >
+            Hang tight! Internet Connection will be back soon..
+          </Typography>
+        </span>
+      );
+    } finally {
+      setLoading(false);
     }
-  }, [payments, projects]);
+  };
 
   const renderFilters = () => (
     <>
@@ -169,64 +150,84 @@ const PaymentRequest = forwardRef((props, ref) => {
       </FormControl> */}
     </>
   );
-  const handleSelectAll = (event) => {
-    if (event.target.checked) {
-      setSelected(paginatedPayments.map((row) => row.id));
-    } else {
-      setSelected([]);
-    }
-  };
-
-  // const handleDateChange = (e) => {
-  //   setDateFilter(e.target.value);
+  // const handleSelectAll = (event) => {
+  //   if (event.target.checked) {
+  //     setSelected(paginatedPayments.map((row) => row.id));
+  //   } else {
+  //     setSelected([]);
+  //   }
   // };
 
-  const RowMenu = ({ currentPage, pay_id, p_id }) => {
-    // console.log("currentPage:", currentPage, "pay_id:", pay_id, "p_id:", p_id);
+  // const RowMenu = ({ currentPage, pay_id, p_id }) => {
+  //   return (
+  //     <>
+  //       <Dropdown>
+  //         <MenuButton
+  //           slots={{ root: IconButton }}
+  //           slotProps={{
+  //             root: { variant: "plain", color: "neutral", size: "sm" },
+  //           }}
+  //         >
+  //           <MoreHorizRoundedIcon />
+  //         </MenuButton>
+  //         <Menu size="sm" sx={{ minWidth: 100 }}>
+  //           <MenuItem
+  //             color="primary"
+  //             onClick={() => {
+  //               const page = currentPage;
+  //               const payId = String(pay_id);
+  //               const projectID = Number(p_id);
+  //               localStorage.setItem("pay_summary", payId);
+  //               localStorage.setItem("p_id", projectID);
+  //               navigate(`/pay_summary?page=${page}&pay_id=${payId}`);
+  //             }}
+  //           >
+  //             <ContentPasteGoIcon />
+  //             <Typography>Pay summary</Typography>
+  //           </MenuItem>
+
+  //           {/* <MenuItem
+  //             color="primary"
+  //             onClick={() => navigate("/standby_records")}
+  //           >
+  //             <ContentPasteGoIcon />
+  //             <Typography>Pending payments</Typography>
+  //           </MenuItem> */}
+  //           <Divider sx={{ backgroundColor: "lightblue" }} />
+  //           <MenuItem color="danger">
+  //             <DeleteIcon />
+  //             <Typography>Delete</Typography>
+  //           </MenuItem>
+  //         </Menu>
+  //       </Dropdown>
+  //     </>
+  //   );
+  // };
+
+  const PaymentID = ({ currentPage, pay_id, p_id }) => {
     return (
       <>
-        <Dropdown>
-          <MenuButton
-            slots={{ root: IconButton }}
-            slotProps={{
-              root: { variant: "plain", color: "neutral", size: "sm" },
-            }}
-          >
-            <MoreHorizRoundedIcon />
-          </MenuButton>
-          <Menu size="sm" sx={{ minWidth: 100 }}>
-            <MenuItem
-              color="primary"
-              onClick={() => {
-                const page = currentPage;
-                const payId = String(pay_id);
-                const projectID = Number(p_id);
-                localStorage.setItem("pay_summary", payId);
-                localStorage.setItem("p_id", projectID);
-                navigate(`/pay_summary?page=${page}&pay_id=${payId}`);
-              }}
-            >
-              <ContentPasteGoIcon />
-              <Typography>Pay summary</Typography>
-            </MenuItem>
-
-            {/* <MenuItem
-              color="primary"
-              onClick={() => navigate("/standby_records")}
-            >
-              <ContentPasteGoIcon />
-              <Typography>Pending payments</Typography>
-            </MenuItem> */}
-            <Divider sx={{ backgroundColor: "lightblue" }} />
-            <MenuItem color="danger">
-              <DeleteIcon />
-              <Typography>Delete</Typography>
-            </MenuItem>
-          </Menu>
-        </Dropdown>
+        <span
+          style={{
+            cursor: "pointer",
+            color: theme.vars.palette.text.primary,
+            textDecoration: "none",
+          }}
+          onClick={() => {
+            const page = currentPage;
+            const payId = String(pay_id);
+            const projectID = Number(p_id);
+            localStorage.setItem("pay_summary", payId);
+            localStorage.setItem("p_id", projectID);
+            navigate(`/pay_summary?page=${page}&pay_id=${payId}`);
+          }}
+        >
+          {pay_id}
+        </span>
       </>
     );
   };
+
   const handleRowSelect = (id, isSelected) => {
     setSelected((prevSelected) =>
       isSelected
@@ -235,94 +236,70 @@ const PaymentRequest = forwardRef((props, ref) => {
     );
   };
 
-  const [FilteredData, setFilteredData] = useState([]);
+  // const [FilteredData, setFilteredData] = useState([]);
 
   const handleSearch = (query) => {
     const lowerCaseQuery = query.toLowerCase();
     setSearchQuery(lowerCaseQuery);
-    applyFilters(lowerCaseQuery, selectedDate); // Pass the updated search query
+    setSearchParams({ page: "1" });
   };
 
-  // Apply filters based on search query and date
-  const applyFilters = (query = searchQuery, dateValue = selectedDate) => {
-    const filteredAndSortedData = mergedData
-      .filter((payment) => {
-        const matchesSearchQuery = [
-          "pay_id",
-          "vendor",
-          "approved",
-          "projectCustomer",
-          "paid_for",
-        ].some((key) => payment[key]?.toLowerCase().includes(query));
+  // const applyFilters = (query = searchQuery, dateValue = selectedDate) => {
+  //   const filtered = payments
+  //     .filter((payment) => {
+  //       const matchesSearchQuery = [
+  //         "pay_id",
+  //         "vendor",
+  //         "approved",
+  //         "projectCustomer",
+  //         "paid_for",
+  //       ].some((key) => payment[key]?.toLowerCase().includes(query));
+  //       return matchesSearchQuery;
+  //     })
+  //     .filter((item) => {
+  //       const matchesDate = dateValue
+  //         ? new Date(item.dbt_date).toISOString().split("T")[0] === dateValue
+  //         : true;
+  //       return matchesDate;
+  //     });
 
-        return matchesSearchQuery;
-      })
-      .filter((item) => {
-        const matchesDate = dateValue
-          ? new Date(item.dbt_date).toISOString().split("T")[0] === dateValue
-          : true;
+  //   setFilteredData(filtered);
+  // };
 
-        return matchesDate;
-      })
-      .sort((a, b) => new Date(b.dbt_date) - new Date(a.dbt_date));
-
-    setFilteredData(filteredAndSortedData);
-  };
-
-  // Handle date filter input and apply combined filters
   const handleDateFilter = (event) => {
     const dateValue = event.target.value;
     setSelectedDate(dateValue);
-    applyFilters(searchQuery, dateValue);
+    // applyFilters(searchQuery, dateValue);
   };
 
-  // Apply filters based on search query and date
-  // const applyFilters = ( dateValue) => {
-  //   const filteredData = filteredAndSortedData.filter((item) => {
-  //     const matchesDate = dateValue
-  //       ? new Date(item.dbt_date).toISOString().split("T")[0] === dateValue
-  //       : true;
+  useEffect(() => {
+    const page = parseInt(searchParams.get("page")) || 1;
+    setCurrentPage(page);
+    fetchTableData(page);
+  }, [searchParams.toString(), searchQuery]);
 
-  //     return matchesDate;
-  //   });
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
 
-  //   setFilteredData(filteredData);
-  // };
-
-  // Generate page numbers for pagination
-  const generatePageNumbers = (currentPage, totalPages) => {
+  const generatePageNumbers = (current, total) => {
     const pages = [];
 
-    if (currentPage > 2) pages.push(1);
-    if (currentPage > 3) pages.push("...");
+    if (current > 2) pages.push(1);
+    if (current > 3) pages.push("...");
 
     for (
-      let i = Math.max(1, currentPage - 1);
-      i <= Math.min(totalPages, currentPage + 1);
+      let i = Math.max(1, current - 1);
+      i <= Math.min(total, current + 1);
       i++
     ) {
       pages.push(i);
     }
 
-    if (currentPage < totalPages - 2) pages.push("...");
-    if (currentPage < totalPages - 1) pages.push(totalPages);
+    if (current < total - 2) pages.push("...");
+    if (current < total - 1) pages.push(total);
 
     return pages;
   };
 
-  // Set current page on component mount or when searchParams change
-  useEffect(() => {
-    const page = parseInt(searchParams.get("page")) || 1;
-    setCurrentPage(page);
-
-    // Apply initial filters
-    applyFilters();
-  }, [searchParams, mergedData]);
-
-  // Calculate total pages based on filtered data
-  const totalPages = Math.ceil(FilteredData.length / itemsPerPage);
-
-  // Format date safely
   const formatDate = (dateString) => {
     if (!dateString) return "-";
 
@@ -338,33 +315,19 @@ const PaymentRequest = forwardRef((props, ref) => {
       .replace(/ /g, "/");
   };
 
-  // Paginate filtered data
-  const paginatedPayments = FilteredData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  // const paginatedPayments = payments;
 
-  // Add formatted date to each payment object
-  const paymentsWithFormattedDate = paginatedPayments.map((payment) => ({
+  const paymentsWithFormattedDate = payments.map((payment) => ({
     ...payment,
     formattedDate: formatDate(payment.dbt_date),
   }));
 
-  // Handle page changes in pagination
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
-      setSearchParams({ page });
-      setCurrentPage(page);
+      setSearchParams({ page: String(page) });
     }
   };
 
-  // if (loading) {
-  //   return <Typography>Loading...</Typography>;
-  // }
-
-  // if (error) {
-  //   return <Typography color="danger">{error}</Typography>;
-  // }
   useImperativeHandle(ref, () => ({
     exportToCSV() {
       console.log("Exporting data to CSV...");
@@ -379,12 +342,12 @@ const PaymentRequest = forwardRef((props, ref) => {
         "UTR",
       ];
 
-      const rows = mergedData.map((payment) => [
+      const rows = [payments].map((payment) => [
         payment.pay_id || "-",
         payment.formattedDate || "-",
         payment.vendor || "-",
         payment.paid_for || "-",
-        payment.ProjectCustomer || "-",
+        payment.customer_name || "-",
         payment.amount_paid || "-",
         payment.approved || "-",
         payment.utr || "-",
@@ -403,48 +366,8 @@ const PaymentRequest = forwardRef((props, ref) => {
     },
   }));
 
-  // const sortedPayments = [...paymentsWithFormattedDate].sort(
-  //   (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-  // );
-
   return (
     <>
-      {/* Mobile Filters */}
-      {/* <Sheet
-        className="SearchAndFilters-mobile"
-        sx={{ display: { xs: "flex", sm: "none" }, my: 1, gap: 1 }}
-      >
-        <Input
-          size="sm"
-          placeholder="Search"
-          startDecorator={<SearchIcon />}
-          sx={{ flexGrow: 1 }}
-        />
-        <IconButton
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          onClick={() => setOpen(true)}
-        >
-          <FilterAltIcon />
-        </IconButton>
-        <Modal open={open} onClose={() => setOpen(false)}>
-          <ModalDialog aria-labelledby="filter-modal" layout="fullscreen">
-            <ModalClose />
-            <Typography id="filter-modal" level="h2">
-              Filters
-            </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Sheet sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {renderFilters()}
-              <Button color="primary" onClick={() => setOpen(false)}>
-                Submit
-              </Button>
-            </Sheet>
-          </ModalDialog>
-        </Modal>
-      </Sheet> */}
-
       {/* Tablet and Up Filters */}
       <Box
         className="SearchAndFilters-tabletUp"
@@ -453,8 +376,8 @@ const PaymentRequest = forwardRef((props, ref) => {
           borderRadius: "sm",
           py: 2,
           // display: { xs: "none", sm: "flex" },
-          display:"flex",
-          flexDirection:{xs:"column", md:"row"},
+          display: "flex",
+          flexDirection: { xs: "column", md: "row" },
           flexWrap: "wrap",
           gap: 1.5,
           "& > *": {
@@ -466,7 +389,7 @@ const PaymentRequest = forwardRef((props, ref) => {
           <FormLabel>Search here</FormLabel>
           <Input
             size="sm"
-            placeholder="Search by Project ID, Customer, or Name"
+            placeholder="Search by Pay ID, Items, Clients Name or Vendor"
             startDecorator={<SearchIcon />}
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
@@ -508,7 +431,7 @@ const PaymentRequest = forwardRef((props, ref) => {
                   sx={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
-                    textAlign: "center",
+                    textAlign: "left",
                   }}
                 >
                   <Checkbox
@@ -534,7 +457,7 @@ const PaymentRequest = forwardRef((props, ref) => {
                   "Amount (₹)",
                   "Payment Status",
                   "UTR",
-                  "",
+                  // "",
                 ].map((header, index) => (
                   <Box
                     component="th"
@@ -542,7 +465,7 @@ const PaymentRequest = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                       fontWeight: "bold",
                     }}
                   >
@@ -569,7 +492,7 @@ const PaymentRequest = forwardRef((props, ref) => {
                         sx={{
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
-                          textAlign: "center",
+                          textAlign: "left",
                         }}
                       >
                         <Checkbox
@@ -588,17 +511,26 @@ const PaymentRequest = forwardRef((props, ref) => {
                         sx={{
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
-                          textAlign: "center",
+                          textAlign: "left",
                         }}
                       >
-                        {payment.pay_id}
+                        {/* {payment.pay_id} */}
+                        <Tooltip title="View Summary" arrow>
+                          <span>
+                            <PaymentID
+                              currentPage={currentPage}
+                              p_id={payment.p_id}
+                              pay_id={payment.pay_id}
+                            />
+                          </span>
+                        </Tooltip>
                       </Box>
                       <Box
                         component="td"
                         sx={{
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
-                          textAlign: "center",
+                          textAlign: "left",
                         }}
                       >
                         {payment.formattedDate}
@@ -608,7 +540,7 @@ const PaymentRequest = forwardRef((props, ref) => {
                         sx={{
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
-                          textAlign: "center",
+                          textAlign: "left",
                         }}
                       >
                         {payment.vendor}
@@ -618,7 +550,7 @@ const PaymentRequest = forwardRef((props, ref) => {
                         sx={{
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
-                          textAlign: "center",
+                          textAlign: "left",
                         }}
                       >
                         {payment.paid_for}
@@ -628,17 +560,17 @@ const PaymentRequest = forwardRef((props, ref) => {
                         sx={{
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
-                          textAlign: "center",
+                          textAlign: "left",
                         }}
                       >
-                        {payment.projectCustomer || "-"}
+                        {payment.customer_name || "-"}
                       </Box>
                       <Box
                         component="td"
                         sx={{
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
-                          textAlign: "center",
+                          textAlign: "left",
                         }}
                       >
                         {payment.amount_paid}
@@ -648,7 +580,7 @@ const PaymentRequest = forwardRef((props, ref) => {
                         sx={{
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
-                          textAlign: "center",
+                          textAlign: "left",
                         }}
                       >
                         <Chip
@@ -677,17 +609,17 @@ const PaymentRequest = forwardRef((props, ref) => {
                         sx={{
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
-                          textAlign: "center",
+                          textAlign: "left",
                         }}
                       >
                         {payment.utr || "-"}
                       </Box>
-                      <Box
+                      {/* <Box
                         component="td"
                         sx={{
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
-                          textAlign: "center",
+                          textAlign: "left",
                         }}
                       >
                         <RowMenu
@@ -695,7 +627,7 @@ const PaymentRequest = forwardRef((props, ref) => {
                           pay_id={payment.pay_id}
                           p_id={payment.p_id}
                         />
-                      </Box>
+                      </Box> */}
                     </Box>
                   ))
               ) : (
@@ -705,7 +637,7 @@ const PaymentRequest = forwardRef((props, ref) => {
                     colSpan={12}
                     sx={{
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                       // fontStyle: "italic",
                       // display:"flex",
                       // flexDirection:"column",
@@ -713,19 +645,24 @@ const PaymentRequest = forwardRef((props, ref) => {
                       // justifyContent:"center"
                     }}
                   >
-                    <Box sx={{
-                      fontStyle: "italic",
-                      display:"flex",
-                      flexDirection:"column",
-                      alignItems:"center",
-                      justifyContent:"center"
-                    }}>
-                      <img src = {NoData} alt="No data Image" style={{width:"50px", height:'50px'}}/>
-                    <Typography fontStyle={"italic"}>
-                      No records available
+                    <Box
+                      sx={{
+                        fontStyle: "italic",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <img
+                        src={NoData}
+                        alt="No data Image"
+                        style={{ width: "50px", height: "50px" }}
+                      />
+                      <Typography fontStyle={"italic"}>
+                        No records available
                       </Typography>
-                      </Box>
-                    
+                    </Box>
                   </Box>
                 </Box>
               )}
@@ -735,15 +672,15 @@ const PaymentRequest = forwardRef((props, ref) => {
       </Sheet>
 
       {/* Pagination */}
+
       <Box
         className="Pagination-laptopUp"
         sx={{
           pt: 2,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
-          // display: { xs: "none", md: "flex" },
-          display:"flex",
-          flexDirection:{xs: "column", sm: "row"},
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
           marginLeft: { xl: "15%", lg: "18%" },
         }}
@@ -758,9 +695,11 @@ const PaymentRequest = forwardRef((props, ref) => {
         >
           Previous
         </Button>
-        <Box>
-          Showing {paginatedPayments.length} of {FilteredData.length} results
-        </Box>
+
+        {/* <Box>
+          Showing page {currentPage} of {totalPages}
+        </Box> */}
+
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
@@ -768,20 +707,17 @@ const PaymentRequest = forwardRef((props, ref) => {
             typeof page === "number" ? (
               <IconButton
                 key={index}
-                size="sm"
                 variant={page === currentPage ? "contained" : "outlined"}
-                color="neutral"
                 onClick={() => handlePageChange(page)}
               >
                 {page}
               </IconButton>
             ) : (
-              <Typography key={index} sx={{ px: 1, alignSelf: "center" }}>
-                {page}
-              </Typography>
+              <Typography key={index}>...</Typography>
             )
           )}
         </Box>
+
         <Button
           size="sm"
           variant="outlined"

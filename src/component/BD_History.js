@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import Axios from "../utils/Axios";
 import Tooltip from "@mui/joy/Tooltip";
-import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
+import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
 import IconButton from "@mui/joy/IconButton";
 
 function BdHistoryTable() {
@@ -26,7 +26,11 @@ function BdHistoryTable() {
           return;
         }
 
-        const { data: response } = await Axios.get("/get-bd-rate-history");
+        const token = localStorage.getItem("authToken");
+
+        const { data: response } = await Axios.get("/get-bd-rate-history", {
+          headers: { "x-auth-token": token },
+        });
         const offerBDRATE = response?.data;
 
         console.log(offerBDRATE);
@@ -61,34 +65,34 @@ function BdHistoryTable() {
     fetchSCMData();
   }, []);
 
-  const AddMenu = ({offer_id, _id}) => {
-    return(
+  const AddMenu = ({ offer_id, _id }) => {
+    return (
       <Tooltip title="Add" arrow>
-      <IconButton
-        size="small"
-        sx={{
-          backgroundColor: "skyblue",
-          color: "white",
-          "&:hover": {
-            backgroundColor: "#45a049",
-          },
-          borderRadius: "50%",
-          padding: "4px",
-        }}
-        onClick={() =>{
-          // const page = currentPage;
-          const offerId = String(offer_id);
-          const Id = _id;
-          localStorage.setItem("preview_id", Id);
-          localStorage.setItem("preview_offerId", offerId);
-          navigate(`/offer_preview?_id=${Id}&offer_id=${offerId}`);
-        }}
-      >
-        <RemoveRedEyeIcon fontSize="xl" />
-      </IconButton>
-    </Tooltip>
-    )
-  }
+        <IconButton
+          size="small"
+          sx={{
+            backgroundColor: "skyblue",
+            color: "white",
+            "&:hover": {
+              backgroundColor: "#45a049",
+            },
+            borderRadius: "50%",
+            padding: "4px",
+          }}
+          onClick={() => {
+            // const page = currentPage;
+            const offerId = String(offer_id);
+            const Id = _id;
+            localStorage.setItem("preview_id", Id);
+            localStorage.setItem("preview_offerId", offerId);
+            navigate(`/offer_preview?_id=${Id}&offer_id=${offerId}`);
+          }}
+        >
+          <RemoveRedEyeIcon fontSize="xl" />
+        </IconButton>
+      </Tooltip>
+    );
+  };
 
   return (
     <Box
@@ -122,7 +126,7 @@ function BdHistoryTable() {
               "Transmission Line",
               "Slnko Charges",
               "Submitted By BD",
-              "Costing Preview"
+              "Costing Preview",
             ].map((header, index) => (
               <Box
                 component="th"
@@ -148,7 +152,7 @@ function BdHistoryTable() {
                 component="tr"
                 key={index}
                 sx={{
-                  textAlign:"center",
+                  textAlign: "center",
                   backgroundColor:
                     index % 2 === 0 ? "neutral.100" : "neutral.50",
                   "&:hover": { backgroundColor: "neutral.200" },
@@ -173,7 +177,7 @@ function BdHistoryTable() {
                   {row.submitted_by_BD || "-"}
                 </Box>
                 <Box component="td" sx={{ padding: 2 }}>
-                <AddMenu offer_id={row.offer_id} _id={row._id} />
+                  <AddMenu offer_id={row.offer_id} _id={row._id} />
                 </Box>
               </Box>
             ))

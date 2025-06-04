@@ -26,7 +26,14 @@ const PaymentRequestSummary = () => {
     const fetchData = async () => {
       try {
         // Fetch project data
-        const projectResponse = await Axios.get("/get-all-projecT-IT");
+       const token = localStorage.getItem("authToken");
+
+const projectResponse = await Axios.get("/get-all-projecT-IT", {
+  headers: {
+    "x-auth-token": token,
+  },
+});
+
         const projectIdFromStorage = Number(localStorage.getItem("p_id"));
 
         if (!projectIdFromStorage) {
@@ -43,7 +50,14 @@ const PaymentRequestSummary = () => {
         setProjectData(matchingProject);
 
         // Fetch payment request data
-        const payRequestResponse = await Axios.get("/get-pay-summarY-IT");
+     
+
+const payRequestResponse = await Axios.get("/get-pay-summarY-IT", {
+  headers: {
+    "x-auth-token": token,
+  },
+});
+
         const payIdFromStorage = localStorage.getItem("pay_summary");
 
         const matchingPayRequest = payRequestResponse.data?.data?.find(
@@ -106,7 +120,18 @@ const PaymentRequestSummary = () => {
 
     setIsPosting(true);
     try {
-      const response = await Axios.post("/approve-data-send-holdpay", PayformData);
+     const token = localStorage.getItem("authToken");
+
+const response = await Axios.post(
+  "/approve-data-send-holdpay",
+  PayformData,
+  {
+    headers: {
+      "x-auth-token": token,
+    },
+  }
+);
+
       // console.log("Standby action successful:", response.data);
       // alert("Data sent successfully!");
       toast.success("Data Hold in StandBy Records");

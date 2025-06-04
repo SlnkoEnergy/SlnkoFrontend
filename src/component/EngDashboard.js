@@ -1,48 +1,32 @@
-import { Player } from "@lottiefiles/react-lottie-player";
-import AddIcon from "@mui/icons-material/Add";
-import BlockIcon from "@mui/icons-material/Block";
 import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
-import HistoryIcon from "@mui/icons-material/History";
+import DashboardCustomizeIcon from "@mui/icons-material/DashboardCustomize";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
-import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
+import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import SearchIcon from "@mui/icons-material/Search";
+import TrackChangesIcon from "@mui/icons-material/TrackChanges";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
 import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
-import DeleteIcon from "@mui/icons-material/Delete";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
-import Divider from "@mui/joy/Divider";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
-import { LockClosedIcon, LockOpenIcon } from "@heroicons/react/24/solid";
 import MenuItem from "@mui/joy/MenuItem";
-import Option from "@mui/joy/Option";
-import EditNoteIcon from "@mui/icons-material/EditNote";
-import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
-import { toast } from "react-toastify";
 import Tooltip from "@mui/joy/Tooltip";
 import Typography from "@mui/joy/Typography";
-import * as React from "react";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import DashboardCustomizeIcon from "@mui/icons-material/DashboardCustomize";
-import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
-import TrackChangesIcon from "@mui/icons-material/TrackChanges";
 
-import NoData from "../assets/alert-bell.svg";
-import animationData from "../assets/Lotties/animation-loading.json";
-import Axios from "../utils/Axios";
-import { useGetHandOverQuery } from "../redux/camsSlice";
 import { CircularProgress } from "@mui/joy";
+import NoData from "../assets/alert-bell.svg";
+import { useGetHandOverQuery } from "../redux/camsSlice";
 
-import { useGetEntireLeadsQuery } from "../redux/leadsSlice";
 import { useTheme } from "@emotion/react";
 
 function Dash_eng() {
@@ -70,10 +54,9 @@ function Dash_eng() {
 
   const {
     data: getHandOverSheet = {},
-    error,
     isLoading,
     refetch,
-  } = useGetHandOverQuery(refreshKey);
+  } = useGetHandOverQuery({ page: currentPage });
 
   // const { data: getLead = {} } = useGetEntireLeadsQuery();
 
@@ -100,7 +83,7 @@ function Dash_eng() {
         ...entry.other_details,
         p_id: entry.p_id,
         status_of_handoversheet: entry.status_of_handoversheet,
-        submitted_by: entry.submitted_by
+        submitted_by: entry.submitted_by,
       }))
     : [];
 
@@ -234,7 +217,7 @@ function Dash_eng() {
     );
   };
 
-    const ProjectCode = ({ currentPage, p_id, code }) => {
+  const ProjectCode = ({ currentPage, p_id, code }) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
 
     return (
@@ -245,7 +228,7 @@ function Dash_eng() {
             color: theme.vars.palette.text.primary,
             textDecoration: "none",
           }}
-           onClick={() => {
+          onClick={() => {
             const page = currentPage;
             const projectId = Number(p_id);
             sessionStorage.setItem("view handover", projectId);
@@ -316,27 +299,18 @@ function Dash_eng() {
   };
 
   const filteredAndSortedData = useMemo(() => {
-    if (!Array.isArray(HandOverSheet)) return [];
-
-    return HandOverSheet
-      .filter((project) => {
-        if (!project) return false; // safeguard
-
-        const matchesSearchQuery = ["code", "customer", "state", "scheme"].some(
-          (key) =>
-            project[key]
-              ?.toString()
-              .toLowerCase()
-              .includes(searchQuery?.toLowerCase())
-        );
-
-        return matchesSearchQuery;
-      })
-      .sort((a, b) => {
-        const dateA = new Date(a?.createdAt || 0);
-        const dateB = new Date(b?.createdAt || 0);
-        return dateB - dateA;
-      });
+    return HandOverSheet.filter((project) =>
+      ["code", "customer", "state"].some((key) =>
+        project[key]
+          ?.toString()
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase())
+      )
+    ).sort((a, b) => {
+      const dateA = new Date(a?.updatedAt || a?.createdAt || 0);
+      const dateB = new Date(b?.updatedAt || b?.createdAt || 0);
+      return dateB - dateA;
+    });
   }, [HandOverSheet, searchQuery]);
 
   const handleSelectAll = (event) => {
@@ -352,52 +326,52 @@ function Dash_eng() {
       prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
     );
   };
-  const generatePageNumbers = (currentPage, totalPages) => {
-    const pages = [];
+  // const generatePageNumbers = (currentPage, totalPages) => {
+  //   const pages = [];
 
-    if (currentPage > 2) {
-      pages.push(1);
-    }
+  //   if (currentPage > 2) {
+  //     pages.push(1);
+  //   }
 
-    if (currentPage > 3) {
-      pages.push("...");
-    }
+  //   if (currentPage > 3) {
+  //     pages.push("...");
+  //   }
 
-    for (
-      let i = Math.max(1, currentPage - 1);
-      i <= Math.min(totalPages, currentPage + 1);
-      i++
-    ) {
-      pages.push(i);
-    }
+  //   for (
+  //     let i = Math.max(1, currentPage - 1);
+  //     i <= Math.min(totalPages, currentPage + 1);
+  //     i++
+  //   ) {
+  //     pages.push(i);
+  //   }
 
-    if (currentPage < totalPages - 2) {
-      pages.push("...");
-    }
+  //   if (currentPage < totalPages - 2) {
+  //     pages.push("...");
+  //   }
 
-    if (currentPage < totalPages - 1) {
-      pages.push(totalPages);
-    }
+  //   if (currentPage < totalPages - 1) {
+  //     pages.push(totalPages);
+  //   }
 
-    return pages;
-  };
+  //   return pages;
+  // };
 
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
   }, [searchParams]);
 
-  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
+  const paginatedPayments = filteredAndSortedData;
 
-  const paginatedPayments = filteredAndSortedData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  // const paginatedPayments = filteredAndSortedData.slice(
+  //   (currentPage - 1) * itemsPerPage,
+  //   currentPage * itemsPerPage
+  // );
   // console.log(paginatedPayments);
   // console.log("Filtered and Sorted Data:", filteredAndSortedData);
 
   const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
+    if (page >= 1) {
       setSearchParams({ page });
       setCurrentPage(page);
     }
@@ -593,15 +567,15 @@ function Dash_eng() {
                       textAlign: "center",
                     }}
                   >
-                  <Tooltip title="View Handover" arrow>
-                    <span>
-                      <ProjectCode
-                        currentPage={currentPage}
-                        p_id={project.p_id}
-                        code={project.code}
-                      />
-                    </span>
-                  </Tooltip>
+                    <Tooltip title="View Handover" arrow>
+                      <span>
+                        <ProjectCode
+                          currentPage={currentPage}
+                          p_id={project.p_id}
+                          code={project.code}
+                        />
+                      </span>
+                    </Tooltip>
                   </td>
                   <td
                     style={{
@@ -610,15 +584,15 @@ function Dash_eng() {
                       textAlign: "center",
                     }}
                   >
-                  <Tooltip title="View Handover" arrow>
-                    <span>
-                      <ProjectName
-                        currentPage={currentPage}
-                        p_id={project.p_id}
-                        customer={project.customer}
-                      />
-                    </span>
-                  </Tooltip>
+                    <Tooltip title="View Handover" arrow>
+                      <span>
+                        <ProjectName
+                          currentPage={currentPage}
+                          p_id={project.p_id}
+                          customer={project.customer}
+                        />
+                      </span>
+                    </Tooltip>
                   </td>
 
                   {/* <td
@@ -630,22 +604,22 @@ function Dash_eng() {
                   >
                     {project.customer || "-"}
                   </td> */}
-                   <td
+                  <td
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
                       textAlign: "center",
                     }}
                   >
-                  <Tooltip title="View Handover" arrow>
-                    <span>
-                      <ProjectName
-                        currentPage={currentPage}
-                        p_id={project.p_id}
-                        customer={project.customer}
-                      />
-                    </span>
-                  </Tooltip>
+                    <Tooltip title="View Handover" arrow>
+                      <span>
+                        <ProjectName
+                          currentPage={currentPage}
+                          p_id={project.p_id}
+                          customer={project.customer}
+                        />
+                      </span>
+                    </Tooltip>
                   </td>
 
                   <td
@@ -745,13 +719,13 @@ function Dash_eng() {
           pt: 2,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
-          // display: { xs: "none", md: "flex" },
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
           marginLeft: { lg: "18%", xl: "15%" },
         }}
       >
+        {/* Previous Button */}
         <Button
           size="sm"
           variant="outlined"
@@ -762,52 +736,50 @@ function Dash_eng() {
         >
           Previous
         </Button>
-        <Box>
-          Showing {draftPayments.length} of {filteredAndSortedData.length}{" "}
-          results
-        </Box>
+
+        {/* Showing X Results (no total because backend paginates) */}
+        <Box>Showing {draftPayments.length} results</Box>
+
+        {/* Page Numbers: Only show current, prev, next for backend-driven pagination */}
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
-          {generatePageNumbers(currentPage, totalPages).map((page, index) =>
-            typeof page === "number" ? (
-              <IconButton
-                key={index}
-                size="sm"
-                variant={page === currentPage ? "contained" : "outlined"}
-                color="neutral"
-                onClick={() => handlePageChange(page)}
-              >
-                {page}
-              </IconButton>
-            ) : (
-              <Typography key={index} sx={{ px: 1, alignSelf: "center" }}>
-                {page}
-              </Typography>
-            )
+          {currentPage > 1 && (
+            <IconButton
+              size="sm"
+              variant="outlined"
+              color="neutral"
+              onClick={() => handlePageChange(currentPage - 1)}
+            >
+              {currentPage - 1}
+            </IconButton>
+          )}
+
+          <IconButton size="sm" variant="contained" color="neutral">
+            {currentPage}
+          </IconButton>
+
+          {/* Show next page button if current page has any data (not empty) */}
+          {draftPayments.length > 0 && (
+            <IconButton
+              size="sm"
+              variant="outlined"
+              color="neutral"
+              onClick={() => handlePageChange(currentPage + 1)}
+            >
+              {currentPage + 1}
+            </IconButton>
           )}
         </Box>
-        {/* <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
-    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-      <IconButton
-        key={page}
-        size="sm"
-        variant={page === currentPage ? "contained" : "outlined"}
-        color="neutral"
-        onClick={() => handlePageChange(page)}
-      >
-        {page}
-      </IconButton>
-    ))}
-  </Box> */}
 
+        {/* Next Button */}
         <Button
           size="sm"
           variant="outlined"
           color="neutral"
           endDecorator={<KeyboardArrowRightIcon />}
           onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
+          disabled={draftPayments.length === 0} // disable next if no data at all on this page
         >
           Next
         </Button>

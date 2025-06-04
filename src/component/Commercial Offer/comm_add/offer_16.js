@@ -51,10 +51,14 @@ const Page16 = () => {
           return;
         }
 
-        const [response, answer] = await Promise.all([
-          Axios.get("/get-comm-offer"),
-          Axios.get("/get-comm-bd-rate"),
-        ]);
+        const token = localStorage.getItem("authToken");
+const config = { headers: { "x-auth-token": token } };
+
+const [response, answer] = await Promise.all([
+  Axios.get("/get-comm-offer", config),
+  Axios.get("/get-comm-bd-rate", config),
+]);
+
 
         const fetchedData = response.data;
         const fetchedBdData = answer.data;

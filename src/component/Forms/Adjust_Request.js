@@ -66,13 +66,20 @@ function AdjustmentRequestForm() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [projectsResponse, poNumbersResponse, vendorsResponse, payResponse] = await Promise.all([
-          Axios.get("/get-all-projecT-IT"),
-          Axios.get("/get-all-pO-IT"),
-          Axios.get("/get-all-vendoR-IT"),
-          Axios.get("/get-pay-summarY-IT"),
-          
-        ]);
+       const token = localStorage.getItem("authToken");
+const config = { headers: { "x-auth-token": token } };
+
+const [
+  projectsResponse,
+  poNumbersResponse,
+  vendorsResponse,
+  payResponse
+] = await Promise.all([
+  Axios.get("/get-all-projecT-IT", config),
+  Axios.get("/get-all-pO-IT", config),
+  Axios.get("/get-all-vendoR-IT", config),
+  Axios.get("/get-pay-summarY-IT", config),
+]);
 
         setGetFormData({
           projectIDs: projectsResponse.data.data || [],
@@ -258,11 +265,21 @@ function AdjustmentRequestForm() {
     // console.log("Form data submitted:", formData);
 
     try {
-      const response = await Axios.post("/add-adjustment-request", {
-        ...formData,
-        p_id: formData?.p_id, 
-        submitted_by: user?.name || getUserData()?.name || "",
-      });
+      const token = localStorage.getItem("authToken");
+
+const response = await Axios.post(
+  "/add-adjustment-request",
+  {
+    ...formData,
+    p_id: formData?.p_id,
+    submitted_by: user?.name || getUserData()?.name || "",
+  },
+  {
+    headers: {
+      "x-auth-token": token,
+    },
+  }
+);
       const { message } = response.data;
 
     setResponseMessage(message);

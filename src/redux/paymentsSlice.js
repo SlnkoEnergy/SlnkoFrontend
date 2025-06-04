@@ -1,16 +1,17 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { baseQuery } from "./auth/auth_variable";
 
-const baseQuery = fetchBaseQuery({
-  baseUrl: "https://dev.api.slnkoprotrac.com/v1/",
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem("authToken");
-    console.log("Token:", token);
-    if (token) {
-      headers.set("x-auth-token", token); // ✅ Match backend expectation
-    }
-    return headers;
-  },
-});
+// const baseQuery = fetchBaseQuery({
+//   baseUrl: "https://api.slnkoprotrac.com/v1/",
+//   prepareHeaders: (headers) => {
+//     const token = localStorage.getItem("authToken");
+//     // console.log("Token:", token);
+//     if (token) {
+//       headers.set("x-auth-token", token);
+//     }
+//     return headers;
+//   },
+// });
 export const paymentsApi = createApi({
   reducerPath: "paymentsApi",
   baseQuery,
@@ -19,12 +20,11 @@ export const paymentsApi = createApi({
     getPayments: builder.query({
       query: () => "get-pay-summarY-IT",
       providesTags: ["Payment"],
-      
     }),
     getVendors: builder.query({
-        query: () => "get-all-vendoR-IT",
-        providesTags: ["Payment"],
-      }),
+      query: () => "get-all-vendoR-IT",
+      providesTags: ["Payment"],
+    }),
     addPayments: builder.mutation({
       query: (newPayment) => ({
         url: "/add-pay-requesT-IT",
@@ -34,29 +34,28 @@ export const paymentsApi = createApi({
       invalidatesTags: ["Payment"],
     }),
     addHoldPayments: builder.mutation({
-        query: (newHoldPayment) => ({
-          url: "/hold-PaymenT-IT",
-          method: "POST",
-          body: newHoldPayment,
-        }),
-        invalidatesTags: ["Payment"],
-      }), 
-      addHoldToPayments: builder.mutation({
-        query: (newHoldToPayment) => ({
-          url: "/hold-payto-payrequest",
-          method: "POST",
-          body: newHoldToPayment,
-        }),
-        invalidatesTags: ["Payment"],
+      query: (newHoldPayment) => ({
+        url: "/hold-PaymenT-IT",
+        method: "POST",
+        body: newHoldPayment,
       }),
+      invalidatesTags: ["Payment"],
+    }),
+    addHoldToPayments: builder.mutation({
+      query: (newHoldToPayment) => ({
+        url: "/hold-payto-payrequest",
+        method: "POST",
+        body: newHoldToPayment,
+      }),
+      invalidatesTags: ["Payment"],
+    }),
   }),
 });
 
-export const { 
-  useGetPaymentsQuery, 
+export const {
+  useGetPaymentsQuery,
   useGetVendorsQuery,
   useAddPaymentsMutation,
   useAddHoldPaymentsMutation,
   useAddHoldToPaymentsMutation,
 } = paymentsApi;
-

@@ -1,12 +1,10 @@
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import { Textarea } from "@mui/joy";
+import { Card, CardContent, Textarea } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Input from "@mui/joy/Input";
 import List from "@mui/joy/List";
 import ListItem from "@mui/joy/ListItem";
-import Modal from "@mui/joy/Modal";
-import ModalDialog from "@mui/joy/ModalDialog";
 import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
@@ -100,17 +98,16 @@ const Expense_Form = () => {
   }, []);
 
   const categoryOptions = [
-    "Travelling Expenses",
-    "Lodging",
-    "Meal Expenses",
-    "Project Expenses",
-    "Repair and Maintenance",
-    "Telephone Expenses",
-    "Courier Charges(porter)",
-    "Staff welfare expenses",
-    "Medical Expenses",
-    "Printing and stationary",
-    "Office expenses",
+    "Site Meal Per-diem Allowance",
+    "Site Lodging and Accommodation Expense",
+    "Site Travelling Expenses",
+    "Site Labour Charges",
+    "Site Staff Telephone Expenses",
+    "Site Courier and Parcel Expense",
+    "Site Material Purchases",
+    "Site Stationery Expenses",
+    "Site Miscellaneous Expenses",
+    "Office Expenses",
   ];
 
   const [addExpense] = useAddExpenseMutation();
@@ -348,7 +345,7 @@ const Expense_Form = () => {
       return updatedInputs;
     });
 
-    setDropdownOpenIndex(null); // ✅ Close the dropdown
+    setDropdownOpenIndex(null);
   };
 
   const handleCommentSave = () => {
@@ -375,33 +372,44 @@ const Expense_Form = () => {
   }
 
   return (
-    <Box p={2}>
-      <Typography level="h4" mb={2}>
-        Expense Sheet
-      </Typography>
-
-      <Box sx={{ maxWidth: "100%", overflowX: "auto", p: 1 }}>
+    <Box
+      p={2}
+      sx={{
+        width: "-webkit-fill-available",
+      }}
+    >
+      <Box
+        sx={{
+          maxWidth: "100%",
+          overflowX: "auto",
+          p: 1,
+          marginLeft: { md: "15%" },
+        }}
+      >
         {/* Action Buttons */}
-
         <Box
           sx={{
-            marginLeft: { md: "15%" },
+            display: "flex",
+            flexDirection: { xs: "column", md: "row-reverse" },
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            gap: 2,
+            mb: 2,
           }}
         >
-          {/* Action Buttons */}
-
+          {/* Select Expense Term – always first on mobile */}
           <Box
-            display="flex"
-            alignItems="center"
-            justifyContent={"flex-end"}
-            gap={2}
-            mb={2}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 1.5,
+            }}
           >
-            <Typography level="body-md" fontWeight="lg">
-              Select Expense Term:
+            <Typography level="body-sm" fontWeight="md">
+              📅 Select Expense Term:
             </Typography>
 
-            {/* From Date */}
             <Input
               type="date"
               size="sm"
@@ -412,11 +420,11 @@ const Expense_Form = () => {
                   from: e.target.value,
                 })
               }
+              sx={{ minWidth: 130 }}
             />
 
             <Typography level="body-sm">to</Typography>
 
-            {/* To Date */}
             <Input
               type="date"
               size="sm"
@@ -427,9 +435,42 @@ const Expense_Form = () => {
                   to: e.target.value,
                 })
               }
+              sx={{ minWidth: 130 }}
             />
           </Box>
 
+          {/* Action Buttons – below on mobile */}
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "row",
+              gap: 1,
+            }}
+          >
+            <Button
+              onClick={handleAddRow}
+              variant="solid"
+              size="sm"
+              title="Add Row"
+              color="primary"
+            >
+              +Add Row
+            </Button>
+
+            <Button
+              onClick={handleRemoveRow}
+              variant="solid"
+              size="sm"
+              title="Remove Row"
+              color="danger"
+              disabled={rows.length <= 1}
+            >
+              -Remove Row
+            </Button>
+          </Box>
+        </Box>
+
+        <Box sx={{ display: { xs: "none", md: "block" } }}>
           <table
             style={{
               borderCollapse: "collapse",
@@ -568,7 +609,6 @@ const Expense_Form = () => {
                             {cat}
                           </Option>
                         ))}
-                        
                       </Select>
                     </td>
 
@@ -715,54 +755,198 @@ const Expense_Form = () => {
               })}
             </tbody>
           </table>
-          <Box mt={2} textAlign="left" display="flex" gap={1}>
-            <Button onClick={handleAddRow} variant="soft" size="sm">
-              + Add Row
-            </Button>
-            <Button
-              onClick={handleRemoveRow}
-              variant="soft"
-              size="sm"
-              color="danger"
-              disabled={rows.length <= 1}
-            >
-              - Remove Row
-            </Button>
-          </Box>
+        </Box>
+
+        <Box sx={{ display: { xs: "block", md: "none" } }}>
+          {rows.map((row, rowIndex) => {
+            const filteredProjects = projectCodes.filter((project) =>
+              (project.code || "")
+                .toLowerCase()
+                .includes((searchInputs[rowIndex] || "").toLowerCase())
+            );
+
+            return (
+              <Card key={rowIndex} variant="outlined" sx={{ p: 2 }}>
+                <CardContent>
+                  {/* Project Code Search */}
+                  <Input
+                    size="sm"
+                    value={searchInputs[rowIndex] || ""}
+                    placeholder="Search Project Code"
+                    onChange={(e) =>
+                      handleSearchInputChange(rowIndex, e.target.value)
+                    }
+                    onFocus={() => setDropdownOpenIndex(rowIndex)}
+                    inputRef={(el) => (inputRefs.current[rowIndex] = el)}
+                    sx={{ mb: 1 }}
+                  />
+                  {/* Project Dropdown */}
+                  {dropdownOpenIndex === rowIndex &&
+                    filteredProjects.length > 0 && (
+                      <Sheet
+                        ref={(el) => (dropdownRefs.current[rowIndex] = el)}
+                        variant="outlined"
+                        sx={{
+                          maxHeight: 180,
+                          overflowY: "auto",
+                          bgcolor: "background.body",
+                          borderRadius: 1,
+                          boxShadow: "md",
+                          mt: 0.5,
+                        }}
+                      >
+                        <List size="sm">
+                          {filteredProjects.map((project, i) => (
+                            <ListItem
+                              key={i}
+                              onClick={() =>
+                                handleSelectProject(
+                                  rowIndex,
+                                  project.code,
+                                  project.name
+                                )
+                              }
+                              sx={{
+                                cursor: "pointer",
+                                "&:hover": { bgcolor: "primary.softBg" },
+                              }}
+                            >
+                              <Typography level="body2" fontWeight="md">
+                                {project.code}
+                              </Typography>{" "}
+                              - {project.name}
+                            </ListItem>
+                          ))}
+                        </List>
+                      </Sheet>
+                    )}
+
+                  <Input
+                    size="sm"
+                    value={row.items?.[0]?.project_name || ""}
+                    placeholder="Project Name"
+                    disabled
+                    sx={{ mt: 1 }}
+                  />
+
+                  <Select
+                    size="sm"
+                    value={row.items?.[0]?.category || ""}
+                    onChange={(e, value) =>
+                      handleItemChange(rowIndex, "category", value)
+                    }
+                    placeholder="Category"
+                    sx={{ mt: 1 }}
+                  >
+                    {categoryOptions.map((cat, idx) => (
+                      <Option key={idx} value={cat}>
+                        {cat}
+                      </Option>
+                    ))}
+                  </Select>
+
+                  <Textarea
+                    size="sm"
+                    value={row.items?.[0]?.description || ""}
+                    placeholder="Description"
+                    onChange={(e) =>
+                      handleItemChange(rowIndex, "description", e.target.value)
+                    }
+                    minRows={2}
+                    sx={{ mt: 1 }}
+                  />
+
+                  <Input
+                    type="date"
+                    size="sm"
+                    value={row.items?.[0]?.expense_date || ""}
+                    onChange={(e) =>
+                      handleItemChange(rowIndex, "expense_date", e.target.value)
+                    }
+                    sx={{ mt: 1 }}
+                  />
+
+                  <Input
+                    type="number"
+                    size="sm"
+                    value={row.items?.[0]?.invoice?.invoice_amount || ""}
+                    placeholder="₹ Invoice Amount"
+                    onChange={(e) =>
+                      handleItemChange(rowIndex, "invoice", {
+                        ...row.items?.[0]?.invoice,
+                        invoice_amount: e.target.value,
+                      })
+                    }
+                    sx={{ mt: 1 }}
+                  />
+
+                  <Box mt={1}>
+                    <Button
+                      size="sm"
+                      component="label"
+                      variant="outlined"
+                      startDecorator={<UploadFileIcon />}
+                    >
+                      {row.items?.[0]?.attachment_url
+                        ? "Change File"
+                        : "Upload File"}
+                      <input
+                        hidden
+                        type="file"
+                        onChange={(e) =>
+                          e.target.files?.[0] &&
+                          handleFileChange(rowIndex, 0, e.target.files[0])
+                        }
+                      />
+                    </Button>
+                    {row.items?.[0]?.attachment_url && (
+                      <Typography
+                        level="body-sm"
+                        mt={1}
+                        sx={{ wordBreak: "break-word" }}
+                      >
+                        📎 {row.items[0].attachment_url}
+                      </Typography>
+                    )}
+                  </Box>
+
+                  <Select
+                    value={row.items?.[0]?.invoice?.status || ""}
+                    onChange={(e, value) =>
+                      handleItemChange(rowIndex, "invoice", {
+                        ...row.items?.[0]?.invoice,
+                        status: value,
+                      })
+                    }
+                    placeholder="Invoice?"
+                    sx={{ mt: 1 }}
+                  >
+                    <Option value="Yes">Yes</Option>
+                    <Option value="No">No</Option>
+                  </Select>
+
+                  {row.items?.[0]?.invoice?.status === "Yes" && (
+                    <Input
+                      value={row.items?.[0]?.invoice?.invoice_number || ""}
+                      onChange={(e) =>
+                        handleItemChange(rowIndex, "invoice", {
+                          ...row.items?.[0]?.invoice,
+                          invoice_number: e.target.value,
+                        })
+                      }
+                      placeholder="Invoice Number"
+                      sx={{ mt: 1 }}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </Box>
       </Box>
 
-      {/* Joy UI Modal for Comment */}
-      <Modal
-        open={commentDialog.open}
-        onClose={() => setCommentDialog({ open: false, rowIndex: null })}
-      >
-        <ModalDialog>
-          <Typography level="h6">Rejection Comment</Typography>
-          <Input
-            minRows={2}
-            placeholder="Enter comment"
-            value={
-              rows[commentDialog.rowIndex]?.items?.[0]?.item_status_history?.[0]
-                ?.remarks || ""
-            }
-            onChange={(e) =>
-              handleRowChange(
-                commentDialog.rowIndex,
-                "item_status_history.remarks",
-                e.target.value
-              )
-            }
-            sx={{ mt: 1 }}
-          />
-          <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
-            <Button onClick={handleCommentSave}>Save</Button>
-          </Box>
-        </ModalDialog>
-      </Modal>
-
       {/* Summary */}
-      <Box mt={4} sx={{ margin: "0 auto", width: "60%" }}>
+      <Box mt={4} sx={{ margin: "0 auto", width: { md: "60%", sm: "100%" } }}>
         <Typography level="h5" mb={1}>
           Expense Summary
         </Typography>

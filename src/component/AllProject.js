@@ -1,10 +1,13 @@
+import DeleteIcon from "@mui/icons-material/Delete";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
+import ModeEditIcon from "@mui/icons-material/ModeEdit";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
+import Divider from "@mui/joy/Divider";
 import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
@@ -13,20 +16,14 @@ import Input from "@mui/joy/Input";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
-import Option from "@mui/joy/Option";
-import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import * as React from "react";
-import DeleteIcon from "@mui/icons-material/Delete";
-import ModeEditIcon from "@mui/icons-material/ModeEdit";
-import Divider from "@mui/joy/Divider";
 import {
   forwardRef,
   useEffect,
   useImperativeHandle,
-  useState,
   useMemo,
+  useState,
 } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -459,8 +456,8 @@ const AllProjects = forwardRef((props, ref) => {
             </Box>
           </Box>
           <Box component="tbody">
-            {paginatedProjects.data.length > 0 ? (
-              paginatedProjects.data.map((project, index) => (
+            {paginatedProjects.length > 0 ? (
+              paginatedProjects.map((project, index) => (
                 <Box
                   component="tr"
                   key={index}

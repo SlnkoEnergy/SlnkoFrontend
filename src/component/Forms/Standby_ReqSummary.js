@@ -26,7 +26,12 @@ const PaymentRequestSummary = () => {
   useEffect(() => {
     const fetchProjectData = async () => {
       try {
-        const projectResponse = await Axios.get("/get-all-projecT-IT");
+        const token = localStorage.getItem("authToken");
+        const projectResponse = await Axios.get("/get-all-projecT-IT", {
+          headers: {
+            "x-auth-token": token,
+          },
+        });
         const projectIdFromStorage = Number(localStorage.getItem("p_id"));
 
         if (!projectIdFromStorage) {
@@ -59,7 +64,12 @@ const PaymentRequestSummary = () => {
   useEffect(() => {
     const fetchPayRequestData = async () => {
       try {
-        const payRequestResponse = await Axios.get("/hold-pay-summarY-IT");
+        const token = localStorage.getItem("authToken");
+        const payRequestResponse = await Axios.get("/hold-pay-summarY-IT", {
+          headers: {
+            "x-auth-token": token,
+          },
+        });
         const payIdFromStorage = localStorage.getItem("standby_summary");
 
         if (!payIdFromStorage) {
@@ -93,12 +103,17 @@ const PaymentRequestSummary = () => {
 
   const handleSubmit = async () => {
     try {
+      const token = localStorage.getItem("authToken");
       const payload = {
         pay_id: payRequestData?.pay_id || "",
         approved: payRequestData?.approved || "",
       };
 
-      const response = await Axios.post("/hold-payto-payrequest", payload);
+      const response = await Axios.post("/hold-payto-payrequest", payload, {
+  headers: {
+    "x-auth-token": token,
+  },
+});
 
       if (response.status === 200 || response.status === 201) {
         // console.log("Data successfully submitted:", response.data);
