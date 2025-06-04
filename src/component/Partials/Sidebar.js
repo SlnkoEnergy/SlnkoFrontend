@@ -173,7 +173,7 @@ function Sidebar() {
           },
         }}
       >
-        {user?.name === "IT Team" || user?.department === "admin" ? (
+        {user?.name === "IT Team" || user?.name === "admin" ? (
           <List>
             {/* Dashboard */}
             <ListItem>
@@ -417,6 +417,11 @@ function Sidebar() {
                       Dashboard
                     </ListItemButton>
                   </ListItem>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/temp_dash")}>
+                      Template Dashboard
+                    </ListItemButton>
+                  </ListItem>
                 </List>
               </Toggler>
             </ListItem>
@@ -501,7 +506,6 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
-
             {/*Expense Sheet */}
             <ListItem nested>
               <Toggler
@@ -785,7 +789,14 @@ function Sidebar() {
                     <ListItemButton
                       onClick={() => navigate("/expense_accounts")}
                     >
-                      Accounts Expense Approval
+                      Project Balances
+                    </ListItemButton>
+                  </ListItem>
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/payment-approved")}
+                    >
+                      Approved Payment
                     </ListItemButton>
                   </ListItem>
                 </List>

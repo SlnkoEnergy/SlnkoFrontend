@@ -9,6 +9,7 @@ import { engsModuleApi } from "../redux/Eng/modulesSlice";
 import { engsPoolingApi } from "../redux/Eng/poolingsSlice";
 import { engsTransformerApi } from "../redux/Eng/transformersSlice";
 import { expensesApi } from "../redux/Expense/expenseSlice";
+import { templatesApi } from "../redux/Eng/templatesSlice";
 import { billsApi } from "../redux/billsSlice";
 import { camsApi } from "../redux/camsSlice";
 import { commsApi } from "../redux/commsSlice";
@@ -41,6 +42,7 @@ export const store = configureStore({
     [engsAcCableApi.reducerPath]: engsAcCableApi.reducer,
     [engsDcCableApi.reducerPath]: engsDcCableApi.reducer,
     [expensesApi.reducerPath]: expensesApi.reducer,
+    [templatesApi.reducerPath]: templatesApi.reducer,
     [billsApi.reducerPath]: billsApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
@@ -64,6 +66,7 @@ export const store = configureStore({
       engsInverterApi.middleware,
       engsTransformerApi.middleware,
       expensesApi.middleware,
+      templatesApi.middleware,
       billsApi.middleware
     ),
 });
