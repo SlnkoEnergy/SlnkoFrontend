@@ -802,9 +802,9 @@ const UpdateExpense = () => {
     "Attachment",
     "Invoice Number",
     "Approved Amount",
-    ...(user?.name === "Shruti Tripathi" || user?.department === "Accounts"
-      ? []
-      : ["Approval"]),
+    ...((user?.role === "manager" || user?.department === "admin" || user?.name === "IT Team")
+      ? ["Approval"]
+      : []),
   ];
 
   return (
@@ -1123,54 +1123,56 @@ const UpdateExpense = () => {
                           />
                         </td>
 
-                        {!(
-                          user?.name === "Shruti Tripathi" ||
-                          user?.department === "Accounts"
-                        ) && (
-                          <td style={{ padding: 8 }}>
-                            <Box display="flex" gap={1} justifyContent="center">
-                              <Button
-                                size="sm"
-                                variant={
-                                  item.item_current_status ===
-                                  "manager approval"
-                                    ? "solid"
-                                    : "outlined"
-                                }
-                                color="success"
-                                onClick={() =>
-                                  handleApproval(
-                                    rowIndex,
-                                    itemIndex,
+                        {((user?.role === "manager" || user?.department === "admin" || user?.name === "IT Team")) &&
+                          item.item_current_status === "submitted" && (
+                            <td style={{ padding: 8 }}>
+                              <Box
+                                display="flex"
+                                gap={1}
+                                justifyContent="center"
+                              >
+                                <Button
+                                  size="sm"
+                                  variant={
+                                    item.item_current_status ===
                                     "manager approval"
-                                  )
-                                }
-                                aria-label="Approve"
-                              >
-                                <CheckIcon />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant={
-                                  item.item_current_status === "rejected"
-                                    ? "solid"
-                                    : "outlined"
-                                }
-                                color="danger"
-                                onClick={() =>
-                                  handleApproval(
-                                    rowIndex,
-                                    itemIndex,
-                                    "rejected"
-                                  )
-                                }
-                                aria-label="Reject"
-                              >
-                                <CloseIcon />
-                              </Button>
-                            </Box>
-                          </td>
-                        )}
+                                      ? "solid"
+                                      : "outlined"
+                                  }
+                                  color="success"
+                                  onClick={() =>
+                                    handleApproval(
+                                      rowIndex,
+                                      itemIndex,
+                                      "manager approval"
+                                    )
+                                  }
+                                  aria-label="Approve"
+                                >
+                                  <CheckIcon />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant={
+                                    item.item_current_status === "rejected"
+                                      ? "solid"
+                                      : "outlined"
+                                  }
+                                  color="danger"
+                                  onClick={() =>
+                                    handleApproval(
+                                      rowIndex,
+                                      itemIndex,
+                                      "rejected"
+                                    )
+                                  }
+                                  aria-label="Reject"
+                                >
+                                  <CloseIcon />
+                                </Button>
+                              </Box>
+                            </td>
+                          )}
                       </tr>
                     ))
                   )}
@@ -1811,28 +1813,27 @@ const UpdateExpense = () => {
                 width="100%"
                 gap={2}
               >
-                {!(
-                  user?.department === "Accounts" || user?.department === "HR"
-                ) && (
-                  <Button
-                    variant="solid"
-                    color="primary"
-                    onClick={handleSubmit}
-                    disabled={
-                      isUpdating ||
-                      (rows[0]?.total_approved_amount === 0 &&
-                        [
-                          "manager approval",
-                          "rejected",
-                          "hr approval",
-                          "final approval",
-                          "hold",
-                        ].includes(rows[0]?.current_status))
-                    }
-                  >
-                    Update Expense Sheet
-                  </Button>
-                )}
+                {(user?.role === "manager" || user?.department === "admin" || user?.name === "IT Team") &&
+                  (rows[0]?.current_status === "submitted") && (
+                    <Button
+                      variant="solid"
+                      color="primary"
+                      onClick={handleSubmit}
+                      disabled={
+                        isUpdating ||
+                        (rows[0]?.total_approved_amount === 0 &&
+                          [
+                            "manager approval",
+                            "rejected",
+                            "hr approval",
+                            "final approval",
+                            "hold",
+                          ].includes(rows[0]?.current_status))
+                      }
+                    >
+                      Update Expense Sheet
+                    </Button>
+                  )}
 
                 {user?.department === "Accounts" &&
                   rows[0]?.current_status === "final approval" && (
