@@ -702,18 +702,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
-        ) : user?.department === "BD" &&
-          (user?.name === "Navin Kumar Gautam" ||
-            user?.name === "Mohd Shakir Khan" ||
-            user?.name === "Shiv Ram Tathagat" ||
-            user?.name === "Ketan Kumar Jha" ||
-            user?.name === "Vibhav Upadhyay" ||
-            user?.name === "Shantanu Sameer" ||
-            user?.name === "Shambhavi Gupta" ||
-            user?.name === "Geeta" ||
-            user?.name === "Anudeep Kumar" ||
-            user?.name === "Ashish Jha" ||
-            user?.name === "Priyanka Sharma") ? (
+        ) : user?.department === "BD" ? (
           <List>
             <ListItem nested>
               <Toggler
@@ -750,17 +739,8 @@ function Sidebar() {
                   </ListItem>
                 </List>
               </Toggler>
-
-              <ListItem>
-                <ListItemButton onClick={() => navigate("#")}>
-                  <AccountBalanceWalletIcon />
-
-                  <ListItemContent>
-                    <Typography level="title-sm">Expense Sheet</Typography>
-                  </ListItemContent>
-                </ListItemButton>
-              </ListItem>
             </ListItem>
+
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
