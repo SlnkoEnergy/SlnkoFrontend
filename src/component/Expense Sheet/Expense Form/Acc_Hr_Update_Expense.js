@@ -6,7 +6,6 @@ import {
   DialogContent,
   DialogTitle,
   FormLabel,
-  IconButton,
   Textarea,
   Tooltip,
 } from "@mui/joy";
@@ -24,7 +23,6 @@ import { toast } from "react-toastify";
 import {
   useGetAllExpenseQuery,
   useUpdateDisbursementDateMutation,
-  useUpdateExpenseAccountsSheetMutation,
   useUpdateExpenseSheetMutation,
   useUpdateExpenseStatusOverallMutation,
 } from "../../../redux/Expense/expenseSlice";
@@ -135,7 +133,6 @@ const UpdateExpenseAccounts = () => {
     "Site Stationery Expenses",
     "Site Miscellaneous Expenses",
     "Site Vehicle Repair and Maintenance Expense",
-    "Office Expenses",
   ];
 
   const categoryDescriptions = {
@@ -159,9 +156,63 @@ const UpdateExpenseAccounts = () => {
       "Please select this head to book all other related expenses incurred by personnel at project site that happens for project at site which are not covered in the above heads. Please make sure to collect receipts or bills",
     "Site Vehicle Repair and Maintenance Expense":
       "Please select this head to book all vehicle repair and maintenance related expenses incurred by personnel at project site that happens for project at site. Please make sure to collect receipts or bills",
-    "Office Expenses":
-      "Please select this head to book general office expenses unrelated to project site.",
   };
+
+  const bdAndSalesCategoryOptions = [
+    "Business Promotion",
+    "Business Development - Travelling Expense",
+    "Lodging - Business Travel",
+    "Business Development - Per Diem and Meal Expenses",
+  ];
+
+  const bdAndSalesCategoryDescriptions = {
+    "Business Promotion":
+      "Please select this head for all kinds of expenses related to expos, conferences and likewise.",
+    "Business Development - Travelling Expense":
+      "Please select this head to book all travelling related expenses incurred for client visit and meeting such as bus-ticket, train-ticket, flight-ticket, reimbursements for fuel, hire of bikes or cabs and likewise. Please make sure to collect receipts or bills",
+    "Lodging - Business Travel":
+      "Please select this head to book all lodging related expenses incurred for client visit and meeting such as hotel, rentals of places and likewise. Please make sure to collect receipts or bills",
+    "Business Development - Per Diem and Meal Expenses":
+      "Please select this head to book expenses and allowance for food incurred during client visits and meetings provided as per company policy.",
+  };
+
+  const officeAdminCategoryOptions = [
+    "Meals Expense - Office",
+    "Office Travelling and Conveyance Expenses",
+    "Repair and Maintenance",
+  ];
+
+  const officeAdminCategoryDescriptions = {
+    "Meals Expense - Office":
+      "Please select this head to book expenses for food incurred during office meetings and late-sitting hours provided as per company policy. Please make sure to collect receipts or bills",
+    "Office Travelling and Conveyance Expenses":
+      "Please select this head to book all travelling related expenses incurred for official visits and meeting such as bus-ticket, train-ticket, flight-ticket, reimbursements for fuel, hire of bikes or cabs and likewise. Please make sure to collect receipts or bills",
+    "Repair and Maintenance":
+      "Please select this head to book all expenses incurred for repair and maintenance of less than INR 10,000 for office equipments and computers. Please make sure to collect receipts or bills. Please make sure all payment above INR 10,000 is to be made directly from bank after raising PO.",
+  };
+
+  function getCategoryOptionsByDepartment(department) {
+    const common = officeAdminCategoryOptions;
+
+    if (department === "Projects" || department === "Engineering") {
+      return [...common, ...categoryOptions];
+    }
+
+    if (department === "BD" || department === "Marketing") {
+      return [...common, ...bdAndSalesCategoryOptions];
+    }
+
+    return common;
+  }
+
+  function getCategoryDescription(category) {
+    return (
+      categoryDescriptions[category] ||
+      bdAndSalesCategoryDescriptions[category] ||
+      officeAdminCategoryDescriptions[category] ||
+      "No description available."
+    );
+  }
 
   const { data: response = {} } = useGetAllExpenseQuery();
   const expenses = response.data || [];
@@ -1303,7 +1354,8 @@ const UpdateExpenseAccounts = () => {
               boxShadow: "sm",
               flex: 1,
               minWidth: 400,
-              overflow: "auto",
+              maxHeight: 500,
+              overflowY: "auto",
             }}
           >
             <Table
@@ -1334,7 +1386,19 @@ const UpdateExpenseAccounts = () => {
                 </tr>
               </thead>
               <tbody>
-                {categoryOptions.map((category, idx) => {
+                {(user?.role === "manager" ||
+                user?.department === "admin" ||
+                user?.department === "HR" ||
+                user?.name === "IT Team"
+                  ? [
+                      ...new Set([
+                        ...categoryOptions,
+                        ...bdAndSalesCategoryOptions,
+                        ...officeAdminCategoryOptions,
+                      ]),
+                    ]
+                  : getCategoryOptionsByDepartment(user?.department)
+                ).map((category, idx) => {
                   let total = 0;
                   let approvedTotal = 0;
 
@@ -1343,7 +1407,6 @@ const UpdateExpenseAccounts = () => {
                       if (item.category === category) {
                         total += Number(item.invoice?.invoice_amount || 0);
 
-                        // ✅ Always count if there's an approved_amount set
                         if (
                           item.item_current_status === "manager approval" ||
                           (item.approved_amount !== undefined &&
@@ -1359,8 +1422,10 @@ const UpdateExpenseAccounts = () => {
                     <tr key={idx}>
                       <td>
                         <Tooltip
-                          placement="right"
+                          placement="bottom"
                           arrow
+                          enterTouchDelay={0}
+                          leaveTouchDelay={3000}
                           title={
                             <Sheet
                               variant="soft"
@@ -1373,7 +1438,7 @@ const UpdateExpenseAccounts = () => {
                               }}
                             >
                               <Typography level="body-sm">
-                                {categoryDescriptions[category]}
+                                {getCategoryDescription(category)}
                               </Typography>
                             </Sheet>
                           }

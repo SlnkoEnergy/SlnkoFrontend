@@ -1,15 +1,7 @@
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import DownloadIcon from "@mui/icons-material/Download";
-import {
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormLabel,
-  IconButton,
-  Textarea,
-  Tooltip,
-} from "@mui/joy";
+import { IconButton, Textarea, Tooltip } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Input from "@mui/joy/Input";
@@ -23,7 +15,6 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   useGetAllExpenseQuery,
-  useUpdateDisbursementDateMutation,
   useUpdateExpenseSheetMutation,
   useUpdateExpenseStatusOverallMutation,
 } from "../../../redux/Expense/expenseSlice";
@@ -110,7 +101,6 @@ const UpdateExpense = () => {
     "Site Stationery Expenses",
     "Site Miscellaneous Expenses",
     "Site Vehicle Repair and Maintenance Expense",
-    "Office Expenses",
   ];
 
   const categoryDescriptions = {
@@ -134,9 +124,63 @@ const UpdateExpense = () => {
       "Please select this head to book all other related expenses incurred by personnel at project site that happens for project at site which are not covered in the above heads. Please make sure to collect receipts or bills",
     "Site Vehicle Repair and Maintenance Expense":
       "Please select this head to book all vehicle repair and maintenance related expenses incurred by personnel at project site that happens for project at site. Please make sure to collect receipts or bills",
-    "Office Expenses":
-      "Please select this head to book general office expenses unrelated to project site.",
   };
+
+  const bdAndSalesCategoryOptions = [
+    "Business Promotion",
+    "Business Development - Travelling Expense",
+    "Lodging - Business Travel",
+    "Business Development - Per Diem and Meal Expenses",
+  ];
+
+  const bdAndSalesCategoryDescriptions = {
+    "Business Promotion":
+      "Please select this head for all kinds of expenses related to expos, conferences and likewise.",
+    "Business Development - Travelling Expense":
+      "Please select this head to book all travelling related expenses incurred for client visit and meeting such as bus-ticket, train-ticket, flight-ticket, reimbursements for fuel, hire of bikes or cabs and likewise. Please make sure to collect receipts or bills",
+    "Lodging - Business Travel":
+      "Please select this head to book all lodging related expenses incurred for client visit and meeting such as hotel, rentals of places and likewise. Please make sure to collect receipts or bills",
+    "Business Development - Per Diem and Meal Expenses":
+      "Please select this head to book expenses and allowance for food incurred during client visits and meetings provided as per company policy.",
+  };
+
+  const officeAdminCategoryOptions = [
+    "Meals Expense - Office",
+    "Office Travelling and Conveyance Expenses",
+    "Repair and Maintenance",
+  ];
+
+  const officeAdminCategoryDescriptions = {
+    "Meals Expense - Office":
+      "Please select this head to book expenses for food incurred during office meetings and late-sitting hours provided as per company policy. Please make sure to collect receipts or bills",
+    "Office Travelling and Conveyance Expenses":
+      "Please select this head to book all travelling related expenses incurred for official visits and meeting such as bus-ticket, train-ticket, flight-ticket, reimbursements for fuel, hire of bikes or cabs and likewise. Please make sure to collect receipts or bills",
+    "Repair and Maintenance":
+      "Please select this head to book all expenses incurred for repair and maintenance of less than INR 10,000 for office equipments and computers. Please make sure to collect receipts or bills. Please make sure all payment above INR 10,000 is to be made directly from bank after raising PO.",
+  };
+
+  function getCategoryOptionsByDepartment(department) {
+    const common = officeAdminCategoryOptions;
+
+    if (department === "Projects" || department === "Engineering") {
+      return [...common, ...categoryOptions];
+    }
+
+    if (department === "BD" || department === "Marketing") {
+      return [...common, ...bdAndSalesCategoryOptions];
+    }
+
+    return common;
+  }
+
+  function getCategoryDescription(category) {
+    return (
+      categoryDescriptions[category] ||
+      bdAndSalesCategoryDescriptions[category] ||
+      officeAdminCategoryDescriptions[category] ||
+      "No description available."
+    );
+  }
 
   const { data: response = {} } = useGetAllExpenseQuery();
   const expenses = response.data || [];
@@ -309,12 +353,15 @@ const UpdateExpense = () => {
       items: [...updatedRows[rowIndex].items],
     };
 
-    updatedRow.items[itemIndex] = {
+    const updatedItem = {
       ...updatedRow.items[itemIndex],
       approvalStatus: status,
       item_current_status: status,
+      approvedAmount:
+        status === "rejected" ? 0 : updatedRow.items[itemIndex].approvedAmount,
     };
 
+    updatedRow.items[itemIndex] = updatedItem;
     updatedRows[rowIndex] = updatedRow;
     setRows(updatedRows);
 
@@ -672,13 +719,10 @@ const UpdateExpense = () => {
                             variant="outlined"
                             type="number"
                             value={
-                              item.item_current_status === "rejected"
-                                ? 0
-                                : item.approved_amount !== undefined &&
-                                    item.approved_amount !== null
-                                  ? item.approved_amount
-                                  : item.invoice?.invoice_amount?.toString() ||
-                                    ""
+                              item.approved_amount !== undefined &&
+                              item.approved_amount !== null
+                                ? item.approved_amount
+                                : item.invoice?.invoice_amount || ""
                             }
                             placeholder="₹"
                             onChange={(e) =>
@@ -696,56 +740,51 @@ const UpdateExpense = () => {
 
                         {(user?.role === "manager" ||
                           user?.department === "admin" ||
-                          user?.name === "IT Team") &&
-                          item.item_current_status === "submitted" && (
-                            <td style={{ padding: 8 }}>
-                              <Box
-                                display="flex"
-                                gap={1}
-                                justifyContent="center"
-                              >
-                                <Button
-                                  size="sm"
-                                  variant={
-                                    item.item_current_status ===
+                          user?.name === "IT Team") && (
+                          <td style={{ padding: 8 }}>
+                            <Box display="flex" gap={1} justifyContent="center">
+                              <Button
+                                size="sm"
+                                variant={
+                                  item.item_current_status ===
+                                  "manager approval"
+                                    ? "solid"
+                                    : "outlined"
+                                }
+                                color="success"
+                                onClick={() =>
+                                  handleApproval(
+                                    rowIndex,
+                                    itemIndex,
                                     "manager approval"
-                                      ? "solid"
-                                      : "outlined"
-                                  }
-                                  color="success"
-                                  onClick={() =>
-                                    handleApproval(
-                                      rowIndex,
-                                      itemIndex,
-                                      "manager approval"
-                                    )
-                                  }
-                                  aria-label="Approve"
-                                >
-                                  <CheckIcon />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant={
-                                    item.item_current_status === "rejected"
-                                      ? "solid"
-                                      : "outlined"
-                                  }
-                                  color="danger"
-                                  onClick={() =>
-                                    handleApproval(
-                                      rowIndex,
-                                      itemIndex,
-                                      "rejected"
-                                    )
-                                  }
-                                  aria-label="Reject"
-                                >
-                                  <CloseIcon />
-                                </Button>
-                              </Box>
-                            </td>
-                          )}
+                                  )
+                                }
+                                aria-label="Approve"
+                              >
+                                <CheckIcon />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant={
+                                  item.item_current_status === "rejected"
+                                    ? "solid"
+                                    : "outlined"
+                                }
+                                color="danger"
+                                onClick={() =>
+                                  handleApproval(
+                                    rowIndex,
+                                    itemIndex,
+                                    "rejected"
+                                  )
+                                }
+                                aria-label="Reject"
+                              >
+                                <CloseIcon />
+                              </Button>
+                            </Box>
+                          </td>
+                        )}
                       </tr>
                     ))
                   )}
@@ -1066,7 +1105,8 @@ const UpdateExpense = () => {
               boxShadow: "sm",
               flex: 1,
               minWidth: 400,
-              overflow: "auto",
+              maxHeight: 500,
+              overflowY: "auto",
             }}
           >
             <Table
@@ -1097,7 +1137,19 @@ const UpdateExpense = () => {
                 </tr>
               </thead>
               <tbody>
-                {categoryOptions.map((category, idx) => {
+                {(user?.role === "manager" ||
+                user?.department === "admin" ||
+                user?.department === "HR" ||
+                user?.name === "IT Team"
+                  ? [
+                      ...new Set([
+                        ...categoryOptions,
+                        ...bdAndSalesCategoryOptions,
+                        ...officeAdminCategoryOptions,
+                      ]),
+                    ]
+                  : getCategoryOptionsByDepartment(user?.department)
+                ).map((category, idx) => {
                   let total = 0;
                   let approvedTotal = 0;
 
@@ -1106,13 +1158,11 @@ const UpdateExpense = () => {
                       if (item.category === category) {
                         total += Number(item.invoice?.invoice_amount || 0);
 
-                        // ✅ Always count if there's an approved_amount set
                         if (
-                          item.item_current_status === "manager approval" ||
-                          (item.approved_amount !== undefined &&
-                            item.approved_amount !== null)
+                          item.item_current_status === "manager approval" &&
+                          Number(item.approved_amount || 0) > 0
                         ) {
-                          approvedTotal += Number(item.approved_amount || 0);
+                          approvedTotal += Number(item.approved_amount);
                         }
                       }
                     });
@@ -1122,8 +1172,10 @@ const UpdateExpense = () => {
                     <tr key={idx}>
                       <td>
                         <Tooltip
-                          placement="right"
+                          placement="bottom"
                           arrow
+                          enterTouchDelay={0}
+                          leaveTouchDelay={3000}
                           title={
                             <Sheet
                               variant="soft"
@@ -1136,7 +1188,7 @@ const UpdateExpense = () => {
                               }}
                             >
                               <Typography level="body-sm">
-                                {categoryDescriptions[category]}
+                                {getCategoryDescription(category)}
                               </Typography>
                             </Sheet>
                           }
@@ -1184,13 +1236,11 @@ const UpdateExpense = () => {
                         .flatMap((row) => row.items || [])
                         .filter(
                           (item) =>
-                            item.item_current_status === "manager approval" ||
-                            (item.approved_amount !== undefined &&
-                              item.approved_amount !== null)
+                            item.item_current_status === "manager approval" &&
+                            Number(item.approved_amount || 0) > 0
                         )
                         .reduce(
-                          (sum, item) =>
-                            sum + Number(item.approved_amount || 0),
+                          (sum, item) => sum + Number(item.approved_amount),
                           0
                         )
                         .toFixed(2)}

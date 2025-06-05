@@ -1,3 +1,4 @@
+import DeleteIcon from "@mui/icons-material/Delete";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import {
   Card,
@@ -18,7 +19,6 @@ import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Table from "@mui/joy/Table";
-import DeleteIcon from "@mui/icons-material/Delete";
 
 import Typography from "@mui/joy/Typography";
 import axios from "axios";
@@ -144,7 +144,6 @@ const Expense_Form = () => {
     "Site Stationery Expenses",
     "Site Miscellaneous Expenses",
     "Site Vehicle Repair and Maintenance Expense",
-    "Office Expenses",
   ];
 
   const categoryDescriptions = {
@@ -168,15 +167,65 @@ const Expense_Form = () => {
       "Please select this head to book all other related expenses incurred by personnel at project site that happens for project at site which are not covered in the above heads. Please make sure to collect receipts or bills",
     "Site Vehicle Repair and Maintenance Expense":
       "Please select this head to book all vehicle repair and maintenance related expenses incurred by personnel at project site that happens for project at site. Please make sure to collect receipts or bills",
-    "Office Expenses":
-      "Please select this head to book general office expenses unrelated to project site.",
   };
 
+  const bdAndSalesCategoryOptions = [
+    "Business Promotion",
+    "Business Development - Travelling Expense",
+    "Lodging - Business Travel",
+    "Business Development - Per Diem and Meal Expenses",
+  ];
+
+  const bdAndSalesCategoryDescriptions = {
+    "Business Promotion":
+      "Please select this head for all kinds of expenses related to expos, conferences and likewise.",
+    "Business Development - Travelling Expense":
+      "Please select this head to book all travelling related expenses incurred for client visit and meeting such as bus-ticket, train-ticket, flight-ticket, reimbursements for fuel, hire of bikes or cabs and likewise. Please make sure to collect receipts or bills",
+    "Lodging - Business Travel":
+      "Please select this head to book all lodging related expenses incurred for client visit and meeting such as hotel, rentals of places and likewise. Please make sure to collect receipts or bills",
+    "Business Development - Per Diem and Meal Expenses":
+      "Please select this head to book expenses and allowance for food incurred during client visits and meetings provided as per company policy.",
+  };
+
+  const officeAdminCategoryOptions = [
+    "Meals Expense - Office",
+    "Office Travelling and Conveyance Expenses",
+    "Repair and Maintenance",
+  ];
+
+  const officeAdminCategoryDescriptions = {
+    "Meals Expense - Office":
+      "Please select this head to book expenses for food incurred during office meetings and late-sitting hours provided as per company policy. Please make sure to collect receipts or bills",
+    "Office Travelling and Conveyance Expenses":
+      "Please select this head to book all travelling related expenses incurred for official visits and meeting such as bus-ticket, train-ticket, flight-ticket, reimbursements for fuel, hire of bikes or cabs and likewise. Please make sure to collect receipts or bills",
+    "Repair and Maintenance":
+      "Please select this head to book all expenses incurred for repair and maintenance of less than INR 10,000 for office equipments and computers. Please make sure to collect receipts or bills. Please make sure all payment above INR 10,000 is to be made directly from bank after raising PO.",
+  };
+
+  function getCategoryOptionsByDepartment(department) {
+    const common = officeAdminCategoryOptions;
+
+    if (department === "Projects" || department === "Engineering") {
+      return [...common, ...categoryOptions];
+    }
+
+    if (department === "BD" || department === "Marketing") {
+      return [...common, ...bdAndSalesCategoryOptions];
+    }
+
+    return common;
+  }
+
+  function getCategoryDescription(category) {
+    return (
+      categoryDescriptions[category] ||
+      bdAndSalesCategoryDescriptions[category] ||
+      officeAdminCategoryDescriptions[category] ||
+      "No description available."
+    );
+  }
+
   const [addExpense] = useAddExpenseMutation();
-
-  // const { data: getProject = [], isLoading, error } = useGetProjectsQuery();
-
-  // console.log(getProject);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -566,13 +615,11 @@ const Expense_Form = () => {
                 let filteredProjects = [];
 
                 if (isProjects) {
-                 
                   filteredProjects = projectCodes.filter((project) =>
                     (project.code || "").toLowerCase().includes(searchValue)
                   );
 
                   if (isSurveyor) {
-                
                     if (
                       searchValue.includes("other") &&
                       !filteredProjects.some((p) => p.code === "Other")
@@ -580,9 +627,7 @@ const Expense_Form = () => {
                       filteredProjects.push({ code: "Other", name: "" });
                     }
                   }
-               
                 } else {
-                
                   if ("other".includes(searchValue)) {
                     filteredProjects = [{ code: "Other", name: "" }];
                   }
@@ -713,39 +758,41 @@ const Expense_Form = () => {
                         }}
                         // sx={{ width: "100%" }}
                       >
-                        {categoryOptions.map((cat, idx) => (
-                          <Option key={idx} value={cat}>
-                            <Tooltip
-                              arrow
-                              placement="right"
-                              title={
-                                <Sheet
-                                  variant="soft"
-                                  sx={{
-                                    p: 1,
-                                    maxWidth: 300,
-                                    borderRadius: "md",
-                                    boxShadow: "md",
-                                    bgcolor: "background.surface",
+                        {getCategoryOptionsByDepartment(user?.department).map(
+                          (cat, idx) => (
+                            <Option key={idx} value={cat}>
+                              <Tooltip
+                                arrow
+                                placement="right"
+                                title={
+                                  <Sheet
+                                    variant="soft"
+                                    sx={{
+                                      p: 1,
+                                      maxWidth: 300,
+                                      borderRadius: "md",
+                                      boxShadow: "md",
+                                      bgcolor: "background.surface",
+                                    }}
+                                  >
+                                    <Typography level="body-sm">
+                                      {getCategoryDescription(cat)}
+                                    </Typography>
+                                  </Sheet>
+                                }
+                              >
+                                <span
+                                  style={{
+                                    cursor: "help",
+                                    textDecoration: "underline dotted",
                                   }}
                                 >
-                                  <Typography level="body-sm">
-                                    {categoryDescriptions[cat]}
-                                  </Typography>
-                                </Sheet>
-                              }
-                            >
-                              <span
-                                style={{
-                                  cursor: "help",
-                                  textDecoration: "underline dotted",
-                                }}
-                              >
-                                {cat}
-                              </span>
-                            </Tooltip>
-                          </Option>
-                        ))}
+                                  {cat}
+                                </span>
+                              </Tooltip>
+                            </Option>
+                          )
+                        )}
                       </Select>
                     </td>
 
@@ -898,34 +945,30 @@ const Expense_Form = () => {
           {rows.map((row, rowIndex) => {
             const searchValue = (searchInputs[rowIndex] || "").toLowerCase();
 
-             const isProjects = user?.department === "Projects";
-                const isExecutive = user?.role === "executive";
-                const isSurveyor = user?.role === "surveyor";
+            const isProjects = user?.department === "Projects";
+            const isExecutive = user?.role === "executive";
+            const isSurveyor = user?.role === "surveyor";
 
-                let filteredProjects = [];
+            let filteredProjects = [];
 
-                if (isProjects) {
-                 
-                  filteredProjects = projectCodes.filter((project) =>
-                    (project.code || "").toLowerCase().includes(searchValue)
-                  );
+            if (isProjects) {
+              filteredProjects = projectCodes.filter((project) =>
+                (project.code || "").toLowerCase().includes(searchValue)
+              );
 
-                  if (isSurveyor) {
-                
-                    if (
-                      searchValue.includes("other") &&
-                      !filteredProjects.some((p) => p.code === "Other")
-                    ) {
-                      filteredProjects.push({ code: "Other", name: "" });
-                    }
-                  }
-               
-                } else {
-                
-                  if ("other".includes(searchValue)) {
-                    filteredProjects = [{ code: "Other", name: "" }];
-                  }
+              if (isSurveyor) {
+                if (
+                  searchValue.includes("other") &&
+                  !filteredProjects.some((p) => p.code === "Other")
+                ) {
+                  filteredProjects.push({ code: "Other", name: "" });
                 }
+              }
+            } else {
+              if ("other".includes(searchValue)) {
+                filteredProjects = [{ code: "Other", name: "" }];
+              }
+            }
 
             return (
               <Card key={rowIndex} variant="outlined" sx={{ p: 2, mt: 1 }}>
@@ -1033,46 +1076,48 @@ const Expense_Form = () => {
                       },
                     }}
                   >
-                    {categoryOptions.map((cat, idx) => (
-                      <Option key={idx} value={cat}>
-                        <Tooltip
-                          arrow
-                          placement="left"
-                          variant="soft"
-                          enterTouchDelay={0}
-                          leaveTouchDelay={3000}
-                          title={
-                            <Sheet
-                              variant="soft"
-                              sx={{
-                                p: 1,
-                                maxWidth: 260,
-                                borderRadius: "md",
-                                boxShadow: "md",
-                                bgcolor: "background.surface",
+                    {getCategoryOptionsByDepartment(user?.department).map(
+                      (cat, idx) => (
+                        <Option key={idx} value={cat}>
+                          <Tooltip
+                            arrow
+                            placement="bottom"
+                            variant="soft"
+                            enterTouchDelay={0}
+                            leaveTouchDelay={5000}
+                            title={
+                              <Sheet
+                                variant="soft"
+                                sx={{
+                                  p: 1,
+                                  maxWidth: 260,
+                                  borderRadius: "md",
+                                  boxShadow: "md",
+                                  bgcolor: "background.surface",
+                                }}
+                              >
+                                <Typography level="body-sm">
+                                  {getCategoryDescription(cat)}
+                                </Typography>
+                              </Sheet>
+                            }
+                          >
+                            <span
+                              style={{
+                                cursor: "help",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                display: "inline-block",
+                                maxWidth: "100%",
                               }}
                             >
-                              <Typography level="body-sm">
-                                {categoryDescriptions[cat]}
-                              </Typography>
-                            </Sheet>
-                          }
-                        >
-                          <span
-                            style={{
-                              cursor: "help",
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              display: "inline-block",
-                              maxWidth: "100%",
-                            }}
-                          >
-                            {cat}
-                          </span>
-                        </Tooltip>
-                      </Option>
-                    ))}
+                              {cat}
+                            </span>
+                          </Tooltip>
+                        </Option>
+                      )
+                    )}
                   </Select>
 
                   <Textarea
@@ -1247,62 +1292,66 @@ const Expense_Form = () => {
               </tr>
             </thead>
             <tbody>
-              {categoryOptions.map((category, idx) => {
-                const itemsInCategory = rows.flatMap((row) =>
-                  (row.items || []).filter((item) => item.category === category)
-                );
+              {getCategoryOptionsByDepartment(user?.department).map(
+                (category, idx) => {
+                  const itemsInCategory = rows.flatMap((row) =>
+                    (row.items || []).filter(
+                      (item) => item.category === category
+                    )
+                  );
 
-                const amt = itemsInCategory.reduce(
-                  (sum, item) =>
-                    sum + Number(item.invoice?.invoice_amount || 0),
-                  0
-                );
+                  const amt = itemsInCategory.reduce(
+                    (sum, item) =>
+                      sum + Number(item.invoice?.invoice_amount || 0),
+                    0
+                  );
 
-                const approvedAmt = itemsInCategory.reduce(
-                  (sum, item) =>
-                    item.item_current_status === "approved"
-                      ? sum + Number(item.approved_amount || 0)
-                      : sum,
-                  0
-                );
+                  const approvedAmt = itemsInCategory.reduce(
+                    (sum, item) =>
+                      item.item_current_status === "approved"
+                        ? sum + Number(item.approved_amount || 0)
+                        : sum,
+                    0
+                  );
 
-                return (
-                  <tr key={idx}>
-                    <td>
-                      <Tooltip
-                        placement="right"
-                        arrow
-                        title={
-                          <Sheet
-                            variant="soft"
-                            sx={{
-                              p: 1,
-                              maxWidth: 300,
-                              borderRadius: "md",
-                              boxShadow: "md",
-                              bgcolor: "background.surface",
+                  return (
+                    <tr key={idx}>
+                      <td>
+                        <Tooltip
+                          placement="right"
+                          arrow
+                          title={
+                            <Sheet
+                              variant="soft"
+                              sx={{
+                                p: 1,
+                                maxWidth: 300,
+                                borderRadius: "md",
+                                boxShadow: "md",
+                                bgcolor: "background.surface",
+                              }}
+                            >
+                              <Typography level="body-sm">
+                                {getCategoryDescription(category)}
+                              </Typography>
+                            </Sheet>
+                          }
+                        >
+                          <span
+                            style={{
+                              cursor: "help",
+                              textDecoration: "underline dotted",
                             }}
                           >
-                            <Typography level="body-sm">
-                              {categoryDescriptions[category]}
-                            </Typography>
-                          </Sheet>
-                        }
-                      >
-                        <span
-                          style={{
-                            cursor: "help",
-                            textDecoration: "underline dotted",
-                          }}
-                        >
-                          {category}
-                        </span>
-                      </Tooltip>
-                    </td>
-                    <td>{amt > 0 ? amt.toFixed(2) : "-"}</td>
-                  </tr>
-                );
-              })}
+                            {category}
+                          </span>
+                        </Tooltip>
+                      </td>
+                      <td>{amt > 0 ? amt.toFixed(2) : "-"}</td>
+                    </tr>
+                  );
+                }
+              )}
 
               {/* Grand Total */}
               <tr>
