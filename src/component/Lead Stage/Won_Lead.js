@@ -171,7 +171,7 @@ const StandByRequest = forwardRef((props, ref) => {
     );
   };
 
-  const RowMenu = ({ currentPage, id }) => {
+  const RowMenu = ({ currentPage, id, _id }) => {
     // console.log(currentPage, id);
     return (
       <Dropdown>
@@ -246,7 +246,7 @@ const StandByRequest = forwardRef((props, ref) => {
             color="primary"
             onClick={() => {
               const page = currentPage;
-              const leadId1 = String(id);
+              const leadId1 = _id;
               // const projectID = Number(p_id);
               localStorage.setItem("hand_Over", leadId1);
               // localStorage.setItem("p_id", projectID);
@@ -671,7 +671,7 @@ const StandByRequest = forwardRef((props, ref) => {
                   <th
                     style={{
                       padding: 8,
-                      textAlign: "center",
+                      textAlign: "left",
                       borderBottom: "1px solid #ccc",
                     }}
                   ></th>
@@ -695,7 +695,7 @@ const StandByRequest = forwardRef((props, ref) => {
                       key={idx}
                       style={{
                         padding: 8,
-                        textAlign: "center",
+                        textAlign: "left",
                         fontWeight: "bold",
                         borderBottom: "1px solid #ccc",
                       }}
@@ -724,7 +724,7 @@ const StandByRequest = forwardRef((props, ref) => {
                       e.currentTarget.style.backgroundColor = "";
                     }}
                   >
-                    <td style={{ textAlign: "center", padding: 8 }}>
+                    <td style={{ textAlign: "left", padding: 8 }}>
                       <Checkbox
                         size="sm"
                         color="primary"
@@ -784,9 +784,9 @@ const StandByRequest = forwardRef((props, ref) => {
                       </Chip>,
 
                       status_handOver(lead.id).submittedBy || "-",
-                      <RowMenu currentPage={currentPage} id={lead.id} />,
+                      <RowMenu currentPage={currentPage} id={lead.id} _id={lead._id} />,
                     ].map((data, idx) => (
-                      <td key={idx} style={{ padding: 8, textAlign: "center" }}>
+                      <td key={idx} style={{ padding: 8, textAlign: "left" }}>
                         {data}
                       </td>
                     ))}

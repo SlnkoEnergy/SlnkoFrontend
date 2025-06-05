@@ -24,11 +24,13 @@ import { toast } from "react-toastify";
 import {
   useGetAllExpenseQuery,
   useUpdateDisbursementDateMutation,
+  useUpdateExpenseAccountsSheetMutation,
   useUpdateExpenseSheetMutation,
   useUpdateExpenseStatusOverallMutation,
 } from "../../../redux/Expense/expenseSlice";
 import PieChartByCategory from "./Expense_Chart";
-const UpdateExpense = () => {
+
+const UpdateExpenseAccounts = () => {
   const navigate = useNavigate();
   const [rows, setRows] = useState([
     {
@@ -76,13 +78,36 @@ const UpdateExpense = () => {
     },
   ]);
 
-  const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
-  const [sharedRejectionComment, setSharedRejectionComment] = useState("");
-  const [showRejectAllDialog, setShowRejectAllDialog] = useState(false);
+  const [approveHRConfirmOpen, setHRApproveConfirmOpen] = useState(false);
+  const [approveAccountsConfirmOpen, setAccountsApproveConfirmOpen] =
+    useState(false);
+
+  const [rejectConfirmOpen, setRejectConfirmOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+
+  const [showAccountsRejectAllDialog, setAccountsShowRejectAllDialog] =
+    useState(false);
+  const [accountsRejectionReason, setAccountsRejectionReason] = useState("");
+
+  const [showHoldAllDialog, setShowHoldAllDialog] = useState(false);
+  const [holdReason, setHoldReason] = useState("");
+
+  const [showAccountsHoldAllDialog, setAccountsShowHoldAllDialog] =
+    useState(false);
+  const [accountsHoldReason, setAccountsHoldReason] = useState("");
+
+  const [disbursementData, setDisbursementData] = useState("");
+
+  // const showDisbursement =
+  //   rows[0]?.current_status === "final approval" &&
+  //   user?.department === "Accounts";
+
   const [commentDialog, setCommentDialog] = useState({
     open: false,
     rowIndex: null,
   });
+
+  // const inputRefs = useRef([]);
 
   const [user, setUser] = useState(null);
 
@@ -146,6 +171,8 @@ const UpdateExpense = () => {
 
   const [updateStatus] = useUpdateExpenseStatusOverallMutation();
 
+  const [updateDisbursement] = useUpdateDisbursementDateMutation();
+
   const ExpenseCode = localStorage.getItem("edit_expense");
 
   useEffect(() => {
@@ -164,6 +191,8 @@ const UpdateExpense = () => {
     );
 
     if (matchedExpense) {
+      // console.log("Matched Expense Found:", matchedExpense);
+
       const enrichedExpense = {
         ...matchedExpense,
       };
@@ -178,6 +207,8 @@ const UpdateExpense = () => {
     try {
       const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
       const ExpenseCode = localStorage.getItem("edit_expense");
+
+      debugger;
 
       if (!userID) {
         toast.error("User ID not found. Please login again.");
@@ -216,14 +247,6 @@ const UpdateExpense = () => {
         })
       );
 
-      // Check if any item is rejected
-      const isAnyRejected = updatedItems.some(
-        (item) => item.item_current_status === "rejected"
-      );
-
-      // Set overall status accordingly
-      const overallStatus = isAnyRejected ? "rejected" : "manager approval";
-
       const totalApproved = updatedItems.reduce(
         (sum, item) => sum + (Number(item.approved_amount) || 0),
         0
@@ -232,18 +255,20 @@ const UpdateExpense = () => {
       const payload = {
         user_id: userID,
         expense_code: ExpenseCode,
-        current_status: overallStatus,
+        current_status: "manager approval",
         total_approved_amount: totalApproved,
         items: updatedItems,
         status_history: [
           ...(rows[0].status_history || []),
           {
-            status: overallStatus,
+            status: "manager approval",
             remarks: rows[0].comments || "",
             user_id: userID,
           },
         ],
       };
+
+      debugger;
 
       await updateExpense({
         _id: expenseSheetId,
@@ -323,135 +348,318 @@ const UpdateExpense = () => {
     }
   };
 
-  const handleCommentSave = () => {
-    setCommentDialog({ open: false, rowIndex: null, itemIndex: null });
+  const handleHrApproveAll = () => {
+    setHRApproveConfirmOpen(true);
   };
 
-  const handleRejectAllSubmit = async () => {
+  const applyHrApproveAll = async () => {
     try {
-      const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
-
-      if (!userID) {
-        toast.error("User ID not found. Please login again.");
-        return;
-      }
-
-      const requests = rows.map((row) =>
-        updateStatus({
-          _id: row._id,
-          status: "rejected",
-          remarks: sharedRejectionComment || "Rejected without comment",
-        }).unwrap()
-      );
-
-      await Promise.all(requests);
-      toast.success("All sheets rejected successfully");
-
       const updated = rows.map((row) => {
-        const updatedItems = row.items.map((item) => ({
-          ...item,
-          item_current_status: "rejected",
-          remarks: sharedRejectionComment || "Rejected without comment",
-          item_status_history: [
-            ...(item.item_status_history || []),
-            {
-              status: "rejected",
-              remarks: sharedRejectionComment || "Rejected without comment",
-              user_id: userID,
-              updatedAt: new Date().toISOString(),
-            },
-          ],
-        }));
+        const updatedItems = row.items.map((item) => {
+          const invoiceAmount = Number(item.invoice?.invoice_amount) || 0;
 
-        return {
-          ...row,
-          items: updatedItems,
-          row_current_status: "rejected",
-          status_history: [
-            ...(row.status_history || []),
-            {
-              status: "rejected",
-              remarks: sharedRejectionComment || "Rejected without comment",
-              user_id: userID,
-              updatedAt: new Date().toISOString(),
-            },
-          ],
-        };
-      });
+          return {
+            ...item,
+            item_current_status: "hr approval",
+            approved_amount: invoiceAmount,
+          };
+        });
 
-      setRows(updated);
-      setShowRejectAllDialog(false);
-      setSharedRejectionComment("");
-    } catch (error) {
-      console.error("Failed to reject all sheets:", error);
-      toast.error("Failed to reject sheets");
-    }
-  };
-
-  const handleRejectAll = () => {
-    setShowRejectAllDialog(true);
-  };
-
-  const handleApproveAll = () => {
-    setApproveConfirmOpen(true);
-  };
-
-  const applyApproveAll = async () => {
-    try {
-      const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
-
-      if (!userID) {
-        toast.error("User ID not found. Please login again.");
-        return;
-      }
-
-      const requests = rows.map((row) => {
-        const approved_items = row.items.map((item) => ({
-          _id: item._id,
-          approved_amount: Number(item?.approved_amount) || 0,
-        }));
-
-        return updateStatus({
-          _id: row._id,
-          status: "manager approval",
-          approved_items,
-
-          remarks: "",
-        }).unwrap();
-      });
-
-      await Promise.all(requests);
-
-      const updatedRows = rows.map((row) => {
-        const updatedItems = row.items.map((item) => ({
-          ...item,
-          item_current_status: "manager approval",
-          current_status: "manager approval",
-          approved_amount: Number(item.approved_amount) || 0,
-        }));
-
-        const total_approved_amount = updatedItems.reduce(
-          (sum, item) => sum + item.approved_amount,
+        const totalApprovedAmount = updatedItems.reduce(
+          (sum, item) => sum + Number(item.approved_amount || 0),
           0
         );
 
         return {
           ...row,
           items: updatedItems,
-          row_current_status: "manager approval",
-          current_status: "manager approval",
-          approved_amount: total_approved_amount,
+          approved_amount: totalApprovedAmount,
         };
       });
 
-      setRows(updatedRows);
-      setApproveConfirmOpen(false);
-      toast.success("All items approved successfully");
+      setRows(updated);
+
+      await Promise.all(
+        updated.map((row) =>
+          updateStatus({
+            _id: row._id,
+            status: "hr approval",
+            approved_amount: row.approved_amount,
+          }).unwrap()
+        )
+      );
+
+      toast.success("HR approved successfully");
+      setHRApproveConfirmOpen(false);
     } catch (error) {
-      console.error("Failed to approve all items:", error);
-      toast.error("Failed to approve all items");
+      console.error("Failed to HR approve all items:", error);
+      toast.error("Failed to HR approve all items");
     }
   };
+
+  const handleHrRejectAll = () => {
+    setRejectConfirmOpen(true);
+  };
+
+  const applyHrRejectAll = async (reason) => {
+    try {
+      const updated = rows.map((row) => {
+        const updatedItems = row.items.map((item) => ({
+          ...item,
+          item_current_status: "rejected",
+          approved_amount: 0,
+          remarks: reason,
+        }));
+
+        return {
+          ...row,
+          items: updatedItems,
+          current_status: "rejected",
+          approved_amount: 0,
+          remarks: reason,
+        };
+      });
+
+      setRows(updated);
+
+      await Promise.all(
+        updated.map((row) =>
+          updateStatus({
+            _id: row._id,
+            status: "rejected",
+            approved_amount: 0,
+            remarks: reason,
+          }).unwrap()
+        )
+      );
+
+      toast.success("All items rejected successfully");
+      setRejectConfirmOpen(false);
+      setRejectionReason("");
+    } catch (error) {
+      console.error("Failed to reject all items:", error);
+      toast.error("Failed to reject all items");
+    }
+  };
+
+  const handleHrHoldAll = () => {
+    setShowHoldAllDialog(true);
+  };
+
+  const applyHrHoldAll = async (reason) => {
+    try {
+      const updated = rows.map((row) => {
+        const updatedItems = row.items.map((item) => ({
+          ...item,
+          item_current_status: "hold",
+          remarks: reason,
+        }));
+
+        return {
+          ...row,
+          items: updatedItems,
+          current_status: "hold",
+          remarks: reason,
+        };
+      });
+
+      setRows(updated);
+
+      await Promise.all(
+        updated.map((row) =>
+          updateStatus({
+            _id: row._id,
+            status: "hold",
+            remarks: reason,
+          }).unwrap()
+        )
+      );
+
+      toast.success("All items put on hold successfully");
+      setShowHoldAllDialog(false);
+      setHoldReason(""); // clear input
+    } catch (error) {
+      console.error("Failed to hold all items:", error);
+      toast.error("Failed to hold all items");
+    }
+  };
+
+  const handleAccountsApproveAll = () => {
+    setAccountsApproveConfirmOpen(true);
+  };
+
+  const applyAccountsApproveAll = async () => {
+    try {
+      const updated = rows.map((row) => {
+        const updatedItems = row.items.map((item) => {
+          const invoiceAmount = Number(item.invoice?.invoice_amount) || 0;
+
+          return {
+            ...item,
+            item_current_status: "final approval",
+            approved_amount: invoiceAmount,
+          };
+        });
+
+        const totalApprovedAmount = updatedItems.reduce(
+          (sum, item) => sum + Number(item.approved_amount || 0),
+          0
+        );
+
+        return {
+          ...row,
+          items: updatedItems,
+          approved_amount: totalApprovedAmount,
+        };
+      });
+
+      setRows(updated);
+
+      await Promise.all(
+        updated.map((row) =>
+          updateStatus({
+            _id: row._id,
+            status: "final approval",
+            approved_amount: row.approved_amount,
+          }).unwrap()
+        )
+      );
+
+      toast.success("Accounts approved successfully");
+      setAccountsApproveConfirmOpen(false);
+    } catch (error) {
+      console.error("Failed to HR approve all items:", error);
+      toast.error("Failed to HR approve all items");
+    }
+  };
+
+  const handleAccountsRejectAll = () => {
+    setAccountsShowRejectAllDialog(true);
+  };
+
+  const applyAccountsRejectAll = async () => {
+    try {
+      const updated = rows.map((row) => {
+        const updatedItems = row.items.map((item) => ({
+          ...item,
+          item_current_status: "rejected",
+          approved_amount: 0,
+          remarks: showAccountsRejectAllDialog,
+        }));
+
+        return {
+          ...row,
+          items: updatedItems,
+          current_status: "rejected",
+          approved_amount: 0,
+          remarks: showAccountsRejectAllDialog,
+        };
+      });
+
+      setRows(updated);
+
+      await Promise.all(
+        updated.map((row) =>
+          updateStatus({
+            _id: row._id,
+            status: "rejected",
+            approved_amount: 0,
+            remarks: showAccountsRejectAllDialog,
+          }).unwrap()
+        )
+      );
+
+      toast.success("All items rejected successfully");
+      setAccountsShowRejectAllDialog(false);
+    } catch (error) {
+      console.error("Failed to reject all items:", error);
+      toast.error("Failed to reject all items");
+    }
+  };
+
+  const handleAccountsHoldAll = () => {
+    setAccountsShowHoldAllDialog(true);
+  };
+
+  const applyAccountsHoldAll = async (reason) => {
+    try {
+      const updated = rows.map((row) => {
+        const updatedItems = row.items.map((item) => ({
+          ...item,
+          item_current_status: "hold",
+          remarks: reason,
+        }));
+
+        return {
+          ...row,
+          items: updatedItems,
+          current_status: "hold",
+          remarks: reason,
+        };
+      });
+
+      setRows(updated);
+
+      await Promise.all(
+        updated.map((row) =>
+          updateStatus({
+            _id: row._id,
+            status: "hold",
+            remarks: reason,
+          }).unwrap()
+        )
+      );
+
+      toast.success("All items put on hold successfully");
+      setAccountsShowHoldAllDialog(false);
+      setAccountsHoldReason(""); // Clear reason after success
+    } catch (error) {
+      console.error("Failed to hold all items:", error);
+      toast.error("Failed to hold all items");
+    }
+  };
+
+  const handleFinalApproval = async () => {
+    try {
+      const expenseSheetId = rows[0]?._id;
+      if (!expenseSheetId) {
+        toast.error("Expense Sheet ID is missing. Please reload the page.");
+        return;
+      }
+
+      const rawDate = disbursementData?.disbursement_date;
+
+      // ✅ Ensure a valid date is selected before submission
+      if (!rawDate || isNaN(new Date(rawDate).getTime())) {
+        toast.error("Please select a valid disbursement date.");
+        return;
+      }
+
+      const disbursement_date = new Date(rawDate).toISOString();
+
+      console.log("Updating disbursement with:", {
+        _id: expenseSheetId,
+        disbursement_date,
+      });
+
+      await updateDisbursement({
+        _id: expenseSheetId,
+        disbursement_date,
+      }).unwrap();
+
+      toast.success("Disbursement date updated successfully!");
+      navigate("/expense_dashboard");
+    } catch (error) {
+      console.error("Disbursement update failed:", error);
+      toast.error("An error occurred while submitting disbursement date.");
+    }
+  };
+
+  // const handleItemChange = (index, field, value) => {
+  //   setRows((prevRows) =>
+  //     prevRows.map((row, i) => (i === index ? { ...row, [field]: value } : row))
+  //   );
+  // };
 
   const tableHeaders = [
     "Project ID",
@@ -463,11 +671,6 @@ const UpdateExpense = () => {
     "Attachment",
     "Invoice Number",
     "Approved Amount",
-    ...(user?.role === "manager" ||
-    user?.department === "admin" ||
-    user?.name === "IT Team"
-      ? ["Approval"]
-      : []),
   ];
 
   return (
@@ -484,6 +687,8 @@ const UpdateExpense = () => {
           p: 1,
         }}
       >
+        {/* Action Buttons */}
+
         <Box
           sx={{
             // px: { xs: 2, md: 2 },
@@ -533,52 +738,101 @@ const UpdateExpense = () => {
 
             {/* Right: Bulk Actions */}
             <Box display="flex" gap={2}>
-              {(([
-                "Engineering",
-                "BD",
-                "Projects",
-                "OPS",
-                "CAM",
-                "Accounts",
-                "HR",
-              ].includes(user?.department) &&
-                user?.role === "manager") ||
-                user?.name === "IT Team" ||
-                user?.department === "admin") && (
+              {user?.name === "Shruti Tripathi" ||
+              user?.department === "admin" ||
+              user?.name === "IT Team" ? (
                 <>
                   <Button
                     color="danger"
                     size="sm"
-                    onClick={handleRejectAll}
+                    onClick={handleHrRejectAll}
                     disabled={rows.every((row) =>
-                      [
-                        "rejected",
-                        "hold",
-                        "hr approval",
-                        "manager approval",
-                        "final approval",
-                      ].includes(row.current_status)
+                      ["rejected", "hold", "hr approval"].includes(
+                        row.current_status
+                      )
                     )}
                   >
                     Reject All
                   </Button>
                   <Button
+                    color="warning"
+                    size="sm"
+                    onClick={handleHrHoldAll}
+                    disabled={rows.every((row) =>
+                      ["rejected", "hold", "hr approval"].includes(
+                        row.current_status
+                      )
+                    )}
+                  >
+                    Hold All
+                  </Button>
+                  <Button
                     color="success"
                     size="sm"
-                    onClick={handleApproveAll}
+                    onClick={handleHrApproveAll}
                     disabled={rows.every((row) =>
-                      [
-                        "rejected",
-                        "hold",
-                        "hr approval",
-                        "manager approval",
-                        "final approval",
-                      ].includes(row.current_status)
+                      ["rejected", "hold", "hr approval"].includes(
+                        row.current_status
+                      )
                     )}
                   >
                     Approve All
                   </Button>
                 </>
+              ) : (
+                user?.department === "Accounts" &&
+                user?.role === "manager" && (
+                  <>
+                    <Button
+                      color="danger"
+                      size="sm"
+                      onClick={handleAccountsRejectAll}
+                      disabled={rows.every((row) =>
+                        [
+                          "rejected",
+                          "hold",
+                          "final approval",
+                          "submitted",
+                          "manager approval",
+                        ].includes(row.current_status)
+                      )}
+                    >
+                      Reject All
+                    </Button>
+                    <Button
+                      color="warning"
+                      size="sm"
+                      onClick={handleAccountsHoldAll}
+                      disabled={rows.every((row) =>
+                        [
+                          "rejected",
+                          "hold",
+                          "final approval",
+                          "submitted",
+                          "manager approval",
+                        ].includes(row.current_status)
+                      )}
+                    >
+                      Hold All
+                    </Button>
+                    <Button
+                      color="success"
+                      size="sm"
+                      onClick={handleAccountsApproveAll}
+                      disabled={rows.every((row) =>
+                        [
+                          "rejected",
+                          "hold",
+                          "final approval",
+                          "submitted",
+                          "manager approval",
+                        ].includes(row.current_status)
+                      )}
+                    >
+                      Approve All
+                    </Button>
+                  </>
+                )
               )}
             </Box>
           </Box>
@@ -666,86 +920,7 @@ const UpdateExpense = () => {
                         <td>{item.invoice?.invoice_number || "NA"}</td>
                         {/* <td>{item.approved_amount || "-"}</td> */}
 
-                        <td>
-                          <Input
-                            size="sm"
-                            variant="outlined"
-                            type="number"
-                            value={
-                              item.item_current_status === "rejected"
-                                ? 0
-                                : item.approved_amount !== undefined &&
-                                    item.approved_amount !== null
-                                  ? item.approved_amount
-                                  : item.invoice?.invoice_amount?.toString() ||
-                                    ""
-                            }
-                            placeholder="₹"
-                            onChange={(e) =>
-                              handleRowChange(
-                                rowIndex,
-                                "approved_amount",
-                                e.target.value,
-                                itemIndex
-                              )
-                            }
-                            inputProps={{ min: 0 }}
-                            sx={{ minWidth: 90 }}
-                          />
-                        </td>
-
-                        {(user?.role === "manager" ||
-                          user?.department === "admin" ||
-                          user?.name === "IT Team") &&
-                          item.item_current_status === "submitted" && (
-                            <td style={{ padding: 8 }}>
-                              <Box
-                                display="flex"
-                                gap={1}
-                                justifyContent="center"
-                              >
-                                <Button
-                                  size="sm"
-                                  variant={
-                                    item.item_current_status ===
-                                    "manager approval"
-                                      ? "solid"
-                                      : "outlined"
-                                  }
-                                  color="success"
-                                  onClick={() =>
-                                    handleApproval(
-                                      rowIndex,
-                                      itemIndex,
-                                      "manager approval"
-                                    )
-                                  }
-                                  aria-label="Approve"
-                                >
-                                  <CheckIcon />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant={
-                                    item.item_current_status === "rejected"
-                                      ? "solid"
-                                      : "outlined"
-                                  }
-                                  color="danger"
-                                  onClick={() =>
-                                    handleApproval(
-                                      rowIndex,
-                                      itemIndex,
-                                      "rejected"
-                                    )
-                                  }
-                                  aria-label="Reject"
-                                >
-                                  <CloseIcon />
-                                </Button>
-                              </Box>
-                            </td>
-                          )}
+                        <td>{item?.approved_amount || "NA"}</td>
                       </tr>
                     ))
                   )}
@@ -901,84 +1076,12 @@ const UpdateExpense = () => {
         </Box>
       </Box>
 
-      {/* Joy UI Modal for Comment */}
+      {/* Comment Dialog */}
+
+      {/* HR Approve All Confirmation Modal */}
       <Modal
-        open={commentDialog.open}
-        onClose={() =>
-          setCommentDialog({ open: false, rowIndex: null, itemIndex: null })
-        }
-      >
-        <ModalDialog
-          aria-labelledby="rejection-remarks-title"
-          layout="center"
-          sx={{
-            position: "relative",
-            width: "100%",
-            maxWidth: 320,
-            padding: 2,
-          }}
-        >
-          <IconButton
-            size="sm"
-            onClick={() =>
-              setCommentDialog({ open: false, rowIndex: null, itemIndex: null })
-            }
-            sx={{ position: "absolute", top: 8, right: 8 }}
-          >
-            <CloseIcon />
-          </IconButton>
-
-          <Typography
-            id="rejection-remarks-title"
-            level="h6"
-            mb={1}
-            fontWeight={600}
-          >
-            Enter Rejection Remarks:
-          </Typography>
-
-          <Textarea
-            minRows={2}
-            placeholder="Enter reason..."
-            value={
-              rows[commentDialog.rowIndex]?.items?.[commentDialog.itemIndex]
-                ?.item_status_history?.[0]?.remarks || ""
-            }
-            onChange={(e) =>
-              handleRowChange(
-                commentDialog.rowIndex,
-                "item_status_history.0.remarks",
-                e.target.value,
-                commentDialog.itemIndex
-              )
-            }
-          />
-
-          <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
-            <Button
-              size="sm"
-              variant="outlined"
-              onClick={() =>
-                setCommentDialog({
-                  open: false,
-                  rowIndex: null,
-                  itemIndex: null,
-                })
-              }
-            >
-              Cancel
-            </Button>
-            <Button size="sm" color="danger" onClick={handleCommentSave}>
-              Reject
-            </Button>
-          </Box>
-        </ModalDialog>
-      </Modal>
-
-      {/* Approve All Confirmation Modal */}
-      <Modal
-        open={approveConfirmOpen}
-        onClose={() => setApproveConfirmOpen(false)}
+        open={approveHRConfirmOpen}
+        onClose={() => setHRApproveConfirmOpen(false)}
       >
         <ModalDialog
           layout="center"
@@ -999,7 +1102,7 @@ const UpdateExpense = () => {
             <Button
               variant="outlined"
               size="sm"
-              onClick={() => setApproveConfirmOpen(false)}
+              onClick={() => setHRApproveConfirmOpen(false)}
             >
               Cancel
             </Button>
@@ -1007,8 +1110,8 @@ const UpdateExpense = () => {
               color="primary"
               size="sm"
               onClick={() => {
-                applyApproveAll();
-                setApproveConfirmOpen(false);
+                applyHrApproveAll();
+                setHRApproveConfirmOpen(false);
               }}
             >
               Yes, Approve All
@@ -1017,37 +1120,171 @@ const UpdateExpense = () => {
         </ModalDialog>
       </Modal>
 
-      {/* Reject All Confirmation Modal */}
+      {/* HR Reject All Confirmation Modal */}
+
       <Modal
-        open={showRejectAllDialog}
-        onClose={() => setShowRejectAllDialog(false)}
+        open={rejectConfirmOpen}
+        onClose={() => setRejectConfirmOpen(false)}
       >
-        <ModalDialog sx={{ minWidth: 320 }}>
-          <Typography level="h6">Reject All Items</Typography>
+        <ModalDialog>
+          <DialogTitle>Confirm Rejection</DialogTitle>
+          <DialogContent>
+            Are you sure you want to reject all items?
+            <Textarea
+              minRows={3}
+              placeholder="Enter rejection reason"
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              sx={{ mt: 2 }}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setRejectConfirmOpen(false)}>Cancel</Button>
+            <Button
+              color="danger"
+              disabled={!rejectionReason.trim()}
+              onClick={() => applyHrRejectAll(rejectionReason)}
+            >
+              Submit
+            </Button>
+          </DialogActions>
+        </ModalDialog>
+      </Modal>
+
+      {/* HR hOLD All Confirmation Modal */}
+
+      <Modal
+        open={showHoldAllDialog}
+        onClose={() => setShowHoldAllDialog(false)}
+      >
+        <ModalDialog>
+          <DialogTitle>Confirm Hold</DialogTitle>
+          <DialogContent>
+            Are you sure you want to put all items on hold?
+            <Textarea
+              minRows={3}
+              placeholder="Enter hold reason"
+              value={holdReason}
+              onChange={(e) => setHoldReason(e.target.value)}
+              sx={{ mt: 2 }}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowHoldAllDialog(false)}>Cancel</Button>
+            <Button
+              color="warning"
+              disabled={!holdReason.trim()}
+              onClick={() => applyHrHoldAll(holdReason)}
+            >
+              Submit
+            </Button>
+          </DialogActions>
+        </ModalDialog>
+      </Modal>
+
+      {/* Accounts Approve All Confirmation Modal */}
+      <Modal
+        open={approveAccountsConfirmOpen}
+        onClose={() => setAccountsApproveConfirmOpen(false)}
+      >
+        <ModalDialog
+          layout="center"
+          sx={{
+            minWidth: 300,
+            padding: 3,
+            textAlign: "center",
+          }}
+        >
+          <Typography level="h6" mb={1}>
+            Confirm Approval
+          </Typography>
           <Typography level="body-sm">
-            Provide remarks for rejection:
+            Are you sure you want to approve all items?
           </Typography>
 
-          <Textarea
-            minRows={2}
-            placeholder="Enter rejection remarks..."
-            value={sharedRejectionComment}
-            onChange={(e) => setSharedRejectionComment(e.target.value)}
-            sx={{ mt: 1 }}
-          />
-
-          <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
+          <Box display="flex" justifyContent="center" gap={1} mt={3}>
             <Button
               variant="outlined"
-              onClick={() => setShowRejectAllDialog(false)}
               size="sm"
+              onClick={() => setAccountsApproveConfirmOpen(false)}
             >
               Cancel
             </Button>
-            <Button color="danger" onClick={handleRejectAllSubmit} size="sm">
-              Reject All
+            <Button
+              color="primary"
+              size="sm"
+              onClick={() => {
+                applyAccountsApproveAll();
+                setAccountsApproveConfirmOpen(false);
+              }}
+            >
+              Yes, Approve All
             </Button>
           </Box>
+        </ModalDialog>
+      </Modal>
+
+      {/* Accounts Reject All Confirmation Modal */}
+      <Modal
+        open={showAccountsRejectAllDialog}
+        onClose={() => setAccountsShowRejectAllDialog(false)}
+      >
+        <ModalDialog>
+          <DialogTitle>Confirm Rejection</DialogTitle>
+          <DialogContent>
+            Are you sure you want to reject all items?
+            <Textarea
+              minRows={3}
+              placeholder="Enter rejection reason"
+              value={accountsRejectionReason}
+              onChange={(e) => setAccountsRejectionReason(e.target.value)}
+              sx={{ mt: 2 }}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setAccountsShowRejectAllDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="danger"
+              disabled={!accountsRejectionReason.trim()}
+              onClick={() => applyAccountsRejectAll(accountsRejectionReason)}
+            >
+              Submit
+            </Button>
+          </DialogActions>
+        </ModalDialog>
+      </Modal>
+
+      {/* Accounts hOLD All Confirmation Modal */}
+      <Modal
+        open={showAccountsHoldAllDialog}
+        onClose={() => setAccountsShowHoldAllDialog(false)}
+      >
+        <ModalDialog>
+          <DialogTitle>Confirm Hold</DialogTitle>
+          <DialogContent>
+            Are you sure you want to put all items on hold?
+            <Textarea
+              minRows={3}
+              placeholder="Enter hold reason"
+              value={accountsHoldReason}
+              onChange={(e) => setAccountsHoldReason(e.target.value)}
+              sx={{ mt: 2 }}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setAccountsShowHoldAllDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="warning"
+              disabled={!accountsHoldReason.trim()}
+              onClick={() => applyAccountsHoldAll(accountsHoldReason)}
+            >
+              Submit
+            </Button>
+          </DialogActions>
         </ModalDialog>
       </Modal>
 
@@ -1232,6 +1469,47 @@ const UpdateExpense = () => {
                       Update Expense Sheet
                     </Button>
                   )}
+
+                {user?.department === "Accounts" &&
+                  rows[0]?.current_status === "final approval" && (
+                    <Box
+                      display="flex"
+                      alignItems="center"
+                      gap={2}
+                      sx={{ mt: 2 }}
+                    >
+                      <Box>
+                        <FormLabel sx={{ justifyContent: "center" }}>
+                          Disbursement Date
+                        </FormLabel>
+                        <Input
+                          type="date"
+                          value={
+                            disbursementData?.disbursement_date
+                              ? new Date(disbursementData.disbursement_date)
+                                  .toISOString()
+                                  .split("T")[0]
+                              : ""
+                          }
+                          onChange={(e) =>
+                            setDisbursementData((prev) => ({
+                              ...prev,
+                              disbursement_date: e.target.value,
+                            }))
+                          }
+                        />
+                      </Box>
+                      <Box mt={2}>
+                        <Button
+                          variant="solid"
+                          color="success"
+                          onClick={handleFinalApproval}
+                        >
+                          Final Approval
+                        </Button>
+                      </Box>
+                    </Box>
+                  )}
               </Box>
             </Box>
           </Sheet>
@@ -1246,4 +1524,4 @@ const UpdateExpense = () => {
   );
 };
 
-export default UpdateExpense;
+export default UpdateExpenseAccounts;

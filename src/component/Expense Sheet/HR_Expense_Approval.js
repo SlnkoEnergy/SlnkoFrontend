@@ -236,7 +236,9 @@ const HrExpense = forwardRef((props, ref) => {
           }}
           onClick={() => {
             localStorage.setItem("edit_expense", expense_code);
-            navigate(`/edit_expense?page=${currentPage}&code=${expense_code}`);
+            navigate(
+              `/update_expense?page=${currentPage}&code=${expense_code}`
+            );
           }}
         >
           {expense_code || "-"}
@@ -455,10 +457,19 @@ const HrExpense = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                    <ExpenseCode
-                      currentPage={currentPage}
-                      expense_code={expense.expense_code}
-                    />
+                    <Box
+                      sx={{
+                        display: "inline",
+                        textDecoration: "underline dotted",
+                        textUnderlineOffset: "2px",
+                        textDecorationColor: "#999",
+                      }}
+                    >
+                      <ExpenseCode
+                        currentPage={currentPage}
+                        expense_code={expense.expense_code}
+                      />
+                    </Box>
                   </Box>
                   <Box
                     component="td"

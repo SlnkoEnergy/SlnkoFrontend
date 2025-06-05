@@ -384,10 +384,19 @@ const ExpenseApproval = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                    <ExpenseCode
-                      currentPage={currentPage}
-                      expense_code={expense.expense_code}
-                    />
+                   <Box
+                      sx={{
+                        display: "inline",
+                        textDecoration: "underline dotted",
+                        textUnderlineOffset: "2px",
+                        textDecorationColor: "#999",
+                      }}
+                    >
+                      <ExpenseCode
+                        currentPage={currentPage}
+                        expense_code={expense.expense_code}
+                      />
+                    </Box>
                   </Box>
                   <Box
                     component="td"
