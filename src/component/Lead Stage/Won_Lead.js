@@ -388,6 +388,7 @@ const StandByRequest = forwardRef((props, ref) => {
       userRole === "admin" ||
       userRole === "superadmin" ||
       userName === "Shiv Ram Tathagat" ||
+      userName === "Deepak Manodi" ||
       userName === "Prachi Singh" ||
       userName === "Guddu Rani Dubey";
 

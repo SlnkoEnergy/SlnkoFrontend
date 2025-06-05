@@ -389,7 +389,7 @@ const filteredData = useMemo(() => {
 
   const userName = user.name.trim();
   const userRole = user.department?.trim();
-  const isAdmin = userRole === "admin" || userRole === "superadmin"|| userName === "Shiv Ram Tathagat";
+  const isAdmin = userRole === "admin" || userRole === "superadmin"|| userName === "Shiv Ram Tathagat" || userName === "Deepak Manodi";
 
   // State-based user access
    const stateUserMap = {

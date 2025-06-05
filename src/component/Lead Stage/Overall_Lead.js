@@ -292,7 +292,8 @@ const Overall_Leads = forwardRef((props, ref) => {
     const isAdmin =
       userRole === "admin" ||
       userRole === "superadmin" ||
-      userName === "Shiv Ram Tathagat";
+      userName === "Shiv Ram Tathagat" ||
+      userName === "Deepak Manodi";
 
     // const taskByWhomList =
     //   getTask?.flatMap((task) => {
