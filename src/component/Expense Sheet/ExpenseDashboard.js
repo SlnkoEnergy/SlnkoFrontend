@@ -85,12 +85,9 @@ const AllExpense = forwardRef((props, ref) => {
       const isAdmin =
         userRole === "admin" || userRole === "superadmin" || userRole === "HR";
       const submittedBy = expense.emp_name?.trim() || "";
+      // const expenseDepartment = expense.department?.trim() || "";
 
-      if (isAdmin) return true;
 
-      const isSubmittedByUser = submittedBy === userName;
-
-      // Only include certain statuses
       const allowedStatuses = [
         "submitted",
         "manager approval",
@@ -113,7 +110,15 @@ const AllExpense = forwardRef((props, ref) => {
           .includes(searchQuery.toLowerCase())
       );
 
-      return matchesSearchQuery && isSubmittedByUser;
+      const isSubmittedByUser = submittedBy === userName;
+
+  
+      const isMayank = userName === "Mayank Kumar";
+      const canSeeProjects = isMayank && userRole === "Projects";
+
+      return (
+        matchesSearchQuery && (isAdmin || isSubmittedByUser || canSeeProjects)
+      );
     })
     .sort((a, b) => {
       const aMatches = [a.expense_code, a.emp_name, a.current_status].some(
@@ -574,18 +579,18 @@ const AllExpense = forwardRef((props, ref) => {
                   >
                     <Typography level="title-md">
                       <Box
-                      sx={{
-                        display: "inline",
-                        textDecoration: "underline dotted",
-                        textUnderlineOffset: "2px",
-                        textDecorationColor: "#999",
-                      }}
-                    >
-                      <ExpenseCode
-                        currentPage={currentPage}
-                        expense_code={expense.expense_code}
-                      />
-                    </Box>
+                        sx={{
+                          display: "inline",
+                          textDecoration: "underline dotted",
+                          textUnderlineOffset: "2px",
+                          textDecorationColor: "#999",
+                        }}
+                      >
+                        <ExpenseCode
+                          currentPage={currentPage}
+                          expense_code={expense.expense_code}
+                        />
+                      </Box>
                     </Typography>
                     {getStatusChip()}
                   </Box>

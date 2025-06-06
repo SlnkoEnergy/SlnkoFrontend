@@ -702,7 +702,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
-        ) : user?.department === "BD" ? (
+        ) : (user?.department === "BD") ? (
           <List>
             <ListItem nested>
               <Toggler

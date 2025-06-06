@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { IdCardIcon } from "lucide-react";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: "https://api.slnkoprotrac.com/v1/",
@@ -18,17 +19,17 @@ export const camsApi = createApi({
   tagTypes: ["CAM"],
   endpoints: (builder) => ({
     getHandOver: builder.query({
-      query: ({ page = 1 } = {}) => `get-all-handover-sheet?page=${page}`,
+      query: ({ page = 1, search = "" } = {}) =>
+        `get-all-handover-sheet?page=${page}&search=${search}`,
+      transformResponse: (response) => ({
+        data: response.data || [],
+        total: response.meta?.total || 0,
+      }),
       providesTags: ["CAM"],
     }),
 
-    // getBDHandOver: builder.query({
-    //   query: () => "get-all-bd-handoversheet",
-    //   providesTags: ["CAM"],
-    // }),
-
     getHandOverById: builder.query({
-      query: (_id) => `get-handoversheet/${_id}`,
+      query: ({ leadId }) => `get-handoversheet?leadId=${leadId}`,
       providesTags: ["CAM"],
     }),
 

@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
 import {
+  useGetHandOverByIdQuery,
   useGetHandOverQuery,
   useUpdateHandOverMutation,
 } from "../../redux/camsSlice";
@@ -321,20 +322,19 @@ const UpdateHandoverSheetForm = ({ onBack }) => {
     return userData ? JSON.parse(userData) : null;
   };
 
-  const LeadId = sessionStorage.getItem("update handover");
+const LeadId = localStorage.getItem("hand_Over");
+console.log("LeadId:", LeadId);
 
-  // console.log("LeadId:", LeadId);
+const { data: getHandOverSheet = {} } = useGetHandOverByIdQuery(LeadId);
 
-  const { data: getHandOverSheet = [] } = useGetHandOverQuery();
-  const HandOverSheet = useMemo(
-    () => getHandOverSheet?.Data ?? [],
-    [getHandOverSheet]
-  );
+const HandOverSheet = useMemo(
+  () => getHandOverSheet?.data ?? [],
+  [getHandOverSheet]
+);
 
-  const handoverData = useMemo(() => {
-    return HandOverSheet.find((item) => item.p_id === Number(LeadId));
-  }, [HandOverSheet, LeadId]);
-
+const handoverData = useMemo(() => {
+  return HandOverSheet.find((item) => item.id === LeadId);
+}, [HandOverSheet, LeadId]);
   // console.log("handoverData:", handoverData);
 
   useEffect(() => {
@@ -345,6 +345,7 @@ const UpdateHandoverSheetForm = ({ onBack }) => {
 
     setFormData((prev) => ({
       ...prev,
+      id: handoverData.id || "",
       p_id: handoverData?.p_id || "",
       customer_details: {
         ...prev.customer_details,
@@ -501,7 +502,7 @@ const UpdateHandoverSheetForm = ({ onBack }) => {
 
       // Prepare updated form data
       const updatedFormData = {
-        p_id: Number(LeadId),
+        id: LeadId,
         customer_details: {
           ...formData.customer_details,
         },
