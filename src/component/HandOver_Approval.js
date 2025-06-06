@@ -24,50 +24,26 @@ import { useGetEntireLeadsQuery } from "../redux/leadsSlice";
 
 function Dash_cam() {
   const navigate = useNavigate();
-  const [payments, setPayments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  // const [error, setError] = useState(null);
-  const [vendors, setVendors] = useState([]);
-  const [vendorFilter, setVendorFilter] = useState("");
-  const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
-  // const [projects, setProjects] = useState([]);
-  const [bdRateData, setBdRateData] = useState([]);
-  const [mergedData, setMergedData] = useState([]);
-  const [accountNumber, setAccountNumber] = useState([]);
-  const [ifscCode, setIfscCode] = useState([]);
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [isUtrSubmitted, setIsUtrSubmitted] = useState(false);
+
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
 
-  const [refreshKey, setRefreshKey] = useState(0);
+
+const itemsPerPage = 10;
 
   const {
     data: getHandOverSheet = {},
     isLoading,
     refetch,
-  } = useGetHandOverQuery(refreshKey);
+  } = useGetHandOverQuery({ page: currentPage,search: searchQuery, status: "draft" });
 
-  const { data: getLead = {} } = useGetEntireLeadsQuery();
-
-  const leads = [
-    ...(getLead?.lead?.initialdata?.map((item) => ({
-      ...item,
-    })) || []),
-    ...(getLead?.lead?.followupdata?.map((item) => ({
-      ...item,
-    })) || []),
-    ...(getLead?.lead?.warmdata?.map((item) => ({ ...item })) || []),
-    ...(getLead?.lead?.wondata?.map((item) => ({ ...item })) || []),
-    ...(getLead?.lead?.deaddata?.map((item) => ({ ...item })) || []),
-  ];
-
-  const HandOverSheet = Array.isArray(getHandOverSheet?.Data)
-    ? getHandOverSheet.Data.map((entry) => {
-        const matchingLead = leads.find((lead) => lead.id === entry.id);
+  const HandOverSheet = Array.isArray(getHandOverSheet?.data)
+    ? getHandOverSheet.data.map((entry) => {
+   
         return {
           ...entry,
           ...entry.customer_details,
@@ -75,25 +51,18 @@ function Dash_cam() {
           ...entry.project_detail,
           ...entry.commercial_details,
           ...entry.other_details,
-          scheme: matchingLead?.scheme || "-",
+          ...entry?.scheme,
+          ...entry?.submitted_by,
         };
       })
     : [];
 
-  // console.log("HandOverSheet:", HandOverSheet);
+console.log("HandOverSheet Data:", HandOverSheet);
+    
+    
 
-  // const combinedData = HandOverSheet.map((handoverItem) => {
-  //   const matchingLead = leads.find((lead) => lead.id === handoverItem.id);
+    const totalCount = getHandOverSheet.total || 0;
 
-  //   return {
-  //     ...handoverItem,
-  //     scheme: matchingLead?.scheme || "-",
-  //   };
-  // });
-
-  // console.log(combinedData);
-  // const [updateUnlockHandoversheet, { isLoading: isUpdating }] =
-  //   useUpdateUnlockHandoversheetMutation();
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userDetails");
@@ -103,98 +72,9 @@ function Dash_cam() {
     }
   }, []);
 
-  // const handleApprovalUpdate = async (Id, newStatus) => {
-  //   try {
-  //     // Convert "Rejected" to "Draft" before sending to backend
-  //     const statusToSend = newStatus === "Rejected" ? "draft" : "Approved";
+ 
 
-  //     const response = await axios.put(`/update-status/${Id}`, {
-  //       status_of_handoversheet: statusToSend,
-  //     });
-
-  //     if (response.status === 200) {
-  //       // Remove item from UI after status change
-  //       setPayments((prevPayments) =>
-  //         prevPayments.filter((payment) => payment._id !== Id)
-  //       );
-
-  //       // Show appropriate toast
-  //       if (newStatus === "Approved") {
-  //         toast.success("Payment Approved !!", { autoClose: 3000 });
-  //       } else if (newStatus === "Rejected") {
-  //         toast.error("Payment Rejected (reverted to Draft)", {
-  //           autoClose: 2000,
-  //         });
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error("Error updating approval status:", error);
-  //     toast.error("Already Done.. Please refresh it.");
-  //   }
-  // };
-
-  // const RowMenu1 = ({ Id, onStatusChange, currentPage, p_id }) => {
-  //   const [status, setStatus] = useState(null);
-
-  //   const handleChipClick = (newStatus) => {
-  //     setStatus(newStatus);
-  //     onStatusChange(Id, newStatus);
-  //   };
-
-  //   return (
-  //     <Box
-  //       sx={{
-  //         display: "flex",
-  //         justifyContent: "center",
-  //         gap: 1,
-  //       }}
-  //     >
-  //       {/* Approve Chip */}
-  //       <Chip
-  //         variant="solid"
-  //         color="success"
-  //         label="Approved"
-  //         onClick={() => {
-  //           const page = currentPage;
-  //           const projectId = Number(p_id);
-  //           sessionStorage.setItem(
-  //             "approvalInfo",
-  //             JSON.stringify({
-  //               projectId,
-  //               status: "Approved",
-  //               page,
-  //             })
-  //           );
-  //           handleChipClick("Approved");
-  //         }}
-  //         sx={{
-  //           textTransform: "none",
-  //           fontSize: "0.875rem",
-  //           fontWeight: 500,
-  //           borderRadius: "sm",
-  //         }}
-  //         startDecorator={<EditNoteIcon />}
-  //       />
-
-  //       {/* Reject Chip */}
-  //       <Chip
-  //         variant="outlined"
-  //         color="danger"
-  //         label="Rejected"
-  //         onClick={() => handleChipClick("Rejected")}
-  //         sx={{
-  //           textTransform: "none",
-  //           fontSize: "0.875rem",
-  //           fontWeight: 500,
-  //           borderRadius: "sm",
-  //         }}
-  //         startDecorator={<BlockIcon />}
-  //       />
-  //     </Box>
-  //   );
-  // };
-
-  const RowMenu1 = ({ currentPage, p_id, _id }) => {
+  const RowMenu1 = ({ currentPage, p_id, _id, id }) => {
     const [openModal, setOpenModal] = useState(false);
     const [comment, setComment] = useState("");
 
@@ -246,10 +126,10 @@ function Dash_cam() {
             label="Approved"
             onClick={() => {
               const page = currentPage;
-              const projectId = _id;
+              const projectId = String(id);
 
               sessionStorage.setItem("approvalInfo", projectId);
-              navigate(`/edit_ops_handover?page=${page}&_id=${projectId}`);
+              navigate(`/edit_ops_handover?page=${page}&id=${projectId}`);
             }}
             sx={{
               textTransform: "none",
@@ -306,119 +186,7 @@ function Dash_cam() {
     );
   };
 
-  // const RowMenu = ({ currentPage, p_id }) => {
-  //   console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
-
-  //   const [user, setUser] = useState(null);
-
-  //   useEffect(() => {
-  //     const userData = getUserData();
-  //     setUser(userData);
-  //   }, []);
-
-  //   const getUserData = () => {
-  //     const userData = localStorage.getItem("userDetails");
-  //     if (userData) {
-  //       return JSON.parse(userData);
-  //     }
-  //     return null;
-  //   };
-
-  //   return (
-  //     <>
-  //       <Dropdown>
-  //         <MenuButton
-  //           slots={{ root: IconButton }}
-  //           slotProps={{
-  //             root: { variant: "plain", color: "neutral", size: "sm" },
-  //           }}
-  //         >
-  //           <MoreHorizRoundedIcon />
-  //         </MenuButton>
-
-  //         <Menu size="sm" sx={{ minWidth: 140 }}>
-  //           <MenuItem
-  //             color="primary"
-  //             onClick={() => {
-  //               const page = currentPage;
-  //               const projectId = Number(p_id);
-  //               sessionStorage.setItem("view handover", projectId);
-  //               // localStorage.setItem("p_id", projectID);
-  //               navigate(`/view_handover?page=${page}&p_id=${projectId}`);
-  //             }}
-  //           >
-  //             <ContentPasteGoIcon />
-  //             <Typography>View</Typography>
-  //           </MenuItem>
-  //           <MenuItem
-  //             color="primary"
-  //             onClick={() => {
-  //               const page = currentPage;
-  //               const projectId = Number(p_id);
-  //               sessionStorage.setItem("update handover", projectId);
-  //               // localStorage.setItem("p_id", projectID);
-  //               navigate(`/edit_handover?page=${page}&p_id=${projectId}`);
-  //             }}
-  //           >
-  //             <EditNoteIcon />
-  //             <Typography>Edit HandOver</Typography>
-  //           </MenuItem>
-  //           {/* <MenuItem
-  //               onClick={() => {
-  //                 const page = currentPage;
-  //                 const projectId = String(p_id);
-  //                 localStorage.setItem("get-project", projectId);
-  //                 navigate("#");
-  //               }}
-  //             >
-  //               <HistoryIcon />
-  //               <Typography>View BOM</Typography>
-  //             </MenuItem> */}
-  //           {/* <Divider sx={{ backgroundColor: "lightblue" }} /> */}
-  //           {/* {(user?.name === "IT Team" || user?.name === "admin") && (
-  //               <MenuItem
-  //                 color="danger"
-  //                 disabled={selected.length === 0}
-  //                 onClick={handleDelete}
-  //               >
-  //                 <DeleteIcon />
-  //                 <Typography>Delete</Typography>
-  //               </MenuItem>
-  //             )} */}
-  //         </Menu>
-  //       </Dropdown>
-  //     </>
-  //   );
-  // };
-
-  // const handleDelete = async () => {
-  //   if (selected.length === 0) {
-  //     toast.error("No offers selected for deletion.");
-  //     return;
-  //   }
-
-  //   try {
-  //     setLoading(true);
-  //     setError("");
-
-  //     for (const _id of selected) {
-  //       await Axios.delete(`/delete-offer/${_id}`);
-
-  //       setCommRate((prev) => prev.filter((item) => item._id !== _id));
-  //       setBdRateData((prev) => prev.filter((item) => item.offer_id !== _id));
-  //       setMergedData((prev) => prev.filter((item) => item.offer_id !== _id));
-  //     }
-
-  //     toast.success("Deleted successfully.");
-  //     setSelected([]);
-  //   } catch (err) {
-  //     console.error("Error deleting offers:", err);
-  //     setError(err.response?.data?.msg || "Failed to delete selected offers.");
-  //     toast.error("Failed to delete selected offers.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+  
 
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
@@ -452,6 +220,9 @@ function Dash_cam() {
       prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
     );
   };
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
 
@@ -489,14 +260,7 @@ function Dash_cam() {
 
   const paginatedPayments = filteredAndSortedData;
 
-  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
-
-  // const paginatedPayments = filteredAndSortedData.slice(
-  //   (currentPage - 1) * itemsPerPage,
-  //   currentPage * itemsPerPage
-  // );
-  // console.log(paginatedPayments);
-  // console.log("Filtered and Sorted Data:", filteredAndSortedData);
+  const pageNumbers = generatePageNumbers(currentPage, totalPages);
 
   const handlePageChange = (page) => {
     if (page >= 1) {
@@ -505,9 +269,8 @@ function Dash_cam() {
     }
   };
 
-  const draftPayments = paginatedPayments.filter(
-    (project) => project.status_of_handoversheet === "draft"
-  );
+  const draftPayments = paginatedPayments;
+
 
   return (
     <>
@@ -696,6 +459,8 @@ function Dash_cam() {
                   >
                     {project.scheme || "-"}
                   </td>
+               
+                  
 
                   <td
                     style={{
@@ -737,7 +502,7 @@ function Dash_cam() {
                   >
                     <RowMenu1
                       currentPage={currentPage}
-                      p_id={project.p_id}
+                      id={project.id}
                       _id={project._id}
                     />
                   </td>

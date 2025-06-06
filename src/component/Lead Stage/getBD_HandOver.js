@@ -16,7 +16,7 @@ import {
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
-import { useGetBDHandOverQuery, useGetHandOverQuery } from "../../redux/camsSlice";
+import { useGetBDHandOverQuery, useGetHandOverByIdQuery, useGetHandOverQuery } from "../../redux/camsSlice";
 import {
   useGetMasterInverterQuery,
   useGetModuleMasterQuery,
@@ -320,17 +320,34 @@ const GetBDHandoverSheetForm = ({ onBack }) => {
   };
   const LeadId = localStorage.getItem("bd_handover");
 
-  const { data: getHandOverSheet = [] } = useGetHandOverQuery();
-  const HandOverSheet = useMemo(
-    () => getHandOverSheet?.Data ?? [],
-    [getHandOverSheet]
-  );
+  // console.log("LeadId:", LeadId);
+  
 
-  console.log("HandOverSheet", HandOverSheet);
+const {
+  data: getHandOverSheet,
+  isLoading,
+  isError,
+  error,
+} = useGetHandOverByIdQuery(
+  { leadId: LeadId },
+  { skip: !LeadId }
+);
 
-  const handoverData = HandOverSheet.find((item) => item.id === String(LeadId));
+// Fallback in case API returns single object instead of array
+const HandOverSheet = Array.isArray(getHandOverSheet?.data)
+  ? getHandOverSheet.data
+  : getHandOverSheet?.data
+  ? [getHandOverSheet.data]
+  : [];
 
-  console.log("✅ Found handoverData:", handoverData);
+console.log("🔍 LeadId:", LeadId);
+console.log("📦 HandOverSheet:", HandOverSheet);
+
+const handoverData = HandOverSheet.find(
+  (item) => String(item.id) === String(LeadId)
+);
+
+console.log("✅ Found handoverData:", handoverData);
 
   useEffect(() => {
     if (!handoverData) {

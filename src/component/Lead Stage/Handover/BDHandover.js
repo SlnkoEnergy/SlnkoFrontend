@@ -245,25 +245,66 @@ const HandoverSheetForm = () => {
     const userData = localStorage.getItem("userDetails");
     return userData ? JSON.parse(userData) : null;
   };
-  const LeadId = localStorage.getItem("hand_Over");
 
   const [addHandOver] = useAddHandOverMutation();
   const [updateHandOver] = useUpdateHandOverMutation();
 
-  const { data, error, isLoading } = useGetHandOverByIdQuery(LeadId, {
+const LeadId = localStorage.getItem("hand_Over");
+
+const {
+  data: getHandOverSheet,
+  isLoading,
+  isError,
+  error,
+} = useGetHandOverByIdQuery(
+  { leadId: LeadId },
+  {
     skip: !LeadId,
-  });
-  const handoverData = data?.Data ?? null;
+  }
+);
+
+
+  const handoverData = getHandOverSheet?.data ?? null;
 
   useEffect(() => {
-    if (!handoverData && !isLoading) {
+    if (!handoverData && !isLoading && !error) {
       console.warn("No matching handover data found.");
     } else if (handoverData) {
       console.log("Fetched handover data:", handoverData);
     }
-  }, [handoverData, isLoading]);
+  }, [handoverData, isLoading, error]);
 
-  console.log("handoverData:", handoverData);
+  useEffect(() => {
+  if (getHandOverSheet?.data) {
+    setFormData(prev => ({
+      ...prev,
+      ...getHandOverSheet.data,
+      
+      customer_details: {
+        ...prev.customer_details,
+        ...getHandOverSheet.data.customer_details,
+      },
+      order_details: {
+        ...prev.order_details,
+        ...getHandOverSheet.data.order_details,
+      },
+      project_detail: {
+        ...prev.project_detail,
+        ...getHandOverSheet.data.project_detail,
+      },
+      commercial_details: {
+        ...prev.commercial_details,
+        ...getHandOverSheet.data.commercial_details,
+      },
+      other_details: {
+        ...prev.other_details,
+        ...getHandOverSheet.data.other_details,
+      },
+     
+    }));
+  }
+}, [getHandOverSheet]);
+
 
   const handoverSchema = Yup.object().shape({
     customer_details: Yup.object().shape({
@@ -290,6 +331,8 @@ const HandoverSheetForm = () => {
       proposed_dc_capacity: Yup.string().required(
         "Proposed DC Capacity is required"
       ),
+      transmission_scope: Yup.string().required("Transmission line scope is required"),
+      module_category: Yup.string().required("Module content category is required"),
     }),
     commercial_details: Yup.object().shape({
       type: Yup.string().required("Commercial type is required"),
@@ -299,79 +342,6 @@ const HandoverSheetForm = () => {
     }),
   });
 
-  useEffect(() => {
-    if (!handoverData) {
-      console.warn("No matching handover data found.");
-      return;
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      _id: handoverData._id || "",
-      id: handoverData.id || "",
-      customer_details: {
-        ...prev.customer_details,
-
-        name: handoverData.customer_details?.name || "",
-        customer: handoverData.customer_details?.customer || "",
-        epc_developer: handoverData.customer_details?.epc_developer || "",
-        site_address: handoverData.customer_details?.site_address || {
-          village_name: "",
-          district_name: "",
-        },
-        number: handoverData.customer_details?.number || "",
-        p_group: handoverData.customer_details?.p_group || "",
-        state: handoverData.customer_details?.state || "",
-        alt_number: handoverData.customer_details?.alt_number || "",
-      },
-      order_details: {
-        ...prev.order_details,
-        type_business: handoverData.order_details?.type_business || "",
-      },
-      project_detail: {
-        ...prev.project_detail,
-        project_type: handoverData.project_detail?.project_type || "",
-        module_type: handoverData.project_detail?.module_type || "",
-        module_category: handoverData.project_detail?.module_category || "",
-        evacuation_voltage:
-          handoverData.project_detail?.evacuation_voltage || "",
-        work_by_slnko: handoverData.project_detail?.work_by_slnko || "",
-        liaisoning_net_metering:
-          handoverData.project_detail?.liaisoning_net_metering || "",
-        ceig_ceg: handoverData.project_detail?.ceig_ceg || "",
-        proposed_dc_capacity:
-          handoverData.project_detail?.proposed_dc_capacity || "",
-        distance: handoverData.project_detail?.distance || "",
-
-        overloading: handoverData.project_detail?.overloading || "",
-        project_kwp: handoverData.project_detail?.project_kwp || "",
-
-        project_component: handoverData.project_detail?.project_component || "",
-        project_component_other:
-          handoverData.project_detail?.project_component_other || "",
-        transmission_scope:
-          handoverData.project_detail?.transmission_scope || "",
-        loan_scope: handoverData.project_detail?.loan_scope || "",
-      },
-      commercial_details: {
-        ...prev.commercial_details,
-        type: handoverData.commercial_details?.type || "",
-      },
-      other_details: {
-        ...prev.other_details,
-        cam_member_name: handoverData.other_details?.cam_member_name || "",
-        service: handoverData.other_details?.service || "",
-        project_status:
-          handoverData.other_details?.project_status || "incomplete",
-        slnko_basic: handoverData.other_details?.slnko_basic || "",
-        remark: handoverData.other_details?.remark || "",
-        remarks_for_slnko: handoverData.other_details?.remarks_for_slnko || "",
-        submitted_by_BD: handoverData.other_details?.submitted_by_BD || "",
-      },
-      submitted_by: handoverData.submitted_by || "-",
-      status_of_handoversheet: handoverData.status_of_handoversheet || "",
-    }));
-  }, [handoverData]);
 
   const handleSubmit = async () => {
     try {
@@ -417,6 +387,8 @@ const HandoverSheetForm = () => {
       }
 
       localStorage.setItem("HandOver_Lead", LeadId);
+      console.log("Submitting LeadIds :" , LeadId);
+      
       navigate("/get_hand_over");
     } catch (error) {
       if (error.name === "ValidationError") {
