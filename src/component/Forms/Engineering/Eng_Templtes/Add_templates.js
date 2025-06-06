@@ -15,12 +15,14 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import {
   useCreateBoqCategoryMutation,
   useCreateBoqTemplateRowMutation,
+  useUpdateModuleTemplateIdMutation,
 } from "../../../../redux/Eng/templatesSlice";
 
 const AddTemplatesPage = () => {
   const [createBoqCategory] = useCreateBoqCategoryMutation();
   const [createBoqTemplateRow] = useCreateBoqTemplateRowMutation();
-
+  const [updateModuleTemplateCategory] = useUpdateModuleTemplateIdMutation();
+  const moduleId = localStorage.getItem("Id");
   const [templateData, setTemplateData] = useState({
     name: "",
     description: "",
@@ -176,6 +178,10 @@ const AddTemplatesPage = () => {
 
       // Step 5: Post ONE document with all rows (column-wise)
       await createBoqTemplateRow(payload).unwrap();
+      await updateModuleTemplateCategory({
+        _id: moduleId, // make sure moduleId is defined
+        template_category: boqCategoryId,
+      }).unwrap();
 
       alert("Template submitted successfully!");
       // Optionally reset form state here

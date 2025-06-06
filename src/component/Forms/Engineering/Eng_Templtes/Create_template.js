@@ -193,6 +193,8 @@ const CreateTemplate = () => {
                 <Option value="civil">Civil</Option>
                 <Option value="mechanical">Mechanical</Option>
                 <Option value="electrical">Electrical</Option>
+                <Option value="mechanical">Plant Layout</Option>
+                <Option value="electrical">BOQ</Option>
               </Select>
             </FormControl>
           </Grid>
