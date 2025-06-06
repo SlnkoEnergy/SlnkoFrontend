@@ -442,7 +442,7 @@ const Expense_Form = () => {
           ...updated[index].items[0],
           project_id: null,
           project_code: "Other",
-          project_name: "", // Allow empty so user can type
+          project_name: "",
           projectSelected: true,
         };
       }
@@ -876,10 +876,9 @@ const Expense_Form = () => {
                           <input
                             hidden
                             type="file"
-                            onChange={
-                              (e) =>
-                                e.target.files?.[0] &&
-                                handleFileChange(rowIndex, 0, e.target.files[0]) // Index 0 for items[0]
+                            onChange={(e) =>
+                              e.target.files?.[0] &&
+                              handleFileChange(rowIndex, 0, e.target.files[0])
                             }
                           />
                         </Button>
@@ -901,7 +900,7 @@ const Expense_Form = () => {
                     {/* Invoice */}
                     <td>
                       <Select
-                        value={row.items?.[0]?.invoice?.status || ""} // 'invoice' can be an object, so maybe status or yes/no
+                        value={row.items?.[0]?.invoice?.status || ""}
                         onChange={(e, value) =>
                           handleItemChange(rowIndex, "invoice", {
                             ...row.items?.[0]?.invoice,
