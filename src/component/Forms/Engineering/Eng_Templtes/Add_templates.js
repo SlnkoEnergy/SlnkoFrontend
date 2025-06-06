@@ -16,7 +16,6 @@ import {
   useCreateBoqCategoryMutation,
   useCreateBoqTemplateRowMutation,
   useUpdateModuleTemplateIdMutation,
-  useUpdateModuleTemplateIdMutation,
 } from "../../../../redux/Eng/templatesSlice";
 
 const AddTemplatesPage = () => {
