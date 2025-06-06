@@ -8,12 +8,12 @@ const PieChartStatic = () => {
 
   const expenseCode = localStorage.getItem("edit_expense");
 
-  // Find the expense that matches the stored expense code
+ 
   const selectedExpense = expenses.find(
     (expense) => expense.expense_code === expenseCode
   );
 
-  // Aggregate amounts by category for the selected expense
+  
   const categoryMap = {};
 
   if (selectedExpense) {
@@ -29,7 +29,7 @@ const PieChartStatic = () => {
     });
   }
 
-  // Transform the aggregated data into format required by Nivo Pie
+ 
   const pieData = Object.entries(categoryMap).map(([category, value]) => ({
     id: category,
     label: category,
