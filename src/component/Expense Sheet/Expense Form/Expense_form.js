@@ -144,6 +144,7 @@ const Expense_Form = () => {
     "Site Stationery Expenses",
     "Site Miscellaneous Expenses",
     "Site Vehicle Repair and Maintenance Expense",
+    
   ];
 
   const categoryDescriptions = {

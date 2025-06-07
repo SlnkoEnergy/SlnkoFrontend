@@ -256,11 +256,11 @@ const StandByRequest = forwardRef((props, ref) => {
             color="primary"
             onClick={() => {
               const page = currentPage;
-              const leadId1 = leadId;
+              // const leadId = leadId;
               // const projectID = Number(p_id);
-              localStorage.setItem("hand_Over", leadId1);
+              // localStorage.setItem("hand_Over", leadId1);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/hand_over?page=${page}&${leadId1}`);
+              navigate(`/hand_over?page=${page}&leadId=${leadId}`);
             }}
           >
             <FollowTheSignsIcon />
@@ -298,9 +298,9 @@ const StandByRequest = forwardRef((props, ref) => {
         <IconButton
           color="primary"
           onClick={() => {
-            const ID = String(leadId);
-            localStorage.setItem("bd_handover", ID);
-            navigate(`/bd_hand_over?page=${currentPage}&id=${ID}`);
+            // const ID = String(leadId);
+            // localStorage.setItem("bd_handover", ID);
+            navigate(`/bd_hand_over?page=${currentPage}&leadId=${leadId}`);
           }}
         >
           <VisibilityIcon />
@@ -309,7 +309,7 @@ const StandByRequest = forwardRef((props, ref) => {
     );
   };
 
-  const EditHandOver = ({ currentPage,leadId }) => {
+  const EditHandOver = ({ currentPage, leadId }) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
 
     return (
@@ -317,8 +317,8 @@ const StandByRequest = forwardRef((props, ref) => {
         <IconButton
           color="primary"
           onClick={() => {
-            localStorage.setItem("edit_won_handover", leadId);
-            navigate(`/edit_won?page=${currentPage}&id=${leadId}`);
+            // localStorage.setItem("edit_won_handover", leadId);
+            navigate(`/edit_won?page=${currentPage}&leadId=${leadId}`);
           }}
         >
           <EditNoteIcon />
