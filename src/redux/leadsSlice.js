@@ -14,7 +14,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 export const leadsApi = createApi({
   reducerPath: "leadsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "https://staging.api.slnkoprotrac.com/v1/",
+    baseUrl: "https://api.slnkoprotrac.com/v1/",
     prepareHeaders: (headers) => {
       const token = localStorage.getItem("authToken");
       // console.log(token);
