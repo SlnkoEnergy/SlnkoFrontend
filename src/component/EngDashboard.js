@@ -65,8 +65,11 @@ function Dash_eng() {
 
   const HandOverSheet = Array.isArray(getHandOverSheet?.data)
     ? getHandOverSheet.data.map((entry) => {
+        console.log("Entry :", entry);
+
         return {
           ...entry,
+          p_id: entry.p_id,
           _id: entry._id,
           ...entry.customer_details,
           ...entry.order_details,
@@ -75,6 +78,7 @@ function Dash_eng() {
           ...entry.other_details,
           ...entry?.scheme,
           is_locked: entry.is_locked,
+          project_id: entry.project_id,
         };
       })
     : [];
@@ -229,8 +233,8 @@ function Dash_eng() {
     );
   };
 
-  const ProjectOverView = ({ currentPage, _id, code }) => {
-    // console.log("currentPage:", currentPage, "p_id:", p_id);
+  const ProjectOverView = ({ currentPage, project_id, code }) => {
+    // console.log("currentPage:", currentPage, "pproject_id:", pproject_id);
 
     return (
       <>
@@ -243,9 +247,9 @@ function Dash_eng() {
           }}
           onClick={() => {
             const page = currentPage;
-            const projectId = _id;
-            sessionStorage.setItem("eng_overview", projectId);
-            navigate(`/overview?page=${page}&_id=${projectId}`);
+            // const project_id = project_id;
+            // sessionStorage.setItem("eng_overview", projectId);
+            navigate(`/overview?page=${page}&project_id=${project_id}`);
           }}
         >
           {code || "-"}
@@ -564,7 +568,7 @@ function Dash_eng() {
                       <span>
                         <ProjectOverView
                           currentPage={currentPage}
-                          _id={project._id}
+                          project_id={project.project_id}
                           code={project.code}
                         />
                       </span>

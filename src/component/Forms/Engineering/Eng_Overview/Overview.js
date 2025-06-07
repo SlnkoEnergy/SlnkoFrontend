@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Sheet,
@@ -14,48 +14,73 @@ import { useGetModuleCategoryByIdQuery } from "../../../../redux/Eng/templatesSl
 const Overview = () => {
   const [searchParams] = useSearchParams();
   const [selected, setSelected] = useState("Electrical");
-  const [moduleId, setModuleId] = useState(null);
+  const [fileUploads, setFileUploads] = useState({});
 
-  // Store or retrieve moduleId from URL/localStorage
-  useEffect(() => {
-    const idFromUrl = searchParams.get("id");
-    const storedId = localStorage.getItem("ModuleId");
+  const pidFromUrl = searchParams.get("project_id");
+  const projectId = pidFromUrl;
 
-    if (idFromUrl && idFromUrl !== storedId) {
-      localStorage.setItem("ModuleId", idFromUrl);
-      setModuleId(idFromUrl);
-    } else if (storedId) {
-      setModuleId(storedId);
-    }
-  }, [searchParams]);
-
-  const { data, isLoading, isError } = useGetModuleCategoryByIdQuery(moduleId, {
-    skip: !moduleId,
-  });
+  const { data, isLoading, isError } = useGetModuleCategoryByIdQuery(
+    { projectId, engineering: selected },
+    { skip: !projectId }
+  );
 
   const categoryData = {
     Electrical: [],
     Mechanical: [],
     Civil: [],
-    "Plant Layout": [],
-    BOQ: [],
+    plant_layout: [],
+    boq: [],
   };
 
-  const project = data?.data?.project_id;
+  const project = data?.data || "-";
 
-  if (data?.data?.items?.length) {
-    data.data.items.forEach((item) => {
+  if (project?.items?.length) {
+    project.items.forEach((item) => {
       const template = item.template_id;
       const category = template?.engineering_category;
-      if (categoryData[category]) {
+
+      if (category && categoryData[category]) {
         categoryData[category].push({
           name: template.name,
           description: template.description,
-          attachmentNumber: item.current_attachment?.attachment_number || "N/A",
+          maxFiles: template.file_upload?.max_files || 0,
+          attachmentUrls: item.current_attachment?.attachment_url || [],
         });
       }
     });
   }
+
+  const handleFileChange = (categoryIndex, fileIndex, file) => {
+    setFileUploads((prev) => {
+      const newUploads = { ...prev };
+      if (!newUploads[categoryIndex]) {
+        newUploads[categoryIndex] = {};
+      }
+      newUploads[categoryIndex][fileIndex] = file;
+      return newUploads;
+    });
+  };
+
+  const isAnyFileUploaded = Object.values(fileUploads).some(
+    (fileGroup) => Object.keys(fileGroup).length > 0
+  );
+
+  const handleSubmit = () => {
+    const uploadedData = [];
+
+    Object.entries(fileUploads).forEach(([categoryIndex, fileGroup]) => {
+      Object.entries(fileGroup).forEach(([fileIndex, file]) => {
+        uploadedData.push({
+          categoryItemIndex: categoryIndex,
+          fileIndex: fileIndex,
+          file: file,
+        });
+      });
+    });
+
+    console.log("Submitting uploaded files:", uploadedData);
+    alert("Files ready for submission! Check console for data.");
+  };
 
   return (
     <Box
@@ -93,6 +118,7 @@ const Overview = () => {
                   color={selected === category ? "primary" : "neutral"}
                   onClick={() => setSelected(category)}
                   sx={{ fontWeight: 600 }}
+                  disabled={isLoading}
                 >
                   {category}
                 </Button>
@@ -101,6 +127,7 @@ const Overview = () => {
           </List>
         </Sheet>
 
+        {/* Main Content */}
         {/* Main Content */}
         <Sheet
           variant="outlined"
@@ -111,13 +138,13 @@ const Overview = () => {
             borderRadius: "lg",
             boxShadow: "sm",
             overflowY: "auto",
-            bgcolor: "background.surface",
+            bgcolor: "#f9fafb",
           }}
         >
-          <Typography level="h4" fontWeight="lg" sx={{ mb: 2 }}>
-            {selected} Data
+          <Typography level="h4" fontWeight="xl" sx={{ mb: 3 }}>
+            {selected} Documentation
           </Typography>
-          <Divider sx={{ mb: 2 }} />
+          <Divider sx={{ mb: 3 }} />
 
           {isLoading ? (
             <Typography>Loading...</Typography>
@@ -125,38 +152,95 @@ const Overview = () => {
             <Typography color="danger">Error fetching data.</Typography>
           ) : (
             <>
-              {/* Project Info */}
-              {project && (
-                <Box sx={{ mb: 3 }}>
-                  <Typography level="body-lg" fontWeight="lg">
-                    Project: {project.name} ({project.code})
-                  </Typography>
-                  <Typography level="body-sm">
-                    Location: {project.site_address?.village_name},{" "}
-                    {project.site_address?.district_name}
-                  </Typography>
-                </Box>
-              )}
-
-              <ul style={{ paddingLeft: "1.5rem", margin: 0 }}>
+              <Box sx={{ display: "grid", gap: 3 }}>
                 {categoryData[selected].length > 0 ? (
                   categoryData[selected].map((item, index) => (
-                    <li key={index} style={{ marginBottom: "12px" }}>
-                      <Typography level="body-lg" fontWeight="md">
-                        {item.name}
+                    <Sheet
+                      key={index}
+                      variant="outlined"
+                      sx={{
+                        p: 3,
+                        borderRadius: "lg",
+                        boxShadow: "sm",
+                        bgcolor: "background.surface",
+                      }}
+                    >
+                      <Typography level="title-md" fontWeight="lg">
+                        📄 {item.name}
                       </Typography>
-                      <Typography level="body-sm" sx={{ mb: 0.5 }}>
+                      <Typography
+                        level="body-sm"
+                        sx={{ mt: 0.5, color: "text.secondary" }}
+                      >
                         {item.description}
                       </Typography>
-                      <Typography level="body-xs" color="neutral">
-                        Attachment No: {item.attachmentNumber}
+
+                      <Typography
+                        level="body-xs"
+                        sx={{
+                          mt: 1,
+                          mb: 1,
+                          fontWeight: "md",
+                          color: "primary.plainColor",
+                        }}
+                      >
+                        Max Uploads Allowed: {item.maxFiles}
                       </Typography>
-                    </li>
+
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 1,
+                          mt: 1,
+                        }}
+                      >
+                        {Array.from({ length: item.maxFiles }).map(
+                          (_, fileIndex) => (
+                            <input
+                              key={fileIndex}
+                              type="file"
+                              onChange={(e) =>
+                                handleFileChange(
+                                  index,
+                                  fileIndex,
+                                  e.target.files[0]
+                                )
+                              }
+                              style={{
+                                padding: "8px",
+                                border: "1px solid #ccc",
+                                borderRadius: "6px",
+                                backgroundColor: "#fff",
+                              }}
+                            />
+                          )
+                        )}
+                      </Box>
+                    </Sheet>
                   ))
                 ) : (
                   <Typography>No data found for {selected}.</Typography>
                 )}
-              </ul>
+              </Box>
+
+              {isAnyFileUploaded && (
+                <Box sx={{ textAlign: "right", mt: 4 }}>
+                  <Button
+                    variant="solid"
+                    color="primary"
+                    onClick={handleSubmit}
+                    sx={{
+                      px: 4,
+                      py: 1.5,
+                      fontWeight: "lg",
+                      borderRadius: "md",
+                    }}
+                  >
+                    📤 Submit Files
+                  </Button>
+                </Box>
+              )}
             </>
           )}
         </Sheet>

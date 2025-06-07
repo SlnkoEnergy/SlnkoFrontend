@@ -119,7 +119,8 @@ export const templatesApi = createApi({
     }),
 
     getModuleCategoryById: builder.query({
-      query: (_id) => `get-module-category-id/${_id}`,
+      query: ({ projectId, engineering }) =>
+        `get-module-category-id?projectId=${projectId}&engineering=${engineering}`,
       providesTags: ["Template"],
     }),
   }),
