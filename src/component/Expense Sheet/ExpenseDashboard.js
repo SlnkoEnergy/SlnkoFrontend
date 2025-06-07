@@ -116,8 +116,13 @@ const AllExpense = forwardRef((props, ref) => {
       const isMayank = userName === "Mayank Kumar";
       const canSeeProjects = isMayank && userRole === "Projects";
 
+       const isPrachi = userName === "Prachi Singh";
+      const canSeeInternal = isPrachi && userRole === "Internal";
+
+
+
       return (
-        matchesSearchQuery && (isAdmin || isSubmittedByUser || canSeeProjects)
+        matchesSearchQuery && (isAdmin || isSubmittedByUser || canSeeProjects || canSeeInternal)
       );
     })
     .sort((a, b) => {

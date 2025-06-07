@@ -584,7 +584,7 @@ const UpdateExpense = () => {
                 "Engineering",
                 "BD",
                 "Projects",
-                "OPS",
+                "Internal",
                 "CAM",
                 "Accounts",
                 "HR",
