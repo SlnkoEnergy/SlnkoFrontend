@@ -9,16 +9,9 @@ import {
   Textarea,
   Typography,
 } from "@mui/joy";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
-import {
-  useGetHandOverByIdQuery,
-  useGetHandOverQuery,
-} from "../../redux/camsSlice";
-import {
-  useGetMasterInverterQuery,
-  useGetModuleMasterQuery,
-} from "../../redux/leadsSlice";
+import { useGetHandOverByIdQuery } from "../../redux/camsSlice";
 
 const GetHandoverSheetForm = ({ onBack }) => {
   const [expanded, setExpanded] = useState(null);
@@ -153,12 +146,10 @@ const GetHandoverSheetForm = ({ onBack }) => {
     submitted_by: "",
   });
 
-
   const handlePrint = () => {
     window.print();
   };
   // const [user, setUser] = useState(null);
-
 
   const handleExpand = (panel) => {
     setExpanded(expanded === panel ? null : panel);
@@ -184,26 +175,6 @@ const GetHandoverSheetForm = ({ onBack }) => {
     }));
   };
 
-  // useEffect(() => {
-  //   const userData = getUserData();
-  //   if (userData && userData.name) {
-  //     setFormData((prev) => ({
-  //       ...prev,
-  //       other_details: {
-  //         ...prev.other_details,
-  //         submitted_by_BD: userData.name,
-  //       },
-  //       submitted_by: userData.name,
-  //     }));
-  //   }
-  //   setUser(userData);
-  // }, []);
-
-  // const getUserData = () => {
-  //   const userData = localStorage.getItem("userDetails");
-  //   return userData ? JSON.parse(userData) : null;
-  // };
-
   const LeadId = localStorage.getItem("HandOver_Lead");
 
   const {
@@ -214,14 +185,13 @@ const GetHandoverSheetForm = ({ onBack }) => {
   } = useGetHandOverByIdQuery({ leadId: LeadId }, { skip: !LeadId });
 
   const HandOverSheet = Array.isArray(getHandOverSheet?.data)
-    ? getHandOverSheet?.data
-    : [];
-    
-console.log("HandOverSheet:", HandOverSheet); 
-  const handoverData = HandOverSheet.find((item) => item.leadId === LeadId);
+    ? getHandOverSheet.data
+    : getHandOverSheet?.data
+      ? [getHandOverSheet.data]
+      : [];
+  // console.log("📦 HandOverSheet:", HandOverSheet);
 
-  console.log("✅ Found handoverData:", handoverData);
-
+  const handoverData = HandOverSheet.find((item) => item.id === LeadId);
 
   useEffect(() => {
     if (!handoverData) {

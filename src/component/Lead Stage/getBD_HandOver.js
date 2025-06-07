@@ -1,8 +1,4 @@
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
   Autocomplete,
   Button,
   Grid,
@@ -13,10 +9,10 @@ import {
   Textarea,
   Typography,
 } from "@mui/joy";
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
-import { useGetBDHandOverQuery, useGetHandOverByIdQuery, useGetHandOverQuery } from "../../redux/camsSlice";
+import { useGetHandOverByIdQuery } from "../../redux/camsSlice";
 import {
   useGetMasterInverterQuery,
   useGetModuleMasterQuery,
@@ -123,10 +119,9 @@ const GetBDHandoverSheetForm = ({ onBack }) => {
       land: { type: "", acres: "" },
       agreement_date: "",
       project_component: "",
-      project_component_other:"",
-      transmission_scope:"",
-      loan_scope:"",
-
+      project_component_other: "",
+      transmission_scope: "",
+      loan_scope: "",
     },
 
     commercial_details: {
@@ -143,7 +138,7 @@ const GetBDHandoverSheetForm = ({ onBack }) => {
       project_status: "incomplete",
       loa_number: "",
       ppa_number: "",
-      remark:"",
+      remark: "",
       submitted_by_BD: "",
     },
     invoice_detail: {
@@ -151,7 +146,7 @@ const GetBDHandoverSheetForm = ({ onBack }) => {
       invoicing_GST_no: "",
       invoicing_address: "",
       delivery_address: "",
-      msme_reg:"",
+      msme_reg: "",
     },
     submitted_by: "",
   });
@@ -321,33 +316,22 @@ const GetBDHandoverSheetForm = ({ onBack }) => {
   const LeadId = localStorage.getItem("bd_handover");
 
   // console.log("LeadId:", LeadId);
-  
 
-const {
-  data: getHandOverSheet,
-  isLoading,
-  isError,
-  error,
-} = useGetHandOverByIdQuery(
-  { leadId: LeadId },
-  { skip: !LeadId }
-);
+  const {
+    data: getHandOverSheet,
+    isLoading,
+    isError,
+    error,
+  } = useGetHandOverByIdQuery({ leadId: LeadId }, { skip: !LeadId });
 
-// Fallback in case API returns single object instead of array
-const HandOverSheet = Array.isArray(getHandOverSheet?.data)
-  ? getHandOverSheet.data
-  : getHandOverSheet?.data
-  ? [getHandOverSheet.data]
-  : [];
+  const HandOverSheet = Array.isArray(getHandOverSheet?.data)
+    ? getHandOverSheet.data
+    : getHandOverSheet?.data
+      ? [getHandOverSheet.data]
+      : [];
+  // console.log("📦 HandOverSheet:", HandOverSheet);
 
-console.log("🔍 LeadId:", LeadId);
-console.log("📦 HandOverSheet:", HandOverSheet);
-
-const handoverData = HandOverSheet.find(
-  (item) => String(item.id) === String(LeadId)
-);
-
-console.log("✅ Found handoverData:", handoverData);
+  const handoverData = HandOverSheet.find((item) => item.id === LeadId);
 
   useEffect(() => {
     if (!handoverData) {
@@ -438,9 +422,11 @@ console.log("✅ Found handoverData:", handoverData);
         agreement_date: handoverData?.project_detail?.agreement_date || "",
         project_component:
           handoverData?.project_detail?.project_component || "",
-          project_component_other: handoverData?.project_detail?.project_component_other || "",
-          transmission_scope: handoverData?.project_detail?.transmission_scope || "",
-          loan_scope: handoverData?.project_detail?.loan_scope || "",
+        project_component_other:
+          handoverData?.project_detail?.project_component_other || "",
+        transmission_scope:
+          handoverData?.project_detail?.transmission_scope || "",
+        loan_scope: handoverData?.project_detail?.loan_scope || "",
       },
       commercial_details: {
         ...prev.commercial_details,
@@ -459,7 +445,7 @@ console.log("✅ Found handoverData:", handoverData);
         loa_number: handoverData?.other_details?.loa_number || "",
         ppa_number: handoverData?.other_details?.ppa_number || "",
         remark: handoverData?.other_details?.remark || "",
-        remarks_for_slnko: handoverData?.other_details?.remarks_for_slnko || "", 
+        remarks_for_slnko: handoverData?.other_details?.remarks_for_slnko || "",
         submitted_by_BD: handoverData?.other_details?.submitted_by_BD || "",
       },
       invoice_detail: {
@@ -475,10 +461,6 @@ console.log("✅ Found handoverData:", handoverData);
       submitted_by: handoverData?.submitted_by || "-",
     }));
   }, [handoverData]);
-
-
-
-
 
   return (
     <Sheet
@@ -506,7 +488,7 @@ console.log("✅ Found handoverData:", handoverData);
         Handover Sheet
       </Typography>
 
-   <Grid
+      <Grid
         sm={{ display: "flex", justifyContent: "center" }}
         container
         spacing={2}
@@ -1082,7 +1064,6 @@ console.log("✅ Found handoverData:", handoverData);
           </Grid>
         </Grid>
       </Grid>
-
 
       {/* Buttons */}
       <Grid container justifyContent="center" sx={{ marginTop: 2 }}>

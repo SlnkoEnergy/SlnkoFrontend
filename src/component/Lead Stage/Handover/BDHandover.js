@@ -249,20 +249,19 @@ const HandoverSheetForm = () => {
   const [addHandOver] = useAddHandOverMutation();
   const [updateHandOver] = useUpdateHandOverMutation();
 
-const LeadId = localStorage.getItem("hand_Over");
+  const LeadId = localStorage.getItem("hand_Over");
 
-const {
-  data: getHandOverSheet,
-  isLoading,
-  isError,
-  error,
-} = useGetHandOverByIdQuery(
-  { leadId: LeadId },
-  {
-    skip: !LeadId,
-  }
-);
-
+  const {
+    data: getHandOverSheet,
+    isLoading,
+    isError,
+    error,
+  } = useGetHandOverByIdQuery(
+    { leadId: LeadId },
+    {
+      skip: !LeadId,
+    }
+  );
 
   const handoverData = getHandOverSheet?.data ?? null;
 
@@ -275,36 +274,34 @@ const {
   }, [handoverData, isLoading, error]);
 
   useEffect(() => {
-  if (getHandOverSheet?.data) {
-    setFormData(prev => ({
-      ...prev,
-      ...getHandOverSheet.data,
-      
-      customer_details: {
-        ...prev.customer_details,
-        ...getHandOverSheet.data.customer_details,
-      },
-      order_details: {
-        ...prev.order_details,
-        ...getHandOverSheet.data.order_details,
-      },
-      project_detail: {
-        ...prev.project_detail,
-        ...getHandOverSheet.data.project_detail,
-      },
-      commercial_details: {
-        ...prev.commercial_details,
-        ...getHandOverSheet.data.commercial_details,
-      },
-      other_details: {
-        ...prev.other_details,
-        ...getHandOverSheet.data.other_details,
-      },
-     
-    }));
-  }
-}, [getHandOverSheet]);
+    if (getHandOverSheet?.data) {
+      setFormData((prev) => ({
+        ...prev,
+        ...getHandOverSheet.data,
 
+        customer_details: {
+          ...prev.customer_details,
+          ...getHandOverSheet.data.customer_details,
+        },
+        order_details: {
+          ...prev.order_details,
+          ...getHandOverSheet.data.order_details,
+        },
+        project_detail: {
+          ...prev.project_detail,
+          ...getHandOverSheet.data.project_detail,
+        },
+        commercial_details: {
+          ...prev.commercial_details,
+          ...getHandOverSheet.data.commercial_details,
+        },
+        other_details: {
+          ...prev.other_details,
+          ...getHandOverSheet.data.other_details,
+        },
+      }));
+    }
+  }, [getHandOverSheet]);
 
   const handoverSchema = Yup.object().shape({
     customer_details: Yup.object().shape({
@@ -331,8 +328,16 @@ const {
       proposed_dc_capacity: Yup.string().required(
         "Proposed DC Capacity is required"
       ),
-      transmission_scope: Yup.string().required("Transmission line scope is required"),
-      module_category: Yup.string().required("Module content category is required"),
+      transmission_scope: Yup.string().required(
+        "Transmission line scope is required"
+      ),
+      module_category: Yup.string().required(
+        "Module content category is required"
+      ),
+      liaisoning_net_metering: Yup.string().required(
+        "Liaisoning for net-metering is required"
+      ),
+      ceig_ceg: Yup.string().required("CEIG/CEG scope is required"),
     }),
     commercial_details: Yup.object().shape({
       type: Yup.string().required("Commercial type is required"),
@@ -341,7 +346,6 @@ const {
       // cam_member_name: Yup.string().required("CAM member name is required"),
     }),
   });
-
 
   const handleSubmit = async () => {
     try {
@@ -387,8 +391,8 @@ const {
       }
 
       localStorage.setItem("HandOver_Lead", LeadId);
-      console.log("Submitting LeadIds :" , LeadId);
-      
+      console.log("Submitting LeadIds :", LeadId);
+
       navigate("/get_hand_over");
     } catch (error) {
       if (error.name === "ValidationError") {

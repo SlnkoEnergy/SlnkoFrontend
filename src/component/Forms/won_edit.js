@@ -1,38 +1,30 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
 import {
-  Button,
-  Input,
-  Grid,
-  Typography,
-  Sheet,
-  Select,
-  Option,
-  FormLabel,
-  Box,
   Autocomplete,
+  Box,
+  Button,
+  FormLabel,
+  Grid,
+  Input,
+  Option,
+  Select,
+  Sheet,
   TextField,
+  Typography,
 } from "@mui/joy";
+import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import {
-  useGetFollowupLeadsQuery,
-  useGetInitialLeadsQuery,
-  useGetLeadsQuery,
-  useGetWarmLeadsQuery,
   useGetWonDataByIdQuery,
-  useGetWonLeadsQuery,
-  useUpdateFollowupLeadsMutation,
-  useUpdateLeadsMutation,
-  useUpdateWARMupLeadsMutation,
   useUpdateWONLeadsMutation,
 } from "../../redux/leadsSlice";
 
 const WonEdit_lead = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-    const statesOfIndia = [
+  const [formData, setFormData] = useState({});
+  const statesOfIndia = [
     "Andhra Pradesh",
     "Arunachal Pradesh",
     "Assam",
@@ -62,17 +54,6 @@ const WonEdit_lead = () => {
     "Uttarakhand",
     "West Bengal",
   ];
-const LeadId = localStorage.getItem("edit_won_handover");
-  const [updateLead, { isLoading: isUpdating }] = useUpdateWONLeadsMutation();
-    const {
-      data: getLead,
-      isLoading,
-      error,
-    } = useGetWonDataByIdQuery({ leadId: LeadId }, { skip: !LeadId });
-
-
-  const [user, setUser] = useState(null);
-  const [formData, setFormData] = useState({});
 
   const sourceOptions = {
     "Referred by": ["Directors", "Clients", "Team members", "E-mail"],
@@ -83,62 +64,41 @@ const LeadId = localStorage.getItem("edit_won_handover");
   };
   const landTypes = ["Leased", "Owned"];
 
+  const LeadId = localStorage.getItem("edit_won_handover");
+
+  const {
+    data: getLead,
+    isLoading,
+    error,
+  } = useGetWonDataByIdQuery({ leadId: LeadId }, { skip: !LeadId });
+
+  const formatDateToYYYYMMDD = (dateString) => {
+    if (!dateString) return "";
+    const parts = dateString.split("-");
+    if (parts.length !== 3) return dateString;
+    return parts[0].length === 4
+      ? dateString
+      : `${parts[2]}-${parts[1]}-${parts[0]}`;
+  };
+  const getLeadArray = Array.isArray(getLead?.data)
+    ? getLead
+    : getLead?.data || [];
+
+  console.log("getLeadArray:", getLeadArray);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("userDetails");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!getLead) {
-      console.error("Error: getLead data is undefined or null.");
-      return;
-    }
-
-    const getLeadArray = Array.isArray(getLead) ? getLead : getLead?.data || [];
-
-    console.log("getLeadArray:", getLeadArray);
-    
-    if (!Array.isArray(getLeadArray)) {
-      console.error("Error: Extracted getLead data is not an array.");
-      return;
-    }
-
- 
-
     if (!LeadId) {
       console.error("Invalid Lead ID retrieved from localStorage.");
       return;
     }
 
-    const selectedLead = getLeadArray.find(
-      (item) => String(item.id) === LeadId
-    );
-
-    if (!selectedLead) {
-      console.error(`No matching Lead found for ID: ${LeadId}`);
-      return;
+    if (getLeadArray) {
+      setFormData({
+        ...getLeadArray,
+        entry_date: formatDateToYYYYMMDD(getLeadArray.entry_date),
+      });
     }
-
-    const formatDateToYYYYMMDD = (dateString) => {
-      if (!dateString) return "";
-      const parts = dateString.split("-");
-      if (parts.length !== 3) return dateString;
-      return parts[0].length === 4
-        ? dateString
-        : `${parts[2]}-${parts[1]}-${parts[0]}`;
-    };
-
-    console.log("Matching Lead Found:", selectedLead);
-
-    setFormData((prev) => ({
-      ...prev,
-      ...selectedLead,
-      entry_date: formatDateToYYYYMMDD(selectedLead.entry_date) || "",
-    }));
-  }, [getLead]);
+  }, [getLeadArray, LeadId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -160,6 +120,8 @@ const LeadId = localStorage.getItem("edit_won_handover");
     }
   };
 
+  const [updateLead, { isLoading: isUpdating }] = useUpdateWONLeadsMutation();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData || !formData._id) {
@@ -167,17 +129,19 @@ const LeadId = localStorage.getItem("edit_won_handover");
       return;
     }
 
+    console.log("Form Data before update:", formData);
+
     const formatDateToDDMMYYYY = (dateString) => {
       if (!dateString) return "";
       const parts = dateString.split("-");
       if (parts.length !== 3) return dateString;
-      return `${parts[2]}-${parts[1]}-${parts[0]}`; 
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
     };
 
     try {
       const updatedLeadData = {
         ...formData,
-        entry_date: formatDateToDDMMYYYY(formData.entry_date), 
+        entry_date: formatDateToDDMMYYYY(formData.entry_date),
       };
 
       const response = await updateLead({
@@ -334,10 +298,11 @@ const LeadId = localStorage.getItem("edit_won_handover");
             <FormLabel>Select State</FormLabel>
             <Autocomplete
               options={statesOfIndia}
-              value={formData.state}
+              value={formData.state || ""}
               onChange={(event, newValue) =>
                 setFormData({ ...formData, state: newValue })
               }
+              isOptionEqualToValue={(option, value) => option === value}
               renderInput={(params) => <TextField {...params} required />}
             />
           </Grid>
