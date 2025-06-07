@@ -12,6 +12,7 @@ import Checkbox from "@mui/joy/Checkbox";
 import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Menu from "@mui/joy/Menu";
@@ -107,7 +108,7 @@ function Dash_eng() {
   //   );
   // };
 
-  const RowMenu = ({ currentPage, p_id }) => {
+  const RowMenu = ({ currentPage, p_id, _id }) => {
     // console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
 
     const [user, setUser] = useState(null);
@@ -144,9 +145,9 @@ function Dash_eng() {
                 color="primary"
                 onClick={() => {
                   const page = currentPage;
-                  const projectId = Number(p_id);
+                  const projectId = _id;
                   sessionStorage.setItem("view handover", projectId);
-                  navigate(`/view_handover?page=${page}&p_id=${projectId}`);
+                  navigate(`/view_handover?page=${page}&_id=${projectId}`);
                 }}
               >
                 <ContentPasteGoIcon sx={{ mr: 1 }} />
@@ -217,17 +218,13 @@ function Dash_eng() {
     );
   };
 
-  const ProjectCode = ({ currentPage, p_id, code }) => {
+  const ViewHandOver = ({ currentPage, p_id, code }) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
 
     return (
       <>
-        <span
-          style={{
-            cursor: "pointer",
-            color: theme.vars.palette.text.primary,
-            textDecoration: "none",
-          }}
+        <IconButton
+          color="primary"
           onClick={() => {
             const page = currentPage;
             const projectId = Number(p_id);
@@ -235,13 +232,13 @@ function Dash_eng() {
             navigate(`/view_handover?page=${page}&p_id=${projectId}`);
           }}
         >
-          {code || "-"}
-        </span>
+          <VisibilityIcon />
+        </IconButton>
       </>
     );
   };
 
-  const ProjectName = ({ currentPage, p_id, customer }) => {
+  const ProjectOverView = ({ currentPage, _id, code }) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
 
     return (
@@ -250,16 +247,17 @@ function Dash_eng() {
           style={{
             cursor: "pointer",
             color: theme.vars.palette.text.primary,
-            textDecoration: "none",
+            textDecoration: "underline",
+            textDecorationStyle: "dotted",
           }}
           onClick={() => {
             const page = currentPage;
-            const projectId = Number(p_id);
-            sessionStorage.setItem("view handover", projectId);
-            navigate(`/view_handover?page=${page}&p_id=${projectId}`);
+            const projectId = _id;
+            sessionStorage.setItem("eng_overview", projectId);
+            navigate(`/overview?page=${page}&_id=${projectId}`);
           }}
         >
-          {customer || "-"}
+          {code || "-"}
         </span>
       </>
     );
@@ -486,6 +484,7 @@ function Dash_eng() {
                 />
               </th>
               {[
+                "",
                 "Project Id",
                 "Customer",
                 "Project Name",
@@ -550,7 +549,12 @@ function Dash_eng() {
                       }
                     />
                   </td>
-
+                  <td>
+                    <ViewHandOver
+                      currentPage={currentPage}
+                      p_id={project.p_id}
+                    />
+                  </td>
                   {/* <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -569,9 +573,9 @@ function Dash_eng() {
                   >
                     <Tooltip title="View Handover" arrow>
                       <span>
-                        <ProjectCode
+                        <ProjectOverView
                           currentPage={currentPage}
-                          p_id={project.p_id}
+                          _id={project._id}
                           code={project.code}
                         />
                       </span>
@@ -584,26 +588,8 @@ function Dash_eng() {
                       textAlign: "center",
                     }}
                   >
-                    <Tooltip title="View Handover" arrow>
-                      <span>
-                        <ProjectName
-                          currentPage={currentPage}
-                          p_id={project.p_id}
-                          customer={project.customer}
-                        />
-                      </span>
-                    </Tooltip>
+                    {project.name || "-"}
                   </td>
-
-                  {/* <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {project.customer || "-"}
-                  </td> */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -611,17 +597,8 @@ function Dash_eng() {
                       textAlign: "center",
                     }}
                   >
-                    <Tooltip title="View Handover" arrow>
-                      <span>
-                        <ProjectName
-                          currentPage={currentPage}
-                          p_id={project.p_id}
-                          customer={project.customer}
-                        />
-                      </span>
-                    </Tooltip>
+                    {project.customer || "-"}
                   </td>
-
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -631,7 +608,6 @@ function Dash_eng() {
                   >
                     {project.number || "-"}
                   </td>
-
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -641,7 +617,6 @@ function Dash_eng() {
                   >
                     {project.state || "-"}
                   </td>
-
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -653,7 +628,6 @@ function Dash_eng() {
                       ? `${project.project_kwp} AC / ${project.proposed_dc_capacity} DC`
                       : "-"}
                   </td>
-
                   {/* <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -669,7 +643,6 @@ function Dash_eng() {
                   >
                     {project.progress || "80%"}
                   </td> */}
-
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",

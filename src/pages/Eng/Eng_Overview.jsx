@@ -68,20 +68,12 @@ function Eng_Overview() {
               >
                 Engineering
               </Link>
-              <Link
-                underline="hover"
-                color="neutral"
-                href=""
-                sx={{ fontSize: 12, fontWeight: 500 }}
-                onClick={() => navigate("/temp_dash")}
-              >
-                Template Dashboard
-              </Link>
+              
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Templates
+                Engineering Overview
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -98,7 +90,7 @@ function Eng_Overview() {
             }}
           >
             <Typography level="h2" component="h1">
-              Templates
+            Engineering Overview
             </Typography>
 
             <Box
@@ -112,13 +104,7 @@ function Eng_Overview() {
                 justifyContent: "center",
               }}
             >
-              <Button
-                color="primary"
-                size="sm"
-                onClick={() => navigate("/add_templates")}
-              >
-                Add Templates +
-              </Button>
+              
               {/* <Button
                 color="primary"
                 startDecorator={<DownloadRoundedIcon />}

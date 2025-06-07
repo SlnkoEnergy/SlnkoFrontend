@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: "https://dev.api.slnkoprotrac.com/v1/",
+  baseUrl: "https://dev.api.slnkoprotrac.com/v1/engineering",
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("authToken");
     // console.log("Token:", token);
@@ -117,6 +117,11 @@ export const templatesApi = createApi({
       }),
       invalidatesTags: ["Template"],
     }),
+
+    getModuleCategoryById: builder.query({
+      query: (_id) => `get-module-category-id/${_id}`,
+      providesTags: ["Template"],
+    }),
   }),
 });
 
@@ -133,4 +138,5 @@ export const {
   useGetAllBoqCategoriesQuery,
   useGetAllBoqTemplatesQuery,
   useUpdateModuleTemplateIdMutation,
+  useGetModuleCategoryByIdQuery,
 } = templatesApi;

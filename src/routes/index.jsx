@@ -102,6 +102,7 @@ import AddFolder from "../pages/Eng/Forms/Add_folder";
 import Template_Pages from "../pages/Eng/Templates_Page";
 import AddTemplates from "../pages/Eng/Forms/Add_Templates";
 import Overview from "../component/Forms/Engineering/Eng_Overview/Overview";
+import Eng_Overview from "../pages/Eng/Eng_Overview";
 
 function index() {
   return (
@@ -463,7 +464,7 @@ function index() {
         path="/overview"
         element={
           <PrivateRoute>
-            <Overview />
+            <Eng_Overview />
           </PrivateRoute>
         }
       />
