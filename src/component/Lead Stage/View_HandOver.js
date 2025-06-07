@@ -18,7 +18,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
-import { useGetHandOverQuery } from "../../redux/camsSlice";
+import { useGetHandOverByIdQuery } from "../../redux/camsSlice";
 import {
   useGetMasterInverterQuery,
   useGetModuleMasterQuery,
@@ -268,19 +268,24 @@ const ViewHandoverSheetForm = ({ onBack }) => {
     return userData ? JSON.parse(userData) : null;
   };
   const LeadId = sessionStorage.getItem("view handover");
-  const { data: getHandOverSheet = [] } = useGetHandOverQuery();
-  const HandOverSheet = useMemo(
-    () => getHandOverSheet?.Data ?? [],
-    [getHandOverSheet]
-  );
+  console.log("LeadId:", LeadId);
+  
+const {
+  data: handoverData,
+  isLoading,
+  isError,
+  error,
+} = useGetHandOverByIdQuery(
+  { leadId: LeadId },
+  { skip: !LeadId }
+);
 
-  console.log("HandOverSheet", HandOverSheet);
+ const handover = Array.isArray(handoverData?.data)
+   ? handoverData.data.find((item) => item.leadId === LeadId)
+   : handoverData?.data || null;
+ 
 
-  const handoverData = useMemo(() => {
-    return HandOverSheet.find((item) => item.p_id === Number(LeadId));
-  }, [HandOverSheet, LeadId]);
-
-  console.log("✅ Found handoverData:", handoverData);
+  console.log("handoverData:", handoverData);
 
   // 🎯 Populate Data from Handover if Available
   useEffect(() => {
@@ -291,132 +296,132 @@ const ViewHandoverSheetForm = ({ onBack }) => {
 
     setFormData((prev) => ({
       ...prev,
-      _id: handoverData?._id || "",
-      p_id: handoverData?.p_id || "",
+       id: LeadId,
+      p_id: handover?.p_id || "",
       customer_details: {
         ...prev.customer_details,
-        code: handoverData?.customer_details?.code || "",
-        name: handoverData?.customer_details?.name || "",
-        customer: handoverData?.customer_details?.customer || "",
-        epc_developer: handoverData?.customer_details?.epc_developer || "",
-        // billing_address: handoverData?.customer_details?.billing_address || {
+        code: handover?.customer_details?.code || "",
+        name: handover?.customer_details?.name || "",
+        customer: handover?.customer_details?.customer || "",
+        epc_developer: handover?.customer_details?.epc_developer || "",
+        // billing_address: handover?.customer_details?.billing_address || {
         //   village_name: "",
         //   district_name: "",
         // },
-        site_address: handoverData?.customer_details?.site_address || {
+        site_address: handover?.customer_details?.site_address || {
           village_name: "",
           district_name: "",
         },
         site_google_coordinates:
-          handoverData?.customer_details?.site_google_coordinates || "",
-        number: handoverData?.customer_details?.number || "",
-        // gst_no: handoverData?.customer_details?.gst_no || "",
+          handover?.customer_details?.site_google_coordinates || "",
+        number: handover?.customer_details?.number || "",
+        // gst_no: handover?.customer_details?.gst_no || "",
         gender_of_Loa_holder:
-          handoverData?.customer_details?.gender_of_Loa_holder || "",
-        email: handoverData?.customer_details?.email || "",
-        p_group: handoverData?.customer_details?.p_group || "",
-        pan_no: handoverData?.customer_details?.pan_no || "",
+          handover?.customer_details?.gender_of_Loa_holder || "",
+        email: handover?.customer_details?.email || "",
+        p_group: handover?.customer_details?.p_group || "",
+        pan_no: handover?.customer_details?.pan_no || "",
         adharNumber_of_loa_holder:
-          handoverData?.customer_details?.adharNumber_of_loa_holder || "",
-        state: handoverData?.customer_details?.state || "",
-        alt_number: handoverData?.customer_details?.alt_number || "",
+          handover?.customer_details?.adharNumber_of_loa_holder || "",
+        state: handover?.customer_details?.state || "",
+        alt_number: handover?.customer_details?.alt_number || "",
       },
       order_details: {
         ...prev.order_details,
-        type_business: handoverData?.order_details?.type_business || "",
-        tender_name: handoverData?.order_details?.tender_name || "",
-        discom_name: handoverData?.order_details?.discom_name || "",
-        design_date: handoverData?.order_details?.design_date || "",
-        feeder_code: handoverData?.order_details?.feeder_code || "",
-        feeder_name: handoverData?.order_details?.feeder_name || "",
+        type_business: handover?.order_details?.type_business || "",
+        tender_name: handover?.order_details?.tender_name || "",
+        discom_name: handover?.order_details?.discom_name || "",
+        design_date: handover?.order_details?.design_date || "",
+        feeder_code: handover?.order_details?.feeder_code || "",
+        feeder_name: handover?.order_details?.feeder_name || "",
       },
       project_detail: {
         ...prev.project_detail,
-        project_type: handoverData?.project_detail?.project_type || "",
+        project_type: handover?.project_detail?.project_type || "",
         module_make_capacity:
-          handoverData?.project_detail?.module_make_capacity || "",
-        module_make: handoverData?.project_detail?.module_make || "",
-        module_capacity: handoverData?.project_detail?.module_capacity || "",
-        module_type: handoverData?.project_detail?.module_type || "",
-        module_category: handoverData?.project_detail?.module_category || "",
+          handover?.project_detail?.module_make_capacity || "",
+        module_make: handover?.project_detail?.module_make || "",
+        module_capacity: handover?.project_detail?.module_capacity || "",
+        module_type: handover?.project_detail?.module_type || "",
+        module_category: handover?.project_detail?.module_category || "",
         evacuation_voltage:
-          handoverData?.project_detail?.evacuation_voltage || "",
+          handover?.project_detail?.evacuation_voltage || "",
         inverter_make_capacity:
-          handoverData?.project_detail?.inverter_make_capacity || "",
-        inverter_make: handoverData?.project_detail?.inverter_make || "",
-        inverter_type: handoverData?.project_detail?.inverter_type || "",
-        // inverter_size: handoverData?.project_detail?.inverter_size || "",
+          handover?.project_detail?.inverter_make_capacity || "",
+        inverter_make: handover?.project_detail?.inverter_make || "",
+        inverter_type: handover?.project_detail?.inverter_type || "",
+        // inverter_size: handover?.project_detail?.inverter_size || "",
         // inverter_model_no:
-        //   handoverData?.project_detail?.inverter_model_no || "",
-        work_by_slnko: handoverData?.project_detail?.work_by_slnko || "",
+        //   handover?.project_detail?.inverter_model_no || "",
+        work_by_slnko: handover?.project_detail?.work_by_slnko || "",
         topography_survey:
-          handoverData?.project_detail?.topography_survey || "",
-        soil_test: handoverData?.project_detail?.soil_test || "",
+          handover?.project_detail?.topography_survey || "",
+        soil_test: handover?.project_detail?.soil_test || "",
         purchase_supply_net_meter:
-          handoverData?.project_detail?.purchase_supply_net_meter || "",
+          handover?.project_detail?.purchase_supply_net_meter || "",
         liaisoning_net_metering:
-          handoverData?.project_detail?.liaisoning_net_metering || "",
-        ceig_ceg: handoverData?.project_detail?.ceig_ceg || "",
+          handover?.project_detail?.liaisoning_net_metering || "",
+        ceig_ceg: handover?.project_detail?.ceig_ceg || "",
         project_completion_date:
-          handoverData?.project_detail?.project_completion_date || "",
+          handover?.project_detail?.project_completion_date || "",
         proposed_dc_capacity:
-          handoverData?.project_detail?.proposed_dc_capacity || "",
-        distance: handoverData?.project_detail?.distance || "",
-        tarrif: handoverData?.project_detail?.tarrif || "",
-        substation_name: handoverData?.project_detail?.substation_name || "",
-        overloading: handoverData?.project_detail?.overloading || "",
-        project_kwp: handoverData?.project_detail?.project_kwp || "",
+          handover?.project_detail?.proposed_dc_capacity || "",
+        distance: handover?.project_detail?.distance || "",
+        tarrif: handover?.project_detail?.tarrif || "",
+        substation_name: handover?.project_detail?.substation_name || "",
+        overloading: handover?.project_detail?.overloading || "",
+        project_kwp: handover?.project_detail?.project_kwp || "",
         land:
-          typeof handoverData?.project_detail?.land === "string"
-            ? JSON.parse(handoverData.project_detail.land)
-            : handoverData?.project_detail?.land || { type: "", acres: "" },
-        agreement_date: handoverData?.project_detail?.agreement_date || "",
+          typeof handover?.project_detail?.land === "string"
+            ? JSON.parse(handover.project_detail.land)
+            : handover?.project_detail?.land || { type: "", acres: "" },
+        agreement_date: handover?.project_detail?.agreement_date || "",
         project_component:
-          handoverData?.project_detail?.project_component || "",
+          handover?.project_detail?.project_component || "",
         project_component_other:
-          handoverData?.project_detail?.project_component_other || "",
+          handover?.project_detail?.project_component_other || "",
         transmission_scope:
-          handoverData?.project_detail?.transmission_scope || "",
-        loan_scope: handoverData?.project_detail?.loan_scope || "",
+          handover?.project_detail?.transmission_scope || "",
+        loan_scope: handover?.project_detail?.loan_scope || "",
       },
       commercial_details: {
         ...prev.commercial_details,
-        type: handoverData?.commercial_details?.type || "",
-        subsidy_amount: handoverData?.commercial_details?.subsidy_amount || "",
+        type: handover?.commercial_details?.type || "",
+        subsidy_amount: handover?.commercial_details?.subsidy_amount || "",
       },
       other_details: {
         ...prev.other_details,
-        taken_over_by: handoverData?.other_details?.taken_over_by || "",
-        cam_member_name: handoverData?.other_details?.cam_member_name || "",
-        service: handoverData?.other_details?.service || "",
-        total_gst: handoverData?.other_details?.total_gst || "",
-        slnko_basic: handoverData?.other_details?.slnko_basic || "",
-        billing_type: handoverData?.other_details?.billing_type || "",
+        taken_over_by: handover?.other_details?.taken_over_by || "",
+        cam_member_name: handover?.other_details?.cam_member_name || "",
+        service: handover?.other_details?.service || "",
+        total_gst: handover?.other_details?.total_gst || "",
+        slnko_basic: handover?.other_details?.slnko_basic || "",
+        billing_type: handover?.other_details?.billing_type || "",
         project_status:
-          handoverData?.other_details?.project_status || "incomplete",
-        loa_number: handoverData?.other_details?.loa_number || "",
-        ppa_number: handoverData?.other_details?.ppa_number || "",
-        remark: handoverData?.other_details?.remark || "",
-        remarks_for_slnko: handoverData?.other_details?.remarks_for_slnko || "",
-        submitted_by_BD: handoverData?.other_details?.submitted_by_BD || "",
+          handover?.other_details?.project_status || "incomplete",
+        loa_number: handover?.other_details?.loa_number || "",
+        ppa_number: handover?.other_details?.ppa_number || "",
+        remark: handover?.other_details?.remark || "",
+        remarks_for_slnko: handover?.other_details?.remarks_for_slnko || "",
+        submitted_by_BD: handover?.other_details?.submitted_by_BD || "",
       },
       invoice_detail: {
         ...prev.invoice_detail,
         invoice_recipient:
-          handoverData?.invoice_detail?.invoice_recipient || "",
-        invoicing_GST_no: handoverData?.invoice_detail?.invoicing_GST_no || "",
+          handover?.invoice_detail?.invoice_recipient || "",
+        invoicing_GST_no: handover?.invoice_detail?.invoicing_GST_no || "",
         invoicing_GST_status:
-          handoverData?.invoice_detail?.invoicing_GST_status || "",
+          handover?.invoice_detail?.invoicing_GST_status || "",
         invoicing_address:
-          handoverData?.invoice_detail?.invoicing_address || "",
+          handover?.invoice_detail?.invoicing_address || "",
 
-        msme_reg: handoverData?.invoice_detail?.msme_reg || "",
+        msme_reg: handover?.invoice_detail?.msme_reg || "",
       },
-      submitted_by: handoverData?.submitted_by || "-",
-      status_of_handoversheet: handoverData?.status_of_handoversheet,
-      is_locked: handoverData?.is_locked,
+      submitted_by: handover?.submitted_by || "-",
+      status_of_handoversheet: handover?.status_of_handoversheet,
+      is_locked: handover?.is_locked,
     }));
-  }, [handoverData]);
+  }, [handover]);
 
   return (
     <Sheet
@@ -625,7 +630,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                     height: "auto",
                     overflow: "visible",
                     whiteSpace: "pre-wrap",
-                   
+
                     WebkitPrintColorAdjust: "exact",
                   },
                 }}
@@ -682,13 +687,13 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                 onChange={(e) =>
                   handleChange("order_details", "discom_name", e.target.value)
                 }
-                  sx={{
+                sx={{
                   minHeight: 80,
                   "@media print": {
                     height: "auto",
                     overflow: "visible",
                     whiteSpace: "pre-wrap",
-                   
+
                     WebkitPrintColorAdjust: "exact",
                   },
                 }}
@@ -1389,13 +1394,13 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                   });
                 }}
                 // minRows={3}
-                  sx={{
+                sx={{
                   minHeight: 80,
                   "@media print": {
                     height: "auto",
                     overflow: "visible",
                     whiteSpace: "pre-wrap",
-                   
+
                     WebkitPrintColorAdjust: "exact",
                   },
                 }}
@@ -1420,15 +1425,15 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                   }}
                   // minRows={3}
                   sx={{
-                  minHeight: 80,
-                  "@media print": {
-                    height: "auto",
-                    overflow: "visible",
-                    whiteSpace: "pre-wrap",
-                   
-                    WebkitPrintColorAdjust: "exact",
-                  },
-                }}
+                    minHeight: 80,
+                    "@media print": {
+                      height: "auto",
+                      overflow: "visible",
+                      whiteSpace: "pre-wrap",
+
+                      WebkitPrintColorAdjust: "exact",
+                    },
+                  }}
                 />
               </Grid>
             )}
@@ -1865,51 +1870,49 @@ const ViewHandoverSheetForm = ({ onBack }) => {
                 </Grid>
               </>
             )}
-{!["Ranvijay Singh", "Rishav Mahato", "Dhruv Choudhary"].includes(
+            {!["Ranvijay Singh", "Rishav Mahato", "Dhruv Choudhary"].includes(
               user?.name
             ) && (
               <>
-            <Grid xs={12}>
-              <Grid item xs={12} sm={6}>
-                <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                  Remarks for Slnko Service Charge{" "}
-                  <span style={{ color: "red" }}>*</span>
-                </Typography>
-                <Textarea
-                  value={formData.other_details.remarks_for_slnko || ""}
-                  placeholder="Enter Remarks for Slnko Service Charge"
-                  onChange={(e) =>
-                    handleChange(
-                      "other_details",
-                      "remarks_for_slnko",
-                      e.target.value
-                    )
-                  }
-                  multiline
-                  minRows={2}
-                  fullWidth
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} mt={1}>
-                <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                  Remarks (Any Other Commitments to Client){" "}
-                  <span style={{ color: "red" }}>*</span>
-                </Typography>
-                <Textarea
-                  value={formData.other_details.remark || ""}
-                  placeholder="Enter Remarks"
-                  onChange={(e) =>
-                    handleChange("other_details", "remark", e.target.value)
-                  }
-                  multiline
-                  minRows={2}
-                  fullWidth
-                  required
-                />
-              </Grid>
-            </Grid>
-            </>
+                <Grid item xs={12} sm={12}>
+                  <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                    Remarks for Slnko Service Charge{" "}
+                    <span style={{ color: "red" }}>*</span>
+                  </Typography>
+                  <Textarea
+                    value={formData.other_details.remarks_for_slnko || ""}
+                    placeholder="Enter Remarks for Slnko Service Charge"
+                    onChange={(e) =>
+                      handleChange(
+                        "other_details",
+                        "remarks_for_slnko",
+                        e.target.value
+                      )
+                    }
+                    multiline
+                    minRows={2}
+                    fullWidth
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} sm={12} mt={1}>
+                  <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                    Remarks (Any Other Commitments to Client){" "}
+                    <span style={{ color: "red" }}>*</span>
+                  </Typography>
+                  <Textarea
+                    value={formData.other_details.remark || ""}
+                    placeholder="Enter Remarks"
+                    onChange={(e) =>
+                      handleChange("other_details", "remark", e.target.value)
+                    }
+                    multiline
+                    minRows={2}
+                    fullWidth
+                    required
+                  />
+                </Grid>
+              </>
             )}
           </Grid>
         </AccordionDetails>

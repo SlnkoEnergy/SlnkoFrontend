@@ -97,12 +97,16 @@ import Expense_Table from "../pages/ExpenseSheet/Expense_Tab";
 import Edit_Expense from "../pages/ExpenseSheet/Update_Expense_Form";
 import Update_Bill from "../pages/SCM/EditBill";
 import PrivateRoute from "./PrivateRoute";
+
 import TempDashboard from "../pages/Eng/Template_Dashboard";
 import AddFolder from "../pages/Eng/Forms/Add_folder";
 import Template_Pages from "../pages/Eng/Templates_Page";
 import AddTemplates from "../pages/Eng/Forms/Add_Templates";
 import Overview from "../component/Forms/Engineering/Eng_Overview/Overview";
 import Eng_Overview from "../pages/Eng/Eng_Overview";
+
+import Update_Expense from "../pages/ExpenseSheet/Expense_Accounts_HR";
+
 
 function index() {
   return (
@@ -886,6 +890,14 @@ function index() {
         element={
           <PrivateRoute>
             <Edit_Expense />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/update_expense"
+        element={
+          <PrivateRoute>
+            <Update_Expense />
           </PrivateRoute>
         }
       />

@@ -319,7 +319,7 @@ const PasswordReset = () => {
                     onChange={(e) => setNewPassword(e.target.value)}
                     fullWidth
                     size="small"
-                    placeholder="New Password"
+                    placeholder="New Password(e.g. Abcdef@123)"
                     sx={{ mt: 1 }}
                   />
                   <TextField
@@ -328,7 +328,7 @@ const PasswordReset = () => {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     fullWidth
                     size="small"
-                    placeholder="Confirm Password"
+                    placeholder="Confirm Password(must same as new password)"
                     sx={{ mt: 2 }}
                     error={!!passwordError}
                     helperText={passwordError}

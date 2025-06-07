@@ -57,35 +57,26 @@ function Dash_eng() {
     data: getHandOverSheet = {},
     isLoading,
     refetch,
-  } = useGetHandOverQuery({ page: currentPage });
+  } = useGetHandOverQuery({
+    page: currentPage,
+    search: searchQuery,
+    status: "Approved",
+  });
 
-  // const { data: getLead = {} } = useGetEntireLeadsQuery();
-
-  // const leads = [
-  //   ...(getLead?.lead?.initialdata?.map((item) => ({
-  //     ...item,
-  //   })) || []),
-  //   ...(getLead?.lead?.followupdata?.map((item) => ({
-  //     ...item,
-  //   })) || []),
-  //   ...(getLead?.lead?.warmdata?.map((item) => ({ ...item })) || []),
-  //   ...(getLead?.lead?.wondata?.map((item) => ({ ...item })) || []),
-  //   ...(getLead?.lead?.deaddata?.map((item) => ({ ...item })) || []),
-  // ];
-
-  const HandOverSheet = Array.isArray(getHandOverSheet?.Data)
-    ? getHandOverSheet.Data.map((entry) => ({
-        _id: entry._id,
-        id: entry.id,
-        ...entry.customer_details,
-        ...entry.order_details,
-        ...entry.project_detail,
-        ...entry.commercial_details,
-        ...entry.other_details,
-        p_id: entry.p_id,
-        status_of_handoversheet: entry.status_of_handoversheet,
-        submitted_by: entry.submitted_by,
-      }))
+  const HandOverSheet = Array.isArray(getHandOverSheet?.data)
+    ? getHandOverSheet.data.map((entry) => {
+        return {
+          ...entry,
+          _id: entry._id,
+          ...entry.customer_details,
+          ...entry.order_details,
+          ...entry.project_detail,
+          ...entry.commercial_details,
+          ...entry.other_details,
+          ...entry?.scheme,
+          is_locked: entry.is_locked,
+        };
+      })
     : [];
 
   // console.log(combinedData);
@@ -375,9 +366,7 @@ function Dash_eng() {
     }
   };
 
-  const draftPayments = paginatedPayments.filter(
-    (project) => project.status_of_handoversheet === "Approved"
-  );
+  const draftPayments = paginatedPayments;
 
   return (
     <>

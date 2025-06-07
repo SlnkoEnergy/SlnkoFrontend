@@ -236,7 +236,7 @@ const AccountsExpense = forwardRef((props, ref) => {
           }}
           onClick={() => {
             localStorage.setItem("edit_expense", expense_code);
-            navigate(`/edit_expense?page=${currentPage}&code=${expense_code}`);
+            navigate(`/update_expense?page=${currentPage}&code=${expense_code}`);
           }}
         >
           {expense_code || "-"}
@@ -405,7 +405,7 @@ const AccountsExpense = forwardRef((props, ref) => {
                 "Rejected Amount",
                 "Disbursement Date",
                 "Status",
-                "Actions",
+                // "Actions",
               ].map((header, index) => (
                 <Box
                   component="th"
@@ -455,10 +455,19 @@ const AccountsExpense = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                    <ExpenseCode
-                      currentPage={currentPage}
-                      expense_code={expense.expense_code}
-                    />
+                    <Box
+                      sx={{
+                        display: "inline",
+                        textDecoration: "underline dotted",
+                        textUnderlineOffset: "2px",
+                        textDecorationColor: "#999",
+                      }}
+                    >
+                      <ExpenseCode
+                        currentPage={currentPage}
+                        expense_code={expense.expense_code}
+                      />
+                    </Box>
                   </Box>
                   <Box
                     component="td"
@@ -583,7 +592,7 @@ const AccountsExpense = forwardRef((props, ref) => {
                       }
                     })()}
                   </Box>
-                  <Box
+                  {/* <Box
                     component="td"
                     sx={{
                       borderBottom: "1px solid #ddd",
@@ -595,7 +604,7 @@ const AccountsExpense = forwardRef((props, ref) => {
                       _id={expense._id}
                       status={expense.current_status}
                     />
-                  </Box>
+                  </Box> */}
                 </Box>
               ))
             ) : (
@@ -640,7 +649,10 @@ const AccountsExpense = forwardRef((props, ref) => {
         >
           Previous
         </Button>
-
+        <Box>
+          Showing {paginatedExpenses.length} of {filteredAndSortedData.length}{" "}
+          results
+        </Box>
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >

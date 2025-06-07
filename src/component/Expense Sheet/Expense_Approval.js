@@ -109,7 +109,7 @@ const ExpenseApproval = forwardRef((props, ref) => {
         !isAdmin &&
         !(isManager && matchedUser.department === user?.department)
       ) {
-        return false; // Access denied
+        return false;
       }
 
       // Status filter
@@ -124,7 +124,6 @@ const ExpenseApproval = forwardRef((props, ref) => {
       const status = expense.current_status?.toLowerCase();
       if (!allowedStatuses.includes(status)) return false;
 
-      // Search filter
       const search = searchQuery.toLowerCase();
       const matchesSearchQuery = [
         "expense_code",
@@ -385,10 +384,19 @@ const ExpenseApproval = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                    <ExpenseCode
-                      currentPage={currentPage}
-                      expense_code={expense.expense_code}
-                    />
+                   <Box
+                      sx={{
+                        display: "inline",
+                        textDecoration: "underline dotted",
+                        textUnderlineOffset: "2px",
+                        textDecorationColor: "#999",
+                      }}
+                    >
+                      <ExpenseCode
+                        currentPage={currentPage}
+                        expense_code={expense.expense_code}
+                      />
+                    </Box>
                   </Box>
                   <Box
                     component="td"
@@ -575,7 +583,10 @@ const ExpenseApproval = forwardRef((props, ref) => {
         >
           Previous
         </Button>
-
+        <Box>
+          Showing {paginatedExpenses.length} of {filteredAndSortedData.length}{" "}
+          results
+        </Box>
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >

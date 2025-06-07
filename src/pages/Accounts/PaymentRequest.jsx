@@ -154,7 +154,8 @@ function ProjectBalance() {
                 user?.name === "Guddu Rani Dubey" ||
                 user?.name === "Prachi Singh" ||
                 user?.department === "admin" ||
-                user?.name === "Shubham Gupta") && (
+                user?.name === "Shubham Gupta" ||
+              user?.name === "Ajay Singh") && (
                 <Button
                   color="primary"
                   size="sm"

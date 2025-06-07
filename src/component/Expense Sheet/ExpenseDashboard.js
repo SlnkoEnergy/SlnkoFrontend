@@ -13,15 +13,14 @@ import Typography from "@mui/joy/Typography";
 import { forwardRef, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 // import Axios from "../utils/Axios";
-import { Card, CardContent, Chip } from "@mui/joy";
+import { Card, CardContent, Chip, useTheme } from "@mui/joy";
 import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
 
 const AllExpense = forwardRef((props, ref) => {
   const navigate = useNavigate();
-
-  const [open, setOpen] = useState(false);
+  const theme = useTheme();
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -83,14 +82,12 @@ const AllExpense = forwardRef((props, ref) => {
 
       const userName = user.name.trim();
       const userRole = user.department?.trim();
-      const isAdmin = userRole === "admin" || userRole === "superadmin";
+      const isAdmin =
+        userRole === "admin" || userRole === "superadmin" || userRole === "HR";
       const submittedBy = expense.emp_name?.trim() || "";
+      // const expenseDepartment = expense.department?.trim() || "";
 
-      if (isAdmin) return true;
 
-      const isSubmittedByUser = submittedBy === userName;
-
-      // Only include certain statuses
       const allowedStatuses = [
         "submitted",
         "manager approval",
@@ -104,26 +101,33 @@ const AllExpense = forwardRef((props, ref) => {
 
       const matchesSearchQuery = [
         "expense_code",
+        "emp_name",
         "current_status",
-        "disbursement_date",
       ].some((key) =>
-        expense[key]?.toLowerCase().includes(searchQuery.toLowerCase())
+        String(expense[key] || "")
+          .trim()
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase())
       );
 
-      return matchesSearchQuery && isSubmittedByUser;
+      const isSubmittedByUser = submittedBy === userName;
+
+  
+      const isMayank = userName === "Mayank Kumar";
+      const canSeeProjects = isMayank && userRole === "Projects";
+
+      return (
+        matchesSearchQuery && (isAdmin || isSubmittedByUser || canSeeProjects)
+      );
     })
     .sort((a, b) => {
-      const aMatches = [
-        a.expense_code,
-        a.disbursement_date,
-        a.current_status,
-      ].some((val) => val?.toLowerCase().includes(searchQuery.toLowerCase()));
+      const aMatches = [a.expense_code, a.emp_name, a.current_status].some(
+        (val) => val?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
 
-      const bMatches = [
-        b.expense_code,
-        b.disbursement_date,
-        b.current_status,
-      ].some((val) => val?.toLowerCase().includes(searchQuery.toLowerCase()));
+      const bMatches = [b.expense_code, b.emp_name, b.current_status].some(
+        (val) => val?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
 
       if (aMatches && !bMatches) return -1;
       if (!aMatches && bMatches) return 1;
@@ -182,6 +186,28 @@ const AllExpense = forwardRef((props, ref) => {
     }
   };
 
+  const ExpenseCode = ({ currentPage, expense_code }) => {
+    // console.log("currentPage:", currentPage, "p_id:", p_id);
+
+    return (
+      <>
+        <span
+          style={{
+            cursor: "pointer",
+            color: theme.vars.palette.text.primary,
+            textDecoration: "none",
+          }}
+          onClick={() => {
+            localStorage.setItem("edit_expense", expense_code);
+            navigate(`/edit_expense?page=${currentPage}&code=${expense_code}`);
+          }}
+        >
+          {expense_code || "-"}
+        </span>
+      </>
+    );
+  };
+
   return (
     <>
       {/* Tablet and Up Filters */}
@@ -203,7 +229,7 @@ const AllExpense = forwardRef((props, ref) => {
           <FormLabel>Search</FormLabel>
           <Input
             size="sm"
-            placeholder="Search by Expense Code, Disbursement Date, or Status"
+            placeholder="Search by Expense Code, Name or Status"
             startDecorator={<SearchIcon />}
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
@@ -262,6 +288,7 @@ const AllExpense = forwardRef((props, ref) => {
               </Box>
               {[
                 "Expense Code",
+                "Employee Name",
                 "Requested Amount",
                 "Approval Amount",
                 "Rejected Amount",
@@ -317,7 +344,29 @@ const AllExpense = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                    {expense.expense_code}
+                    <Box
+                      sx={{
+                        display: "inline",
+                        textDecoration: "underline dotted",
+                        textUnderlineOffset: "2px",
+                        textDecorationColor: "#999",
+                      }}
+                    >
+                      <ExpenseCode
+                        currentPage={currentPage}
+                        expense_code={expense.expense_code}
+                      />
+                    </Box>
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {expense.emp_name || "0"}
                   </Box>
                   <Box
                     component="td"
@@ -529,7 +578,19 @@ const AllExpense = forwardRef((props, ref) => {
                     mb={1}
                   >
                     <Typography level="title-md">
-                      {expense.expense_code}
+                      <Box
+                        sx={{
+                          display: "inline",
+                          textDecoration: "underline dotted",
+                          textUnderlineOffset: "2px",
+                          textDecorationColor: "#999",
+                        }}
+                      >
+                        <ExpenseCode
+                          currentPage={currentPage}
+                          expense_code={expense.expense_code}
+                        />
+                      </Box>
                     </Typography>
                     {getStatusChip()}
                   </Box>
@@ -596,7 +657,10 @@ const AllExpense = forwardRef((props, ref) => {
         >
           Previous
         </Button>
-
+        <Box>
+          Showing {paginatedExpenses.length} of {filteredAndSortedData.length}{" "}
+          results
+        </Box>
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
