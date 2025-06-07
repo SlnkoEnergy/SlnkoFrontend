@@ -278,19 +278,59 @@ const CamHandoverSheetForm = ({ onBack }) => {
 
   // console.log("LeadId:", LeadId);
 
-  const { data, error, isLoading } = useGetHandOverByIdQuery(LeadId, {
-    skip: !LeadId,
-  });
-  const handoverData = data?.Data ?? null;
+  const {
+    data: getHandOverSheet,
+    isLoading,
+    isError,
+    error,
+  } = useGetHandOverByIdQuery(
+    { leadId: LeadId },
+    {
+      skip: !LeadId,
+    }
+  );
+
+  const handoverData = getHandOverSheet?.data ?? null;
+
+  console.log("Handover Data:", handoverData);
+
   useEffect(() => {
-    if (!handoverData && !isLoading) {
+    if (!handoverData && !isLoading && !error) {
       console.warn("No matching handover data found.");
     } else if (handoverData) {
       console.log("Fetched handover data:", handoverData);
     }
-  }, [handoverData, isLoading]);
+  }, [handoverData, isLoading, error]);
 
-  console.log("handoverData:", handoverData);
+  useEffect(() => {
+    if (handoverData) {
+      setFormData((prev) => ({
+        ...prev,
+        ...handoverData,
+
+        customer_details: {
+          ...prev.customer_details,
+          ...handoverData.customer_details,
+        },
+        order_details: {
+          ...prev.order_details,
+          ...handoverData.order_details,
+        },
+        project_detail: {
+          ...prev.project_detail,
+          ...handoverData.project_detail,
+        },
+        commercial_details: {
+          ...prev.commercial_details,
+          ...handoverData.commercial_details,
+        },
+        other_details: {
+          ...prev.other_details,
+          ...handoverData.other_details,
+        },
+      }));
+    }
+  }, [getHandOverSheet]);
 
   const handoverSchema = Yup.object().shape({
     customer_details: Yup.object().shape({
@@ -598,7 +638,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
             );
 
       const updatedFormData = {
-        _id: LeadId,
+        _id: formData._id,
         customer_details: { ...formData.customer_details },
         order_details: { ...formData.order_details },
         project_detail: {

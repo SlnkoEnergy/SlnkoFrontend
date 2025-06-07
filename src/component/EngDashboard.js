@@ -32,25 +32,11 @@ import { useTheme } from "@emotion/react";
 function Dash_eng() {
   const navigate = useNavigate();
   const theme = useTheme();
-  const [payments, setPayments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  // const [error, setError] = useState(null);
-  const [vendors, setVendors] = useState([]);
-  const [vendorFilter, setVendorFilter] = useState("");
-  const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  // const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
-  // const [projects, setProjects] = useState([]);
-  const [bdRateData, setBdRateData] = useState([]);
-  const [mergedData, setMergedData] = useState([]);
-  const [accountNumber, setAccountNumber] = useState([]);
-  const [ifscCode, setIfscCode] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isUtrSubmitted, setIsUtrSubmitted] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0);
 
   const itemsPerPage = 10;
 
@@ -68,18 +54,14 @@ function Dash_eng() {
     const rawData = getHandOverSheet?.data || [];
     return Array.isArray(rawData)
       ? rawData.map((entry) => ({
+          ...entry,
           _id: entry._id,
-          id: entry.id,
           ...entry.customer_details,
           ...entry.order_details,
           ...entry.project_detail,
           ...entry.commercial_details,
           ...entry.other_details,
-          p_id: entry.p_id,
-          status_of_handoversheet: entry.status_of_handoversheet,
-          submitted_by: entry.submitted_by,
-          createdAt: entry.createdAt,
-          updatedAt: entry.updatedAt,
+          ...entry?.scheme,
         }))
       : [];
   }, [getHandOverSheet]);
@@ -198,7 +180,7 @@ function Dash_eng() {
     );
   };
 
-  const ProjectCode = ({ currentPage, _id, code }) => {
+  const ProjectCode = ({ currentPage, _id, code, id }) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
 
     return (
@@ -211,9 +193,9 @@ function Dash_eng() {
           }}
           onClick={() => {
             const page = currentPage;
-            const projectId = _id;
+            const projectId = id;
             sessionStorage.setItem("view handover", projectId);
-            navigate(`/view_handover?page=${page}&_id=${projectId}`);
+            navigate(`/view_handover?page=${page}&id=${projectId}`);
           }}
         >
           {code || "-"}
@@ -222,7 +204,7 @@ function Dash_eng() {
     );
   };
 
-  const ProjectName = ({ currentPage, p_id, customer }) => {
+  const ProjectName = ({ currentPage, p_id, customer , id}) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
 
     return (
@@ -235,9 +217,9 @@ function Dash_eng() {
           }}
           onClick={() => {
             const page = currentPage;
-            const projectId = Number(p_id);
+            const projectId = id;
             sessionStorage.setItem("view handover", projectId);
-            navigate(`/view_handover?page=${page}&p_id=${projectId}`);
+            navigate(`/view_handover?page=${page}&id=${projectId}`);
           }}
         >
           {customer || "-"}
@@ -480,7 +462,7 @@ function Dash_eng() {
                       <span>
                         <ProjectCode
                           currentPage={currentPage}
-                          _id={project._id}
+                          id={project.id}
                           code={project.code}
                         />
                       </span>
@@ -497,22 +479,13 @@ function Dash_eng() {
                       <span>
                         <ProjectName
                           currentPage={currentPage}
-                          p_id={project.p_id}
+                          id={project.id}
                           customer={project.customer}
                         />
                       </span>
                     </Tooltip>
                   </td>
 
-                  {/* <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {project.customer || "-"}
-                  </td> */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -520,16 +493,9 @@ function Dash_eng() {
                       textAlign: "center",
                     }}
                   >
-                    <Tooltip title="View Handover" arrow>
-                      <span>
-                        <ProjectName
-                          currentPage={currentPage}
-                          p_id={project.p_id}
-                          customer={project.customer}
-                        />
-                      </span>
-                    </Tooltip>
+                    {project.name || "-"}
                   </td>
+                  
 
                   <td
                     style={{
