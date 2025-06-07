@@ -19,8 +19,8 @@ export const camsApi = createApi({
   tagTypes: ["CAM"],
   endpoints: (builder) => ({
     getHandOver: builder.query({
-      query: ({ page = 1, search = "" } = {}) =>
-        `get-all-handover-sheet?page=${page}&search=${search}`,
+      query: ({ page = 1, search = "", status }) =>
+        `get-all-handover-sheet?page=${page}&search=${search}&status=${status}`,
       transformResponse: (response) => ({
         data: response.data || [],
         total: response.meta?.total || 0,

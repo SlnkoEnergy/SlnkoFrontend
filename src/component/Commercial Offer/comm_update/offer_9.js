@@ -60,8 +60,8 @@ const [offerResponse, bdResponse] = await Promise.all([
   Axios.get("/get-comm-bd-rate", config),
 ]);
 
-        console.log("Fetched Offer Data:", offerResponse.data);
-        console.log("Fetched BD Rate Data:", bdResponse.data);
+        // console.log("Fetched Offer Data:", offerResponse.data);
+        // console.log("Fetched BD Rate Data:", bdResponse.data);
 
         const matchedOffer = offerResponse.data.find(
           (item) => item.offer_id === offerRate
@@ -95,7 +95,7 @@ const [offerResponse, bdResponse] = await Promise.all([
             transformer: matchedOffer.transformer ?? "",
             column_type: matchedOffer.column_type ?? "",
           });
-          console.log("Updated Offer Data:", matchedOffer);
+          // console.log("Updated Offer Data:", matchedOffer);
         } else {
           console.warn("No matching offer found for Offer ID:", offerRate);
           toast.error("No matching offer found.");
@@ -110,7 +110,7 @@ const [offerResponse, bdResponse] = await Promise.all([
             slnko_charges: matchedBdRate.slnko_charges ?? "",
             submitted_by_BD: matchedBdRate.submitted_by_BD ?? "",
           });
-          console.log("Updated BD Rate Data:", matchedBdRate);
+          // console.log("Updated BD Rate Data:", matchedBdRate);
         } else {
           console.warn(
             "No matching BD Rate data found for Offer ID:",
