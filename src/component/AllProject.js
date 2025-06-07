@@ -335,7 +335,7 @@ const AllProjects = forwardRef((props, ref) => {
         "Email",
         "Mobile",
         "State",
-        "Slnko Service Charges (with GST)",
+        "Slnko Service Charges (without GST)",
       ];
 
       const rows = projects.map((project) => [
@@ -437,7 +437,7 @@ const AllProjects = forwardRef((props, ref) => {
                 "Email",
                 "Mobile",
                 "State",
-                "Slnko Service Charges (with GST)",
+                "Slnko Service Charges (without GST)",
                 "",
               ].map((header, index) => (
                 <Box

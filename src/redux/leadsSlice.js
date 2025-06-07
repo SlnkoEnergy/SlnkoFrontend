@@ -288,6 +288,11 @@ export const leadsApi = createApi({
       invalidatesTags: ["Lead"],
     }),
 
+     getWonDataById: builder.query({
+      query: ({ leadId }) => `/get-won?leadId=${leadId}`,
+      providesTags: ["CAM"],
+    }),
+
     /*-- HandOver Sheet */
     getModuleMaster: builder.query({
       query: () => "get-module-master",
@@ -348,5 +353,6 @@ export const {
   useGetMasterInverterQuery,
   useGetModuleMasterQuery,
   useUpdateWONLeadsMutation,
+  useGetWonDataByIdQuery,
   // useGetHandOverQuery,
 } = leadsApi;

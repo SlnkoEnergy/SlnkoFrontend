@@ -84,9 +84,6 @@ const HrExpense = forwardRef((props, ref) => {
 
   const filteredAndSortedData = expenses
     .filter((expense) => {
-   
-
-      
       const allowedStatuses = [
         "manager approval",
         "hr approval",
@@ -97,7 +94,6 @@ const HrExpense = forwardRef((props, ref) => {
       const status = expense.current_status?.toLowerCase();
       if (!allowedStatuses.includes(status)) return false;
 
-     
       const search = searchQuery.toLowerCase();
       const matchesSearchQuery = [
         "expense_code",
@@ -132,9 +128,12 @@ const HrExpense = forwardRef((props, ref) => {
     const [updateStatus] = useUpdateExpenseStatusOverallMutation();
 
     // Disable all chips if current status is "hr approval"
-    const disableActions = ["hr approval", "rejected", "hold"].includes(
-      status.toLowerCase()
-    );
+    const disableActions = [
+      "hr approval",
+      "rejected",
+      "hold",
+      "final approval",
+    ].includes(status.toLowerCase());
 
     const handleOpenModal = (status) => {
       setSelectedStatus(status);
@@ -237,7 +236,9 @@ const HrExpense = forwardRef((props, ref) => {
           }}
           onClick={() => {
             localStorage.setItem("edit_expense", expense_code);
-            navigate(`/edit_expense?page=${currentPage}&code=${expense_code}`);
+            navigate(
+              `/update_expense?page=${currentPage}&code=${expense_code}`
+            );
           }}
         >
           {expense_code || "-"}
@@ -405,7 +406,7 @@ const HrExpense = forwardRef((props, ref) => {
                 "Approval Amount",
                 "Rejected Amount",
                 "Disbursement Date",
-                "Status",
+                "Current Status",
                 "Actions",
               ].map((header, index) => (
                 <Box
@@ -456,10 +457,19 @@ const HrExpense = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                    <ExpenseCode
-                      currentPage={currentPage}
-                      expense_code={expense.expense_code}
-                    />
+                    <Box
+                      sx={{
+                        display: "inline",
+                        textDecoration: "underline dotted",
+                        textUnderlineOffset: "2px",
+                        textDecorationColor: "#999",
+                      }}
+                    >
+                      <ExpenseCode
+                        currentPage={currentPage}
+                        expense_code={expense.expense_code}
+                      />
+                    </Box>
                   </Box>
                   <Box
                     component="td"
@@ -647,7 +657,10 @@ const HrExpense = forwardRef((props, ref) => {
         >
           Previous
         </Button>
-
+        <Box>
+          Showing {paginatedExpenses.length} of {filteredAndSortedData.length}{" "}
+          results
+        </Box>
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >

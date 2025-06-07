@@ -1,6 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-
 const baseQuery = fetchBaseQuery({
   baseUrl: "https://api.slnkoprotrac.com/v1/",
   prepareHeaders: (headers) => {
@@ -21,7 +20,6 @@ export const tasksApi = createApi({
     getTasks: builder.query({
       query: () => "get-all-task",
       providesTags: ["Task"],
-      
     }),
     addTasks: builder.mutation({
       query: (newTask) => ({
@@ -38,11 +36,10 @@ export const tasksApi = createApi({
         body: { _id },
       }),
     }),
-    
+
     getTasksHistory: builder.query({
       query: () => "get-task-history",
       providesTags: ["Task"],
-      
     }),
   }),
 });
@@ -51,6 +48,5 @@ export const {
   useGetTasksQuery,
   useAddTasksMutation,
   useUpdateTaskStatusMutation,
-  useGetTasksHistoryQuery
+  useGetTasksHistoryQuery,
 } = tasksApi;
-

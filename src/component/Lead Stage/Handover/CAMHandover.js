@@ -21,7 +21,7 @@ import { toast } from "react-toastify";
 import * as Yup from "yup";
 import Img1 from "../../../assets/HandOverSheet_Icon.jpeg";
 import {
-  useGetHandOverQuery,
+  useGetHandOverByIdQuery,
   useUpdateHandOverMutation,
   useUpdateStatusHandOverMutation,
 } from "../../../redux/camsSlice";
@@ -278,17 +278,59 @@ const CamHandoverSheetForm = ({ onBack }) => {
 
   // console.log("LeadId:", LeadId);
 
-  const { data: getHandOverSheet = [] } = useGetHandOverQuery();
-  const HandOverSheet = useMemo(
-    () => getHandOverSheet?.Data ?? [],
-    [getHandOverSheet]
+  const {
+    data: getHandOverSheet,
+    isLoading,
+    isError,
+    error,
+  } = useGetHandOverByIdQuery(
+    { leadId: LeadId },
+    {
+      skip: !LeadId,
+    }
   );
 
-  const handoverData = useMemo(() => {
-    return HandOverSheet.find((item) => item._id === LeadId);
-  }, [HandOverSheet, LeadId]);
+  const handoverData = getHandOverSheet?.data ?? null;
 
-  // console.log("handoverData:", handoverData);
+  console.log("Handover Data:", handoverData);
+
+  useEffect(() => {
+    if (!handoverData && !isLoading && !error) {
+      console.warn("No matching handover data found.");
+    } else if (handoverData) {
+      console.log("Fetched handover data:", handoverData);
+    }
+  }, [handoverData, isLoading, error]);
+
+  useEffect(() => {
+    if (handoverData) {
+      setFormData((prev) => ({
+        ...prev,
+        ...handoverData,
+
+        customer_details: {
+          ...prev.customer_details,
+          ...handoverData.customer_details,
+        },
+        order_details: {
+          ...prev.order_details,
+          ...handoverData.order_details,
+        },
+        project_detail: {
+          ...prev.project_detail,
+          ...handoverData.project_detail,
+        },
+        commercial_details: {
+          ...prev.commercial_details,
+          ...handoverData.commercial_details,
+        },
+        other_details: {
+          ...prev.other_details,
+          ...handoverData.other_details,
+        },
+      }));
+    }
+  }, [getHandOverSheet]);
 
   const handoverSchema = Yup.object().shape({
     customer_details: Yup.object().shape({
@@ -596,7 +638,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
             );
 
       const updatedFormData = {
-        _id: LeadId,
+        _id: formData._id,
         customer_details: { ...formData.customer_details },
         order_details: { ...formData.order_details },
         project_detail: {
@@ -808,7 +850,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
               >
                 Invoicing Address<span style={{ color: "red" }}>*</span>
               </Typography>
-              <Input
+              <Textarea
                 fullWidth
                 placeholder="Invoicing Address"
                 value={formData.invoice_detail.invoicing_address}
@@ -819,6 +861,16 @@ const CamHandoverSheetForm = ({ onBack }) => {
                     e.target.value
                   )
                 }
+                sx={{
+                  minHeight: 80,
+                  "@media print": {
+                    height: "auto",
+                    overflow: "visible",
+                    whiteSpace: "pre-wrap",
+
+                    WebkitPrintColorAdjust: "exact",
+                  },
+                }}
               />
             </Grid>
 
@@ -867,11 +919,21 @@ const CamHandoverSheetForm = ({ onBack }) => {
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 DISCOM Name <span style={{ color: "red" }}>*</span>
               </Typography>
-              <Input
+              <Textarea
                 value={formData.order_details.discom_name}
                 onChange={(e) =>
                   handleChange("order_details", "discom_name", e.target.value)
                 }
+                sx={{
+                  minHeight: 80,
+                  "@media print": {
+                    height: "auto",
+                    overflow: "visible",
+                    whiteSpace: "pre-wrap",
+
+                    WebkitPrintColorAdjust: "exact",
+                  },
+                }}
               />
             </Grid>
 
@@ -1523,7 +1585,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 </Tooltip>
               </Typography>
 
-              <Input
+              <Textarea
                 fullWidth
                 placeholder="e.g. Varanasi 221001"
                 value={formData.customer_details.site_address.district_name}
@@ -1534,6 +1596,16 @@ const CamHandoverSheetForm = ({ onBack }) => {
                     district_name: newDistrict,
                   });
                 }}
+                sx={{
+                  minHeight: 80,
+                  "@media print": {
+                    height: "auto",
+                    overflow: "visible",
+                    whiteSpace: "pre-wrap",
+
+                    WebkitPrintColorAdjust: "exact",
+                  },
+                }}
               />
             </Grid>
 
@@ -1542,7 +1614,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 <Typography level="body1" sx={{ fontWeight: "bold", mb: 0.5 }}>
                   Village Name
                 </Typography>
-                <Input
+                <Textarea
                   fullWidth
                   placeholder="e.g. Chakia"
                   value={formData.customer_details.site_address.village_name}
@@ -1551,6 +1623,16 @@ const CamHandoverSheetForm = ({ onBack }) => {
                       ...formData.customer_details.site_address,
                       village_name: e.target.value,
                     });
+                  }}
+                  sx={{
+                    minHeight: 80,
+                    "@media print": {
+                      height: "auto",
+                      overflow: "visible",
+                      whiteSpace: "pre-wrap",
+
+                      WebkitPrintColorAdjust: "exact",
+                    },
                   }}
                 />
               </Grid>

@@ -1,7 +1,4 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { BASE_URL, getAuthToken } from "../auth/auth_variable";
-
-
 
 const baseQuery = fetchBaseQuery({
   baseUrl: "https://api.slnkoprotrac.com/v1/",
@@ -40,7 +37,7 @@ export const expensesApi = createApi({
         body: newExpense,
       }),
       invalidatesTags: ["Expense"],
-    }), 
+    }),
 
     // PUT: Update overall status by _id
     updateExpenseStatusOverall: builder.mutation({

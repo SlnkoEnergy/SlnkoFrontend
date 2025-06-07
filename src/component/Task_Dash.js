@@ -273,7 +273,7 @@ const TaskDashboard = () => {
       if (!task.by_whom || !user?.name) return false;
 
       // Allow IT Team and Admin to see all tasks
-      if (user.name === "IT Team" || user.name === "admin") return true;
+      if (user.name === "IT Team" || user.department === "admin" || user?.name === "Deepak Manodi") return true;
 
       // Convert `by_whom` into a trimmed, lowercase array
       const assignedUsers = task.by_whom
@@ -1190,7 +1190,8 @@ const TaskDashboard = () => {
                             <Grid container spacing={2} alignItems="center">
                               <Grid item xs={7}>
                                 {(user?.name === "IT Team" ||
-                                  user?.name === "admin" ||
+                                  user?.department === "admin" ||
+                                  user?.name === "Deepak Manodi" ||
                                   user?.name?.toLowerCase() ===
                                     task?.submitted_by?.toLowerCase()) && (
                                   <Chip
@@ -1584,6 +1585,7 @@ const TaskDashboard = () => {
                       return (
                         userNames.includes("it team") ||
                         userNames.includes("admin") ||
+                        userNames.includes("deepak manodi") ||
                         userNames.some((name) => assignedUsers.includes(name))
                       );
                     })

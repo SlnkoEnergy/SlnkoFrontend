@@ -24,7 +24,6 @@ import Sheet from "@mui/joy/Sheet";
 import Tooltip from "@mui/joy/Tooltip";
 import Typography from "@mui/joy/Typography";
 import { useSnackbar } from "notistack";
-import * as React from "react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
@@ -77,17 +76,17 @@ function PaymentRequest() {
     const fetchPaymentsAndProjects = async () => {
       setLoading(true);
       try {
-          const token = localStorage.getItem("authToken");
+        const token = localStorage.getItem("authToken");
 
-    const [paymentResponse, projectResponse] = await Promise.all([
-      Axios.get("/get-pay-summarY-IT", {
-        params: { approved: "Approved", acc_match: "" },
-        headers: { "x-auth-token": token },
-      }),
-      Axios.get("/get-all-projecT-IT", {
-        headers: { "x-auth-token": token },
-      }),
-    ]);
+        const [paymentResponse, projectResponse] = await Promise.all([
+          Axios.get("/get-pay-summarY-IT", {
+            params: { approved: "Approved", acc_match: "" },
+            headers: { "x-auth-token": token },
+          }),
+          Axios.get("/get-all-projecT-IT", {
+            headers: { "x-auth-token": token },
+          }),
+        ]);
 
         const approvedPayments = paymentResponse.data.data.filter(
           (payment) =>
@@ -190,18 +189,21 @@ function PaymentRequest() {
       setError(null);
 
       try {
-        // console.log("Sending account match request...");
         const token = localStorage.getItem("authToken");
-        const response = await Axios.put("/acc-matched", {
-          pay_id: paymentId,
-          acc_number: accountMatch,
-          ifsc: ifsc,
-        },
-      {
-        headers: {"x-auth-token" : token}
-      });
+        // console.log("Sending account match request...");
+        const response = await Axios.put(
+          "/acc-matched",
+          {
+            pay_id: paymentId,
+            acc_number: accountMatch,
+            ifsc: ifsc,
+          },
+          {
+            headers: { "x-auth-token": token },
+          }
+        );
 
-        console.log("Account match response:", response);
+        // console.log("Account match response:", response);
 
         if (response.status === 200) {
           setIsMatched(true);
@@ -219,9 +221,41 @@ function PaymentRequest() {
         }
       } catch (error) {
         console.error("Error during account match:", error);
-        enqueueSnackbar("Something went wrong. Please try again.", {
-          variant: "error",
-        });
+
+        if (!window.navigator.onLine) {
+          enqueueSnackbar(
+            "No internet connection. Please check your network.",
+            {
+              variant: "error",
+            }
+          );
+          return;
+        }
+
+        if (error.response) {
+          const { data } = error.response;
+
+          if (data.message?.includes("account number not matched")) {
+            enqueueSnackbar("Account number not matched with our records.", {
+              variant: "error",
+            });
+          } else if (data.message?.includes("ifsc not matched")) {
+            enqueueSnackbar("IFSC code not matched with our records.", {
+              variant: "error",
+            });
+          } else {
+            enqueueSnackbar("Account match failed. Please check the details.", {
+              variant: "error",
+            });
+          }
+        } else {
+          enqueueSnackbar(
+            "An internal error occurred. Please try again later.",
+            {
+              variant: "error",
+            }
+          );
+        }
       }
     };
 

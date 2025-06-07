@@ -32,82 +32,45 @@ import { useTheme } from "@emotion/react";
 function Dash_eng() {
   const navigate = useNavigate();
   const theme = useTheme();
-  const [payments, setPayments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  // const [error, setError] = useState(null);
-  const [vendors, setVendors] = useState([]);
-  const [vendorFilter, setVendorFilter] = useState("");
-  const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
-  // const [projects, setProjects] = useState([]);
-  const [bdRateData, setBdRateData] = useState([]);
-  const [mergedData, setMergedData] = useState([]);
-  const [accountNumber, setAccountNumber] = useState([]);
-  const [ifscCode, setIfscCode] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isUtrSubmitted, setIsUtrSubmitted] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+
+  const itemsPerPage = 10;
 
   const {
     data: getHandOverSheet = {},
     isLoading,
     refetch,
-  } = useGetHandOverQuery({ page: currentPage });
+  } = useGetHandOverQuery({
+    page: currentPage,
+    search: searchQuery,
+    status: "Approved",
+  });
 
-  // const { data: getLead = {} } = useGetEntireLeadsQuery();
+  const HandOverSheet = useMemo(() => {
+    const rawData = getHandOverSheet?.data || [];
+    return Array.isArray(rawData)
+      ? rawData.map((entry) => ({
+          ...entry,
+          _id: entry._id,
+          ...entry.customer_details,
+          ...entry.order_details,
+          ...entry.project_detail,
+          ...entry.commercial_details,
+          ...entry.other_details,
+          ...entry?.scheme,
+        }))
+      : [];
+  }, [getHandOverSheet]);
 
-  // const leads = [
-  //   ...(getLead?.lead?.initialdata?.map((item) => ({
-  //     ...item,
-  //   })) || []),
-  //   ...(getLead?.lead?.followupdata?.map((item) => ({
-  //     ...item,
-  //   })) || []),
-  //   ...(getLead?.lead?.warmdata?.map((item) => ({ ...item })) || []),
-  //   ...(getLead?.lead?.wondata?.map((item) => ({ ...item })) || []),
-  //   ...(getLead?.lead?.deaddata?.map((item) => ({ ...item })) || []),
-  // ];
+  console.log("HandOverSheet:", HandOverSheet);
 
-  const HandOverSheet = Array.isArray(getHandOverSheet?.Data)
-    ? getHandOverSheet.Data.map((entry) => ({
-        _id: entry._id,
-        id: entry.id,
-        ...entry.customer_details,
-        ...entry.order_details,
-        ...entry.project_detail,
-        ...entry.commercial_details,
-        ...entry.other_details,
-        p_id: entry.p_id,
-        status_of_handoversheet: entry.status_of_handoversheet,
-        submitted_by: entry.submitted_by,
-      }))
-    : [];
+  const totalCount = getHandOverSheet.total || 0;
 
-  // console.log(combinedData);
-
-  // const StatusIcon = ({ isLocked }) => {
-  //   return (
-  //     <Box
-  //       sx={{
-  //         display: "flex",
-  //         justifyContent: "center",
-  //         alignItems: "center",
-  //       }}
-  //     >
-  //       {isLocked ? (
-  //         <LockClosedIcon style={{ width: 20, height: 20, color: "#f44336" }} />
-  //       ) : (
-  //         <LockOpenIcon style={{ width: 20, height: 20, color: "#4caf50" }} />
-  //       )}
-  //     </Box>
-  //   );
-  // };
-
-  const RowMenu = ({ currentPage, p_id }) => {
+  const RowMenu = ({ currentPage, p_id, _id }) => {
     // console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
 
     const [user, setUser] = useState(null);
@@ -144,9 +107,9 @@ function Dash_eng() {
                 color="primary"
                 onClick={() => {
                   const page = currentPage;
-                  const projectId = Number(p_id);
+                  const projectId = _id;
                   sessionStorage.setItem("view handover", projectId);
-                  navigate(`/view_handover?page=${page}&p_id=${projectId}`);
+                  navigate(`/view_handover?page=${page}&_id=${projectId}`);
                 }}
               >
                 <ContentPasteGoIcon sx={{ mr: 1 }} />
@@ -217,7 +180,7 @@ function Dash_eng() {
     );
   };
 
-  const ProjectCode = ({ currentPage, p_id, code }) => {
+  const ProjectCode = ({ currentPage, _id, code, id }) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
 
     return (
@@ -230,9 +193,9 @@ function Dash_eng() {
           }}
           onClick={() => {
             const page = currentPage;
-            const projectId = Number(p_id);
+            const projectId = id;
             sessionStorage.setItem("view handover", projectId);
-            navigate(`/view_handover?page=${page}&p_id=${projectId}`);
+            navigate(`/view_handover?page=${page}&id=${projectId}`);
           }}
         >
           {code || "-"}
@@ -241,7 +204,7 @@ function Dash_eng() {
     );
   };
 
-  const ProjectName = ({ currentPage, p_id, customer }) => {
+  const ProjectName = ({ currentPage, p_id, customer , id}) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
 
     return (
@@ -254,9 +217,9 @@ function Dash_eng() {
           }}
           onClick={() => {
             const page = currentPage;
-            const projectId = Number(p_id);
+            const projectId = id;
             sessionStorage.setItem("view handover", projectId);
-            navigate(`/view_handover?page=${page}&p_id=${projectId}`);
+            navigate(`/view_handover?page=${page}&id=${projectId}`);
           }}
         >
           {customer || "-"}
@@ -265,53 +228,27 @@ function Dash_eng() {
     );
   };
 
-  // const handleDelete = async () => {
-  //   if (selected.length === 0) {
-  //     toast.error("No offers selected for deletion.");
-  //     return;
-  //   }
-
-  //   try {
-  //     setLoading(true);
-  //     setError("");
-
-  //     for (const _id of selected) {
-  //       await Axios.delete(`/delete-offer/${_id}`);
-
-  //       setCommRate((prev) => prev.filter((item) => item._id !== _id));
-  //       setBdRateData((prev) => prev.filter((item) => item.offer_id !== _id));
-  //       setMergedData((prev) => prev.filter((item) => item.offer_id !== _id));
-  //     }
-
-  //     toast.success("Deleted successfully.");
-  //     setSelected([]);
-  //   } catch (err) {
-  //     console.error("Error deleting offers:", err);
-  //     setError(err.response?.data?.msg || "Failed to delete selected offers.");
-  //     toast.error("Failed to delete selected offers.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const handleSearch = (query) => {
-    setSearchQuery(query.toLowerCase());
+    setCurrentPage(1);
+    setSearchQuery(query);
   };
 
-  const filteredAndSortedData = useMemo(() => {
-    return HandOverSheet.filter((project) =>
-      ["code", "customer", "state"].some((key) =>
-        project[key]
-          ?.toString()
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase())
-      )
-    ).sort((a, b) => {
-      const dateA = new Date(a?.updatedAt || a?.createdAt || 0);
-      const dateB = new Date(b?.updatedAt || b?.createdAt || 0);
-      return dateB - dateA;
-    });
-  }, [HandOverSheet, searchQuery]);
+  // const filteredAndSortedData = useMemo(() => {
+  //   return HandOverSheet.filter((project) =>
+  //     ["code", "customer", "state"].some((key) =>
+  //       project[key]
+  //         ?.toString()
+  //         .toLowerCase()
+  //         .includes(searchQuery.toLowerCase())
+  //     )
+  //   ).sort((a, b) => {
+  //     const dateA = new Date(a?.updatedAt || a?.createdAt || 0);
+  //     const dateB = new Date(b?.updatedAt || b?.createdAt || 0);
+  //     return dateB - dateA;
+  //   });
+  // }, [HandOverSheet, searchQuery]);
+
+  const paginatedPayments = HandOverSheet;
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -326,49 +263,36 @@ function Dash_eng() {
       prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
     );
   };
-  // const generatePageNumbers = (currentPage, totalPages) => {
-  //   const pages = [];
-
-  //   if (currentPage > 2) {
-  //     pages.push(1);
-  //   }
-
-  //   if (currentPage > 3) {
-  //     pages.push("...");
-  //   }
-
-  //   for (
-  //     let i = Math.max(1, currentPage - 1);
-  //     i <= Math.min(totalPages, currentPage + 1);
-  //     i++
-  //   ) {
-  //     pages.push(i);
-  //   }
-
-  //   if (currentPage < totalPages - 2) {
-  //     pages.push("...");
-  //   }
-
-  //   if (currentPage < totalPages - 1) {
-  //     pages.push(totalPages);
-  //   }
-
-  //   return pages;
-  // };
 
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
   }, [searchParams]);
 
-  const paginatedPayments = filteredAndSortedData;
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
 
-  // const paginatedPayments = filteredAndSortedData.slice(
-  //   (currentPage - 1) * itemsPerPage,
-  //   currentPage * itemsPerPage
-  // );
-  // console.log(paginatedPayments);
-  // console.log("Filtered and Sorted Data:", filteredAndSortedData);
+  const generatePageNumbers = (current, total) => {
+    const pages = [];
+
+    if (current > 2) pages.push(1);
+    if (current > 3) pages.push("...");
+
+    for (
+      let i = Math.max(1, current - 1);
+      i <= Math.min(total, current + 1);
+      i++
+    ) {
+      pages.push(i);
+    }
+
+    if (current < total - 2) pages.push("...");
+    if (current < total - 1) pages.push(total);
+
+    return pages;
+  };
+
+  const pageNumbers = generatePageNumbers(currentPage, totalPages);
+
 
   const handlePageChange = (page) => {
     if (page >= 1) {
@@ -377,47 +301,14 @@ function Dash_eng() {
     }
   };
 
-  const draftPayments = paginatedPayments.filter(
-    (project) => project.status_of_handoversheet === "Approved"
-  );
+  // const draftPayments = paginatedPayments.filter(
+  //   (project) => project.status_of_handoversheet === "Approved"
+  // );
+
+  const draftPayments = paginatedPayments;
 
   return (
     <>
-      {/* Mobile Filters */}
-      {/* <Sheet
-        className="SearchAndFilters-mobile"
-        sx={{ display: { xs: "", sm: "none" }, my: 1, gap: 1 }}
-      >
-        <Input
-          size="sm"
-          placeholder="Search"
-          startDecorator={<SearchIcon />}
-          sx={{ flexGrow: 1 }}
-        />
-        <IconButton
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          onClick={() => setOpen(true)}
-        >
-          <FilterAltIcon />
-        </IconButton>
-        <Modal open={open} onClose={() => setOpen(false)}>
-          <ModalDialog aria-labelledby="filter-modal" layout="fullscreen">
-            <ModalClose />
-            <Typography id="filter-modal" level="h2">
-              Filters
-            </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Sheet sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {renderFilters()}
-              <Button color="primary" onClick={() => setOpen(false)}>
-                Submit
-              </Button>
-            </Sheet>
-          </ModalDialog>
-        </Modal>
-      </Sheet> */}
       {/* Tablet and Up Filters */}
       <Box
         className="SearchAndFilters-tabletUp"
@@ -571,7 +462,7 @@ function Dash_eng() {
                       <span>
                         <ProjectCode
                           currentPage={currentPage}
-                          p_id={project.p_id}
+                          id={project.id}
                           code={project.code}
                         />
                       </span>
@@ -588,22 +479,13 @@ function Dash_eng() {
                       <span>
                         <ProjectName
                           currentPage={currentPage}
-                          p_id={project.p_id}
+                          id={project.id}
                           customer={project.customer}
                         />
                       </span>
                     </Tooltip>
                   </td>
 
-                  {/* <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {project.customer || "-"}
-                  </td> */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -611,16 +493,9 @@ function Dash_eng() {
                       textAlign: "center",
                     }}
                   >
-                    <Tooltip title="View Handover" arrow>
-                      <span>
-                        <ProjectName
-                          currentPage={currentPage}
-                          p_id={project.p_id}
-                          customer={project.customer}
-                        />
-                      </span>
-                    </Tooltip>
+                    {project.name || "-"}
                   </td>
+                  
 
                   <td
                     style={{
@@ -737,40 +612,28 @@ function Dash_eng() {
           Previous
         </Button>
 
-        {/* Showing X Results (no total because backend paginates) */}
+    
         <Box>Showing {draftPayments.length} results</Box>
 
         {/* Page Numbers: Only show current, prev, next for backend-driven pagination */}
-        <Box
-          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
-        >
-          {currentPage > 1 && (
-            <IconButton
-              size="sm"
-              variant="outlined"
-              color="neutral"
-              onClick={() => handlePageChange(currentPage - 1)}
-            >
-              {currentPage - 1}
-            </IconButton>
-          )}
+       <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
+  {pageNumbers.map((page, index) =>
+    page === "..." ? (
+      <Box key={index} sx={{ px: 1 }}>...</Box>
+    ) : (
+      <IconButton
+        key={index}
+        size="sm"
+        variant={page === currentPage ? "contained" : "outlined"}
+        color="neutral"
+        onClick={() => handlePageChange(page)}
+      >
+        {page}
+      </IconButton>
+    )
+  )}
+</Box>
 
-          <IconButton size="sm" variant="contained" color="neutral">
-            {currentPage}
-          </IconButton>
-
-          {/* Show next page button if current page has any data (not empty) */}
-          {draftPayments.length > 0 && (
-            <IconButton
-              size="sm"
-              variant="outlined"
-              color="neutral"
-              onClick={() => handlePageChange(currentPage + 1)}
-            >
-              {currentPage + 1}
-            </IconButton>
-          )}
-        </Box>
 
         {/* Next Button */}
         <Button
@@ -779,7 +642,7 @@ function Dash_eng() {
           color="neutral"
           endDecorator={<KeyboardArrowRightIcon />}
           onClick={() => handlePageChange(currentPage + 1)}
-          disabled={draftPayments.length === 0} // disable next if no data at all on this page
+          disabled={currentPage >= totalPages}
         >
           Next
         </Button>

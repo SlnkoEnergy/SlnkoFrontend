@@ -15,24 +15,24 @@ import { useNavigate } from "react-router-dom";
 import Header from "../../component/Partials/Header";
 import Sidebar from "../../component/Partials/Sidebar";
 import PaymentRequest from "../../component/PaymentRequest";
+import { use } from "react";
 
 function ProjectBalance() {
   const navigate = useNavigate();
-   const [user, setUser] = useState(null);
-      
-        
-        useEffect(() => {
-         const userData = getUserData();
-         setUser(userData);
-       }, []);
-       
-       const getUserData = () => {
-         const userData = localStorage.getItem("userDetails");
-         if (userData) {
-           return JSON.parse(userData);
-         }
-         return null;
-       };
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
 
   const paymentRequestRef = useRef();
 
@@ -70,14 +70,14 @@ function ProjectBalance() {
             sx={{
               display: "flex",
               alignItems: "center",
-              marginLeft: { xl: "15%", lg: "18%", },
+              marginLeft: { xl: "15%", lg: "18%" },
             }}
           >
             <Breadcrumbs
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0 , marginTop: {md:"4%", lg:"0%"}}}
+              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
               {/* <Link
                 underline="none"
@@ -127,51 +127,56 @@ function ProjectBalance() {
                 flexWrap: "wrap",
                 justifyContent: "center",
               }}
-            > {(user?.name === "IT Team" ||
-              user?.name === "Guddu Rani Dubey" ||
-              user?.name === "Prachi Singh" ||
-              user?.name === "admin" ||
-              user?.name === "Ajay Singh" ||
-              user?.name === "Aryan Maheshwari" ||
-              user?.name === "Sarthak Sharma" ||
-              user?.name === "Naresh Kumar"||
-            user?.name === "Shubham Gupta" ||
-          user?.name === "Saurabh Suman" ||
-        user?.name === "CAM Team") && (
-              <Button
-                color="primary"
-                size="sm"
-                onClick={() => navigate("/standby_records")}
-              >
-                Pending Payment
-              </Button>
+            >
+              {" "}
+              {(user?.name === "IT Team" ||
+                user?.name === "Guddu Rani Dubey" ||
+                user?.name === "Prachi Singh" ||
+                user?.department === "admin" ||
+                user?.name === "Ajay Singh" ||
+                user?.name === "Aryan Maheshwari" ||
+                user?.name === "Sarthak Sharma" ||
+                user?.name === "Naresh Kumar" ||
+                user?.name === "Shubham Gupta" ||
+                user?.name === "Saurabh Suman" ||
+                user?.name === "Sandeep Yadav" ||
+                user?.name === "Som Narayan Jha" ||
+                user?.name === "Saresh") && (
+                <Button
+                  color="primary"
+                  size="sm"
+                  onClick={() => navigate("/standby_records")}
+                >
+                  Pending Payment
+                </Button>
               )}
               {(user?.name === "IT Team" ||
-              user?.name === "Guddu Rani Dubey" ||
-              user?.name === "Prachi Singh" ||
-              user?.name === "admin" ||
-              user?.name === "Shubham Gupta") && (
-              <Button
-                color="primary"
-                size="sm"
-                onClick={() => navigate("/pay_Request")}
-              >
-                Add New Payment +
-              </Button>
+                user?.name === "Guddu Rani Dubey" ||
+                user?.name === "Prachi Singh" ||
+                user?.department === "admin" ||
+                user?.name === "Shubham Gupta" ||
+              user?.name === "Ajay Singh") && (
+                <Button
+                  color="primary"
+                  size="sm"
+                  onClick={() => navigate("/pay_Request")}
+                >
+                  Add New Payment +
+                </Button>
               )}
               {(user?.name === "IT Team" ||
-              user?.name === "Guddu Rani Dubey" ||
-              user?.name === "Prachi Singh" ||
-              user?.name === "admin" ) && (
-              <Button
-                color="primary"
-                startDecorator={<DownloadRoundedIcon />}
-                size="sm"
-                onClick={handleExportToCSV}
-              >
-                Export to CSV
-              </Button>
-)}
+                user?.name === "Guddu Rani Dubey" ||
+                user?.name === "Prachi Singh" ||
+                user?.department === "admin") && (
+                <Button
+                  color="primary"
+                  startDecorator={<DownloadRoundedIcon />}
+                  size="sm"
+                  onClick={handleExportToCSV}
+                >
+                  Export to CSV
+                </Button>
+              )}
             </Box>
           </Box>
           <PaymentRequest ref={paymentRequestRef} />
