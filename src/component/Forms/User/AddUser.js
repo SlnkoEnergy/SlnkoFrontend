@@ -38,8 +38,9 @@ const AddUserForm = () => {
 
     const payload = { ...formData };
     try {
-      const response = await Axios.post("/user-registratioN-IT", payload, {
-        headers: { "Content-Type": "application/json" },
+       const token = localStorage.getItem("authToken");
+      await Axios.post("/user-registratioN-IT", payload, {
+        headers: { "x-auth-token": token },
       });
       // console.log("User registered successfully:", response.data);
       // alert("User registered successfully!");

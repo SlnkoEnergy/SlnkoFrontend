@@ -7,10 +7,10 @@ import { fetchBaseQuery } from "@reduxjs/toolkit/query";
 // };
 
 export const baseQuery = fetchBaseQuery({
-  baseUrl: "https://api.slnkoprotrac.com/v1/",
+  baseUrl: "https://staging.api.slnkoprotrac.com/v1/",
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("authToken");
-console.log(token);
+// console.log(token);
     if (token) {
       headers.set("x-auth-token", token);
     }

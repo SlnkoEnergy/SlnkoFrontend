@@ -14,10 +14,10 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 export const leadsApi = createApi({
   reducerPath: "leadsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "https://api.slnkoprotrac.com/v1/",
+    baseUrl: "https://staging.api.slnkoprotrac.com/v1/",
     prepareHeaders: (headers) => {
       const token = localStorage.getItem("authToken");
-      console.log(token);
+      // console.log(token);
       if (token) {
         headers.set("x-auth-token", token);
       }
@@ -288,6 +288,11 @@ export const leadsApi = createApi({
       invalidatesTags: ["Lead"],
     }),
 
+     getWonDataById: builder.query({
+      query: ({ leadId }) => `/get-won?leadId=${leadId}`,
+      providesTags: ["CAM"],
+    }),
+
     /*-- HandOver Sheet */
     getModuleMaster: builder.query({
       query: () => "get-module-master",
@@ -348,5 +353,6 @@ export const {
   useGetMasterInverterQuery,
   useGetModuleMasterQuery,
   useUpdateWONLeadsMutation,
+  useGetWonDataByIdQuery,
   // useGetHandOverQuery,
 } = leadsApi;

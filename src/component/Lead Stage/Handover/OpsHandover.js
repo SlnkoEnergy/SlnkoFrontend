@@ -21,6 +21,7 @@ import { toast } from "react-toastify";
 import * as Yup from "yup";
 import Img1 from "../../../assets/HandOverSheet_Icon.jpeg";
 import {
+  useGetHandOverByIdQuery,
   useGetHandOverQuery,
   useUpdateHandOverMutation,
 } from "../../../redux/camsSlice";
@@ -206,97 +207,61 @@ const OpsHandoverSheetForm = ({ onBack }) => {
 
   // console.log("LeadId:", LeadId);
 
-  const { data: getHandOverSheet = [] } = useGetHandOverQuery();
-  const HandOverSheet = useMemo(
-    () => getHandOverSheet?.Data ?? [],
-    [getHandOverSheet]
+  const {
+    data: getHandOverSheet,
+    isLoading,
+    isError,
+    error,
+  } = useGetHandOverByIdQuery(
+    { leadId: LeadId },
+    {
+      skip: !LeadId,
+    }
   );
 
-  const handoverData = useMemo(() => {
-    return HandOverSheet.find((item) => item._id === LeadId);
-  }, [HandOverSheet, LeadId]);
+  const handoverData = getHandOverSheet?.data ?? null;
 
-  // console.log("handoverData:", handoverData);
+  console.log("Handover Data:", handoverData);
 
   useEffect(() => {
-    if (!handoverData) {
+    if (!handoverData && !isLoading && !error) {
       console.warn("No matching handover data found.");
-      return;
+    } else if (handoverData) {
+      console.log("Fetched handover data:", handoverData);
     }
+  }, [handoverData, isLoading, error]);
+  
 
-    setFormData((prev) => ({
-      ...prev,
-      _id: handoverData?._id || "",
-      p_id: handoverData?.p_id || "",
-      customer_details: {
-        ...prev.customer_details,
-        code: handoverData?.customer_details?.code || "",
-        name: handoverData?.customer_details?.name || "",
-        customer: handoverData?.customer_details?.customer || "",
-        epc_developer: handoverData?.customer_details?.epc_developer || "",
-        site_address: handoverData?.customer_details?.site_address || {
-          village_name: "",
-          district_name: "",
+  useEffect(() => {
+    if (getHandOverSheet?.data) {
+      setFormData((prev) => ({
+        // _id: getHandOverSheet.data._id,
+        ...prev,
+        ...getHandOverSheet.data,
+
+        customer_details: {
+          ...prev.customer_details,
+          ...getHandOverSheet.data.customer_details,
         },
-
-        number: handoverData?.customer_details?.number || "",
-
-        p_group: handoverData?.customer_details?.p_group || "",
-        state: handoverData?.customer_details?.state || "",
-        alt_number: handoverData?.customer_details?.alt_number || "",
-      },
-      order_details: {
-        ...prev.order_details,
-        type_business: handoverData?.order_details?.type_business || "",
-      },
-      project_detail: {
-        ...prev.project_detail,
-        project_type: handoverData?.project_detail?.project_type || "",
-        module_type: handoverData?.project_detail?.module_type || "",
-        module_category: handoverData?.project_detail?.module_category || "",
-        evacuation_voltage:
-          handoverData?.project_detail?.evacuation_voltage || "",
-
-        work_by_slnko: handoverData?.project_detail?.work_by_slnko || "",
-        liaisoning_net_metering:
-          handoverData?.project_detail?.liaisoning_net_metering || "",
-        ceig_ceg: handoverData?.project_detail?.ceig_ceg || "",
-        proposed_dc_capacity:
-          handoverData?.project_detail?.proposed_dc_capacity || "",
-        distance: handoverData?.project_detail?.distance || "",
-        tarrif: handoverData?.project_detail?.tarrif || "",
-        overloading: handoverData?.project_detail?.overloading || "",
-        project_kwp: handoverData?.project_detail?.project_kwp || "",
-        billing_type: handoverData?.project_detail?.billing_type || "",
-        project_component:
-          handoverData?.project_detail?.project_component || "",
-        project_component_other:
-          handoverData?.project_detail?.project_component_other || "",
-        transmission_scope:
-          handoverData?.project_detail?.transmission_scope || "",
-        loan_scope: handoverData?.project_detail?.loan_scope || "",
-      },
-      commercial_details: {
-        ...prev.commercial_details,
-        type: handoverData?.commercial_details?.type || "",
-      },
-      other_details: {
-        ...prev.other_details,
-        cam_member_name: handoverData?.other_details?.cam_member_name || "",
-        service: handoverData?.other_details?.service || "",
-        project_status:
-          handoverData?.other_details?.project_status || "incomplete",
-        slnko_basic: handoverData?.other_details?.slnko_basic || "",
-
-        remark: handoverData?.other_details?.remark || "",
-        remarks_for_slnko: handoverData?.other_details?.remarks_for_slnko || "",
-        submitted_by_BD: handoverData?.other_details?.submitted_by_BD || "",
-      },
-
-      submitted_by: handoverData?.submitted_by || "-",
-      status_of_handoversheet: handoverData?.status_of_handoversheet,
-    }));
-  }, [handoverData]);
+        order_details: {
+          ...prev.order_details,
+          ...getHandOverSheet.data.order_details,
+        },
+        project_detail: {
+          ...prev.project_detail,
+          ...getHandOverSheet.data.project_detail,
+        },
+        commercial_details: {
+          ...prev.commercial_details,
+          ...getHandOverSheet.data.commercial_details,
+        },
+        other_details: {
+          ...prev.other_details,
+          ...getHandOverSheet.data.other_details,
+        },
+      }));
+    }
+  }, [getHandOverSheet]);
 
   const calculateDcCapacity = (ac, overloadingPercent) => {
     const acValue = parseFloat(ac);
@@ -404,7 +369,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
       await handoverSchema.validate(formData, { abortEarly: false });
 
       const updatedFormData = {
-        _id: LeadId,
+        _id: formData._id,
         // p_id: formData.p_id,
         customer_details: { ...formData.customer_details },
         order_details: { ...formData.order_details },
@@ -703,7 +668,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 </Tooltip>
               </Typography>
 
-              <Input
+              <Textarea
                 fullWidth
                 placeholder="e.g. Varanasi 221001"
                 value={formData.customer_details.site_address.district_name}
@@ -722,7 +687,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 <Typography level="body1" sx={{ fontWeight: "bold", mb: 0.5 }}>
                   Village Name
                 </Typography>
-                <Input
+                <Textarea
                   fullWidth
                   placeholder="e.g. Chakia"
                   value={formData.customer_details.site_address.village_name}

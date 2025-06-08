@@ -165,7 +165,10 @@ const Add_Money = () => {
     };
 
     try {
-      const response = await Axios.post("/Add-MoneY-IT", payload);
+      const token = localStorage.getItem("authToken");
+      await Axios.post("/Add-MoneY-IT", payload , {
+        headers: {"x-auth-token": token}
+      });
       setResponseMessage("Form submitted successfully!");
       toast.success("Money Added Successfully ")
       navigate("/project-balance");

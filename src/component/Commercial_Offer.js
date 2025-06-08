@@ -252,7 +252,7 @@ function Offer() {
             <MoreHorizRoundedIcon />
           </MenuButton>
           {(user?.name === "IT Team" ||
-            user?.name === "admin" ||
+            user?.department === "admin" ||
             user?.name === "Navin Kumar Gautam" ||
             user?.name === "Mohd Shakir Khan" ||
             user?.name === "Shiv Ram Tathagat" ||
@@ -264,7 +264,12 @@ function Offer() {
             user?.name === "Shambhavi Gupta" ||
             user?.name === "Geeta" ||
             user?.name === "Anudeep Kumar" ||
-            user?.name === "Ashish Jha") && (
+            user?.name === "Ashish Jha" ||
+            user?.name === "Abhishek Sawhney" ||
+            user?.name === "Ankit Dikshit" ||
+            user?.name === "Kunal Kumar" ||
+            user?.name === "Deepak Manodi"
+          ) && (
             <Menu size="sm" sx={{ minWidth: 140 }}>
               <MenuItem
                 color="primary"
@@ -304,7 +309,7 @@ function Offer() {
                 <Typography>Offer History</Typography>
               </MenuItem>
               <Divider sx={{ backgroundColor: "lightblue" }} />
-              {(user?.name === "IT Team" || user?.name === "admin") && (
+              {(user?.name === "IT Team" || user?.department === "admin") && (
                 <MenuItem
                   color="danger"
                   disabled={selected.length === 0}
@@ -339,20 +344,24 @@ function Offer() {
 
     return (
       <>
-        {user?.name === "IT Team" ||
-        user?.name === "admin" ||
-        user?.name === "Navin Kumar Gautam" ||
-        user?.name === "Mohd Shakir Khan" ||
-        user?.name === "Shiv Ram Tathagat" ||
-        user?.name === "Kana Sharma" ||
-        user?.name === "Ketan Kumar Jha" ||
-        user?.name === "Vibhav Upadhyay" ||
-        user?.name === "Shantanu Sameer" ||
-        user?.name === "Arnav Shahi" ||
-        user?.name === "Shambhavi Gupta" ||
-        user?.name === "Geeta" ||
-        user?.name === "Anudeep Kumar" ||
-        user?.name === "Ashish Jha" ? (
+        {(user?.name === "IT Team" ||
+            user?.department === "admin" ||
+            user?.name === "Navin Kumar Gautam" ||
+            user?.name === "Mohd Shakir Khan" ||
+            user?.name === "Shiv Ram Tathagat" ||
+            user?.name === "Kana Sharma" ||
+            user?.name === "Ketan Kumar Jha" ||
+            user?.name === "Vibhav Upadhyay" ||
+            user?.name === "Shantanu Sameer" ||
+            user?.name === "Arnav Shahi" ||
+            user?.name === "Shambhavi Gupta" ||
+            user?.name === "Geeta" ||
+            user?.name === "Anudeep Kumar" ||
+            user?.name === "Ashish Jha" ||
+            user?.name === "Abhishek Sawhney" ||
+            user?.name === "Ankit Dikshit" ||
+            user?.name === "Kunal Kumar" ||
+            user?.name === "Deepak Manodi") ? (
           <Tooltip title="Add" arrow>
             <IconButton
               size="small"
@@ -446,7 +455,7 @@ function Offer() {
         const preparedBy =
           project.prepared_by?.trim().toLowerCase() || "unassigned";
         const userName = user.name.trim().toLowerCase();
-        const userRole = user.role?.toLowerCase();
+        const userRole = user.department?.toLowerCase();
 
         const isAdmin = userRole === "admin" || userRole === "superadmin";
         const matchesUser = isAdmin || preparedBy === userName;
@@ -644,7 +653,7 @@ function Offer() {
                   sx={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
-                    textAlign: "center",
+                    textAlign: "left",
                   }}
                 >
                   <Checkbox
@@ -676,7 +685,7 @@ function Offer() {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                       fontWeight: "bold",
                     }}
                   >
@@ -700,7 +709,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       <Checkbox
@@ -716,7 +725,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.offer_id}
@@ -726,7 +735,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.client_name}
@@ -736,7 +745,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.state || "-"}
@@ -746,7 +755,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.ac_capacity || "-"}
@@ -756,7 +765,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.scheme || "-"}
@@ -766,7 +775,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.component || "-"}
@@ -777,7 +786,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.slnkoCharges.toLocaleString("en-IN")}
@@ -787,7 +796,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       <AddMenu
@@ -800,7 +809,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.prepared_by || "-"}
@@ -810,7 +819,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       <RowMenu

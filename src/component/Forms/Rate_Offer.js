@@ -148,7 +148,6 @@ const { data: existingBDRates } = await Axios.get("/get-comm-bd-rate", {
 
 const response = await Axios.post("/create-bd-rate", scmPayload, {
   headers: {
-    "Content-Type": "application/json",
     "x-auth-token": token,
   },
 });

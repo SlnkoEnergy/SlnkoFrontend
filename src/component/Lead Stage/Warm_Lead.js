@@ -266,10 +266,10 @@ const StandByRequest = forwardRef((props, ref) => {
      if (!user || !user.name) return [];
    
      const userName = user.name.trim();
-     const userRole = user.role?.trim();
-     const isAdmin = userRole === "admin" || userRole === "superadmin"|| userName === "Shiv Ram Tathagat";
+     const userRole = user.department?.trim();
+     const isAdmin = userRole === "admin" || userRole === "superadmin"|| userName === "Shiv Ram Tathagat" || userName === "Deepak Manodi";
    
-     // State-based user access
+     // State-based user accesss
       const stateUserMap = {
        "Uttar Pradesh": ["Geeta", "Shambhavi Gupta", "Vibhav Upadhyay", "Navin Kumar Gautam"],
        "Rajasthan": ["Shantanu Sameer", "Vibhav Upadhyay", "Navin Kumar Gautam"],

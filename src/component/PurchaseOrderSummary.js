@@ -235,7 +235,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           {(user?.name === "IT Team" ||
             user?.name === "Guddu Rani Dubey" ||
             user?.name === "Prachi Singh" ||
-            user?.name === "admin" ||
+            user?.department === "admin" ||
             user?.name === "Ajay Singh" ||
             user?.name === "Aryan Maheshwari" ||
             user?.name === "Sarthak Sharma" ||
@@ -269,12 +269,16 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           {(user?.name === "IT Team" ||
             user?.name === "Guddu Rani Dubey" ||
             user?.name === "Prachi Singh" ||
-            user?.name === "admin" ||
+            user?.department=== "admin" ||
             user?.name === "Ajay Singh" ||
             user?.name === "Aryan Maheshwari" ||
             user?.name === "Sarthak Sharma" ||
             user?.name === "Shubham Gupta" ||
-            user?.name === "Naresh Kumar") && (
+            user?.name === "Naresh Kumar" ||
+          user?.name === "Sandeep Yadav" ||
+            user?.name === "Som Narayan Jha" ||
+            user?.name === "Saresh"
+          ) && (
             <MenuItem
               onClick={() => {
                 const page = currentPage;
@@ -323,6 +327,20 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
               <Typography>Edit Bill</Typography>
             </MenuItem>
           )}
+            {/* <Divider sx={{ backgroundColor: "lightblue" }} />
+                      {(user?.name === "IT Team" ||
+                        user?.name === "Guddu Rani Dubey" ||
+                        user?.name === "Prachi Singh" ||
+                        user?.name === "admin") && (
+                        <MenuItem
+                          color="danger"
+                          disabled={selectedProjects.length === 0}
+                          onClick={handleDelete}
+                        >
+                          <DeleteIcon />
+                          <Typography>Delete</Typography>
+                        </MenuItem>
+                      )} */}
         </Menu>
       </Dropdown>
     );

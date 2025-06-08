@@ -120,7 +120,7 @@ function Comm_Offer() {
               }}
             >
               {(user?.name === "IT Team" ||
-                user?.name === "admin" ||
+                user?.department === "admin" ||
                 user?.name === "Naresh Kumar") && (
                 <Button
                   color="primary"
@@ -133,7 +133,7 @@ function Comm_Offer() {
               )}
 
               {(user?.name === "IT Team" ||
-                user?.name === "admin" ||
+                user?.department === "admin" ||
                 user?.name === "Navin Kumar Gautam" ||
                 user?.name === "Mohd Shakir Khan" ||
                 user?.name === "Shiv Ram Tathagat" ||
@@ -145,7 +145,10 @@ function Comm_Offer() {
                 user?.name === "Shambhavi Gupta" ||
                 user?.name === "Geeta" ||
                 user?.name === "Anudeep Kumar" ||
-                user?.name === "Ashish Jha") && (
+                user?.name === "Ashish Jha" ||
+                user?.name === "Abhishek Sawhney" ||
+            user?.name === "Ankit Dikshit" ||
+            user?.name === "Kunal Kumar") && (
                 <Button
                   color="primary"
                   size="sm"

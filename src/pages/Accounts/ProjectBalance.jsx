@@ -144,7 +144,7 @@ function ProjectBalance() {
               {(user?.name === "IT Team" ||
                 user?.name === "Guddu Rani Dubey" ||
                 user?.name === "Prachi Singh" ||
-                user?.name === "admin") && (
+                user?.department === "admin") && (
                 <Button
                   color="primary"
                   onClick={() => navigate("/adjust_request")}
@@ -156,7 +156,7 @@ function ProjectBalance() {
               {(user?.name === "IT Team" ||
                 user?.name === "Guddu Rani Dubey" ||
                 user?.name === "Prachi Singh" ||
-                user?.name === "admin") && (
+                user?.department === "admin") && (
                 <Button color="primary" onClick={handleClick} size="sm">
                   Add New Project +
                 </Button>
@@ -175,10 +175,10 @@ function ProjectBalance() {
               {(user?.name === "IT Team" ||
                 user?.name === "Guddu Rani Dubey" ||
                 user?.name === "Prachi Singh" ||
-                user?.name === "admin" ||
+                user?.department === "admin" ||
                 user?.name === "Naresh Kumar" ||
-                user?.name === "Chandan Singh" ||
-                user?.department === "account") && (
+               
+                user?.department === "Accounts") && (
                 <Button
                   color="primary"
                   startDecorator={<DownloadRoundedIcon />}
