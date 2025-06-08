@@ -16,16 +16,20 @@ import { useGetModuleCategoryByIdQuery } from "../../../../redux/Eng/templatesSl
 const Overview = () => {
   const [searchParams] = useSearchParams();
   const [selected, setSelected] = useState("Electrical");
+  // State to store actual File objects selected by the user
+  // Structure: { categoryItemDisplayIndex: { fileInputIndex: FileObject } }
   const [fileUploads, setFileUploads] = useState({});
 
   const pidFromUrl = searchParams.get("project_id");
   const projectId = pidFromUrl;
 
-  const { data, isLoading, isError } = useGetModuleCategoryByIdQuery(
+  // RTK Query hook to fetch project module category data
+  const { data, isLoading, isError, refetch } = useGetModuleCategoryByIdQuery(
     { projectId, engineering: selected },
-    { skip: !projectId }
+    { skip: !projectId } // Skip query if projectId is not available
   );
 
+  // Initialize a structured object to hold category-wise data for display
   const categoryData = {
     Electrical: [],
     Mechanical: [],
@@ -34,30 +38,47 @@ const Overview = () => {
     boq: [],
   };
 
-  const project = data?.data || "-";
+  const project = data?.data || null; // Access project data or null if not available
 
+  // Populate categoryData from the fetched project data
   if (project?.items?.length) {
     project.items.forEach((item) => {
       const template = item.template_id;
       const category = template?.engineering_category;
 
       if (category && categoryData[category]) {
+        // Ensure templateId is correctly extracted, whether template_id is an ID string or an object
+        const currentTemplateId =
+          typeof template === "string" ? template : template?._id;
+
         categoryData[category].push({
-          name: template.name,
-          description: template.description,
-          maxFiles: template.file_upload?.max_files || 0,
-          attachmentUrls: item.current_attachment?.attachment_url || [],
+          templateId: currentTemplateId, // This is the crucial template_id needed for the backend
+          name: template?.name || "N/A",
+          description: template?.description || "No description provided.",
+          maxFiles: template?.file_upload?.max_files || 0,
+          // Ensure attachmentUrls is always an array for consistent rendering
+          attachmentUrls: Array.isArray(item.current_attachment?.attachment_url)
+            ? item.current_attachment?.attachment_url
+            : item.current_attachment?.attachment_url
+              ? [item.current_attachment.attachment_url]
+              : [],
         });
       }
     });
   }
 
-  const handleFileChange = (categoryIndex, fileIndex, file) => {
+  /**
+   * Handles file selection from an input field.
+   * Updates the fileUploads state with the selected File object.
+   * @param {number} categoryItemDisplayIndex - The visual index of the item in the currently displayed category.
+   * @param {number} fileInputIndex - The index of the specific file input for that item.
+   * @param {File} file - The actual File object selected by the user.
+   */
+  const handleFileChange = (categoryItemDisplayIndex, fileInputIndex, file) => {
     setFileUploads((prev) => {
       const newUploads = { ...prev };
-
-      if (!newUploads[categoryIndex]) {
-        newUploads[categoryIndex] = {};
+      if (!newUploads[categoryItemDisplayIndex]) {
+        newUploads[categoryItemDisplayIndex] = {};
       }
 
       newUploads[categoryIndex][fileIndex] = {
@@ -69,7 +90,8 @@ const Overview = () => {
     });
   };
 
-  const isAnyFileUploaded = Object.values(fileUploads).some(
+  // Determines if any file has been selected to enable the submit button
+  const isAnyFileSelected = Object.values(fileUploads).some(
     (fileGroup) => Object.keys(fileGroup).length > 0
   );
 
@@ -160,7 +182,7 @@ const Overview = () => {
       }}
     >
       <Box sx={{ display: "flex", flexGrow: 1, gap: 3 }}>
-        {/* Sidebar */}
+        {/* Sidebar for Categories */}
         <Sheet
           variant="outlined"
           sx={{
@@ -192,8 +214,7 @@ const Overview = () => {
           </List>
         </Sheet>
 
-        {/* Main Content */}
-        {/* Main Content */}
+        {/* Main Content Area for Documentation */}
         <Sheet
           variant="outlined"
           sx={{
@@ -212,16 +233,18 @@ const Overview = () => {
           <Divider sx={{ mb: 3 }} />
 
           {isLoading ? (
-            <Typography>Loading...</Typography>
+            <Typography>Loading documentation...</Typography>
           ) : isError ? (
-            <Typography color="danger">Error fetching data.</Typography>
+            <Typography color="danger">
+              Error fetching documentation.
+            </Typography>
           ) : (
             <>
               <Box sx={{ display: "grid", gap: 3 }}>
                 {categoryData[selected].length > 0 ? (
                   categoryData[selected].map((item, index) => (
                     <Sheet
-                      key={index}
+                      key={index} // Using index here is safe for rendering the list items
                       variant="outlined"
                       sx={{
                         p: 3,
@@ -237,7 +260,7 @@ const Overview = () => {
                         level="body-sm"
                         sx={{ color: "text.secondary", mb: 2 }}
                       >
-                        {item.description || "No description provided."}
+                        {item.description}
                       </Typography>
 
                       <Typography level="body-xs" sx={{ fontWeight: 600 }}>
@@ -256,14 +279,14 @@ const Overview = () => {
                         }}
                       >
                         {Array.from({ length: item.maxFiles }).map(
-                          (_, fileIndex) => (
+                          (_, fileInputIndex) => (
                             <input
-                              key={fileIndex}
+                              key={fileInputIndex}
                               type="file"
                               onChange={(e) =>
                                 handleFileChange(
-                                  index,
-                                  fileIndex,
+                                  index, // Pass the display index to correctly link to categoryData
+                                  fileInputIndex,
                                   e.target.files[0]
                                 )
                               }
@@ -305,11 +328,14 @@ const Overview = () => {
                     </Sheet>
                   ))
                 ) : (
-                  <Typography>No data found for {selected}.</Typography>
+                  <Typography>
+                    No documentation found for {selected}.
+                  </Typography>
                 )}
               </Box>
 
-              {isAnyFileUploaded && (
+              {/* Submit button, only visible if files are selected */}
+              {isAnyFileSelected && (
                 <Box sx={{ textAlign: "right", mt: 4 }}>
                   <Button
                     variant="solid"

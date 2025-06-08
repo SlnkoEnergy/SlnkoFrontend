@@ -23,12 +23,17 @@ const AddTemplatesPage = () => {
   const [createBoqTemplateRow] = useCreateBoqTemplateRowMutation();
   const [updateModuleTemplateCategory] = useUpdateModuleTemplateIdMutation();
   const moduleId = localStorage.getItem("Id");
+  const [isSubmittingHeaders, setIsSubmittingHeaders] = useState(false);
+
   const [templateData, setTemplateData] = useState({
     name: "",
     description: "",
     boqHeaders: [],
     boqRows: [],
   });
+
+  // Store the submitted category ID after headers submission
+  const [submittedCategoryId, setSubmittedCategoryId] = useState(null);
 
   const [headerInput, setHeaderInput] = useState({
     columnName: "",
@@ -120,21 +125,26 @@ const AddTemplatesPage = () => {
     });
   };
 
-  const handleSubmit = async (e) => {
+  // Submit only Headers (BOQ Category)
+  const handleSubmitHeaders = async (e) => {
     e.preventDefault();
 
+    if (isSubmittingHeaders) return;
+    setIsSubmittingHeaders(true);
+
+    console.log("🧪 handleSubmitHeaders called at", new Date().toISOString());
+
     if (
-      !templateData.name ||
-      !templateData.description ||
+      !templateData.name.trim() ||
+      !templateData.description.trim() ||
       templateData.boqHeaders.length === 0
     ) {
-      return alert(
-        "Please complete all required fields and add at least one header."
-      );
+      alert("Please complete all required fields and add at least one header.");
+      setIsSubmittingHeaders(false);
+      return;
     }
 
     try {
-      // Step 1: Create BOQ Category (Headers)
       const categoryPayload = {
         name: templateData.name,
         description: templateData.description,
@@ -147,20 +157,51 @@ const AddTemplatesPage = () => {
         })),
       };
 
-      const categoryResponse =
-        await createBoqCategory(categoryPayload).unwrap();
+      const categoryResponse = await createBoqCategory({
+        categoryData: categoryPayload,
+        module_template: moduleId,
+      }).unwrap();
+
       const boqCategoryId = categoryResponse._id || categoryResponse.data?._id;
 
       if (!boqCategoryId) {
         throw new Error("boq_category ID not returned from API");
       }
 
-      // Step 2: Filter rows that have any non-empty value
-      const filteredBoqRows = templateData.boqRows.filter((row) =>
-        Object.values(row).some((val) => val !== "")
-      );
+      setSubmittedCategoryId(boqCategoryId);
 
-      // Step 3: Build column-wise data array for all rows
+      alert("Headers submitted successfully! Now you can submit rows.");
+    } catch (error) {
+      console.error("Header submission error:", error);
+      alert("Failed to submit headers. Please try again.");
+    } finally {
+      setIsSubmittingHeaders(false);
+    }
+  };
+
+  // Submit only Rows (BOQ Rows)
+  const handleSubmitRows = async (e) => {
+    e.preventDefault();
+    console.log("handleSubmitRows called");
+    if (!submittedCategoryId) {
+      return alert("Please submit headers first before submitting rows.");
+    }
+
+    if (templateData.boqRows.length === 0) {
+      return alert("No rows to submit.");
+    }
+
+    // Filter rows that have any non-empty value
+    const filteredBoqRows = templateData.boqRows.filter((row) =>
+      Object.values(row).some((val) => val !== "")
+    );
+
+    if (filteredBoqRows.length === 0) {
+      return alert("Please add some data in rows before submitting.");
+    }
+
+    try {
+      // Build column-wise data array for all rows
       const dataForAllRows = templateData.boqHeaders.map((header) => ({
         name: header.columnName,
         values: filteredBoqRows.map((row) => ({
@@ -168,26 +209,19 @@ const AddTemplatesPage = () => {
         })),
       }));
 
-      // Step 4: Build payload with category and all rows (column-wise)
       const payload = {
-        boq_category: boqCategoryId,
+        boq_category: submittedCategoryId,
         data: dataForAllRows,
       };
 
-      console.log("Posting payload:", JSON.stringify(payload, null, 2));
+      // console.log("Posting rows payload:", JSON.stringify(payload, null, 2));
 
-      // Step 5: Post ONE document with all rows (column-wise)
       await createBoqTemplateRow(payload).unwrap();
-      await updateModuleTemplateCategory({
-        _id: moduleId,
-        template_category: boqCategoryId,
-      }).unwrap();
 
-      alert("Template submitted successfully!");
-      // Optionally reset form state here
+      alert("Rows submitted successfully!");
     } catch (error) {
-      console.error("Submission error:", error);
-      alert("Failed to submit template. Please try again.");
+      console.error("Row submission error:", error);
+      alert("Failed to submit rows. Please try again.");
     }
   };
 
@@ -197,7 +231,7 @@ const AddTemplatesPage = () => {
         Add Template
       </Typography>
 
-      <form onSubmit={handleSubmit}>
+      <form>
         {/* Name and Description */}
         <Box
           sx={{
@@ -214,6 +248,7 @@ const AddTemplatesPage = () => {
               onChange={(e) =>
                 setTemplateData((prev) => ({ ...prev, name: e.target.value }))
               }
+              disabled={!!submittedCategoryId}
             />
           </FormControl>
           <FormControl required sx={{ flex: "1 1 300px" }}>
@@ -228,6 +263,7 @@ const AddTemplatesPage = () => {
                   description: e.target.value,
                 }))
               }
+              disabled={!!submittedCategoryId}
             />
           </FormControl>
         </Box>
@@ -254,11 +290,13 @@ const AddTemplatesPage = () => {
               handleHeaderInputChange("columnName", e.target.value)
             }
             sx={{ flex: "1 1 200px" }}
+            disabled={!!submittedCategoryId}
           />
           <Select
             value={headerInput.inputType}
             onChange={(event, val) => handleHeaderInputChange("inputType", val)}
             sx={{ flex: "0 0 120px" }}
+            disabled={!!submittedCategoryId}
           >
             <Option value="text">Text</Option>
             <Option value="number">Number</Option>
@@ -269,6 +307,7 @@ const AddTemplatesPage = () => {
             value={headerInput.keyName}
             onChange={(e) => handleHeaderInputChange("keyName", e.target.value)}
             sx={{ flex: "1 1 200px" }}
+            disabled={!!submittedCategoryId}
           />
           <Input
             placeholder="Placeholder"
@@ -277,12 +316,14 @@ const AddTemplatesPage = () => {
               handleHeaderInputChange("placeholder", e.target.value)
             }
             sx={{ flex: "1 1 200px" }}
+            disabled={!!submittedCategoryId}
           />
           <Button
             type="button"
             onClick={addHeader}
             variant="soft"
             sx={{ flex: "0 0 auto" }}
+            disabled={!!submittedCategoryId}
           >
             Add
           </Button>
@@ -344,12 +385,14 @@ const AddTemplatesPage = () => {
                     }
                     placeholder="Column Name"
                     aria-label={`Edit Column Name for header ${idx + 1}`}
+                    disabled={!!submittedCategoryId}
                   />
                   <Select
                     size="sm"
                     value={header.inputType}
                     onChange={(event, val) => editHeader(idx, "inputType", val)}
                     aria-label={`Edit Input Type for header ${idx + 1}`}
+                    disabled={!!submittedCategoryId}
                   >
                     <Option value="text">Text</Option>
                     <Option value="number">Number</Option>
@@ -361,6 +404,7 @@ const AddTemplatesPage = () => {
                     onChange={(e) => editHeader(idx, "keyName", e.target.value)}
                     placeholder="Key Name"
                     aria-label={`Edit Key Name for header ${idx + 1}`}
+                    disabled={!!submittedCategoryId}
                   />
                   <Input
                     size="sm"
@@ -370,6 +414,7 @@ const AddTemplatesPage = () => {
                     }
                     placeholder="Placeholder"
                     aria-label={`Edit Placeholder for header ${idx + 1}`}
+                    disabled={!!submittedCategoryId}
                   />
                   <IconButton
                     variant="soft"
@@ -378,6 +423,7 @@ const AddTemplatesPage = () => {
                     onClick={() => removeHeader(idx)}
                     sx={{ position: "absolute", top: 4, right: 4 }}
                     aria-label={`Remove header ${idx + 1}`}
+                    disabled={!!submittedCategoryId}
                   >
                     <DeleteIcon fontSize="small" />
                   </IconButton>
@@ -386,6 +432,19 @@ const AddTemplatesPage = () => {
             </Box>
           </Sheet>
         )}
+
+        {/* Submit Headers Button */}
+        <Box sx={{ mb: 4 }}>
+          <Button
+            type="button"
+            variant="solid"
+            color="primary"
+            onClick={handleSubmitHeaders}
+            disabled={isSubmittingHeaders || !!submittedCategoryId}
+          >
+            Submit Headers
+          </Button>
+        </Box>
 
         {/* Excel-like BOQ Table */}
         {templateData.boqHeaders.length > 0 && (
@@ -480,6 +539,7 @@ const AddTemplatesPage = () => {
                               fontSize: 14,
                               boxSizing: "border-box",
                             }}
+                            disabled={!submittedCategoryId}
                           />
                         </td>
                       ))}
@@ -496,6 +556,7 @@ const AddTemplatesPage = () => {
                           size="sm"
                           onClick={() => removeRow(rowIndex)}
                           aria-label={`Remove row ${rowIndex + 1}`}
+                          disabled={!submittedCategoryId}
                         >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
@@ -506,18 +567,29 @@ const AddTemplatesPage = () => {
               </table>
             </Box>
 
-            <Button type="button" onClick={addRow} sx={{ mt: 2 }}>
+            <Button
+              type="button"
+              onClick={addRow}
+              sx={{ mt: 2 }}
+              disabled={!submittedCategoryId}
+            >
               Add Row
             </Button>
+
+            {/* Submit Rows Button */}
+            <Box sx={{ mt: 4 }}>
+              <Button
+                type="button"
+                variant="solid"
+                color="primary"
+                onClick={handleSubmitRows}
+                disabled={!submittedCategoryId}
+              >
+                Submit Rows
+              </Button>
+            </Box>
           </>
         )}
-
-        {/* Submit Button */}
-        <Box sx={{ mt: 4 }}>
-          <Button type="submit" variant="solid" color="primary">
-            Submit Template
-          </Button>
-        </Box>
       </form>
     </Box>
   );

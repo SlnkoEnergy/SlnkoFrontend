@@ -59,10 +59,10 @@ export const templatesApi = createApi({
       invalidatesTags: ["Template"],
     }),
 
-    // POST: Step 1 - Create BOQ Category (template with headers)
+    // POST: Step 1 - Create BOQ Category (template with headers) ?$module_Template
     createBoqCategory: builder.mutation({
-      query: (categoryData) => ({
-        url: "create-boq-category",
+      query: ({ categoryData, module_template }) => ({
+        url: `create-boq-category?module_template=${module_template}`,
         method: "POST",
         body: categoryData,
       }),
