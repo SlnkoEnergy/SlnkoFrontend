@@ -1,5 +1,6 @@
 import { Player } from "@lottiefiles/react-lottie-player";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import InfoOutlined from "@mui/icons-material/InfoOutlined";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
@@ -15,7 +16,6 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
-import InfoOutlined from "@mui/icons-material/InfoOutlined";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
@@ -25,8 +25,8 @@ import NextPlanIcon from "@mui/icons-material/NextPlan";
 import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
 // import EditSquareIcon from '@mui/icons-material/EditSquare';
 
-import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditNoteIcon from "@mui/icons-material/EditNote";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../../assets/Lotties/animation-loading.json";
@@ -46,10 +46,7 @@ import {
 import { forwardRef, useCallback, useImperativeHandle } from "react";
 import { toast } from "react-toastify";
 import NoData from "../../assets/alert-bell.svg";
-import {
-  useGetHandOverByIdQuery,
-  useGetHandOverQuery,
-} from "../../redux/camsSlice";
+import { useGetHandOverByIdQuery } from "../../redux/camsSlice";
 import { useGetWonLeadsQuery } from "../../redux/leadsSlice";
 
 const StandByRequest = forwardRef((props, ref) => {
@@ -270,11 +267,11 @@ const StandByRequest = forwardRef((props, ref) => {
             color="primary"
             onClick={() => {
               const page = currentPage;
-              const leadId = String(leadId);
+
               // const projectID = Number(p_id);
-              localStorage.setItem("view_won", leadId);
+              // localStorage.setItem("view_won", leadId);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/won_Summary?page=${page}&id=${leadId}`);
+              navigate(`/won_Summary?page=${page}&leadId=${leadId}`);
             }}
           >
             <RemoveRedEyeIcon />
@@ -350,7 +347,6 @@ const StandByRequest = forwardRef((props, ref) => {
   const handleDateFilter = (e) => {
     setSelectedDate(e.target.value);
   };
-
 
   const filteredData = useMemo(() => {
     if (!user || !user.name) return [];
@@ -709,8 +705,14 @@ const StandByRequest = forwardRef((props, ref) => {
                       </td>
 
                       {[
-                        <ViewHandOver currentPage={currentPage} leadId={lead.leadId} />,
-                        <EditHandOver currentPage={currentPage} leadId={lead.leadId} />,
+                        <ViewHandOver
+                          currentPage={currentPage}
+                          leadId={lead.leadId}
+                        />,
+                        <EditHandOver
+                          currentPage={currentPage}
+                          leadId={lead.leadId}
+                        />,
                         <span
                           key="id"
                           onClick={() => handleOpenModal(lead)}
@@ -904,7 +906,7 @@ const StandByRequest = forwardRef((props, ref) => {
                                       ? "In Process"
                                       : "Pending"}
                               </Chip>
-                            )
+                            ),
                           },
                           {
                             label: "Handover Submission",

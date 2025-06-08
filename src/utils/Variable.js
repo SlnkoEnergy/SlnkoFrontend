@@ -1,2 +1,1 @@
-
-export const baseurl = "https://sttaging.api.slnkoprotrac.com/v1/";
+export const baseurl = "https://staging.api.slnkoprotrac.com/v1/";

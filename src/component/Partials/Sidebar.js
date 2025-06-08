@@ -702,7 +702,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
-        ) : (user?.department === "BD") ? (
+        ) : user?.department === "BD" ? (
           <List>
             <ListItem nested>
               <Toggler
@@ -775,7 +775,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
-        ) : (user?.department === "Internal") ? (
+        ) : user?.department === "Internal" ? (
           <List>
             <ListItem nested>
               <Toggler
@@ -961,9 +961,8 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
-        ):
-          (user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Prachi Singh") ? (
+        ) : user?.name === "Guddu Rani Dubey" ||
+          user?.name === "Prachi Singh" ? (
           <List
             size="sm"
             sx={{
@@ -1247,13 +1246,13 @@ function Sidebar() {
                     </ListItemButton>
                   </ListItem>
                   {user?.name === "Prachi Singh" && (
-                   <ListItem>
-                    <ListItemButton
-                      onClick={() => navigate("/expense_approval")}
-                    >
-                      Expense Manager Approval
-                    </ListItemButton>
-                  </ListItem>
+                    <ListItem>
+                      <ListItemButton
+                        onClick={() => navigate("/expense_approval")}
+                      >
+                        Expense Manager Approval
+                      </ListItemButton>
+                    </ListItem>
                   )}
                 </List>
               </Toggler>
@@ -2005,13 +2004,13 @@ function Sidebar() {
               )}
             >
               <List sx={{ gap: 0.5 }}>
-                 <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton
-                      onClick={() => navigate("/expense_dashboard")}
-                    >
-                      User Dashboard
-                    </ListItemButton>
-                  </ListItem>
+                <ListItem sx={{ mt: 0.5 }}>
+                  <ListItemButton
+                    onClick={() => navigate("/expense_dashboard")}
+                  >
+                    User Dashboard
+                  </ListItemButton>
+                </ListItem>
                 <ListItem>
                   <ListItemButton onClick={() => navigate("/expense_approval")}>
                     Expense Manager Approval
@@ -2064,7 +2063,11 @@ function Sidebar() {
               </List>
             </Toggler>
           </ListItem>
-        ) : user?.department === "Projects" ? (
+        ) : user?.department === "Projects" ||
+          user?.department === "Marketing" ||
+          user?.department === "Internal" ||
+          user?.department === "Engineering" ||
+          user?.department === "CAM" ? (
           <ListItem nested>
             <Toggler
               renderToggle={({ open, setOpen }) => (
@@ -2098,7 +2101,7 @@ function Sidebar() {
               </List>
             </Toggler>
           </ListItem>
-        ) : user?.department === "eng" &&
+        ) : user?.department === "Engineering" &&
           (user?.name === "Rishav Mahato" ||
             user?.name === "Dhruv Choudhary") ? (
           <List

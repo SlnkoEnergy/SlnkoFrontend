@@ -10,6 +10,7 @@ import {
   Typography,
 } from "@mui/joy";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
 import { useGetHandOverByIdQuery } from "../../redux/camsSlice";
 
@@ -175,14 +176,17 @@ const GetHandoverSheetForm = ({ onBack }) => {
     }));
   };
 
-  const LeadId = localStorage.getItem("HandOver_Lead");
+  const [searchParams] = useSearchParams();
+  const leadId = searchParams.get("leadId");
+
+  // console.log("Lead ID from URL:", leadId);
 
   const {
     data: getHandOverSheet,
     isLoading,
     isError,
     error,
-  } = useGetHandOverByIdQuery({ leadId: LeadId }, { skip: !LeadId });
+  } = useGetHandOverByIdQuery({ leadId }, { skip: !leadId });
 
   const HandOverSheet = Array.isArray(getHandOverSheet?.data)
     ? getHandOverSheet.data
@@ -191,7 +195,7 @@ const GetHandoverSheetForm = ({ onBack }) => {
       : [];
   // console.log("📦 HandOverSheet:", HandOverSheet);
 
-  const handoverData = HandOverSheet.find((item) => item.id === LeadId);
+  const handoverData = HandOverSheet.find((item) => item.id === leadId);
 
   useEffect(() => {
     if (!handoverData) {
@@ -201,7 +205,7 @@ const GetHandoverSheetForm = ({ onBack }) => {
 
     setFormData((prev) => ({
       ...prev,
-      id: LeadId,
+      id: leadId,
       p_id: handoverData?.p_id || "",
       customer_details: {
         ...prev.customer_details,

@@ -70,8 +70,6 @@ const WonEdit_lead = () => {
 
   const leadId = searchParams.get("leadId");
 
-  
-
   const {
     data: getLead,
     isLoading,
@@ -88,16 +86,16 @@ const WonEdit_lead = () => {
   };
 
   useEffect(() => {
-      if (!leadId) {
+    if (!leadId) {
       console.error("Lead ID missing in URL.");
       return;
     }
-      if (getLead?.data) {
+    if (getLead?.data) {
       const lead = Array.isArray(getLead?.data) ? getLead?.data : getLead?.data;
 
       setFormData({
         ...lead,
-        entry_date: formatDateToYYYYMMDD(lead.entry_date), 
+        entry_date: formatDateToYYYYMMDD(lead.entry_date),
       });
     }
   }, [getLead, leadId]);
