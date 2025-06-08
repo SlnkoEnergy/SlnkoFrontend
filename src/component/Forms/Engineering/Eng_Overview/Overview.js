@@ -1,20 +1,17 @@
-import React, { useState } from "react";
 import {
   Box,
-  Sheet,
-  Typography,
   Button,
   Divider,
   List,
   ListItem,
+  Sheet,
+  Typography,
 } from "@mui/joy";
+import axios from "axios";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import {
-  useGetModuleCategoryByIdQuery,
-  useUpdateAttachmentStatusMutation,
-  useUpdateModuleCategoryMutation,
-} from "../../../../redux/Eng/templatesSlice";
 import { toast } from "react-toastify";
+import { useGetModuleCategoryByIdQuery } from "../../../../redux/Eng/templatesSlice";
 
 const Overview = () => {
   const [searchParams] = useSearchParams();
@@ -66,7 +63,6 @@ const Overview = () => {
       newUploads[categoryIndex][fileIndex] = {
         file,
         fileName: file.name,
-        // Add other metadata if needed
       };
 
       return newUploads;
@@ -77,49 +73,76 @@ const Overview = () => {
     (fileGroup) => Object.keys(fileGroup).length > 0
   );
 
-  const [updateModuleCategory] = useUpdateModuleCategoryMutation();
-
   const handleSubmit = async () => {
-    const uploadedData = [];
+    const formData = new FormData();
+    const uploadedItems = [];
 
     Object.entries(fileUploads).forEach(([categoryIndex, fileGroup]) => {
       Object.entries(fileGroup).forEach(([fileIndex, fileObj]) => {
-        uploadedData.push({
-          categoryItemIndex: Number(categoryIndex),
-          fileUrl: fileObj.file, // This should be the actual URL string if your backend expects URLs
-        });
-      });
-    });
-
-    if (!uploadedData.length) {
-      toast.error("No files selected.");
-      return;
-    }
-
-    try {
-      const updatedItems = uploadedData.map((data) => {
-        const item = project.items[data.categoryItemIndex];
+        const item = project.items[categoryIndex];
         const templateId =
           typeof item.template_id === "string"
             ? item.template_id
             : item.template_id._id;
 
-        return {
+        const attachmentNumber = `R${item.attachment_urls.length}`;
+
+        uploadedItems.push({
           template_id: templateId,
-          attachment_urls: [data.fileUrl], // your backend expects URL strings here
-        };
+          attachment_urls: [
+            {
+              attachment_number: attachmentNumber,
+              attachment_url: [],
+            },
+          ],
+        });
+
+        formData.append("files", fileObj.file);
       });
+    });
 
-      console.log("Items being sent:", updatedItems);
+    if (uploadedItems.length === 0) {
+      toast.error("No files selected.");
+      return;
+    }
 
-      const response = await updateModuleCategory({
-        items: updatedItems,
-      }).unwrap();
+    uploadedItems.forEach((item, i) => {
+      formData.append(`items[${i}][template_id]`, item.template_id);
 
-      console.log("Updated successfully:", response);
+      item.attachment_urls.forEach((att, j) => {
+        formData.append(
+          `items[${i}][attachment_urls][${j}][attachment_number]`,
+          att.attachment_number
+        );
+
+        att.attachment_url.forEach((url, k) => {
+          formData.append(
+            `items[${i}][attachment_urls][${j}][attachment_url][${k}]`,
+            url
+          );
+        });
+      });
+    });
+
+    console.log("🧾 Final items payload:", uploadedItems);
+    console.log("📌 projectId:", projectId);
+
+    try {
+      const response = await axios.put(
+        `https://dev.api.slnkoprotrac.com/v1/engineering/update-module-category?projectId=${projectId}`,
+        formData,
+        {
+          headers: {
+            "x-auth-token": localStorage.getItem("authToken"),
+          },
+        }
+      );
+
+      console.log("✅ Updated successfully:", response.data);
       toast.success("Module Category updated successfully!");
+      window.location.reload();
     } catch (error) {
-      console.error("Update error:", error);
+      console.error("❌ Update error:", error.response?.data || error.message);
       toast.error("Failed to update module category.");
     }
   };
@@ -256,7 +279,7 @@ const Overview = () => {
                         )}
                       </Box>
 
-                      {item.attachmentUrls?.length > 0 && (
+                      {/* {item.attachmentUrls?.length > 0 && (
                         <Box sx={{ mt: 2 }}>
                           <Typography
                             level="body-xs"
@@ -278,7 +301,7 @@ const Overview = () => {
                             ))}
                           </ul>
                         </Box>
-                      )}
+                      )} */}
                     </Sheet>
                   ))
                 ) : (
