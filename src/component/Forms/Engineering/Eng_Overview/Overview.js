@@ -16,20 +16,16 @@ import { useGetModuleCategoryByIdQuery } from "../../../../redux/Eng/templatesSl
 const Overview = () => {
   const [searchParams] = useSearchParams();
   const [selected, setSelected] = useState("Electrical");
-  // State to store actual File objects selected by the user
-  // Structure: { categoryItemDisplayIndex: { fileInputIndex: FileObject } }
   const [fileUploads, setFileUploads] = useState({});
 
   const pidFromUrl = searchParams.get("project_id");
   const projectId = pidFromUrl;
 
-  // RTK Query hook to fetch project module category data
   const { data, isLoading, isError, refetch } = useGetModuleCategoryByIdQuery(
     { projectId, engineering: selected },
-    { skip: !projectId } // Skip query if projectId is not available
+    { skip: !projectId }
   );
 
-  // Initialize a structured object to hold category-wise data for display
   const categoryData = {
     Electrical: [],
     Mechanical: [],
@@ -38,25 +34,23 @@ const Overview = () => {
     boq: [],
   };
 
-  const project = data?.data || null; // Access project data or null if not available
+  const project = data?.data || null;
 
-  // Populate categoryData from the fetched project data
   if (project?.items?.length) {
     project.items.forEach((item) => {
       const template = item.template_id;
       const category = template?.engineering_category;
 
       if (category && categoryData[category]) {
-        // Ensure templateId is correctly extracted, whether template_id is an ID string or an object
         const currentTemplateId =
           typeof template === "string" ? template : template?._id;
 
         categoryData[category].push({
-          templateId: currentTemplateId, // This is the crucial template_id needed for the backend
+          templateId: currentTemplateId,
           name: template?.name || "N/A",
           description: template?.description || "No description provided.",
           maxFiles: template?.file_upload?.max_files || 0,
-          // Ensure attachmentUrls is always an array for consistent rendering
+
           attachmentUrls: Array.isArray(item.current_attachment?.attachment_url)
             ? item.current_attachment?.attachment_url
             : item.current_attachment?.attachment_url
@@ -67,13 +61,6 @@ const Overview = () => {
     });
   }
 
-  /**
-   * Handles file selection from an input field.
-   * Updates the fileUploads state with the selected File object.
-   * @param {number} categoryItemDisplayIndex - The visual index of the item in the currently displayed category.
-   * @param {number} fileInputIndex - The index of the specific file input for that item.
-   * @param {File} file - The actual File object selected by the user.
-   */
   const handleFileChange = (categoryItemDisplayIndex, fileInputIndex, file) => {
     setFileUploads((prev) => {
       const newUploads = { ...prev };
@@ -90,7 +77,6 @@ const Overview = () => {
     });
   };
 
-  // Determines if any file has been selected to enable the submit button
   const isAnyFileSelected = Object.values(fileUploads).some(
     (fileGroup) => Object.keys(fileGroup).length > 0
   );
@@ -244,7 +230,7 @@ const Overview = () => {
                 {categoryData[selected].length > 0 ? (
                   categoryData[selected].map((item, index) => (
                     <Sheet
-                      key={index} // Using index here is safe for rendering the list items
+                      key={index}
                       variant="outlined"
                       sx={{
                         p: 3,
@@ -285,7 +271,7 @@ const Overview = () => {
                               type="file"
                               onChange={(e) =>
                                 handleFileChange(
-                                  index, // Pass the display index to correctly link to categoryData
+                                  index,
                                   fileInputIndex,
                                   e.target.files[0]
                                 )
@@ -334,7 +320,7 @@ const Overview = () => {
                 )}
               </Box>
 
-              {/* Submit button, only visible if files are selected */}
+          
               {isAnyFileSelected && (
                 <Box sx={{ textAlign: "right", mt: 4 }}>
                   <Button
