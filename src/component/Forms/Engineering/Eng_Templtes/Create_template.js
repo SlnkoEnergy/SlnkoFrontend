@@ -33,6 +33,7 @@ const CreateTemplate = () => {
     icon_image: "uploads/icons/default.png",
     boq: {
       enabled: false,
+      template_category: [],
     },
     engineering_category: "",
   });
@@ -68,7 +69,10 @@ const CreateTemplate = () => {
         icon_image: formData.icon_image,
         boq: {
           enabled: formData.boq.enabled,
-          template_category: formData.boq.template_category || "",
+
+          template_category: formData.boq.enabled
+            ? formData.boq.template_category
+            : [],
         },
         engineering_category: formData.engineering_category,
       };

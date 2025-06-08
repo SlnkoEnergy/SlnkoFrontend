@@ -11,7 +11,6 @@ import {
 import { useSearchParams } from "react-router-dom";
 import {
   useGetModuleCategoryByIdQuery,
-  useUpdateAttachmentStatusMutation,
   useUpdateModuleCategoryMutation,
 } from "../../../../redux/Eng/templatesSlice";
 import { toast } from "react-toastify";
@@ -19,16 +18,20 @@ import { toast } from "react-toastify";
 const Overview = () => {
   const [searchParams] = useSearchParams();
   const [selected, setSelected] = useState("Electrical");
+  // State to store actual File objects selected by the user
+  // Structure: { categoryItemDisplayIndex: { fileInputIndex: FileObject } }
   const [fileUploads, setFileUploads] = useState({});
 
   const pidFromUrl = searchParams.get("project_id");
   const projectId = pidFromUrl;
 
-  const { data, isLoading, isError } = useGetModuleCategoryByIdQuery(
+  // RTK Query hook to fetch project module category data
+  const { data, isLoading, isError, refetch } = useGetModuleCategoryByIdQuery(
     { projectId, engineering: selected },
-    { skip: !projectId }
+    { skip: !projectId } // Skip query if projectId is not available
   );
 
+  // Initialize a structured object to hold category-wise data for display
   const categoryData = {
     Electrical: [],
     Mechanical: [],
@@ -37,90 +40,151 @@ const Overview = () => {
     boq: [],
   };
 
-  const project = data?.data || "-";
+  const project = data?.data || null; // Access project data or null if not available
 
+  // Populate categoryData from the fetched project data
   if (project?.items?.length) {
     project.items.forEach((item) => {
       const template = item.template_id;
       const category = template?.engineering_category;
 
       if (category && categoryData[category]) {
+        // Ensure templateId is correctly extracted, whether template_id is an ID string or an object
+        const currentTemplateId =
+          typeof template === "string" ? template : template?._id;
+
         categoryData[category].push({
-          name: template.name,
-          description: template.description,
-          maxFiles: template.file_upload?.max_files || 0,
-          attachmentUrls: item.current_attachment?.attachment_url || [],
+          templateId: currentTemplateId, // This is the crucial template_id needed for the backend
+          name: template?.name || "N/A",
+          description: template?.description || "No description provided.",
+          maxFiles: template?.file_upload?.max_files || 0,
+          // Ensure attachmentUrls is always an array for consistent rendering
+          attachmentUrls: Array.isArray(item.current_attachment?.attachment_url)
+            ? item.current_attachment?.attachment_url
+            : item.current_attachment?.attachment_url
+              ? [item.current_attachment.attachment_url]
+              : [],
         });
       }
     });
   }
 
-  const handleFileChange = (categoryIndex, fileIndex, file) => {
+  /**
+   * Handles file selection from an input field.
+   * Updates the fileUploads state with the selected File object.
+   * @param {number} categoryItemDisplayIndex - The visual index of the item in the currently displayed category.
+   * @param {number} fileInputIndex - The index of the specific file input for that item.
+   * @param {File} file - The actual File object selected by the user.
+   */
+  const handleFileChange = (categoryItemDisplayIndex, fileInputIndex, file) => {
     setFileUploads((prev) => {
       const newUploads = { ...prev };
-
-      if (!newUploads[categoryIndex]) {
-        newUploads[categoryIndex] = {};
+      if (!newUploads[categoryItemDisplayIndex]) {
+        newUploads[categoryItemDisplayIndex] = {};
       }
-
-      newUploads[categoryIndex][fileIndex] = {
-        file,
-        fileName: file.name,
-        // Add other metadata if needed
-      };
-
+      newUploads[categoryItemDisplayIndex][fileInputIndex] = file;
       return newUploads;
     });
   };
 
-  const isAnyFileUploaded = Object.values(fileUploads).some(
+  // Determines if any file has been selected to enable the submit button
+  const isAnyFileSelected = Object.values(fileUploads).some(
     (fileGroup) => Object.keys(fileGroup).length > 0
   );
 
+  // RTK Query mutation hook for updating module categories
   const [updateModuleCategory] = useUpdateModuleCategoryMutation();
 
+  /**
+   * Handles the submission of selected files to the backend.
+   * Constructs FormData containing both files and JSON data.
+   */
   const handleSubmit = async () => {
-    const uploadedData = [];
-
-    Object.entries(fileUploads).forEach(([categoryIndex, fileGroup]) => {
-      Object.entries(fileGroup).forEach(([fileIndex, fileObj]) => {
-        uploadedData.push({
-          categoryItemIndex: Number(categoryIndex),
-          fileUrl: fileObj.file, // This should be the actual URL string if your backend expects URLs
-        });
-      });
-    });
-
-    if (!uploadedData.length) {
-      toast.error("No files selected.");
+    if (!projectId) {
+      toast.error("Project ID is missing. Cannot upload files.");
       return;
     }
 
+    if (!isAnyFileSelected) {
+      toast.info("Please select files to upload before submitting.");
+      return;
+    }
+
+    const formData = new FormData();
+    const itemsToUpdate = []; // This array will contain objects like { template_id: "..." }
+
+    // Iterate through the `fileUploads` state to prepare data and append files
+    // `fileUploads` keys (categoryItemDisplayIndexStr) correspond to the `index` used in `categoryData[selected].map`
+    Object.entries(fileUploads).forEach(
+      ([categoryItemDisplayIndexStr, fileGroup]) => {
+        const categoryItemDisplayIndex = Number(categoryItemDisplayIndexStr);
+
+        // Get the corresponding item from the currently selected category's data (e.g., Electrical)
+        const itemInSelectedCategory =
+          categoryData[selected][categoryItemDisplayIndex];
+
+        if (itemInSelectedCategory && itemInSelectedCategory.templateId) {
+          // Add the template_id to the itemsToUpdate array.
+          // This is essential for the backend to associate uploaded files with the correct template.
+          itemsToUpdate.push({
+            template_id: itemInSelectedCategory.templateId,
+          });
+
+          // Append each actual File object to the FormData.
+          // The backend typically expects files under the key "files" (e.g., `multer.array('files')`).
+          Object.values(fileGroup).forEach((file) => {
+            if (file instanceof File) {
+              // Ensure we're appending a valid File object
+              formData.append("files", file);
+            }
+          });
+        } else {
+          console.warn(
+            `Skipping item at display index ${categoryItemDisplayIndex} due to missing data or templateId.`
+          );
+        }
+      }
+    );
+
+    // CRITICAL PART: Append the JSON data (project_id and items array) under the "data" field.
+    // The backend's `req.body.data` will parse this string.
+    // IMPORTANT: Use 'project_id' as the key within this JSON to match backend's expectation.
+    formData.append(
+      "data",
+      JSON.stringify({ project_id: projectId, items: itemsToUpdate })
+    );
+
+    // --- Debugging Logs (You can remove these after it works) ---
+    console.log("Debug - fileUploads state:", fileUploads);
+    console.log("Debug - itemsToUpdate array sent to backend:", itemsToUpdate);
+    console.log(
+      "Debug - FormData 'data' field JSON string:",
+      JSON.stringify({ project_id: projectId, items: itemsToUpdate })
+    );
+    // --- End Debugging Logs ---
+
     try {
-      const updatedItems = uploadedData.map((data) => {
-        const item = project.items[data.categoryItemIndex];
-        const templateId =
-          typeof item.template_id === "string"
-            ? item.template_id
-            : item.template_id._id;
-
-        return {
-          template_id: templateId,
-          attachment_urls: [data.fileUrl], // your backend expects URL strings here
-        };
-      });
-
-      console.log("Items being sent:", updatedItems);
-
+      // Call the mutation. RTK Query's fetchBaseQuery automatically sets
+      // Content-Type to 'multipart/form-data' because `body` is a FormData object.
       const response = await updateModuleCategory({
-        items: updatedItems,
-      }).unwrap();
+        projectId: projectId, // This is passed as a query parameter for the URL
+        body: formData, // The FormData object containing both files and JSON data
+      }).unwrap(); // .unwrap() automatically throws if the mutation fails (e.g., non-2xx status)
 
-      console.log("Updated successfully:", response);
+      console.log("Update successful:", response);
       toast.success("Module Category updated successfully!");
+      setFileUploads({}); // Clear selected files from the state
+      refetch(); // Re-fetch the data to display newly uploaded attachments
     } catch (error) {
       console.error("Update error:", error);
-      toast.error("Failed to update module category.");
+      // Display a more specific error message from the backend if available
+      if (error.data && error.data.message) {
+        toast.error(`Failed to update module category: ${error.data.message}`);
+      } else {
+        toast.error(
+          "Failed to update module category. Please check console for details."
+        );
+      }
     }
   };
 
@@ -137,7 +201,7 @@ const Overview = () => {
       }}
     >
       <Box sx={{ display: "flex", flexGrow: 1, gap: 3 }}>
-        {/* Sidebar */}
+        {/* Sidebar for Categories */}
         <Sheet
           variant="outlined"
           sx={{
@@ -169,8 +233,7 @@ const Overview = () => {
           </List>
         </Sheet>
 
-        {/* Main Content */}
-        {/* Main Content */}
+        {/* Main Content Area for Documentation */}
         <Sheet
           variant="outlined"
           sx={{
@@ -189,16 +252,18 @@ const Overview = () => {
           <Divider sx={{ mb: 3 }} />
 
           {isLoading ? (
-            <Typography>Loading...</Typography>
+            <Typography>Loading documentation...</Typography>
           ) : isError ? (
-            <Typography color="danger">Error fetching data.</Typography>
+            <Typography color="danger">
+              Error fetching documentation.
+            </Typography>
           ) : (
             <>
               <Box sx={{ display: "grid", gap: 3 }}>
                 {categoryData[selected].length > 0 ? (
                   categoryData[selected].map((item, index) => (
                     <Sheet
-                      key={index}
+                      key={index} // Using index here is safe for rendering the list items
                       variant="outlined"
                       sx={{
                         p: 3,
@@ -214,7 +279,7 @@ const Overview = () => {
                         level="body-sm"
                         sx={{ color: "text.secondary", mb: 2 }}
                       >
-                        {item.description || "No description provided."}
+                        {item.description}
                       </Typography>
 
                       <Typography level="body-xs" sx={{ fontWeight: 600 }}>
@@ -233,14 +298,14 @@ const Overview = () => {
                         }}
                       >
                         {Array.from({ length: item.maxFiles }).map(
-                          (_, fileIndex) => (
+                          (_, fileInputIndex) => (
                             <input
-                              key={fileIndex}
+                              key={fileInputIndex}
                               type="file"
                               onChange={(e) =>
                                 handleFileChange(
-                                  index,
-                                  fileIndex,
+                                  index, // Pass the display index to correctly link to categoryData
+                                  fileInputIndex,
                                   e.target.files[0]
                                 )
                               }
@@ -256,6 +321,7 @@ const Overview = () => {
                         )}
                       </Box>
 
+                      {/* Display previously uploaded attachments */}
                       {item.attachmentUrls?.length > 0 && (
                         <Box sx={{ mt: 2 }}>
                           <Typography
@@ -282,11 +348,14 @@ const Overview = () => {
                     </Sheet>
                   ))
                 ) : (
-                  <Typography>No data found for {selected}.</Typography>
+                  <Typography>
+                    No documentation found for {selected}.
+                  </Typography>
                 )}
               </Box>
 
-              {isAnyFileUploaded && (
+              {/* Submit button, only visible if files are selected */}
+              {isAnyFileSelected && (
                 <Box sx={{ textAlign: "right", mt: 4 }}>
                   <Button
                     variant="solid"
