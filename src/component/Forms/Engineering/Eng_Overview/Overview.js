@@ -9,7 +9,12 @@ import {
   ListItem,
 } from "@mui/joy";
 import { useSearchParams } from "react-router-dom";
-import { useGetModuleCategoryByIdQuery } from "../../../../redux/Eng/templatesSlice";
+import {
+  useGetModuleCategoryByIdQuery,
+  useUpdateAttachmentStatusMutation,
+  useUpdateModuleCategoryMutation,
+} from "../../../../redux/Eng/templatesSlice";
+import { toast } from "react-toastify";
 
 const Overview = () => {
   const [searchParams] = useSearchParams();
@@ -53,10 +58,17 @@ const Overview = () => {
   const handleFileChange = (categoryIndex, fileIndex, file) => {
     setFileUploads((prev) => {
       const newUploads = { ...prev };
+
       if (!newUploads[categoryIndex]) {
         newUploads[categoryIndex] = {};
       }
-      newUploads[categoryIndex][fileIndex] = file;
+
+      newUploads[categoryIndex][fileIndex] = {
+        file,
+        fileName: file.name,
+        // Add other metadata if needed
+      };
+
       return newUploads;
     });
   };
@@ -65,21 +77,51 @@ const Overview = () => {
     (fileGroup) => Object.keys(fileGroup).length > 0
   );
 
-  const handleSubmit = () => {
+  const [updateModuleCategory] = useUpdateModuleCategoryMutation();
+
+  const handleSubmit = async () => {
     const uploadedData = [];
 
     Object.entries(fileUploads).forEach(([categoryIndex, fileGroup]) => {
-      Object.entries(fileGroup).forEach(([fileIndex, file]) => {
+      Object.entries(fileGroup).forEach(([fileIndex, fileObj]) => {
         uploadedData.push({
-          categoryItemIndex: categoryIndex,
-          fileIndex: fileIndex,
-          file: file,
+          categoryItemIndex: Number(categoryIndex),
+          fileUrl: fileObj.file, // This should be the actual URL string if your backend expects URLs
         });
       });
     });
 
-    console.log("Submitting uploaded files:", uploadedData);
-    alert("Files ready for submission! Check console for data.");
+    if (!uploadedData.length) {
+      toast.error("No files selected.");
+      return;
+    }
+
+    try {
+      const updatedItems = uploadedData.map((data) => {
+        const item = project.items[data.categoryItemIndex];
+        const templateId =
+          typeof item.template_id === "string"
+            ? item.template_id
+            : item.template_id._id;
+
+        return {
+          template_id: templateId,
+          attachment_urls: [data.fileUrl], // your backend expects URL strings here
+        };
+      });
+
+      console.log("Items being sent:", updatedItems);
+
+      const response = await updateModuleCategory({
+        items: updatedItems,
+      }).unwrap();
+
+      console.log("Updated successfully:", response);
+      toast.success("Module Category updated successfully!");
+    } catch (error) {
+      console.error("Update error:", error);
+      toast.error("Failed to update module category.");
+    }
   };
 
   return (
@@ -165,34 +207,29 @@ const Overview = () => {
                         bgcolor: "background.surface",
                       }}
                     >
-                      <Typography level="title-md" fontWeight="lg">
-                        📄 {item.name}
+                      <Typography level="title-md" sx={{ mb: 1 }}>
+                        📁 {item.name}
                       </Typography>
                       <Typography
                         level="body-sm"
-                        sx={{ mt: 0.5, color: "text.secondary" }}
+                        sx={{ color: "text.secondary", mb: 2 }}
                       >
-                        {item.description}
+                        {item.description || "No description provided."}
                       </Typography>
 
-                      <Typography
-                        level="body-xs"
-                        sx={{
-                          mt: 1,
-                          mb: 1,
-                          fontWeight: "md",
-                          color: "primary.plainColor",
-                        }}
-                      >
+                      <Typography level="body-xs" sx={{ fontWeight: 600 }}>
                         Max Uploads Allowed: {item.maxFiles}
                       </Typography>
 
                       <Box
                         sx={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 1,
-                          mt: 1,
+                          display: "grid",
+                          gridTemplateColumns: {
+                            xs: "1fr",
+                            sm: "repeat(auto-fit, minmax(200px, 1fr))",
+                          },
+                          gap: 1.5,
+                          mt: 1.5,
                         }}
                       >
                         {Array.from({ length: item.maxFiles }).map(
@@ -212,11 +249,36 @@ const Overview = () => {
                                 border: "1px solid #ccc",
                                 borderRadius: "6px",
                                 backgroundColor: "#fff",
+                                width: "100%",
                               }}
                             />
                           )
                         )}
                       </Box>
+
+                      {item.attachmentUrls?.length > 0 && (
+                        <Box sx={{ mt: 2 }}>
+                          <Typography
+                            level="body-xs"
+                            sx={{ fontWeight: 500, mb: 0.5 }}
+                          >
+                            Previously Uploaded:
+                          </Typography>
+                          <ul style={{ paddingLeft: "1rem", margin: 0 }}>
+                            {item.attachmentUrls.map((url, i) => (
+                              <li key={i}>
+                                <a
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  File {i + 1}
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        </Box>
+                      )}
                     </Sheet>
                   ))
                 ) : (

@@ -68,6 +68,7 @@ const CreateTemplate = () => {
         icon_image: formData.icon_image,
         boq: {
           enabled: formData.boq.enabled,
+          template_category: formData.boq.template_category || "",
         },
         engineering_category: formData.engineering_category,
       };

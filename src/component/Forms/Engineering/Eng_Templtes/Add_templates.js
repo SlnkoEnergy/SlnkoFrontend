@@ -179,7 +179,7 @@ const AddTemplatesPage = () => {
       // Step 5: Post ONE document with all rows (column-wise)
       await createBoqTemplateRow(payload).unwrap();
       await updateModuleTemplateCategory({
-        _id: moduleId, // make sure moduleId is defined
+        _id: moduleId,
         template_category: boqCategoryId,
       }).unwrap();
 

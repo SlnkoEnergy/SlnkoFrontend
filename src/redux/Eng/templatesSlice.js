@@ -123,6 +123,15 @@ export const templatesApi = createApi({
         `get-module-category-id?projectId=${projectId}&engineering=${engineering}`,
       providesTags: ["Template"],
     }),
+
+    updateModuleCategory: builder.mutation({
+      query: ({ projectId, items }) => ({
+        url: `update-module-category?projectId=${projectId}`,
+        method: "PUT",
+        body: { items },
+      }),
+      invalidatesTags: ["Template"],
+    }),
   }),
 });
 
@@ -140,4 +149,5 @@ export const {
   useGetAllBoqTemplatesQuery,
   useUpdateModuleTemplateIdMutation,
   useGetModuleCategoryByIdQuery,
+  useUpdateModuleCategoryMutation,
 } = templatesApi;
