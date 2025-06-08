@@ -20,6 +20,7 @@ import { paymentsApi } from "../redux/paymentsSlice";
 import { projectsApi } from "../redux/projectsSlice";
 import { purchasesApi } from "../redux/purchasesSlice";
 import { tasksApi } from "../redux/tasksSlice";
+import { masterSheetApi } from "../redux/Eng/masterSheet";
 
 export const store = configureStore({
   reducer: {
@@ -44,6 +45,7 @@ export const store = configureStore({
     [expensesApi.reducerPath]: expensesApi.reducer,
     [templatesApi.reducerPath]: templatesApi.reducer,
     [billsApi.reducerPath]: billsApi.reducer,
+    [masterSheetApi.reducerPath]: masterSheetApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -67,6 +69,7 @@ export const store = configureStore({
       engsTransformerApi.middleware,
       expensesApi.middleware,
       templatesApi.middleware,
-      billsApi.middleware
+      billsApi.middleware,
+      masterSheetApi.middleware
     ),
 });

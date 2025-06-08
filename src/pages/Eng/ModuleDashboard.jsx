@@ -3,11 +3,9 @@ import Button from "@mui/joy/Button";
 import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider, useColorScheme } from "@mui/joy/styles";
 import { React, useState } from "react";
-// import Button from '@mui/joy/Button';
 import Breadcrumbs from "@mui/joy/Breadcrumbs";
 import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
-// import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import { useRef } from "react";
@@ -23,23 +21,17 @@ import BOSTab from "../../component/Modules/Eng_BOS";
 import PoolingTab from "../../component/Modules/Eng_Pooling";
 import ModuleTab from "../../component/Modules/Eng_Modules";
 import DCCableTab from "../../component/Modules/Eng_DC_Cable";
+import { useGetAllMaterialCategoryQuery } from "../../redux/Eng/masterSheet";
 
 function ModuleSheet() {
   const allEngRef = useRef();
   const navigate = useNavigate();
   const [selectedModule, setSelectedModule] = useState("Module");
+const { data, isLoading } = useGetAllMaterialCategoryQuery();
+const categoryData = data?.data || [];
 
-  const moduleOptions = [
-    "Module",
-    "Inverter",
-    "Transformer",
-    "LT Panel",
-    "HT Panel",
-    "AC Cable",
-    "DC Cable",
-    "BOS Items",
-    "Pooling Station",
-  ];
+// Extract names for module options
+const moduleOptions = categoryData.map(category => category.name);
 
   const handleExportToCSV = () => {
     if (allEngRef.current?.exportToCSV) {
@@ -59,11 +51,11 @@ function ModuleSheet() {
         return <HTPanelTab ref={allEngRef} />;
       case "AC Cable":
         return <ACCableTab ref={allEngRef} />;
-        case "DC Cable":
+      case "DC Cable":
         return <DCCableTab ref={allEngRef} />;
-        case "BOS Items":
+      case "BOS Items":
         return <BOSTab ref={allEngRef} />;
-        case "Pooling Station":
+      case "Pooling Station":
         return <PoolingTab ref={allEngRef} />;
       default:
         return <ModuleTab ref={allEngRef} />;
@@ -85,10 +77,6 @@ function ModuleSheet() {
   );
 }
 
-const getAddNewButtonLabel = (module) => {
-  if (module === "Module") return "Add New Module";
-  return `Add New ${module}+`;
-};
 
 const getAddNewRoute = (module) => {
   switch (module) {
@@ -102,7 +90,7 @@ const getAddNewRoute = (module) => {
       return "/add_ht_panel";
     case "AC Cable":
       return "/add_ac_cable";
-      case "DC Cable":
+    case "DC Cable":
       return "/add_dc_cable";
     case "BOS Items":
       return "/add_bos";
@@ -112,7 +100,6 @@ const getAddNewRoute = (module) => {
       return "/add_module";
   }
 };
-
 
 function LeadPage({
   navigate,
@@ -190,7 +177,6 @@ function LeadPage({
           }}
         >
           <Typography level="h2" component="h1">
-            {/* {selectedLead} Leads */}
             Engineering
           </Typography>
 
@@ -203,44 +189,13 @@ function LeadPage({
               justifyContent: "center",
             }}
           >
-            {/* {(selectedLead === "Won" ||
-              selectedLead === "Follow Up" ||
-              selectedLead === "Warm") && (
-              <Button
-                color="primary"
-                size="sm"
-                onClick={() => navigate("/comm_offer")}
-              >
-                Commercial Offer
-              </Button>
-            )} */}
-
-            {/* <Button
-              color="primary"
-              size="sm"
-              onClick={() => navigate("/add_module")}
-            >
-              Add New Module
-            </Button> */}
             <Button
-  color="primary"
-  size="sm"
-  onClick={() => navigate(getAddNewRoute(selectedModule))}
->
-  {getAddNewButtonLabel(selectedModule)}
-</Button>
-
-
-            {/* {selectedLead === "Initial" && (
-              <Button
-                color="primary"
-                size="sm"
-                onClick={() => navigate("/add_lead")}
-              >
-                Add New Leads +
-              </Button>
-            )} */}
-
+            color="primary"
+            size="sm"
+            onClick={() => navigate("/add_material_category")}
+            >
+             Add Material Category
+            </Button>
             <Button
               color="primary"
               startDecorator={<DownloadRoundedIcon />}
@@ -257,7 +212,7 @@ function LeadPage({
           component="ul"
           sx={{
             display: "flex",
-            flexDirection: {md:"row", xs:"column"},
+            flexDirection: { md: "row", xs: "column" },
             alignItems: "center",
             justifyContent: "flex-start",
             padding: 0,
