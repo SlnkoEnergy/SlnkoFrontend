@@ -30,6 +30,7 @@ const AddTemplatesPage = () => {
     description: "",
     boqHeaders: [],
     boqRows: [],
+    BOMSummary: "",
   });
 
   // Store the submitted category ID after headers submission
@@ -183,6 +184,7 @@ const AddTemplatesPage = () => {
   const handleSubmitRows = async (e) => {
     e.preventDefault();
     console.log("handleSubmitRows called");
+
     if (!submittedCategoryId) {
       return alert("Please submit headers first before submitting rows.");
     }
@@ -191,9 +193,9 @@ const AddTemplatesPage = () => {
       return alert("No rows to submit.");
     }
 
-    // Filter rows that have any non-empty value
+    // Filter out completely empty rows
     const filteredBoqRows = templateData.boqRows.filter((row) =>
-      Object.values(row).some((val) => val !== "")
+      Object.values(row).some((val) => val?.trim?.() !== "")
     );
 
     if (filteredBoqRows.length === 0) {
@@ -201,7 +203,7 @@ const AddTemplatesPage = () => {
     }
 
     try {
-      // Build column-wise data array for all rows
+      // Construct column-wise data structure
       const dataForAllRows = templateData.boqHeaders.map((header) => ({
         name: header.columnName,
         values: filteredBoqRows.map((row) => ({
@@ -211,10 +213,11 @@ const AddTemplatesPage = () => {
 
       const payload = {
         boq_category: submittedCategoryId,
+        module_template: moduleId,
         data: dataForAllRows,
       };
 
-      // console.log("Posting rows payload:", JSON.stringify(payload, null, 2));
+      console.log("Posting rows payload:", JSON.stringify(payload, null, 2));
 
       await createBoqTemplateRow(payload).unwrap();
 

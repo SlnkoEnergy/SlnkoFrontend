@@ -7,17 +7,26 @@ import {
   Divider,
   List,
   ListItem,
+  IconButton,
+  Select,
+  Option,
+  Tooltip,
 } from "@mui/joy";
 import { useSearchParams } from "react-router-dom";
 import {
   useGetModuleCategoryByIdQuery,
   useUpdateModuleCategoryMutation,
 } from "../../../../redux/Eng/templatesSlice";
+import Modal from "@mui/joy/Modal";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import { toast } from "react-toastify";
 
 const Overview = () => {
   const [searchParams] = useSearchParams();
   const [selected, setSelected] = useState("Electrical");
+  const [openModalIndex, setOpenModalIndex] = useState(null);
+  const [tableData, setTableData] = useState([]);
+
   // State to store actual File objects selected by the user
   // Structure: { categoryItemDisplayIndex: { fileInputIndex: FileObject } }
   const [fileUploads, setFileUploads] = useState({});
@@ -246,11 +255,141 @@ const Overview = () => {
             bgcolor: "#f9fafb",
           }}
         >
-          <Typography level="h4" fontWeight="xl" sx={{ mb: 3 }}>
-            {selected} Documentation
-          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              mb: 3,
+            }}
+          >
+            <Typography level="h4" fontWeight="xl">
+              {selected} Documentation
+            </Typography>
+            <Tooltip title="View BOQ" variant="outlined" arrow>
+              <IconButton
+                size="sm"
+                variant="soft"
+                onClick={() => {
+                  setOpenModalIndex(0);
+                  setTableData([
+                    { make: "ABC", rating: "5", description: "Good quality" },
+                    { make: "XYZ", rating: "4", description: "Moderate" },
+                  ]);
+                }}
+              >
+                <VisibilityIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+
+          {/* Modal Table */}
+          <Modal
+            open={openModalIndex !== null}
+            onClose={() => setOpenModalIndex(null)}
+          >
+            <Sheet
+              sx={{
+                width: 500,
+                mx: "auto",
+                mt: "10vh",
+                p: 4,
+                borderRadius: "lg",
+                boxShadow: "lg",
+                bgcolor: "background.surface",
+              }}
+            >
+              <Typography level="h6" mb={2}>
+                📋 Document Info
+              </Typography>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  marginBottom: "1rem",
+                }}
+              >
+                <thead>
+                  <tr>
+                    <th
+                      style={{
+                        textAlign: "left",
+                        padding: "8px",
+                        borderBottom: "1px solid #ccc",
+                      }}
+                    >
+                      Make
+                    </th>
+                    <th
+                      style={{
+                        textAlign: "left",
+                        padding: "8px",
+                        borderBottom: "1px solid #ccc",
+                      }}
+                    >
+                      Rating
+                    </th>
+                    <th
+                      style={{
+                        textAlign: "left",
+                        padding: "8px",
+                        borderBottom: "1px solid #ccc",
+                      }}
+                    >
+                      Description
+                    </th>
+                    <th
+                      style={{
+                        textAlign: "left",
+                        padding: "8px",
+                        borderBottom: "1px solid #ccc",
+                      }}
+                    >
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tableData.map((row, i) => (
+                    <tr key={i}>
+                      <td style={{ padding: "8px" }}>
+                        <Select
+                          size="sm"
+                          value={row.make}
+                          onChange={(_, val) => {
+                            const updated = [...tableData];
+                            updated[i].make = val;
+                            setTableData(updated);
+                          }}
+                        >
+                          <Option value="ABC">ABC</Option>
+                          <Option value="XYZ">XYZ</Option>
+                          <Option value="DEF">DEF</Option>
+                        </Select>
+                      </td>
+                      <td style={{ padding: "8px" }}>{row.rating}</td>
+                      <td style={{ padding: "8px" }}>{row.description}</td>
+                      <td style={{ padding: "8px" }}>
+                        <Button
+                          size="sm"
+                          onClick={() => alert("Action on row " + i)}
+                        >
+                          ✅ Action
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <Box sx={{ textAlign: "right" }}>
+                <Button onClick={() => setOpenModalIndex(null)}>Submit</Button>
+              </Box>
+            </Sheet>
+          </Modal>
+
           <Divider sx={{ mb: 3 }} />
 
+          {/* Main Documentation Content */}
           {isLoading ? (
             <Typography>Loading documentation...</Typography>
           ) : isError ? (
@@ -260,10 +399,10 @@ const Overview = () => {
           ) : (
             <>
               <Box sx={{ display: "grid", gap: 3 }}>
-                {categoryData[selected].length > 0 ? (
+                {categoryData[selected]?.length > 0 ? (
                   categoryData[selected].map((item, index) => (
                     <Sheet
-                      key={index} // Using index here is safe for rendering the list items
+                      key={index}
                       variant="outlined"
                       sx={{
                         p: 3,
@@ -304,7 +443,7 @@ const Overview = () => {
                               type="file"
                               onChange={(e) =>
                                 handleFileChange(
-                                  index, // Pass the display index to correctly link to categoryData
+                                  index,
                                   fileInputIndex,
                                   e.target.files[0]
                                 )
@@ -321,7 +460,7 @@ const Overview = () => {
                         )}
                       </Box>
 
-                      {/* Display previously uploaded attachments */}
+                      {/* Previously uploaded files */}
                       {item.attachmentUrls?.length > 0 && (
                         <Box sx={{ mt: 2 }}>
                           <Typography
@@ -354,7 +493,7 @@ const Overview = () => {
                 )}
               </Box>
 
-              {/* Submit button, only visible if files are selected */}
+              {/* Submit Button */}
               {isAnyFileSelected && (
                 <Box sx={{ textAlign: "right", mt: 4 }}>
                   <Button
