@@ -87,7 +87,6 @@ const AllExpense = forwardRef((props, ref) => {
       const submittedBy = expense.emp_name?.trim() || "";
       // const expenseDepartment = expense.department?.trim() || "";
 
-
       const allowedStatuses = [
         "submitted",
         "manager approval",
@@ -112,12 +111,21 @@ const AllExpense = forwardRef((props, ref) => {
 
       const isSubmittedByUser = submittedBy === userName;
 
-  
-      const isMayank = userName === "Mayank Kumar";
-      const canSeeProjects = isMayank && userRole === "Projects";
+      const projectViewUsers = [
+        "Mayank Kumar",
+        "Shyam Singh",
+        "Raghav Kumar Jha",
+      ];
+      const canSeeProjects =
+        projectViewUsers.includes(userName) && userRole === "Projects";
+
+      const internalViewUsers = ["Prachi Singh"];
+      const canSeeInternal =
+        internalViewUsers.includes(userName) && userRole === "Internal";
 
       return (
-        matchesSearchQuery && (isAdmin || isSubmittedByUser || canSeeProjects)
+        matchesSearchQuery &&
+        (isAdmin || isSubmittedByUser || canSeeProjects || canSeeInternal)
       );
     })
     .sort((a, b) => {

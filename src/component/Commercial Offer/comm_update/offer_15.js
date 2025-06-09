@@ -86,7 +86,7 @@ const Summary = () => {
     const fetchData = async () => {
       try {
         const offerRate = localStorage.getItem("offer_summary");
-        console.log("Fetched offer_id from localStorage:", offerRate);
+        // console.log("Fetched offer_id from localStorage:", offerRate);
 
         if (!offerRate) {
           console.error("Offer ID not found in localStorage");
@@ -108,9 +108,9 @@ const [response, result, answer] = await Promise.all([
         const fetchedScmData = result.data[0];
         const fetchedBdData = answer.data;
 
-        console.log("Fetched Offer Data:", fetchedData);
-        console.log("Fetched SCM Rate Data:", fetchedScmData);
-        console.log("Fetched BD Rate Data:", fetchedBdData);
+        // console.log("Fetched Offer Data:", fetchedData);
+        // console.log("Fetched SCM Rate Data:", fetchedScmData);
+        // console.log("Fetched BD Rate Data:", fetchedBdData);
 
         const offerFetchData = fetchedData.find(
           (item) => item.offer_id === offerRate

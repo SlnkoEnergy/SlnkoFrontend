@@ -702,7 +702,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
-        ) : (user?.department === "BD") ? (
+        ) : user?.department === "BD" ? (
           <List>
             <ListItem nested>
               <Toggler
@@ -741,6 +741,42 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <AccountBalanceWalletIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">Expense Sheet</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton
+                      onClick={() => navigate("/expense_dashboard")}
+                    >
+                      User Dashboard
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+          </List>
+        ) : user?.department === "Internal" ? (
+          <List>
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -925,9 +961,8 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
-        ) : user?.role === "executive" &&
-          (user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Prachi Singh") ? (
+        ) : user?.name === "Guddu Rani Dubey" ||
+          user?.name === "Prachi Singh" ? (
           <List
             size="sm"
             sx={{
@@ -1210,6 +1245,15 @@ function Sidebar() {
                       User Dashboard
                     </ListItemButton>
                   </ListItem>
+                  {user?.name === "Prachi Singh" && (
+                    <ListItem>
+                      <ListItemButton
+                        onClick={() => navigate("/expense_approval")}
+                      >
+                        Expense Manager Approval
+                      </ListItemButton>
+                    </ListItem>
+                  )}
                 </List>
               </Toggler>
             </ListItem>
@@ -1960,13 +2004,13 @@ function Sidebar() {
               )}
             >
               <List sx={{ gap: 0.5 }}>
-                 <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton
-                      onClick={() => navigate("/expense_dashboard")}
-                    >
-                      User Dashboard
-                    </ListItemButton>
-                  </ListItem>
+                <ListItem sx={{ mt: 0.5 }}>
+                  <ListItemButton
+                    onClick={() => navigate("/expense_dashboard")}
+                  >
+                    User Dashboard
+                  </ListItemButton>
+                </ListItem>
                 <ListItem>
                   <ListItemButton onClick={() => navigate("/expense_approval")}>
                     Expense Manager Approval
@@ -2019,7 +2063,11 @@ function Sidebar() {
               </List>
             </Toggler>
           </ListItem>
-        ) : user?.department === "Projects" ? (
+        ) : user?.department === "Projects" ||
+          user?.department === "Marketing" ||
+          user?.department === "Internal" ||
+          user?.department === "Engineering" ||
+          user?.department === "CAM" ? (
           <ListItem nested>
             <Toggler
               renderToggle={({ open, setOpen }) => (
@@ -2053,7 +2101,7 @@ function Sidebar() {
               </List>
             </Toggler>
           </ListItem>
-        ) : user?.department === "eng" &&
+        ) : user?.department === "Engineering" &&
           (user?.name === "Rishav Mahato" ||
             user?.name === "Dhruv Choudhary") ? (
           <List

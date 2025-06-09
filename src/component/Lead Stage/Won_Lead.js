@@ -1,5 +1,6 @@
 import { Player } from "@lottiefiles/react-lottie-player";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import InfoOutlined from "@mui/icons-material/InfoOutlined";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
@@ -15,7 +16,6 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
-import InfoOutlined from "@mui/icons-material/InfoOutlined";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
@@ -25,8 +25,8 @@ import NextPlanIcon from "@mui/icons-material/NextPlan";
 import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
 // import EditSquareIcon from '@mui/icons-material/EditSquare';
 
-import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditNoteIcon from "@mui/icons-material/EditNote";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../../assets/Lotties/animation-loading.json";
@@ -46,10 +46,7 @@ import {
 import { forwardRef, useCallback, useImperativeHandle } from "react";
 import { toast } from "react-toastify";
 import NoData from "../../assets/alert-bell.svg";
-import {
-  useGetHandOverByIdQuery,
-  useGetHandOverQuery,
-} from "../../redux/camsSlice";
+import { useGetHandOverByIdQuery } from "../../redux/camsSlice";
 import { useGetWonLeadsQuery } from "../../redux/leadsSlice";
 
 const StandByRequest = forwardRef((props, ref) => {
@@ -68,7 +65,7 @@ const StandByRequest = forwardRef((props, ref) => {
   const { data: getLead = [], isLoading, error } = useGetWonLeadsQuery();
   const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
 
-  console.log("Leads:", leads);
+  // console.log("Leads:", leads);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userDetails");
@@ -105,7 +102,7 @@ const StandByRequest = forwardRef((props, ref) => {
     [getHandOverSheet]
   );
 
-  // console.log("HandOverSheet:", HandOverSheet);
+  console.log("HandOverSheet:", HandOverSheet);
 
   const status_handOver = (leadId) => {
     const matchedLead = leads?.find((lead) => lead.leadId === leadId);
@@ -182,7 +179,7 @@ const StandByRequest = forwardRef((props, ref) => {
   };
 
   const RowMenu = ({ currentPage, id, _id, leadId }) => {
-    console.log(leadId);
+    // console.log(leadId);
     return (
       <Dropdown>
         <MenuButton
@@ -212,13 +209,13 @@ const StandByRequest = forwardRef((props, ref) => {
             color="primary"
             onClick={() => {
               const page = currentPage;
-              const leadId = String(id);
+              const ID = String(leadId);
 
               // const projectID = Number(p_id);
               setOpen(true);
-              localStorage.setItem("stage_next3", leadId);
+              localStorage.setItem("stage_next3", ID);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/won_to_all?page=${page}&${leadId}`);
+              navigate(`/won_to_all?page=${page}&${ID}`);
             }}
           >
             <NextPlanIcon />
@@ -228,11 +225,11 @@ const StandByRequest = forwardRef((props, ref) => {
             color="primary"
             onClick={() => {
               const page = currentPage;
-              const leadId = String(id);
+              const ID = String(leadId);
               // const projectID = Number(p_id);
-              localStorage.setItem("view_won_history", leadId);
+              localStorage.setItem("view_won_history", ID);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/won_records?page=${page}&${leadId}`);
+              navigate(`/won_records?page=${page}&${ID}`);
             }}
           >
             <ManageHistoryIcon />
@@ -242,11 +239,11 @@ const StandByRequest = forwardRef((props, ref) => {
             color="primary"
             onClick={() => {
               const page = currentPage;
-              const leadId = String(id);
+              // const leadId = String(leadId);
               // const projectID = Number(p_id);
-              localStorage.setItem("add_task_won", leadId);
+              // localStorage.setItem("add_task_won", leadId);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/add_task_won?page=${page}&${leadId}`);
+              navigate(`/add_task_won?page=${page}&leadId=${leadId}`);
             }}
           >
             <AddCircleOutlineIcon />
@@ -256,11 +253,11 @@ const StandByRequest = forwardRef((props, ref) => {
             color="primary"
             onClick={() => {
               const page = currentPage;
-              const leadId1 = leadId;
+              // const leadId = leadId;
               // const projectID = Number(p_id);
-              localStorage.setItem("hand_Over", leadId1);
+              // localStorage.setItem("hand_Over", leadId1);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/hand_over?page=${page}&${leadId1}`);
+              navigate(`/hand_over?page=${page}&leadId=${leadId}`);
             }}
           >
             <FollowTheSignsIcon />
@@ -270,11 +267,11 @@ const StandByRequest = forwardRef((props, ref) => {
             color="primary"
             onClick={() => {
               const page = currentPage;
-              const leadId = String(id);
+
               // const projectID = Number(p_id);
-              localStorage.setItem("view_won", leadId);
+              // localStorage.setItem("view_won", leadId);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/won_Summary?page=${page}&id=${leadId}`);
+              navigate(`/won_Summary?page=${page}&leadId=${leadId}`);
             }}
           >
             <RemoveRedEyeIcon />
@@ -290,7 +287,7 @@ const StandByRequest = forwardRef((props, ref) => {
     );
   };
 
-  const ViewHandOver = ({ currentPage, id }) => {
+  const ViewHandOver = ({ currentPage, leadId }) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
 
     return (
@@ -298,8 +295,9 @@ const StandByRequest = forwardRef((props, ref) => {
         <IconButton
           color="primary"
           onClick={() => {
-            localStorage.setItem("bd_handover", id);
-            navigate(`/bd_hand_over?page=${currentPage}&id=${id}`);
+            // const ID = String(leadId);
+            // localStorage.setItem("bd_handover", ID);
+            navigate(`/bd_hand_over?page=${currentPage}&leadId=${leadId}`);
           }}
         >
           <VisibilityIcon />
@@ -308,7 +306,7 @@ const StandByRequest = forwardRef((props, ref) => {
     );
   };
 
-  const EditHandOver = ({ currentPage, id }) => {
+  const EditHandOver = ({ currentPage, leadId }) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
 
     return (
@@ -316,8 +314,8 @@ const StandByRequest = forwardRef((props, ref) => {
         <IconButton
           color="primary"
           onClick={() => {
-            localStorage.setItem("edit_won_handover", id);
-            navigate(`/edit_won?page=${currentPage}&id=${id}`);
+            // localStorage.setItem("edit_won_handover", leadId);
+            navigate(`/edit_won?page=${currentPage}&leadId=${leadId}`);
           }}
         >
           <EditNoteIcon />
@@ -349,45 +347,6 @@ const StandByRequest = forwardRef((props, ref) => {
   const handleDateFilter = (e) => {
     setSelectedDate(e.target.value);
   };
-
-  // const filteredData = useMemo(() => {
-  //   if (!user || !user.name) return [];
-
-  //   return leads
-  //     .filter((lead) => {
-  //       const submittedBy = lead.submitted_by?.trim() || "";
-  //       const userName = user.name.trim();
-  //       const userRole = user.role?.toLowerCase();
-
-  //       const isAdmin =
-  //         userRole === "admin" ||
-  //         userRole === "superadmin" ||
-  //         userName === "Guddu Rani Dubey" ||
-  //         userName === "Prachi Singh";
-
-  //       const matchesUser = isAdmin || submittedBy === userName;
-
-  //       const statusInfo = status_handOver(lead.id);
-  //       const statusText = statusInfo.status?.toLowerCase() || "";
-
-  //       const matchesQuery =
-  //         ["id", "c_name", "mobile", "state", "submitted_by"].some((key) =>
-  //           lead[key]?.toLowerCase().includes(searchQuery)
-  //         ) || statusText.includes(searchQuery);
-
-  //       const matchesDate = selectedDate
-  //         ? formatDate(lead.entry_date).toLocaleDateString() ===
-  //           formatDate(selectedDate).toLocaleDateString()
-  //         : true;
-
-  //       return matchesUser && matchesQuery && matchesDate;
-  //     })
-  //     .sort((a, b) => {
-  //       const dateA = new Date(a.entry_date);
-  //       const dateB = new Date(b.entry_date);
-  //       return dateB - dateA;
-  //     });
-  // }, [leads, searchQuery, selectedDate, user]);
 
   const filteredData = useMemo(() => {
     if (!user || !user.name) return [];
@@ -430,7 +389,7 @@ const StandByRequest = forwardRef((props, ref) => {
         // Search & date filters
         const matchesQuery = [
           "id",
-          "c_name",
+          "customer",
           "mobile",
           "state",
           "submitted_by",
@@ -746,8 +705,14 @@ const StandByRequest = forwardRef((props, ref) => {
                       </td>
 
                       {[
-                        <ViewHandOver currentPage={currentPage} id={lead.id} />,
-                        <EditHandOver currentPage={currentPage} id={lead.id} />,
+                        <ViewHandOver
+                          currentPage={currentPage}
+                          leadId={lead.leadId}
+                        />,
+                        <EditHandOver
+                          currentPage={currentPage}
+                          leadId={lead.leadId}
+                        />,
                         <span
                           key="id"
                           onClick={() => handleOpenModal(lead)}
@@ -941,7 +906,7 @@ const StandByRequest = forwardRef((props, ref) => {
                                       ? "In Process"
                                       : "Pending"}
                               </Chip>
-                            )
+                            ),
                           },
                           {
                             label: "Handover Submission",

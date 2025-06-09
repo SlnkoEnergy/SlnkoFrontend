@@ -101,6 +101,7 @@ const UpdateExpense = () => {
     "Site Stationery Expenses",
     "Site Miscellaneous Expenses",
     "Site Vehicle Repair and Maintenance Expense",
+    
   ];
 
   const categoryDescriptions = {
@@ -584,7 +585,7 @@ const UpdateExpense = () => {
                 "Engineering",
                 "BD",
                 "Projects",
-                "OPS",
+                "Internal",
                 "CAM",
                 "Accounts",
                 "HR",

@@ -44,7 +44,7 @@ const Page5 = () => {
           return;
         }
 
-        console.log("Fetched Offer ID from localStorage:", offerRate);
+        // console.log("Fetched Offer ID from localStorage:", offerRate);
 
         const token = localStorage.getItem("authToken");
 
@@ -54,14 +54,14 @@ const Page5 = () => {
           },
         });
 
-        console.log("API Response:", commercialOffers);
+        // console.log("API Response:", commercialOffers);
 
         const matchedOffer = commercialOffers.find(
           (item) => item.offer_id === offerRate
         );
 
         if (matchedOffer) {
-          console.log("Matched Offer Found:", matchedOffer);
+          // console.log("Matched Offer Found:", matchedOffer);
 
           setOfferData({
             offer_id: matchedOffer.offer_id ?? "",

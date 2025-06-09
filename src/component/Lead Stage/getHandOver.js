@@ -9,13 +9,10 @@ import {
   Textarea,
   Typography,
 } from "@mui/joy";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
-import { useGetHandOverQuery } from "../../redux/camsSlice";
-import {
-  useGetMasterInverterQuery,
-  useGetModuleMasterQuery,
-} from "../../redux/leadsSlice";
+import { useGetHandOverByIdQuery } from "../../redux/camsSlice";
 
 const GetHandoverSheetForm = ({ onBack }) => {
   const [expanded, setExpanded] = useState(null);
@@ -150,125 +147,11 @@ const GetHandoverSheetForm = ({ onBack }) => {
     submitted_by: "",
   });
 
-  const [moduleMakeOptions, setModuleMakeOptions] = useState([]);
-  const [moduleTypeOptions, setModuleTypeOptions] = useState([]);
-  const [moduleModelOptions, setModuleModelOptions] = useState([]);
-  const [moduleCapacityOptions, setModuleCapacityOptions] = useState([]);
-  const [inverterMakeOptions, setInverterMakeOptions] = useState([]);
-  const [inverterSizeOptions, setInverterSizeOptions] = useState([]);
-  const [inverterModelOptions, setInverterModelOptions] = useState([]);
-  const [inverterTypeOptions, setInverterTypeOptions] = useState([]);
-  // const [handoverId, setHandoverId] = useState(null);
   const handlePrint = () => {
     window.print();
   };
-  const [user, setUser] = useState(null);
+  // const [user, setUser] = useState(null);
 
-  const { data: getModuleMaster = [] } = useGetModuleMasterQuery();
-  const ModuleMaster = useMemo(
-    () => getModuleMaster?.data ?? [],
-    [getModuleMaster?.data]
-  );
-
-  console.log(ModuleMaster);
-
-  const { data: getMasterInverter = [] } = useGetMasterInverterQuery();
-  const MasterInverter = useMemo(
-    () => getMasterInverter?.data ?? [],
-    [getMasterInverter?.data]
-  );
-
-  console.log(MasterInverter);
-
-  useEffect(() => {
-    if (ModuleMaster.length > 0) {
-      setModuleMakeOptions([
-        ...new Set(ModuleMaster.map((item) => item.make).filter(Boolean)),
-      ]);
-      setModuleTypeOptions([
-        ...new Set(ModuleMaster.map((item) => item.Type).filter(Boolean)),
-      ]);
-      setModuleModelOptions([
-        ...new Set(ModuleMaster.map((item) => item.model).filter(Boolean)),
-      ]);
-      setModuleCapacityOptions([
-        ...new Set(ModuleMaster.map((item) => item.power).filter(Boolean)),
-      ]);
-    }
-
-    if (MasterInverter.length > 0) {
-      setInverterMakeOptions([
-        ...new Set(
-          MasterInverter.map((item) => item.inveter_make).filter(Boolean)
-        ),
-      ]);
-      setInverterSizeOptions([
-        ...new Set(
-          MasterInverter.map((item) => item.inveter_size).filter(Boolean)
-        ),
-      ]);
-      setInverterModelOptions([
-        ...new Set(
-          MasterInverter.map((item) => item.inveter_model).filter(Boolean)
-        ),
-      ]);
-      setInverterTypeOptions([
-        ...new Set(
-          MasterInverter.map((item) => item.inveter_type).filter(Boolean)
-        ),
-      ]);
-    }
-  }, [ModuleMaster, MasterInverter]);
-
-  // useEffect(() => {
-  //   const fetchMasterData = async () => {
-  //     try {
-  //       const response = await axios.get("https://api.slnkoprotrac.com/v1/get-module-master");
-
-  //       // console.log("Module Master Response:", response.data);
-
-  //       // Ensure response.data is an object and contains an array key
-  //       const moduleData = Array.isArray(response.data.data) ? response.data.data : [];
-
-  //       // console.log("Extracted Module Master Data:", moduleData);
-
-  //       const Inverterresponse = await axios.get("https://api.slnkoprotrac.com/v1/get-master-inverter");
-
-  //       // console.log("Inverter Master Response:", Inverterresponse.data);
-
-  //       // Ensure response.data is an object and contains an array key
-  //       const InverterData = Array.isArray(Inverterresponse.data.data) ? Inverterresponse.data.data : [];
-
-  //       // console.log("Extracted Inverter Master Data:", InverterData);
-
-  //       // Extract unique values for Module
-  //       const makeOptions = [...new Set(moduleData.map((item) => item.make).filter(Boolean))];
-  //       const typeOptions = [...new Set(moduleData.map((item) => item.type).filter(Boolean))];
-  //       const modelOptions = [...new Set(moduleData.map((item) => item.model).filter(Boolean))];
-  //       const capacityOptions = [...new Set(moduleData.map((item) => item.power).filter(Boolean))];
-
-  //       setModuleMakeOptions(makeOptions);
-  //       setModuleTypeOptions(typeOptions);
-  //       setModuleModelOptions(modelOptions);
-  //       setModuleCapacityOptions(capacityOptions);
-
-  //       // Extract unique values for Inverter
-  //       const inverterMake = [...new Set(InverterData.map((item) => item.inveter_make).filter(Boolean))];
-  //       const inverterSize = [...new Set(InverterData.map((item) => item.inveter_size).filter(Boolean))];
-  //       const inverterModel = [...new Set(InverterData.map((item) => item.inveter_model).filter(Boolean))];
-  //       const inverterType = [...new Set(InverterData.map((item) => item.inveter_type).filter(Boolean))];
-
-  //       setInverterMakeOptions(inverterMake);
-  //       setInverterSizeOptions(inverterSize);
-  //       setInverterModelOptions(inverterModel);
-  //       setInverterTypeOptions(inverterType);
-
-  //     } catch (error) {
-  //       console.error("Error fetching master data:", error);
-  //     }
-  //   };
-  //   fetchMasterData();
-  // }, []);
   const handleExpand = (panel) => {
     setExpanded(expanded === panel ? null : panel);
   };
@@ -293,39 +176,27 @@ const GetHandoverSheetForm = ({ onBack }) => {
     }));
   };
 
-  useEffect(() => {
-    const userData = getUserData();
-    if (userData && userData.name) {
-      setFormData((prev) => ({
-        ...prev,
-        other_details: {
-          ...prev.other_details,
-          submitted_by_BD: userData.name,
-        },
-        submitted_by: userData.name,
-      }));
-    }
-    setUser(userData);
-  }, []);
+  const [searchParams] = useSearchParams();
+  const leadId = searchParams.get("leadId");
 
-  const getUserData = () => {
-    const userData = localStorage.getItem("userDetails");
-    return userData ? JSON.parse(userData) : null;
-  };
-  const LeadId = localStorage.getItem("HandOver_Lead");
-  const { data: getHandOverSheet = [] } = useGetHandOverQuery();
-  const HandOverSheet = useMemo(
-    () => getHandOverSheet?.Data ?? [],
-    [getHandOverSheet]
-  );
+  // console.log("Lead ID from URL:", leadId);
 
-  console.log("HandOverSheet", HandOverSheet);
+  const {
+    data: getHandOverSheet,
+    isLoading,
+    isError,
+    error,
+  } = useGetHandOverByIdQuery({ leadId }, { skip: !leadId });
 
-  const handoverData = HandOverSheet.find((item) => item.id === LeadId);
+  const HandOverSheet = Array.isArray(getHandOverSheet?.data)
+    ? getHandOverSheet.data
+    : getHandOverSheet?.data
+      ? [getHandOverSheet.data]
+      : [];
+  // console.log("📦 HandOverSheet:", HandOverSheet);
 
-  console.log("✅ Found handoverData:", handoverData);
+  const handoverData = HandOverSheet.find((item) => item.id === leadId);
 
-  // 🎯 Populate Data from Handover if Available
   useEffect(() => {
     if (!handoverData) {
       console.warn("No matching handover data found.");
@@ -334,6 +205,7 @@ const GetHandoverSheetForm = ({ onBack }) => {
 
     setFormData((prev) => ({
       ...prev,
+      id: leadId,
       p_id: handoverData?.p_id || "",
       customer_details: {
         ...prev.customer_details,

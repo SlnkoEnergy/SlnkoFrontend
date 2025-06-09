@@ -44,7 +44,7 @@ function VendorBillSummary() {
     async function fetchPoData() {
       try {
           const token = localStorage.getItem("authToken");
-        console.log(token);
+        // console.log(token);
 
         if (!token) {
           throw new Error("No auth token found in localStorage.");
@@ -68,7 +68,7 @@ function VendorBillSummary() {
     async function fetchBillData() {
       try {
            const token = localStorage.getItem("authToken");
-        console.log(token);
+        // console.log(token);
 
         if (!token) {
           throw new Error("No auth token found in localStorage.");
@@ -122,7 +122,7 @@ function VendorBillSummary() {
         return [];
       });
 
-      console.log("Matched Data:", matchedData);
+      // console.log("Matched Data:", matchedData);
       setMatchingData(matchedData);
     }
   }, [poData, billData]);
@@ -149,7 +149,7 @@ function VendorBillSummary() {
     const handleAcceptance = async () => {
       try {
            const token = localStorage.getItem("authToken");
-        console.log(token);
+        // console.log(token);
 
         if (!token) {
           throw new Error("No auth token found in localStorage.");
