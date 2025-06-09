@@ -71,29 +71,26 @@ function DashboardENG() {
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
               sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
-              {/* <Link
-                underline="none"
-                color="neutral"
-                href="#some-link"
-                aria-label="Home"
-              >
-                <HomeRoundedIcon />
-              </Link> */}
-              <Link
-                underline="none"
-                color="neutral"
-                sx={{ fontSize: 12, fontWeight: 500 }}
-              >
-                Engineering
-              </Link>
+              {user?.department !== "Accounts" && (
+                <Link
+                  underline="none"
+                  color="neutral"
+                  sx={{ fontSize: 12, fontWeight: 500 }}
+                >
+                  Engineering
+                </Link>
+              )}
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Engineering Dashboard
+                {user?.department === "Accounts"
+                  ? "Handover Dashboard"
+                  : "Engineering Dashboard"}
               </Typography>
             </Breadcrumbs>
           </Box>
+
           <Box
             sx={{
               display: "flex",
@@ -107,8 +104,11 @@ function DashboardENG() {
             }}
           >
             <Typography level="h2" component="h1">
-              Engineering Dashboard
+              {user?.department === "Accounts"
+                ? "Handover Dashboard"
+                : "Engineering Dashboard"}
             </Typography>
+
             {/* <Box
               sx={{
                 display: "flex",
@@ -133,32 +133,33 @@ function DashboardENG() {
 
            
             </Box> */}
-
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: { xs: "column", sm: "row" },
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 1.5,
-                p: 2,
-                flexWrap: "wrap",
-                bgcolor: "background.level1",
-                borderRadius: "lg",
-                boxShadow: "sm",
-                mb: 2,
-              }}
-            >
-              <Button
-                variant="solid"
-                color="primary"
-                startDecorator={<ViewModuleRoundedIcon />}
-                size="md"
-                onClick={() => navigate("/module_sheet")}
+            {user?.department !== "Accounts" && (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: { xs: "column", sm: "row" },
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 1.5,
+                  p: 2,
+                  flexWrap: "wrap",
+                  bgcolor: "background.level1",
+                  borderRadius: "lg",
+                  boxShadow: "sm",
+                  mb: 2,
+                }}
               >
-                Module Sheet Dashboard
-              </Button>
-            </Box>
+                <Button
+                  variant="solid"
+                  color="primary"
+                  startDecorator={<ViewModuleRoundedIcon />}
+                  size="md"
+                  onClick={() => navigate("/module_sheet")}
+                >
+                  Module Sheet Dashboard
+                </Button>
+              </Box>
+            )}
           </Box>
           <Dash_eng />
           {/* <OrderTable />

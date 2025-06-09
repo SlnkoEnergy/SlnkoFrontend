@@ -309,7 +309,7 @@ function Offer() {
                 <Typography>Offer History</Typography>
               </MenuItem>
               <Divider sx={{ backgroundColor: "lightblue" }} />
-              {(user?.name === "IT Team" || user?.department === "admin") && (
+              {(user?.name === "IT Team" || user?.department === "admin" || user?.name === "Deepak Manodi") && (
                 <MenuItem
                   color="danger"
                   disabled={selected.length === 0}
@@ -454,10 +454,10 @@ function Offer() {
       .filter((project) => {
         const preparedBy =
           project.prepared_by?.trim().toLowerCase() || "unassigned";
-        const userName = user.name.trim().toLowerCase();
+        const userName = user.name.trim();
         const userRole = user.department?.toLowerCase();
 
-        const isAdmin = userRole === "admin" || userRole === "superadmin";
+        const isAdmin = userRole === "admin" || userRole === "superadmin" || userName === "Deepak Manodi";
         const matchesUser = isAdmin || preparedBy === userName;
 
         const matchesSearchQuery = [

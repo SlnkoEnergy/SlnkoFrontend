@@ -204,7 +204,7 @@ function Dash_eng() {
     );
   };
 
-  const ProjectName = ({ currentPage, p_id, customer , id}) => {
+  const ProjectName = ({ currentPage, p_id, customer, id }) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
 
     return (
@@ -293,7 +293,6 @@ function Dash_eng() {
 
   const pageNumbers = generatePageNumbers(currentPage, totalPages);
 
-
   const handlePageChange = (page) => {
     if (page >= 1) {
       setSearchParams({ page });
@@ -363,7 +362,7 @@ function Dash_eng() {
                 style={{
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
-                  textAlign: "center",
+                  textAlign: "left",
                 }}
               >
                 <Checkbox
@@ -383,15 +382,14 @@ function Dash_eng() {
                 "Mobile",
                 "State",
                 "Capacity(AC/DC)",
-                // "Progress",
-                "Action",
+                ...(user?.department !== "Accounts" ? ["Action"] : []),
               ].map((header, index) => (
                 <th
                   key={index}
                   style={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
-                    textAlign: "center",
+                    textAlign: "left",
                     fontWeight: "bold",
                   }}
                 >
@@ -403,7 +401,7 @@ function Dash_eng() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={7} style={{ padding: "8px", textAlign: "center" }}>
+                <td colSpan={7} style={{ padding: "8px", textAlign: "left" }}>
                   <Box
                     sx={{
                       fontStyle: "italic",
@@ -430,7 +428,7 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     <Checkbox
@@ -446,7 +444,7 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.code || "-"}
@@ -455,11 +453,11 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     <Tooltip title="View Handover" arrow>
-                      <span>
+                      <span style={{ textDecoration: "underline dotted", cursor: "pointer" }}>
                         <ProjectCode
                           currentPage={currentPage}
                           id={project.id}
@@ -472,7 +470,7 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     <Tooltip title="View Handover" arrow>
@@ -490,18 +488,17 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.name || "-"}
                   </td>
-                  
 
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.number || "-"}
@@ -511,7 +508,7 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.state || "-"}
@@ -521,7 +518,7 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.project_kwp && project.proposed_dc_capacity
@@ -544,16 +541,17 @@ function Dash_eng() {
                   >
                     {project.progress || "80%"}
                   </td> */}
-
-                  <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    <RowMenu currentPage={currentPage} p_id={project.p_id} />
-                  </td>
+                  {user?.department !== "Accounts" && (
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "left",
+                      }}
+                    >
+                      <RowMenu currentPage={currentPage} p_id={project.p_id} />
+                    </td>
+                  )}
                 </tr>
               ))
             ) : (
@@ -612,28 +610,30 @@ function Dash_eng() {
           Previous
         </Button>
 
-    
         <Box>Showing {draftPayments.length} results</Box>
 
         {/* Page Numbers: Only show current, prev, next for backend-driven pagination */}
-       <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
-  {pageNumbers.map((page, index) =>
-    page === "..." ? (
-      <Box key={index} sx={{ px: 1 }}>...</Box>
-    ) : (
-      <IconButton
-        key={index}
-        size="sm"
-        variant={page === currentPage ? "contained" : "outlined"}
-        color="neutral"
-        onClick={() => handlePageChange(page)}
-      >
-        {page}
-      </IconButton>
-    )
-  )}
-</Box>
-
+        <Box
+          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
+        >
+          {pageNumbers.map((page, index) =>
+            page === "..." ? (
+              <Box key={index} sx={{ px: 1 }}>
+                ...
+              </Box>
+            ) : (
+              <IconButton
+                key={index}
+                size="sm"
+                variant={page === currentPage ? "contained" : "outlined"}
+                color="neutral"
+                onClick={() => handlePageChange(page)}
+              >
+                {page}
+              </IconButton>
+            )
+          )}
+        </Box>
 
         {/* Next Button */}
         <Button

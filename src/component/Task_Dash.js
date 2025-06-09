@@ -273,7 +273,7 @@ const TaskDashboard = () => {
       if (!task.by_whom || !user?.name) return false;
 
       // Allow IT Team and Admin to see all tasks
-      if (user.name === "IT Team" || user.department === "admin" || user?.name === "Deepak Manodi") return true;
+      if (user.name === "Deepak Manodi"|| user.name === "IT Team" || user.department === "admin" ) return true;
 
       // Convert `by_whom` into a trimmed, lowercase array
       const assignedUsers = task.by_whom
@@ -353,18 +353,10 @@ const TaskDashboard = () => {
       }
     });
 
-  // const filteredTask = matchedTasks.find(
-  //   (task) => String(task.id) === String(selectedTask?.id)
-  // );
-
-  // console.log("🔍 Filtered Task:", filteredTask);
-
-  // const tasksWithComments = getTaskArray.filter((task) => task.comment);
-  // const tasksWithoutComments = getTaskArray.filter((task) => !task.comment);
 
   // Check if user is IT Team or Admin
   const isAdminOrITTeam =
-    userNames.includes("it team") || userNames.includes("admin");
+    userNames.includes("it team") || userNames.includes("admin") || userNames.includes("deepak manodi");
 
   // ✅ Get all tasks if user is IT Team or Admin
   // Step 1: Filter tasks for normal users; admins/IT see all
@@ -910,6 +902,7 @@ const TaskDashboard = () => {
                       const isMatched =
                         userNames.includes("it team") ||
                         userNames.includes("admin") ||
+                        userNames.includes("deepak manodi") ||
                         userNames.some((name) => assignedUsers.includes(name));
                       return isMatched;
                     })
@@ -1146,6 +1139,7 @@ const TaskDashboard = () => {
                       const isMatched =
                         userNames.includes("it team") ||
                         userNames.includes("admin") ||
+                        userNames.includes("deepak manodi") ||
                         userNames.some((name) => assignedUsers.includes(name));
                       return isMatched;
                     })
@@ -1396,6 +1390,7 @@ const TaskDashboard = () => {
                   return (
                     userNames.includes("it team") ||
                     userNames.includes("admin") ||
+                    userNames.includes("deepak manodi") ||
                     userNames.some((name) => assignedUsers.includes(name))
                   );
                 }).length > 0 ? (
@@ -1415,6 +1410,7 @@ const TaskDashboard = () => {
                         return (
                           userNames.includes("it team") ||
                           userNames.includes("admin") ||
+                          userNames.includes("deepak manodi") ||
                           userNames.some((name) => assignedUsers.includes(name))
                         );
                       })
