@@ -12,7 +12,6 @@ import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import { forwardRef, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-// import Axios from "../utils/Axios";
 import { Card, CardContent, Chip, useTheme } from "@mui/joy";
 import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
 
