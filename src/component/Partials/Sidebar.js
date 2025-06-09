@@ -2066,7 +2066,9 @@ function Sidebar() {
         ) : user?.department === "Projects" ||
           user?.department === "Marketing" ||
           user?.department === "Internal" ||
-          user?.department === "Engineering" ||
+          (user?.department === "Engineering" &&
+            user?.name !== "Dhruv Choudhary" &&
+            user?.name !== "Rishav Mahato") ||
           user?.department === "CAM" ? (
           <ListItem nested>
             <Toggler
