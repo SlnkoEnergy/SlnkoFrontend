@@ -239,11 +239,11 @@ const StandByRequest = forwardRef((props, ref) => {
             color="primary"
             onClick={() => {
               const page = currentPage;
-              const leadId = String(leadId);
+              // const leadId = String(leadId);
               // const projectID = Number(p_id);
-              localStorage.setItem("add_task_won", leadId);
+              // localStorage.setItem("add_task_won", leadId);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/add_task_won?page=${page}&${leadId}`);
+              navigate(`/add_task_won?page=${page}&leadId=${leadId}`);
             }}
           >
             <AddCircleOutlineIcon />
