@@ -1,8 +1,5 @@
-import React, { useState } from "react";
 import {
   Box,
-  Sheet,
-  Typography,
   Button,
   Divider,
   List,
@@ -11,7 +8,11 @@ import {
   Select,
   Option,
   Tooltip,
+  Sheet,
+  Typography,
 } from "@mui/joy";
+import axios from "axios";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   useGetModuleCategoryByIdQuery,
@@ -34,13 +35,11 @@ const Overview = () => {
   const pidFromUrl = searchParams.get("project_id");
   const projectId = pidFromUrl;
 
-  // RTK Query hook to fetch project module category data
   const { data, isLoading, isError, refetch } = useGetModuleCategoryByIdQuery(
     { projectId, engineering: selected },
-    { skip: !projectId } // Skip query if projectId is not available
+    { skip: !projectId }
   );
 
-  // Initialize a structured object to hold category-wise data for display
   const categoryData = {
     Electrical: [],
     Mechanical: [],
@@ -49,25 +48,23 @@ const Overview = () => {
     boq: [],
   };
 
-  const project = data?.data || null; // Access project data or null if not available
+  const project = data?.data || null;
 
-  // Populate categoryData from the fetched project data
   if (project?.items?.length) {
     project.items.forEach((item) => {
       const template = item.template_id;
       const category = template?.engineering_category;
 
       if (category && categoryData[category]) {
-        // Ensure templateId is correctly extracted, whether template_id is an ID string or an object
         const currentTemplateId =
           typeof template === "string" ? template : template?._id;
 
         categoryData[category].push({
-          templateId: currentTemplateId, // This is the crucial template_id needed for the backend
+          templateId: currentTemplateId,
           name: template?.name || "N/A",
           description: template?.description || "No description provided.",
           maxFiles: template?.file_upload?.max_files || 0,
-          // Ensure attachmentUrls is always an array for consistent rendering
+
           attachmentUrls: Array.isArray(item.current_attachment?.attachment_url)
             ? item.current_attachment?.attachment_url
             : item.current_attachment?.attachment_url
@@ -78,122 +75,97 @@ const Overview = () => {
     });
   }
 
-  /**
-   * Handles file selection from an input field.
-   * Updates the fileUploads state with the selected File object.
-   * @param {number} categoryItemDisplayIndex - The visual index of the item in the currently displayed category.
-   * @param {number} fileInputIndex - The index of the specific file input for that item.
-   * @param {File} file - The actual File object selected by the user.
-   */
   const handleFileChange = (categoryItemDisplayIndex, fileInputIndex, file) => {
     setFileUploads((prev) => {
       const newUploads = { ...prev };
       if (!newUploads[categoryItemDisplayIndex]) {
         newUploads[categoryItemDisplayIndex] = {};
       }
-      newUploads[categoryItemDisplayIndex][fileInputIndex] = file;
+
+      newUploads[categoryIndex][fileIndex] = {
+        file,
+        fileName: file.name,
+      };
+
       return newUploads;
     });
   };
 
-  // Determines if any file has been selected to enable the submit button
   const isAnyFileSelected = Object.values(fileUploads).some(
     (fileGroup) => Object.keys(fileGroup).length > 0
   );
 
-  // RTK Query mutation hook for updating module categories
-  const [updateModuleCategory] = useUpdateModuleCategoryMutation();
-
-  /**
-   * Handles the submission of selected files to the backend.
-   * Constructs FormData containing both files and JSON data.
-   */
   const handleSubmit = async () => {
-    if (!projectId) {
-      toast.error("Project ID is missing. Cannot upload files.");
-      return;
-    }
-
-    if (!isAnyFileSelected) {
-      toast.info("Please select files to upload before submitting.");
-      return;
-    }
-
     const formData = new FormData();
-    const itemsToUpdate = []; // This array will contain objects like { template_id: "..." }
+    const uploadedItems = [];
 
-    // Iterate through the `fileUploads` state to prepare data and append files
-    // `fileUploads` keys (categoryItemDisplayIndexStr) correspond to the `index` used in `categoryData[selected].map`
-    Object.entries(fileUploads).forEach(
-      ([categoryItemDisplayIndexStr, fileGroup]) => {
-        const categoryItemDisplayIndex = Number(categoryItemDisplayIndexStr);
+    Object.entries(fileUploads).forEach(([categoryIndex, fileGroup]) => {
+      Object.entries(fileGroup).forEach(([fileIndex, fileObj]) => {
+        const item = project.items[categoryIndex];
+        const templateId =
+          typeof item.template_id === "string"
+            ? item.template_id
+            : item.template_id._id;
 
-        // Get the corresponding item from the currently selected category's data (e.g., Electrical)
-        const itemInSelectedCategory =
-          categoryData[selected][categoryItemDisplayIndex];
+        const attachmentNumber = `R${item.attachment_urls.length}`;
 
-        if (itemInSelectedCategory && itemInSelectedCategory.templateId) {
-          // Add the template_id to the itemsToUpdate array.
-          // This is essential for the backend to associate uploaded files with the correct template.
-          itemsToUpdate.push({
-            template_id: itemInSelectedCategory.templateId,
-          });
+        uploadedItems.push({
+          template_id: templateId,
+          attachment_urls: [
+            {
+              attachment_number: attachmentNumber,
+              attachment_url: [],
+            },
+          ],
+        });
 
-          // Append each actual File object to the FormData.
-          // The backend typically expects files under the key "files" (e.g., `multer.array('files')`).
-          Object.values(fileGroup).forEach((file) => {
-            if (file instanceof File) {
-              // Ensure we're appending a valid File object
-              formData.append("files", file);
-            }
-          });
-        } else {
-          console.warn(
-            `Skipping item at display index ${categoryItemDisplayIndex} due to missing data or templateId.`
+        formData.append("files", fileObj.file);
+      });
+    });
+
+    if (uploadedItems.length === 0) {
+      toast.error("No files selected.");
+      return;
+    }
+
+    uploadedItems.forEach((item, i) => {
+      formData.append(`items[${i}][template_id]`, item.template_id);
+
+      item.attachment_urls.forEach((att, j) => {
+        formData.append(
+          `items[${i}][attachment_urls][${j}][attachment_number]`,
+          att.attachment_number
+        );
+
+        att.attachment_url.forEach((url, k) => {
+          formData.append(
+            `items[${i}][attachment_urls][${j}][attachment_url][${k}]`,
+            url
           );
-        }
-      }
-    );
+        });
+      });
+    });
 
-    // CRITICAL PART: Append the JSON data (project_id and items array) under the "data" field.
-    // The backend's `req.body.data` will parse this string.
-    // IMPORTANT: Use 'project_id' as the key within this JSON to match backend's expectation.
-    formData.append(
-      "data",
-      JSON.stringify({ project_id: projectId, items: itemsToUpdate })
-    );
-
-    // --- Debugging Logs (You can remove these after it works) ---
-    console.log("Debug - fileUploads state:", fileUploads);
-    console.log("Debug - itemsToUpdate array sent to backend:", itemsToUpdate);
-    console.log(
-      "Debug - FormData 'data' field JSON string:",
-      JSON.stringify({ project_id: projectId, items: itemsToUpdate })
-    );
-    // --- End Debugging Logs ---
+    console.log("🧾 Final items payload:", uploadedItems);
+    console.log("📌 projectId:", projectId);
 
     try {
-      // Call the mutation. RTK Query's fetchBaseQuery automatically sets
-      // Content-Type to 'multipart/form-data' because `body` is a FormData object.
-      const response = await updateModuleCategory({
-        projectId: projectId, // This is passed as a query parameter for the URL
-        body: formData, // The FormData object containing both files and JSON data
-      }).unwrap(); // .unwrap() automatically throws if the mutation fails (e.g., non-2xx status)
+      const response = await axios.put(
+        `https://dev.api.slnkoprotrac.com/v1/engineering/update-module-category?projectId=${projectId}`,
+        formData,
+        {
+          headers: {
+            "x-auth-token": localStorage.getItem("authToken"),
+          },
+        }
+      );
 
-      console.log("Update successful:", response);
+      console.log("✅ Updated successfully:", response.data);
       toast.success("Module Category updated successfully!");
-      setFileUploads({}); // Clear selected files from the state
-      refetch(); // Re-fetch the data to display newly uploaded attachments
+      window.location.reload();
     } catch (error) {
-      console.error("Update error:", error);
-      // Display a more specific error message from the backend if available
-      if (error.data && error.data.message) {
-        toast.error(`Failed to update module category: ${error.data.message}`);
-      } else {
-        toast.error(
-          "Failed to update module category. Please check console for details."
-        );
-      }
+      console.error("❌ Update error:", error.response?.data || error.message);
+      toast.error("Failed to update module category.");
     }
   };
 
@@ -460,8 +432,7 @@ const Overview = () => {
                         )}
                       </Box>
 
-                      {/* Previously uploaded files */}
-                      {item.attachmentUrls?.length > 0 && (
+                      {/* {item.attachmentUrls?.length > 0 && (
                         <Box sx={{ mt: 2 }}>
                           <Typography
                             level="body-xs"
@@ -483,7 +454,7 @@ const Overview = () => {
                             ))}
                           </ul>
                         </Box>
-                      )}
+                      )} */}
                     </Sheet>
                   ))
                 ) : (
@@ -493,7 +464,6 @@ const Overview = () => {
                 )}
               </Box>
 
-              {/* Submit Button */}
               {isAnyFileSelected && (
                 <Box sx={{ textAlign: "right", mt: 4 }}>
                   <Button

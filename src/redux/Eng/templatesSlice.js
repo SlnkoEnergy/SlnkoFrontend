@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: "https://dev.api.slnkoprotrac.com/v1/engineering",
+  baseUrl: "https://dev.api.slnkoprotrac.com/v1/engineering/",
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("authToken");
     // console.log("Token:", token);
@@ -125,12 +125,11 @@ export const templatesApi = createApi({
     }),
 
     updateModuleCategory: builder.mutation({
-      query: ({ projectId, items }) => ({
+      query: ({ formData, projectId }) => ({
         url: `update-module-category?projectId=${projectId}`,
         method: "PUT",
-        body: { items },
+        body: formData,
       }),
-      invalidatesTags: ["Template"],
     }),
   }),
 });
