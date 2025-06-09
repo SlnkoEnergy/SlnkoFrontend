@@ -78,11 +78,12 @@ const Overview = () => {
   const handleFileChange = (categoryItemDisplayIndex, fileInputIndex, file) => {
     setFileUploads((prev) => {
       const newUploads = { ...prev };
+
       if (!newUploads[categoryItemDisplayIndex]) {
         newUploads[categoryItemDisplayIndex] = {};
       }
 
-      newUploads[categoryIndex][fileIndex] = {
+      newUploads[categoryItemDisplayIndex][fileInputIndex] = {
         file,
         fileName: file.name,
       };
