@@ -657,13 +657,12 @@ function Sidebar() {
                       Purchase Order
                     </ListItemButton>
                   </ListItem>
-                  {user?.name === "Gagan Tayal" && (
-                    <ListItem>
-                      <ListItemButton onClick={() => navigate("/vendor_bill")}>
-                        Vendor Bill
-                      </ListItemButton>
-                    </ListItem>
-                  )}
+
+                  <ListItem>
+                    <ListItemButton onClick={() => navigate("/vendor_bill")}>
+                      Vendor Bill
+                    </ListItemButton>
+                  </ListItem>
                 </List>
               </Toggler>
             </ListItem>
@@ -1059,12 +1058,12 @@ function Sidebar() {
                 <ListItemButton onClick={() => navigate("#")}>
                   Material Status
                 </ListItemButton>
-              </ListItem>
-              <ListItem>
-                <ListItemButton onClick={() => navigate("#")}>
-                  Vendor Bill
-                </ListItemButton>
               </ListItem> */}
+                  <ListItem>
+                    <ListItemButton onClick={() => navigate("/vendor_bill")}>
+                      Vendor Bill
+                    </ListItemButton>
+                  </ListItem>
                 </List>
               </Toggler>
             </ListItem>
@@ -1348,12 +1347,12 @@ function Sidebar() {
                 <ListItemButton onClick={() => navigate("#")}>
                   Material Status
                 </ListItemButton>
-              </ListItem>
-              <ListItem>
-                <ListItemButton onClick={() => navigate("#")}>
-                  Vendor Bill
-                </ListItemButton>
               </ListItem> */}
+                  <ListItem>
+                    <ListItemButton onClick={() => navigate("/vendor_bill")}>
+                      Vendor Bill
+                    </ListItemButton>
+                  </ListItem>
                 </List>
               </Toggler>
             </ListItem>
