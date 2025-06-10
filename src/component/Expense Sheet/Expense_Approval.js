@@ -97,9 +97,8 @@ const ExpenseApproval = forwardRef((props, ref) => {
         "Engineering",
       ];
 
-      const isManager =
-        user?.role === "manager" &&
-        allowedDepartments.includes(user?.department);
+      const isManager = user?.role === "manager" || user?.role === "visitor";
+      allowedDepartments.includes(user?.department);
 
       const isAdmin = user?.role === "admin" || user?.role === "superadmin";
 
@@ -382,7 +381,7 @@ const ExpenseApproval = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                   <Box
+                    <Box
                       sx={{
                         display: "inline",
                         textDecoration: "underline dotted",
