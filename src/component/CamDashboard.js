@@ -11,7 +11,7 @@ import Checkbox from "@mui/joy/Checkbox";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
-
+import { useTheme } from "@emotion/react";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
@@ -31,19 +31,18 @@ function Dash_cam() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
-
+  const theme = useTheme();
   const [currentPage, setCurrentPage] = useState(1);
 
- const {
-  data: getHandOverSheet = {},
-  isLoading,
-  refetch,
-} = useGetHandOverQuery({
-  page: currentPage,
-  search: searchQuery,
-  status: "submitted,Approved"
-});
-
+  const {
+    data: getHandOverSheet = {},
+    isLoading,
+    refetch,
+  } = useGetHandOverQuery({
+    page: currentPage,
+    search: searchQuery,
+    status: "submitted,Approved",
+  });
 
   const HandOverSheet = Array.isArray(getHandOverSheet?.data)
     ? getHandOverSheet.data.map((entry) => {
@@ -61,6 +60,31 @@ function Dash_cam() {
       })
     : [];
 
+  const ProjectOverView = ({ currentPage, project_id, code }) => {
+    // console.log("currentPage:", currentPage, "pproject_id:", pproject_id);
+
+    return (
+      <>
+        <span
+          style={{
+            cursor: "pointer",
+            color: theme.vars.palette.text.primary,
+            textDecoration: "underline",
+            textDecorationStyle: "dotted",
+          }}
+          onClick={() => {
+            const page = currentPage;
+            // const project_id = project_id;
+            // sessionStorage.setItem("eng_overview", projectId);
+            navigate(`/overview?page=${page}&project_id=${project_id}`);
+          }}
+        >
+          {code || "-"}
+        </span>
+      </>
+    );
+  };
+
   useEffect(() => {
     const storedUser = localStorage.getItem("userDetails");
     if (storedUser) {
@@ -69,9 +93,7 @@ function Dash_cam() {
   }, []);
 
   const StatusChip = ({ status, is_locked, _id, user, refetch }) => {
-console.log("StatusChip props:", { status, is_locked, _id, user, refetch });
-
-
+    console.log("StatusChip props:", { status, is_locked, _id, user, refetch });
 
     const [lockedState, setLockedState] = useState(
       is_locked === "locked" || is_locked === true

@@ -101,7 +101,6 @@ const UpdateExpense = () => {
     "Site Stationery Expenses",
     "Site Miscellaneous Expenses",
     "Site Vehicle Repair and Maintenance Expense",
-    
   ];
 
   const categoryDescriptions = {
@@ -513,6 +512,7 @@ const UpdateExpense = () => {
     "Approved Amount",
     ...(user?.role === "manager" ||
     user?.department === "admin" ||
+    user?.role === "visitor" ||
     user?.name === "IT Team"
       ? ["Approval"]
       : []),
@@ -591,6 +591,7 @@ const UpdateExpense = () => {
                 "HR",
               ].includes(user?.department) &&
                 user?.role === "manager") ||
+                user?.role === "visitor" ||
                 user?.name === "IT Team" ||
                 user?.department === "admin") && (
                 <>
@@ -740,6 +741,7 @@ const UpdateExpense = () => {
                         </td>
 
                         {(user?.role === "manager" ||
+                          user?.role === "visitor" ||
                           user?.department === "admin" ||
                           user?.name === "IT Team") && (
                           <td style={{ padding: 8 }}>
@@ -890,6 +892,7 @@ const UpdateExpense = () => {
                     </Box>
 
                     {(user?.role === "manager" ||
+                      user?.role === "visitor" ||
                       user?.department === "admin" ||
                       user?.name === "IT Team") &&
                       item.item_current_status === "submitted" && (
@@ -1139,6 +1142,7 @@ const UpdateExpense = () => {
               </thead>
               <tbody>
                 {(user?.role === "manager" ||
+                user?.role === "visitor" ||
                 user?.department === "admin" ||
                 user?.department === "HR" ||
                 user?.name === "IT Team"
@@ -1262,6 +1266,7 @@ const UpdateExpense = () => {
               >
                 {(user?.role === "manager" ||
                   user?.department === "admin" ||
+                  user?.role === "visitor" ||
                   user?.name === "IT Team") &&
                   rows[0]?.current_status === "submitted" && (
                     <Button
