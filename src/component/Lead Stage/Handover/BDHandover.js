@@ -12,7 +12,7 @@ import {
   Typography,
 } from "@mui/joy";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import * as Yup from "yup";
 import Img1 from "../../../assets/HandOverSheet_Icon.jpeg";
@@ -249,19 +249,19 @@ const HandoverSheetForm = () => {
   const [addHandOver] = useAddHandOverMutation();
   const [updateHandOver] = useUpdateHandOverMutation();
 
-  const LeadId = localStorage.getItem("hand_Over");
+  // const LeadId = localStorage.getItem("hand_Over");
+
+ const [searchParams] = useSearchParams();
+    const leadId = searchParams.get("leadId");
+  
+    console.log("Lead ID from URL:", leadId);
 
   const {
     data: getHandOverSheet,
     isLoading,
     isError,
     error,
-  } = useGetHandOverByIdQuery(
-    { leadId: LeadId },
-    {
-      skip: !LeadId,
-    }
-  );
+  } = useGetHandOverByIdQuery({ leadId }, { skip: !leadId });
 
   const handoverData = getHandOverSheet?.data ?? null;
 
@@ -349,7 +349,7 @@ const HandoverSheetForm = () => {
 
   const handleSubmit = async () => {
     try {
-      if (!LeadId) {
+      if (!leadId) {
         toast.error("Lead ID is missing!");
         return;
       }
@@ -358,7 +358,7 @@ const HandoverSheetForm = () => {
 
       const updatedFormData = {
         ...formData,
-        id: LeadId,
+        id: leadId,
         other_details: {
           ...formData.other_details,
         },
@@ -390,10 +390,10 @@ const HandoverSheetForm = () => {
         return;
       }
 
-      localStorage.setItem("HandOver_Lead", LeadId);
-      console.log("Submitting LeadIds :", LeadId);
+      // localStorage.setItem("HandOver_Lead", leadId);
+      // console.log("Submitting LeadIds :", LeadId);
 
-      navigate("/get_hand_over");
+      navigate(`/get_hand_over?${leadId}`);
     } catch (error) {
       if (error.name === "ValidationError") {
         error.inner.forEach((err) => {

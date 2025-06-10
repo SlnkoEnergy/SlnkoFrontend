@@ -13,7 +13,7 @@ import {
 } from "@mui/joy";
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   useGetWonDataByIdQuery,
@@ -64,13 +64,17 @@ const WonEdit_lead = () => {
   };
   const landTypes = ["Leased", "Owned"];
 
-  const LeadId = localStorage.getItem("edit_won_handover");
+  // const LeadId = localStorage.getItem("edit_won_handover");
+
+  const [searchParams] = useSearchParams();
+
+  const leadId = searchParams.get("leadId");
 
   const {
     data: getLead,
     isLoading,
     error,
-  } = useGetWonDataByIdQuery({ leadId: LeadId }, { skip: !LeadId });
+  } = useGetWonDataByIdQuery({ leadId }, { skip: !leadId });
 
   const formatDateToYYYYMMDD = (dateString) => {
     if (!dateString) return "";
@@ -80,25 +84,21 @@ const WonEdit_lead = () => {
       ? dateString
       : `${parts[2]}-${parts[1]}-${parts[0]}`;
   };
-  const getLeadArray = Array.isArray(getLead?.data)
-    ? getLead
-    : getLead?.data || [];
-
-  console.log("getLeadArray:", getLeadArray);
 
   useEffect(() => {
-    if (!LeadId) {
-      console.error("Invalid Lead ID retrieved from localStorage.");
+    if (!leadId) {
+      console.error("Lead ID missing in URL.");
       return;
     }
+    if (getLead?.data) {
+      const lead = Array.isArray(getLead?.data) ? getLead?.data : getLead?.data;
 
-    if (getLeadArray) {
       setFormData({
-        ...getLeadArray,
-        entry_date: formatDateToYYYYMMDD(getLeadArray.entry_date),
+        ...lead,
+        entry_date: formatDateToYYYYMMDD(lead.entry_date),
       });
     }
-  }, [getLeadArray, LeadId]);
+  }, [getLead, leadId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

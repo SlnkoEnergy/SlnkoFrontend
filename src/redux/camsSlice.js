@@ -2,7 +2,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { IdCardIcon } from "lucide-react";
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: "https://dev.api.slnkoprotrac.com/v1/",
+  baseUrl: `${process.env.REACT_APP_API_URL}/`,
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("authToken");
     // console.log("Token:", token);

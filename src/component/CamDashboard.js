@@ -34,16 +34,15 @@ function Dash_cam() {
 
   const [currentPage, setCurrentPage] = useState(1);
 
- const {
-  data: getHandOverSheet = {},
-  isLoading,
-  refetch,
-} = useGetHandOverQuery({
-  page: currentPage,
-  search: searchQuery,
-  status: "submitted,Approved"
-});
-
+  const {
+    data: getHandOverSheet = {},
+    isLoading,
+    refetch,
+  } = useGetHandOverQuery({
+    page: currentPage,
+    search: searchQuery,
+    status: "submitted,Approved",
+  });
 
   const HandOverSheet = Array.isArray(getHandOverSheet?.data)
     ? getHandOverSheet.data.map((entry) => {
@@ -69,9 +68,7 @@ function Dash_cam() {
   }, []);
 
   const StatusChip = ({ status, is_locked, _id, user, refetch }) => {
-console.log("StatusChip props:", { status, is_locked, _id, user, refetch });
-
-
+    console.log("StatusChip props:", { status, is_locked, _id, user, refetch });
 
     const [lockedState, setLockedState] = useState(
       is_locked === "locked" || is_locked === true

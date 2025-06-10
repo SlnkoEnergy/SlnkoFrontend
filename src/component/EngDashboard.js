@@ -263,6 +263,8 @@ function Dash_eng() {
   //     toast.error("No offers selected for deletion.");
   //     return;
   //   }
+  const ProjectName = ({ currentPage, p_id, customer, id }) => {
+    // console.log("currentPage:", currentPage, "p_id:", p_id);
 
   //   try {
   //     setLoading(true);
@@ -463,7 +465,7 @@ function Dash_eng() {
                 style={{
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
-                  textAlign: "center",
+                  textAlign: "left",
                 }}
               >
                 <Checkbox
@@ -484,15 +486,14 @@ function Dash_eng() {
                 "Mobile",
                 "State",
                 "Capacity(AC/DC)",
-                // "Progress",
-                "Action",
+                ...(user?.department !== "Accounts" ? ["Action"] : []),
               ].map((header, index) => (
                 <th
                   key={index}
                   style={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
-                    textAlign: "center",
+                    textAlign: "left",
                     fontWeight: "bold",
                   }}
                 >
@@ -504,7 +505,7 @@ function Dash_eng() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={7} style={{ padding: "8px", textAlign: "center" }}>
+                <td colSpan={7} style={{ padding: "8px", textAlign: "left" }}>
                   <Box
                     sx={{
                       fontStyle: "italic",
@@ -531,7 +532,7 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     <Checkbox
@@ -552,7 +553,7 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.code || "-"}
@@ -561,12 +562,12 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     <Tooltip title="View Handover" arrow>
-                      <span>
-                        <ProjectOverView
+                      <span style={{ textDecoration: "underline dotted", cursor: "pointer" }}>
+                        <ProjectCode
                           currentPage={currentPage}
                           project_id={project.project_id}
                           code={project.code}
@@ -578,7 +579,7 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.name || "-"}
@@ -587,16 +588,17 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.customer || "-"}
                   </td>
+
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.number || "-"}
@@ -605,7 +607,7 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.state || "-"}
@@ -614,7 +616,7 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.project_kwp && project.proposed_dc_capacity
@@ -636,15 +638,17 @@ function Dash_eng() {
                   >
                     {project.progress || "80%"}
                   </td> */}
-                  <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    <RowMenu currentPage={currentPage} p_id={project.p_id} />
-                  </td>
+                  {user?.department !== "Accounts" && (
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "left",
+                      }}
+                    >
+                      <RowMenu currentPage={currentPage} p_id={project.p_id} />
+                    </td>
+                  )}
                 </tr>
               ))
             ) : (
@@ -752,5 +756,5 @@ function Dash_eng() {
       </Box>
     </>
   );
-}
+}}
 export default Dash_eng;

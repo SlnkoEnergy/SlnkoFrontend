@@ -3,7 +3,18 @@ import { baseQuery } from "../auth/auth_variable";
 
 export const engsTransformerApi = createApi({
   reducerPath: "engsTransformerApi",
-    baseQuery,
+    baseQuery: fetchBaseQuery({
+    baseUrl: `${process.env.REACT_APP_API_URL}/`,
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem("authToken");
+
+      if (token) {
+        headers.set("x-auth-token", token);
+      }
+
+      return headers;
+    },
+  }),
   tagTypes: ["Transformer"],
   endpoints: (builder) => ({
     getTransformers: builder.query({

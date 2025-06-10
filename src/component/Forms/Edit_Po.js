@@ -200,7 +200,7 @@ const [projectsRes, vendorsRes, itemsRes, poRes] = await Promise.all([
       setLoading(true);
       setError("");
       const token = localStorage.getItem("authToken");
-  const endpoint = `https://api.slnkoprotrac.com/v1/edit-pO-IT/${formData._id}`;
+  const endpoint = `${process.env.REACT_APP_API_URL}/edit-pO-IT/${formData._id}`;
 
   const response = await axios.put(endpoint, formData, {
     headers: {

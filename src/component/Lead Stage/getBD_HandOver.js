@@ -10,7 +10,7 @@ import {
   Typography,
 } from "@mui/joy";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
 import { useGetHandOverByIdQuery } from "../../redux/camsSlice";
 import {
@@ -224,7 +224,7 @@ const GetBDHandoverSheetForm = ({ onBack }) => {
   // useEffect(() => {
   //   const fetchMasterData = async () => {
   //     try {
-  //       const response = await axios.get("https://api.slnkoprotrac.com/v1/get-module-master");
+  //       const response = await axios.get("${process.env.REACT_APP_API_URL}/get-module-master");
 
   //       // console.log("Module Master Response:", response.data);
 
@@ -233,7 +233,7 @@ const GetBDHandoverSheetForm = ({ onBack }) => {
 
   //       // console.log("Extracted Module Master Data:", moduleData);
 
-  //       const Inverterresponse = await axios.get("https://api.slnkoprotrac.com/v1/get-master-inverter");
+  //       const Inverterresponse = await axios.get("${process.env.REACT_APP_API_URL}/get-master-inverter");
 
   //       // console.log("Inverter Master Response:", Inverterresponse.data);
 
@@ -313,16 +313,21 @@ const GetBDHandoverSheetForm = ({ onBack }) => {
     const userData = localStorage.getItem("userDetails");
     return userData ? JSON.parse(userData) : null;
   };
-  const LeadId = localStorage.getItem("bd_handover");
+  // const LeadId = localStorage.getItem("bd_handover");
 
   // console.log("LeadId:", LeadId);
+
+    const [searchParams] = useSearchParams();
+    const leadId = searchParams.get("leadId");
+  
+    // console.log("Lead ID from URL:", leadId);
 
   const {
     data: getHandOverSheet,
     isLoading,
     isError,
     error,
-  } = useGetHandOverByIdQuery({ leadId: LeadId }, { skip: !LeadId });
+  } = useGetHandOverByIdQuery({ leadId }, { skip: !leadId });
 
   const HandOverSheet = Array.isArray(getHandOverSheet?.data)
     ? getHandOverSheet.data
@@ -331,7 +336,7 @@ const GetBDHandoverSheetForm = ({ onBack }) => {
       : [];
   // console.log("📦 HandOverSheet:", HandOverSheet);
 
-  const handoverData = HandOverSheet.find((item) => item.id === LeadId);
+  const handoverData = HandOverSheet.find((item) => item.id === leadId);
 
   useEffect(() => {
     if (!handoverData) {
@@ -341,7 +346,7 @@ const GetBDHandoverSheetForm = ({ onBack }) => {
 
     setFormData((prev) => ({
       ...prev,
-      id: LeadId,
+      id: leadId,
       p_id: handoverData?.p_id || "",
       customer_details: {
         ...prev.customer_details,
