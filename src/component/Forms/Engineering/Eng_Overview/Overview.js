@@ -4,38 +4,27 @@ import {
   Divider,
   List,
   ListItem,
-  IconButton,
-  Select,
-  Option,
-  Tooltip,
   Sheet,
   Typography,
+  Modal,
+  ModalDialog,
 } from "@mui/joy";
 import axios from "axios";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import {
-  useGetModuleCategoryByIdQuery,
-  useUpdateModuleCategoryMutation,
-} from "../../../../redux/Eng/templatesSlice";
-import Modal from "@mui/joy/Modal";
-import VisibilityIcon from "@mui/icons-material/Visibility";
+import { useGetModuleCategoryByIdQuery } from "../../../../redux/Eng/templatesSlice";
 import { toast } from "react-toastify";
 
 const Overview = () => {
   const [searchParams] = useSearchParams();
   const [selected, setSelected] = useState("Electrical");
-  const [openModalIndex, setOpenModalIndex] = useState(null);
-  const [tableData, setTableData] = useState([]);
-
-  // State to store actual File objects selected by the user
-  // Structure: { categoryItemDisplayIndex: { fileInputIndex: FileObject } }
   const [fileUploads, setFileUploads] = useState({});
+  const [logModalData, setLogModalData] = useState([]);
+  const [showLogsModal, setShowLogsModal] = useState(false);
 
-  const pidFromUrl = searchParams.get("project_id");
-  const projectId = pidFromUrl;
+  const projectId = searchParams.get("project_id");
 
-  const { data, isLoading, isError, refetch } = useGetModuleCategoryByIdQuery(
+  const { data, isLoading } = useGetModuleCategoryByIdQuery(
     { projectId, engineering: selected },
     { skip: !projectId }
   );
@@ -48,78 +37,61 @@ const Overview = () => {
     boq: [],
   };
 
-  const project = data?.data || null;
+  const templates = data?.data || [];
 
-  if (project?.items?.length) {
-    project.items.forEach((item) => {
-      const template = item.template_id;
-      const category = template?.engineering_category;
+  if (Array.isArray(templates)) {
+    templates.forEach((template) => {
+      const category = template.engineering_category;
+      const rawUrls = Array.isArray(template.attachment_urls)
+        ? template.attachment_urls.flat()
+        : [];
 
       if (category && categoryData[category]) {
-        const currentTemplateId =
-          typeof template === "string" ? template : template?._id;
-
         categoryData[category].push({
-          templateId: currentTemplateId,
-          name: template?.name || "N/A",
-          description: template?.description || "No description provided.",
-          maxFiles: template?.file_upload?.max_files || 0,
-
-          attachmentUrls: Array.isArray(item.current_attachment?.attachment_url)
-            ? item.current_attachment?.attachment_url
-            : item.current_attachment?.attachment_url
-              ? [item.current_attachment.attachment_url]
-              : [],
+          templateId: template._id,
+          name: template.name || "N/A",
+          description: template.description || "No description provided.",
+          maxFiles: template.file_upload?.max_files || 0,
+          attachmentUrls: rawUrls,
         });
       }
     });
   }
 
-  const handleFileChange = (categoryItemDisplayIndex, fileInputIndex, file) => {
-    setFileUploads((prev) => {
-      const newUploads = { ...prev };
-
-      if (!newUploads[categoryItemDisplayIndex]) {
-        newUploads[categoryItemDisplayIndex] = {};
-      }
-
-      newUploads[categoryItemDisplayIndex][fileInputIndex] = {
+  const handleMultiFileChange = (index, files) => {
+    setFileUploads((prev) => ({
+      ...prev,
+      [index]: files.map((file) => ({
         file,
         fileName: file.name,
-      };
-
-      return newUploads;
-    });
+      })),
+    }));
   };
 
   const isAnyFileSelected = Object.values(fileUploads).some(
-    (fileGroup) => Object.keys(fileGroup).length > 0
+    (files) => files.length > 0
   );
 
   const handleSubmit = async () => {
     const formData = new FormData();
     const uploadedItems = [];
 
-    Object.entries(fileUploads).forEach(([categoryIndex, fileGroup]) => {
-      Object.entries(fileGroup).forEach(([fileIndex, fileObj]) => {
-        const item = project.items[categoryIndex];
-        const templateId =
-          typeof item.template_id === "string"
-            ? item.template_id
-            : item.template_id._id;
+    Object.entries(fileUploads).forEach(([index, files]) => {
+      const item = categoryData[selected][index];
+      const templateId = item.templateId;
+      const attachmentNumber = `R0`;
 
-        const attachmentNumber = `R${item.attachment_urls.length}`;
+      uploadedItems.push({
+        template_id: templateId,
+        attachment_urls: [
+          {
+            attachment_number: attachmentNumber,
+            attachment_url: [],
+          },
+        ],
+      });
 
-        uploadedItems.push({
-          template_id: templateId,
-          attachment_urls: [
-            {
-              attachment_number: attachmentNumber,
-              attachment_url: [],
-            },
-          ],
-        });
-
+      files.forEach((fileObj) => {
         formData.append("files", fileObj.file);
       });
     });
@@ -131,27 +103,16 @@ const Overview = () => {
 
     uploadedItems.forEach((item, i) => {
       formData.append(`items[${i}][template_id]`, item.template_id);
-
       item.attachment_urls.forEach((att, j) => {
         formData.append(
           `items[${i}][attachment_urls][${j}][attachment_number]`,
           att.attachment_number
         );
-
-        att.attachment_url.forEach((url, k) => {
-          formData.append(
-            `items[${i}][attachment_urls][${j}][attachment_url][${k}]`,
-            url
-          );
-        });
       });
     });
 
-    console.log("🧾 Final items payload:", uploadedItems);
-    console.log("📌 projectId:", projectId);
-
     try {
-      const response = await axios.put(
+      await axios.put(
         `https://dev.api.slnkoprotrac.com/v1/engineering/update-module-category?projectId=${projectId}`,
         formData,
         {
@@ -160,14 +121,17 @@ const Overview = () => {
           },
         }
       );
-
-      console.log("✅ Updated successfully:", response.data);
       toast.success("Module Category updated successfully!");
       window.location.reload();
     } catch (error) {
       console.error("❌ Update error:", error.response?.data || error.message);
       toast.error("Failed to update module category.");
     }
+  };
+
+  const handleLogsOpen = (urls) => {
+    setLogModalData(urls);
+    setShowLogsModal(true);
   };
 
   return (
@@ -183,7 +147,7 @@ const Overview = () => {
       }}
     >
       <Box sx={{ display: "flex", flexGrow: 1, gap: 3 }}>
-        {/* Sidebar for Categories */}
+        {/* Category Selector */}
         <Sheet
           variant="outlined"
           sx={{
@@ -215,7 +179,7 @@ const Overview = () => {
           </List>
         </Sheet>
 
-        {/* Main Content Area for Documentation */}
+        {/* Template Cards */}
         <Sheet
           variant="outlined"
           sx={{
@@ -228,264 +192,148 @@ const Overview = () => {
             bgcolor: "#f9fafb",
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              mb: 3,
-            }}
-          >
-            <Typography level="h4" fontWeight="xl">
-              {selected} Documentation
-            </Typography>
-            <Tooltip title="View BOQ" variant="outlined" arrow>
-              <IconButton
-                size="sm"
-                variant="soft"
-                onClick={() => {
-                  setOpenModalIndex(0);
-                  setTableData([
-                    { make: "ABC", rating: "5", description: "Good quality" },
-                    { make: "XYZ", rating: "4", description: "Moderate" },
-                  ]);
-                }}
-              >
-                <VisibilityIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
-
-          {/* Modal Table */}
-          <Modal
-            open={openModalIndex !== null}
-            onClose={() => setOpenModalIndex(null)}
-          >
-            <Sheet
-              sx={{
-                width: 500,
-                mx: "auto",
-                mt: "10vh",
-                p: 4,
-                borderRadius: "lg",
-                boxShadow: "lg",
-                bgcolor: "background.surface",
-              }}
-            >
-              <Typography level="h6" mb={2}>
-                📋 Document Info
-              </Typography>
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  marginBottom: "1rem",
-                }}
-              >
-                <thead>
-                  <tr>
-                    <th
-                      style={{
-                        textAlign: "left",
-                        padding: "8px",
-                        borderBottom: "1px solid #ccc",
-                      }}
-                    >
-                      Make
-                    </th>
-                    <th
-                      style={{
-                        textAlign: "left",
-                        padding: "8px",
-                        borderBottom: "1px solid #ccc",
-                      }}
-                    >
-                      Rating
-                    </th>
-                    <th
-                      style={{
-                        textAlign: "left",
-                        padding: "8px",
-                        borderBottom: "1px solid #ccc",
-                      }}
-                    >
-                      Description
-                    </th>
-                    <th
-                      style={{
-                        textAlign: "left",
-                        padding: "8px",
-                        borderBottom: "1px solid #ccc",
-                      }}
-                    >
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tableData.map((row, i) => (
-                    <tr key={i}>
-                      <td style={{ padding: "8px" }}>
-                        <Select
-                          size="sm"
-                          value={row.make}
-                          onChange={(_, val) => {
-                            const updated = [...tableData];
-                            updated[i].make = val;
-                            setTableData(updated);
-                          }}
-                        >
-                          <Option value="ABC">ABC</Option>
-                          <Option value="XYZ">XYZ</Option>
-                          <Option value="DEF">DEF</Option>
-                        </Select>
-                      </td>
-                      <td style={{ padding: "8px" }}>{row.rating}</td>
-                      <td style={{ padding: "8px" }}>{row.description}</td>
-                      <td style={{ padding: "8px" }}>
-                        <Button
-                          size="sm"
-                          onClick={() => alert("Action on row " + i)}
-                        >
-                          ✅ Action
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <Box sx={{ textAlign: "right" }}>
-                <Button onClick={() => setOpenModalIndex(null)}>Submit</Button>
-              </Box>
-            </Sheet>
-          </Modal>
-
           <Divider sx={{ mb: 3 }} />
 
-          {/* Main Documentation Content */}
-          {isLoading ? (
-            <Typography>Loading documentation...</Typography>
-          ) : isError ? (
-            <Typography color="danger">
-              Error fetching documentation.
-            </Typography>
-          ) : (
-            <>
-              <Box sx={{ display: "grid", gap: 3 }}>
-                {categoryData[selected]?.length > 0 ? (
-                  categoryData[selected].map((item, index) => (
-                    <Sheet
-                      key={index}
+          <Box sx={{ display: "grid", gap: 3 }}>
+            {categoryData[selected]?.length > 0 ? (
+              categoryData[selected].map((item, index) => (
+                <Sheet
+                  key={index}
+                  variant="outlined"
+                  sx={{
+                    p: 3,
+                    borderRadius: "lg",
+                    boxShadow: "sm",
+                    bgcolor: "background.surface",
+                    position: "relative",
+                  }}
+                >
+                  <Typography level="title-md" sx={{ mb: 1 }}>
+                    📁 {item.name}
+                  </Typography>
+                  <Typography
+                    level="body-sm"
+                    sx={{ color: "text.secondary", mb: 2 }}
+                  >
+                    {item.description}
+                  </Typography>
+                  <Typography level="body-xs" sx={{ fontWeight: 600 }}>
+                    Max Uploads Allowed: {item.maxFiles}
+                  </Typography>
+
+                  {/* File Input */}
+                  <input
+                    type="file"
+                    multiple
+                    onChange={(e) => {
+                      const selectedFiles = Array.from(e.target.files);
+                      if (selectedFiles.length > item.maxFiles) {
+                        toast.error(
+                          `You can only upload up to ${item.maxFiles} files.`
+                        );
+                        return;
+                      }
+                      handleMultiFileChange(index, selectedFiles);
+                    }}
+                    style={{
+                      padding: "8px",
+                      border: "1px solid #ccc",
+                      borderRadius: "6px",
+                      backgroundColor: "#fff",
+                      width: "100%",
+                      marginTop: "8px",
+                    }}
+                  />
+
+                  {/* File Previews */}
+                  {fileUploads[index]?.length > 0 && (
+                    <Box sx={{ mt: 1 }}>
+                      {fileUploads[index].map((f, i) => (
+                        <Typography key={i} level="body-xs">
+                          📎 {f.fileName}
+                        </Typography>
+                      ))}
+                    </Box>
+                  )}
+
+                  {/* Logs Button */}
+                  {item.attachmentUrls.length > 0 && (
+                    <Button
                       variant="outlined"
+                      size="sm"
+                      onClick={() => handleLogsOpen(item.attachmentUrls)}
                       sx={{
-                        p: 3,
-                        borderRadius: "lg",
-                        boxShadow: "sm",
-                        bgcolor: "background.surface",
+                        position: "absolute",
+                        top: 12,
+                        right: 12,
                       }}
                     >
-                      <Typography level="title-md" sx={{ mb: 1 }}>
-                        📁 {item.name}
-                      </Typography>
-                      <Typography
-                        level="body-sm"
-                        sx={{ color: "text.secondary", mb: 2 }}
-                      >
-                        {item.description}
-                      </Typography>
+                      📂 Attachment Logs
+                    </Button>
+                  )}
+                </Sheet>
+              ))
+            ) : (
+              <Typography>No documentation found for {selected}.</Typography>
+            )}
+          </Box>
 
-                      <Typography level="body-xs" sx={{ fontWeight: 600 }}>
-                        Max Uploads Allowed: {item.maxFiles}
-                      </Typography>
-
-                      <Box
-                        sx={{
-                          display: "grid",
-                          gridTemplateColumns: {
-                            xs: "1fr",
-                            sm: "repeat(auto-fit, minmax(200px, 1fr))",
-                          },
-                          gap: 1.5,
-                          mt: 1.5,
-                        }}
-                      >
-                        {Array.from({ length: item.maxFiles }).map(
-                          (_, fileInputIndex) => (
-                            <input
-                              key={fileInputIndex}
-                              type="file"
-                              onChange={(e) =>
-                                handleFileChange(
-                                  index,
-                                  fileInputIndex,
-                                  e.target.files[0]
-                                )
-                              }
-                              style={{
-                                padding: "8px",
-                                border: "1px solid #ccc",
-                                borderRadius: "6px",
-                                backgroundColor: "#fff",
-                                width: "100%",
-                              }}
-                            />
-                          )
-                        )}
-                      </Box>
-
-                      {/* {item.attachmentUrls?.length > 0 && (
-                        <Box sx={{ mt: 2 }}>
-                          <Typography
-                            level="body-xs"
-                            sx={{ fontWeight: 500, mb: 0.5 }}
-                          >
-                            Previously Uploaded:
-                          </Typography>
-                          <ul style={{ paddingLeft: "1rem", margin: 0 }}>
-                            {item.attachmentUrls.map((url, i) => (
-                              <li key={i}>
-                                <a
-                                  href={url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  File {i + 1}
-                                </a>
-                              </li>
-                            ))}
-                          </ul>
-                        </Box>
-                      )} */}
-                    </Sheet>
-                  ))
-                ) : (
-                  <Typography>
-                    No documentation found for {selected}.
-                  </Typography>
-                )}
-              </Box>
-
-              {isAnyFileSelected && (
-                <Box sx={{ textAlign: "right", mt: 4 }}>
-                  <Button
-                    variant="solid"
-                    color="primary"
-                    onClick={handleSubmit}
-                    sx={{
-                      px: 4,
-                      py: 1.5,
-                      fontWeight: "lg",
-                      borderRadius: "md",
-                    }}
-                  >
-                    📤 Submit Files
-                  </Button>
-                </Box>
-              )}
-            </>
+          {/* Submit Button */}
+          {isAnyFileSelected && (
+            <Box sx={{ textAlign: "right", mt: 4 }}>
+              <Button
+                variant="solid"
+                color="primary"
+                onClick={handleSubmit}
+                sx={{
+                  px: 4,
+                  py: 1.5,
+                  fontWeight: "lg",
+                  borderRadius: "md",
+                }}
+              >
+                📤 Submit Files
+              </Button>
+            </Box>
           )}
         </Sheet>
       </Box>
+
+      {/* Attachment Logs Modal */}
+      <Modal open={showLogsModal} onClose={() => setShowLogsModal(false)}>
+        <ModalDialog>
+          <Typography level="h5" sx={{ mb: 2 }}>
+            📂 Attachment Logs
+          </Typography>
+          {logModalData.length === 0 ? (
+            <Typography>No files uploaded.</Typography>
+          ) : (
+            <List>
+              {logModalData.map((url, i) => (
+                <ListItem key={i}>
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "#1976d2", fontSize: "14px" }}
+                  >
+                    📎 {url.split("/").pop()}
+                  </a>
+                </ListItem>
+              ))}
+            </List>
+          )}
+          <Box sx={{ textAlign: "right", mt: 2 }}>
+            <Button
+              variant="soft"
+              color="neutral"
+              onClick={() => setShowLogsModal(false)}
+            >
+              Close
+            </Button>
+          </Box>
+        </ModalDialog>
+      </Modal>
     </Box>
   );
 };
