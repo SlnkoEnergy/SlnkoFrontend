@@ -224,7 +224,7 @@ const GetBDHandoverSheetForm = ({ onBack }) => {
   // useEffect(() => {
   //   const fetchMasterData = async () => {
   //     try {
-  //       const response = await axios.get("https://api.slnkoprotrac.com/v1/get-module-master");
+  //       const response = await axios.get("${process.env.REACT_APP_API_URL}/get-module-master");
 
   //       // console.log("Module Master Response:", response.data);
 
@@ -233,7 +233,7 @@ const GetBDHandoverSheetForm = ({ onBack }) => {
 
   //       // console.log("Extracted Module Master Data:", moduleData);
 
-  //       const Inverterresponse = await axios.get("https://api.slnkoprotrac.com/v1/get-master-inverter");
+  //       const Inverterresponse = await axios.get("${process.env.REACT_APP_API_URL}/get-master-inverter");
 
   //       // console.log("Inverter Master Response:", Inverterresponse.data);
 

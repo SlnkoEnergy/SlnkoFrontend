@@ -8,7 +8,6 @@ import Offer10 from "../comm_add/offer_10";
 // import Offer11 from "../comm_add/offer_11";
 // import Offer12 from "../comm_add/offer_12";
 import Offer13 from "../comm_add/offer_13";
-// import Offer14 from "../comm_add/offer_14";
 import Offer15 from "../comm_add/offer_15";
 import Offer16 from "../comm_add/offer_16";
 import Offer17 from "../comm_add/offer_17";

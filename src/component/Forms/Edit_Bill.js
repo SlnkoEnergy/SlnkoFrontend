@@ -180,7 +180,7 @@ const [poRes, billRes] = await Promise.all([
       setError("");
        const token = localStorage.getItem("authToken");
 
-      const endpoint = `https://api.slnkoprotrac.com/v1/update-bill/${formValues._id}`;
+      const endpoint = `${process.env.REACT_APP_API_URL}/update-bill/${formValues._id}`;
       const response = await Axios.put(endpoint, dataToPost,  { headers: {
             "x-auth-token": token,
       }});
