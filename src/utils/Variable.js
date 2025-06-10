@@ -1,1 +1,1 @@
-export const baseurl = "https://staging.api.slnkoprotrac.com/v1/";
+export const baseurl = `${process.env.REACT_APP_API_URL}/`;

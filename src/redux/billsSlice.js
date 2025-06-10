@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: "https://api.slnkoprotrac.com/v1/",
+  baseUrl: `${process.env.REACT_APP_API_URL}/`,
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("authToken");
     if (token) {

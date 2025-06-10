@@ -234,7 +234,7 @@ const Expense_Form = () => {
         const token = localStorage.getItem("authToken");
 
         const response = await axios.get(
-          "https://api.slnkoprotrac.com/v1/get-all-project-IT",
+          "${process.env.REACT_APP_API_URL}/get-all-project-IT",
           {
             headers: {
               "x-auth-token": token,
