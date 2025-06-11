@@ -1,6 +1,4 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
-
 const baseQuery = fetchBaseQuery({
   baseUrl: `${process.env.REACT_APP_API_URL}/`,
   prepareHeaders: (headers) => {
@@ -21,7 +19,6 @@ export const loginsApi = createApi({
       query: () => "get-all-useR-IT",
       providesTags: ["Login"],
     }),
-
     addLogins: builder.mutation({
       query: (newLogin) => ({
         url: "logiN-IT",
@@ -30,7 +27,6 @@ export const loginsApi = createApi({
       }),
       invalidatesTags: ["Login"],
     }),
-
     verifyOtp: builder.mutation({
       query: (otpPayload) => ({
         url: "verifyOtp",
@@ -38,7 +34,6 @@ export const loginsApi = createApi({
         body: otpPayload,
       }),
     }),
-
     addEmail: builder.mutation({
       query: (newEmail) => ({
         url: "sendOtp",
@@ -47,7 +42,6 @@ export const loginsApi = createApi({
       }),
       invalidatesTags: ["Login"],
     }),
-
     resetPassword: builder.mutation({
       query: (payload) => ({
         url: "resetPassword",
@@ -57,7 +51,6 @@ export const loginsApi = createApi({
     }),
   }),
 });
-
 export const {
   useGetLoginsQuery,
   useAddEmailMutation,

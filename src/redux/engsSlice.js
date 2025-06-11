@@ -2,7 +2,6 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 import { BASE_URL, getAuthToken } from "./auth/auth_variable";
 
-
 const baseQuery = fetchBaseQuery({
   baseUrl: `${process.env.REACT_APP_API_URL}/`,
   prepareHeaders: (headers) => {
@@ -23,7 +22,7 @@ export const engsApi = createApi({
     // getEngs: builder.query({
     //   query: () => "get-all-task",
     //   providesTags: ["Eng"],
-      
+
     // }),
     addEng: builder.mutation({
       query: (addBOM) => ({
@@ -36,12 +35,9 @@ export const engsApi = createApi({
     // getTasksHistory: builder.query({
     //   query: () => "get-task-history",
     //   providesTags: ["Task"],
-      
+
     // }),
   }),
 });
 
-export const {
-useAddEngMutation
-} = engsApi;
-
+export const { useAddEngMutation } = engsApi;
