@@ -1,102 +1,79 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Button,
   FormControl,
   FormLabel,
   Input,
-  Select,
-  Option,
-  IconButton,
   Typography,
-  Sheet,
 } from "@mui/joy";
-import DeleteIcon from "@mui/icons-material/Delete";
-import { useCreateMaterialCategoryMutation } from "../../../redux/Eng/masterSheet";
-import { useSearchParams } from "react-router-dom";
+import {
+  useCreateMaterialMutation,
+  useGetMaterialCategoryQuery,
+} from "../../../redux/Eng/masterSheet";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
-const Material = ({item}) => {
-  
+const Material = ({ item }) => {
+  const [searchParams] = useSearchParams();
+  const _id = searchParams.get("_id");
+  const navigate = useNavigate();
   const [materialData, setMaterialData] = useState({
     name: "",
     description: "",
     materialHeaders: [],
   });
 
-const [headerInput, setHeaderInput] = useState({
-  name: "",
-  input_type: "text",
-  key: "",
-  placeholder: "",
-  required: false,
-});
+  const [headerInput, setHeaderInput] = useState({
+    name: "",
+    input_type: "text",
+    key: "",
+    placeholder: "",
+    required: false,
+  });
 
-  const [createMaterialCategory] = useCreateMaterialCategoryMutation();
+  const [createMaterial] = useCreateMaterialMutation();
+  const {
+    data: materialModelData,
+    isLoading: loadingMaterialModelData,
+    isError: errorMaterial,
+  } = useGetMaterialCategoryQuery(_id, {
+    skip: !_id, // Avoid fetch if ID is null
+  });
 
-  const handleHeaderInputChange = (field, value) => {
-    setHeaderInput((prev) => ({ ...prev, [field]: value }));
+  console.log(materialModelData);
+
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  if (!materialModelData?.data?.fields) {
+    console.error("Fields data not available");
+    return;
+  }
+
+  const finalData = materialModelData.data.fields.map((field) => ({
+    name: field.name,
+    values: [
+      {
+        input_values: materialData[field.key] ?? "",
+      },
+    ],
+  }));
+
+  const payload = {
+    category: _id, // from useSearchParams
+    data: finalData,
+    is_available: true, // or false if needed
   };
 
-  const addHeader = () => {
-    if (
-      !headerInput.name.trim() ||
-      !headerInput.key.trim() ||
-      !headerInput.input_type
-    ) return alert("Please fill all header fields");
-
-    if (
-      materialData.materialHeaders.some(
-        (h) => h.key.toLowerCase() === headerInput.key.toLowerCase()
-      )
-    ) return alert("Key Name must be unique");
-
-    setMaterialData((prev) => ({
-      ...prev,
-      materialHeaders: [...prev.materialHeaders, headerInput],
-    }));
-
-    setHeaderInput({
-      name: "",
-      input_type: "text",
-      key: "",
-      placeholder: "",
-    });
-  };
-
-  const editHeader = (index, field, value) => {
-    setMaterialData((prev) => {
-      const newHeaders = [...prev.materialHeaders];
-      newHeaders[index][field] = value;
-      return { ...prev, materialHeaders: newHeaders };
-    });
-  };
-
-  const removeHeader = (index) => {
-    setMaterialData((prev) => {
-      const newHeaders = prev.materialHeaders.filter((_, i) => i !== index);
-      return { ...prev, materialHeaders: newHeaders };
-    });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const payload = {
-      name: materialData.name,
-      description: materialData.description,
-      fields: materialData.materialHeaders, // key changed here
-    };
-
-    try {
-      const response = await createMaterialCategory(payload).unwrap();
-      alert("Success: " + response.message);
-      // Reset form
-      setMaterialData({ name: "", description: "", materialHeaders: [] });
-    } catch (error) {
-      alert("Error creating material category");
-      console.error(error);
-    }
-  };
+  try {
+    await createMaterial(payload).unwrap();
+    alert("Material created successfully");
+    navigate('/module_sheet');
+  } catch (error) {
+    console.error("Failed to create material:", error);
+  }
+};
 
   return (
     <Box sx={{ p: 4, marginLeft: "25%" }}>
@@ -104,34 +81,31 @@ const [headerInput, setHeaderInput] = useState({
 
       <form onSubmit={handleSubmit}>
         <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 4 }}>
-          <FormControl required sx={{ flex: "1 1 300px" }}>
-            <FormLabel>Name</FormLabel>
-            <Input
-              value={materialData.name}
-              onChange={(e) =>
-                setMaterialData((prev) => ({ ...prev, name: e.target.value }))
-              }
-            />
-          </FormControl>
-          <FormControl required sx={{ flex: "1 1 300px" }}>
-            <FormLabel>Description</FormLabel>
-            <Input
-              multiline
-              minRows={2}
-              value={materialData.description}
-              onChange={(e) =>
-                setMaterialData((prev) => ({
-                  ...prev,
-                  description: e.target.value,
-                }))
-              }
-            />
-          </FormControl>
+          {materialModelData?.data.fields?.map((field, index) => (
+            <FormControl
+              key={index}
+              required={field.required}
+              sx={{ flex: "1 1 300px", mb: 2 }}
+            >
+              <FormLabel>{field.name}</FormLabel>
+              <Input
+                type={field.input_type || "text"}
+                placeholder={field.placeholder || ""}
+                value={materialData[field.key] || ""}
+                onChange={(e) =>
+                  setMaterialData((prev) => ({
+                    ...prev,
+                    [field.key]: e.target.value,
+                  }))
+                }
+              />
+            </FormControl>
+          ))}
         </Box>
 
         <Box sx={{ mt: 4 }}>
           <Button type="submit" variant="solid" color="primary">
-           {` Submit ${item}`}
+            {` Submit ${item}`}
           </Button>
         </Box>
       </form>
