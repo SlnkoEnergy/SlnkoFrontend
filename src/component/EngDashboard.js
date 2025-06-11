@@ -753,8 +753,4 @@ function Dash_eng() {
     </>
   );
 }
-<<<<<<< HEAD
 export default Dash_eng;
-=======
-export default Dash_eng;
->>>>>>> f279fdc308ebd39ca24363bbbcf913b1b302f3ff
