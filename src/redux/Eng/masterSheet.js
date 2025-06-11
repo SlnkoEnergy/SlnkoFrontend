@@ -30,10 +30,29 @@ export const masterSheetApi = createApi({
       query: () => "all-material-category",
       providesTags: ["MasterSheet"],
     }),
+
+  getMaterialCategory: builder.query({
+    query: (_id) => `material-category-id?id=${_id}`,
+    providesTags:["MasterSheet"]
+  }),
+   createMaterial: builder.mutation({
+    query: (newMaterial) => ({
+      url: "create-material",
+      method:"POST",
+      body: newMaterial
+    })
+   }),
+   getAllMaterial: builder.query({
+    query: (category) => `all-materials?category=${category}`,
+    providesTags:["MasterSheet"]
+   })
 })
 });
 
 export const {
   useCreateMaterialCategoryMutation,
   useGetAllMaterialCategoryQuery,
+  useGetMaterialCategoryQuery,
+  useCreateMaterialMutation,
+  useGetAllMaterialQuery
 } = masterSheetApi;

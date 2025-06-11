@@ -26,8 +26,6 @@ function ModuleSheet() {
   const selectedModuleData =
     categoryData.find((category) => category.name === selectedModule) || {};
 
-    console.log(selectedModuleData);
-
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -49,7 +47,7 @@ function LeadPage({
   setSelectedModule,
   moduleOptions,
   selectedModuleData,
-  categoryData
+  categoryData,
 }) {
   const { mode } = useColorScheme();
 
@@ -137,22 +135,23 @@ function LeadPage({
             >
               Add Material Category
             </Button>
-           
-           <Button
-  color="primary"
-  size="sm"
-  onClick={() => {
-    const selectedObj = categoryData.find(cat => cat.name === selectedModule);
-    if (selectedObj?._id) {
-      navigate(`/add_material?item=${selectedObj?.name}&_id=${selectedObj._id}`);
-    }
-  }}
->
-  {`Add ${selectedModule}`}
-</Button>
 
-
-
+            <Button
+              color="primary"
+              size="sm"
+              onClick={() => {
+                const selectedObj = categoryData.find(
+                  (cat) => cat.name === selectedModule
+                );
+                if (selectedObj?._id) {
+                  navigate(
+                    `/add_material?item=${selectedObj?.name}&_id=${selectedObj._id}`
+                  );
+                }
+              }}
+            >
+              {`Add ${selectedModule}`}
+            </Button>
           </Box>
         </Box>
 
@@ -205,7 +204,10 @@ function LeadPage({
           ))}
         </Box>
 
-        <Material_Category_Tab selectedModuleData={selectedModuleData}/>
+        <Material_Category_Tab
+          selectedModuleData={selectedModuleData}
+          id={selectedModuleData._id}
+        />
       </Box>
     </Box>
   );

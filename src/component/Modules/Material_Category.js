@@ -29,44 +29,34 @@ import { Divider, Grid, Modal, Option, Select } from "@mui/joy";
 import { forwardRef, useCallback, useImperativeHandle } from "react";
 import NoData from "../../assets/alert-bell.svg";
 import { toast } from "react-toastify";
-import { useGetInvertersQuery } from "../../redux/Eng/invertersSlice";
+import { useGetAllMaterialQuery } from "../../redux/Eng/masterSheet";
 
-const Material_Category_Tab = ({ selectedModuleData }) => {
+const Material_Category_Tab = ({ selectedModuleData, id }) => {
   const headers = selectedModuleData?.fields?.map((field) => field.name) || [];
-  console.log(headers);
 
-  const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
   const [selectedInverter, setSelectedInverter] = useState(null);
 
-  const { data: getInverter = [], isLoading, error } = useGetInvertersQuery();
-  const inverters = useMemo(() => getInverter?.data ?? [], [getInverter?.data]);
-
   useEffect(() => {
     const storedUser = localStorage.getItem("userDetails");
     if (storedUser) {
       setUser(JSON.parse(storedUser));
-      // console.log("User Loaded:", JSON.parse(storedUser));
     }
   }, []);
 
-  const [openModal, setOpenModal] = useState(false);
 
-  const handleOpenModal = useCallback((inverter) => {
-    setSelectedInverter(inverter);
-    setOpenModal(true);
-  }, []);
+  const {
+    data: materialModelData,
+    isLoading: loadingMaterialModelData,
+    isError: errorMaterial,
+  } = useGetAllMaterialQuery(id, {
+    skip: !id, // Avoid fetch if ID is null
+  });
 
-  const handleCloseModal = useCallback(() => {
-    setOpenModal(false);
-    setSelectedInverter(null);
-  }, []);
+  console.log("material:", materialModelData);
 
   const renderFilters = () => (
     <>
@@ -81,130 +71,6 @@ const Material_Category_Tab = ({ selectedModuleData }) => {
     </>
   );
 
-  const handleSelectAll = (event) => {
-    if (event.target.checked) {
-      // Select all visible (paginated) leads
-      const allInverters = paginatedData.map((inverter) => inverter._id);
-      setSelected(allInverters);
-    } else {
-      // Unselect all
-      setSelected([]);
-    }
-  };
-
-  const handleRowSelect = (_id) => {
-    setSelected((prev) =>
-      prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
-    );
-  };
-
-  const RowMenu = ({ currentPage, id }) => {
-    // console.log(currentPage, id);
-    return (
-      <Dropdown>
-        <MenuButton
-          slots={{ root: IconButton }}
-          slotProps={{
-            root: { variant: "plain", color: "neutral", size: "sm" },
-          }}
-        >
-          <MoreHorizRoundedIcon />
-        </MenuButton>
-        <Menu size="sm" sx={{ minWidth: 140 }}>
-          <MenuItem
-            color="primary"
-            onClick={() => {
-              const page = currentPage;
-              const leadId = String(id);
-              // const projectID = Number(p_id);
-              // localStorage.setItem("edit_initial", leadId);
-              // localStorage.setItem("p_id", projectID);
-              // navigate(`/edit_initial?page=${page}&id=${leadId}`);
-              navigate("#");
-            }}
-          >
-            {/* <ContentPasteGoIcon /> */}
-            <RemoveRedEyeIcon />
-            <Typography>View Details</Typography>
-          </MenuItem>
-          <MenuItem
-            color="primary"
-            onClick={() => {
-              const page = currentPage;
-              const leadId = String(id);
-              // const projectID = Number(p_id);
-              setOpen(true);
-              // localStorage.setItem("stage_next", leadId);
-              // localStorage.setItem("p_id", projectID);
-              // navigate(`/initial_to_all?page=${page}&${leadId}`);
-              navigate("#");
-            }}
-          >
-            {/* <NextPlanIcon /> */}
-            <EditRoundedIcon />
-            <Typography>Edit Details</Typography>
-          </MenuItem>
-          {/* <MenuItem
-            color="primary"
-            onClick={() => {
-              const page = currentPage;
-              const leadId = String(id);
-              // const projectID = Number(p_id);
-              localStorage.setItem("view_initial_history", leadId);
-              // localStorage.setItem("p_id", projectID);
-              navigate(`/initial_records?page=${page}&${leadId}`);
-            }}
-          >
-            <ManageHistoryIcon />
-            <Typography>View History</Typography>
-          </MenuItem> */}
-          {/* <MenuItem
-            color="primary"
-            onClick={() => {
-              const page = currentPage;
-              const leadId = String(id);
-              // const projectID = Number(p_id);
-              localStorage.setItem("add_task_initial", leadId);
-              // localStorage.setItem("p_id", projectID);
-              navigate(`/add_task_initial?page=${page}&${leadId}`);
-            }}
-          >
-            <AddCircleOutlineIcon />
-            <Typography>Add Task</Typography>
-          </MenuItem> */}
-          {/* <MenuItem
-            color="primary"
-            onClick={() => {
-              const page = currentPage;
-              const leadId = String(id);
-              // const projectID = Number(p_id);
-              localStorage.setItem("view_initial", leadId);
-              // localStorage.setItem("p_id", projectID);
-              navigate(`/initial_Summary?page=${page}&id=${leadId}`);
-            }}
-          >
-            <RemoveRedEyeIcon />
-            <Typography>Initial Summary</Typography>
-          </MenuItem> */}
-          <Divider sx={{ backgroundColor: "lightblue" }} />
-          <MenuItem color="danger">
-            <DeleteIcon />
-            <Typography>Delete</Typography>
-          </MenuItem>
-        </Menu>
-      </Dropdown>
-    );
-  };
-
-  // const cacheKey = `leadsPage-${currentPage}`;
-
-  // useEffect(() => {
-  //   const cachedData = sessionStorage.getItem(cacheKey);
-  //   if (cachedData) {
-  //     setPaginatedData(JSON.parse(cachedData)); // Load cached data
-  //   }
-  // }, [cacheKey]);
-
   const formatDate = (date) => {
     if (!date) return new Date();
     const [day, month, year] = date.split("-");
@@ -215,157 +81,9 @@ const Material_Category_Tab = ({ selectedModuleData }) => {
     setSearchQuery(e.target.value.toLowerCase());
   };
 
-  // const handleDateFilter = (e) => {
-  //   setSelectedDate(e.target.value);
-  // };
 
-  // const filteredData = useMemo(() => {
-  //   // if (!user || !user.name) return [];
-
-  //   return modules
-  //     .filter((module) => {
-  //       // const submittedBy = module.submitted_by?.trim() || "";
-  //       // const userName = user.name.trim();
-  //       // const userRole = user.role?.toLowerCase();
-
-  //       // const isAdmin = userRole === "admin" || userRole === "superadmin";
-  //       // const matchesUser = isAdmin || submittedBy === userName;
-
-  //       const matchesQuery = [
-  //         "make",
-  //         "status",
-
-  //       ].some((key) => module[key]?.toLowerCase().includes(searchQuery));
-
-  //       // const matchesDate = selectedDate
-  //       //   ? formatDate(module.entry_date).toLocaleDateString() ===
-  //       //     formatDate(selectedDate).toLocaleDateString()
-  //       //   : true;
-
-  //       return matchesQuery;
-  //     })
-  //     .sort((a, b) => {
-  //       const dateA = formatDate(a.createdAt);
-  //       const dateB = formatDate(b.createdAt);
-
-  //       if (!dateA.id) return 1;
-  //       if (!dateB.id) return -1;
-
-  //       return dateB - dateA;
-  //     });
-  // }, [modules, searchQuery, selectedDate, user]);
-
-  const filteredData = useMemo(() => {
-    return inverters
-      .filter((inverter) => {
-        const matchesQuery = ["make", "status"].some((key) =>
-          inverter[key]?.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-
-        return matchesQuery;
-      })
-      .sort((a, b) => {
-        const dateA = new Date(a.createdAt);
-        const dateB = new Date(b.createdAt);
-        return dateB - dateA;
-      });
-  }, [inverters, searchQuery]);
-
-  // const filteredData = useMemo(() => {
-  //   return leads
-  //     .filter((lead) => {
-  //       const matchesQuery = ["id", "c_name", "mobile", "state"].some((key) =>
-  //         lead[key]?.toLowerCase().includes(searchQuery)
-  //       );
-  //       const matchesDate = selectedDate
-  //         ? formatDate(lead.entry_date) === selectedDate
-  //         : true;
-  //       return matchesQuery && matchesDate;
-  //     })
-  //     .sort((a, b) => {
-  //       const dateA = formatDate(a.entry_date);
-  //       const dateB = formatDate(b.entry_date);
-
-  //       if (isNaN(dateA.getTime())) return 1;
-  //       if (isNaN(dateB.getTime())) return -1;
-
-  //       return dateB - dateA;
-  //     });
-  // }, [leads, searchQuery, selectedDate]);
-
-  // const getPaginatedData = (page) => {
-  //   const startIndex = (page - 1) * itemsPerPage;
-  //   const endIndex = startIndex + itemsPerPage;
-  //   return filteredData.slice(startIndex, endIndex);
-  // };
-
-  // const paginatedData = useMemo(() => getPaginatedData(currentPage), [filteredData, currentPage]);
-
-  // Cache data in localStorage
-  // const cacheData = (data) => {
-  //   localStorage.setItem("paginatedData", JSON.stringify(data));
-  // };
-
-  // Update filterData and paginatedData
-  // useEffect(() => {
-  //   const data = filterData;
-  //   setFilteredData(data);
-
-  //   // Cache filtered data in localStorage for future use
-  //   cacheData(data);
-  // }, [filterData]);
-
-  // useEffect(() => {
-  //   const cached = localStorage.getItem("paginatedData");
-  //   if (cached) {
-  //     setCachedData(JSON.parse(cached));
-  //   }
-  // }, []);
-
-  // Paginated data based on currentPage and filtered data
-  // const paginatedData = useMemo(() => {
-  //   return getPaginatedData(currentPage);
-  // }, [filteredData, currentPage]);
-
-  useEffect(() => {
-    const page = parseInt(searchParams.get("page")) || 1;
-    setCurrentPage(page);
-  }, [searchParams]);
-
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-
-  const paginatedData = useMemo(() => {
-    return filteredData.slice(
-      (currentPage - 1) * itemsPerPage,
-      currentPage * itemsPerPage
-    );
-  }, [filteredData, currentPage, itemsPerPage]);
-
-  const handlePageChange = (newPage) => {
-    const page = Math.max(1, Math.min(newPage, totalPages));
-    setCurrentPage(page);
-    setSearchParams({ page });
-  };
-
-  const generatePageNumbers = (currentPage, totalPages) => {
-    const pages = [];
-
-    if (currentPage > 2) pages.push(1);
-    if (currentPage > 3) pages.push("...");
-
-    for (
-      let i = Math.max(1, currentPage - 1);
-      i <= Math.min(totalPages, currentPage + 1);
-      i++
-    ) {
-      pages.push(i);
-    }
-
-    if (currentPage < totalPages - 2) pages.push("...");
-    if (currentPage < totalPages - 1) pages.push(totalPages);
-
-    return pages;
-  };
+  const isLoading = false;
+  const error = false;
 
   return (
     <>
@@ -397,10 +115,7 @@ const Material_Category_Tab = ({ selectedModuleData }) => {
           />
         </FormControl>
         {renderFilters()}
-
       </Box>
-
-      
 
       {/* Table */}
       <Sheet
@@ -468,23 +183,12 @@ const Material_Category_Tab = ({ selectedModuleData }) => {
                     textAlign: "center",
                   }}
                 >
-                  <Checkbox
-                    size="sm"
-                    checked={
-                      selected.length === paginatedData.length &&
-                      paginatedData.length > 0
-                    }
-                    indeterminate={
-                      selected.length > 0 &&
-                      selected.length < paginatedData.length
-                    }
-                    onChange={handleSelectAll}
-                  />
+                  <Checkbox size="sm" />
                 </Box>
                 {[
                   ...(selectedModuleData?.fields?.map((field) => field.name) ||
                     []),
-                  "Action",
+                  "Status",
                 ].map((header, index) => (
                   <Box
                     component="th"
@@ -501,17 +205,17 @@ const Material_Category_Tab = ({ selectedModuleData }) => {
                 ))}
               </Box>
             </Box>
-
             <Box component="tbody">
-              {paginatedData.length > 0 ? (
-                paginatedData.map((inverter, index) => (
+              {materialModelData?.data.length > 0 ? (
+                materialModelData.data.map((material) => (
                   <Box
                     component="tr"
-                    key={index}
+                    key={material._id}
                     sx={{
                       "&:hover": { backgroundColor: "neutral.plainHoverBg" },
                     }}
                   >
+                    {/* Checkbox column */}
                     <Box
                       component="td"
                       sx={{
@@ -523,42 +227,33 @@ const Material_Category_Tab = ({ selectedModuleData }) => {
                       <Checkbox
                         size="sm"
                         color="primary"
-                        checked={selected.includes(inverter._id)}
-                        onChange={() => handleRowSelect(inverter._id)}
+                        checked={selected.includes(material._id)}
                       />
                     </Box>
 
-                    {[
-                      <span
-                        key={inverter.id}
-                        onClick={() => handleOpenModal(inverter)}
-                        style={{
-                          cursor: "pointer",
-                          color: "black",
-                          textDecoration: "none",
-                        }}
-                      >
-                        {inverter.inveter_make}
-                      </span>,
-                      inverter.inveter_size,
+                    {/* Dynamic data columns */}
+                    {material.category.fields.map((field, idx) => {
+                      const fieldValue = material.data.find(
+                        (d) => d.name === field.name
+                      );
+                      return (
+                        <Box
+                          component="td"
+                          key={idx}
+                          sx={{
+                            borderBottom: "1px solid #ddd",
+                            padding: "8px",
+                            textAlign: "center",
+                          }}
+                        >
+                          {fieldValue?.values
+                            ?.map((v) => v.input_values)
+                            .join(", ") || "-"}
+                        </Box>
+                      );
+                    })}
 
-                      inverter.inveter_model,
-                      inverter.status,
-                    ].map((data, idx) => (
-                      <Box
-                        component="td"
-                        key={idx}
-                        sx={{
-                          borderBottom: "1px solid #ddd",
-                          padding: "8px",
-                          textAlign: "center",
-                        }}
-                      >
-                        {data}
-                      </Box>
-                    ))}
-
-                    {/* Actions */}
+                    {/* Status column */}
                     <Box
                       component="td"
                       sx={{
@@ -567,7 +262,7 @@ const Material_Category_Tab = ({ selectedModuleData }) => {
                         textAlign: "center",
                       }}
                     >
-                      <RowMenu currentPage={currentPage} id={inverter.id} />
+                      {material.is_available ? "Available" : "Not Available"}
                     </Box>
                   </Box>
                 ))
@@ -575,31 +270,18 @@ const Material_Category_Tab = ({ selectedModuleData }) => {
                 <Box component="tr">
                   <Box
                     component="td"
-                    colSpan={6}
+                    colSpan={
+                      materialModelData?.data?.[0]?.category?.fields.length +
+                        2 || 3
+                    }
                     sx={{
-                      padding: "8px",
+                      borderBottom: "1px solid #ddd",
+                      padding: "16px",
                       textAlign: "center",
-                      fontStyle: "italic",
+                      color: "gray",
                     }}
                   >
-                    <Box
-                      sx={{
-                        fontStyle: "italic",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <img
-                        src={NoData}
-                        alt="No data"
-                        style={{ width: "50px", height: "50px" }}
-                      />
-                      <Typography fontStyle={"italic"}>
-                        No Inverters available
-                      </Typography>
-                    </Box>
+                    No data available
                   </Box>
                 </Box>
               )}
@@ -607,134 +289,6 @@ const Material_Category_Tab = ({ selectedModuleData }) => {
           </Box>
         )}
       </Sheet>
-
-      {/* Pagination */}
-      <Box
-        className="Pagination-laptopUp"
-        sx={{
-          pt: 2,
-          gap: 1,
-          [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
-          display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
-          alignItems: "center",
-          marginLeft: { xl: "15%", lg: "18%" },
-        }}
-      >
-        <Button
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          startDecorator={<KeyboardArrowLeftIcon />}
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-        >
-          Previous
-        </Button>
-        <Box>
-          Showing {paginatedData.length} of {filteredData.length} results
-        </Box>
-        {/* <Typography>
-          Page {currentPage} of {totalPages || 1}
-        </Typography> */}
-        <Box
-          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
-        >
-          {generatePageNumbers(currentPage, totalPages).map((page, index) =>
-            typeof page === "number" ? (
-              <IconButton
-                key={index}
-                size="sm"
-                variant={page === currentPage ? "contained" : "outlined"}
-                color="neutral"
-                onClick={() => handlePageChange(page)}
-              >
-                {page}
-              </IconButton>
-            ) : (
-              <Typography key={index} sx={{ px: 1, alignSelf: "center" }}>
-                {page}
-              </Typography>
-            )
-          )}
-        </Box>
-        <Button
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          endDecorator={<KeyboardArrowRightIcon />}
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-        >
-          Next
-        </Button>
-      </Box>
-
-      <Modal open={openModal} onClose={handleCloseModal}>
-        <Box
-          sx={{
-            p: 4,
-            bgcolor: "background.surface",
-            borderRadius: "md",
-            maxWidth: 600,
-            mx: "auto",
-            mt: 10,
-          }}
-        >
-          <Grid container spacing={2}>
-            <Grid xs={12} sm={6}>
-              <FormLabel>Make</FormLabel>
-              <Input
-                name="make"
-                value={selectedInverter?.inveter_make ?? ""}
-                readOnly
-                fullWidth
-              />
-            </Grid>
-            <Grid xs={12} sm={6}>
-              <FormLabel>Size</FormLabel>
-              <Input
-                name="power"
-                value={selectedInverter?.inveter_size ?? ""}
-                readOnly
-                fullWidth
-              />
-            </Grid>
-            <Grid xs={12} sm={6}>
-              <FormLabel>Specification</FormLabel>
-              <Input
-                name="type"
-                value={selectedInverter?.inveter_type ?? ""}
-                readOnly
-                fullWidth
-              />
-            </Grid>
-
-            <Grid xs={12} sm={6}>
-              <FormLabel>Model No</FormLabel>
-              <Input
-                name="model"
-                value={selectedInverter?.inveter_model ?? ""}
-                readOnly
-                fullWidth
-              />
-            </Grid>
-
-            <Grid xs={12}>
-              <FormLabel>Status</FormLabel>
-              <Input
-                name="status"
-                value={selectedInverter?.status ?? ""}
-                readOnly
-                fullWidth
-              />
-            </Grid>
-          </Grid>
-          <Box textAlign="center" sx={{ mt: 2 }}>
-            <Button onClick={handleCloseModal}>Close</Button>
-          </Box>
-        </Box>
-      </Modal>
     </>
   );
 };
