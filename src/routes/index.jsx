@@ -107,6 +107,7 @@ import Eng_Overview from "../pages/Eng/Eng_Overview";
 
 import Update_Expense from "../pages/ExpenseSheet/Expense_Accounts_HR";
 import Add_Material_Category from "../pages/Eng/Forms/Add_Material_Category";
+import Add_Material from "../pages/Eng/Forms/Add_Material";
 
 
 function index() {
@@ -355,6 +356,14 @@ function index() {
       element={
         <PrivateRoute>
           <Add_Material_Category />
+        </PrivateRoute>
+      }
+      />
+      <Route
+      path="/add_material"
+      element={
+        <PrivateRoute>
+          <Add_Material />
         </PrivateRoute>
       }
       />
