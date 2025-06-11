@@ -1,10 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 import { BASE_URL, getAuthToken } from "./auth/auth_variable";
-<<<<<<< HEAD
-=======
-
->>>>>>> f279fdc308ebd39ca24363bbbcf913b1b302f3ff
 
 const baseQuery = fetchBaseQuery({
   baseUrl: `${process.env.REACT_APP_API_URL}/`,
