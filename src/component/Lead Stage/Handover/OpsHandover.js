@@ -116,6 +116,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
       slnko_basic: "",
       total_gst: "",
       billing_type: "",
+      billing_by: "",
       project_status: "incomplete",
       remark: "",
       remarks_for_slnko: "",
@@ -169,19 +170,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
     }));
   };
 
-  const handoverSchema = Yup.object().shape({
-    customer_details: Yup.object().shape({
-      code: Yup.string().required("Project ID is required"),
-    }),
 
-    project_detail: Yup.object().shape({
-      tarrif: Yup.string().required("Tariff rate is required"),
-    }),
-
-    other_details: Yup.object().shape({
-      billing_type: Yup.string().required("Billing type is required"),
-    }),
-  });
 
   // useEffect(() => {
   //   const userData = getUserData();
@@ -230,7 +219,6 @@ const OpsHandoverSheetForm = ({ onBack }) => {
       console.log("Fetched handover data:", handoverData);
     }
   }, [handoverData, isLoading, error]);
-  
 
   useEffect(() => {
     if (getHandOverSheet?.data) {
@@ -366,7 +354,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
         return;
       }
 
-      await handoverSchema.validate(formData, { abortEarly: false });
+     
 
       const updatedFormData = {
         _id: formData._id,
@@ -456,7 +444,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                Project ID <span style={{ color: "red" }}>*</span>
+                Project ID 
               </Typography>
               <Input
                 required
@@ -470,7 +458,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                Tariff Rate<span style={{ color: "red" }}>*</span>
+                Tariff Rate
               </Typography>
               <Input
                 value={formData.project_detail.tarrif}
@@ -500,6 +488,27 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 placeholder="Billing Type"
                 sx={{ width: "100%" }}
               />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Typography
+                level="body1"
+                sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+              >
+                Billing By
+              </Typography>
+              <Select
+                fullWidth
+                placeholder="Select Billing"
+                value={formData["other_details"]?.["billing_by"] || ""}
+                onChange={(e, newValue) =>
+                  handleChange("other_details", "billing_by", newValue)
+                }
+              >
+                <Option value="Jharkhand">Slnko Energy Jharkhand</Option>
+                <Option value="UP">Slnko Energy UP</Option>
+                <Option value="Infra-UP">Slnko Infra UP</Option>
+              </Select>
             </Grid>
 
             <Grid item xs={12} sm={6}>
@@ -555,7 +564,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                Contact Person <span style={{ color: "red" }}>*</span>
+                Contact Person 
               </Typography>
               <Input
                 required
@@ -572,7 +581,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                Project Name <span style={{ color: "red" }}>*</span>
+                Project Name 
               </Typography>
               <Input
                 required
@@ -589,7 +598,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                Group Name <span style={{ color: "red" }}>*</span>
+                Group Name 
               </Typography>
               <Input
                 required
@@ -606,7 +615,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                State <span style={{ color: "red" }}>*</span>
+                State 
               </Typography>
               <Autocomplete
                 options={states}
@@ -626,7 +635,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                EPC/Developer <span style={{ color: "red" }}>*</span>
+                EPC/Developer 
               </Typography>
               <Select
                 required
@@ -657,7 +666,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 }}
               >
                 Site Address with Pin Code{" "}
-                <span style={{ color: "red" }}>*</span>
+                
                 <Tooltip title="Enable to enter village name" placement="top">
                   <Switch
                     checked={showVillage}
@@ -705,7 +714,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                Contact No. <span style={{ color: "red" }}>*</span>
+                Contact No. 
               </Typography>
               <Input
                 required
@@ -738,7 +747,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                Type of Business <span style={{ color: "red" }}>*</span>
+                Type of Business 
               </Typography>
               <Select
                 required
@@ -767,7 +776,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                   level="body1"
                   sx={{ fontWeight: "bold", marginBottom: 0.5 }}
                 >
-                  Project Component<span style={{ color: "red" }}>*</span>
+                  Project Component
                 </Typography>
 
                 <Select
@@ -820,7 +829,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                Type<span style={{ color: "red" }}>*</span>
+                Type
               </Typography>
               <Select
                 fullWidth
@@ -846,7 +855,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                Project Type<span style={{ color: "red" }}>*</span>
+                Project Type
               </Typography>
               <Select
                 fullWidth
@@ -863,7 +872,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                Proposed AC Capacity (kW)<span style={{ color: "red" }}>*</span>
+                Proposed AC Capacity (kW)
               </Typography>
               <Input
                 value={formData.project_detail.project_kwp}
@@ -875,7 +884,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                DC Overloading (%)<span style={{ color: "red" }}>*</span>
+                DC Overloading (%)
               </Typography>
               <Input
                 value={formData.project_detail.overloading}
@@ -888,7 +897,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 Proposed DC Capacity (kWp)
-                <span style={{ color: "red" }}>*</span>
+                
               </Typography>
               <Input
                 value={formData.project_detail.proposed_dc_capacity}
@@ -901,7 +910,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                Work By Slnko<span style={{ color: "red" }}>*</span>
+                Work By Slnko
               </Typography>
               <Select
                 fullWidth
@@ -923,7 +932,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                Solar Module Scope<span style={{ color: "red" }}>*</span>
+                Solar Module Scope
               </Typography>
               <Select
                 fullWidth
@@ -946,7 +955,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography level="body1">
-                Module Type<span style={{ color: "red" }}>*</span>
+                Module Type
               </Typography>
               <Select
                 fullWidth
@@ -967,7 +976,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
                 Liaisoning for Net-Metering
-                <span style={{ color: "red" }}>*</span>
+                
               </Typography>
               <Select
                 fullWidth
@@ -992,7 +1001,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                CEIG/CEG Scope<span style={{ color: "red" }}>*</span>
+                CEIG/CEG Scope
               </Typography>
               <Select
                 fullWidth
@@ -1009,7 +1018,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
 
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                Transmission Line Scope<span style={{ color: "red" }}>*</span>
+                Transmission Line Scope
               </Typography>
 
               <Select
@@ -1028,7 +1037,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 Transmission Line Length (KM)
-                <span style={{ color: "red" }}>*</span>
+                
               </Typography>
               <Input
                 value={formData.project_detail.distance}
@@ -1044,7 +1053,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                Evacuation Voltage<span style={{ color: "red" }}>*</span>
+                Evacuation Voltage
               </Typography>
               <Select
                 fullWidth
@@ -1064,7 +1073,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                Loan Scope<span style={{ color: "red" }}>*</span>
+                Loan Scope
               </Typography>
               <Select
                 fullWidth
@@ -1084,7 +1093,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                Module Content Category<span style={{ color: "red" }}>*</span>
+                Module Content Category
               </Typography>
               <Select
                 fullWidth
@@ -1101,7 +1110,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 Slnko Service Charges (Without GST)/W{" "}
-                <span style={{ color: "red" }}>*</span>
+                
               </Typography>
               <Input
                 value={formData.other_details.slnko_basic}
@@ -1114,7 +1123,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 Slnko Service Charges (Without GST)/MWp{" "}
-                <span style={{ color: "red" }}>*</span>
+                
               </Typography>
               <Input
                 value={formData.other_details.service}
@@ -1127,7 +1136,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
               <Grid item xs={12} sm={6} mt={1}>
                 <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                   Remarks for Slnko Service Charge{" "}
-                  <span style={{ color: "red" }}>*</span>
+                  
                 </Typography>
                 <Textarea
                   value={formData.other_details.remarks_for_slnko || ""}
@@ -1148,7 +1157,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
               <Grid item xs={12} sm={6}>
                 <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                   Remarks (Any Other Commitments to Client){" "}
-                  <span style={{ color: "red" }}>*</span>
+                  
                 </Typography>
                 <Textarea
                   value={formData.other_details.remark || ""}

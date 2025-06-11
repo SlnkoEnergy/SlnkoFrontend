@@ -697,6 +697,19 @@ function Sidebar() {
                       User Dashboard
                     </ListItemButton>
                   </ListItem>
+            {(
+             ( user?.name === "Deepak Kumar Maurya" ||
+              user?.name === "Gagan Tayal") && (
+                <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/expense_accounts")}
+                    >
+                      Accounts Expense
+                    </ListItemButton>
+                  </ListItem>
+              )
+            )}
+                  
                 </List>
               </Toggler>
             </ListItem>

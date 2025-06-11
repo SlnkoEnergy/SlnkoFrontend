@@ -16,7 +16,6 @@ import Typography from "@mui/joy/Typography";
 import { forwardRef, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
-// import Axios from "../utils/Axios";
 import { Chip, Modal, ModalDialog, Textarea, useTheme } from "@mui/joy";
 import {
   useGetAllExpenseQuery,
@@ -29,14 +28,12 @@ const AccountsExpense = forwardRef((props, ref) => {
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
-  const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedExpenses, setSelectedExpenses] = useState([]);
 
   const { data: getExpense = [], isLoading, error } = useGetAllExpenseQuery();
 
-  // console.log("getExpense: ", getExpense);
 
   const [user, setUser] = useState(null);
 
@@ -60,7 +57,7 @@ const AccountsExpense = forwardRef((props, ref) => {
         ...new Set([...prevSelected, ...ids]),
       ]);
     } else {
-      // Remove only the IDs from current page
+    
       const ids = paginatedExpenses.map((row) => row._id);
       setSelectedExpenses((prevSelected) =>
         prevSelected.filter((id) => !ids.includes(id))
@@ -83,9 +80,7 @@ const AccountsExpense = forwardRef((props, ref) => {
 
   const filteredAndSortedData = expenses
     .filter((expense) => {
-      // Match user by ID
-
-      // Only include certain statuses
+      
       const allowedStatuses = [
         "hr approval",
         "final approval",
@@ -95,7 +90,7 @@ const AccountsExpense = forwardRef((props, ref) => {
       const status = expense.current_status?.toLowerCase();
       if (!allowedStatuses.includes(status)) return false;
 
-      // Filter based on search query (case-insensitive)
+      
       const search = searchQuery.toLowerCase();
       const matchesSearchQuery = [
         "expense_code",
@@ -109,7 +104,7 @@ const AccountsExpense = forwardRef((props, ref) => {
     .sort((a, b) => {
       const search = searchQuery.toLowerCase();
 
-      // Prioritize exact field matches
+      
       const fields = ["expense_code", "emp_id", "emp_name", "status"];
       for (let field of fields) {
         const aValue = a[field]?.toLowerCase() || "";
@@ -120,7 +115,7 @@ const AccountsExpense = forwardRef((props, ref) => {
         if (!aMatch && bMatch) return 1;
       }
 
-      // Fallback: sort by createdAt descending
+  
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
@@ -130,7 +125,7 @@ const AccountsExpense = forwardRef((props, ref) => {
     const [remarks, setRemarks] = useState("");
     const [updateStatus] = useUpdateExpenseStatusOverallMutation();
 
-    // Disable all chips if current status is "hr approval"
+
     const disableActions = ["hr approval", "rejected", "hold"].includes(
       status.toLowerCase()
     );
@@ -224,7 +219,6 @@ const AccountsExpense = forwardRef((props, ref) => {
   };
 
   const ExpenseCode = ({ currentPage, expense_code }) => {
-    // console.log("currentPage:", currentPage, "p_id:", p_id);
 
     return (
       <>
@@ -246,7 +240,7 @@ const AccountsExpense = forwardRef((props, ref) => {
   };
 
   const EmployeeName = ({ currentPage, expense_code, emp_name }) => {
-    // console.log("currentPage:", currentPage, "p_id:", p_id);
+   
 
     return (
       <>
@@ -592,19 +586,7 @@ const AccountsExpense = forwardRef((props, ref) => {
                       }
                     })()}
                   </Box>
-                  {/* <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    <RowMenu
-                      _id={expense._id}
-                      status={expense.current_status}
-                    />
-                  </Box> */}
+                  
                 </Box>
               ))
             ) : (

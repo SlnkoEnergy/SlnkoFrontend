@@ -938,26 +938,7 @@ const HandoverSheetForm = () => {
           />
         </Grid>
 
-          <Grid item xs={12} sm={6}>
-          <Typography
-            level="body1"
-            sx={{ fontWeight: "bold", marginBottom: 0.5 }}
-          >
-            Loan Scope
-          </Typography>
-          <Select
-            fullWidth
-            placeholder="Select Scope"
-            value={formData["project_detail"]?.["loan_scope"] || ""}
-            onChange={(e, newValue) =>
-              handleChange("project_detail", "loan_scope", newValue)
-            }
-          >
-            <Option value="Slnko">Slnko</Option>
-            <Option value="Client">Client</Option>
-            <Option value="TBD">TBD</Option>
-          </Select>
-        </Grid>
+        
 
         <Grid xs={12}>
           <Grid item xs={12} sm={6} mt={1}>
