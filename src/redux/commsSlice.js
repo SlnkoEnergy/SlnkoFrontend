@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { BASE_URL, getAuthToken } from "./auth/auth_variable";
-import { baseQuery } from "./auth/auth_variable";
+
 
 
 const baseQuery = fetchBaseQuery({
