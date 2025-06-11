@@ -86,7 +86,7 @@ const Reference = () => {
     const fetchData = async () => {
       try {
         const offerRate = localStorage.getItem("offer_rate");
-        console.log("Fetched offer_id from localStorage page10:", offerRate);
+        // console.log("Fetched offer_id from localStorage page10:", offerRate);
 
         if (!offerRate) {
           console.error("Offer ID not found in localStorage");
@@ -108,9 +108,9 @@ const [response, result, answer] = await Promise.all([
         const fetchedScmData = result.data[0];
         const fetchedBdData = answer.data;
 
-        console.log("Fetched Offer Data:", fetchedData);
-        console.log("Fetched SCM Rate Data:", fetchedScmData);
-        console.log("Fetched BD Rate Data:", fetchedBdData);
+        // console.log("Fetched Offer Data:", fetchedData);
+        // console.log("Fetched SCM Rate Data:", fetchedScmData);
+        // console.log("Fetched BD Rate Data:", fetchedBdData);
 
         const offerFetchData = fetchedData.find(
           (item) => item.offer_id === offerRate
@@ -119,8 +119,8 @@ const [response, result, answer] = await Promise.all([
           (item) => item.offer_id === offerRate
         );
 
-        console.log("Matched Offer Data:", offerFetchData);
-        console.log("Matched BD Rate Data:", fetchRatebd);
+        // console.log("Matched Offer Data:", offerFetchData);
+        // console.log("Matched BD Rate Data:", fetchRatebd);
 
         if (!offerFetchData) {
           console.error("No matching offer data found");
@@ -153,7 +153,7 @@ const [response, result, answer] = await Promise.all([
           column_type: offerFetchData.column_type || "",
         });
 
-        console.log("Set Offer Data:", offerFetchData);
+        // console.log("Set Offer Data:", offerFetchData);
 
         setscmData({
           spv_modules_555: fetchedScmData.spv_modules_555 || "",
@@ -201,7 +201,7 @@ const [response, result, answer] = await Promise.all([
           },
         });
 
-        console.log("Set SCM Data:", fetchedScmData);
+        // console.log("Set SCM Data:", fetchedScmData);
 
         if (fetchRatebd) {
           setBdRate({
@@ -213,7 +213,7 @@ const [response, result, answer] = await Promise.all([
             slnko_charges: fetchRatebd.slnko_charges || "",
             submitted_by_BD: fetchRatebd.submitted_by_BD || "",
           });
-          console.log("Set BD Rate Data:", fetchRatebd);
+          // console.log("Set BD Rate Data:", fetchRatebd);
         } else {
           console.warn(
             "No matching BD Rate data found for offer_id:",
@@ -306,11 +306,11 @@ const [response, result, answer] = await Promise.all([
     //***for N10 ***/
     const Nten = (internalQuantity2) => {
       if (internalQuantity2 <= 11) {
-        console.log(`Nten = ${internalQuantity2}`); // Log the original value
+        // console.log(`Nten = ${internalQuantity2}`); 
         return internalQuantity2;
       } else {
         const roundedValue = Math.round(internalQuantity2 / 2);
-        console.log(`Nten = ${roundedValue}`); // Log the rounded value
+        // console.log(`Nten = ${roundedValue}`); 
         return roundedValue;
       }
     };

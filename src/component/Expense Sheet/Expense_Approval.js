@@ -20,10 +20,8 @@ import { useGetLoginsQuery } from "../../redux/loginSlice";
 const ExpenseApproval = forwardRef((props, ref) => {
   const navigate = useNavigate();
   const theme = useTheme();
-  const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
-  const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedExpenses, setSelectedExpenses] = useState([]);
@@ -99,9 +97,8 @@ const ExpenseApproval = forwardRef((props, ref) => {
         "Engineering",
       ];
 
-      const isManager =
-        user?.role === "manager" &&
-        allowedDepartments.includes(user?.department);
+      const isManager = user?.role === "manager" || user?.role === "visitor";
+      allowedDepartments.includes(user?.department);
 
       const isAdmin = user?.role === "admin" || user?.role === "superadmin";
 
@@ -384,7 +381,7 @@ const ExpenseApproval = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                   <Box
+                    <Box
                       sx={{
                         display: "inline",
                         textDecoration: "underline dotted",

@@ -142,7 +142,7 @@ function Dash_eng() {
                   const page = currentPage;
                   const projectId = _id;
                   sessionStorage.setItem("view handover", projectId);
-                  navigate(`/view_handover?page=${page}&_id=${projectId}`);
+                  navigate(`/overview?page=${page}&_id=${projectId}`);
                 }}
               >
                 <ContentPasteGoIcon sx={{ mr: 1 }} />

@@ -22,8 +22,6 @@ import Input from "@mui/joy/Input";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
-import Option from "@mui/joy/Option";
-import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Tooltip from "@mui/joy/Tooltip";
 import Typography from "@mui/joy/Typography";
@@ -36,103 +34,24 @@ import Axios from "../utils/Axios";
 
 function Offer() {
   const navigate = useNavigate();
-  const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [vendors, setVendors] = useState([]);
-  const [vendorFilter, setVendorFilter] = useState("");
-  const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const itemsPerPage = 10;
   const [selected, setSelected] = useState([]);
-  // const [projects, setProjects] = useState([]);
   const [bdRateData, setBdRateData] = useState([]);
   const [mergedData, setMergedData] = useState([]);
-  const [accountNumber, setAccountNumber] = useState([]);
-  const [ifscCode, setIfscCode] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [commRate, setCommRate] = useState([]);
-  const [isUtrSubmitted, setIsUtrSubmitted] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
 
-  const renderFilters = () => (
-    <>
-      <FormControl size="sm">
-        <FormLabel>Vendor</FormLabel>
-        <Select
-          size="sm"
-          placeholder="Filter by Vendors"
-          value={vendorFilter}
-          onChange={(e) => {
-            const selectedValue = e.target.value;
-            console.log("Selected State:", selectedValue);
-            setVendorFilter(selectedValue);
-          }}
-        >
-          <Option value="">All</Option>
-          {vendors.map((vendor, index) => (
-            <Option key={index} value={vendor}>
-              {vendor}
-            </Option>
-          ))}
-        </Select>
-      </FormControl>
-    </>
-  );
-
-  // useEffect(() => {
-  //   const fetchPaymentsAndProjects = async () => {
-  //     setLoading(true);
-  //     try {
-  //       const commResponse = await Axios.get("/get-comm-offer");
-  //       const newCommOffr = commResponse.data;
-
-  //       setCommRate((prevCommRate) => {
-  //         if (JSON.stringify(prevCommRate) !== JSON.stringify(newCommOffr)) {
-  //           console.log("Commercial Offer updated:", newCommOffr);
-  //           return newCommOffr;
-  //         }
-  //         return prevCommRate;
-  //       });
-  //     } catch (error) {
-  //       console.error("Error fetching data:", error);
-  //       setError(
-  //         <span
-  //           style={{
-  //             display: "flex",
-  //             alignItems: "center",
-  //             gap: "5px",
-  //             color: "red",
-  //             justifyContent: "center",
-  //             flexDirection: "column",
-  //             padding: "20px",
-  //           }}
-  //         >
-  //           <PermScanWifiIcon />
-  //           <Typography
-  //             fontStyle={"italic"}
-  //             fontWeight={"600"}
-  //             sx={{ color: "#0a6bcc" }}
-  //           >
-  //             Hang Tight! Internet Connection will be back soon..
-  //           </Typography>
-  //         </span>
-  //       );
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   fetchPaymentsAndProjects();
-  // }, []);
 
   useEffect(() => {
     const fetchCommAndBdRate = async () => {
       setLoading(true);
       try {
         const token = localStorage.getItem("authToken");
-        console.log(token);
 
         if (!token) {
           throw new Error("No auth token found in localStorage.");
@@ -203,27 +122,24 @@ function Offer() {
         const matchingBdRate = bdRateData.find(
           (bd) => bd.offer_id === offer.offer_id
         );
-
         return {
           ...offer,
           slnkoCharges: matchingBdRate ? matchingBdRate.slnko_charges : 0,
         };
       });
-
       setMergedData(mergedData);
     }
   }, [commRate, bdRateData]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userDetails");
+    console.log(storedUser);
     if (storedUser) {
       setUser(JSON.parse(storedUser));
-      // console.log("User Loaded:", JSON.parse(storedUser));
     }
   }, []);
 
   const RowMenu = ({ currentPage, offer_id }) => {
-    // console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
 
     const [user, setUser] = useState(null);
 
@@ -251,7 +167,8 @@ function Offer() {
           >
             <MoreHorizRoundedIcon />
           </MenuButton>
-          {(user?.name === "IT Team" ||
+          {
+          (user?.name === "IT Team" ||
             user?.department === "admin" ||
             user?.name === "Navin Kumar Gautam" ||
             user?.name === "Mohd Shakir Khan" ||
@@ -269,7 +186,8 @@ function Offer() {
             user?.name === "Ankit Dikshit" ||
             user?.name === "Kunal Kumar" ||
             user?.name === "Deepak Manodi"
-          ) && (
+          )
+          && (
             <Menu size="sm" sx={{ minWidth: 140 }}>
               <MenuItem
                 color="primary"
@@ -277,7 +195,6 @@ function Offer() {
                   const page = currentPage;
                   const offerId = String(offer_id);
                   localStorage.setItem("offer_edit", offerId);
-                  // localStorage.setItem("p_id", projectID);
                   navigate(`/edit_offer?page=${page}&offer_id=${offerId}`);
                 }}
               >
@@ -290,7 +207,6 @@ function Offer() {
                   const page = currentPage;
                   const offerId = String(offer_id);
                   localStorage.setItem("offer_summary", offerId);
-                  // localStorage.setItem("p_id", projectID);
                   navigate(`/offer_summary?page=${page}&offer_id=${offerId}`);
                 }}
               >
@@ -309,7 +225,7 @@ function Offer() {
                 <Typography>Offer History</Typography>
               </MenuItem>
               <Divider sx={{ backgroundColor: "lightblue" }} />
-              {(user?.name === "IT Team" || user?.department === "admin") && (
+              {(user?.name === "IT Team" || user?.department === "admin" || user?.name === "Deepak Manodi") && (
                 <MenuItem
                   color="danger"
                   disabled={selected.length === 0}
@@ -344,8 +260,9 @@ function Offer() {
 
     return (
       <>
-        {(user?.name === "IT Team" ||
-            user?.department === "admin" ||
+        {
+        (user?.name === "IT Team" ||
+            user?.department === "admin" || user?.department === "BD" ||
             user?.name === "Navin Kumar Gautam" ||
             user?.name === "Mohd Shakir Khan" ||
             user?.name === "Shiv Ram Tathagat" ||
@@ -361,7 +278,8 @@ function Offer() {
             user?.name === "Abhishek Sawhney" ||
             user?.name === "Ankit Dikshit" ||
             user?.name === "Kunal Kumar" ||
-            user?.name === "Deepak Manodi") ? (
+            user?.name === "Deepak Manodi")
+             ? (
           <Tooltip title="Add" arrow>
             <IconButton
               size="small"
@@ -414,7 +332,6 @@ function Offer() {
       setLoading(true);
       setError("");
       const token = localStorage.getItem("authToken");
-      console.log(token);
 
       if (!token) {
         throw new Error("No auth token found in localStorage.");
@@ -449,15 +366,14 @@ function Offer() {
 
   const filteredAndSortedData = useMemo(() => {
     if (!user || !user.name) return [];
-
-    return mergedData
+    const data = mergedData
       .filter((project) => {
         const preparedBy =
-          project.prepared_by?.trim().toLowerCase() || "unassigned";
-        const userName = user.name.trim().toLowerCase();
+          project.prepared_by?.trim() || "unassigned";
+        const userName = user.name.trim();
         const userRole = user.department?.toLowerCase();
 
-        const isAdmin = userRole === "admin" || userRole === "superadmin";
+        const isAdmin = userRole === "admin" || userRole === "superadmin" || userName === "Deepak Manodi";
         const matchesUser = isAdmin || preparedBy === userName;
 
         const matchesSearchQuery = [
@@ -469,6 +385,8 @@ function Offer() {
 
         return matchesUser && matchesSearchQuery;
       })
+      console.log({data})
+    return data 
       .sort((a, b) => {
         const dateA = new Date(a.createdAt || 0);
         const dateB = new Date(b.createdAt || 0);
@@ -541,52 +459,13 @@ function Offer() {
 
   return (
     <>
-      {/* Mobile Filters */}
-      {/* <Sheet
-        className="SearchAndFilters-mobile"
-        sx={{ display: { xs: "", sm: "none" }, my: 1, gap: 1 }}
-      >
-        <Input
-          size="sm"
-          placeholder="Search"
-          startDecorator={<SearchIcon />}
-          sx={{ flexGrow: 1 }}
-        />
-        <IconButton
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          onClick={() => setOpen(true)}
-        >
-          <FilterAltIcon />
-        </IconButton>
-        <Modal open={open} onClose={() => setOpen(false)}>
-          <ModalDialog aria-labelledby="filter-modal" layout="fullscreen">
-            <ModalClose />
-            <Typography id="filter-modal" level="h2">
-              Filters
-            </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Sheet sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {renderFilters()}
-              <Button color="primary" onClick={() => setOpen(false)}>
-                Submit
-              </Button>
-            </Sheet>
-          </ModalDialog>
-        </Modal>
-      </Sheet> */}
-
-      {/* Tablet and Up Filters */}
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
           marginLeft: { xl: "15%", lg: "18%" },
           borderRadius: "sm",
           py: 2,
-          // display: { xs: "none", sm: "flex" },
           display: "flex",
-          // flexDirection:{xs: "none", sm: "flex"}
           flexWrap: "wrap",
           gap: 1.5,
           "& > *": {
@@ -604,10 +483,8 @@ function Offer() {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {/* {renderFilters()} */}
       </Box>
 
-      {/* Table */}
       <Sheet
         className="OrderTableContainer"
         variant="outlined"
@@ -653,7 +530,7 @@ function Offer() {
                   sx={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
-                    textAlign: "center",
+                    textAlign: "left",
                   }}
                 >
                   <Checkbox
@@ -677,7 +554,6 @@ function Offer() {
                   "Add BD Rate",
                   "Prepared By",
                   "View More",
-                  // "Validation",
                 ].map((header, index) => (
                   <Box
                     component="th"
@@ -685,7 +561,7 @@ function Offer() {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                       fontWeight: "bold",
                     }}
                   >
@@ -709,7 +585,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       <Checkbox
@@ -725,7 +601,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.offer_id}
@@ -735,7 +611,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.client_name}
@@ -745,7 +621,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.state || "-"}
@@ -755,7 +631,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.ac_capacity || "-"}
@@ -765,7 +641,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.scheme || "-"}
@@ -775,7 +651,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.component || "-"}
@@ -786,7 +662,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.slnkoCharges.toLocaleString("en-IN")}
@@ -796,7 +672,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       <AddMenu
@@ -809,7 +685,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {offer.prepared_by || "-"}
@@ -819,7 +695,7 @@ function Offer() {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       <RowMenu
@@ -915,19 +791,6 @@ function Offer() {
             )
           )}
         </Box>
-        {/* <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
-    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-      <IconButton
-        key={page}
-        size="sm"
-        variant={page === currentPage ? "contained" : "outlined"}
-        color="neutral"
-        onClick={() => handlePageChange(page)}
-      >
-        {page}
-      </IconButton>
-    ))}
-  </Box> */}
 
         <Button
           size="sm"

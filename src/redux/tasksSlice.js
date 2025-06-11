@@ -1,18 +1,16 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { baseQuery } from "./auth/auth_variable";
 
-
-// const baseQuery = fetchBaseQuery({
-//   baseUrl: "https://api.slnkoprotrac.com/v1/",
-//   prepareHeaders: (headers) => {
-//     const token = localStorage.getItem("authToken");
-//     console.log("Token:", token);
-//     if (token) {
-//       headers.set("x-auth-token", token);
-//     }
-//     return headers;
-//   },
-// });
+const baseQuery = fetchBaseQuery({
+  baseUrl: `${process.env.REACT_APP_API_URL}/`,
+  prepareHeaders: (headers) => {
+    const token = localStorage.getItem("authToken");
+    // console.log("Token:", token);
+    if (token) {
+      headers.set("x-auth-token", token);
+    }
+    return headers;
+  },
+});
 
 export const tasksApi = createApi({
   reducerPath: "tasksApi",
