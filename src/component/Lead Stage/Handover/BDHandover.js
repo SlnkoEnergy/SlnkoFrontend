@@ -119,7 +119,7 @@ const HandoverSheetForm = () => {
   const validateField = (section, field, value) => {
     let error = "";
 
-    // Example validation rules
+
     if (field === "email") {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!value || !emailRegex.test(value)) {
@@ -205,10 +205,10 @@ const HandoverSheetForm = () => {
   };
 
   const handleChange = (section, field, value) => {
-    // Validate field
+
     const error = validateField(section, field, value);
 
-    // Update form data
+
     setFormData((prev) => ({
       ...prev,
       [section]: {
@@ -217,7 +217,7 @@ const HandoverSheetForm = () => {
       },
     }));
 
-    // Update errors
+   
     setFormErrors((prev) => ({
       ...prev,
       [section]: {
@@ -303,58 +303,13 @@ const HandoverSheetForm = () => {
     }
   }, [getHandOverSheet]);
 
-  const handoverSchema = Yup.object().shape({
-    customer_details: Yup.object().shape({
-      name: Yup.string().required("Customer name is required"),
-      customer: Yup.string().required("Customer is required"),
-      number: Yup.string().required("Phone number is required"),
-      state: Yup.string().required("State is required"),
-      site_address: Yup.object().shape({
-        district_name: Yup.string().required("District name is required"),
-        // village_name: Yup.string().when("district_name", {
-        //   is: (val) => val && val.trim() !== "",
-        //   then: Yup.string().required(
-        //     "Village name is required once district is entered"
-        //   ),
-        //   otherwise: Yup.string(),
-        // }),
-      }),
-    }),
-    order_details: Yup.object().shape({
-      type_business: Yup.string().required("Business type is required"),
-    }),
-    project_detail: Yup.object().shape({
-      project_type: Yup.string().required("Project type is required"),
-      proposed_dc_capacity: Yup.string().required(
-        "Proposed DC Capacity is required"
-      ),
-      transmission_scope: Yup.string().required(
-        "Transmission line scope is required"
-      ),
-      module_category: Yup.string().required(
-        "Module content category is required"
-      ),
-      liaisoning_net_metering: Yup.string().required(
-        "Liaisoning for net-metering is required"
-      ),
-      ceig_ceg: Yup.string().required("CEIG/CEG scope is required"),
-    }),
-    commercial_details: Yup.object().shape({
-      type: Yup.string().required("Commercial type is required"),
-    }),
-    other_details: Yup.object().shape({
-      // cam_member_name: Yup.string().required("CAM member name is required"),
-    }),
-  });
-
+  
   const handleSubmit = async () => {
     try {
       if (!leadId) {
         toast.error("Lead ID is missing!");
         return;
       }
-
-      await handoverSchema.validate(formData, { abortEarly: false });
 
       const updatedFormData = {
         ...formData,
@@ -382,7 +337,6 @@ const HandoverSheetForm = () => {
         toast.info("Already submitted");
         return;
       } else if (!handoverData) {
-        // New submission
         await addHandOver(updatedFormData).unwrap();
         toast.success("Form submitted successfully");
       } else {
@@ -403,7 +357,6 @@ const HandoverSheetForm = () => {
         const errorMessage =
           error?.data?.message || error?.message || "Submission failed";
 
-        // Only show error if it's not a duplicate entry
         if (!errorMessage.toLowerCase().includes("already exists")) {
           console.error("Submission error:", error);
           toast.error(errorMessage);
@@ -449,7 +402,7 @@ const HandoverSheetForm = () => {
             level="body1"
             sx={{ fontWeight: "bold", marginBottom: 0.5 }}
           >
-            Contact Person <span style={{ color: "red" }}>*</span>
+            Contact Person 
           </Typography>
           <Input
             required
@@ -466,7 +419,7 @@ const HandoverSheetForm = () => {
             level="body1"
             sx={{ fontWeight: "bold", marginBottom: 0.5 }}
           >
-            Project Name <span style={{ color: "red" }}>*</span>
+            Project Name 
           </Typography>
           <Input
             required
@@ -483,7 +436,7 @@ const HandoverSheetForm = () => {
             level="body1"
             sx={{ fontWeight: "bold", marginBottom: 0.5 }}
           >
-            Group Name <span style={{ color: "red" }}>*</span>
+            Group Name 
           </Typography>
           <Input
             required
@@ -500,7 +453,7 @@ const HandoverSheetForm = () => {
             level="body1"
             sx={{ fontWeight: "bold", marginBottom: 0.5 }}
           >
-            State <span style={{ color: "red" }}>*</span>
+            State 
           </Typography>
           <Autocomplete
             options={states}
@@ -520,7 +473,7 @@ const HandoverSheetForm = () => {
             level="body1"
             sx={{ fontWeight: "bold", marginBottom: 0.5 }}
           >
-            EPC/Developer <span style={{ color: "red" }}>*</span>
+            EPC/Developer 
           </Typography>
           <Select
             required
@@ -552,7 +505,7 @@ const HandoverSheetForm = () => {
               mb: 0.5,
             }}
           >
-            Site Address with Pin Code <span style={{ color: "red" }}>*</span>
+            Site Address with Pin Code 
             <Tooltip title="Enable to enter village name" placement="top">
               <Switch
                 checked={showVillage}
@@ -601,7 +554,7 @@ const HandoverSheetForm = () => {
             level="body1"
             sx={{ fontWeight: "bold", marginBottom: 0.5 }}
           >
-            Contact No. <span style={{ color: "red" }}>*</span>
+            Contact No. 
           </Typography>
           <Input
             required
@@ -634,7 +587,7 @@ const HandoverSheetForm = () => {
             level="body1"
             sx={{ fontWeight: "bold", marginBottom: 0.5 }}
           >
-            Type of Business <span style={{ color: "red" }}>*</span>
+            Type of Business 
           </Typography>
           <Select
             required
@@ -664,7 +617,7 @@ const HandoverSheetForm = () => {
               level="body1"
               sx={{ fontWeight: "bold", marginBottom: 0.5 }}
             >
-              Project Component<span style={{ color: "red" }}>*</span>
+              Project Component
             </Typography>
 
             <Select
@@ -706,7 +659,7 @@ const HandoverSheetForm = () => {
             level="body1"
             sx={{ fontWeight: "bold", marginBottom: 0.5 }}
           >
-            Type<span style={{ color: "red" }}>*</span>
+            Type
           </Typography>
           <Select
             fullWidth
@@ -732,7 +685,7 @@ const HandoverSheetForm = () => {
             level="body1"
             sx={{ fontWeight: "bold", marginBottom: 0.5 }}
           >
-            Project Type<span style={{ color: "red" }}>*</span>
+            Project Type
           </Typography>
           <Select
             fullWidth
@@ -749,7 +702,7 @@ const HandoverSheetForm = () => {
         </Grid>
         <Grid item xs={12} sm={6}>
           <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-            Proposed AC Capacity (kW)<span style={{ color: "red" }}>*</span>
+            Proposed AC Capacity (kW)
           </Typography>
           <Input
             value={formData.project_detail.project_kwp}
@@ -761,7 +714,7 @@ const HandoverSheetForm = () => {
         </Grid>
         <Grid item xs={12} sm={6}>
           <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-            DC Overloading (%)<span style={{ color: "red" }}>*</span>
+            DC Overloading (%)
           </Typography>
           <Input
             value={formData.project_detail.overloading}
@@ -774,7 +727,7 @@ const HandoverSheetForm = () => {
         <Grid item xs={12} sm={6}>
           <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
             Proposed DC Capacity (kWp)
-            <span style={{ color: "red" }}>*</span>
+            
           </Typography>
           <Input
             value={formData.project_detail.proposed_dc_capacity}
@@ -787,7 +740,7 @@ const HandoverSheetForm = () => {
             level="body1"
             sx={{ fontWeight: "bold", marginBottom: 0.5 }}
           >
-            Work By Slnko<span style={{ color: "red" }}>*</span>
+            Work By Slnko
           </Typography>
           <Select
             fullWidth
@@ -809,7 +762,7 @@ const HandoverSheetForm = () => {
             level="body1"
             sx={{ fontWeight: "bold", marginBottom: 0.5 }}
           >
-            Module Type<span style={{ color: "red" }}>*</span>
+            Module Type
           </Typography>
           <Select
             fullWidth
@@ -830,7 +783,7 @@ const HandoverSheetForm = () => {
             sx={{ fontWeight: "bold", marginBottom: 0.5 }}
           >
             Liaisoning for Net-Metering
-            <span style={{ color: "red" }}>*</span>
+            
           </Typography>
           <Select
             fullWidth
@@ -855,7 +808,7 @@ const HandoverSheetForm = () => {
             level="body1"
             sx={{ fontWeight: "bold", marginBottom: 0.5 }}
           >
-            CEIG/CEG Scope<span style={{ color: "red" }}>*</span>
+            CEIG/CEG Scope
           </Typography>
           <Select
             fullWidth
@@ -872,7 +825,7 @@ const HandoverSheetForm = () => {
 
         <Grid item xs={12} sm={6}>
           <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-            Transmission Line Scope<span style={{ color: "red" }}>*</span>
+            Transmission Line Scope
           </Typography>
 
           <Select
@@ -891,7 +844,7 @@ const HandoverSheetForm = () => {
         <Grid item xs={12} sm={6}>
           <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
             Transmission Line Length (KM)
-            <span style={{ color: "red" }}>*</span>
+            
           </Typography>
           <Input
             value={formData.project_detail.distance}
@@ -907,7 +860,7 @@ const HandoverSheetForm = () => {
             level="body1"
             sx={{ fontWeight: "bold", marginBottom: 0.5 }}
           >
-            Evacuation Voltage<span style={{ color: "red" }}>*</span>
+            Evacuation Voltage
           </Typography>
           <Select
             fullWidth
@@ -927,7 +880,7 @@ const HandoverSheetForm = () => {
             level="body1"
             sx={{ fontWeight: "bold", marginBottom: 0.5 }}
           >
-            Loan Scope<span style={{ color: "red" }}>*</span>
+            Loan Scope
           </Typography>
           <Select
             fullWidth
@@ -947,7 +900,7 @@ const HandoverSheetForm = () => {
             level="body1"
             sx={{ fontWeight: "bold", marginBottom: 0.5 }}
           >
-            Module Content Category<span style={{ color: "red" }}>*</span>
+            Module Content Category
           </Typography>
           <Select
             fullWidth
@@ -963,7 +916,7 @@ const HandoverSheetForm = () => {
         <Grid item xs={12} sm={6}>
           <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
             Slnko Service Charges (Without GST)/W{" "}
-            <span style={{ color: "red" }}>*</span>
+            
           </Typography>
           <Input
             value={formData.other_details.slnko_basic}
@@ -976,7 +929,7 @@ const HandoverSheetForm = () => {
         <Grid item xs={12} sm={6}>
           <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
             Total Slnko Service Charges (Without GST){" "}
-            <span style={{ color: "red" }}>*</span>
+            
           </Typography>
           <Input
             value={formData.other_details.service}
@@ -985,11 +938,32 @@ const HandoverSheetForm = () => {
           />
         </Grid>
 
+          <Grid item xs={12} sm={6}>
+          <Typography
+            level="body1"
+            sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+          >
+            Loan Scope
+          </Typography>
+          <Select
+            fullWidth
+            placeholder="Select Scope"
+            value={formData["project_detail"]?.["loan_scope"] || ""}
+            onChange={(e, newValue) =>
+              handleChange("project_detail", "loan_scope", newValue)
+            }
+          >
+            <Option value="Slnko">Slnko</Option>
+            <Option value="Client">Client</Option>
+            <Option value="TBD">TBD</Option>
+          </Select>
+        </Grid>
+
         <Grid xs={12}>
           <Grid item xs={12} sm={6} mt={1}>
             <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
               Remarks for Slnko Service Charge{" "}
-              <span style={{ color: "red" }}>*</span>
+              
             </Typography>
             <Textarea
               value={formData.other_details.remarks_for_slnko || ""}
@@ -1010,7 +984,7 @@ const HandoverSheetForm = () => {
           <Grid item xs={12} sm={6}>
             <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
               Remarks (Any Other Commitments to Client){" "}
-              <span style={{ color: "red" }}>*</span>
+              
             </Typography>
             <Textarea
               value={formData.other_details.remark || ""}
