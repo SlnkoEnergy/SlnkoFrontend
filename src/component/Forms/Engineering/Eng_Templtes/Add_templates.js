@@ -19,6 +19,7 @@ import {
   useUpdateModuleTemplateIdMutation,
 } from "../../../../redux/Eng/templatesSlice";
 import { skipToken } from "@reduxjs/toolkit/query";
+import { useNavigate } from "react-router-dom";
 
 const AddTemplatesPage = () => {
   const [createBoqCategory] = useCreateBoqCategoryMutation();
@@ -31,8 +32,7 @@ const AddTemplatesPage = () => {
 const [dropdownOptions, setDropdownOptions] = useState({});
   const [triggerGetBoqCategory, { data, isLoading, error }] =
     useLazyGetBoqCategoryByIdAndKeyQuery();
-
-  console.log(triggerGetBoqCategory);
+  const navigate = useNavigate();
 
   const [templateData, setTemplateData] = useState({
     name: "",
@@ -231,6 +231,7 @@ const [dropdownOptions, setDropdownOptions] = useState({});
       await createBoqTemplateRow(payload).unwrap();
 
       alert("Rows submitted successfully!");
+      navigate('/temp_dash');
     } catch (error) {
       console.error("Row submission error:", error);
       alert("Failed to submit rows. Please try again.");
