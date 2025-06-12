@@ -12,6 +12,8 @@ import {
 import axios from "axios";
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useGetModuleCategoryByIdQuery } from "../../../../redux/Eng/templatesSlice";
 import { toast } from "react-toastify";
 
@@ -22,7 +24,16 @@ const Overview = () => {
   const [fileUploads, setFileUploads] = useState({});
   const [logModalData, setLogModalData] = useState([]);
   const [showLogsModal, setShowLogsModal] = useState(false);
+  const [user, setUser] = useState(null);
 
+  useEffect(() => {
+    const storedUser = localStorage.getItem("userDetails");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  const isEngineering = user?.department === "Engineering";
   const projectId = searchParams.get("project_id");
 
   const { data, isLoading } = useGetModuleCategoryByIdQuery(
@@ -53,7 +64,9 @@ const Overview = () => {
           name: template.name || "N/A",
           description: template.description || "No description provided.",
           maxFiles: template.file_upload?.max_files || 0,
+          fileUploadEnabled: template.file_upload?.enabled || false,
           attachmentUrls: rawUrls,
+          currentAttachments: template.current_attachment || [],
         });
       }
     });
@@ -130,8 +143,26 @@ const Overview = () => {
     }
   };
 
-  const handleLogsOpen = (urls) => {
-    setLogModalData(urls);
+  const handleLogsOpen = (rawUrls) => {
+    const grouped = {};
+
+    rawUrls.forEach((url) => {
+      // Extract the revision label, e.g., 'R0' or 'R1' from the URL
+      const match = url.match(/\/(R\d+)\//);
+      if (match) {
+        const revision = match[1];
+        if (!grouped[revision]) grouped[revision] = [];
+        grouped[revision].push(url);
+      }
+    });
+
+    // Convert grouped object to array format expected by modal
+    const structured = Object.entries(grouped).map(([revision, urls]) => ({
+      revision,
+      urls,
+    }));
+
+    setLogModalData(structured);
     setShowLogsModal(true);
   };
 
@@ -148,7 +179,7 @@ const Overview = () => {
       }}
     >
       <Box sx={{ display: "flex", flexGrow: 1, gap: 3 }}>
-        {/* Category Selector */}
+        {/* Sidebar */}
         <Sheet
           variant="outlined"
           sx={{
@@ -180,7 +211,7 @@ const Overview = () => {
           </List>
         </Sheet>
 
-        {/* Template Cards */}
+        {/* Content */}
         <Sheet
           variant="outlined"
           sx={{
@@ -193,6 +224,15 @@ const Overview = () => {
             bgcolor: "#f9fafb",
           }}
         >
+          {!isEngineering && (
+            <Typography
+              level="body-sm"
+              sx={{ mb: 2, color: "warning.700", fontWeight: 500 }}
+            >
+              🔒 Upload access is restricted. You can only view/download files.
+            </Typography>
+          )}
+
           <Divider sx={{ mb: 3 }} />
 
           <Box sx={{ display: "grid", gap: 3 }}>
@@ -222,52 +262,91 @@ const Overview = () => {
                     Max Uploads Allowed: {item.maxFiles}
                   </Typography>
 
-                  {/* File Input */}
-                  <input
-                    type="file"
-                    multiple
-                    onChange={(e) => {
-                      const selectedFiles = Array.from(e.target.files);
-                      if (selectedFiles.length > item.maxFiles) {
-                        toast.error(
-                          `You can only upload up to ${item.maxFiles} files.`
-                        );
-                        return;
-                      }
-                      handleMultiFileChange(index, selectedFiles);
-                    }}
-                    style={{
-                      padding: "8px",
-                      border: "1px solid #ccc",
-                      borderRadius: "6px",
-                      backgroundColor: "#fff",
-                      width: "100%",
-                      marginTop: "8px",
-                    }}
-                  />
+                  {item.fileUploadEnabled && isEngineering && (
+                    <input
+                      type="file"
+                      multiple
+                      onChange={(e) => {
+                        const selectedFiles = Array.from(e.target.files);
+                        if (selectedFiles.length > item.maxFiles) {
+                          toast.error(
+                            `You can only upload up to ${item.maxFiles} files.`
+                          );
+                          return;
+                        }
+                        handleMultiFileChange(index, selectedFiles);
+                      }}
+                      style={{
+                        padding: "8px",
+                        border: "1px solid #ccc",
+                        borderRadius: "6px",
+                        backgroundColor: "#fff",
+                        width: "100%",
+                        marginTop: "8px",
+                      }}
+                    />
+                  )}
 
                   {/* File Previews */}
                   {fileUploads[index]?.length > 0 && (
                     <Box sx={{ mt: 1 }}>
                       {fileUploads[index].map((f, i) => (
-                        <Typography key={i} level="body-xs">
-                          📎 {f.fileName}
-                        </Typography>
+                        <Box
+                          key={i}
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <Typography level="body-xs">
+                            📎 {f.fileName} ({(f.file.size / 1024).toFixed(1)}{" "}
+                            KB)
+                          </Typography>
+                          <Button
+                            size="sm"
+                            variant="plain"
+                            color="danger"
+                            onClick={() => {
+                              setFileUploads((prev) => ({
+                                ...prev,
+                                [index]: prev[index].filter(
+                                  (_, idx) => idx !== i
+                                ),
+                              }));
+                            }}
+                          >
+                            ❌
+                          </Button>
+                        </Box>
                       ))}
                     </Box>
                   )}
 
-                  {/* Logs Button */}
+                  {/* Current Attachments for CAM and others */}
+                  {!isEngineering && item.currentAttachments.length > 0 && (
+                    <Box sx={{ mt: 2 }}>
+                      <Typography level="body-xs" sx={{ fontWeight: 500 }}>
+                        📥 Current Attachments:
+                      </Typography>
+                      {item.currentAttachments.map((url, i) => (
+                        <ListItem key={i} sx={{ p: 0, mt: 0.5 }}>
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: "#1976d2", fontSize: "14px" }}
+                          >
+                            📎 {url.split("/").pop()}
+                          </a>
+                        </ListItem>
+                      ))}
+                    </Box>
+                  )}
+
+                  {/* Attachment Logs Button */}
                   {item.attachmentUrls.length > 0 && (
                     <Button
                       variant="outlined"
                       size="sm"
                       onClick={() => handleLogsOpen(item.attachmentUrls)}
-                      sx={{
-                        position: "absolute",
-                        top: 12,
-                        right: 12,
-                      }}
+                      sx={{ position: "absolute", top: 12, right: 12 }}
                     >
                       📂 Attachment Logs
                     </Button>
@@ -293,8 +372,7 @@ const Overview = () => {
             )}
           </Box>
 
-          {/* Submit Button */}
-          {isAnyFileSelected && (
+          {isEngineering && isAnyFileSelected && (
             <Box sx={{ textAlign: "right", mt: 4 }}>
               <Button
                 variant="solid"
@@ -314,30 +392,43 @@ const Overview = () => {
         </Sheet>
       </Box>
 
-      {/* Attachment Logs Modal */}
+      {/* Logs Modal */}
       <Modal open={showLogsModal} onClose={() => setShowLogsModal(false)}>
         <ModalDialog>
           <Typography level="h5" sx={{ mb: 2 }}>
             📂 Attachment Logs
           </Typography>
+
           {logModalData.length === 0 ? (
             <Typography>No files uploaded.</Typography>
           ) : (
             <List>
-              {logModalData.map((url, i) => (
-                <ListItem key={i}>
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: "#1976d2", fontSize: "14px" }}
+              {logModalData.map((revisionBlock, i) => (
+                <Box key={i} sx={{ mb: 2 }}>
+                  <Typography
+                    level="body-sm"
+                    sx={{ fontWeight: 600, mb: 1, color: "primary.plainColor" }}
                   >
-                    📎 {url.split("/").pop()}
-                  </a>
-                </ListItem>
+                    📁 {revisionBlock.revision}
+                  </Typography>
+                  {Array.isArray(revisionBlock.urls) &&
+                    revisionBlock.urls.map((url, j) => (
+                      <ListItem key={j} sx={{ p: 0, pl: 2 }}>
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: "#1976d2", fontSize: "14px" }}
+                        >
+                          📎 {url.split("/").pop()}
+                        </a>
+                      </ListItem>
+                    ))}
+                </Box>
               ))}
             </List>
           )}
+
           <Box sx={{ textAlign: "right", mt: 2 }}>
             <Button
               variant="soft"
