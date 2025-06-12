@@ -82,7 +82,9 @@ const AllExpense = forwardRef((props, ref) => {
       const userName = user.name.trim();
       const userRole = user.department?.trim();
       const isAdmin =
-        userRole === "admin" || userRole === "superadmin" || userRole === "HR";
+        userRole === "admin" ||
+        userRole === "superadmin" ||
+        (userRole === "HR" && userName !== "Manish Shah");
       const submittedBy = expense.emp_name?.trim() || "";
       // const expenseDepartment = expense.department?.trim() || "";
 

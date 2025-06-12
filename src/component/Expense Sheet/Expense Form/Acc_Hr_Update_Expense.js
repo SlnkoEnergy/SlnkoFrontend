@@ -25,6 +25,7 @@ import {
   useUpdateDisbursementDateMutation,
   useUpdateExpenseSheetMutation,
   useUpdateExpenseStatusOverallMutation,
+  useLazyExportExpenseByIdToCSVQuery,
 } from "../../../redux/Expense/expenseSlice";
 import PieChartByCategory from "./Expense_Chart";
 
@@ -120,6 +121,24 @@ const UpdateExpenseAccounts = () => {
       return JSON.parse(userData);
     }
     return null;
+  };
+  const [triggerExportById] = useLazyExportExpenseByIdToCSVQuery();
+  const handleExportCSVById = async (expenseId) => {
+    try {
+      const blob = await triggerExportById(expenseId).unwrap();
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "text/csv" })
+      );
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `expense_${expenseId}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Error exporting CSV:", err);
+    }
   };
 
   const categoryOptions = [
@@ -831,8 +850,7 @@ const UpdateExpenseAccounts = () => {
                   </Button>
                 </>
               ) : (
-                user?.department === "Accounts" &&
-                user?.role === "manager" && (
+                user?.department === "Accounts" && (
                   <>
                     <Button
                       color="danger"
@@ -881,6 +899,13 @@ const UpdateExpenseAccounts = () => {
                       )}
                     >
                       Approve All
+                    </Button>
+                    <Button
+                      onClick={() => handleExportCSVById(rows[0]?._id)}
+                      size="sm"
+                      variant="outlined"
+                    >
+                      Export CSV
                     </Button>
                   </>
                 )
