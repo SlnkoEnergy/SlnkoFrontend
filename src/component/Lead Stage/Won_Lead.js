@@ -126,7 +126,7 @@ const StandByRequest = forwardRef((props, ref) => {
     const matchedLead = leads?.find((lead) => lead.leadId === leadId);
     return {
       status: matchedLead?.status || "Not Found",
-      submittedBy: matchedLead?.submittedBy || "-",
+      submittedBy: matchedLead?.submitted_by || "-",
       comment: matchedLead?.comment || "",
     };
   };
@@ -375,14 +375,14 @@ const StandByRequest = forwardRef((props, ref) => {
     return leads
       .filter((lead) => {
         const leadState = lead.state?.trim() || "";
-        const submittedBy = lead.submitted_by?.trim() || "";
-
+        const submittedBy = lead.submitted_by_bdlead?.trim() || "";
+        console.log("submitted:", lead.submitted_by_bdlead);
         if (isAdmin) return true;
 
         const allowedUsers = stateUserMap[leadState] || [];
         const isAllowedForState = allowedUsers.includes(userName);
         const isSubmittedByUser = submittedBy === userName;
-
+        console.log("username:", userName);
         return isAllowedForState || isSubmittedByUser;
       })
       .filter((lead) => {
@@ -392,7 +392,7 @@ const StandByRequest = forwardRef((props, ref) => {
           "customer",
           "mobile",
           "state",
-          "submitted_by",
+          "submitted_by_bdlead",
         ].some((key) =>
           lead[key]
             ?.toString()
@@ -681,6 +681,7 @@ const StandByRequest = forwardRef((props, ref) => {
               >
                 {paginatedData.map((lead) => {
                   const statusInfo = getStatusDetails(lead.leadId);
+                  console.log("statusInfo:", statusInfo);
                   return (
                     <tr
                       key={lead._id}
