@@ -11,11 +11,12 @@ import {
 } from "@mui/joy";
 import axios from "axios";
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useGetModuleCategoryByIdQuery } from "../../../../redux/Eng/templatesSlice";
 import { toast } from "react-toastify";
 
 const Overview = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [selected, setSelected] = useState("Electrical");
   const [fileUploads, setFileUploads] = useState({});
@@ -271,6 +272,20 @@ const Overview = () => {
                       📂 Attachment Logs
                     </Button>
                   )}
+
+                  <Button
+                    variant="soft"
+                    size="sm"
+                    startDecorator="➕"
+                    sx={{ mt: 2 }}
+                    onClick={() =>
+                      navigate(
+                        `/add_boq?projectId=${projectId}&module_template=${item.templateId}`
+                      )
+                    }
+                  >
+                    Add BOQ
+                  </Button>
                 </Sheet>
               ))
             ) : (

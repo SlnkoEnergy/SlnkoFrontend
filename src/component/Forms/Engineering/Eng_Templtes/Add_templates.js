@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -15,8 +15,10 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import {
   useCreateBoqCategoryMutation,
   useCreateBoqTemplateRowMutation,
+  useLazyGetBoqCategoryByIdAndKeyQuery,
   useUpdateModuleTemplateIdMutation,
 } from "../../../../redux/Eng/templatesSlice";
+import { skipToken } from "@reduxjs/toolkit/query";
 
 const AddTemplatesPage = () => {
   const [createBoqCategory] = useCreateBoqCategoryMutation();
@@ -24,6 +26,13 @@ const AddTemplatesPage = () => {
   const [updateModuleTemplateCategory] = useUpdateModuleTemplateIdMutation();
   const moduleId = localStorage.getItem("Id");
   const [isSubmittingHeaders, setIsSubmittingHeaders] = useState(false);
+  const [selectedKeyName, setSelectedKeyName] = useState("");
+  const [activeHeaderKey, setActiveHeaderKey] = useState("");
+const [dropdownOptions, setDropdownOptions] = useState({});
+  const [triggerGetBoqCategory, { data, isLoading, error }] =
+    useLazyGetBoqCategoryByIdAndKeyQuery();
+
+  console.log(triggerGetBoqCategory);
 
   const [templateData, setTemplateData] = useState({
     name: "",
@@ -227,6 +236,28 @@ const AddTemplatesPage = () => {
       alert("Failed to submit rows. Please try again.");
     }
   };
+
+  const handleHeaderClick = (keyName) => {
+  if (!submittedCategoryId) return;
+  setSelectedKeyName(keyName);
+  if (!dropdownOptions[keyName]) {
+    triggerGetBoqCategory({ _id: submittedCategoryId, keyname: keyName });
+  }
+};
+
+console.log("drop:",dropdownOptions);
+
+// update dropdown options when new data arrives
+useEffect(() => {
+  if (data && selectedKeyName) {
+    setDropdownOptions((prev) => ({
+      ...prev,
+      [selectedKeyName]: data,
+    }));
+  }
+}, [data, selectedKeyName]);
+
+console.log(selectedKeyName);
 
   return (
     <Box sx={{ p: 4, marginLeft: "25%" }}>
@@ -488,12 +519,14 @@ const AddTemplatesPage = () => {
                           padding: "8px",
                           minWidth: 150,
                           textAlign: "center",
+                          cursor: "pointer", // optional: indicates it's clickable
                         }}
                         title={`${header.columnName} (${header.keyName})`}
                       >
                         {header.columnName || header.keyName}
                       </th>
                     ))}
+
                     <th
                       style={{
                         border: "1px solid #ddd",
@@ -517,55 +550,75 @@ const AddTemplatesPage = () => {
                       </td>
                     </tr>
                   )}
-                  {templateData.boqRows.map((row, rowIndex) => (
-                    <tr key={rowIndex}>
-                      {templateData.boqHeaders.map((header, colIndex) => (
-                        <td
-                          key={colIndex}
-                          style={{ border: "1px solid #ddd", padding: 4 }}
-                        >
-                          <input
-                            type={header.inputType}
-                            value={row[header.keyName] || ""}
-                            placeholder={header.placeholder}
-                            onChange={(e) =>
-                              handleRowChange(
-                                rowIndex,
-                                header.keyName,
-                                e.target.value
-                              )
-                            }
-                            style={{
-                              width: "100%",
-                              border: "none",
-                              padding: "6px 8px",
-                              fontSize: 14,
-                              boxSizing: "border-box",
-                            }}
-                            disabled={!submittedCategoryId}
-                          />
-                        </td>
-                      ))}
-                      <td
-                        style={{
-                          border: "1px solid #ddd",
-                          padding: 4,
-                          textAlign: "center",
-                        }}
-                      >
-                        <IconButton
-                          variant="soft"
-                          color="danger"
-                          size="sm"
-                          onClick={() => removeRow(rowIndex)}
-                          aria-label={`Remove row ${rowIndex + 1}`}
-                          disabled={!submittedCategoryId}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </td>
-                    </tr>
-                  ))}
+                    {templateData.boqRows.map((row, rowIndex) => (
+        <tr key={rowIndex}>
+          {templateData.boqHeaders.map((header, colIndex) => {
+           const dropdownEntry = dropdownOptions[header.keyName];
+const options = dropdownEntry?.data || [];
+const isDropdown = Array.isArray(options) && options.length > 0;
+            return (
+              <td key={colIndex} style={{ border: "1px solid #ddd", padding: 4 }}>
+                {isDropdown ? (
+                  <select
+                    value={row[header.keyName] || ""}
+                    onChange={(e) =>
+                      handleRowChange(rowIndex, header.keyName, e.target.value)
+                    }
+                    onClick={() => handleHeaderClick(header.keyName)}
+                    style={{
+                      width: "100%",
+                      border: "none",
+                      padding: "6px 8px",
+                      fontSize: 14,
+                      boxSizing: "border-box",
+                    }}
+                    disabled={!submittedCategoryId}
+                  >
+                    <option value="">Select</option>
+                    {options.map((option, i) => (
+                      <option key={i} value={option}>
+                        {option}
+                        
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type={header.inputType}
+                    value={row[header.keyName] || ""}
+                    placeholder={header.placeholder}
+                    onClick={() => handleHeaderClick(header.keyName)}
+                    onChange={(e) =>
+                      handleRowChange(rowIndex, header.keyName, e.target.value)
+                    }
+                    style={{
+                      width: "100%",
+                      border: "none",
+                      padding: "6px 8px",
+                      fontSize: 14,
+                      boxSizing: "border-box",
+                    }}
+                    disabled={!submittedCategoryId}
+                  />
+                )}
+              </td>
+            );
+          })}
+          <td style={{ border: "1px solid #ddd", padding: 4, textAlign: "center" }}>
+            <IconButton
+              variant="soft"
+              color="danger"
+              size="sm"
+              onClick={() => removeRow(rowIndex)}
+              aria-label={`Remove row ${rowIndex + 1}`}
+              disabled={!submittedCategoryId}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </td>
+        </tr>
+      ))}
+    
                 </tbody>
               </table>
             </Box>

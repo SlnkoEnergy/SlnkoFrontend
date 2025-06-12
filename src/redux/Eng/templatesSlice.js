@@ -131,6 +131,40 @@ export const templatesApi = createApi({
         body: formData,
       }),
     }),
+
+    getBoqProject: builder.query({
+      query: ({ projectId, module_template }) =>
+        `get-boq-project-by-id?projectId=${projectId}&module_template=${module_template}`,
+      providesTags: ["Template"],
+    }),
+    updateBoqProject: builder.mutation({
+      query: ({ data, projectId, module_template }) => ({
+        url: `${projectId}/moduletemplate/${module_template}/updateBoqProject`,
+        method: "PUT",
+        body: { data },
+      }),
+      invalidatesTags: ["Template"],
+    }),
+    getBoqTemplateById: builder.query({
+      query: ({ module_template }) => ({
+        url: `/get-boq-template-by-id?moduleTemplateId=${module_template}`,
+        method: "GET",
+      }),
+    }),
+    createBoqProject: builder.mutation({
+      query: ({ data }) => ({
+        url: `create-boq-project`,
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Template"],
+    }),
+
+    getBoqCategoryByIdAndKey: builder.query({
+      query: ({ _id, keyname }) =>
+        `get-boq-catergories?_id=${_id}&keyname=${keyname}`,
+      providesTags: ["Template"],
+    }),
   }),
 });
 
@@ -149,4 +183,9 @@ export const {
   useUpdateModuleTemplateIdMutation,
   useGetModuleCategoryByIdQuery,
   useUpdateModuleCategoryMutation,
+  useGetBoqProjectQuery,
+  useUpdateBoqProjectMutation,
+  useGetBoqTemplateByIdQuery,
+  useCreateBoqProjectMutation,
+  useLazyGetBoqCategoryByIdAndKeyQuery,
 } = templatesApi;
