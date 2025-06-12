@@ -697,6 +697,14 @@ function Sidebar() {
                       User Dashboard
                     </ListItemButton>
                   </ListItem>
+
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton
+                      onClick={() => navigate("/expense_accounts")}
+                    >
+                      Accounts Expense Approval
+                    </ListItemButton>
+                  </ListItem>
                 </List>
               </Toggler>
             </ListItem>
@@ -2068,6 +2076,7 @@ function Sidebar() {
           (user?.department === "Engineering" &&
             user?.name !== "Dhruv Choudhary" &&
             user?.name !== "Rishav Mahato") ||
+          user?.name === "Manish Shah" ||
           user?.department === "CAM" ? (
           <ListItem nested>
             <Toggler

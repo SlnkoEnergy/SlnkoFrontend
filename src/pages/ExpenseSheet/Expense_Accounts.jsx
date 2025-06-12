@@ -18,11 +18,31 @@ import AllProject from '../../component/AllProject';
 import { useNavigate } from 'react-router-dom';
 import HrExpense from '../../component/Expense Sheet/HR_Expense_Approval';
 import AccountsExpense from '../../component/Expense Sheet/Accounts_Expense_Approval';
+import { useLazyExportExpensesToCSVQuery } from '../../redux/Expense/expenseSlice';
 
 
 function Accounts_Expense() {
     const navigate = useNavigate();
-      
+    const [triggerExport] = useLazyExportExpensesToCSVQuery();
+
+    const handleExportToCSV = async () => {
+      try {
+        const result = await triggerExport().unwrap(); // .unwrap() gives direct access to blob
+        const blob = new Blob([result], { type: "text/csv" });
+    
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "expenses.csv"; // set desired filename
+        document.body.appendChild(a); // Firefox compatibility
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url); // cleanup
+      } catch (error) {
+        console.error("Export to CSV failed:", error);
+      }
+    };
+    
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -94,7 +114,16 @@ function Accounts_Expense() {
               Accounts Expense Approval Dashboard
             </Typography>
            
-             
+            <Button
+  color="primary"
+  startDecorator={<DownloadRoundedIcon />}
+  size="sm"
+  onClick={handleExportToCSV}
+>
+  Export to CSV
+</Button>
+
+
           </Box>
           <AccountsExpense/>
           
