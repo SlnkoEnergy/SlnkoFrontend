@@ -11,15 +11,17 @@ import {
   ModalDialog,
 } from "@mui/joy";
 import axios from "axios";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
 import {
   useGetModuleCategoryByIdQuery,
   useUpdateModuleTemplateStatusMutation,
+  useGetBoqProjectByProjectIdQuery,
 } from "../../../../redux/Eng/templatesSlice";
 import { toast } from "react-toastify";
 
 const Overview = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [selected, setSelected] = useState("Electrical");
   const [fileUploads, setFileUploads] = useState({});
@@ -53,13 +55,20 @@ const Overview = () => {
     { projectId, engineering: selected },
     { skip: !projectId }
   );
-
+  const {
+    data: boqSummaryData,
+    isLoading: isBoqLoading,
+    error: boqError,
+  } = useGetBoqProjectByProjectIdQuery(projectId, {
+    skip: !projectId,
+  });
   const categoryData = {
     Electrical: [],
     Mechanical: [],
     Civil: [],
     plant_layout: [],
     boq: [],
+    summary: [],
   };
 
   const templates = data?.data || [];
@@ -334,7 +343,54 @@ const Overview = () => {
           <Divider sx={{ mb: 3 }} />
 
           <Box sx={{ display: "grid", gap: 3 }}>
-            {categoryData[selected]?.length > 0 ? (
+            {selected === "summary" ? (
+              boqSummaryData && boqSummaryData.length > 0 ? (
+                boqSummaryData.map((summary, i) => (
+                  <Sheet
+                    key={i}
+                    variant="outlined"
+                    sx={{
+                      p: 3,
+                      borderRadius: "lg",
+                      boxShadow: "sm",
+                      bgcolor: "background.surface",
+                    }}
+                  >
+                    <Typography level="title-md" sx={{ mb: 1 }}>
+                      📘 {summary.boq_category_name}
+                    </Typography>
+
+                    {summary.item?.current_data?.length > 0 ? (
+                      summary.item.current_data.map((row, j) => (
+                        <Box
+                          key={j}
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            borderBottom: "1px solid #ccc",
+                            py: 1,
+                          }}
+                        >
+                          <Typography level="body-sm" fontWeight="lg">
+                            {row.name}
+                          </Typography>
+                          <Typography level="body-sm">
+                            {row.values.map((v) => v.input_values).join(", ")}
+                          </Typography>
+                        </Box>
+                      ))
+                    ) : (
+                      <Typography level="body-sm" sx={{ ml: 1 }}>
+                        No data available.
+                      </Typography>
+                    )}
+                  </Sheet>
+                ))
+              ) : (
+                <Typography>No summary data found.</Typography>
+              )
+            ) : categoryData[selected]?.length > 0 ? (
               categoryData[selected].map((item, index) => {
                 const isUploadDisabled = item.latestStatus === "approved";
                 return (
@@ -479,13 +535,31 @@ const Overview = () => {
                         }}
                       >
                         {item.attachmentUrls.length > 0 && (
-                          <Button
-                            variant="outlined"
-                            size="sm"
-                            onClick={() => handleLogsOpen(item.attachmentUrls)}
-                          >
-                            📂 Attachment Logs
-                          </Button>
+                          <>
+                            <Button
+                              variant="outlined"
+                              size="sm"
+                              onClick={() =>
+                                handleLogsOpen(item.attachmentUrls)
+                              }
+                            >
+                              📂 Attachment Logs
+                            </Button>
+                            {isEngineering && (
+                              <Button
+                                variant="soft"
+                                size="sm"
+                                sx={{ mt: 2 }}
+                                onClick={() =>
+                                  navigate(
+                                    `/add_boq?projectId=${projectId}&module_template=${item.templateId}`
+                                  )
+                                }
+                              >
+                                Add BOQ
+                              </Button>
+                            )}
+                          </>
                         )}
                         {isCAM && item.latestStatus === "submitted" && (
                           <>
@@ -504,15 +578,13 @@ const Overview = () => {
                               variant="soft"
                               color="warning"
                               onClick={() => {
-                                setActiveTemplateId(item.templateId); // ✅ Correctly set it
-                                setShowRemarksModal(true); // ✅ Open modal AFTER setting
+                                setActiveTemplateId(item.templateId);
+                                setShowRemarksModal(true);
                               }}
                               disabled={isUpdating}
                             >
                               🔁 Revise
                             </Button>
-
-                            {console.log("Showing buttons for", item.name)}
                           </>
                         )}
                       </Box>
