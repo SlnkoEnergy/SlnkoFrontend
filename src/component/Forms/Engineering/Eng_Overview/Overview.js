@@ -10,10 +10,8 @@ import {
   ModalDialog,
 } from "@mui/joy";
 import axios from "axios";
-import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
 import { useGetModuleCategoryByIdQuery } from "../../../../redux/Eng/templatesSlice";
 import { toast } from "react-toastify";
 
