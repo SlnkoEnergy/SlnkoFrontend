@@ -131,6 +131,14 @@ export const templatesApi = createApi({
         body: formData,
       }),
     }),
+    updateModuleTemplateStatus: builder.mutation({
+      query: ({ projectId, moduleTemplateId, statusData }) => ({
+        url: `${projectId}/moduletemplate/${moduleTemplateId}/statusModule`,
+        method: "PUT",
+        body: statusData,
+      }),
+      invalidatesTags: ["Template"],
+    }),
   }),
 });
 
@@ -149,4 +157,5 @@ export const {
   useUpdateModuleTemplateIdMutation,
   useGetModuleCategoryByIdQuery,
   useUpdateModuleCategoryMutation,
+  useUpdateModuleTemplateStatusMutation,
 } = templatesApi;
