@@ -195,11 +195,11 @@ const CreateTemplate = () => {
                 }
                 placeholder="Select a category"
               >
-                <Option value="civil">Civil</Option>
-                <Option value="mechanical">Mechanical</Option>
-                <Option value="electrical">Electrical</Option>
-                <Option value="plant layout">Plant Layout</Option>
-                <Option value="boq">BOQ</Option>
+                <Option value="Civil">Civil</Option>
+                <Option value="Mechanical">Mechanical</Option>
+                <Option value="Electrical">Electrical</Option>
+                <Option value="Plant layout">Plant Layout</Option>
+                <Option value="Boq">BOQ</Option>
               </Select>
             </FormControl>
           </Grid>

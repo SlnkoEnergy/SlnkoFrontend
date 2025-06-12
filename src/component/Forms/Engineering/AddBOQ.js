@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -18,6 +18,7 @@ import {
   useUpdateBoqProjectMutation,
   useGetBoqTemplateByIdQuery,
   useCreateBoqProjectMutation,
+  useLazyGetBoqCategoryByIdAndKeyQuery,
 } from "../../../redux/Eng/templatesSlice";
 
 const AddBOQ = () => {
@@ -27,6 +28,7 @@ const AddBOQ = () => {
   const [createBoqProject] = useCreateBoqProjectMutation();
   const [formData, setFormData] = React.useState({});
   const [modalFormData, setModalFormData] = React.useState({});
+  const [dropdownOptions, setDropdownOptions] = useState({});
   const [selected, setSelected] = React.useState("Use Template");
   const [selectedCategory, setSelectedCategory] = React.useState(null);
   const [openModal, setOpenModal] = React.useState(false);
@@ -38,14 +40,20 @@ const AddBOQ = () => {
     { module_template },
     { skip: !module_template }
   );
-  console.log(templateRes);
+
+  const [triggerGetBoqCategory, { data, isLoading, error }] =
+    useLazyGetBoqCategoryByIdAndKeyQuery();
+
   const boqTemplates = templateRes?.boqTemplates || [];
   const template_id = boqTemplates[0]?._id;
 
   const [updateBoqProject, { isLoading: isSubmitting }] =
     useUpdateBoqProjectMutation();
 
+  const boqCategoryIdProject = boqTemplates[0]?.boq_category;
+
   const projectData = projectRes?.data || {};
+
   const matchedCategories =
     templateRes?.moduleTemplate?.matchedCategories || [];
 
@@ -54,17 +62,14 @@ const AddBOQ = () => {
       ? projectData?.items?.[0]?.boqCategoryDetails?.headers || []
       : selectedCategory?.headers || [];
 
-      
+  const boqName = projectData?.items?.[0]?.boqCategoryDetails?.name || " ";
+  const boqCategoryId = projectData?.items?.[0]?.boqCategoryDetails._id || " ";
 
- const boqName = projectData?.items?.[0]?.boqCategoryDetails?.name || " ";
-
-
-      
-
-  const handleChange = (name) => (e) => {
+  const handleChange = (key) => (e) => {
+    console.log("Updating key:", key, "with value:", e.target.value);
     setFormData((prev) => ({
       ...prev,
-      [name]: e.target.value,
+      [key]: e.target.value,
     }));
   };
 
@@ -80,6 +85,7 @@ const AddBOQ = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("Submit clicked");
 
     const formattedData = headers.map((header) => {
       const values =
@@ -96,6 +102,8 @@ const AddBOQ = () => {
         values,
       };
     });
+
+    console.log("values :", formattedData); // This should print
 
     try {
       await updateBoqProject({
@@ -129,41 +137,99 @@ const AddBOQ = () => {
     }
   };
 
-const handleModalSubmit = async () => {
-  const formattedData = selectedCategory.headers.map((header) => {
-    const values =
-      modalFormData?.[header.name]?.length > 0
-        ? modalFormData[header.name].map((val) => ({
-            input_values: typeof val === "object" ? val.input_values || "" : val || "",
-          })).filter((v) => v.input_values !== "")
-        : [];
+  useEffect(() => {
+    if (!projectData?.items?.length) return;
 
-    return {
-      name: header.name,
-      values,
+    const currentData = projectData.items[0].current_data;
+
+    const initialFormData = {};
+    currentData.forEach((item) => {
+      initialFormData[item.name] = item.values?.[0]?.input_values || "";
+    });
+
+    console.log("initialData:", initialFormData);
+    if (initialFormData) setFormData(initialFormData);
+  }, [projectData]);
+
+  useEffect(() => {
+    const fetchAllDropdowns = async () => {
+      const activeBoqId = openModal ? boqCategoryIdProject : boqCategoryId;
+
+      const promises = headers.map(async (header) => {
+        try {
+          const res = await triggerGetBoqCategory({
+            _id: activeBoqId,
+            keyname: header.name.toLowerCase(),
+          }).unwrap();
+
+          return { key: header.name, values: res?.data || [] };
+        } catch (error) {
+          console.error(`Error fetching for ${header.name}`, error);
+          return { key: header.name, values: [] };
+        }
+      });
+
+      const results = await Promise.all(promises);
+      const optionsMap = results.reduce((acc, curr) => {
+        acc[curr.key] = curr.values;
+        return acc;
+      }, {});
+      setDropdownOptions(optionsMap);
     };
-  });
 
-  const payload = {
-    project_id: projectId,
-    items: [
-      {
-        module_template,
-        boq_template: template_id,
-        data_history: [formattedData], 
-      },
-    ],
+    if ((boqCategoryId || boqCategoryIdProject) && headers.length) {
+      fetchAllDropdowns();
+    }
+  }, [boqCategoryId, boqCategoryIdProject, headers, openModal]);
+
+  useEffect(() => {
+    if (projectData?.items?.[0]?.current_data) {
+      const initialValues = {};
+      projectData.items[0].current_data.forEach((item) => {
+        initialValues[item.name] = item.values[0]?.input_values || "";
+      });
+      setFormData(initialValues);
+    }
+  }, [projectData]);
+
+  const handleModalSubmit = async () => {
+    const formattedData = selectedCategory.headers.map((header) => {
+      const values =
+        modalFormData?.[header.name]?.length > 0
+          ? modalFormData[header.name]
+              .map((val) => ({
+                input_values:
+                  typeof val === "object" ? val.input_values || "" : val || "",
+              }))
+              .filter((v) => v.input_values !== "")
+          : [];
+
+      return {
+        name: header.name,
+        values,
+      };
+    });
+
+    const payload = {
+      project_id: projectId,
+      items: [
+        {
+          module_template,
+          boq_template: template_id,
+          data_history: [formattedData],
+        },
+      ],
+    };
+
+    try {
+      await createBoqProject({ data: payload }).unwrap();
+      alert("BOQ created successfully!");
+      setOpenModal(false);
+    } catch (error) {
+      console.error("Error creating BOQ:", error);
+      alert("Failed to create BOQ");
+    }
   };
-
-  try {
-    await createBoqProject({ data: payload }).unwrap();
-    alert("BOQ created successfully!");
-    setOpenModal(false);
-  } catch (error) {
-    console.error("Error creating BOQ:", error);
-    alert("Failed to create BOQ");
-  }
-};
 
   return (
     <Box
@@ -205,38 +271,49 @@ const handleModalSubmit = async () => {
           <Stack spacing={2} mt={2}>
             {selectedCategory?.headers?.map((header, index) => {
               const values = modalFormData?.[header.name] || [{}];
-              
-              // Correct path to fetch matching template item
               const matchingTemplateItem =
                 templateRes?.boqTemplates?.[0]?.data?.find(
                   (item) => item.name === header.name
                 );
+
               return (
                 <FormControl key={index}>
                   <FormLabel>{header.name}</FormLabel>
-                  <Stack spacing={1}>
-                    {values.map((val, i) => (
-                      <Input
-                        key={i}
-                        type={header.input_type}
-                        placeholder={header.placeholder}
-                        required={header.required}
-                        defaultValue={
-                          val.input_values ??
-                          matchingTemplateItem?.values?.[0]?.input_values ??
-                          ""
-                        }
-                        onChange={(e) => {
-                          handleModalInputChange(
-                            header.name,
-                            0,
-                            e.target.value
-                          );
-                          console.log(e.target.value);
-                        }}
-                      />
-                    ))}
-                  </Stack>
+                 <Stack spacing={1}>
+  {values.map((val, i) => (
+    <select
+      key={i}
+      value={
+        val.input_values ??
+        matchingTemplateItem?.values?.[0]?.input_values ??
+        ""
+      }
+      onChange={(e) =>
+        handleModalInputChange(header.name, i, e.target.value)
+      }
+      style={{
+        padding: "8px",
+        borderRadius: "6px",
+        border: "1px solid #ccc",
+        width: "100%",
+      }}
+    >
+      <option value="" disabled>
+        {val.input_values ??
+          matchingTemplateItem?.values?.[0]?.input_values ??
+          `Select ${header.name}`}
+      </option>
+      {(dropdownOptions[header.name] || []).map((option, idx) =>
+        option !== val.input_values ? (
+          <option key={idx} value={option}>
+            {option}
+          </option>
+        ) : null
+      )}
+    </select>
+  ))}
+</Stack>
+
                 </FormControl>
               );
             })}
@@ -272,22 +349,56 @@ const handleModalSubmit = async () => {
           }}
         >
           <Stack spacing={2}>
-          <Typography fontSize={'1.2rem'} fontWeight={'700'}>{boqName}</Typography>
+            <Typography fontSize="1.2rem" fontWeight="700">
+              {boqName}
+            </Typography>
+
             {headers.map((header, i) => {
-              const defaultValue =
-                projectData?.items?.[0]?.current_data?.find(
-                  (d) => d.name === header.name
-                )?.values?.[0]?.input_values || "";
+              const keyname = header.name;
+              const isDropdown = true;
+
               return (
-                <FormControl key={i}>
-                  <FormLabel>{header.name}</FormLabel>
-                  <Input
-                    type={header.input_type}
-                    placeholder={header.placeholder}
-                    required={header.required}
-                    defaultValue={defaultValue}
-                    onChange={handleChange(header.name)}
-                  />
+                <FormControl key={i} margin="normal">
+                  <FormLabel>{keyname}</FormLabel>
+                  {isDropdown ? (
+                    <select
+                      value={formData[keyname] || ""}
+                      onChange={(e) => handleChange(keyname)(e)}
+                      style={{
+                        padding: "8px",
+                        borderRadius: "6px",
+                        border: "1px solid #ccc",
+                        width: "100%",
+                      }}
+                    >
+                      {formData[keyname] ? (
+                        <option value={formData[keyname]} disabled>
+                          {formData[keyname]}
+                        </option>
+                      ) : (
+                        <option value="" disabled>
+                          Select {keyname}
+                        </option>
+                      )}
+
+                      {(dropdownOptions[keyname] || [])
+                        .filter((option) => option !== formData[keyname]) // avoid duplicating selected
+                        .map((option, idx) => (
+                          <option key={idx} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                    </select>
+                  ) : (
+                    <Input
+                      type={header.input_type}
+                      name={keyname}
+                      value={formData[keyname] || ""}
+                      onChange={(e) => handleChange(keyname)(e)}
+                      placeholder={header.placeholder}
+                      required={header.required}
+                    />
+                  )}
                 </FormControl>
               );
             })}
