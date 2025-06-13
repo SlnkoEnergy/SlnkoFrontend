@@ -21,13 +21,13 @@ const MaterialCategory = () => {
     materialHeaders: [],
   });
 
-const [headerInput, setHeaderInput] = useState({
-  name: "",
-  input_type: "text",
-  key: "",
-  placeholder: "",
-  required: false,
-});
+  const [headerInput, setHeaderInput] = useState({
+    name: "",
+    input_type: "text",
+    key: "",
+    placeholder: "",
+    required: false,
+  });
 
   const [createMaterialCategory] = useCreateMaterialCategoryMutation();
 
@@ -40,13 +40,15 @@ const [headerInput, setHeaderInput] = useState({
       !headerInput.name.trim() ||
       !headerInput.key.trim() ||
       !headerInput.input_type
-    ) return alert("Please fill all header fields");
+    )
+      return alert("Please fill all header fields");
 
     if (
       materialData.materialHeaders.some(
         (h) => h.key.toLowerCase() === headerInput.key.toLowerCase()
       )
-    ) return alert("Key Name must be unique");
+    )
+      return alert("Key Name must be unique");
 
     setMaterialData((prev) => ({
       ...prev,
@@ -98,7 +100,9 @@ const [headerInput, setHeaderInput] = useState({
 
   return (
     <Box sx={{ p: 4, marginLeft: "25%" }}>
-      <Typography level="h3" mb={3}>Add Material Category</Typography>
+      <Typography level="h3" mb={3}>
+        Add Material Category
+      </Typography>
 
       <form onSubmit={handleSubmit}>
         <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 4 }}>
@@ -127,9 +131,19 @@ const [headerInput, setHeaderInput] = useState({
           </FormControl>
         </Box>
 
-        <Typography level="h4" mb={2}>Define Material Template Headers</Typography>
+        <Typography level="h4" mb={2}>
+          Define Material Template Headers
+        </Typography>
 
-        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center", mb: 2 }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1,
+            flexWrap: "wrap",
+            alignItems: "center",
+            mb: 2,
+          }}
+        >
           <Input
             placeholder="Input Column Name"
             value={headerInput.name}
@@ -138,7 +152,9 @@ const [headerInput, setHeaderInput] = useState({
           />
           <Select
             value={headerInput.input_type}
-            onChange={(event, val) => handleHeaderInputChange("input_type", val)}
+            onChange={(event, val) =>
+              handleHeaderInputChange("input_type", val)
+            }
             sx={{ flex: "0 0 120px" }}
           >
             <Option value="text">Text</Option>
@@ -154,10 +170,17 @@ const [headerInput, setHeaderInput] = useState({
           <Input
             placeholder="Placeholder"
             value={headerInput.placeholder}
-            onChange={(e) => handleHeaderInputChange("placeholder", e.target.value)}
+            onChange={(e) =>
+              handleHeaderInputChange("placeholder", e.target.value)
+            }
             sx={{ flex: "1 1 200px" }}
           />
-          <Button type="button" onClick={addHeader} variant="soft" sx={{ flex: "0 0 auto" }}>
+          <Button
+            type="button"
+            onClick={addHeader}
+            variant="soft"
+            sx={{ flex: "0 0 auto" }}
+          >
             Add
           </Button>
         </Box>
@@ -165,12 +188,35 @@ const [headerInput, setHeaderInput] = useState({
         {materialData.materialHeaders.length > 0 && (
           <Sheet
             variant="outlined"
-            sx={{ mb: 3, p: 2, borderRadius: 2, overflowX: "auto", maxWidth: "100%" }}
+            sx={{
+              mb: 3,
+              p: 2,
+              borderRadius: 2,
+              overflowX: "auto",
+              maxWidth: "100%",
+            }}
           >
-            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center", mb: 1 }}>
-              <Typography level="body2" sx={{ fontWeight: "bold" }}>Editable Headers:</Typography>
+            <Box
+              sx={{
+                display: "flex",
+                gap: 1,
+                flexWrap: "wrap",
+                alignItems: "center",
+                mb: 1,
+              }}
+            >
+              <Typography level="body2" sx={{ fontWeight: "bold" }}>
+                Editable Headers:
+              </Typography>
             </Box>
-            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
+            <Box
+              sx={{
+                display: "flex",
+                gap: 1,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
               {materialData.materialHeaders.map((header, idx) => (
                 <Box
                   key={idx}
@@ -195,7 +241,9 @@ const [headerInput, setHeaderInput] = useState({
                   <Select
                     size="sm"
                     value={header.input_type}
-                    onChange={(event, val) => editHeader(idx, "input_type", val)}
+                    onChange={(event, val) =>
+                      editHeader(idx, "input_type", val)
+                    }
                   >
                     <Option value="text">Text</Option>
                     <Option value="number">Number</Option>
@@ -210,7 +258,9 @@ const [headerInput, setHeaderInput] = useState({
                   <Input
                     size="sm"
                     value={header.placeholder}
-                    onChange={(e) => editHeader(idx, "placeholder", e.target.value)}
+                    onChange={(e) =>
+                      editHeader(idx, "placeholder", e.target.value)
+                    }
                     placeholder="Placeholder"
                   />
                   <IconButton

@@ -545,20 +545,18 @@ const Overview = () => {
                             >
                               📂 Attachment Logs
                             </Button>
-                            {isEngineering && (
-                              <Button
-                                variant="soft"
-                                size="sm"
-                                sx={{ mt: 2 }}
-                                onClick={() =>
-                                  navigate(
-                                    `/add_boq?projectId=${projectId}&module_template=${item.templateId}`
-                                  )
-                                }
-                              >
-                                Add BOQ
-                              </Button>
-                            )}
+
+                            <Button
+                              variant="soft"
+                              size="sm"
+                              onClick={() =>
+                                navigate(
+                                  `/add_boq?projectId=${projectId}&module_template=${item.templateId}`
+                                )
+                              }
+                            >
+                              Add Boq
+                            </Button>
                           </>
                         )}
                         {isCAM && item.latestStatus === "submitted" && (
@@ -613,49 +611,52 @@ const Overview = () => {
       </Box>
 
       <Modal open={showLogsModal} onClose={() => setShowLogsModal(false)}>
-        <ModalDialog>
-          <Typography level="h5" sx={{ mb: 2 }}>
-            📂 Attachment Logs
-          </Typography>
-          {logModalData.length === 0 ? (
-            <Typography>No files uploaded.</Typography>
-          ) : (
-            <List>
-              {logModalData.map((revisionBlock, i) => (
-                <Box key={i} sx={{ mb: 2 }}>
-                  <Typography
-                    level="body-sm"
-                    sx={{ fontWeight: 600, mb: 1, color: "primary.plainColor" }}
+  <ModalDialog>
+    <Typography level="h5" sx={{ mb: 2 }}>
+      📂 Attachment Logs
+    </Typography>
+    {logModalData.length === 0 ? (
+      <Typography>No files uploaded.</Typography>
+    ) : (
+      <Box sx={{ maxHeight: 300, overflowY: "auto", pr: 1 }}>
+        <List>
+          {logModalData.map((revisionBlock, i) => (
+            <Box key={i} sx={{ mb: 2 }}>
+              <Typography
+                level="body-sm"
+                sx={{ fontWeight: 600, mb: 1, color: "primary.plainColor" }}
+              >
+                📁 {revisionBlock.revision}
+              </Typography>
+              {revisionBlock.urls.map((url, j) => (
+                <ListItem key={j} sx={{ p: 0, pl: 2 }}>
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "#1976d2", fontSize: "14px" }}
                   >
-                    📁 {revisionBlock.revision}
-                  </Typography>
-                  {revisionBlock.urls.map((url, j) => (
-                    <ListItem key={j} sx={{ p: 0, pl: 2 }}>
-                      <a
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: "#1976d2", fontSize: "14px" }}
-                      >
-                        📎 {url.split("/").pop()}
-                      </a>
-                    </ListItem>
-                  ))}
-                </Box>
+                    📎 {url.split("/").pop()}
+                  </a>
+                </ListItem>
               ))}
-            </List>
-          )}
-          <Box sx={{ textAlign: "right", mt: 2 }}>
-            <Button
-              variant="soft"
-              color="neutral"
-              onClick={() => setShowLogsModal(false)}
-            >
-              Close
-            </Button>
-          </Box>
-        </ModalDialog>
-      </Modal>
+            </Box>
+          ))}
+        </List>
+      </Box>
+    )}
+    <Box sx={{ textAlign: "right", mt: 2 }}>
+      <Button
+        variant="soft"
+        color="neutral"
+        onClick={() => setShowLogsModal(false)}
+      >
+        Close
+      </Button>
+    </Box>
+  </ModalDialog>
+</Modal>
+
       <Modal open={showRemarksModal} onClose={() => setShowRemarksModal(false)}>
         <ModalDialog>
           <Typography level="h6">Enter Remarks for Revision</Typography>
