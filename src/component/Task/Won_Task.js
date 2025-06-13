@@ -15,12 +15,12 @@ import {
   Typography,
 } from "@mui/joy";
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import plus from "../../assets/plus 1.png";
 import { useGetLoginsQuery } from "../../redux/loginSlice";
 import { useAddTasksMutation } from "../../redux/tasksSlice";
-import { useGetWonLeadsQuery } from "../../redux/leadsSlice";
+import { useGetWonDataByIdQuery, useGetWonLeadsQuery } from "../../redux/leadsSlice";
 
 const FormComponent4 = () => {
   const navigate = useNavigate();
@@ -40,7 +40,14 @@ const FormComponent4 = () => {
   const [ADDTask, { isLoading }] = useAddTasksMutation();
   const { data: usersData = [], isLoading: isFetchingUsers } =
     useGetLoginsQuery();
-  const { data: getLead = [] } = useGetWonLeadsQuery();
+
+    const [searchParams] = useSearchParams();
+    const leadId = searchParams.get("leadId");
+  
+    const {
+      data: getLead,
+      error,
+    } = useGetWonDataByIdQuery({ leadId }, { skip: !leadId });
 
   const getLeadArray = Array.isArray(getLead) ? getLead : getLead?.data || [];
   console.log("Processed Leads Array:", getLeadArray);
@@ -66,19 +73,19 @@ const FormComponent4 = () => {
   };
 
   // Retrieve LeadId safely
-  const LeadId = localStorage.getItem("add_task_won");
+  // const LeadId = localStorage.getItem("add_task_won");
 
   useEffect(() => {
-    if (LeadId && getLeadArray.length > 0) {
-      const matchedLead = getLeadArray.find((lead) => lead.id === LeadId);
+    if (leadId && getLeadArray.length > 0) {
+      const matchedLead = getLeadArray.find((lead) => lead.id === leadId);
       if (matchedLead) {
         setFormData((prevData) => ({
           ...prevData,
-          name: matchedLead.c_name || "",
+          name: matchedLead.customer || "",
         }));
       }
     }
-  }, [LeadId, getLeadArray]);
+  }, [leadId, getLeadArray]);
 
   const handleChange = (field, value) => {
     setFormData((prevData) => ({ ...prevData, [field]: value }));
@@ -125,11 +132,11 @@ const FormComponent4 = () => {
 
     const updatedFormData = {
       ...formData,
-      id: LeadId,
+      id: leadId,
       submitted_by: submittedBy,
     };
 
-    console.log("Final Payload:", updatedFormData);
+    // console.log("Final Payload:", updatedFormData);
 
     try {
       await ADDTask(updatedFormData).unwrap();
@@ -196,7 +203,7 @@ const FormComponent4 = () => {
               <Input
                 fullWidth
                 placeholder="Customer Name"
-                value={formData.name || "-"}
+                value={formData.customer || "-"}
                 onChange={(e) => handleChange("name", e.target.value)}
                 sx={{ borderRadius: "8px" }}
                 readOnly

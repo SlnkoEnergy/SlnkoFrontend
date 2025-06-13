@@ -3,7 +3,18 @@ import { baseQuery } from "../auth/auth_variable";
 
 export const engsLTPanelApi = createApi({
   reducerPath: "engsLTPanelApi",
-    baseQuery,
+    baseQuery: fetchBaseQuery({
+    baseUrl: `${process.env.REACT_APP_API_URL}/`,
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem("authToken");
+
+      if (token) {
+        headers.set("x-auth-token", token);
+      }
+
+      return headers;
+    },
+  }),
   tagTypes: ["LTPanel"],
   endpoints: (builder) => ({
     getLTPanels: builder.query({

@@ -13,7 +13,7 @@ import {
   Typography,
 } from "@mui/joy";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
 import { useAddHandOverMutation } from "../../redux/camsSlice";
@@ -163,6 +163,7 @@ const HandoverSheetForm = () => {
   const [inverterSizeOptions, setInverterSizeOptions] = useState([]);
   const [inverterModelOptions, setInverterModelOptions] = useState([]);
   const [inverterTypeOptions, setInverterTypeOptions] = useState([]);
+  const [searchParams] = useSearchParams();
   const [user, setUser] = useState(null);
 
   const { data: getModuleMaster = [] } = useGetModuleMasterQuery();
@@ -292,18 +293,21 @@ const HandoverSheetForm = () => {
     const userData = localStorage.getItem("userDetails");
     return userData ? JSON.parse(userData) : null;
   };
-  const LeadId = localStorage.getItem("hand_Over");
+  // const LeadId = localStorage.getItem("hand_Over");
+  
+const leadId = searchParams.get("leadId");
+
 
   const handleSubmit = async () => {
     try {
-      if (!LeadId) {
+      if (!leadId) {
         toast.error("Lead ID is missing!");
         return;
       }
 
       const updatedFormData = {
         ...formData,
-        id: LeadId,
+        id: leadId,
         other_details: {
           ...formData.other_details,
           submitted_by_BD:
@@ -316,11 +320,12 @@ const HandoverSheetForm = () => {
         submitted_by: formData.submitted_by || user?.name || "",
       };
 
-      const response = await HandOverSheet(updatedFormData).unwrap();
+    await HandOverSheet(updatedFormData).unwrap();
 
       toast.success("Form submitted successfully");
-      localStorage.setItem("HandOver_Lead", LeadId);
-      navigate("/get_hand_over");
+     
+      // navigate("/get_hand_over");
+      navigate(`/get_hand_over?${leadId}`)
     } catch (error) {
       console.error("Submission error:", error);
 

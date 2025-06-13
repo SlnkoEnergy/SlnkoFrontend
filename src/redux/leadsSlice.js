@@ -2,7 +2,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { baseQuery } from "./auth/auth_variable";
 
 // const baseQuery = fetchBaseQuery({
-//   baseUrl: "https://api.slnkoprotrac.com/v1/",
+//   baseUrl: "${process.env.REACT_APP_API_URL}/",
 //   prepareHeaders: (headers) => {
 //     const token = localStorage.getItem("authToken");
 //     console.log("Token:", token);
@@ -14,7 +14,18 @@ import { baseQuery } from "./auth/auth_variable";
 // });
 export const leadsApi = createApi({
   reducerPath: "leadsApi",
-  baseQuery,
+  baseQuery: fetchBaseQuery({
+    baseUrl: `${process.env.REACT_APP_API_URL}/`,
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem("authToken");
+      // console.log(token);
+      if (token) {
+        headers.set("x-auth-token", token);
+      }
+
+      return headers;
+    },
+  }),
   tagTypes: ["Lead"],
   endpoints: (builder) => ({
     getLeads: builder.query({
@@ -278,6 +289,11 @@ export const leadsApi = createApi({
       invalidatesTags: ["Lead"],
     }),
 
+     getWonDataById: builder.query({
+      query: ({ leadId }) => `/get-won?leadId=${leadId}`,
+      providesTags: ["CAM"],
+    }),
+
     /*-- HandOver Sheet */
     getModuleMaster: builder.query({
       query: () => "get-module-master",
@@ -338,5 +354,6 @@ export const {
   useGetMasterInverterQuery,
   useGetModuleMasterQuery,
   useUpdateWONLeadsMutation,
+  useGetWonDataByIdQuery,
   // useGetHandOverQuery,
 } = leadsApi;

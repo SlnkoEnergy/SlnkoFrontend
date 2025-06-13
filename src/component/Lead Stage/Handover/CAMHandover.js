@@ -21,7 +21,7 @@ import { toast } from "react-toastify";
 import * as Yup from "yup";
 import Img1 from "../../../assets/HandOverSheet_Icon.jpeg";
 import {
-  useGetHandOverQuery,
+  useGetHandOverByIdQuery,
   useUpdateHandOverMutation,
   useUpdateStatusHandOverMutation,
 } from "../../../redux/camsSlice";
@@ -278,17 +278,59 @@ const CamHandoverSheetForm = ({ onBack }) => {
 
   // console.log("LeadId:", LeadId);
 
-  const { data: getHandOverSheet = [] } = useGetHandOverQuery();
-  const HandOverSheet = useMemo(
-    () => getHandOverSheet?.Data ?? [],
-    [getHandOverSheet]
+  const {
+    data: getHandOverSheet,
+    isLoading,
+    isError,
+    error,
+  } = useGetHandOverByIdQuery(
+    { leadId: LeadId },
+    {
+      skip: !LeadId,
+    }
   );
 
-  const handoverData = useMemo(() => {
-    return HandOverSheet.find((item) => item._id === LeadId);
-  }, [HandOverSheet, LeadId]);
+  const handoverData = getHandOverSheet?.data ?? null;
 
-  // console.log("handoverData:", handoverData);
+  console.log("Handover Data:", handoverData);
+
+  useEffect(() => {
+    if (!handoverData && !isLoading && !error) {
+      console.warn("No matching handover data found.");
+    } else if (handoverData) {
+      console.log("Fetched handover data:", handoverData);
+    }
+  }, [handoverData, isLoading, error]);
+
+  useEffect(() => {
+    if (handoverData) {
+      setFormData((prev) => ({
+        ...prev,
+        ...handoverData,
+
+        customer_details: {
+          ...prev.customer_details,
+          ...handoverData.customer_details,
+        },
+        order_details: {
+          ...prev.order_details,
+          ...handoverData.order_details,
+        },
+        project_detail: {
+          ...prev.project_detail,
+          ...handoverData.project_detail,
+        },
+        commercial_details: {
+          ...prev.commercial_details,
+          ...handoverData.commercial_details,
+        },
+        other_details: {
+          ...prev.other_details,
+          ...handoverData.other_details,
+        },
+      }));
+    }
+  }, [getHandOverSheet]);
 
   const handoverSchema = Yup.object().shape({
     customer_details: Yup.object().shape({
@@ -596,7 +638,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
             );
 
       const updatedFormData = {
-        _id: LeadId,
+        _id: formData._id,
         customer_details: { ...formData.customer_details },
         order_details: { ...formData.order_details },
         project_detail: {
@@ -819,13 +861,13 @@ const CamHandoverSheetForm = ({ onBack }) => {
                     e.target.value
                   )
                 }
-                  sx={{
+                sx={{
                   minHeight: 80,
                   "@media print": {
                     height: "auto",
                     overflow: "visible",
                     whiteSpace: "pre-wrap",
-                   
+
                     WebkitPrintColorAdjust: "exact",
                   },
                 }}
@@ -882,13 +924,13 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 onChange={(e) =>
                   handleChange("order_details", "discom_name", e.target.value)
                 }
-                  sx={{
+                sx={{
                   minHeight: 80,
                   "@media print": {
                     height: "auto",
                     overflow: "visible",
                     whiteSpace: "pre-wrap",
-                   
+
                     WebkitPrintColorAdjust: "exact",
                   },
                 }}
@@ -1554,13 +1596,13 @@ const CamHandoverSheetForm = ({ onBack }) => {
                     district_name: newDistrict,
                   });
                 }}
-                  sx={{
+                sx={{
                   minHeight: 80,
                   "@media print": {
                     height: "auto",
                     overflow: "visible",
                     whiteSpace: "pre-wrap",
-                   
+
                     WebkitPrintColorAdjust: "exact",
                   },
                 }}
@@ -1582,16 +1624,16 @@ const CamHandoverSheetForm = ({ onBack }) => {
                       village_name: e.target.value,
                     });
                   }}
-                    sx={{
-                  minHeight: 80,
-                  "@media print": {
-                    height: "auto",
-                    overflow: "visible",
-                    whiteSpace: "pre-wrap",
-                   
-                    WebkitPrintColorAdjust: "exact",
-                  },
-                }}
+                  sx={{
+                    minHeight: 80,
+                    "@media print": {
+                      height: "auto",
+                      overflow: "visible",
+                      whiteSpace: "pre-wrap",
+
+                      WebkitPrintColorAdjust: "exact",
+                    },
+                  }}
                 />
               </Grid>
             )}

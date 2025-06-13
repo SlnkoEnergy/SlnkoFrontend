@@ -1,5 +1,6 @@
 import { Player } from "@lottiefiles/react-lottie-player";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import InfoOutlined from "@mui/icons-material/InfoOutlined";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
@@ -15,7 +16,6 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
-import InfoOutlined from "@mui/icons-material/InfoOutlined";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
@@ -25,8 +25,8 @@ import NextPlanIcon from "@mui/icons-material/NextPlan";
 import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
 // import EditSquareIcon from '@mui/icons-material/EditSquare';
 
-import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditNoteIcon from "@mui/icons-material/EditNote";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import animationData from "../../assets/Lotties/animation-loading.json";
@@ -46,7 +46,7 @@ import {
 import { forwardRef, useCallback, useImperativeHandle } from "react";
 import { toast } from "react-toastify";
 import NoData from "../../assets/alert-bell.svg";
-import { useGetHandOverQuery } from "../../redux/camsSlice";
+import { useGetHandOverByIdQuery } from "../../redux/camsSlice";
 import { useGetWonLeadsQuery } from "../../redux/leadsSlice";
 
 const StandByRequest = forwardRef((props, ref) => {
@@ -64,6 +64,8 @@ const StandByRequest = forwardRef((props, ref) => {
 
   const { data: getLead = [], isLoading, error } = useGetWonLeadsQuery();
   const leads = useMemo(() => getLead?.data ?? [], [getLead?.data]);
+
+  // console.log("Leads:", leads);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userDetails");
@@ -94,18 +96,18 @@ const StandByRequest = forwardRef((props, ref) => {
     setSelectedLead(null);
   }, []);
 
-  const { data: getHandOverSheet = [] } = useGetHandOverQuery();
+  const { data: getHandOverSheet = [] } = useGetHandOverByIdQuery();
   const HandOverSheet = useMemo(
-    () => getHandOverSheet?.Data ?? [],
+    () => getHandOverSheet?.data ?? [],
     [getHandOverSheet]
   );
 
-  // console.log("HandOverSheet:", HandOverSheet);
+  console.log("HandOverSheet:", HandOverSheet);
 
   const status_handOver = (leadId) => {
-    const matchedHandOver = HandOverSheet.find((sheet) => sheet.id === leadId);
+    const matchedLead = leads?.find((lead) => lead.leadId === leadId);
 
-    if (!matchedHandOver) {
+    if (!matchedLead) {
       return {
         status: "Not Found",
         submittedBy: "Not Found",
@@ -113,14 +115,19 @@ const StandByRequest = forwardRef((props, ref) => {
       };
     }
 
-    const submittedBy = matchedHandOver.submitted_by || "Not Found";
-    const status = matchedHandOver.status_of_handoversheet || "Not Found";
-    const comment = matchedHandOver.comment || "Not Found";
-
     return {
-      status,
-      submittedBy,
-      comment,
+      status: matchedLead.status || "Not Found",
+      submittedBy: matchedLead.submittedBy || "Not Found",
+      comment: matchedLead.comment || "Not Found",
+    };
+  };
+
+  const getStatusDetails = (leadId) => {
+    const matchedLead = leads?.find((lead) => lead.leadId === leadId);
+    return {
+      status: matchedLead?.status || "Not Found",
+      submittedBy: matchedLead?.submitted_by || "-",
+      comment: matchedLead?.comment || "",
     };
   };
 
@@ -171,8 +178,8 @@ const StandByRequest = forwardRef((props, ref) => {
     );
   };
 
-  const RowMenu = ({ currentPage, id }) => {
-    // console.log(currentPage, id);
+  const RowMenu = ({ currentPage, id, _id, leadId }) => {
+    // console.log(leadId);
     return (
       <Dropdown>
         <MenuButton
@@ -202,13 +209,13 @@ const StandByRequest = forwardRef((props, ref) => {
             color="primary"
             onClick={() => {
               const page = currentPage;
-              const leadId = String(id);
+              const ID = String(leadId);
 
               // const projectID = Number(p_id);
               setOpen(true);
-              localStorage.setItem("stage_next3", leadId);
+              localStorage.setItem("stage_next3", ID);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/won_to_all?page=${page}&${leadId}`);
+              navigate(`/won_to_all?page=${page}&${ID}`);
             }}
           >
             <NextPlanIcon />
@@ -218,11 +225,11 @@ const StandByRequest = forwardRef((props, ref) => {
             color="primary"
             onClick={() => {
               const page = currentPage;
-              const leadId = String(id);
+              const ID = String(leadId);
               // const projectID = Number(p_id);
-              localStorage.setItem("view_won_history", leadId);
+              localStorage.setItem("view_won_history", ID);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/won_records?page=${page}&${leadId}`);
+              navigate(`/won_records?page=${page}&${ID}`);
             }}
           >
             <ManageHistoryIcon />
@@ -232,11 +239,11 @@ const StandByRequest = forwardRef((props, ref) => {
             color="primary"
             onClick={() => {
               const page = currentPage;
-              const leadId = String(id);
+              // const leadId = String(leadId);
               // const projectID = Number(p_id);
-              localStorage.setItem("add_task_won", leadId);
+              // localStorage.setItem("add_task_won", leadId);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/add_task_won?page=${page}&${leadId}`);
+              navigate(`/add_task_won?page=${page}&leadId=${leadId}`);
             }}
           >
             <AddCircleOutlineIcon />
@@ -246,11 +253,11 @@ const StandByRequest = forwardRef((props, ref) => {
             color="primary"
             onClick={() => {
               const page = currentPage;
-              const leadId1 = String(id);
+              // const leadId = leadId;
               // const projectID = Number(p_id);
-              localStorage.setItem("hand_Over", leadId1);
+              // localStorage.setItem("hand_Over", leadId1);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/hand_over?page=${page}&${leadId1}`);
+              navigate(`/hand_over?page=${page}&leadId=${leadId}`);
             }}
           >
             <FollowTheSignsIcon />
@@ -260,11 +267,11 @@ const StandByRequest = forwardRef((props, ref) => {
             color="primary"
             onClick={() => {
               const page = currentPage;
-              const leadId = String(id);
+
               // const projectID = Number(p_id);
-              localStorage.setItem("view_won", leadId);
+              // localStorage.setItem("view_won", leadId);
               // localStorage.setItem("p_id", projectID);
-              navigate(`/won_Summary?page=${page}&id=${leadId}`);
+              navigate(`/won_Summary?page=${page}&leadId=${leadId}`);
             }}
           >
             <RemoveRedEyeIcon />
@@ -280,7 +287,7 @@ const StandByRequest = forwardRef((props, ref) => {
     );
   };
 
-  const ViewHandOver = ({ currentPage, id }) => {
+  const ViewHandOver = ({ currentPage, leadId }) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
 
     return (
@@ -288,8 +295,9 @@ const StandByRequest = forwardRef((props, ref) => {
         <IconButton
           color="primary"
           onClick={() => {
-            localStorage.setItem("bd_handover", id);
-            navigate(`/bd_hand_over?page=${currentPage}&id=${id}`);
+            // const ID = String(leadId);
+            // localStorage.setItem("bd_handover", ID);
+            navigate(`/bd_hand_over?page=${currentPage}&leadId=${leadId}`);
           }}
         >
           <VisibilityIcon />
@@ -298,7 +306,7 @@ const StandByRequest = forwardRef((props, ref) => {
     );
   };
 
-  const EditHandOver = ({ currentPage, id }) => {
+  const EditHandOver = ({ currentPage, leadId }) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
 
     return (
@@ -306,8 +314,8 @@ const StandByRequest = forwardRef((props, ref) => {
         <IconButton
           color="primary"
           onClick={() => {
-            localStorage.setItem("edit_won_handover", id);
-            navigate(`/edit_won?page=${currentPage}&id=${id}`);
+            // localStorage.setItem("edit_won_handover", leadId);
+            navigate(`/edit_won?page=${currentPage}&leadId=${leadId}`);
           }}
         >
           <EditNoteIcon />
@@ -340,45 +348,6 @@ const StandByRequest = forwardRef((props, ref) => {
     setSelectedDate(e.target.value);
   };
 
-  // const filteredData = useMemo(() => {
-  //   if (!user || !user.name) return [];
-
-  //   return leads
-  //     .filter((lead) => {
-  //       const submittedBy = lead.submitted_by?.trim() || "";
-  //       const userName = user.name.trim();
-  //       const userRole = user.role?.toLowerCase();
-
-  //       const isAdmin =
-  //         userRole === "admin" ||
-  //         userRole === "superadmin" ||
-  //         userName === "Guddu Rani Dubey" ||
-  //         userName === "Prachi Singh";
-
-  //       const matchesUser = isAdmin || submittedBy === userName;
-
-  //       const statusInfo = status_handOver(lead.id);
-  //       const statusText = statusInfo.status?.toLowerCase() || "";
-
-  //       const matchesQuery =
-  //         ["id", "c_name", "mobile", "state", "submitted_by"].some((key) =>
-  //           lead[key]?.toLowerCase().includes(searchQuery)
-  //         ) || statusText.includes(searchQuery);
-
-  //       const matchesDate = selectedDate
-  //         ? formatDate(lead.entry_date).toLocaleDateString() ===
-  //           formatDate(selectedDate).toLocaleDateString()
-  //         : true;
-
-  //       return matchesUser && matchesQuery && matchesDate;
-  //     })
-  //     .sort((a, b) => {
-  //       const dateA = new Date(a.entry_date);
-  //       const dateB = new Date(b.entry_date);
-  //       return dateB - dateA;
-  //     });
-  // }, [leads, searchQuery, selectedDate, user]);
-
   const filteredData = useMemo(() => {
     if (!user || !user.name) return [];
 
@@ -388,6 +357,7 @@ const StandByRequest = forwardRef((props, ref) => {
       userRole === "admin" ||
       userRole === "superadmin" ||
       userName === "Shiv Ram Tathagat" ||
+      userName === "Deepak Manodi" ||
       userName === "Prachi Singh" ||
       userName === "Guddu Rani Dubey";
 
@@ -405,24 +375,24 @@ const StandByRequest = forwardRef((props, ref) => {
     return leads
       .filter((lead) => {
         const leadState = lead.state?.trim() || "";
-        const submittedBy = lead.submitted_by?.trim() || "";
-
+        const submittedBy = lead.submitted_by_bdlead?.trim() || "";
+        console.log("submitted:", lead.submitted_by_bdlead);
         if (isAdmin) return true;
 
         const allowedUsers = stateUserMap[leadState] || [];
         const isAllowedForState = allowedUsers.includes(userName);
         const isSubmittedByUser = submittedBy === userName;
-
+        console.log("username:", userName);
         return isAllowedForState || isSubmittedByUser;
       })
       .filter((lead) => {
         // Search & date filters
         const matchesQuery = [
           "id",
-          "c_name",
+          "customer",
           "mobile",
           "state",
-          "submitted_by",
+          "submitted_by_bdlead",
         ].some((key) =>
           lead[key]
             ?.toString()
@@ -670,7 +640,7 @@ const StandByRequest = forwardRef((props, ref) => {
                   <th
                     style={{
                       padding: 8,
-                      textAlign: "center",
+                      textAlign: "left",
                       borderBottom: "1px solid #ccc",
                     }}
                   ></th>
@@ -694,7 +664,7 @@ const StandByRequest = forwardRef((props, ref) => {
                       key={idx}
                       style={{
                         padding: 8,
-                        textAlign: "center",
+                        textAlign: "left",
                         fontWeight: "bold",
                         borderBottom: "1px solid #ccc",
                       }}
@@ -709,94 +679,109 @@ const StandByRequest = forwardRef((props, ref) => {
                   backgroundColor: "#fff",
                 }}
               >
-                {paginatedData.map((lead) => (
-                  <tr
-                    key={lead._id}
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      cursor: "pointer",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "#F4F9FF";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "";
-                    }}
-                  >
-                    <td style={{ textAlign: "center", padding: 8 }}>
-                      <Checkbox
-                        size="sm"
-                        color="primary"
-                        checked={selected.includes(lead._id)}
-                        onChange={() => handleRowSelect(lead._id)}
-                      />
-                    </td>
-
-                    {[
-                      <ViewHandOver currentPage={currentPage} id={lead.id} />,
-                      <EditHandOver currentPage={currentPage} id={lead.id} />,
-                      <span
-                        key="id"
-                        onClick={() => handleOpenModal(lead)}
-                        style={{ cursor: "pointer" }}
-                      >
-                        {lead.id}
-                      </span>,
-                      lead.c_name,
-                      lead.mobile,
-                      lead.state,
-                      lead.scheme,
-                      lead.capacity || "-",
-                      lead.distance || "-",
-                      lead.entry_date || "-",
-
-                      <Chip
-                        variant="soft"
-                        color={
-                          status_handOver(lead.id).status === "submitted" ||
-                          status_handOver(lead.id).status === "Approved"
-                            ? "success"
-                            : status_handOver(lead.id).status === "Rejected"
-                              ? "danger"
-                              : status_handOver(lead.id).status === "draft"
-                                ? "warning"
-                                : "neutral"
-                        }
-                        size="sm"
-                        endDecorator={
-                          status_handOver(lead.id).status === "Rejected" &&
-                          status_handOver(lead.id).comment !== "Not Found" ? (
-                            <Tooltip title={status_handOver(lead.id).comment}>
-                              <InfoOutlined fontSize="small" />
-                            </Tooltip>
-                          ) : null
-                        }
-                      >
-                        {status_handOver(lead.id).status === "submitted" ||
-                        status_handOver(lead.id).status === "Approved"
-                          ? "Submitted"
-                          : status_handOver(lead.id).status === "Rejected"
-                            ? "Rejected"
-                            : status_handOver(lead.id).status === "draft"
-                              ? "In Process"
-                              : "Pending"}
-                      </Chip>,
-
-                      status_handOver(lead.id).submittedBy || "-",
-                      <RowMenu currentPage={currentPage} id={lead.id} />,
-                    ].map((data, idx) => (
-                      <td key={idx} style={{ padding: 8, textAlign: "center" }}>
-                        {data}
+                {paginatedData.map((lead) => {
+                  const statusInfo = getStatusDetails(lead.leadId);
+                  console.log("statusInfo:", statusInfo);
+                  return (
+                    <tr
+                      key={lead._id}
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        cursor: "pointer",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "#F4F9FF";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "";
+                      }}
+                    >
+                      <td style={{ textAlign: "left", padding: 8 }}>
+                        <Checkbox
+                          size="sm"
+                          color="primary"
+                          checked={selected.includes(lead._id)}
+                          onChange={() => handleRowSelect(lead._id)}
+                        />
                       </td>
-                    ))}
-                  </tr>
-                ))}
+
+                      {[
+                        <ViewHandOver
+                          currentPage={currentPage}
+                          leadId={lead.leadId}
+                        />,
+                        <EditHandOver
+                          currentPage={currentPage}
+                          leadId={lead.leadId}
+                        />,
+                        <span
+                          key="id"
+                          onClick={() => handleOpenModal(lead)}
+                          style={{ cursor: "pointer" }}
+                        >
+                          {lead.leadId}
+                        </span>,
+                        lead.customer,
+                        lead.mobile,
+                        lead.state,
+                        lead.scheme,
+                        lead.capacity || "-",
+                        lead.substationDistance || "-",
+                        lead.date || "-",
+
+                        <Chip
+                          variant="soft"
+                          color={
+                            statusInfo.status === "submitted" ||
+                            statusInfo.status === "Approved"
+                              ? "success"
+                              : statusInfo.status === "Rejected"
+                                ? "danger"
+                                : statusInfo.status === "draft"
+                                  ? "warning"
+                                  : "neutral"
+                          }
+                          size="sm"
+                          endDecorator={
+                            statusInfo.status === "Rejected" &&
+                            statusInfo.comment ? (
+                              <Tooltip title={statusInfo.comment}>
+                                <InfoOutlined fontSize="small" />
+                              </Tooltip>
+                            ) : null
+                          }
+                        >
+                          {statusInfo.status === "submitted" ||
+                          statusInfo.status === "Approved"
+                            ? "Submitted"
+                            : statusInfo.status === "Rejected"
+                              ? "Rejected"
+                              : statusInfo.status === "draft"
+                                ? "In Process"
+                                : "Pending"}
+                        </Chip>,
+
+                        statusInfo.submittedBy || "-",
+                        <RowMenu
+                          currentPage={currentPage}
+                          leadId={lead.leadId}
+                          _id={lead._id}
+                        />,
+                      ].map((data, idx) => (
+                        <td key={idx} style={{ padding: 8, textAlign: "left" }}>
+                          {data}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
               </tbody>
             </Box>
 
             {/* Mobile View - Card Style */}
             {paginatedData.map((lead) => {
               const isExpanded = expandedRows.includes(lead._id);
+              const statusInfo = getStatusDetails(lead.leadId);
               return (
                 <Box
                   key={lead._id}
@@ -823,35 +808,41 @@ const StandByRequest = forwardRef((props, ref) => {
                       onClick={() => handleOpenModal(lead)}
                       sx={{ cursor: "pointer", flex: 1 }}
                     >
-                      {lead.c_name}
+                      {lead.customer}
                     </Typography>
-
                     <Chip
                       variant="soft"
                       color={
-                        status_handOver(lead.id).status === "submitted" ||
-                        status_handOver(lead.id).status === "Approved"
+                        statusInfo.status === "submitted" ||
+                        statusInfo.status === "Approved"
                           ? "success"
-                          : status_handOver(lead.id).status === "Rejected"
+                          : statusInfo.status === "Rejected"
                             ? "danger"
-                            : status_handOver(lead.id).status === "draft"
+                            : statusInfo.status === "draft"
                               ? "warning"
                               : "neutral"
                       }
                       size="sm"
+                      endDecorator={
+                        statusInfo.status === "Rejected" &&
+                        statusInfo.comment ? (
+                          <Tooltip title={statusInfo.comment}>
+                            <InfoOutlined fontSize="small" />
+                          </Tooltip>
+                        ) : null
+                      }
                     >
-                      {status_handOver(lead.id).status === "submitted" ||
-                      status_handOver(lead.id).status === "Approved"
+                      {statusInfo.status === "submitted" ||
+                      statusInfo.status === "Approved"
                         ? "Submitted"
-                        : status_handOver(lead.id).status === "Rejected"
+                        : statusInfo.status === "Rejected"
                           ? "Rejected"
-                          : status_handOver(lead.id).status === "draft"
+                          : statusInfo.status === "draft"
                             ? "In Process"
                             : "Pending"}
                     </Chip>
-
                     <Box sx={{ ml: 1 }}>
-                      <RowMenu currentPage={currentPage} id={lead.id} />
+                      <RowMenu currentPage={currentPage} leadId={lead.leadId} />
                     </Box>
                   </Box>
 
@@ -869,7 +860,7 @@ const StandByRequest = forwardRef((props, ref) => {
                       <Divider sx={{ my: 1 }} />
                       <Stack spacing={1}>
                         {[
-                          { label: "Lead ID", value: lead.id },
+                          { label: "Lead ID", value: lead.leadId },
                           { label: "Mobile", value: lead.mobile },
                           { label: "State", value: lead.state },
                           { label: "Scheme", value: lead.scheme },
@@ -881,31 +872,38 @@ const StandByRequest = forwardRef((props, ref) => {
                             label: "Distance (KM)",
                             value: lead.distance || "-",
                           },
-                          { label: "Date", value: lead.entry_date || "-" },
+                          { label: "Date", value: lead.date || "-" },
                           {
                             label: "Handover Status",
                             value: (
                               <Chip
                                 variant="soft"
                                 color={
-                                  status_handOver.status ===
-                                  ("submitted" || "Approved")
+                                  statusInfo.status === "submitted" ||
+                                  statusInfo.status === "Approved"
                                     ? "success"
-                                    : status_handOver.status === "Rejected"
+                                    : statusInfo.status === "Rejected"
                                       ? "danger"
-                                      : status_handOver.status === "draft"
+                                      : statusInfo.status === "draft"
                                         ? "warning"
                                         : "neutral"
                                 }
                                 size="sm"
-                                sx={{ ml: 1 }}
+                                endDecorator={
+                                  statusInfo.status === "Rejected" &&
+                                  statusInfo.comment ? (
+                                    <Tooltip title={statusInfo.comment}>
+                                      <InfoOutlined fontSize="small" />
+                                    </Tooltip>
+                                  ) : null
+                                }
                               >
-                                {status_handOver.status ===
-                                ("submitted" || "Approved")
+                                {statusInfo.status === "submitted" ||
+                                statusInfo.status === "Approved"
                                   ? "Submitted"
-                                  : status_handOver.status === "Rejected"
+                                  : statusInfo.status === "Rejected"
                                     ? "Rejected"
-                                    : status_handOver.status === "draft"
+                                    : statusInfo.status === "draft"
                                       ? "In Process"
                                       : "Pending"}
                               </Chip>
@@ -913,7 +911,7 @@ const StandByRequest = forwardRef((props, ref) => {
                           },
                           {
                             label: "Handover Submission",
-                            value: status_handOver(lead.id).submittedBy || "-",
+                            value: statusInfo.submittedBy || "-",
                           },
                         ].map((item, idx) => (
                           <Box key={idx}>

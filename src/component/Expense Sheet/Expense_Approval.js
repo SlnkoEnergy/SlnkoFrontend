@@ -20,10 +20,8 @@ import { useGetLoginsQuery } from "../../redux/loginSlice";
 const ExpenseApproval = forwardRef((props, ref) => {
   const navigate = useNavigate();
   const theme = useTheme();
-  const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
-  const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedExpenses, setSelectedExpenses] = useState([]);
@@ -99,9 +97,8 @@ const ExpenseApproval = forwardRef((props, ref) => {
         "Engineering",
       ];
 
-      const isManager =
-        user?.role === "manager" &&
-        allowedDepartments.includes(user?.department);
+      const isManager = user?.role === "manager" || user?.role === "visitor";
+      allowedDepartments.includes(user?.department);
 
       const isAdmin = user?.role === "admin" || user?.role === "superadmin";
 
@@ -109,7 +106,7 @@ const ExpenseApproval = forwardRef((props, ref) => {
         !isAdmin &&
         !(isManager && matchedUser.department === user?.department)
       ) {
-        return false; // Access denied
+        return false;
       }
 
       // Status filter
@@ -124,7 +121,6 @@ const ExpenseApproval = forwardRef((props, ref) => {
       const status = expense.current_status?.toLowerCase();
       if (!allowedStatuses.includes(status)) return false;
 
-      // Search filter
       const search = searchQuery.toLowerCase();
       const matchesSearchQuery = [
         "expense_code",
@@ -385,10 +381,19 @@ const ExpenseApproval = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
-                    <ExpenseCode
-                      currentPage={currentPage}
-                      expense_code={expense.expense_code}
-                    />
+                    <Box
+                      sx={{
+                        display: "inline",
+                        textDecoration: "underline dotted",
+                        textUnderlineOffset: "2px",
+                        textDecorationColor: "#999",
+                      }}
+                    >
+                      <ExpenseCode
+                        currentPage={currentPage}
+                        expense_code={expense.expense_code}
+                      />
+                    </Box>
                   </Box>
                   <Box
                     component="td"
@@ -575,7 +580,10 @@ const ExpenseApproval = forwardRef((props, ref) => {
         >
           Previous
         </Button>
-
+        <Box>
+          Showing {paginatedExpenses.length} of {filteredAndSortedData.length}{" "}
+          results
+        </Box>
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >

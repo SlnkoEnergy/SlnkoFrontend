@@ -1,4 +1,4 @@
-// export const BASE_URL = "https://api.slnkoprotrac.com/v1/";
+// export const BASE_URL = "${process.env.REACT_APP_API_URL}/";
 
 import { fetchBaseQuery } from "@reduxjs/toolkit/query";
 
@@ -7,10 +7,10 @@ import { fetchBaseQuery } from "@reduxjs/toolkit/query";
 // };
 
 export const baseQuery = fetchBaseQuery({
-  baseUrl: "https://dev.api.slnkoprotrac.com/v1/",
+  baseUrl: `${process.env.REACT_APP_API_URL}/`,
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("authToken");
-console.log(token);
+// console.log(token);
     if (token) {
       headers.set("x-auth-token", token);
     }
