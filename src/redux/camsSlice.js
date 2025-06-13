@@ -29,7 +29,14 @@ export const camsApi = createApi({
     }),
 
     getHandOverById: builder.query({
-      query: ({ leadId }) => `get-handoversheet?leadId=${leadId}`,
+      query: ({ leadId, p_id }) => {
+        if (p_id) {
+          return `get-handoversheet?p_id=${p_id}`;
+        } else if (leadId) {
+          return `get-handoversheet?leadId=${leadId}`;
+        }
+        return null;
+      },
       providesTags: ["CAM"],
     }),
 
