@@ -11,11 +11,12 @@ import Checkbox from "@mui/joy/Checkbox";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
-
+import { useTheme } from "@emotion/react";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Tooltip from "@mui/joy/Tooltip";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
 import {
@@ -31,7 +32,7 @@ function Dash_cam() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
-
+  const theme = useTheme();
   const [currentPage, setCurrentPage] = useState(1);
 
   const {
@@ -43,7 +44,30 @@ function Dash_cam() {
     search: searchQuery,
     status: "submitted,Approved",
   });
+  const ProjectOverView = ({ currentPage, project_id, code }) => {
+    // console.log("currentPage:", currentPage, "pproject_id:", pproject_id);
 
+    return (
+      <>
+        <span
+          style={{
+            cursor: "pointer",
+            color: theme.vars.palette.text.primary,
+            textDecoration: "underline",
+            textDecorationStyle: "dotted",
+          }}
+          onClick={() => {
+            const page = currentPage;
+            // const project_id = project_id;
+            // sessionStorage.setItem("eng_overview", projectId);
+            navigate(`/overview?page=${page}&project_id=${project_id}`);
+          }}
+        >
+          {code || "-"}
+        </span>
+      </>
+    );
+  };
   const HandOverSheet = Array.isArray(getHandOverSheet?.data)
     ? getHandOverSheet.data.map((entry) => {
         return {
@@ -83,6 +107,30 @@ function Dash_cam() {
         user?.name
       );
 
+    const ProjectOverView = ({ currentPage, project_id, code }) => {
+      // console.log("currentPage:", currentPage, "pproject_id:", pproject_id);
+
+      return (
+        <>
+          <span
+            style={{
+              cursor: "pointer",
+              color: theme.vars.palette.text.primary,
+              textDecoration: "underline",
+              textDecorationStyle: "dotted",
+            }}
+            onClick={() => {
+              const page = currentPage;
+              // const project_id = project_id;
+              // sessionStorage.setItem("eng_overview", projectId);
+              navigate(`/overview?page=${page}&project_id=${project_id}`);
+            }}
+          >
+            {code || "-"}
+          </span>
+        </>
+      );
+    };
     useEffect(() => {
       setLockedState(is_locked === "locked" || is_locked === true);
     }, [is_locked]);
@@ -405,7 +453,7 @@ function Dash_cam() {
                     />
                   </td>
 
-                  <td
+                  {/* <td
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
@@ -413,8 +461,24 @@ function Dash_cam() {
                     }}
                   >
                     {project.code || "-"}
+                  </td> */}
+                  <td
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <Tooltip title="View Engineering Overview" arrow>
+                      <span>
+                        <ProjectOverView
+                          currentPage={currentPage}
+                          project_id={project.project_id}
+                          code={project.code}
+                        />
+                      </span>
+                    </Tooltip>
                   </td>
-
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",

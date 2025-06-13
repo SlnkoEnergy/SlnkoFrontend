@@ -16,7 +16,7 @@ import {
   Typography,
 } from "@mui/joy";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
 import { useGetHandOverByIdQuery } from "../../redux/camsSlice";
 import {
@@ -26,6 +26,7 @@ import {
 
 const ViewHandoverSheetForm = ({ onBack }) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [expanded, setExpanded] = useState(null);
   const states = [
     "Andhra Pradesh",
@@ -269,16 +270,20 @@ const ViewHandoverSheetForm = ({ onBack }) => {
   };
   const LeadId = sessionStorage.getItem("view handover");
   console.log("LeadId:", LeadId);
+
+  const p_id = searchParams.get("p_id");
+  // console.log(routes);
   
+const queryParams = p_id ? { p_id } : { leadId: LeadId };
+
 const {
   data: handoverData,
   isLoading,
   isError,
   error,
-} = useGetHandOverByIdQuery(
-  { leadId: LeadId },
-  { skip: !LeadId }
-);
+} = useGetHandOverByIdQuery(queryParams, {
+  skip: !p_id && !LeadId,
+});
 
  const handover = Array.isArray(handoverData?.data)
    ? handoverData.data.find((item) => item.leadId === LeadId)

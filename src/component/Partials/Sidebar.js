@@ -417,6 +417,11 @@ function Sidebar() {
                       Dashboard
                     </ListItemButton>
                   </ListItem>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/temp_dash")}>
+                      Template Dashboard
+                    </ListItemButton>
+                  </ListItem>
                 </List>
               </Toggler>
             </ListItem>
@@ -501,7 +506,6 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
-
             {/*Expense Sheet */}
             <ListItem nested>
               <Toggler
@@ -778,6 +782,20 @@ function Sidebar() {
                       User Dashboard
                     </ListItemButton>
                   </ListItem>
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/expense_accounts")}
+                    >
+                      Project Balances
+                    </ListItemButton>
+                  </ListItem>
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/payment-approved")}
+                    >
+                      Approved Payment
+                    </ListItemButton>
+                  </ListItem>
                 </List>
               </Toggler>
             </ListItem>
@@ -924,9 +942,9 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <AccountBalanceWalletIcon />
+                    <AccountBalanceIcon />
                     <ListItemContent>
-                      <Typography level="title-sm">Expense Sheet</Typography>
+                      <Typography level="title-sm">Accounting</Typography>
                     </ListItemContent>
                     <KeyboardArrowDownIcon
                       sx={[
@@ -961,7 +979,14 @@ function Sidebar() {
                     <ListItemButton
                       onClick={() => navigate("/expense_accounts")}
                     >
-                      Accounts Expense Approval
+                      Project Balances
+                    </ListItemButton>
+                  </ListItem>
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/payment-approved")}
+                    >
+                      Approved Payment
                     </ListItemButton>
                   </ListItem>
                 </List>

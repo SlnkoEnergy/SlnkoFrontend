@@ -288,7 +288,7 @@ export const leadsApi = createApi({
       invalidatesTags: ["Lead"],
     }),
 
-     getWonDataById: builder.query({
+    getWonDataById: builder.query({
       query: ({ leadId }) => `/get-won?leadId=${leadId}`,
       providesTags: ["CAM"],
     }),

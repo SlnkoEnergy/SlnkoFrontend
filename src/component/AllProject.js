@@ -54,7 +54,7 @@ const AllProjects = forwardRef((props, ref) => {
   //       const response = await Axios.get("/get-all-projecT-IT");
 
   //       const projectsData = Array.isArray(response.data.data)
-  //         ? response.data.data
+  // ? response.data.data
   //         : [];
   //       setProjects(projectsData);
   //     } catch (err) {
