@@ -143,12 +143,8 @@ const Expense_Form = () => {
     "Site Material Purchases",
     "Site Stationery Expenses",
     "Site Miscellaneous Expenses",
-<<<<<<< HEAD
-    "Office Expenses",
-=======
     "Site Vehicle Repair and Maintenance Expense",
     
->>>>>>> staging
   ];
 
   const categoryDescriptions = {
