@@ -97,7 +97,6 @@ import Expense_Table from "../pages/ExpenseSheet/Expense_Tab";
 import Edit_Expense from "../pages/ExpenseSheet/Update_Expense_Form";
 import Update_Bill from "../pages/SCM/EditBill";
 import PrivateRoute from "./PrivateRoute";
-
 import TempDashboard from "../pages/Eng/Template_Dashboard";
 import AddFolder from "../pages/Eng/Forms/Add_folder";
 import Template_Pages from "../pages/Eng/Templates_Page";
@@ -110,6 +109,7 @@ import Add_Material_Category from "../pages/Eng/Forms/Add_Material_Category";
 import Add_Material from "../pages/Eng/Forms/Add_Material";
 import AddBoq from "../pages/Eng/AddBoq";
 
+import Update_Expense from "../pages/ExpenseSheet/Expense_Accounts_HR";
 
 function index() {
   return (

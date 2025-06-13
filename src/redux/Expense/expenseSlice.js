@@ -84,6 +84,20 @@ export const expensesApi = createApi({
       }),
       invalidatesTags: ["Expense"],
     }),
+    exportExpensesToCSV: builder.query({
+      query: () => ({
+        url: "expense-all-csv", // or your actual endpoint
+        method: "GET",
+        responseHandler: (response) => response.blob(), // important
+      }),
+    }),
+    exportExpenseByIdToCSV: builder.query({
+      query: (expenseId) => ({
+        url: `expense-by-id-csv/${expenseId}`,
+        method: "GET",
+        responseHandler: (response) => response.blob(),
+      }),
+    }),
   }),
 });
 
@@ -96,4 +110,6 @@ export const {
   useDeleteExpenseMutation,
   useUpdateExpenseSheetMutation,
   useUpdateDisbursementDateMutation,
+  useLazyExportExpensesToCSVQuery,
+  useLazyExportExpenseByIdToCSVQuery,
 } = expensesApi;
