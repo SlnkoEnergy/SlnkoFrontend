@@ -1,5 +1,4 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { baseQuery } from "./auth/auth_variable";
 
 // const baseQuery = fetchBaseQuery({
 //   baseUrl: "${process.env.REACT_APP_API_URL}/",
@@ -289,7 +288,7 @@ export const leadsApi = createApi({
       invalidatesTags: ["Lead"],
     }),
 
-     getWonDataById: builder.query({
+    getWonDataById: builder.query({
       query: ({ leadId }) => `/get-won?leadId=${leadId}`,
       providesTags: ["CAM"],
     }),

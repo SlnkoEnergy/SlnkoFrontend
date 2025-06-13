@@ -12,6 +12,7 @@ import Checkbox from "@mui/joy/Checkbox";
 import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Menu from "@mui/joy/Menu";
@@ -32,13 +33,25 @@ import { useTheme } from "@emotion/react";
 function Dash_eng() {
   const navigate = useNavigate();
   const theme = useTheme();
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  // const [error, setError] = useState(null);
+  const [vendors, setVendors] = useState([]);
+  const [vendorFilter, setVendorFilter] = useState("");
+  const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
+  // const [projects, setProjects] = useState([]);
+  const [bdRateData, setBdRateData] = useState([]);
+  const [mergedData, setMergedData] = useState([]);
+  const [accountNumber, setAccountNumber] = useState([]);
+  const [ifscCode, setIfscCode] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isUtrSubmitted, setIsUtrSubmitted] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
-
-  const itemsPerPage = 10;
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const {
     data: getHandOverSheet = {},
@@ -50,11 +63,13 @@ function Dash_eng() {
     status: "Approved",
   });
 
-  const HandOverSheet = useMemo(() => {
-    const rawData = getHandOverSheet?.data || [];
-    return Array.isArray(rawData)
-      ? rawData.map((entry) => ({
+  const HandOverSheet = Array.isArray(getHandOverSheet?.data)
+    ? getHandOverSheet.data.map((entry) => {
+        console.log("Entry :", entry);
+
+        return {
           ...entry,
+          p_id: entry.p_id,
           _id: entry._id,
           ...entry.customer_details,
           ...entry.order_details,
@@ -62,13 +77,31 @@ function Dash_eng() {
           ...entry.commercial_details,
           ...entry.other_details,
           ...entry?.scheme,
-        }))
-      : [];
-  }, [getHandOverSheet]);
+          is_locked: entry.is_locked,
+          project_id: entry.project_id,
+        };
+      })
+    : [];
 
-  console.log("HandOverSheet:", HandOverSheet);
+  // console.log(combinedData);
 
-  const totalCount = getHandOverSheet.total || 0;
+  // const StatusIcon = ({ isLocked }) => {
+  //   return (
+  //     <Box
+  //       sx={{
+  //         display: "flex",
+  //         justifyContent: "center",
+  //         alignItems: "center",
+  //       }}
+  //     >
+  //       {isLocked ? (
+  //         <LockClosedIcon style={{ width: 20, height: 20, color: "#f44336" }} />
+  //       ) : (
+  //         <LockOpenIcon style={{ width: 20, height: 20, color: "#4caf50" }} />
+  //       )}
+  //     </Box>
+  //   );
+  // };
 
   const RowMenu = ({ currentPage, p_id, _id }) => {
     // console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
@@ -109,7 +142,7 @@ function Dash_eng() {
                   const page = currentPage;
                   const projectId = _id;
                   sessionStorage.setItem("view handover", projectId);
-                  navigate(`/view_handover?page=${page}&_id=${projectId}`);
+                  navigate(`/overview?page=${page}&_id=${projectId}`);
                 }}
               >
                 <ContentPasteGoIcon sx={{ mr: 1 }} />
@@ -180,8 +213,28 @@ function Dash_eng() {
     );
   };
 
-  const ProjectCode = ({ currentPage, _id, code, id }) => {
+  const ViewHandOver = ({ currentPage, p_id, code }) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
+
+    return (
+      <>
+        <IconButton
+          color="primary"
+          onClick={() => {
+            const page = currentPage;
+            const projectId = Number(p_id);
+            sessionStorage.setItem("view handover", projectId);
+            navigate(`/view_handover?page=${page}&p_id=${projectId}`);
+          }}
+        >
+          <VisibilityIcon />
+        </IconButton>
+      </>
+    );
+  };
+
+  const ProjectOverView = ({ currentPage, project_id, code }) => {
+    // console.log("currentPage:", currentPage, "pproject_id:", pproject_id);
 
     return (
       <>
@@ -189,13 +242,14 @@ function Dash_eng() {
           style={{
             cursor: "pointer",
             color: theme.vars.palette.text.primary,
-            textDecoration: "none",
+            textDecoration: "underline",
+            textDecorationStyle: "dotted",
           }}
           onClick={() => {
             const page = currentPage;
-            const projectId = id;
-            sessionStorage.setItem("view handover", projectId);
-            navigate(`/view_handover?page=${page}&id=${projectId}`);
+            // const project_id = project_id;
+            // sessionStorage.setItem("eng_overview", projectId);
+            navigate(`/overview?page=${page}&project_id=${project_id}`);
           }}
         >
           {code || "-"}
@@ -204,51 +258,53 @@ function Dash_eng() {
     );
   };
 
-  const ProjectName = ({ currentPage, p_id, customer, id }) => {
-    // console.log("currentPage:", currentPage, "p_id:", p_id);
+  // const handleDelete = async () => {
+  //   if (selected.length === 0) {
+  //     toast.error("No offers selected for deletion.");
+  //     return;
+  //   }
 
-    return (
-      <>
-        <span
-          style={{
-            cursor: "pointer",
-            color: theme.vars.palette.text.primary,
-            textDecoration: "none",
-          }}
-          onClick={() => {
-            const page = currentPage;
-            const projectId = id;
-            sessionStorage.setItem("view handover", projectId);
-            navigate(`/view_handover?page=${page}&id=${projectId}`);
-          }}
-        >
-          {customer || "-"}
-        </span>
-      </>
-    );
-  };
+  //   try {
+  //     setLoading(true);
+  //     setError("");
+
+  //     for (const _id of selected) {
+  //       await Axios.delete(`/delete-offer/${_id}`);
+
+  //       setCommRate((prev) => prev.filter((item) => item._id !== _id));
+  //       setBdRateData((prev) => prev.filter((item) => item.offer_id !== _id));
+  //       setMergedData((prev) => prev.filter((item) => item.offer_id !== _id));
+  //     }
+
+  //     toast.success("Deleted successfully.");
+  //     setSelected([]);
+  //   } catch (err) {
+  //     console.error("Error deleting offers:", err);
+  //     setError(err.response?.data?.msg || "Failed to delete selected offers.");
+  //     toast.error("Failed to delete selected offers.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const handleSearch = (query) => {
-    setCurrentPage(1);
-    setSearchQuery(query);
+    setSearchQuery(query.toLowerCase());
   };
 
-  // const filteredAndSortedData = useMemo(() => {
-  //   return HandOverSheet.filter((project) =>
-  //     ["code", "customer", "state"].some((key) =>
-  //       project[key]
-  //         ?.toString()
-  //         .toLowerCase()
-  //         .includes(searchQuery.toLowerCase())
-  //     )
-  //   ).sort((a, b) => {
-  //     const dateA = new Date(a?.updatedAt || a?.createdAt || 0);
-  //     const dateB = new Date(b?.updatedAt || b?.createdAt || 0);
-  //     return dateB - dateA;
-  //   });
-  // }, [HandOverSheet, searchQuery]);
-
-  const paginatedPayments = HandOverSheet;
+  const filteredAndSortedData = useMemo(() => {
+    return HandOverSheet.filter((project) =>
+      ["code", "customer", "state"].some((key) =>
+        project[key]
+          ?.toString()
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase())
+      )
+    ).sort((a, b) => {
+      const dateA = new Date(a?.updatedAt || a?.createdAt || 0);
+      const dateB = new Date(b?.updatedAt || b?.createdAt || 0);
+      return dateB - dateA;
+    });
+  }, [HandOverSheet, searchQuery]);
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -263,35 +319,49 @@ function Dash_eng() {
       prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
     );
   };
+  // const generatePageNumbers = (currentPage, totalPages) => {
+  //   const pages = [];
+
+  //   if (currentPage > 2) {
+  //     pages.push(1);
+  //   }
+
+  //   if (currentPage > 3) {
+  //     pages.push("...");
+  //   }
+
+  //   for (
+  //     let i = Math.max(1, currentPage - 1);
+  //     i <= Math.min(totalPages, currentPage + 1);
+  //     i++
+  //   ) {
+  //     pages.push(i);
+  //   }
+
+  //   if (currentPage < totalPages - 2) {
+  //     pages.push("...");
+  //   }
+
+  //   if (currentPage < totalPages - 1) {
+  //     pages.push(totalPages);
+  //   }
+
+  //   return pages;
+  // };
 
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
   }, [searchParams]);
 
-  const totalPages = Math.ceil(totalCount / itemsPerPage);
+  const paginatedPayments = filteredAndSortedData;
 
-  const generatePageNumbers = (current, total) => {
-    const pages = [];
-
-    if (current > 2) pages.push(1);
-    if (current > 3) pages.push("...");
-
-    for (
-      let i = Math.max(1, current - 1);
-      i <= Math.min(total, current + 1);
-      i++
-    ) {
-      pages.push(i);
-    }
-
-    if (current < total - 2) pages.push("...");
-    if (current < total - 1) pages.push(total);
-
-    return pages;
-  };
-
-  const pageNumbers = generatePageNumbers(currentPage, totalPages);
+  // const paginatedPayments = filteredAndSortedData.slice(
+  //   (currentPage - 1) * itemsPerPage,
+  //   currentPage * itemsPerPage
+  // );
+  // console.log(paginatedPayments);
+  // console.log("Filtered and Sorted Data:", filteredAndSortedData);
 
   const handlePageChange = (page) => {
     if (page >= 1) {
@@ -300,14 +370,45 @@ function Dash_eng() {
     }
   };
 
-  // const draftPayments = paginatedPayments.filter(
-  //   (project) => project.status_of_handoversheet === "Approved"
-  // );
-
   const draftPayments = paginatedPayments;
 
   return (
     <>
+      {/* Mobile Filters */}
+      {/* <Sheet
+        className="SearchAndFilters-mobile"
+        sx={{ display: { xs: "", sm: "none" }, my: 1, gap: 1 }}
+      >
+        <Input
+          size="sm"
+          placeholder="Search"
+          startDecorator={<SearchIcon />}
+          sx={{ flexGrow: 1 }}
+        />
+        <IconButton
+          size="sm"
+          variant="outlined"
+          color="neutral"
+          onClick={() => setOpen(true)}
+        >
+          <FilterAltIcon />
+        </IconButton>
+        <Modal open={open} onClose={() => setOpen(false)}>
+          <ModalDialog aria-labelledby="filter-modal" layout="fullscreen">
+            <ModalClose />
+            <Typography id="filter-modal" level="h2">
+              Filters
+            </Typography>
+            <Divider sx={{ my: 2 }} />
+            <Sheet sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              {renderFilters()}
+              <Button color="primary" onClick={() => setOpen(false)}>
+                Submit
+              </Button>
+            </Sheet>
+          </ModalDialog>
+        </Modal>
+      </Sheet> */}
       {/* Tablet and Up Filters */}
       <Box
         className="SearchAndFilters-tabletUp"
@@ -362,7 +463,7 @@ function Dash_eng() {
                 style={{
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
-                  textAlign: "left",
+                  textAlign: "center",
                 }}
               >
                 <Checkbox
@@ -376,20 +477,22 @@ function Dash_eng() {
                 />
               </th>
               {[
+                "",
                 "Project Id",
                 "Customer",
                 "Project Name",
                 "Mobile",
                 "State",
                 "Capacity(AC/DC)",
-                ...(user?.department !== "Accounts" ? ["Action"] : []),
+                // "Progress",
+                "Action",
               ].map((header, index) => (
                 <th
                   key={index}
                   style={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
-                    textAlign: "left",
+                    textAlign: "center",
                     fontWeight: "bold",
                   }}
                 >
@@ -401,7 +504,7 @@ function Dash_eng() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={7} style={{ padding: "8px", textAlign: "left" }}>
+                <td colSpan={7} style={{ padding: "8px", textAlign: "center" }}>
                   <Box
                     sx={{
                       fontStyle: "italic",
@@ -428,7 +531,7 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "left",
+                      textAlign: "center",
                     }}
                   >
                     <Checkbox
@@ -439,12 +542,17 @@ function Dash_eng() {
                       }
                     />
                   </td>
-
+                  <td>
+                    <ViewHandOver
+                      currentPage={currentPage}
+                      p_id={project.p_id}
+                    />
+                  </td>
                   {/* <td
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "left",
+                      textAlign: "center",
                     }}
                   >
                     {project.code || "-"}
@@ -453,14 +561,14 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "left",
+                      textAlign: "center",
                     }}
                   >
                     <Tooltip title="View Handover" arrow>
-                      <span style={{ textDecoration: "underline dotted", cursor: "pointer" }}>
-                        <ProjectCode
+                      <span>
+                        <ProjectOverView
                           currentPage={currentPage}
-                          id={project.id}
+                          project_id={project.project_id}
                           code={project.code}
                         />
                       </span>
@@ -470,62 +578,49 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    <Tooltip title="View Handover" arrow>
-                      <span>
-                        <ProjectName
-                          currentPage={currentPage}
-                          id={project.id}
-                          customer={project.customer}
-                        />
-                      </span>
-                    </Tooltip>
-                  </td>
-
-                  <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
+                      textAlign: "center",
                     }}
                   >
                     {project.name || "-"}
                   </td>
-
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "left",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.customer || "-"}
+                  </td>
+                  <td
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
                     }}
                   >
                     {project.number || "-"}
                   </td>
-
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "left",
+                      textAlign: "center",
                     }}
                   >
                     {project.state || "-"}
                   </td>
-
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "left",
+                      textAlign: "center",
                     }}
                   >
                     {project.project_kwp && project.proposed_dc_capacity
                       ? `${project.project_kwp} AC / ${project.proposed_dc_capacity} DC`
                       : "-"}
                   </td>
-
                   {/* <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -541,17 +636,15 @@ function Dash_eng() {
                   >
                     {project.progress || "80%"}
                   </td> */}
-                  {user?.department !== "Accounts" && (
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
-                    >
-                      <RowMenu currentPage={currentPage} p_id={project.p_id} />
-                    </td>
-                  )}
+                  <td
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <RowMenu currentPage={currentPage} p_id={project.p_id} />
+                  </td>
                 </tr>
               ))
             ) : (
@@ -610,28 +703,38 @@ function Dash_eng() {
           Previous
         </Button>
 
+        {/* Showing X Results (no total because backend paginates) */}
         <Box>Showing {draftPayments.length} results</Box>
 
         {/* Page Numbers: Only show current, prev, next for backend-driven pagination */}
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
-          {pageNumbers.map((page, index) =>
-            page === "..." ? (
-              <Box key={index} sx={{ px: 1 }}>
-                ...
-              </Box>
-            ) : (
-              <IconButton
-                key={index}
-                size="sm"
-                variant={page === currentPage ? "contained" : "outlined"}
-                color="neutral"
-                onClick={() => handlePageChange(page)}
-              >
-                {page}
-              </IconButton>
-            )
+          {currentPage > 1 && (
+            <IconButton
+              size="sm"
+              variant="outlined"
+              color="neutral"
+              onClick={() => handlePageChange(currentPage - 1)}
+            >
+              {currentPage - 1}
+            </IconButton>
+          )}
+
+          <IconButton size="sm" variant="contained" color="neutral">
+            {currentPage}
+          </IconButton>
+
+          {/* Show next page button if current page has any data (not empty) */}
+          {draftPayments.length > 0 && (
+            <IconButton
+              size="sm"
+              variant="outlined"
+              color="neutral"
+              onClick={() => handlePageChange(currentPage + 1)}
+            >
+              {currentPage + 1}
+            </IconButton>
           )}
         </Box>
 
@@ -642,7 +745,7 @@ function Dash_eng() {
           color="neutral"
           endDecorator={<KeyboardArrowRightIcon />}
           onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage >= totalPages}
+          disabled={draftPayments.length === 0} // disable next if no data at all on this page
         >
           Next
         </Button>

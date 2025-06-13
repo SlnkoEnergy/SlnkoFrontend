@@ -1,20 +1,15 @@
-import React from "react";
-import { CssVarsProvider } from "@mui/joy/styles";
-import CssBaseline from "@mui/joy/CssBaseline";
-import Box from "@mui/joy/Box";
-import Button from "@mui/joy/Button";
-import Breadcrumbs from "@mui/joy/Breadcrumbs";
-import Link from "@mui/joy/Link";
-import Typography from "@mui/joy/Typography";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-
-import Sidebar from "../../component/Partials/Sidebar";
+import Box from "@mui/joy/Box";
+import Breadcrumbs from "@mui/joy/Breadcrumbs";
+import CssBaseline from "@mui/joy/CssBaseline";
+import Link from "@mui/joy/Link";
+import { CssVarsProvider } from "@mui/joy/styles";
+import Typography from "@mui/joy/Typography";
 import Header from "../../component/Partials/Header";
-import { useNavigate } from "react-router-dom";
-import Overview from "../../component/Forms/Engineering/Eng_Overview/Overview";
+import Sidebar from "../../component/Partials/Sidebar";
+import AddBOQ from "../../component/Forms/Engineering/AddBOQ";
 
-function Eng_Overview() {
-  const navigate = useNavigate();
+function AddBoq() {
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -44,14 +39,14 @@ function Eng_Overview() {
             sx={{
               display: "flex",
               alignItems: "center",
-              marginLeft: { xl: "17%", lg: "20%" },
+              marginLeft: { xl: "16%", lg: "20%" },
             }}
           >
             <Breadcrumbs
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
+              sx={{ pl: 0 , marginTop: {md:"4%", lg:"0%"}}}
             >
               {/* <Link
                 underline="none"
@@ -62,18 +57,18 @@ function Eng_Overview() {
                 <HomeRoundedIcon />
               </Link> */}
               <Link
-                underline="none"
+                underline="hover"
                 color="neutral"
+                href=""
                 sx={{ fontSize: 12, fontWeight: 500 }}
               >
                 Engineering
               </Link>
-              
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Engineering Overview
+                Add Boq
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -86,36 +81,12 @@ function Eng_Overview() {
               alignItems: { xs: "start", sm: "center" },
               flexWrap: "wrap",
               justifyContent: "space-between",
-              marginLeft: { xl: "15%", lg: "18%" },
+              marginLeft: { xl: "8%", lg: "15%" },
             }}
           >
-            <Typography level="h2" component="h1">
-            Engineering Overview
-            </Typography>
-
-            <Box
-              sx={{
-                display: "flex",
-                mb: 1,
-                gap: 1,
-                flexDirection: { xs: "column", sm: "row" },
-                alignItems: { xs: "start", sm: "center" },
-                flexWrap: "wrap",
-                justifyContent: "center",
-              }}
-            >
-              
-              {/* <Button
-                color="primary"
-                startDecorator={<DownloadRoundedIcon />}
-                size="sm"
-                onClick={handleExportToCSV} 
-              >
-                Export to CSV
-              </Button> */}
-            </Box>
+            <AddBOQ />
           </Box>
-          <Overview />
+
           {/* <OrderTable /> */}
           {/* <OrderList /> */}
         </Box>
@@ -123,4 +94,4 @@ function Eng_Overview() {
     </CssVarsProvider>
   );
 }
-export default Eng_Overview;
+export default AddBoq;

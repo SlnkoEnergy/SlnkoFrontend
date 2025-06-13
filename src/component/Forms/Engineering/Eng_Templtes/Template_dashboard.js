@@ -357,6 +357,8 @@ const TemplateDashboard = () => {
                     <Option value="civil">Civil</Option>
                     <Option value="mechanical">Mechanical</Option>
                     <Option value="electrical">Electrical</Option>
+                    <Option value="plant_layout">Plant Layout</Option>
+                    <Option value="boq">BOQ</Option>
                   </Select>
                 </FormControl>
               </Grid>

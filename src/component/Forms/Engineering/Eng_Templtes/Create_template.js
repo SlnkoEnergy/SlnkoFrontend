@@ -33,6 +33,7 @@ const CreateTemplate = () => {
     icon_image: "uploads/icons/default.png",
     boq: {
       enabled: false,
+      template_category: [],
     },
     engineering_category: "",
   });
@@ -68,6 +69,10 @@ const CreateTemplate = () => {
         icon_image: formData.icon_image,
         boq: {
           enabled: formData.boq.enabled,
+
+          template_category: formData.boq.enabled
+            ? formData.boq.template_category
+            : [],
         },
         engineering_category: formData.engineering_category,
       };
@@ -190,9 +195,11 @@ const CreateTemplate = () => {
                 }
                 placeholder="Select a category"
               >
-                <Option value="civil">Civil</Option>
-                <Option value="mechanical">Mechanical</Option>
-                <Option value="electrical">Electrical</Option>
+                <Option value="Civil">Civil</Option>
+                <Option value="Mechanical">Mechanical</Option>
+                <Option value="Electrical">Electrical</Option>
+                <Option value="plant_layout">Plant Layout</Option>
+                <Option value="boq">BOQ</Option>
               </Select>
             </FormControl>
           </Grid>

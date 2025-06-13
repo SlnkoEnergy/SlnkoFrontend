@@ -102,7 +102,11 @@ import AddFolder from "../pages/Eng/Forms/Add_folder";
 import Template_Pages from "../pages/Eng/Templates_Page";
 import AddTemplates from "../pages/Eng/Forms/Add_Templates";
 import Overview from "../component/Forms/Engineering/Eng_Overview/Overview";
+import Eng_Overview from "../pages/Eng/Eng_Overview";
 import Update_Expense from "../pages/ExpenseSheet/Expense_Accounts_HR";
+import Add_Material_Category from "../pages/Eng/Forms/Add_Material_Category";
+import Add_Material from "../pages/Eng/Forms/Add_Material";
+import AddBoq from "../pages/Eng/AddBoq";
 
 function index() {
   return (
@@ -346,92 +350,20 @@ function index() {
         }
       />
       <Route
-        path="/add_bom"
-        element={
-          <PrivateRoute>
-            <Add_BOM />
-          </PrivateRoute>
-        }
+      path="/add_material_category"
+      element={
+        <PrivateRoute>
+          <Add_Material_Category />
+        </PrivateRoute>
+      }
       />
       <Route
-        path="/add_module"
-        element={
-          <PrivateRoute>
-            <Add_Module />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/add_inverter"
-        element={
-          <PrivateRoute>
-            <Add_Inverter />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/add_transformer"
-        element={
-          <PrivateRoute>
-            <Add_Transformer />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/add_bos"
-        element={
-          <PrivateRoute>
-            <Add_BOS />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/add_dc_cable"
-        element={
-          <PrivateRoute>
-            <Add_DC_Cable />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/add_ac_cable"
-        element={
-          <PrivateRoute>
-            <Add_AC_Cable />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/add_bos"
-        element={
-          <PrivateRoute>
-            <Add_BOS_Station />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/add_pooling"
-        element={
-          <PrivateRoute>
-            <Add_Pooling />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/add_ht_panel"
-        element={
-          <PrivateRoute>
-            <Add_HT_Panel />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/add_lt_panel"
-        element={
-          <PrivateRoute>
-            <Add_LT_Panel />
-          </PrivateRoute>
-        }
+      path="/add_material"
+      element={
+        <PrivateRoute>
+          <Add_Material />
+        </PrivateRoute>
+      }
       />
       <Route
         path="/add_folder"
@@ -464,7 +396,16 @@ function index() {
         path="/overview"
         element={
           <PrivateRoute>
-            <Overview />
+            <Eng_Overview />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/add_boq"
+        element={
+          <PrivateRoute>
+            <AddBoq />
           </PrivateRoute>
         }
       />

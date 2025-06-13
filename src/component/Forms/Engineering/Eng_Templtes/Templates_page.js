@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Box,
   Button,
@@ -9,38 +9,56 @@ import {
   Divider,
 } from "@mui/joy";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useGetAllBoqCategoriesQuery } from "../../../../redux/Eng/templatesSlice";
+import { useGetTemplatesByIdQuery } from "../../../../redux/Eng/templatesSlice";
 
 const Templates_pages = () => {
   const [searchParams] = useSearchParams();
-  const moduleId = searchParams.get("module_id");
+  const moduleId = searchParams.get("id") || localStorage.getItem("Id");
+
   const navigate = useNavigate();
 
-  // Fetch only BOQ categories
-  const {
-    data: categoryData,
-    isLoading: loadingCategories,
-    isError: errorCategories,
-  } = useGetAllBoqCategoriesQuery();
+  // If ID comes from URL, store it
+  useEffect(() => {
+    const idFromURL = searchParams.get("id");
+    if (idFromURL) {
+      localStorage.setItem("Id", idFromURL);
+      console.log("Stored Id in localStorage:", idFromURL);
+    }
+  }, [searchParams]);
 
-  const categories = categoryData?.data || [];
+  console.log("Module ID used for fetching:", moduleId);
+
+  const {
+    data: templateData,
+    isLoading: loadingTemplates,
+    isError: errorTemplates,
+  } = useGetTemplatesByIdQuery(moduleId, {
+    skip: !moduleId, // Avoid fetch if ID is null
+  });
+
+  console.log("Raw templateData fetched:", templateData);
+
+  const templates = templateData?.data || {};
+
+  const uniqueTemplateCategories = [
+    ...new Map(
+      (templates?.boq?.template_category || []).map((item) => [item._id, item])
+    ).values(),
+  ];
 
   const handleAddTemplateClick = () => {
     navigate(`/create_template?module_id=${moduleId}`);
   };
 
-  if (loadingCategories) {
-    return <Typography>Loading...</Typography>;
-  }
+  if (loadingTemplates) return <Typography>Loading...</Typography>;
 
-  if (errorCategories) {
+  if (errorTemplates)
     return <Typography color="danger">Failed to load categories.</Typography>;
-  }
 
   return (
     <Box sx={{ p: 3, marginLeft: "14%" }}>
-      {categories.length === 0 ? (
-        <Typography>No BOQ Categories available.</Typography>
+      {uniqueTemplateCategories.length === 0 ? (
+        <Typography>No BOQ templates available.</Typography>
       ) : (
         <Box
           sx={{
@@ -49,9 +67,9 @@ const Templates_pages = () => {
             gap: 2,
           }}
         >
-          {categories.map((category) => (
+          {uniqueTemplateCategories.map((boqCategory) => (
             <Card
-              key={category._id}
+              key={boqCategory._id}
               variant="outlined"
               sx={{
                 height: 200,
@@ -62,13 +80,13 @@ const Templates_pages = () => {
             >
               <CardOverflow>
                 <Typography level="title-md" sx={{ p: 2 }}>
-                  {category.name || "Untitled Category"}
+                  {boqCategory.name || "Untitled Category"}
                 </Typography>
                 <Divider />
               </CardOverflow>
               <CardContent>
                 <Typography level="body-sm">
-                  {category.description || "No description provided."}
+                  {boqCategory.description || "No description provided."}
                 </Typography>
               </CardContent>
             </Card>

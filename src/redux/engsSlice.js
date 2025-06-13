@@ -21,7 +21,7 @@ export const engsApi = createApi({
     // getEngs: builder.query({
     //   query: () => "get-all-task",
     //   providesTags: ["Eng"],
-      
+
     // }),
     addEng: builder.mutation({
       query: (addBOM) => ({
@@ -34,12 +34,9 @@ export const engsApi = createApi({
     // getTasksHistory: builder.query({
     //   query: () => "get-task-history",
     //   providesTags: ["Task"],
-      
+
     // }),
   }),
 });
 
-export const {
-useAddEngMutation
-} = engsApi;
-
+export const { useAddEngMutation } = engsApi;

@@ -782,6 +782,20 @@ function Sidebar() {
                       User Dashboard
                     </ListItemButton>
                   </ListItem>
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/expense_accounts")}
+                    >
+                      Project Balances
+                    </ListItemButton>
+                  </ListItem>
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/payment-approved")}
+                    >
+                      Approved Payment
+                    </ListItemButton>
+                  </ListItem>
                 </List>
               </Toggler>
             </ListItem>
@@ -816,20 +830,6 @@ function Sidebar() {
                       onClick={() => navigate("/expense_dashboard")}
                     >
                       User Dashboard
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem>
-                    <ListItemButton
-                      onClick={() => navigate("/expense_accounts")}
-                    >
-                      Project Balances
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem>
-                    <ListItemButton
-                      onClick={() => navigate("/payment-approved")}
-                    >
-                      Approved Payment
                     </ListItemButton>
                   </ListItem>
                 </List>

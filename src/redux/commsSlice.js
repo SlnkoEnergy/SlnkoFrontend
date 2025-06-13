@@ -21,13 +21,11 @@ export const commsApi = createApi({
     getOffer: builder.query({
       query: () => "get-comm-offer",
       providesTags: ["Offer"],
-      
     }),
     getBDOffer: builder.query({
-        query: () => "get-comm-bd-rate",
-        providesTags: ["Offer"],
-        
-      }),
+      query: () => "get-comm-bd-rate",
+      providesTags: ["Offer"],
+    }),
 
     updateOffer: builder.mutation({
       query: ({ _id, updatedOffer }) => ({
@@ -40,8 +38,5 @@ export const commsApi = createApi({
   }),
 });
 
-export const { 
- useGetOfferQuery,
- useGetBDOfferQuery,
- useUpdateOfferMutation
-} = commsApi;
+export const { useGetOfferQuery, useGetBDOfferQuery, useUpdateOfferMutation } =
+  commsApi;
