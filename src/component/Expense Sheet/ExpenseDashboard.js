@@ -54,7 +54,7 @@ const AllExpense = forwardRef((props, ref) => {
         ...new Set([...prevSelected, ...ids]),
       ]);
     } else {
-      // Remove only the IDs from current page
+     
       const ids = paginatedExpenses.map((row) => row._id);
       setSelectedExpenses((prevSelected) =>
         prevSelected.filter((id) => !ids.includes(id))
@@ -86,7 +86,7 @@ const AllExpense = forwardRef((props, ref) => {
         userRole === "superadmin" ||
         (userRole === "HR" && userName !== "Manish Shah");
       const submittedBy = expense.emp_name?.trim() || "";
-      // const expenseDepartment = expense.department?.trim() || "";
+    
 
       const allowedStatuses = [
         "submitted",
@@ -196,7 +196,7 @@ const AllExpense = forwardRef((props, ref) => {
   };
 
   const ExpenseCode = ({ currentPage, expense_code }) => {
-    // console.log("currentPage:", currentPage, "p_id:", p_id);
+
 
     return (
       <>
@@ -219,7 +219,7 @@ const AllExpense = forwardRef((props, ref) => {
 
   return (
     <>
-      {/* Tablet and Up Filters */}
+
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
@@ -244,7 +244,7 @@ const AllExpense = forwardRef((props, ref) => {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {/* {renderFilters()} */}
+ 
       </Box>
 
       {/* Table */}

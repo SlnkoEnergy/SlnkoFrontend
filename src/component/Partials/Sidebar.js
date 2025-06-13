@@ -58,21 +58,17 @@ function Toggler({ defaultExpanded = false, renderToggle, children }) {
 function Sidebar() {
   const navigate = useNavigate();
   const { mode } = useColorScheme();
-  const [admin, setAdmin] = useState("");
-  const [department, setDepartment] = useState("");
-  const [role, setRole] = useState("");
-  const [username, setUsername] = useState("");
   const [user, setUser] = useState(null);
 
   useEffect(() => {
     const userData = getUserData();
     setUser(userData);
-    // console.log("details are :", userData);
+
   }, []);
 
   const getUserData = () => {
     const userData = localStorage.getItem("userDetails");
-    // console.log("Only this needed :", userData);
+   
     if (userData) {
       return JSON.parse(userData);
     }
@@ -128,7 +124,7 @@ function Sidebar() {
           width: "100vw",
           height: "100vh",
           opacity: "var(--SideNavigation-slideIn)",
-          // backgroundColor: "var(--joy-palette-background-backdrop)",
+          backgroundColor: "var(--joy-palette-background-backdrop)",
           transition: "opacity 0.4s",
           transform: {
             xs: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1) + var(--SideNavigation-slideIn, 0) * var(--Sidebar-width, 0px)))",
@@ -149,12 +145,6 @@ function Sidebar() {
         </IconButton>
         <ColorSchemeToggle sx={{ ml: "auto" }} />
 
-        {/* <IconButton variant="soft" color="primary" size="sm">
-      <img src={Main_Logo} alt="Protrac" style={{ width: '70px', height: '60px' }} />
-    </IconButton> */}
-        {/* <Typography level="title-lg">Protrac</Typography> */}
-
-        {/* <ColorSchemeToggle sx={{ ml: 'auto' }} /> */}
       </Box>
       <Input
         size="sm"
@@ -175,7 +165,6 @@ function Sidebar() {
       >
         {user?.name === "IT Team" || user?.department === "admin" ? (
           <List>
-            {/* Dashboard */}
             <ListItem>
               <ListItemButton>
                 <HomeRoundedIcon />
@@ -190,7 +179,7 @@ function Sidebar() {
               </ListItemButton>
             </ListItem>
 
-            {/* User Section */}
+          
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -228,7 +217,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            {/* BD Section */}
+        
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -266,7 +255,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            {/* Accounting Section */}
+          
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -322,7 +311,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            {/* Ops Section */}
+        
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -355,7 +344,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            {/* CAM Section */}
+        
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -388,7 +377,6 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            {/* Eng Section */}
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -421,7 +409,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            {/* SCM Section */}
+           
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -464,7 +452,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            {/* Projects Section */}
+           
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -502,7 +490,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            {/*Expense Sheet */}
+           
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -778,6 +766,16 @@ function Sidebar() {
                       User Dashboard
                     </ListItemButton>
                   </ListItem>
+                  {(user?.emp_id === "SE-099" && (
+                     <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/expense_approval")}
+                    >
+                      Expense Approval
+                    </ListItemButton>
+                  </ListItem>
+                  ))}
+                  
                 </List>
               </Toggler>
             </ListItem>
@@ -1900,20 +1898,6 @@ function Sidebar() {
               "--ListItem-radius": (theme) => theme.vars.radius.sm,
             }}
           >
-            {/* <ListItem>
-              <ListItemButton>
-                <HomeRoundedIcon />
-                <ListItemContent>
-                  <Typography
-                    level="title-sm"
-                    onClick={() => navigate("/dashboard")}
-                  >
-                    Dashboard
-                  </Typography>
-                </ListItemContent>
-              </ListItemButton>
-            </ListItem> */}
-            {/* Eng Section */}
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -2062,11 +2046,6 @@ function Sidebar() {
                     User Dashboard
                   </ListItemButton>
                 </ListItem>
-                {/* <ListItem>
-                  <ListItemButton onClick={() => navigate("/expense_hr")}>
-                    HR Expense Approval
-                  </ListItemButton>
-                </ListItem> */}
               </List>
             </Toggler>
           </ListItem>
@@ -2122,20 +2101,7 @@ function Sidebar() {
               "--ListItem-radius": (theme) => theme.vars.radius.sm,
             }}
           >
-            {/* <ListItem>
-              <ListItemButton>
-                <HomeRoundedIcon />
-                <ListItemContent>
-                  <Typography
-                    level="title-sm"
-                    onClick={() => navigate("/dashboard")}
-                  >
-                    Dashboard
-                  </Typography>
-                </ListItemContent>
-              </ListItemButton>
-            </ListItem> */}
-            {/* Eng Section */}
+            
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
