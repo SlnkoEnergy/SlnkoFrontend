@@ -63,12 +63,11 @@ function Sidebar() {
   useEffect(() => {
     const userData = getUserData();
     setUser(userData);
-
   }, []);
 
   const getUserData = () => {
     const userData = localStorage.getItem("userDetails");
-   
+
     if (userData) {
       return JSON.parse(userData);
     }
@@ -144,7 +143,6 @@ function Sidebar() {
           />
         </IconButton>
         <ColorSchemeToggle sx={{ ml: "auto" }} />
-
       </Box>
       <Input
         size="sm"
@@ -179,7 +177,6 @@ function Sidebar() {
               </ListItemButton>
             </ListItem>
 
-          
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -217,7 +214,6 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-        
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -255,7 +251,6 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-          
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -311,7 +306,6 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-        
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -344,7 +338,6 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-        
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -409,7 +402,6 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-           
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -452,7 +444,6 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-           
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -490,7 +481,6 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-           
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -766,16 +756,15 @@ function Sidebar() {
                       User Dashboard
                     </ListItemButton>
                   </ListItem>
-                  {(user?.emp_id === "SE-099" && (
-                     <ListItem>
-                    <ListItemButton
-                      onClick={() => navigate("/expense_approval")}
-                    >
-                      Expense Approval
-                    </ListItemButton>
-                  </ListItem>
-                  ))}
-                  
+                  {user?.emp_id === "SE-099" && (
+                    <ListItem>
+                      <ListItemButton
+                        onClick={() => navigate("/expense_approval")}
+                      >
+                        Expense Approval
+                      </ListItemButton>
+                    </ListItem>
+                  )}
                 </List>
               </Toggler>
             </ListItem>
@@ -2101,7 +2090,6 @@ function Sidebar() {
               "--ListItem-radius": (theme) => theme.vars.radius.sm,
             }}
           >
-            
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (

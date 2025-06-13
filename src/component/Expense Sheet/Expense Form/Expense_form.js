@@ -29,6 +29,7 @@ import { useAddExpenseMutation } from "../../../redux/Expense/expenseSlice";
 
 const Expense_Form = () => {
   const navigate = useNavigate();
+
   const [rows, setRows] = useState([
     {
       items: [
@@ -74,6 +75,7 @@ const Expense_Form = () => {
       comments: "",
     },
   ]);
+  const [showError, setShowError] = useState(false);
 
   const [projectCodes, setProjectCodes] = useState([]);
   const [dropdownOpenIndex, setDropdownOpenIndex] = useState(null);
@@ -144,7 +146,6 @@ const Expense_Form = () => {
     "Site Stationery Expenses",
     "Site Miscellaneous Expenses",
     "Site Vehicle Repair and Maintenance Expense",
-    
   ];
 
   const categoryDescriptions = {
@@ -234,7 +235,7 @@ const Expense_Form = () => {
         const token = localStorage.getItem("authToken");
 
         const response = await axios.get(
-          "${process.env.REACT_APP_API_URL}/get-all-project-IT",
+          `${process.env.REACT_APP_API_URL}/get-all-project-IT`,
           {
             headers: {
               "x-auth-token": token,
@@ -260,6 +261,20 @@ const Expense_Form = () => {
   const handleSubmit = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
+
+    // 🔴 Validate that all items have category selected
+    const hasMissingCategory = rows.some((row) =>
+      (row.items || []).some(
+        (item) => !item.category || item.category.trim() === ""
+      )
+    );
+
+    if (hasMissingCategory) {
+      toast.error("Please select Category for all items before submitting.");
+      setShowError(true); // 🔁 triggers red warning below <Select>
+      setIsSubmitting(false); // stop form submission
+      return;
+    }
 
     try {
       const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
@@ -747,6 +762,7 @@ const Expense_Form = () => {
                       <Select
                         size="sm"
                         variant="outlined"
+                        required="true"
                         value={row.items?.[0]?.category || ""}
                         onChange={(e, value) =>
                           handleItemChange(rowIndex, "category", value)
@@ -795,6 +811,11 @@ const Expense_Form = () => {
                           )
                         )}
                       </Select>
+                      {showError && !row.items?.[0]?.category && (
+                        <Typography level="body-xs" color="danger">
+                          Category is required
+                        </Typography>
+                      )}
                     </td>
 
                     {/* Description */}
