@@ -29,6 +29,7 @@ import { useAddExpenseMutation } from "../../../redux/Expense/expenseSlice";
 
 const Expense_Form = () => {
   const navigate = useNavigate();
+
   const [rows, setRows] = useState([
     {
       items: [
@@ -74,6 +75,7 @@ const Expense_Form = () => {
       comments: "",
     },
   ]);
+  const [showError, setShowError] = useState(false);
 
   const [projectCodes, setProjectCodes] = useState([]);
   const [dropdownOpenIndex, setDropdownOpenIndex] = useState(null);
@@ -144,7 +146,6 @@ const Expense_Form = () => {
     "Site Stationery Expenses",
     "Site Miscellaneous Expenses",
     "Site Vehicle Repair and Maintenance Expense",
-    
   ];
 
   const categoryDescriptions = {
@@ -208,9 +209,11 @@ const Expense_Form = () => {
 
     if (department === "Projects" || department === "Engineering") {
       return [...common, ...categoryOptions];
-    }
-
-    if (department === "BD" || department === "Marketing") {
+    } else if (
+      department === "BD" ||
+      department === "Marketing" ||
+      department === "Internal"
+    ) {
       return [...common, ...bdAndSalesCategoryOptions];
     }
 
@@ -234,7 +237,7 @@ const Expense_Form = () => {
         const token = localStorage.getItem("authToken");
 
         const response = await axios.get(
-          "${process.env.REACT_APP_API_URL}/get-all-project-IT",
+          `${process.env.REACT_APP_API_URL}/get-all-project-IT`,
           {
             headers: {
               "x-auth-token": token,
@@ -257,89 +260,106 @@ const Expense_Form = () => {
     fetchProjects();
   }, []);
 
-  const handleSubmit = async () => {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
+ const handleSubmit = async () => {
+  if (isSubmitting) return;
+  setIsSubmitting(true);
 
-    try {
-      const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
-      console.log("userID:", userID);
+  const hasMissingCategory = rows.some((row) =>
+    (row.items || []).some(
+      (item) => !item.category || item.category.trim() === ""
+    )
+  );
 
-      if (!userID) {
-        toast.error("User ID not found. Please login again.");
-        return;
-      }
+  if (hasMissingCategory) {
+    toast.error("Please select Category for all items before submitting.");
+    setShowError(true);
+    setIsSubmitting(false);
+    return;
+  }
 
-      const items = rows.flatMap((row) =>
-        (row.items || []).map((item) => ({
-          ...item,
-          invoice: {
-            ...item.invoice,
-            invoice_amount: item.invoice?.invoice_amount || "0",
-          },
-          item_status_history: [
-            {
-              status: "submitted",
-              remarks: item.item_status_history?.[0]?.remarks || "",
-              user_id: userID,
-              updatedAt: new Date().toISOString(),
-            },
-          ],
-          item_current_status: "submitted",
-        }))
-      );
+  const { from, to } = rows[0]?.expense_term || {};
+if (!from || !to) {
+  toast.error("Expense Term is required.");
+  setIsSubmitting(false);
+  return;
+}
+  try {
+    const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
+    if (!userID) {
+      toast.error("User ID not found. Please login again.");
+      return;
+    }
 
-      const cleanedData = {
-        expense_term: rows[0]?.expense_term || {},
-        disbursement_date: rows[0]?.disbursement_date ?? null,
-
-        items,
-        user_id: userID,
-        current_status: "submitted",
-        status_history: [
+    const items = rows.flatMap((row) =>
+      (row.items || []).map((item) => ({
+        ...item,
+        invoice: {
+          ...item.invoice,
+          invoice_amount: item.invoice?.invoice_amount || "0",
+        },
+        item_status_history: [
           {
             status: "submitted",
-            remarks: rows[0]?.status_history?.[0]?.remarks || "",
+            remarks: item.item_status_history?.[0]?.remarks || "",
             user_id: userID,
             updatedAt: new Date().toISOString(),
           },
         ],
-        total_requested_amount: items.reduce(
-          (sum, itm) => sum + Number(itm.invoice.invoice_amount || 0),
-          0
-        ),
-        total_approved_amount: items.reduce(
-          (sum, itm) => sum + Number(itm.approved_amount || 0),
-          0
-        ),
-      };
+        item_current_status: "submitted",
+      }))
+    );
 
-      const formData = new FormData();
+    const cleanedData = {
+      expense_term: rows[0]?.expense_term || {},
+      disbursement_date: rows[0]?.disbursement_date ?? null,
+      items,
+      user_id: userID,
+      current_status: "submitted",
+      status_history: [
+        {
+          status: "submitted",
+          remarks: rows[0]?.status_history?.[0]?.remarks || "",
+          user_id: userID,
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+      total_requested_amount: items.reduce(
+        (sum, itm) => sum + Number(itm.invoice.invoice_amount || 0),
+        0
+      ),
+      total_approved_amount: items.reduce(
+        (sum, itm) => sum + Number(itm.approved_amount || 0),
+        0
+      ),
+    };
 
-      items.forEach((item) => {
-        if (item.file) {
-          formData.append("files", item.file);
-        }
-      });
+    const formData = new FormData();
 
-      formData.append("data", JSON.stringify(cleanedData));
-      formData.append("user_id", userID);
+    items.forEach((item, index) => {
+      if (item.file) {
+        formData.append(`file_${index}`, item.file);
+      }
+    });
 
-      await addExpense(formData).unwrap();
+    formData.append("data", JSON.stringify(cleanedData));
+    formData.append("user_id", userID);
 
-      toast.success("Expense sheet submitted successfully!");
-      navigate("/expense_dashboard");
-    } catch (error) {
-      const errMsg =
-        error?.data?.message ||
-        error?.response?.data?.message ||
-        "An error occurred while submitting the expense sheet.";
-      toast.error(errMsg);
-      console.error("Submission failed:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    await addExpense(formData).unwrap();
+
+    toast.success("Expense sheet submitted successfully!");
+    navigate("/expense_dashboard");
+  } catch (error) {
+    const errMsg =
+      error?.data?.message ||
+      error?.response?.data?.message ||
+      "An error occurred while submitting the expense sheet.";
+    toast.error(errMsg);
+    console.error("Submission failed:", error);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   const handleAddRow = () => {
     setRows((prev) => [
@@ -552,6 +572,7 @@ const Expense_Form = () => {
               type="date"
               size="sm"
               value={rows[0].expense_term.from}
+              required
               onChange={(e) =>
                 handleRowChange(0, "expense_term", {
                   ...rows[0].expense_term,
@@ -567,6 +588,7 @@ const Expense_Form = () => {
               type="date"
               size="sm"
               value={rows[0].expense_term.to}
+              required
               onChange={(e) =>
                 handleRowChange(0, "expense_term", {
                   ...rows[0].expense_term,
@@ -747,6 +769,7 @@ const Expense_Form = () => {
                       <Select
                         size="sm"
                         variant="outlined"
+                        required="true"
                         value={row.items?.[0]?.category || ""}
                         onChange={(e, value) =>
                           handleItemChange(rowIndex, "category", value)
@@ -795,6 +818,11 @@ const Expense_Form = () => {
                           )
                         )}
                       </Select>
+                      {showError && !row.items?.[0]?.category && (
+                        <Typography level="body-xs" color="danger">
+                          Category is required
+                        </Typography>
+                      )}
                     </td>
 
                     {/* Description */}

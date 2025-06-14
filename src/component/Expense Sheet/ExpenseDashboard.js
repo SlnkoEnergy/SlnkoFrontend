@@ -54,7 +54,6 @@ const AllExpense = forwardRef((props, ref) => {
         ...new Set([...prevSelected, ...ids]),
       ]);
     } else {
-     
       const ids = paginatedExpenses.map((row) => row._id);
       setSelectedExpenses((prevSelected) =>
         prevSelected.filter((id) => !ids.includes(id))
@@ -86,7 +85,6 @@ const AllExpense = forwardRef((props, ref) => {
         userRole === "superadmin" ||
         (userRole === "HR" && userName !== "Manish Shah");
       const submittedBy = expense.emp_name?.trim() || "";
-    
 
       const allowedStatuses = [
         "submitted",
@@ -120,13 +118,8 @@ const AllExpense = forwardRef((props, ref) => {
       const canSeeProjects =
         projectViewUsers.includes(userName) && userRole === "Projects";
 
-      const internalViewUsers = ["Prachi Singh"];
-      const canSeeInternal =
-        internalViewUsers.includes(userName) && userRole === "Internal";
-
       return (
-        matchesSearchQuery &&
-        (isAdmin || isSubmittedByUser || canSeeProjects || canSeeInternal)
+        matchesSearchQuery && (isAdmin || isSubmittedByUser || canSeeProjects)
       );
     })
     .sort((a, b) => {
@@ -196,8 +189,6 @@ const AllExpense = forwardRef((props, ref) => {
   };
 
   const ExpenseCode = ({ currentPage, expense_code }) => {
-
-
     return (
       <>
         <span
@@ -219,7 +210,6 @@ const AllExpense = forwardRef((props, ref) => {
 
   return (
     <>
-
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
@@ -244,7 +234,6 @@ const AllExpense = forwardRef((props, ref) => {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
- 
       </Box>
 
       {/* Table */}
