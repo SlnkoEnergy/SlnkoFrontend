@@ -182,7 +182,7 @@ const Overview = () => {
 
     try {
       await axios.put(
-        `https://dev.api.slnkoprotrac.com/v1/engineering/update-module-category?projectId=${projectId}`,
+        `${process.env.REACT_APP_API_URL}/engineering/update-module-category?projectId=${projectId}`,
         formData,
         {
           headers: {
