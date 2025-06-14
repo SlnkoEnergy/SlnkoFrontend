@@ -260,103 +260,106 @@ const Expense_Form = () => {
     fetchProjects();
   }, []);
 
-  const handleSubmit = async () => {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
+ const handleSubmit = async () => {
+  if (isSubmitting) return;
+  setIsSubmitting(true);
 
-    // 🔴 Validate that all items have category selected
-    const hasMissingCategory = rows.some((row) =>
-      (row.items || []).some(
-        (item) => !item.category || item.category.trim() === ""
-      )
-    );
+  const hasMissingCategory = rows.some((row) =>
+    (row.items || []).some(
+      (item) => !item.category || item.category.trim() === ""
+    )
+  );
 
-    if (hasMissingCategory) {
-      toast.error("Please select Category for all items before submitting.");
-      setShowError(true); // 🔁 triggers red warning below <Select>
-      setIsSubmitting(false); // stop form submission
+  if (hasMissingCategory) {
+    toast.error("Please select Category for all items before submitting.");
+    setShowError(true);
+    setIsSubmitting(false);
+    return;
+  }
+
+  const { from, to } = rows[0]?.expense_term || {};
+if (!from || !to) {
+  toast.error("Expense Term is required.");
+  setIsSubmitting(false);
+  return;
+}
+  try {
+    const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
+    if (!userID) {
+      toast.error("User ID not found. Please login again.");
       return;
     }
 
-    try {
-      const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
-      console.log("userID:", userID);
-
-      if (!userID) {
-        toast.error("User ID not found. Please login again.");
-        return;
-      }
-
-      const items = rows.flatMap((row) =>
-        (row.items || []).map((item) => ({
-          ...item,
-          invoice: {
-            ...item.invoice,
-            invoice_amount: item.invoice?.invoice_amount || "0",
-          },
-          item_status_history: [
-            {
-              status: "submitted",
-              remarks: item.item_status_history?.[0]?.remarks || "",
-              user_id: userID,
-              updatedAt: new Date().toISOString(),
-            },
-          ],
-          item_current_status: "submitted",
-        }))
-      );
-
-      const cleanedData = {
-        expense_term: rows[0]?.expense_term || {},
-        disbursement_date: rows[0]?.disbursement_date ?? null,
-
-        items,
-        user_id: userID,
-        current_status: "submitted",
-        status_history: [
+    const items = rows.flatMap((row) =>
+      (row.items || []).map((item) => ({
+        ...item,
+        invoice: {
+          ...item.invoice,
+          invoice_amount: item.invoice?.invoice_amount || "0",
+        },
+        item_status_history: [
           {
             status: "submitted",
-            remarks: rows[0]?.status_history?.[0]?.remarks || "",
+            remarks: item.item_status_history?.[0]?.remarks || "",
             user_id: userID,
             updatedAt: new Date().toISOString(),
           },
         ],
-        total_requested_amount: items.reduce(
-          (sum, itm) => sum + Number(itm.invoice.invoice_amount || 0),
-          0
-        ),
-        total_approved_amount: items.reduce(
-          (sum, itm) => sum + Number(itm.approved_amount || 0),
-          0
-        ),
-      };
+        item_current_status: "submitted",
+      }))
+    );
 
-      const formData = new FormData();
+    const cleanedData = {
+      expense_term: rows[0]?.expense_term || {},
+      disbursement_date: rows[0]?.disbursement_date ?? null,
+      items,
+      user_id: userID,
+      current_status: "submitted",
+      status_history: [
+        {
+          status: "submitted",
+          remarks: rows[0]?.status_history?.[0]?.remarks || "",
+          user_id: userID,
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+      total_requested_amount: items.reduce(
+        (sum, itm) => sum + Number(itm.invoice.invoice_amount || 0),
+        0
+      ),
+      total_approved_amount: items.reduce(
+        (sum, itm) => sum + Number(itm.approved_amount || 0),
+        0
+      ),
+    };
 
-      items.forEach((item) => {
-        if (item.file) {
-          formData.append("files", item.file);
-        }
-      });
+    const formData = new FormData();
 
-      formData.append("data", JSON.stringify(cleanedData));
-      formData.append("user_id", userID);
+    items.forEach((item, index) => {
+      if (item.file) {
+        formData.append(`file_${index}`, item.file);
+      }
+    });
 
-      await addExpense(formData).unwrap();
+    formData.append("data", JSON.stringify(cleanedData));
+    formData.append("user_id", userID);
 
-      toast.success("Expense sheet submitted successfully!");
-      navigate("/expense_dashboard");
-    } catch (error) {
-      const errMsg =
-        error?.data?.message ||
-        error?.response?.data?.message ||
-        "An error occurred while submitting the expense sheet.";
-      toast.error(errMsg);
-      console.error("Submission failed:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    await addExpense(formData).unwrap();
+
+    toast.success("Expense sheet submitted successfully!");
+    navigate("/expense_dashboard");
+  } catch (error) {
+    const errMsg =
+      error?.data?.message ||
+      error?.response?.data?.message ||
+      "An error occurred while submitting the expense sheet.";
+    toast.error(errMsg);
+    console.error("Submission failed:", error);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   const handleAddRow = () => {
     setRows((prev) => [
@@ -569,6 +572,7 @@ const Expense_Form = () => {
               type="date"
               size="sm"
               value={rows[0].expense_term.from}
+              required
               onChange={(e) =>
                 handleRowChange(0, "expense_term", {
                   ...rows[0].expense_term,
@@ -584,6 +588,7 @@ const Expense_Form = () => {
               type="date"
               size="sm"
               value={rows[0].expense_term.to}
+              required
               onChange={(e) =>
                 handleRowChange(0, "expense_term", {
                   ...rows[0].expense_term,
