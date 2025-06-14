@@ -89,9 +89,11 @@ const ExpenseApproval = forwardRef(() => {
         "HR",
         "SCM",
         "Engineering",
+        "Internal",
       ];
 
       const isManager = user?.role === "manager" || user?.role === "visitor";
+
       allowedDepartments.includes(user?.department);
 
       const isAdmin = user?.role === "admin" || user?.role === "superadmin";
