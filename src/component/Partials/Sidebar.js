@@ -398,6 +398,11 @@ function Sidebar() {
                       Dashboard
                     </ListItemButton>
                   </ListItem>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/temp_dash")}>
+                      Template Dashboard
+                    </ListItemButton>
+                  </ListItem>
                 </List>
               </Toggler>
             </ListItem>
@@ -481,6 +486,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
+            {/*Expense Sheet */}
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -765,6 +771,56 @@ function Sidebar() {
                       </ListItemButton>
                     </ListItem>
                   )}
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/expense_accounts")}
+                    >
+                      Project Balances
+                    </ListItemButton>
+                  </ListItem>
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/payment-approved")}
+                    >
+                      Approved Payment
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+          </List>
+        ) : user?.department === "Internal" ? (
+          <List>
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <AccountBalanceWalletIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">Expense Sheet</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton
+                      onClick={() => navigate("/expense_dashboard")}
+                    >
+                      User Dashboard
+                    </ListItemButton>
+                  </ListItem>
                 </List>
               </Toggler>
             </ListItem>
@@ -875,9 +931,9 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <AccountBalanceWalletIcon />
+                    <AccountBalanceIcon />
                     <ListItemContent>
-                      <Typography level="title-sm">Expense Sheet</Typography>
+                      <Typography level="title-sm">Accounting</Typography>
                     </ListItemContent>
                     <KeyboardArrowDownIcon
                       sx={[
@@ -912,7 +968,14 @@ function Sidebar() {
                     <ListItemButton
                       onClick={() => navigate("/expense_accounts")}
                     >
-                      Accounts Expense Approval
+                      Project Balances
+                    </ListItemButton>
+                  </ListItem>
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/payment-approved")}
+                    >
+                      Approved Payment
                     </ListItemButton>
                   </ListItem>
                 </List>

@@ -1,18 +1,22 @@
-import React from 'react';
+
 import { CssVarsProvider } from '@mui/joy/styles';
 import CssBaseline from '@mui/joy/CssBaseline';
 import Box from '@mui/joy/Box';
-import Button from '@mui/joy/Button';
 import Breadcrumbs from '@mui/joy/Breadcrumbs';
 import Link from '@mui/joy/Link';
 import Typography from '@mui/joy/Typography';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
-import Sidebar from '../../component/Partials/Sidebar';
-import Header from '../../component/Partials/Header';
-import UpdateHandoverSheetForm from '../../component/Lead Stage/edit_HandOver';
-import ViewHandoverSheetForm from '../../component/Lead Stage/View_HandOver';
+import Sidebar from '../../../component/Partials/Sidebar';
+import Header from '../../../component/Partials/Header';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import MaterialCategory from '../../../component/Forms/Engineering/MaterialCategory';
+import Material from '../../../component/Forms/Engineering/Material';
 
-function ViewHandSheet() {
+function Add_Material() {
+    const navigate = useNavigate();
+   const [searchParams] = useSearchParams();
+   const item = searchParams.get('item');
+const id = searchParams.get('_id');
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -38,11 +42,7 @@ function ViewHandSheet() {
             gap: 1,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', marginLeft:{xl:"17%",lg:"20%"}, 
-            "@media print": {
-              display: "none",
-            },
-         }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', marginLeft:{xl:"17%",lg:"20%"}}}>
             <Breadcrumbs
               size="sm"
               aria-label="breadcrumbs"
@@ -62,11 +62,12 @@ function ViewHandSheet() {
                 color="neutral"
                 href=""
                 sx={{ fontSize: 12, fontWeight: 500 }}
+                onClick={() => navigate("/module_sheet")}
               >
-                Cam Dashboard
+                Module Sheet
               </Link>
               <Typography color="primary" sx={{ fontWeight: 500, fontSize: 12 }}>
-                HandOver Sheet Summary
+                {`Add ${item}`}
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -81,11 +82,8 @@ function ViewHandSheet() {
               justifyContent: 'space-between',
             }}
           >
-           <ViewHandoverSheetForm />
-           
+           <Material item={item} />
           </Box>
-          
-          
           {/* <OrderTable /> */}
           {/* <OrderList /> */}
         </Box>
@@ -93,4 +91,4 @@ function ViewHandSheet() {
     </CssVarsProvider>
   );
 }
-export default ViewHandSheet;
+export default Add_Material;

@@ -1,4 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { baseQuery } from "../auth/auth_variable";
+
 
 export const engsBOSApi = createApi({
   reducerPath: "engsBOSApi",
