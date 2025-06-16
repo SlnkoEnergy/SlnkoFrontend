@@ -18,7 +18,15 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 // import Axios from "../utils/Axios";
 
-import { Chip, Modal, ModalDialog, Textarea, useTheme } from "@mui/joy";
+import {
+  Chip,
+  Modal,
+  ModalDialog,
+  Option,
+  Select,
+  Textarea,
+  useTheme,
+} from "@mui/joy";
 import {
   useGetAllExpenseQuery,
   useUpdateExpenseStatusOverallMutation,
@@ -34,11 +42,45 @@ const HrExpense = forwardRef((props, ref) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedExpenses, setSelectedExpenses] = useState([]);
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const {
+    data: getExpense = [],
+    isLoading,
+    error,
+  } = useGetAllExpenseQuery({
+    page: currentPage,
+    department: selectedDepartment,
+    search: searchQuery,
+  });
 
-  const { data: getExpense = [], isLoading, error } = useGetAllExpenseQuery();
 
-  // console.log("getExpense: ", getExpense);
 
+  const total = getExpense?.total || 0;
+  const limit = getExpense?.limit || 10;
+  const totalPages = Math.ceil(total / limit);
+
+  const getPaginationRange = () => {
+    const siblings = 1;
+    const pages = [];
+
+    if (totalPages <= 5 + siblings * 2) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      const left = Math.max(currentPage - siblings, 2);
+      const right = Math.min(currentPage + siblings, totalPages - 1);
+
+      pages.push(1);
+      if (left > 2) pages.push("...");
+
+      for (let i = left; i <= right; i++) pages.push(i);
+
+      if (right < totalPages - 1) pages.push("...");
+      pages.push(totalPages);
+    }
+
+    return pages;
+  };
+debugger;
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -61,12 +103,46 @@ const HrExpense = forwardRef((props, ref) => {
         ...new Set([...prevSelected, ...ids]),
       ]);
     } else {
-      // Remove only the IDs from current page
       const ids = paginatedExpenses.map((row) => row._id);
       setSelectedExpenses((prevSelected) =>
         prevSelected.filter((id) => !ids.includes(id))
       );
     }
+  };
+
+  const renderFilters = () => {
+    const departments = [
+      "Accounts",
+      "HR",
+      "Engineering",
+      "Projects",
+      "CAM",
+      "Internal",
+      "SCM",
+      "IT Team",
+    ];
+
+    return (
+      <FormControl sx={{ flex: 1 }} size="sm">
+        <FormLabel>Department</FormLabel>
+        <Select
+          value={selectedDepartment}
+          onChange={(e, newValue) => {
+            setSelectedDepartment(newValue);
+            setCurrentPage(1);
+          }}
+          size="sm"
+          placeholder="Select Department"
+        >
+          <Option value="">All Departments</Option>
+          {departments.map((dept) => (
+            <Option key={dept} value={dept}>
+              {dept}
+            </Option>
+          ))}
+        </Select>
+      </FormControl>
+    );
   };
 
   const handleRowSelect = (_id) => {
@@ -82,6 +158,7 @@ const HrExpense = forwardRef((props, ref) => {
     [getExpense]
   );
 
+
   const filteredAndSortedData = expenses
     .filter((expense) => {
       const allowedStatuses = [
@@ -93,7 +170,6 @@ const HrExpense = forwardRef((props, ref) => {
       ];
       const status = expense.current_status?.toLowerCase();
       if (!allowedStatuses.includes(status)) return false;
-
       const search = searchQuery.toLowerCase();
       const matchesSearchQuery = [
         "expense_code",
@@ -107,7 +183,6 @@ const HrExpense = forwardRef((props, ref) => {
     .sort((a, b) => {
       const search = searchQuery.toLowerCase();
 
-      // Prioritize exact field matches
       const fields = ["expense_code", "emp_id", "emp_name", "status"];
       for (let field of fields) {
         const aValue = a[field]?.toLowerCase() || "";
@@ -164,6 +239,40 @@ const HrExpense = forwardRef((props, ref) => {
         toast.error("Update failed");
         console.error(err);
       }
+    };
+    const renderFilters = () => {
+      const departments = [
+        "Accounts",
+        "HR",
+        "Engineering",
+        "Projects",
+        "CAM",
+        "Internal",
+        "SCM",
+        "IT Team",
+      ];
+
+      return (
+        <FormControl sx={{ flex: 1 }} size="sm">
+          <FormLabel>Department</FormLabel>
+          <Select
+            value={selectedDepartment}
+            onChange={(e, newValue) => {
+              setSelectedDepartment(newValue);
+              setCurrentPage(1);
+            }}
+            size="sm"
+            placeholder="Select Department"
+          >
+            <Option value="">All Departments</Option>
+            {departments.map((dept) => (
+              <Option key={dept} value={dept}>
+                {dept}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+      );
     };
 
     return (
@@ -224,8 +333,6 @@ const HrExpense = forwardRef((props, ref) => {
   };
 
   const ExpenseCode = ({ currentPage, expense_code }) => {
-    // console.log("currentPage:", currentPage, "p_id:", p_id);
-
     return (
       <>
         <span
@@ -248,8 +355,6 @@ const HrExpense = forwardRef((props, ref) => {
   };
 
   const EmployeeName = ({ currentPage, expense_code, emp_name }) => {
-    // console.log("currentPage:", currentPage, "p_id:", p_id);
-
     return (
       <>
         <span
@@ -269,54 +374,20 @@ const HrExpense = forwardRef((props, ref) => {
     );
   };
 
-  const generatePageNumbers = (currentPage, totalPages) => {
-    const pages = [];
-
-    if (currentPage > 2) {
-      pages.push(1);
-    }
-
-    if (currentPage > 3) {
-      pages.push("...");
-    }
-
-    for (
-      let i = Math.max(1, currentPage - 1);
-      i <= Math.min(totalPages, currentPage + 1);
-      i++
-    ) {
-      pages.push(i);
-    }
-
-    if (currentPage < totalPages - 2) {
-      pages.push("...");
-    }
-
-    if (currentPage < totalPages - 1) {
-      pages.push(totalPages);
-    }
-
-    return pages;
-  };
-
+  
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
   }, [searchParams]);
 
-  const totalPages = Math.ceil(
-    (filteredAndSortedData?.length || 0) / itemsPerPage
-  );
+  const paginatedExpenses = expenses;
 
-  const paginatedExpenses = filteredAndSortedData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  console.log("paginatedExpenses", paginatedExpenses);
+  
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
-      setSearchParams({ page });
-      setCurrentPage(page);
+      setSearchParams({ page: String(page) });
     }
   };
 
@@ -347,7 +418,7 @@ const HrExpense = forwardRef((props, ref) => {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {/* {renderFilters()} */}
+        {renderFilters()}
       </Box>
 
       {/* Table */}
@@ -561,7 +632,7 @@ const HrExpense = forwardRef((props, ref) => {
                     {(() => {
                       const status = expense.current_status?.toLowerCase();
 
-                      if (status === "manager approval") {
+                      if (status === "manager approval" || status === "submitted") {
                         return (
                           <Chip color="primary" variant="soft" size="sm">
                             Pending
@@ -657,17 +728,22 @@ const HrExpense = forwardRef((props, ref) => {
         >
           Previous
         </Button>
+
         <Box>
-          Showing {paginatedExpenses.length} of {filteredAndSortedData.length}{" "}
-          results
+          Showing page {currentPage} of {totalPages} ({total} results)
         </Box>
+
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
-          {generatePageNumbers(currentPage, totalPages).map((page, index) =>
-            typeof page === "number" ? (
+          {getPaginationRange().map((page, idx) =>
+            page === "..." ? (
+              <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
+                ...
+              </Box>
+            ) : (
               <IconButton
-                key={index}
+                key={page}
                 size="sm"
                 variant={page === currentPage ? "contained" : "outlined"}
                 color="neutral"
@@ -675,10 +751,6 @@ const HrExpense = forwardRef((props, ref) => {
               >
                 {page}
               </IconButton>
-            ) : (
-              <Typography key={index} sx={{ px: 1, alignSelf: "center" }}>
-                {page}
-              </Typography>
             )
           )}
         </Box>

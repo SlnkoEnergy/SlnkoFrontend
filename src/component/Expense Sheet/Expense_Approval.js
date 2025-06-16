@@ -13,7 +13,7 @@ import Typography from "@mui/joy/Typography";
 import { forwardRef, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-import { Chip, useTheme } from "@mui/joy";
+import { Chip, Option, Select, useTheme } from "@mui/joy";
 import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
 import { useGetLoginsQuery } from "../../redux/loginSlice";
 
@@ -25,8 +25,16 @@ const ExpenseApproval = forwardRef(() => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedExpenses, setSelectedExpenses] = useState([]);
-
-  const { data: getExpense = [] } = useGetAllExpenseQuery();
+const [selectedDepartment, setSelectedDepartment] = useState("");
+  const {
+    data: getExpense = [],
+    isLoading,
+    error,
+  } = useGetAllExpenseQuery({
+    page: currentPage,
+    department: selectedDepartment,
+    search: searchQuery,
+  });
 
   const { data: getAllUser = [] } = useGetLoginsQuery();
 
@@ -143,37 +151,33 @@ const ExpenseApproval = forwardRef(() => {
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
-  const generatePageNumbers = (currentPage, totalPages) => {
+    const total = getExpense?.total || 0;
+  const limit = getExpense?.limit || 10;
+  const totalPages = Math.ceil(total / limit);
+
+  const getPaginationRange = () => {
+    const siblings = 1;
     const pages = [];
 
-    if (currentPage > 2) {
+    if (totalPages <= 5 + siblings * 2) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      const left = Math.max(currentPage - siblings, 2);
+      const right = Math.min(currentPage + siblings, totalPages - 1);
+
       pages.push(1);
-    }
+      if (left > 2) pages.push("...");
 
-    if (currentPage > 3) {
-      pages.push("...");
-    }
+      for (let i = left; i <= right; i++) pages.push(i);
 
-    for (
-      let i = Math.max(1, currentPage - 1);
-      i <= Math.min(totalPages, currentPage + 1);
-      i++
-    ) {
-      pages.push(i);
-    }
-
-    if (currentPage < totalPages - 2) {
-      pages.push("...");
-    }
-
-    if (currentPage < totalPages - 1) {
+      if (right < totalPages - 1) pages.push("...");
       pages.push(totalPages);
     }
 
     return pages;
   };
 
-  const ExpenseCode = ({ currentPage, expense_code }) => {
+  const ExpenseCode = ({ currentPage, expense_code}) => {
     return (
       <>
         <span
@@ -184,7 +188,7 @@ const ExpenseApproval = forwardRef(() => {
           }}
           onClick={() => {
             localStorage.setItem("edit_expense", expense_code);
-            navigate(`/edit_expense?page=${currentPage}&code=${expense_code}`);
+            navigate(`/edit_expense?page=${currentPage}&expense_code=${expense_code}`);
           }}
         >
           {expense_code || "-"}
@@ -193,7 +197,7 @@ const ExpenseApproval = forwardRef(() => {
     );
   };
 
-  const EmployeeName = ({ currentPage, expense_code, emp_name }) => {
+  const EmployeeName = ({ currentPage, emp_name, expense_code }) => {
     return (
       <>
         <span
@@ -204,7 +208,7 @@ const ExpenseApproval = forwardRef(() => {
           }}
           onClick={() => {
             localStorage.setItem("edit_expense", expense_code);
-            navigate(`/edit_expense?page=${currentPage}&code=${expense_code}`);
+            navigate(`/edit_expense?page=${currentPage}&expense_code=${expense_code}`);
           }}
         >
           {emp_name || "-"}
@@ -218,21 +222,16 @@ const ExpenseApproval = forwardRef(() => {
     setCurrentPage(page);
   }, [searchParams]);
 
-  const totalPages = Math.ceil(
-    (filteredAndSortedData?.length || 0) / itemsPerPage
-  );
 
-  const paginatedExpenses = filteredAndSortedData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedExpenses = filteredAndSortedData;
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
-      setSearchParams({ page });
-      setCurrentPage(page);
+      setSearchParams({ page: String(page) });
     }
   };
+
+
 
   return (
     <>
@@ -544,7 +543,7 @@ const ExpenseApproval = forwardRef(() => {
         </Box>
       </Sheet>
 
-      <Box
+     <Box
         className="Pagination-laptopUp"
         sx={{
           pt: 2,
@@ -566,17 +565,20 @@ const ExpenseApproval = forwardRef(() => {
         >
           Previous
         </Button>
+
         <Box>
-          Showing {paginatedExpenses.length} of {filteredAndSortedData.length}{" "}
-          results
+          Showing page {currentPage} of {totalPages} ({total} results)
         </Box>
-        <Box
-          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
-        >
-          {generatePageNumbers(currentPage, totalPages).map((page, index) =>
-            typeof page === "number" ? (
+
+        <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
+          {getPaginationRange().map((page, idx) =>
+            page === "..." ? (
+              <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
+                ...
+              </Box>
+            ) : (
               <IconButton
-                key={index}
+                key={page}
                 size="sm"
                 variant={page === currentPage ? "contained" : "outlined"}
                 color="neutral"
@@ -584,10 +586,6 @@ const ExpenseApproval = forwardRef(() => {
               >
                 {page}
               </IconButton>
-            ) : (
-              <Typography key={index} sx={{ px: 1, alignSelf: "center" }}>
-                {page}
-              </Typography>
             )
           )}
         </Box>

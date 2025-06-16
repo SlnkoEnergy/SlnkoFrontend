@@ -19,13 +19,15 @@ export const expensesApi = createApi({
   endpoints: (builder) => ({
     // GET: Fetch all expenses
     getAllExpense: builder.query({
-      query: () => "get-all-expense",
+      query: ({ page = 1, search = "", department }) =>
+        `get-all-expense?page=${page}&search=${search}&department=${department}`,
       providesTags: ["Expense"],
     }),
 
-    // GET: Fetch single expense by ID
+    // GET: Fetch single expense by IDs
     getExpenseById: builder.query({
-      query: (_id) => `get-expense-by-id/${_id}`,
+      query: ({ expense_code }) =>
+        `get-expense-by-id?expense_code=${expense_code}`,
       providesTags: ["Expense"],
     }),
 
@@ -86,14 +88,22 @@ export const expensesApi = createApi({
     }),
     exportExpensesToCSV: builder.query({
       query: () => ({
-        url: "expense-all-csv", // or your actual endpoint
+        url: "expense-all-csv",
         method: "GET",
-        responseHandler: (response) => response.blob(), // important
+        responseHandler: (response) => response.blob(),
       }),
     }),
     exportExpenseByIdToCSV: builder.query({
       query: (expenseId) => ({
         url: `expense-by-id-csv/${expenseId}`,
+        method: "GET",
+        responseHandler: (response) => response.blob(),
+      }),
+    }),
+
+    exportExpenseByIdToPDF: builder.query({
+      query: ({ expenseId, withAttachment }) => ({
+        url: `expense-pdf/${expenseId}?printAttachments=${withAttachment}`,
         method: "GET",
         responseHandler: (response) => response.blob(),
       }),
@@ -112,4 +122,5 @@ export const {
   useUpdateDisbursementDateMutation,
   useLazyExportExpensesToCSVQuery,
   useLazyExportExpenseByIdToCSVQuery,
+  useLazyExportExpenseByIdToPDFQuery,
 } = expensesApi;

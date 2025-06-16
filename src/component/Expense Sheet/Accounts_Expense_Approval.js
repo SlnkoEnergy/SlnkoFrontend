@@ -17,41 +17,144 @@ import { forwardRef, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 // import Axios from "../utils/Axios";
-import { Chip, Modal, ModalDialog, Textarea, useTheme } from "@mui/joy";
+import {
+  Chip,
+  Modal,
+  ModalDialog,
+  Option,
+  Select,
+  Textarea,
+  useTheme,
+} from "@mui/joy";
 import {
   useGetAllExpenseQuery,
   useUpdateExpenseStatusOverallMutation,
 } from "../../redux/Expense/expenseSlice";
+import { Engineering } from "@mui/icons-material";
+import { TextAnnotation } from "asposepdfcloud/src/models/textAnnotation";
 
-const AccountsExpense = forwardRef((props, ref) => {
+const AccountsExpense = forwardRef(() => {
   const navigate = useNavigate();
   const theme = useTheme();
-  const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(12);
-  const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedExpenses, setSelectedExpenses] = useState([]);
+  const [selectedDepartment, setSelectedDepartment] = useState("");
 
-  const { data: getExpense = [], isLoading, error } = useGetAllExpenseQuery();
+  const { data: getExpense = [] } = useGetAllExpenseQuery({
+    page: currentPage,
+    department: selectedDepartment,
+    search: searchQuery,
+  });
 
-  // console.log("getExpense: ", getExpense);
+  const renderFilters = () => {
+    const departments = [
+      "Accounts",
+      "HR",
+      "Engineering",
+      "Projects",
+      "CAM",
+      "Internal",
+      "SCM",
+      "IT Team",
+    ];
 
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const userData = getUserData();
-    setUser(userData);
-  }, []);
-
-  const getUserData = () => {
-    const userData = localStorage.getItem("userDetails");
-    if (userData) {
-      return JSON.parse(userData);
-    }
-    return null;
+    return (
+      <FormControl sx={{ flex: 1 }} size="sm">
+        <FormLabel>Department</FormLabel>
+        <Select
+          value={selectedDepartment}
+          onChange={(e, newValue) => {
+            setSelectedDepartment(newValue);
+            setCurrentPage(1);
+          }}
+          size="sm"
+          placeholder="Select Department"
+        >
+          <Option value="">All Departments</Option>
+          {departments.map((dept) => (
+            <Option key={dept} value={dept}>
+              {dept}
+            </Option>
+          ))}
+        </Select>
+      </FormControl>
+    );
   };
+
+  const total = getExpense?.total || 0;
+  const limit = getExpense?.limit || 10;
+  const totalPages = Math.ceil(total / limit);
+
+  const getPaginationRange = () => {
+    const siblings = 1;
+    const pages = [];
+
+    if (totalPages <= 5 + siblings * 2) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      const left = Math.max(currentPage - siblings, 2);
+      const right = Math.min(currentPage + siblings, totalPages - 1);
+
+      pages.push(1);
+      if (left > 2) pages.push("...");
+
+      for (let i = left; i <= right; i++) pages.push(i);
+
+      if (right < totalPages - 1) pages.push("...");
+      pages.push(totalPages);
+    }
+
+    return pages;
+  };
+
+  const expenses = useMemo(
+    () => (Array.isArray(getExpense?.data) ? getExpense.data : []),
+    [getExpense]
+  );
+
+  const filteredAndSortedData = expenses
+    .filter((expense) => {
+      const allowedStatuses = [
+        "hr approval",
+        "final approval",
+        "hold",
+        "rejected",
+      ];
+      const status = expense.current_status?.toLowerCase();
+      if (!allowedStatuses.includes(status)) return false;
+      const search = searchQuery.toLowerCase();
+      const matchesSearchQuery = [
+        "expense_code",
+        "emp_id",
+        "emp_name",
+        "status",
+      ].some((key) => expense[key]?.toLowerCase().includes(search));
+
+      return matchesSearchQuery;
+    })
+    .sort((a, b) => {
+      const search = searchQuery.toLowerCase();
+
+      const fields = ["expense_code", "emp_id", "emp_name", "status"];
+      for (let field of fields) {
+        const aValue = a[field]?.toLowerCase() || "";
+        const bValue = b[field]?.toLowerCase() || "";
+        const aMatch = aValue.includes(search);
+        const bMatch = bValue.includes(search);
+        if (aMatch && !bMatch) return -1;
+        if (!aMatch && bMatch) return 1;
+      }
+
+      // Fallback: sort by createdAt descending
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
+
+
+
+
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -60,7 +163,6 @@ const AccountsExpense = forwardRef((props, ref) => {
         ...new Set([...prevSelected, ...ids]),
       ]);
     } else {
-      // Remove only the IDs from current page
       const ids = paginatedExpenses.map((row) => row._id);
       setSelectedExpenses((prevSelected) =>
         prevSelected.filter((id) => !ids.includes(id))
@@ -76,152 +178,6 @@ const AccountsExpense = forwardRef((props, ref) => {
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
-  const expenses = useMemo(
-    () => (Array.isArray(getExpense?.data) ? getExpense.data : []),
-    [getExpense]
-  );
-
-  const filteredAndSortedData = expenses
-    .filter((expense) => {
-      // Match user by ID
-
-      // Only include certain statuses
-      const allowedStatuses = [
-        "hr approval",
-        "final approval",
-        "hold",
-        "rejected",
-      ];
-      const status = expense.current_status?.toLowerCase();
-      if (!allowedStatuses.includes(status)) return false;
-
-      // Filter based on search query (case-insensitive)
-      const search = searchQuery.toLowerCase();
-      const matchesSearchQuery = [
-        "expense_code",
-        "emp_id",
-        "emp_name",
-        "status",
-      ].some((key) => expense[key]?.toLowerCase().includes(search));
-
-      return matchesSearchQuery;
-    })
-    .sort((a, b) => {
-      const search = searchQuery.toLowerCase();
-
-      // Prioritize exact field matches
-      const fields = ["expense_code", "emp_id", "emp_name", "status"];
-      for (let field of fields) {
-        const aValue = a[field]?.toLowerCase() || "";
-        const bValue = b[field]?.toLowerCase() || "";
-        const aMatch = aValue.includes(search);
-        const bMatch = bValue.includes(search);
-        if (aMatch && !bMatch) return -1;
-        if (!aMatch && bMatch) return 1;
-      }
-
-      // Fallback: sort by createdAt descending
-      return new Date(b.createdAt) - new Date(a.createdAt);
-    });
-
-  const RowMenu = ({ _id, status }) => {
-    const [openModal, setOpenModal] = useState(false);
-    const [selectedStatus, setSelectedStatus] = useState("");
-    const [remarks, setRemarks] = useState("");
-    const [updateStatus] = useUpdateExpenseStatusOverallMutation();
-
-    // Disable all chips if current status is "hr approval"
-    const disableActions = ["hr approval", "rejected", "hold"].includes(
-      status.toLowerCase()
-    );
-
-    const handleOpenModal = (status) => {
-      setSelectedStatus(status);
-      setOpenModal(true);
-    };
-
-    const handleSubmit = async () => {
-      if (!remarks.trim()) {
-        toast.error("Please enter remarks.");
-        return;
-      }
-
-      try {
-        await updateStatus({
-          _id,
-          status: selectedStatus,
-          remarks,
-        }).unwrap();
-
-        toast.success(`Status updated to ${selectedStatus}`);
-        setOpenModal(false);
-        setRemarks("");
-
-        setTimeout(() => {
-          window.location.reload();
-        }, 100);
-      } catch (err) {
-        toast.error("Update failed");
-        console.error(err);
-      }
-    };
-
-    return (
-      <>
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <Chip
-            color="danger"
-            onClick={() => handleOpenModal("rejected")}
-            startDecorator={<BlockIcon />}
-            label="Reject"
-            disabled={disableActions}
-            sx={{ cursor: disableActions ? "not-allowed" : "pointer" }}
-          />
-          <Chip
-            color="warning"
-            onClick={() => handleOpenModal("hold")}
-            startDecorator={<PauseCircleIcon />}
-            label="Hold"
-            disabled={disableActions}
-            sx={{ cursor: disableActions ? "not-allowed" : "pointer" }}
-          />
-          <Chip
-            color="success"
-            onClick={() => handleOpenModal("hr approval")}
-            startDecorator={<CheckCircleIcon />}
-            label="HR Approval"
-            disabled={disableActions}
-            sx={{ cursor: disableActions ? "not-allowed" : "pointer" }}
-          />
-        </Box>
-
-        <Modal open={openModal} onClose={() => setOpenModal(false)}>
-          <ModalDialog>
-            <Typography level="h5">Remarks for {selectedStatus}</Typography>
-            <Textarea
-              placeholder="Enter your remarks"
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-              sx={{ mt: 2 }}
-            />
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: 1,
-                mt: 2,
-              }}
-            >
-              <Button onClick={() => setOpenModal(false)}>Cancel</Button>
-              <Button color="primary" onClick={handleSubmit}>
-                Submit
-              </Button>
-            </Box>
-          </ModalDialog>
-        </Modal>
-      </>
-    );
-  };
 
   const ExpenseCode = ({ currentPage, expense_code }) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
@@ -236,7 +192,9 @@ const AccountsExpense = forwardRef((props, ref) => {
           }}
           onClick={() => {
             localStorage.setItem("edit_expense", expense_code);
-            navigate(`/update_expense?page=${currentPage}&code=${expense_code}`);
+            navigate(
+              `/update_expense?page=${currentPage}&code=${expense_code}`
+            );
           }}
         >
           {expense_code || "-"}
@@ -267,54 +225,17 @@ const AccountsExpense = forwardRef((props, ref) => {
     );
   };
 
-  const generatePageNumbers = (currentPage, totalPages) => {
-    const pages = [];
-
-    if (currentPage > 2) {
-      pages.push(1);
-    }
-
-    if (currentPage > 3) {
-      pages.push("...");
-    }
-
-    for (
-      let i = Math.max(1, currentPage - 1);
-      i <= Math.min(totalPages, currentPage + 1);
-      i++
-    ) {
-      pages.push(i);
-    }
-
-    if (currentPage < totalPages - 2) {
-      pages.push("...");
-    }
-
-    if (currentPage < totalPages - 1) {
-      pages.push(totalPages);
-    }
-
-    return pages;
-  };
 
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
   }, [searchParams]);
 
-  const totalPages = Math.ceil(
-    (filteredAndSortedData?.length || 0) / itemsPerPage
-  );
-
-  const paginatedExpenses = filteredAndSortedData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedExpenses = expenses;
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
-      setSearchParams({ page });
-      setCurrentPage(page);
+      setSearchParams({ page: String(page) });
     }
   };
 
@@ -345,7 +266,7 @@ const AccountsExpense = forwardRef((props, ref) => {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {/* {renderFilters()} */}
+        {renderFilters()}
       </Box>
 
       {/* Table */}
@@ -559,7 +480,7 @@ const AccountsExpense = forwardRef((props, ref) => {
                     {(() => {
                       const status = expense.current_status?.toLowerCase();
 
-                      if (status === "hr approval") {
+                      if (status === "hr approval" || status === "manager approval" || status === "submitted") {
                         return (
                           <Chip color="warning" variant="soft" size="sm">
                             Pending
@@ -649,17 +570,22 @@ const AccountsExpense = forwardRef((props, ref) => {
         >
           Previous
         </Button>
+
         <Box>
-          Showing {paginatedExpenses.length} of {filteredAndSortedData.length}{" "}
-          results
+          Showing page {currentPage} of {totalPages} ({total} results)
         </Box>
+
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
-          {generatePageNumbers(currentPage, totalPages).map((page, index) =>
-            typeof page === "number" ? (
+          {getPaginationRange().map((page, idx) =>
+            page === "..." ? (
+              <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
+                ...
+              </Box>
+            ) : (
               <IconButton
-                key={index}
+                key={page}
                 size="sm"
                 variant={page === currentPage ? "contained" : "outlined"}
                 color="neutral"
@@ -667,10 +593,6 @@ const AccountsExpense = forwardRef((props, ref) => {
               >
                 {page}
               </IconButton>
-            ) : (
-              <Typography key={index} sx={{ px: 1, alignSelf: "center" }}>
-                {page}
-              </Typography>
             )
           )}
         </Box>
