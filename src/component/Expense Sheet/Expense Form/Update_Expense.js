@@ -71,6 +71,8 @@ const UpdateExpense = () => {
   const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
   const [sharedRejectionComment, setSharedRejectionComment] = useState("");
   const [showRejectAllDialog, setShowRejectAllDialog] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
+
   const [commentDialog, setCommentDialog] = useState({
     open: false,
     rowIndex: null,
@@ -718,50 +720,103 @@ const UpdateExpense = () => {
                           )}
                         </td> */}
 
-                      <td>
- 
-                      {item.attachment_url ? (
-                        <Stack direction="row" spacing={1}>
-                          {/* 👁️ View Button */}
-                          <Button
-                            component="a"
-                            href={item.attachment_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            variant="soft"
-                            color="neutral"
-                            size="sm"
-                            sx={{ textTransform: "none" }}
-                          >
-                            👁️
-                          </Button>
+                        <td>
+                          {item.attachment_url ? (
+                            <Stack direction="row" spacing={1}>
+                              {/* 👁️ View Button — show for images and PDFs */}
+                              {/\.(jpg|jpeg|png|webp|gif|pdf)$/i.test(
+                                item.attachment_url
+                              ) && (
+                                <Button
+                                  variant="soft"
+                                  color="neutral"
+                                  size="sm"
+                                  onClick={() =>
+                                    setPreviewImage(item.attachment_url)
+                                  }
+                                  sx={{ textTransform: "none" }}
+                                >
+                                  👁️ View
+                                </Button>
+                              )}
 
-                          {/* ⬇️ Download Button */}
-                          <Button
-                            component="a"
-                            href={item.attachment_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            download
-                            variant="soft"
-                            color="primary"
-                            startDecorator={<DownloadIcon />}
-                            size="sm"
-                            sx={{ textTransform: "none" }}
+                              {/* ⬇️ Download Button */}
+                              <Button
+                                component="a"
+                                href={item.attachment_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download
+                                variant="soft"
+                                color="primary"
+                                startDecorator={<DownloadIcon />}
+                                size="sm"
+                                sx={{ textTransform: "none" }}
+                              >
+                                Download
+                              </Button>
+                            </Stack>
+                          ) : (
+                            <span
+                              style={{ color: "#999", fontStyle: "italic" }}
+                            >
+                              No Attachment
+                            </span>
+                          )}
+
+                          {/* 📄 Preview Modal for Image or PDF */}
+                          <Modal
+                            open={!!previewImage}
+                            onClose={() => setPreviewImage(null)}
                           >
-                            Download
-                          </Button>
-                        </Stack>
-                      ) : (
-                        <span style={{ color: "#999", fontStyle: "italic" }}>
-                          No Attachment
-                        </span>
-                      )}
-                      </td>
-                      
-                      <td></td>
-                     
-                   
+                            <ModalDialog>
+                              <Box sx={{ textAlign: "center" }}>
+                                {/* If image file */}
+                                {/\.(jpg|jpeg|png|webp|gif)$/i.test(
+                                  previewImage
+                                ) ? (
+                                  <img
+                                    src={previewImage}
+                                    alt="Preview"
+                                    style={{
+                                      maxWidth: "100%",
+                                      maxHeight: "70vh",
+                                      borderRadius: 8,
+                                    }}
+                                  />
+                                ) : previewImage?.endsWith(".pdf") ? (
+                                  <iframe
+                                    src={previewImage}
+                                    title="PDF Preview"
+                                    style={{
+                                      width: "100%",
+                                      height: "70vh",
+                                      border: "none",
+                                      borderRadius: 8,
+                                    }}
+                                  />
+                                ) : (
+                                  <Typography
+                                    level="body-sm"
+                                    sx={{ color: "gray" }}
+                                  >
+                                    ⚠️ Preview not available for this file type.
+                                  </Typography>
+                                )}
+
+                                <Button
+                                  onClick={() => setPreviewImage(null)}
+                                  sx={{ mt: 2 }}
+                                >
+                                  Close
+                                </Button>
+                              </Box>
+                            </ModalDialog>
+                          </Modal>
+                        </td>
+
+                        <td></td>
+
                         <td>{item.invoice?.invoice_number || "NA"}</td>
                         {/* <td>{item.approved_amount || "-"}</td> */}
 
@@ -920,19 +975,22 @@ const UpdateExpense = () => {
                       <b>Attachment:</b>{" "}
                       {item.attachment_url ? (
                         <Stack direction="row" spacing={1}>
-                          {/* 👁️ View Button */}
-                          <Button
-                            component="a"
-                            href={item.attachment_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            variant="soft"
-                            color="neutral"
-                            size="sm"
-                            sx={{ textTransform: "none" }}
-                          >
-                            👁️
-                          </Button>
+                          {/* 👁️ View Button: show if image or PDF */}
+                          {/\.(jpg|jpeg|png|gif|webp|pdf)$/i.test(
+                            item.attachment_url
+                          ) && (
+                            <Button
+                              variant="soft"
+                              color="neutral"
+                              size="sm"
+                              onClick={() =>
+                                setPreviewImage(item.attachment_url)
+                              }
+                              sx={{ textTransform: "none" }}
+                            >
+                              👁️ View
+                            </Button>
+                          )}
 
                           {/* ⬇️ Download Button */}
                           <Button
@@ -955,7 +1013,57 @@ const UpdateExpense = () => {
                           No Attachment
                         </span>
                       )}
+                      {/* Modal Preview */}
+                      <Modal
+                        open={!!previewImage}
+                        onClose={() => setPreviewImage(null)}
+                      >
+                        <ModalDialog>
+                          <Box sx={{ textAlign: "center" }}>
+                            {/* Render image if it's an image file */}
+                            {/\.(jpg|jpeg|png|gif|webp)$/i.test(
+                              previewImage
+                            ) ? (
+                              <img
+                                src={previewImage}
+                                alt="Preview"
+                                style={{
+                                  maxWidth: "100%",
+                                  maxHeight: "70vh",
+                                  borderRadius: 8,
+                                }}
+                              />
+                            ) : previewImage?.endsWith(".pdf") ? (
+                              <iframe
+                                src={previewImage}
+                                title="PDF Preview"
+                                style={{
+                                  width: "100%",
+                                  height: "70vh",
+                                  border: "none",
+                                  borderRadius: 8,
+                                }}
+                              />
+                            ) : (
+                              <Typography
+                                level="body-sm"
+                                sx={{ color: "gray" }}
+                              >
+                                ⚠️ Preview not available for this file type.
+                              </Typography>
+                            )}
+
+                            <Button
+                              onClick={() => setPreviewImage(null)}
+                              sx={{ mt: 2 }}
+                            >
+                              Close
+                            </Button>
+                          </Box>
+                        </ModalDialog>
+                      </Modal>
                     </Box>
+
                     <Box></Box>
                     <Box>
                       <b>Approved Amount:</b>
