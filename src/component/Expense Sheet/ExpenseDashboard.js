@@ -12,7 +12,7 @@ import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import { forwardRef, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Card, CardContent, Chip, useTheme } from "@mui/joy";
+import { Card, CardContent, Chip, Option, Select, useTheme } from "@mui/joy";
 import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
 
 const AllExpense = forwardRef((props, ref) => {
@@ -25,12 +25,78 @@ const AllExpense = forwardRef((props, ref) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedExpenses, setSelectedExpenses] = useState([]);
   const [expandedCard, setExpandedCard] = useState(null);
+  const [selectedDepartment, setSelectedDepartment] = useState("");
 
   const toggleExpand = (id) => {
     setExpandedCard(expandedCard === id ? null : id);
   };
 
-  const { data: getExpense = [], isLoading, error } = useGetAllExpenseQuery();
+  const { data: getExpense = [] } = useGetAllExpenseQuery({
+    page: currentPage,
+    department: selectedDepartment,
+    search: searchQuery,
+  });
+
+  const renderFilters = () => {
+    const departments = [
+      "Accounts",
+      "HR",
+      "Engineering",
+      "Projects",
+      "CAM",
+      "Internal",
+      "SCM",
+      "IT Team",
+    ];
+
+    return (
+      <FormControl sx={{ flex: 1 }} size="sm">
+        <FormLabel>Department</FormLabel>
+        <Select
+          value={selectedDepartment}
+          onChange={(e, newValue) => {
+            setSelectedDepartment(newValue);
+            setCurrentPage(1);
+          }}
+          size="sm"
+          placeholder="Select Department"
+        >
+          <Option value="">All Departments</Option>
+          {departments.map((dept) => (
+            <Option key={dept} value={dept}>
+              {dept}
+            </Option>
+          ))}
+        </Select>
+      </FormControl>
+    );
+  };
+
+  const total = getExpense?.total || 0;
+  const limit = getExpense?.limit || 10;
+  const totalPages = Math.ceil(total / limit);
+
+  const getPaginationRange = () => {
+    const siblings = 1;
+    const pages = [];
+
+    if (totalPages <= 5 + siblings * 2) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      const left = Math.max(currentPage - siblings, 2);
+      const right = Math.min(currentPage + siblings, totalPages - 1);
+
+      pages.push(1);
+      if (left > 2) pages.push("...");
+
+      for (let i = left; i <= right; i++) pages.push(i);
+
+      if (right < totalPages - 1) pages.push("...");
+      pages.push(totalPages);
+    }
+
+    return pages;
+  };
 
   const [user, setUser] = useState(null);
 
@@ -97,17 +163,6 @@ const AllExpense = forwardRef((props, ref) => {
       const status = expense.current_status?.toLowerCase();
       if (!allowedStatuses.includes(status)) return false;
 
-      const matchesSearchQuery = [
-        "expense_code",
-        "emp_name",
-        "current_status",
-      ].some((key) =>
-        String(expense[key] || "")
-          .trim()
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase())
-      );
-
       const isSubmittedByUser = submittedBy === userName;
 
       const projectViewUsers = [
@@ -118,9 +173,7 @@ const AllExpense = forwardRef((props, ref) => {
       const canSeeProjects =
         projectViewUsers.includes(userName) && userRole === "Projects";
 
-      return (
-        matchesSearchQuery && (isAdmin || isSubmittedByUser || canSeeProjects)
-      );
+      return isAdmin || isSubmittedByUser || canSeeProjects;
     })
     .sort((a, b) => {
       const aMatches = [a.expense_code, a.emp_name, a.current_status].some(
@@ -137,54 +190,16 @@ const AllExpense = forwardRef((props, ref) => {
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
-  const generatePageNumbers = (currentPage, totalPages) => {
-    const pages = [];
-
-    if (currentPage > 2) {
-      pages.push(1);
-    }
-
-    if (currentPage > 3) {
-      pages.push("...");
-    }
-
-    for (
-      let i = Math.max(1, currentPage - 1);
-      i <= Math.min(totalPages, currentPage + 1);
-      i++
-    ) {
-      pages.push(i);
-    }
-
-    if (currentPage < totalPages - 2) {
-      pages.push("...");
-    }
-
-    if (currentPage < totalPages - 1) {
-      pages.push(totalPages);
-    }
-
-    return pages;
-  };
-
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
   }, [searchParams]);
 
-  const totalPages = Math.ceil(
-    (filteredAndSortedData?.length || 0) / itemsPerPage
-  );
-
-  const paginatedExpenses = filteredAndSortedData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedExpenses = filteredAndSortedData;
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
-      setSearchParams({ page });
-      setCurrentPage(page);
+      setSearchParams({ page: String(page) });
     }
   };
 
@@ -234,6 +249,11 @@ const AllExpense = forwardRef((props, ref) => {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
+
+        {user?.name === "Shruti Tripathi" ||
+          user?.department === "Accounts" ||
+          user?.department === "admin" ||
+          (user?.name === "IT Team" && renderFilters())}
       </Box>
 
       {/* Table */}
@@ -655,17 +675,22 @@ const AllExpense = forwardRef((props, ref) => {
         >
           Previous
         </Button>
+
         <Box>
-          Showing {paginatedExpenses.length} of {filteredAndSortedData.length}{" "}
-          results
+          Showing page {currentPage} of {totalPages} ({total} results)
         </Box>
+
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
-          {generatePageNumbers(currentPage, totalPages).map((page, index) =>
-            typeof page === "number" ? (
+          {getPaginationRange().map((page, idx) =>
+            page === "..." ? (
+              <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
+                ...
+              </Box>
+            ) : (
               <IconButton
-                key={index}
+                key={page}
                 size="sm"
                 variant={page === currentPage ? "contained" : "outlined"}
                 color="neutral"
@@ -673,10 +698,6 @@ const AllExpense = forwardRef((props, ref) => {
               >
                 {page}
               </IconButton>
-            ) : (
-              <Typography key={index} sx={{ px: 1, alignSelf: "center" }}>
-                {page}
-              </Typography>
             )
           )}
         </Box>

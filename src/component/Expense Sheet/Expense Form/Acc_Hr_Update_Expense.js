@@ -5,7 +5,12 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Dropdown,
   FormLabel,
+  Menu,
+  MenuButton,
+  MenuItem,
+  Stack,
   Textarea,
   Tooltip,
 } from "@mui/joy";
@@ -26,9 +31,12 @@ import {
   useUpdateExpenseSheetMutation,
   useUpdateExpenseStatusOverallMutation,
   useLazyExportExpenseByIdToCSVQuery,
+  useGetExpenseByIdQuery,
+  useExportExpenseByIdToPDFQuery,
+  useLazyExportExpenseByIdToPDFQuery,
 } from "../../../redux/Expense/expenseSlice";
 import PieChartByCategory from "./Expense_Chart";
-
+import CircularProgress from "@mui/joy/CircularProgress";
 const UpdateExpenseAccounts = () => {
   const navigate = useNavigate();
   const [rows, setRows] = useState([
@@ -96,7 +104,8 @@ const UpdateExpenseAccounts = () => {
   const [accountsHoldReason, setAccountsHoldReason] = useState("");
 
   const [disbursementData, setDisbursementData] = useState("");
-
+  const [previewImage, setPreviewImage] = useState(null);
+  const [isPdfLoading, setIsPdfLoading] = useState(false);
   // const showDisbursement =
   //   rows[0]?.current_status === "final approval" &&
   //   user?.department === "Accounts";
@@ -106,22 +115,32 @@ const UpdateExpenseAccounts = () => {
     rowIndex: null,
   });
 
-  // const inputRefs = useRef([]);
+  const [triggerExportPDFById] = useLazyExportExpenseByIdToPDFQuery();
 
-  const [user, setUser] = useState(null);
+  const handleExportPDFById = async (expenseId, withAttachment = true) => {
+    try {
+      const blob = await triggerExportPDFById({
+        expenseId,
+        withAttachment,
+      }).unwrap();
 
-  useEffect(() => {
-    const userData = getUserData();
-    setUser(userData);
-  }, []);
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "application/pdf" })
+      );
 
-  const getUserData = () => {
-    const userData = localStorage.getItem("userDetails");
-    if (userData) {
-      return JSON.parse(userData);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `expense_${expenseId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Error exporting PDF:", err);
     }
-    return null;
   };
+
   const [triggerExportById] = useLazyExportExpenseByIdToCSVQuery();
   const handleExportCSVById = async (expenseId) => {
     try {
@@ -139,6 +158,22 @@ const UpdateExpenseAccounts = () => {
     } catch (err) {
       console.error("Error exporting CSV:", err);
     }
+  };
+  // const inputRefs = useRef([]);
+
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
   };
 
   const categoryOptions = [
@@ -233,8 +268,13 @@ const UpdateExpenseAccounts = () => {
     );
   }
 
-  const { data: response = {} } = useGetAllExpenseQuery();
-  const expenses = response.data || [];
+  const ExpenseCode = localStorage.getItem("edit_expense");
+
+  const { data: response = {} } = useGetExpenseByIdQuery({
+    expense_code: ExpenseCode,
+  });
+
+  const expenses = response?.data || [];
 
   const [updateExpense, { isLoading: isUpdating }] =
     useUpdateExpenseSheetMutation();
@@ -243,33 +283,25 @@ const UpdateExpenseAccounts = () => {
 
   const [updateDisbursement] = useUpdateDisbursementDateMutation();
 
-  const ExpenseCode = localStorage.getItem("edit_expense");
-
   useEffect(() => {
     if (!ExpenseCode) {
       console.warn("No expense_code in localStorage");
       return;
     }
 
-    if (!Array.isArray(expenses) || expenses.length === 0) {
-      console.warn("No expenses available");
+    if (!expenses || typeof expenses !== "object") {
+      console.warn("No valid expense data available");
       return;
     }
 
-    const matchedExpense = expenses.find(
-      (exp) => String(exp.expense_code).trim() === String(ExpenseCode).trim()
-    );
+    const isMatch =
+      String(expenses.expense_code).trim() === String(ExpenseCode).trim();
 
-    if (matchedExpense) {
-      // console.log("Matched Expense Found:", matchedExpense);
-
-      const enrichedExpense = {
-        ...matchedExpense,
-      };
-
+    if (isMatch) {
+      const enrichedExpense = { ...expenses };
       setRows([enrichedExpense]);
     } else {
-      console.warn("No matching expense_code found");
+      console.warn("Expense code does not match");
     }
   }, [ExpenseCode, expenses]);
 
@@ -739,6 +771,7 @@ const UpdateExpenseAccounts = () => {
     "Submission Date",
     "Bill Amount",
     "Attachment",
+    "",
     "Invoice Number",
     "Approved Amount",
   ];
@@ -900,13 +933,45 @@ const UpdateExpenseAccounts = () => {
                     >
                       Approve All
                     </Button>
-                    <Button
+                    {/* <Button
                       onClick={() => handleExportCSVById(rows[0]?._id)}
                       size="sm"
                       variant="outlined"
                     >
                       Export CSV
-                    </Button>
+                    </Button> */}
+
+                    <Stack direction="row" spacing={1}>
+                      <Button
+                        onClick={() => handleExportCSVById(rows[0]?._id)}
+                        size="sm"
+                        variant="outlined"
+                      >
+                        Export CSV
+                      </Button>
+
+                      <Dropdown>
+                        <MenuButton variant="outlined" size="sm" color="danger">
+                          PDF
+                        </MenuButton>
+                        <Menu>
+                          <MenuItem
+                            onClick={() =>
+                              handleExportPDFById(rows[0]?._id, true)
+                            }
+                          >
+                            Download with Attachment
+                          </MenuItem>
+                          <MenuItem
+                            onClick={() =>
+                              handleExportPDFById(rows[0]?._id, false)
+                            }
+                          >
+                            Download without Attachment
+                          </MenuItem>
+                        </Menu>
+                      </Dropdown>
+                    </Stack>
                   </>
                 )
               )}
@@ -971,20 +1036,45 @@ const UpdateExpenseAccounts = () => {
                         <td>{item.invoice?.invoice_amount}</td>
                         <td>
                           {item.attachment_url ? (
-                            <Button
-                              component="a"
-                              href={item.attachment_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              download
-                              variant="soft"
-                              color="primary"
-                              startDecorator={<DownloadIcon />}
-                              size="sm"
-                              sx={{ textTransform: "none" }}
-                            >
-                              Download
-                            </Button>
+                            <Stack direction="row" spacing={1}>
+                              {/* 👁️ View Button — show for images and PDFs */}
+                              {/\.(jpg|jpeg|png|webp|gif|pdf)$/i.test(
+                                item.attachment_url
+                              ) && (
+                                <Button
+                                  variant="soft"
+                                  color="neutral"
+                                  size="sm"
+                                  onClick={() => {
+                                    setPreviewImage(item.attachment_url);
+                                    if (
+                                      /\.pdf(\?|$)/i.test(item.attachment_url)
+                                    ) {
+                                      setIsPdfLoading(true);
+                                    }
+                                  }}
+                                  sx={{ textTransform: "none" }}
+                                >
+                                  👁️ View
+                                </Button>
+                              )}
+
+                              {/* ⬇️ Download Button */}
+                              <Button
+                                component="a"
+                                href={item.attachment_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download
+                                variant="soft"
+                                color="primary"
+                                startDecorator={<DownloadIcon />}
+                                size="sm"
+                                sx={{ textTransform: "none" }}
+                              >
+                                Download
+                              </Button>
+                            </Stack>
                           ) : (
                             <span
                               style={{ color: "#999", fontStyle: "italic" }}
@@ -992,7 +1082,96 @@ const UpdateExpenseAccounts = () => {
                               No Attachment
                             </span>
                           )}
+
+                          {/* 📄 Preview Modal */}
+                          <Modal
+                            open={!!previewImage}
+                            onClose={() => setPreviewImage(null)}
+                          >
+                            <ModalDialog>
+                              <Box
+                                sx={{ textAlign: "center", minWidth: "60vw" }}
+                              >
+                                {/* Image Preview */}
+                                {/\.(jpg|jpeg|png|webp|gif)$/i.test(
+                                  previewImage
+                                ) ? (
+                                  <img
+                                    src={previewImage}
+                                    alt="Preview"
+                                    style={{
+                                      maxWidth: "100%",
+                                      maxHeight: "70vh",
+                                      borderRadius: 8,
+                                    }}
+                                  />
+                                ) : /\.pdf(\?|$)/i.test(previewImage) ? (
+                                  <>
+                                    <Typography level="body-sm" sx={{ mb: 1 }}>
+                                      PDF Preview (via Google Docs)
+                                    </Typography>
+
+                                    {isPdfLoading && (
+                                      <Box sx={{ py: 3 }}>
+                                        <CircularProgress size="sm" />
+                                        <Typography
+                                          level="body-sm"
+                                          sx={{ mt: 1 }}
+                                        >
+                                          Loading PDF preview...
+                                        </Typography>
+                                      </Box>
+                                    )}
+
+                                    <iframe
+                                      src={`https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(
+                                        previewImage
+                                      )}`}
+                                      title="PDF Preview"
+                                      width="100%"
+                                      height="500px"
+                                      style={{
+                                        border: "none",
+                                        display: isPdfLoading
+                                          ? "none"
+                                          : "block",
+                                      }}
+                                      onLoad={() => setIsPdfLoading(false)}
+                                      onError={() => setIsPdfLoading(false)}
+                                    />
+
+                                    <Button
+                                      component="a"
+                                      href={previewImage}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      variant="outlined"
+                                      sx={{ mt: 1 }}
+                                    >
+                                      Open in New Tab
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <Typography
+                                    level="body-sm"
+                                    sx={{ color: "gray" }}
+                                  >
+                                    ⚠️ Preview not available for this file type.
+                                  </Typography>
+                                )}
+
+                                <Button
+                                  onClick={() => setPreviewImage(null)}
+                                  sx={{ mt: 2 }}
+                                >
+                                  Close
+                                </Button>
+                              </Box>
+                            </ModalDialog>
+                          </Modal>
                         </td>
+
+                        <td></td>
                         <td>{item.invoice?.invoice_number || "NA"}</td>
                         {/* <td>{item.approved_amount || "-"}</td> */}
 
@@ -1055,26 +1234,44 @@ const UpdateExpenseAccounts = () => {
                     <Box>
                       <b>Attachment:</b>{" "}
                       {item.attachment_url ? (
-                        <Button
-                          component="a"
-                          href={item.attachment_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          download
-                          variant="soft"
-                          color="primary"
-                          startDecorator={<DownloadIcon />}
-                          size="sm"
-                          sx={{ textTransform: "none" }}
-                        >
-                          Download
-                        </Button>
+                        <Stack direction="row" spacing={1}>
+                          {/*  View Button */}
+                          <Button
+                            component="a"
+                            href={item.attachment_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            variant="soft"
+                            color="neutral"
+                            size="sm"
+                            sx={{ textTransform: "none" }}
+                          >
+                            👁️ View
+                          </Button>
+
+                          {/* ⬇️ Download Button */}
+                          <Button
+                            component="a"
+                            href={item.attachment_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                            variant="soft"
+                            color="primary"
+                            startDecorator={<DownloadIcon />}
+                            size="sm"
+                            sx={{ textTransform: "none" }}
+                          >
+                            Download
+                          </Button>
+                        </Stack>
                       ) : (
                         <span style={{ color: "#999", fontStyle: "italic" }}>
                           No Attachment
                         </span>
                       )}
                     </Box>
+                    <Box></Box>
                     <Box>
                       <b>Approved Amount:</b>
                       <Input
