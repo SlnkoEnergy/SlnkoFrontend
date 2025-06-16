@@ -485,11 +485,8 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
-<<<<<<< HEAD
             {/*Expense Sheet */}
-=======
 
->>>>>>> main
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -765,58 +762,6 @@ function Sidebar() {
                       User Dashboard
                     </ListItemButton>
                   </ListItem>
-<<<<<<< HEAD
-                  <ListItem>
-                    <ListItemButton
-                      onClick={() => navigate("/expense_accounts")}
-                    >
-                      Project Balances
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem>
-                    <ListItemButton
-                      onClick={() => navigate("/payment-approved")}
-                    >
-                      Approved Payment
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
-            </ListItem>
-          </List>
-        ) : user?.department === "Internal" ? (
-          <List>
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <AccountBalanceWalletIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Expense Sheet</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton
-                      onClick={() => navigate("/expense_dashboard")}
-                    >
-                      User Dashboard
-                    </ListItemButton>
-                  </ListItem>
-=======
                   {user?.emp_id === "SE-099" && (
                     <ListItem>
                       <ListItemButton
@@ -826,7 +771,6 @@ function Sidebar() {
                       </ListItemButton>
                     </ListItem>
                   )}
->>>>>>> main
                 </List>
               </Toggler>
             </ListItem>
