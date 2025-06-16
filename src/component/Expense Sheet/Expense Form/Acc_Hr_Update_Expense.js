@@ -36,7 +36,7 @@ import {
   useLazyExportExpenseByIdToPDFQuery,
 } from "../../../redux/Expense/expenseSlice";
 import PieChartByCategory from "./Expense_Chart";
-
+import CircularProgress from "@mui/joy/CircularProgress";
 const UpdateExpenseAccounts = () => {
   const navigate = useNavigate();
   const [rows, setRows] = useState([
@@ -104,7 +104,8 @@ const UpdateExpenseAccounts = () => {
   const [accountsHoldReason, setAccountsHoldReason] = useState("");
 
   const [disbursementData, setDisbursementData] = useState("");
-
+  const [previewImage, setPreviewImage] = useState(null);
+  const [isPdfLoading, setIsPdfLoading] = useState(false);
   // const showDisbursement =
   //   rows[0]?.current_status === "final approval" &&
   //   user?.department === "Accounts";
@@ -114,33 +115,31 @@ const UpdateExpenseAccounts = () => {
     rowIndex: null,
   });
 
- const [triggerExportPDFById] = useLazyExportExpenseByIdToPDFQuery();
+  const [triggerExportPDFById] = useLazyExportExpenseByIdToPDFQuery();
 
+  const handleExportPDFById = async (expenseId, withAttachment = true) => {
+    try {
+      const blob = await triggerExportPDFById({
+        expenseId,
+        withAttachment,
+      }).unwrap();
 
-const handleExportPDFById = async (expenseId, withAttachment = true) => {
-  try {
-    const blob = await triggerExportPDFById({
-      expenseId,
-      withAttachment,
-    }).unwrap();
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "application/pdf" })
+      );
 
-    const url = window.URL.createObjectURL(
-      new Blob([blob], { type: "application/pdf" })
-    );
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `expense_${expenseId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `expense_${expenseId}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-
-    window.URL.revokeObjectURL(url);
-  } catch (err) {
-    console.error("Error exporting PDF:", err);
-  }
-};
-
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Error exporting PDF:", err);
+    }
+  };
 
   const [triggerExportById] = useLazyExportExpenseByIdToCSVQuery();
   const handleExportCSVById = async (expenseId) => {
@@ -1036,46 +1035,143 @@ const handleExportPDFById = async (expenseId, withAttachment = true) => {
                         </td>
                         <td>{item.invoice?.invoice_amount}</td>
                         <td>
- 
-                      {item.attachment_url ? (
-                        <Stack direction="row" spacing={1}>
-                          {/* 👁️ View Button */}
-                          <Button
-                            component="a"
-                            href={item.attachment_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            variant="soft"
-                            color="neutral"
-                            size="sm"
-                            sx={{ textTransform: "none" }}
-                          >
-                            👁️ View
-                          </Button>
+                          {item.attachment_url ? (
+                            <Stack direction="row" spacing={1}>
+                              {/* 👁️ View Button — show for images and PDFs */}
+                              {/\.(jpg|jpeg|png|webp|gif|pdf)$/i.test(
+                                item.attachment_url
+                              ) && (
+                                <Button
+                                  variant="soft"
+                                  color="neutral"
+                                  size="sm"
+                                  onClick={() => {
+                                    setPreviewImage(item.attachment_url);
+                                    if (
+                                      /\.pdf(\?|$)/i.test(item.attachment_url)
+                                    ) {
+                                      setIsPdfLoading(true);
+                                    }
+                                  }}
+                                  sx={{ textTransform: "none" }}
+                                >
+                                  👁️ View
+                                </Button>
+                              )}
 
-                          {/* ⬇️ Download Button */}
-                          <Button
-                            component="a"
-                            href={item.attachment_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            download
-                            variant="soft"
-                            color="primary"
-                            startDecorator={<DownloadIcon />}
-                            size="sm"
-                            sx={{ textTransform: "none" }}
+                              {/* ⬇️ Download Button */}
+                              <Button
+                                component="a"
+                                href={item.attachment_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download
+                                variant="soft"
+                                color="primary"
+                                startDecorator={<DownloadIcon />}
+                                size="sm"
+                                sx={{ textTransform: "none" }}
+                              >
+                                Download
+                              </Button>
+                            </Stack>
+                          ) : (
+                            <span
+                              style={{ color: "#999", fontStyle: "italic" }}
+                            >
+                              No Attachment
+                            </span>
+                          )}
+
+                          {/* 📄 Preview Modal */}
+                          <Modal
+                            open={!!previewImage}
+                            onClose={() => setPreviewImage(null)}
                           >
-                            Download
-                          </Button>
-                        </Stack>
-                      ) : (
-                        <span style={{ color: "#999", fontStyle: "italic" }}>
-                          No Attachment
-                        </span>
-                      )}
-                      </td>
-                       <td></td>
+                            <ModalDialog>
+                              <Box
+                                sx={{ textAlign: "center", minWidth: "60vw" }}
+                              >
+                                {/* Image Preview */}
+                                {/\.(jpg|jpeg|png|webp|gif)$/i.test(
+                                  previewImage
+                                ) ? (
+                                  <img
+                                    src={previewImage}
+                                    alt="Preview"
+                                    style={{
+                                      maxWidth: "100%",
+                                      maxHeight: "70vh",
+                                      borderRadius: 8,
+                                    }}
+                                  />
+                                ) : /\.pdf(\?|$)/i.test(previewImage) ? (
+                                  <>
+                                    <Typography level="body-sm" sx={{ mb: 1 }}>
+                                      PDF Preview (via Google Docs)
+                                    </Typography>
+
+                                    {isPdfLoading && (
+                                      <Box sx={{ py: 3 }}>
+                                        <CircularProgress size="sm" />
+                                        <Typography
+                                          level="body-sm"
+                                          sx={{ mt: 1 }}
+                                        >
+                                          Loading PDF preview...
+                                        </Typography>
+                                      </Box>
+                                    )}
+
+                                    <iframe
+                                      src={`https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(
+                                        previewImage
+                                      )}`}
+                                      title="PDF Preview"
+                                      width="100%"
+                                      height="500px"
+                                      style={{
+                                        border: "none",
+                                        display: isPdfLoading
+                                          ? "none"
+                                          : "block",
+                                      }}
+                                      onLoad={() => setIsPdfLoading(false)}
+                                      onError={() => setIsPdfLoading(false)}
+                                    />
+
+                                    <Button
+                                      component="a"
+                                      href={previewImage}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      variant="outlined"
+                                      sx={{ mt: 1 }}
+                                    >
+                                      Open in New Tab
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <Typography
+                                    level="body-sm"
+                                    sx={{ color: "gray" }}
+                                  >
+                                    ⚠️ Preview not available for this file type.
+                                  </Typography>
+                                )}
+
+                                <Button
+                                  onClick={() => setPreviewImage(null)}
+                                  sx={{ mt: 2 }}
+                                >
+                                  Close
+                                </Button>
+                              </Box>
+                            </ModalDialog>
+                          </Modal>
+                        </td>
+
+                        <td></td>
                         <td>{item.invoice?.invoice_number || "NA"}</td>
                         {/* <td>{item.approved_amount || "-"}</td> */}
 
@@ -1135,11 +1231,11 @@ const handleExportPDFById = async (expenseId, withAttachment = true) => {
                       <b>Invoice Number:</b>{" "}
                       {item.invoice?.invoice_number || "NA"}
                     </span>
-                     <Box>
+                    <Box>
                       <b>Attachment:</b>{" "}
                       {item.attachment_url ? (
                         <Stack direction="row" spacing={1}>
-                          {/* 👁️ View Button */}
+                          {/*  View Button */}
                           <Button
                             component="a"
                             href={item.attachment_url}

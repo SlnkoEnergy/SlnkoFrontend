@@ -16,6 +16,7 @@ import Typography from "@mui/joy/Typography";
 import { forwardRef, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
+
 // import Axios from "../utils/Axios";
 import {
   Chip,
@@ -41,11 +42,14 @@ const AccountsExpense = forwardRef(() => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedExpenses, setSelectedExpenses] = useState([]);
   const [selectedDepartment, setSelectedDepartment] = useState("");
-
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const { data: getExpense = [] } = useGetAllExpenseQuery({
     page: currentPage,
     department: selectedDepartment,
     search: searchQuery,
+    from,
+    to,
   });
 
   const renderFilters = () => {
@@ -61,25 +65,59 @@ const AccountsExpense = forwardRef(() => {
     ];
 
     return (
-      <FormControl sx={{ flex: 1 }} size="sm">
-        <FormLabel>Department</FormLabel>
-        <Select
-          value={selectedDepartment}
-          onChange={(e, newValue) => {
-            setSelectedDepartment(newValue);
-            setCurrentPage(1);
-          }}
-          size="sm"
-          placeholder="Select Department"
-        >
-          <Option value="">All Departments</Option>
-          {departments.map((dept) => (
-            <Option key={dept} value={dept}>
-              {dept}
-            </Option>
-          ))}
-        </Select>
-      </FormControl>
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 2,
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <FormControl sx={{ minWidth: 180 }} size="sm">
+          <FormLabel>Department</FormLabel>
+          <Select
+            value={selectedDepartment}
+            onChange={(e, newValue) => {
+              setSelectedDepartment(newValue);
+              setCurrentPage(1);
+            }}
+            size="sm"
+            placeholder="Select Department"
+          >
+            <Option value="">All Departments</Option>
+            {departments.map((dept) => (
+              <Option key={dept} value={dept}>
+                {dept}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl size="sm" sx={{ minWidth: 140 }}>
+          <FormLabel>From Date</FormLabel>
+          <Input
+            type="date"
+            value={from}
+            onChange={(e) => {
+              setFrom(e.target.value);
+              setCurrentPage(1);
+            }}
+          />
+        </FormControl>
+
+        <FormControl size="sm" sx={{ minWidth: 140 }}>
+          <FormLabel>To Date</FormLabel>
+          <Input
+            type="date"
+            value={to}
+            onChange={(e) => {
+              setTo(e.target.value);
+              setCurrentPage(1);
+            }}
+          />
+        </FormControl>
+      </Box>
     );
   };
 
@@ -151,11 +189,6 @@ const AccountsExpense = forwardRef(() => {
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
-
-
-
-
-
   const handleSelectAll = (event) => {
     if (event.target.checked) {
       const ids = paginatedExpenses.map((row) => row._id);
@@ -224,7 +257,6 @@ const AccountsExpense = forwardRef(() => {
       </>
     );
   };
-
 
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
@@ -480,7 +512,11 @@ const AccountsExpense = forwardRef(() => {
                     {(() => {
                       const status = expense.current_status?.toLowerCase();
 
-                      if (status === "hr approval" || status === "manager approval" || status === "submitted") {
+                      if (
+                        status === "hr approval" ||
+                        status === "manager approval" ||
+                        status === "submitted"
+                      ) {
                         return (
                           <Chip color="warning" variant="soft" size="sm">
                             Pending
