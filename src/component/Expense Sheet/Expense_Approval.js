@@ -16,7 +16,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Chip, Option, Select, useTheme } from "@mui/joy";
 import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
 import { useGetLoginsQuery } from "../../redux/loginSlice";
-
+import { skipToken } from "@reduxjs/toolkit/query";
 const ExpenseApproval = forwardRef(() => {
   const navigate = useNavigate();
   const theme = useTheme();
@@ -25,33 +25,39 @@ const ExpenseApproval = forwardRef(() => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedExpenses, setSelectedExpenses] = useState([]);
-const [selectedDepartment, setSelectedDepartment] = useState("");
-  const {
-    data: getExpense = [],
-    isLoading,
-    error,
-  } = useGetAllExpenseQuery({
-    page: currentPage,
-    department: selectedDepartment,
-    search: searchQuery,
-  });
+  const [selectedDepartment, setSelectedDepartment] = useState("");
 
   const { data: getAllUser = [] } = useGetLoginsQuery();
 
   const [user, setUser] = useState(null);
+  const [department, setDepartment] = useState("");
 
+  // 1. Get user data from localStorage
   useEffect(() => {
-    const userData = getUserData();
-    setUser(userData);
+    const userDataString = localStorage.getItem("userDetails");
+    if (userDataString) {
+      const userData = JSON.parse(userDataString);
+      setUser(userData);
+      setDepartment(userData?.department || "");
+    }
   }, []);
 
-  const getUserData = () => {
-    const userData = localStorage.getItem("userDetails");
-    if (userData) {
-      return JSON.parse(userData);
-    }
-    return null;
-  };
+  // 2. Only fetch expenses once department is ready
+  const {
+    data: getExpense = [],
+    isLoading,
+    error,
+  } = useGetAllExpenseQuery(
+    department
+      ? {
+          page: currentPage,
+          department,
+          search: searchQuery,
+        }
+      : skipToken // skip the query if department is not ready yet
+  );
+
+  console.log("department:", department);
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -151,7 +157,7 @@ const [selectedDepartment, setSelectedDepartment] = useState("");
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
-    const total = getExpense?.total || 0;
+  const total = getExpense?.total || 0;
   const limit = getExpense?.limit || 10;
   const totalPages = Math.ceil(total / limit);
 
@@ -177,7 +183,7 @@ const [selectedDepartment, setSelectedDepartment] = useState("");
     return pages;
   };
 
-  const ExpenseCode = ({ currentPage, expense_code}) => {
+  const ExpenseCode = ({ currentPage, expense_code }) => {
     return (
       <>
         <span
@@ -188,7 +194,9 @@ const [selectedDepartment, setSelectedDepartment] = useState("");
           }}
           onClick={() => {
             localStorage.setItem("edit_expense", expense_code);
-            navigate(`/edit_expense?page=${currentPage}&expense_code=${expense_code}`);
+            navigate(
+              `/edit_expense?page=${currentPage}&expense_code=${expense_code}`
+            );
           }}
         >
           {expense_code || "-"}
@@ -208,7 +216,9 @@ const [selectedDepartment, setSelectedDepartment] = useState("");
           }}
           onClick={() => {
             localStorage.setItem("edit_expense", expense_code);
-            navigate(`/edit_expense?page=${currentPage}&expense_code=${expense_code}`);
+            navigate(
+              `/edit_expense?page=${currentPage}&expense_code=${expense_code}`
+            );
           }}
         >
           {emp_name || "-"}
@@ -222,7 +232,6 @@ const [selectedDepartment, setSelectedDepartment] = useState("");
     setCurrentPage(page);
   }, [searchParams]);
 
-
   const paginatedExpenses = filteredAndSortedData;
 
   const handlePageChange = (page) => {
@@ -230,8 +239,6 @@ const [selectedDepartment, setSelectedDepartment] = useState("");
       setSearchParams({ page: String(page) });
     }
   };
-
-
 
   return (
     <>
@@ -543,7 +550,7 @@ const [selectedDepartment, setSelectedDepartment] = useState("");
         </Box>
       </Sheet>
 
-     <Box
+      <Box
         className="Pagination-laptopUp"
         sx={{
           pt: 2,
@@ -570,7 +577,9 @@ const [selectedDepartment, setSelectedDepartment] = useState("");
           Showing page {currentPage} of {totalPages} ({total} results)
         </Box>
 
-        <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
+        <Box
+          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
+        >
           {getPaginationRange().map((page, idx) =>
             page === "..." ? (
               <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
