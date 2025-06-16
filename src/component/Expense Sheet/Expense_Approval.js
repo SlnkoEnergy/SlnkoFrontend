@@ -17,7 +17,7 @@ import { Chip, useTheme } from "@mui/joy";
 import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
 import { useGetLoginsQuery } from "../../redux/loginSlice";
 
-const ExpenseApproval = forwardRef((props, ref) => {
+const ExpenseApproval = forwardRef(() => {
   const navigate = useNavigate();
   const theme = useTheme();
   const [currentPage, setCurrentPage] = useState(1);
@@ -26,11 +26,9 @@ const ExpenseApproval = forwardRef((props, ref) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedExpenses, setSelectedExpenses] = useState([]);
 
-  const { data: getExpense = [], isLoading, error } = useGetAllExpenseQuery();
+  const { data: getExpense = [] } = useGetAllExpenseQuery();
 
   const { data: getAllUser = [] } = useGetLoginsQuery();
-
-  // console.log("getExpense: ", getExpense);
 
   const [user, setUser] = useState(null);
 
@@ -54,7 +52,6 @@ const ExpenseApproval = forwardRef((props, ref) => {
         ...new Set([...prevSelected, ...ids]),
       ]);
     } else {
-      // Remove only the IDs from current page
       const ids = paginatedExpenses.map((row) => row._id);
       setSelectedExpenses((prevSelected) =>
         prevSelected.filter((id) => !ids.includes(id))
@@ -76,8 +73,6 @@ const ExpenseApproval = forwardRef((props, ref) => {
     [getExpense]
   );
 
-  // if (!user) return [];
-
   const filteredAndSortedData = expenses
     .filter((expense) => {
       const matchedUser = getAllUser?.data?.find(
@@ -85,7 +80,6 @@ const ExpenseApproval = forwardRef((props, ref) => {
       );
       if (!matchedUser) return false;
 
-      // Role and department-based access
       const allowedDepartments = [
         "Accounts",
         "Projects",
@@ -95,9 +89,11 @@ const ExpenseApproval = forwardRef((props, ref) => {
         "HR",
         "SCM",
         "Engineering",
+        "Internal",
       ];
 
       const isManager = user?.role === "manager" || user?.role === "visitor";
+
       allowedDepartments.includes(user?.department);
 
       const isAdmin = user?.role === "admin" || user?.role === "superadmin";
@@ -109,7 +105,6 @@ const ExpenseApproval = forwardRef((props, ref) => {
         return false;
       }
 
-      // Status filter
       const allowedStatuses = [
         "submitted",
         "manager approval",
@@ -145,7 +140,6 @@ const ExpenseApproval = forwardRef((props, ref) => {
         if (!aMatch && bMatch) return 1;
       }
 
-      // Fallback sort by created date (descending)
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
@@ -180,8 +174,6 @@ const ExpenseApproval = forwardRef((props, ref) => {
   };
 
   const ExpenseCode = ({ currentPage, expense_code }) => {
-    // console.log("currentPage:", currentPage, "p_id:", p_id);
-
     return (
       <>
         <span
@@ -202,8 +194,6 @@ const ExpenseApproval = forwardRef((props, ref) => {
   };
 
   const EmployeeName = ({ currentPage, expense_code, emp_name }) => {
-    // console.log("currentPage:", currentPage, "p_id:", p_id);
-
     return (
       <>
         <span
@@ -246,7 +236,6 @@ const ExpenseApproval = forwardRef((props, ref) => {
 
   return (
     <>
-      {/* Tablet and Up Filters */}
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
@@ -271,10 +260,8 @@ const ExpenseApproval = forwardRef((props, ref) => {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {/* {renderFilters()} */}
       </Box>
 
-      {/* Table */}
       <Sheet
         className="OrderTableContainer"
         variant="outlined"
@@ -557,7 +544,6 @@ const ExpenseApproval = forwardRef((props, ref) => {
         </Box>
       </Sheet>
 
-      {/* Pagination */}
       <Box
         className="Pagination-laptopUp"
         sx={{

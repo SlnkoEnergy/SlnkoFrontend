@@ -164,9 +164,11 @@ const UpdateExpense = () => {
 
     if (department === "Projects" || department === "Engineering") {
       return [...common, ...categoryOptions];
-    }
-
-    if (department === "BD" || department === "Marketing") {
+    } else if (
+      department === "BD" ||
+      department === "Marketing" ||
+      department === "Internal"
+    ) {
       return [...common, ...bdAndSalesCategoryOptions];
     }
 
@@ -277,7 +279,7 @@ const UpdateExpense = () => {
         user_id: userID,
         expense_code: ExpenseCode,
         current_status: overallStatus,
-        total_approved_amount: totalApproved,
+        total_approved_amount: String(totalApproved),
         items: updatedItems,
         status_history: [
           ...(rows[0].status_history || []),
@@ -288,6 +290,8 @@ const UpdateExpense = () => {
           },
         ],
       };
+
+      console.log("payload:", payload);
 
       await updateExpense({
         _id: expenseSheetId,
@@ -444,61 +448,64 @@ const UpdateExpense = () => {
   };
 
   const applyApproveAll = async () => {
-    try {
-      const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
+  try {
+    const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
 
-      if (!userID) {
-        toast.error("User ID not found. Please login again.");
-        return;
-      }
+    if (!userID) {
+      toast.error("User ID not found. Please login again.");
+      return;
+    }
 
-      const requests = rows.map((row) => {
-        const approved_items = row.items.map((item) => ({
-          _id: item._id,
-          approved_amount: Number(item?.approved_amount) || 0,
-        }));
+    const requests = rows.map((row) => {
+      const approved_items = row.items.map((item) => ({
+        _id: item._id,
+        approved_amount: Number(item.invoice?.invoice_amount) || 0, 
+      }));
 
-        return updateStatus({
-          _id: row._id,
-          status: "manager approval",
-          approved_items,
+      return updateStatus({
+        _id: row._id,
+        status: "manager approval",
+        approved_items,
+        remarks: "",
+      }).unwrap();
+    });
 
-          remarks: "",
-        }).unwrap();
-      });
+    await Promise.all(requests);
 
-      await Promise.all(requests);
-
-      const updatedRows = rows.map((row) => {
-        const updatedItems = row.items.map((item) => ({
+    const updatedRows = rows.map((row) => {
+      const updatedItems = row.items.map((item) => {
+        const approvedAmount = Number(item.invoice?.invoice_amount) || 0;
+        return {
           ...item,
           item_current_status: "manager approval",
           current_status: "manager approval",
-          approved_amount: Number(item.approved_amount) || 0,
-        }));
-
-        const total_approved_amount = updatedItems.reduce(
-          (sum, item) => sum + item.approved_amount,
-          0
-        );
-
-        return {
-          ...row,
-          items: updatedItems,
-          row_current_status: "manager approval",
-          current_status: "manager approval",
-          approved_amount: total_approved_amount,
+          approved_amount: approvedAmount,
         };
       });
 
-      setRows(updatedRows);
-      setApproveConfirmOpen(false);
-      toast.success("All items approved successfully");
-    } catch (error) {
-      console.error("Failed to approve all items:", error);
-      toast.error("Failed to approve all items");
-    }
-  };
+      const total_approved_amount = updatedItems.reduce(
+        (sum, item) => sum + item.approved_amount,
+        0
+      );
+      console.log(String(total_approved_amount));
+      return {
+        ...row,
+        items: updatedItems,
+        row_current_status: "manager approval",
+        current_status: "manager approval",
+        total_approved_amount: String(total_approved_amount),
+      };
+    });
+
+    setRows(updatedRows);
+    setApproveConfirmOpen(false);
+    toast.success("All items approved successfully");
+  } catch (error) {
+    console.error("Failed to approve all items:", error);
+    toast.error("Failed to approve all items");
+  }
+};
+
 
   const tableHeaders = [
     "Project ID",
