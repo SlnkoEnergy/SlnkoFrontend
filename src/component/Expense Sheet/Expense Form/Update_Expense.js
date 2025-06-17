@@ -1,7 +1,7 @@
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import DownloadIcon from "@mui/icons-material/Download";
-import { IconButton, Textarea, Tooltip } from "@mui/joy";
+import { IconButton, Stack, Textarea, Tooltip } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Input from "@mui/joy/Input";
@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   useGetAllExpenseQuery,
+  useGetExpenseByIdQuery,
   useUpdateExpenseSheetMutation,
   useUpdateExpenseStatusOverallMutation,
 } from "../../../redux/Expense/expenseSlice";
@@ -70,6 +71,8 @@ const UpdateExpense = () => {
   const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
   const [sharedRejectionComment, setSharedRejectionComment] = useState("");
   const [showRejectAllDialog, setShowRejectAllDialog] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
+
   const [commentDialog, setCommentDialog] = useState({
     open: false,
     rowIndex: null,
@@ -184,15 +187,18 @@ const UpdateExpense = () => {
     );
   }
 
-  const { data: response = {} } = useGetAllExpenseQuery();
-  const expenses = response.data || [];
+  const ExpenseCode = localStorage.getItem("edit_expense");
+
+  const { data: response = {} } = useGetExpenseByIdQuery({
+    expense_code: ExpenseCode,
+  });
+
+  const expenses = response?.data || [];
 
   const [updateExpense, { isLoading: isUpdating }] =
     useUpdateExpenseSheetMutation();
 
   const [updateStatus] = useUpdateExpenseStatusOverallMutation();
-
-  const ExpenseCode = localStorage.getItem("edit_expense");
 
   useEffect(() => {
     if (!ExpenseCode) {
@@ -200,23 +206,19 @@ const UpdateExpense = () => {
       return;
     }
 
-    if (!Array.isArray(expenses) || expenses.length === 0) {
-      console.warn("No expenses available");
+    if (!expenses || typeof expenses !== "object") {
+      console.warn("No valid expense data available");
       return;
     }
 
-    const matchedExpense = expenses.find(
-      (exp) => String(exp.expense_code).trim() === String(ExpenseCode).trim()
-    );
+    const isMatch =
+      String(expenses.expense_code).trim() === String(ExpenseCode).trim();
 
-    if (matchedExpense) {
-      const enrichedExpense = {
-        ...matchedExpense,
-      };
-
+    if (isMatch) {
+      const enrichedExpense = { ...expenses };
       setRows([enrichedExpense]);
     } else {
-      console.warn("No matching expense_code found");
+      console.warn("Expense code does not match");
     }
   }, [ExpenseCode, expenses]);
 
@@ -262,12 +264,10 @@ const UpdateExpense = () => {
         })
       );
 
-      // Check if any item is rejected
       const isAnyRejected = updatedItems.some(
         (item) => item.item_current_status === "rejected"
       );
 
-      // Set overall status accordingly
       const overallStatus = isAnyRejected ? "rejected" : "manager approval";
 
       const totalApproved = updatedItems.reduce(
@@ -448,64 +448,63 @@ const UpdateExpense = () => {
   };
 
   const applyApproveAll = async () => {
-  try {
-    const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
+    try {
+      const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
 
-    if (!userID) {
-      toast.error("User ID not found. Please login again.");
-      return;
-    }
+      if (!userID) {
+        toast.error("User ID not found. Please login again.");
+        return;
+      }
 
-    const requests = rows.map((row) => {
-      const approved_items = row.items.map((item) => ({
-        _id: item._id,
-        approved_amount: Number(item.invoice?.invoice_amount) || 0, 
-      }));
+      const requests = rows.map((row) => {
+        const approved_items = row.items.map((item) => ({
+          _id: item._id,
+          approved_amount: Number(item.invoice?.invoice_amount) || 0,
+        }));
 
-      return updateStatus({
-        _id: row._id,
-        status: "manager approval",
-        approved_items,
-        remarks: "",
-      }).unwrap();
-    });
+        return updateStatus({
+          _id: row._id,
+          status: "manager approval",
+          approved_items,
+          remarks: "",
+        }).unwrap();
+      });
 
-    await Promise.all(requests);
+      await Promise.all(requests);
 
-    const updatedRows = rows.map((row) => {
-      const updatedItems = row.items.map((item) => {
-        const approvedAmount = Number(item.invoice?.invoice_amount) || 0;
+      const updatedRows = rows.map((row) => {
+        const updatedItems = row.items.map((item) => {
+          const approvedAmount = Number(item.invoice?.invoice_amount) || 0;
+          return {
+            ...item,
+            item_current_status: "manager approval",
+            current_status: "manager approval",
+            approved_amount: approvedAmount,
+          };
+        });
+
+        const total_approved_amount = updatedItems.reduce(
+          (sum, item) => sum + item.approved_amount,
+          0
+        );
+        console.log(String(total_approved_amount));
         return {
-          ...item,
-          item_current_status: "manager approval",
+          ...row,
+          items: updatedItems,
+          row_current_status: "manager approval",
           current_status: "manager approval",
-          approved_amount: approvedAmount,
+          total_approved_amount: String(total_approved_amount),
         };
       });
 
-      const total_approved_amount = updatedItems.reduce(
-        (sum, item) => sum + item.approved_amount,
-        0
-      );
-      console.log(String(total_approved_amount));
-      return {
-        ...row,
-        items: updatedItems,
-        row_current_status: "manager approval",
-        current_status: "manager approval",
-        total_approved_amount: String(total_approved_amount),
-      };
-    });
-
-    setRows(updatedRows);
-    setApproveConfirmOpen(false);
-    toast.success("All items approved successfully");
-  } catch (error) {
-    console.error("Failed to approve all items:", error);
-    toast.error("Failed to approve all items");
-  }
-};
-
+      setRows(updatedRows);
+      setApproveConfirmOpen(false);
+      toast.success("All items approved successfully");
+    } catch (error) {
+      console.error("Failed to approve all items:", error);
+      toast.error("Failed to approve all items");
+    }
+  };
 
   const tableHeaders = [
     "Project ID",
@@ -515,6 +514,7 @@ const UpdateExpense = () => {
     "Submission Date",
     "Bill Amount",
     "Attachment",
+    "",
     "Invoice Number",
     "Approved Amount",
     ...(user?.role === "manager" ||
@@ -695,7 +695,7 @@ const UpdateExpense = () => {
                             : ""}
                         </td>
                         <td>{item.invoice?.invoice_amount}</td>
-                        <td>
+                        {/* <td>
                           {item.attachment_url ? (
                             <Button
                               component="a"
@@ -718,7 +718,105 @@ const UpdateExpense = () => {
                               No Attachment
                             </span>
                           )}
+                        </td> */}
+
+                        <td>
+                          {item.attachment_url ? (
+                            <Stack direction="row" spacing={1}>
+                              {/* 👁️ View Button — show for images and PDFs */}
+                              {/\.(jpg|jpeg|png|webp|gif|pdf)$/i.test(
+                                item.attachment_url
+                              ) && (
+                                <Button
+                                  variant="soft"
+                                  color="neutral"
+                                  size="sm"
+                                  onClick={() =>
+                                    setPreviewImage(item.attachment_url)
+                                  }
+                                  sx={{ textTransform: "none" }}
+                                >
+                                  👁️ View
+                                </Button>
+                              )}
+
+                              {/* ⬇️ Download Button */}
+                              <Button
+                                component="a"
+                                href={item.attachment_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download
+                                variant="soft"
+                                color="primary"
+                                startDecorator={<DownloadIcon />}
+                                size="sm"
+                                sx={{ textTransform: "none" }}
+                              >
+                                Download
+                              </Button>
+                            </Stack>
+                          ) : (
+                            <span
+                              style={{ color: "#999", fontStyle: "italic" }}
+                            >
+                              No Attachment
+                            </span>
+                          )}
+
+                          {/* 📄 Preview Modal for Image or PDF */}
+                          <Modal
+                            open={!!previewImage}
+                            onClose={() => setPreviewImage(null)}
+                          >
+                            <ModalDialog>
+                              <Box sx={{ textAlign: "center" }}>
+                                {/* If image file */}
+                                {/\.(jpg|jpeg|png|webp|gif)$/i.test(
+                                  previewImage
+                                ) ? (
+                                  <img
+                                    src={previewImage}
+                                    alt="Preview"
+                                    style={{
+                                      maxWidth: "100%",
+                                      maxHeight: "70vh",
+                                      borderRadius: 8,
+                                    }}
+                                  />
+                                ) : previewImage?.endsWith(".pdf") ? (
+                                  <iframe
+                                    src={previewImage}
+                                    title="PDF Preview"
+                                    style={{
+                                      width: "100%",
+                                      height: "70vh",
+                                      border: "none",
+                                      borderRadius: 8,
+                                    }}
+                                  />
+                                ) : (
+                                  <Typography
+                                    level="body-sm"
+                                    sx={{ color: "gray" }}
+                                  >
+                                    ⚠️ Preview not available for this file type.
+                                  </Typography>
+                                )}
+
+                                <Button
+                                  onClick={() => setPreviewImage(null)}
+                                  sx={{ mt: 2 }}
+                                >
+                                  Close
+                                </Button>
+                              </Box>
+                            </ModalDialog>
+                          </Modal>
                         </td>
+
+                        <td></td>
+
                         <td>{item.invoice?.invoice_number || "NA"}</td>
                         {/* <td>{item.approved_amount || "-"}</td> */}
 
@@ -850,7 +948,7 @@ const UpdateExpense = () => {
                       <b>Invoice Number:</b>{" "}
                       {item.invoice?.invoice_number || "NA"}
                     </span>
-                    <Box>
+                    {/* <Box>
                       <b>Attachment:</b>{" "}
                       {item.attachment_url ? (
                         <Button
@@ -872,7 +970,101 @@ const UpdateExpense = () => {
                           No Attachment
                         </span>
                       )}
+                    </Box> */}
+                    <Box>
+                      <b>Attachment:</b>{" "}
+                      {item.attachment_url ? (
+                        <Stack direction="row" spacing={1}>
+                          {/* 👁️ View Button: show if image or PDF */}
+                          {/\.(jpg|jpeg|png|gif|webp|pdf)$/i.test(
+                            item.attachment_url
+                          ) && (
+                            <Button
+                              variant="soft"
+                              color="neutral"
+                              size="sm"
+                              onClick={() =>
+                                setPreviewImage(item.attachment_url)
+                              }
+                              sx={{ textTransform: "none" }}
+                            >
+                              👁️ View
+                            </Button>
+                          )}
+
+                          {/* ⬇️ Download Button */}
+                          <Button
+                            component="a"
+                            href={item.attachment_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                            variant="soft"
+                            color="primary"
+                            startDecorator={<DownloadIcon />}
+                            size="sm"
+                            sx={{ textTransform: "none" }}
+                          >
+                            Download
+                          </Button>
+                        </Stack>
+                      ) : (
+                        <span style={{ color: "#999", fontStyle: "italic" }}>
+                          No Attachment
+                        </span>
+                      )}
+                      {/* Modal Preview */}
+                      <Modal
+                        open={!!previewImage}
+                        onClose={() => setPreviewImage(null)}
+                      >
+                        <ModalDialog>
+                          <Box sx={{ textAlign: "center" }}>
+                            {/* Render image if it's an image file */}
+                            {/\.(jpg|jpeg|png|gif|webp)$/i.test(
+                              previewImage
+                            ) ? (
+                              <img
+                                src={previewImage}
+                                alt="Preview"
+                                style={{
+                                  maxWidth: "100%",
+                                  maxHeight: "70vh",
+                                  borderRadius: 8,
+                                }}
+                              />
+                            ) : previewImage?.endsWith(".pdf") ? (
+                              <iframe
+                                src={previewImage}
+                                title="PDF Preview"
+                                style={{
+                                  width: "100%",
+                                  height: "70vh",
+                                  border: "none",
+                                  borderRadius: 8,
+                                }}
+                              />
+                            ) : (
+                              <Typography
+                                level="body-sm"
+                                sx={{ color: "gray" }}
+                              >
+                                ⚠️ Preview not available for this file type.
+                              </Typography>
+                            )}
+
+                            <Button
+                              onClick={() => setPreviewImage(null)}
+                              sx={{ mt: 2 }}
+                            >
+                              Close
+                            </Button>
+                          </Box>
+                        </ModalDialog>
+                      </Modal>
                     </Box>
+
+                    <Box></Box>
                     <Box>
                       <b>Approved Amount:</b>
                       <Input
@@ -1164,14 +1356,15 @@ const UpdateExpense = () => {
                 ).map((category, idx) => {
                   let total = 0;
                   let approvedTotal = 0;
-
+                  
                   rows.forEach((row) => {
+                  console.log("row:",rows);
                     row.items?.forEach((item) => {
                       if (item.category === category) {
                         total += Number(item.invoice?.invoice_amount || 0);
 
                         if (
-                          item.item_current_status === "manager approval" &&
+                          (item.item_current_status === "manager approval" || rows[0].current_status === "manager approval") &&
                           Number(item.approved_amount || 0) > 0
                         ) {
                           approvedTotal += Number(item.approved_amount);
@@ -1248,7 +1441,7 @@ const UpdateExpense = () => {
                         .flatMap((row) => row.items || [])
                         .filter(
                           (item) =>
-                            item.item_current_status === "manager approval" &&
+                            item.item_current_status === "manager approval" || rows[0].current_status === "manager approval" &&
                             Number(item.approved_amount || 0) > 0
                         )
                         .reduce(
