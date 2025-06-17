@@ -260,105 +260,105 @@ const Expense_Form = () => {
     fetchProjects();
   }, []);
 
- const handleSubmit = async () => {
-  if (isSubmitting) return;
-  setIsSubmitting(true);
+  const handleSubmit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
-  const hasMissingCategory = rows.some((row) =>
-    (row.items || []).some(
-      (item) => !item.category || item.category.trim() === ""
-    )
-  );
+    const hasMissingCategory = rows.some((row) =>
+      (row.items || []).some(
+        (item) => !item.category || item.category.trim() === ""
+      )
+    );
 
-  if (hasMissingCategory) {
-    toast.error("Please select Category for all items before submitting.");
-    setShowError(true);
-    setIsSubmitting(false);
-    return;
-  }
-
-  const { from, to } = rows[0]?.expense_term || {};
-if (!from || !to) {
-  toast.error("Expense Term is required.");
-  setIsSubmitting(false);
-  return;
-}
-  try {
-    const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
-    if (!userID) {
-      toast.error("User ID not found. Please login again.");
+    if (hasMissingCategory) {
+      toast.error("Please select Category for all items before submitting.");
+      setShowError(true);
+      setIsSubmitting(false);
       return;
     }
 
-    const items = rows.flatMap((row) =>
-      (row.items || []).map((item) => ({
-        ...item,
-        invoice: {
-          ...item.invoice,
-          invoice_amount: item.invoice?.invoice_amount || "0",
-        },
-        item_status_history: [
+    const { from, to } = rows[0]?.expense_term || {};
+    if (!from || !to) {
+      toast.error("Expense Term is required.");
+      setIsSubmitting(false);
+      return;
+    }
+    try {
+      const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
+      if (!userID) {
+        toast.error("User ID not found. Please login again.");
+        return;
+      }
+
+      const items = rows.flatMap((row) =>
+        (row.items || []).map((item) => ({
+          ...item,
+          invoice: {
+            ...item.invoice,
+            invoice_amount: item.invoice?.invoice_amount || "0",
+          },
+          item_status_history: [
+            {
+              status: "submitted",
+              remarks: item.item_status_history?.[0]?.remarks || "",
+              user_id: userID,
+              updatedAt: new Date().toISOString(),
+            },
+          ],
+          item_current_status: "submitted",
+        }))
+      );
+
+      const cleanedData = {
+        expense_term: rows[0]?.expense_term || {},
+        disbursement_date: rows[0]?.disbursement_date ?? null,
+        items,
+        user_id: userID,
+        current_status: "submitted",
+        status_history: [
           {
             status: "submitted",
-            remarks: item.item_status_history?.[0]?.remarks || "",
+            remarks: rows[0]?.status_history?.[0]?.remarks || "",
             user_id: userID,
             updatedAt: new Date().toISOString(),
           },
         ],
-        item_current_status: "submitted",
-      }))
-    );
+        total_requested_amount: items.reduce(
+          (sum, itm) => sum + Number(itm.invoice.invoice_amount || 0),
+          0
+        ),
+        total_approved_amount: items.reduce(
+          (sum, itm) => sum + Number(itm.approved_amount || 0),
+          0
+        ),
+      };
 
-    const cleanedData = {
-      expense_term: rows[0]?.expense_term || {},
-      disbursement_date: rows[0]?.disbursement_date ?? null,
-      items,
-      user_id: userID,
-      current_status: "submitted",
-      status_history: [
-        {
-          status: "submitted",
-          remarks: rows[0]?.status_history?.[0]?.remarks || "",
-          user_id: userID,
-          updatedAt: new Date().toISOString(),
-        },
-      ],
-      total_requested_amount: items.reduce(
-        (sum, itm) => sum + Number(itm.invoice.invoice_amount || 0),
-        0
-      ),
-      total_approved_amount: items.reduce(
-        (sum, itm) => sum + Number(itm.approved_amount || 0),
-        0
-      ),
-    };
+      const formData = new FormData();
 
-    const formData = new FormData();
+      items.forEach((item, index) => {
+        if (item.file) {
+          formData.append(`file_${index}`, item.file);
+        }
+      });
 
-    items.forEach((item, index) => {
-      if (item.file) {
-        formData.append(`file_${index}`, item.file);
-      }
-    });
+      formData.append("data", JSON.stringify(cleanedData));
+      formData.append("user_id", userID);
 
-    formData.append("data", JSON.stringify(cleanedData));
-    formData.append("user_id", userID);
+      await addExpense(formData).unwrap();
 
-    await addExpense(formData).unwrap();
-
-    toast.success("Expense sheet submitted successfully!");
-    navigate("/expense_dashboard");
-  } catch (error) {
-    const errMsg =
-      error?.data?.message ||
-      error?.response?.data?.message ||
-      "An error occurred while submitting the expense sheet.";
-    toast.error(errMsg);
-    console.error("Submission failed:", error);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      toast.success("Expense sheet submitted successfully!");
+      navigate("/expense_dashboard");
+    } catch (error) {
+      const errMsg =
+        error?.data?.message ||
+        error?.response?.data?.message ||
+        "An error occurred while submitting the expense sheet.";
+      toast.error(errMsg);
+      console.error("Submission failed:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleAddRow = () => {
     setRows((prev) => [
@@ -633,7 +633,7 @@ if (!from || !to) {
                 const isProjects = user?.department === "Projects";
                 const isExecutive = user?.role === "executive";
                 const isSurveyor = user?.role === "surveyor";
-
+                console.log(isSurveyor);
                 let filteredProjects = [];
 
                 if (isProjects) {
@@ -642,10 +642,13 @@ if (!from || !to) {
                   );
 
                   if (isSurveyor) {
-                    if (
-                      searchValue.includes("other") &&
-                      !filteredProjects.some((p) => p.code === "Other")
-                    ) {
+                    const lowerSearch = searchValue?.toLowerCase() || "";
+                    const includesOther = lowerSearch.includes("other");
+                    const alreadyHasOther = filteredProjects.some(
+                      (p) => p.code === "Other"
+                    );
+
+                    if (includesOther && !alreadyHasOther) {
                       filteredProjects.push({ code: "Other", name: "" });
                     }
                   }
