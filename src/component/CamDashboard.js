@@ -210,7 +210,7 @@ function Dash_cam() {
             const page = currentPage;
             const projectId = String(id);
             sessionStorage.setItem("submitInfo", projectId);
-            navigate(`/edit_cam_handover?page=${page}&id=${projectId}`);
+            navigate(`/edit_cam_handover?page=${page}&leadId=${projectId}`);
           }}
           sx={{
             textTransform: "none",
