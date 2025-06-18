@@ -101,15 +101,16 @@ const CamHandoverSheetForm = ({ onBack }) => {
       project_type: "",
       module_make_capacity: "",
       module_make: "",
+      module_make_other:"",
       module_capacity: "",
       module_type: "",
       module_category: "",
       evacuation_voltage: "",
       inverter_make_capacity: "",
       inverter_make: "",
+      inverter_make_other:"",
       inverter_type: "",
-      // inverter_size: "",
-      // inverter_model_no: "",
+      inverter_type_other:"",
       work_by_slnko: "",
       topography_survey: "",
 
@@ -172,6 +173,11 @@ const CamHandoverSheetForm = ({ onBack }) => {
   const handlePrint = () => {
     window.print();
   };
+  const inverterTypeToSave =
+  formData.project_detail.inverter_type === "Other"
+    ? formData.project_detail.custom_inverter_type
+    : formData.project_detail.inverter_type;
+
   const [user, setUser] = useState(null);
 
   const { data: getModuleMaster = [] } = useGetModuleMasterQuery();
@@ -618,14 +624,10 @@ const CamHandoverSheetForm = ({ onBack }) => {
   const [updateStatusHandOver] = useUpdateStatusHandOverMutation();
 
   const handleSubmit = async () => {
-    
-
     if (!LeadId || !formData._id) {
       toast.error("Invalid or missing ID!");
       return;
     }
-    
-
 
     try {
       await handoverSchema.validate(formData, { abortEarly: false });
@@ -662,20 +664,17 @@ const CamHandoverSheetForm = ({ onBack }) => {
         is_locked: "locked",
         submitted_by: user?.name,
       };
-      
+
       const statusPayload = {
         _id: formData._id,
         status_of_handoversheet: "Approved",
       };
 
-      
-  await updateHandOver(updatedFormData).unwrap();
+      await updateHandOver(updatedFormData).unwrap();
       toast.success("Project updated successfully.");
-      
+
       await updateStatusHandOver(statusPayload).unwrap();
       toast.success("Handover sheet locked.");
-
-    
 
       navigate("/cam_dash");
     } catch (error) {
@@ -998,7 +997,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
                     value={formData?.project_detail?.module_make || ""}
                     onChange={(_, newValue) => {
                       handleChange("project_detail", "module_make", newValue);
-                      // Clear the "Other" input when a different option is selected
                       if (newValue !== "Other") {
                         handleChange("project_detail", "module_make_other", "");
                       }
@@ -1107,10 +1105,9 @@ const CamHandoverSheetForm = ({ onBack }) => {
               <>
                 <Grid item xs={12} sm={6}>
                   <Typography level="body1">Inverter Make</Typography>
-
                   <Select
                     fullWidth
-                    value={formData["project_detail"]?.["inverter_make"] || ""}
+                    value={formData?.project_detail?.inverter_make || ""}
                     onChange={(_, newValue) => {
                       handleChange("project_detail", "inverter_make", newValue);
                       if (newValue !== "Other") {
@@ -1120,24 +1117,27 @@ const CamHandoverSheetForm = ({ onBack }) => {
                           ""
                         );
                       }
+
                     }}
                   >
-                    {inverterMakeOptions.map((option) => (
-                      <Option key={option} value={option}>
-                        {option}
-                      </Option>
-                    ))}
+                    {/* {moduleMakeOptions.length > 0 &&
+                      moduleMakeOptions.map((make, index) => (
+                        <Option key={index} value={make}>
+                          {make}
+                        </Option>
+                      ))} */}
+                    <Option value="SUNGROW">SUNGROW</Option>
+                    <Option value="WATTPOWER">WATTPOWER</Option>
+                    <Option value="HITACHI">HITACHI</Option>
                     <Option value="Other">Other</Option>
                   </Select>
 
-                  {formData["project_detail"]?.["inverter_make"] ===
-                    "Other" && (
+                  {formData?.project_detail?.inverter_make === "Other" && (
                     <Input
                       fullWidth
-                      placeholder="Enter other inverter make"
+                      placeholder="Enter other make"
                       value={
-                        formData["project_detail"]?.["inverter_make_other"] ||
-                        ""
+                        formData?.project_detail?.inverter_make_other || ""
                       }
                       onChange={(e) =>
                         handleChange(
@@ -1155,23 +1155,39 @@ const CamHandoverSheetForm = ({ onBack }) => {
                   <Typography level="body1">Inverter Type</Typography>
                   <Select
                     fullWidth
-                    value={formData["project_detail"]?.["inverter_type"] || ""}
-                    onChange={(e, newValue) =>
-                      handleChange("project_detail", "inverter_type", newValue)
-                    }
+                    value={formData?.project_detail?.inverter_type || ""}
+                    onChange={(_, newValue) => {
+                      if (newValue !== null) {
+                        handleChange(
+                          "project_detail",
+                          "inverter_type",
+                          newValue
+                        );
+                      }
+                    }}
                   >
-                    {inverterTypeOptions.length > 0 ? (
-                      inverterTypeOptions.map((type, index) => (
-                        <Option key={index} value={type}>
-                          {type}
-                        </Option>
-                      ))
-                    ) : (
-                      <Option disabled>No options available</Option>
-                    )}
-                    <Option value="TBD">TBD</Option>{" "}
-                    {/* ✅ Added "TBD" as an option */}
+                    <Option value="STRING INVERTER">STRING INVERTER</Option>
+                    <Option value="Other">Other</Option>
                   </Select>
+
+                  {/* Show text input if 'Other' is selected */}
+                  {formData?.project_detail?.inverter_type === "Other" && (
+                    <Input
+                      placeholder="Enter inverter type"
+                      fullWidth
+                      value={
+                        formData?.project_detail?.inverter_type_other|| ""
+                      }
+                      onChange={(e) =>
+                        handleChange(
+                          "project_detail",
+                          "inverter_type_other",
+                          e.target.value
+                        )
+                      }
+                      sx={{ mt: 1 }}
+                    />
+                  )}
                 </Grid>
               </>
             )}
