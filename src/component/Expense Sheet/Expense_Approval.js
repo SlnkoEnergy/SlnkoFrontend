@@ -97,6 +97,7 @@ const ExpenseApproval = forwardRef(() => {
       const allowedDepartments = [
         "Accounts",
         "Projects",
+        "Infra",
         "BD",
         "OPS",
         "CAM",

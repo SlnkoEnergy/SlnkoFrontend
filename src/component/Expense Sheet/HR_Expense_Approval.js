@@ -116,6 +116,7 @@ debugger;
       "HR",
       "Engineering",
       "Projects",
+      "Infra",
       "CAM",
       "Internal",
       "SCM",

@@ -248,7 +248,7 @@ const UpdateExpenseAccounts = () => {
   function getCategoryOptionsByDepartment(department) {
     const common = officeAdminCategoryOptions;
 
-    if (department === "Projects" || department === "Engineering") {
+    if (department === "Projects" || department === "Engineering" || department === "Infra") {
       return [...common, ...categoryOptions];
     }
 

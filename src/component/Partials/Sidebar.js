@@ -756,7 +756,7 @@ function Sidebar() {
                       User Dashboard
                     </ListItemButton>
                   </ListItem>
-                  {user?.emp_id === "SE-099" && (
+                  {user?.department === "BD" && user?.emp_id === "SE-277" && (
                     <ListItem>
                       <ListItemButton
                         onClick={() => navigate("/expense_approval")}
@@ -2004,6 +2004,7 @@ function Sidebar() {
             </Toggler>
           </ListItem>
         ) : user?.department === "Projects" ||
+          user?.department === "Infra" ||
           user?.department === "Marketing" ||
           user?.department === "Internal" ||
           (user?.department === "Engineering" &&

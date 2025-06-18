@@ -207,7 +207,7 @@ const Expense_Form = () => {
   function getCategoryOptionsByDepartment(department) {
     const common = officeAdminCategoryOptions;
 
-    if (department === "Projects" || department === "Engineering") {
+    if (department === "Projects" || department === "Engineering" || department === "Infra") {
       return [...common, ...categoryOptions];
     } else if (
       department === "BD" ||
@@ -630,7 +630,7 @@ const Expense_Form = () => {
                   searchInputs[rowIndex] || ""
                 ).toLowerCase();
 
-                const isProjects = user?.department === "Projects";
+                const isProjects =(user?.department === "Projects" || user?.department === "Infra");
                 const isExecutive = user?.role === "executive";
                 const isSurveyor = user?.role === "surveyor";
                 console.log(isSurveyor);
@@ -975,7 +975,7 @@ const Expense_Form = () => {
           {rows.map((row, rowIndex) => {
             const searchValue = (searchInputs[rowIndex] || "").toLowerCase();
 
-            const isProjects = user?.department === "Projects";
+            const isProjects = (user?.department === "Projects" || user?.department === "Infra");
             const isExecutive = user?.role === "executive";
             const isSurveyor = user?.role === "surveyor";
 
