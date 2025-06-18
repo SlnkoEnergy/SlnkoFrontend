@@ -42,7 +42,7 @@ const ExpenseApproval = forwardRef(() => {
     }
   }, []);
 
-  // 2. Only fetch expenses once department is ready
+
   const {
     data: getExpense = [],
     isLoading,
@@ -54,7 +54,7 @@ const ExpenseApproval = forwardRef(() => {
           department,
           search: searchQuery,
         }
-      : skipToken // skip the query if department is not ready yet
+      : skipToken
   );
 
   console.log("department:", department);

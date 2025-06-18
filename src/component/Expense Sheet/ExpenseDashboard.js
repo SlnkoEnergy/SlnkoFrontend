@@ -37,6 +37,9 @@ const AllExpense = forwardRef((props, ref) => {
     search: searchQuery,
   });
 
+  console.log(getExpense);
+  
+
   const renderFilters = () => {
     const departments = [
       "Accounts",
@@ -140,6 +143,8 @@ const AllExpense = forwardRef((props, ref) => {
     [getExpense]
   );
 
+  console.log(expenses);
+  
   const filteredAndSortedData = expenses
     .filter((expense) => {
       if (!user || !user.name) return false;
@@ -151,6 +156,9 @@ const AllExpense = forwardRef((props, ref) => {
         userRole === "superadmin" ||
         (userRole === "HR" && userName !== "Manish Shah");
       const submittedBy = expense.emp_name?.trim() || "";
+
+      console.log(userRole);
+      
 
       const allowedStatuses = [
         "submitted",

@@ -2041,6 +2041,16 @@ function Sidebar() {
                     User Dashboard
                   </ListItemButton>
                 </ListItem>
+                {user?.department === "Projects" &&
+                  user?.name === "Mayank Kumar" && (
+                    <ListItem>
+                      <ListItemButton
+                        onClick={() => navigate("/expense_approval")}
+                      >
+                        Expense Approval
+                      </ListItemButton>
+                    </ListItem>
+                  )}
               </List>
             </Toggler>
           </ListItem>
