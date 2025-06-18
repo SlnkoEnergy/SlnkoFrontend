@@ -278,13 +278,15 @@ const CamHandoverSheetForm = ({ onBack }) => {
 
   // console.log("LeadId:", LeadId);
 
+  console.log("Fetching handover sheet with:", { id: LeadId });
+
   const {
     data: getHandOverSheet,
     isLoading,
     isError,
     error,
   } = useGetHandOverByIdQuery(
-    { leadId: LeadId },
+    { id: LeadId },
     {
       skip: !LeadId,
     }
@@ -327,6 +329,10 @@ const CamHandoverSheetForm = ({ onBack }) => {
         other_details: {
           ...prev.other_details,
           ...handoverData.other_details,
+        },
+        invoice_detail: {
+          ...prev.invoice_detail,
+          ...handoverData.invoice_detail,
         },
       }));
     }
@@ -612,10 +618,14 @@ const CamHandoverSheetForm = ({ onBack }) => {
   const [updateStatusHandOver] = useUpdateStatusHandOverMutation();
 
   const handleSubmit = async () => {
+    
+
     if (!LeadId || !formData._id) {
       toast.error("Invalid or missing ID!");
       return;
     }
+    
+
 
     try {
       await handoverSchema.validate(formData, { abortEarly: false });
@@ -648,23 +658,24 @@ const CamHandoverSheetForm = ({ onBack }) => {
         commercial_details: { ...formData.commercial_details },
         other_details: { ...formData.other_details },
         invoice_detail: { ...formData.invoice_detail },
-        status_of_handoversheet: "Approved",
+        // status_of_handoversheet: "Approved",
         is_locked: "locked",
         submitted_by: user?.name,
       };
-
+      
       const statusPayload = {
         _id: formData._id,
         status_of_handoversheet: "Approved",
       };
 
-      // console.log("Updating status...");
+      
+  await updateHandOver(updatedFormData).unwrap();
+      toast.success("Project updated successfully.");
+      
       await updateStatusHandOver(statusPayload).unwrap();
       toast.success("Handover sheet locked.");
 
-      // console.log("Updating form data...");
-      await updateHandOver(updatedFormData).unwrap();
-      toast.success("Project updated successfully.");
+    
 
       navigate("/cam_dash");
     } catch (error) {
