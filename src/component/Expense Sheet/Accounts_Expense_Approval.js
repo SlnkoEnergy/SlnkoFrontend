@@ -58,6 +58,7 @@ const AccountsExpense = forwardRef(() => {
       "HR",
       "Engineering",
       "Projects",
+      "Infra",
       "CAM",
       "Internal",
       "SCM",

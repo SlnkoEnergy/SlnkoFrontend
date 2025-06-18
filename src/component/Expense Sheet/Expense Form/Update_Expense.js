@@ -165,7 +165,11 @@ const UpdateExpense = () => {
   function getCategoryOptionsByDepartment(department) {
     const common = officeAdminCategoryOptions;
 
-    if (department === "Projects" || department === "Engineering") {
+    if (
+      department === "Projects" ||
+      department === "Engineering" ||
+      department === "Infra"
+    ) {
       return [...common, ...categoryOptions];
     } else if (
       department === "BD" ||
@@ -592,6 +596,7 @@ const UpdateExpense = () => {
                 "Engineering",
                 "BD",
                 "Projects",
+                "Infra",
                 "Internal",
                 "CAM",
                 "Accounts",
@@ -1356,15 +1361,16 @@ const UpdateExpense = () => {
                 ).map((category, idx) => {
                   let total = 0;
                   let approvedTotal = 0;
-                  
+
                   rows.forEach((row) => {
-                  console.log("row:",rows);
+                    console.log("row:", rows);
                     row.items?.forEach((item) => {
                       if (item.category === category) {
                         total += Number(item.invoice?.invoice_amount || 0);
 
                         if (
-                          (item.item_current_status === "manager approval" || rows[0].current_status === "manager approval") &&
+                          (item.item_current_status === "manager approval" ||
+                            rows[0].current_status === "manager approval") &&
                           Number(item.approved_amount || 0) > 0
                         ) {
                           approvedTotal += Number(item.approved_amount);
@@ -1441,8 +1447,9 @@ const UpdateExpense = () => {
                         .flatMap((row) => row.items || [])
                         .filter(
                           (item) =>
-                            item.item_current_status === "manager approval" || rows[0].current_status === "manager approval" &&
-                            Number(item.approved_amount || 0) > 0
+                            item.item_current_status === "manager approval" ||
+                            (rows[0].current_status === "manager approval" &&
+                              Number(item.approved_amount || 0) > 0)
                         )
                         .reduce(
                           (sum, item) => sum + Number(item.approved_amount),

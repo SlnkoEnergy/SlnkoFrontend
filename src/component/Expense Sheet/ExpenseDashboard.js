@@ -46,6 +46,7 @@ const AllExpense = forwardRef((props, ref) => {
       "HR",
       "Engineering",
       "Projects",
+      "Infra",
       "CAM",
       "Internal",
       "SCM",

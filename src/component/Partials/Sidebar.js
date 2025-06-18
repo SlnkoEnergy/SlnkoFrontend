@@ -2004,6 +2004,7 @@ function Sidebar() {
             </Toggler>
           </ListItem>
         ) : user?.department === "Projects" ||
+          user?.department === "Infra" ||
           user?.department === "Marketing" ||
           user?.department === "Internal" ||
           (user?.department === "Engineering" &&
