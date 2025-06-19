@@ -1969,7 +1969,7 @@ function Sidebar() {
               </List>
             </Toggler>
           </ListItem>
-        ) : user?.department === "HR" && user?.name === "Neetika Panwar" ? (
+        ) : user?.department === "HR" ? (
           <ListItem nested>
             <Toggler
               renderToggle={({ open, setOpen }) => (
