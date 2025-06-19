@@ -4,7 +4,7 @@ FROM node:16-alpine AS build
 WORKDIR /protrac/frontend
 
 # Copy env and package info first (for caching)
-COPY .env.testing .env
+COPY .env.prod .env
 COPY package.json ./
 
 RUN npm install
