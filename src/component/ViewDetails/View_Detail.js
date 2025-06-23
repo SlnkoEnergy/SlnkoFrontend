@@ -2397,7 +2397,7 @@ const Customer_Payment_Summary = () => {
           variant="solid"
           color="primary"
           onClick={() => navigate("/project-balance")}
-           sx={{
+          sx={{
             "@media print": {
               display: "none",
             },
