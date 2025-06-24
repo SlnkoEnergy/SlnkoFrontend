@@ -1624,7 +1624,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
                   mb: 0.5,
                 }}
               >
-                Site Address with Pin Code{" "}
+                Site/Delivery Address with Pin Code{" "}
                 <span style={{ color: "red" }}>*</span>
                 <Tooltip title="Enable to enter village name" placement="top">
                   <Switch

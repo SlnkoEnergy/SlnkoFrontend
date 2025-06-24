@@ -5,6 +5,8 @@ import {
   Checkbox,
   Container,
   Divider,
+  FormControl,
+  FormLabel,
   Grid,
   IconButton,
   Input,
@@ -65,7 +67,7 @@ const Customer_Payment_Summary = () => {
     ];
     const creditRows = creditHistory.map((row, index) => [
       index + 1,
-      new Date(row.cr_date).toLocaleDateString("en-IN", {
+      new Date(row.cr_date || row.createdAt).toLocaleDateString("en-IN", {
         day: "2-digit",
         month: "short",
         year: "numeric",
@@ -267,7 +269,6 @@ const Customer_Payment_Summary = () => {
   const [filteredClients, setFilteredClients] = useState([]);
   const [clientSearch, setClientSearch] = useState("");
   const [adjustSearch, setAdjustSearch] = useState("");
-  const [creditSearch, setCreditSearch] = useState("");
   const [selectedClients, setSelectedClients] = useState([]);
   const [selectedAdjust, setSelectedAdjust] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -278,10 +279,10 @@ const Customer_Payment_Summary = () => {
   const [selectedDebits, setSelectedDebits] = useState([]);
   const [filteredDebits, setFilteredDebits] = useState([]);
   const [filteredAdjusts, setFilteredAdjusts] = useState([]);
-  const [payments, setPayments] = useState([]);
-
-  const [openRemarkModal, setOpenRemarkModal] = useState(false);
-  const [selectedRemark, setSelectedRemark] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [startCreditDate, setStartCreditDate] = useState("");
+  const [endCreditDate, setEndCreditDate] = useState("");
 
   const totalCredited = creditHistory.reduce(
     (sum, item) => sum + item.cr_amount,
@@ -293,19 +294,19 @@ const Customer_Payment_Summary = () => {
     0
   );
 
-  const handleSearchDebit = (event) => {
-    const searchValue = event.target.value.toLowerCase();
-    setDebitSearch(searchValue);
+  // const handleSearchDebit = (event) => {
+  //   const searchValue = event.target.value.toLowerCase();
+  //   setDebitSearch(searchValue);
 
-    const filteredD = debitHistory.filter(
-      (item) =>
-        (item.paid_for && item.paid_for.toLowerCase().includes(searchValue)) ||
-        (item.vendor && item.vendor.toLowerCase().includes(searchValue))
-    );
+  //   const filteredD = debitHistory.filter(
+  //     (item) =>
+  //       (item.paid_for && item.paid_for.toLowerCase().includes(searchValue)) ||
+  //       (item.vendor && item.vendor.toLowerCase().includes(searchValue))
+  //   );
 
-    setFilteredDebits(filteredD);
-    // console.log("Search Data are:", filteredD);
-  };
+  //   setFilteredDebits(filteredD);
+  //   // console.log("Search Data are:", filteredD);
+  // };
 
   const handleClientSearch = (event) => {
     const searchValue = event.target.value.toLowerCase();
@@ -560,26 +561,85 @@ const Customer_Payment_Summary = () => {
     return null;
   };
 
-  const handleDateFilter = (event) => {
-    const dateValue = event.target.value;
-    setSelectedDate(dateValue);
-
-    applyFilters(debitSearch, dateValue);
+  const handleSearchDebit = (event) => {
+    const value = event.target.value.toLowerCase();
+    setDebitSearch(value);
+    applyFilters(value, startDate, endDate);
   };
 
-  const applyFilters = (searchValue, dateValue) => {
+  const handleStartDateChange = (event) => {
+    const value = event.target.value;
+    setStartDate(value);
+    applyFilters(debitSearch, value, endDate);
+  };
+
+  const handleEndDateChange = (event) => {
+    const value = event.target.value;
+    setEndDate(value);
+    applyFilters(debitSearch, startDate, value);
+  };
+
+  const handleCreditEndDateChange = (event) => {
+    const value = event.target.value;
+    const newStart = startCreditDate;
+    setEndCreditDate(value);
+    applyCreditFilters(newStart, value);
+  };
+
+  const handleCreditStartDateChange = (event) => {
+    const value = event.target.value;
+    const newEnd = endCreditDate;
+    setStartCreditDate(value);
+    applyCreditFilters(value, newEnd);
+  };
+
+  const applyFilters = (searchValue, start, end) => {
     const filteredData = debitHistory.filter((item) => {
       const matchesSearch =
         (item.paid_for && item.paid_for.toLowerCase().includes(searchValue)) ||
         (item.vendor && item.vendor.toLowerCase().includes(searchValue));
-      const matchesDate = dateValue
-        ? new Date(item.dbt_date).toISOString().split("T")[0] === dateValue
-        : true;
+
+      let itemDate = null;
+      if (item.dbt_date) {
+        const parsedDate = new Date(item.dbt_date);
+        if (!isNaN(parsedDate.getTime())) {
+          itemDate = parsedDate.toISOString().split("T")[0];
+        }
+      }
+
+      const matchesDate =
+        (!start || (itemDate && itemDate >= start)) &&
+        (!end || (itemDate && itemDate <= end));
+
       return matchesSearch && matchesDate;
     });
 
     setFilteredDebits(filteredData);
   };
+
+   const applyCreditFilters = (start, end) => {
+    const filteredData = creditHistory.filter((item) => {
+      
+
+      let itemDate = null;
+      if (item.cr_date) {
+        const parsedDate = new Date(item.cr_date);
+        if (!isNaN(parsedDate.getTime())) {
+          itemDate = parsedDate.toISOString().split("T")[0];
+        }
+      }
+
+      const matchesDate =
+        (!start || (itemDate && itemDate >= start)) &&
+        (!end || (itemDate && itemDate <= end));
+
+      return matchesDate;
+    });
+
+    setCreditHistory(filteredData);
+  };
+
+
 
   useEffect(() => {
     if (projectData.code) {
@@ -1649,142 +1709,182 @@ const Customer_Payment_Summary = () => {
 
       {/* Credit History Section */}
 
-      {creditHistory.length > 0 && (
-        <Box>
-          <Typography
-            variant="h5"
-            fontFamily="Playfair Display"
-            fontWeight={600}
-            mt={4}
-            mb={2}
-          >
-            Credit History
-          </Typography>
-          <Divider style={{ borderWidth: "2px", marginBottom: "20px" }} />
+      <Box>
+        <Typography
+          variant="h5"
+          fontFamily="Playfair Display"
+          fontWeight={600}
+          mt={4}
+          mb={2}
+        >
+          Credit History
+        </Typography>
+        <Divider style={{ borderWidth: "2px", marginBottom: "20px" }} />
 
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexDirection: { md: "row", xs: "column" },
+            "@media print": {
+              display: "none",
+            },
+          }}
+          mb={2}
+        >
           <Box
             sx={{
               display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
               flexDirection: { md: "row", xs: "column" },
-              "@media print": {
-                display: "none",
-              },
+              alignItems: { md: "flex-end", xs: "stretch" },
+              gap: 2,
+              flexWrap: "wrap",
             }}
-            mb={2}
           >
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                flexDirection: { md: "row", xs: "column" },
-              }}
-            >
-              {/* <Input
-              label="Search Paid For"
-              value={creditSearch}
-              placeholder="Search here"
-              onChange={handleCreditSearch}
-              style={{ width: "250px" }}
-            /> */}
-              {/* <Input
-              type="date"
-              value={selectedDate}
-              onChange={handleDateFilter}
-              style={{ width: "200px", marginLeft: "5px" }}
-            /> */}
-            </Box>
-            {(user?.name === "IT Team" ||
-              user?.name === "Guddu Rani Dubey" ||
-              user?.name === "Prachi Singh" ||
-              user?.name === "admin") && (
-              <Box>
-                <IconButton
-                  color="danger"
-                  disabled={selectedCredits.length === 0}
-                  onClick={handleDeleteCredit}
-                >
-                  <DeleteIcon />
-                </IconButton>
-              </Box>
-            )}
+            <FormControl sx={{ minWidth: 200 }}>
+              <FormLabel>Start Date</FormLabel>
+              <Input
+                type="date"
+                value={startCreditDate}
+                onChange={handleCreditStartDateChange}
+              />
+            </FormControl>
+
+            <FormControl sx={{ minWidth: 200 }}>
+              <FormLabel>End Date</FormLabel>
+              <Input
+                type="date"
+                value={endCreditDate}
+                onChange={handleCreditEndDateChange}
+              />
+            </FormControl>
           </Box>
 
-          <Sheet
-            variant="outlined"
+          {(user?.name === "IT Team" ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Prachi Singh" ||
+            user?.name === "admin") && (
+            <Box>
+              <IconButton
+                color="danger"
+                disabled={selectedCredits.length === 0}
+                onClick={handleDeleteCredit}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Box>
+          )}
+        </Box>
+
+        <Sheet
+          variant="outlined"
+          sx={{
+            borderRadius: "12px",
+            overflow: "hidden",
+            p: 2,
+            boxShadow: "md",
+            maxWidth: "100%",
+            width: "100%",
+            "@media print": {
+              boxShadow: "none",
+              p: 0,
+              borderRadius: 0,
+              overflow: "visible",
+            },
+          }}
+        >
+          <Table
+            borderAxis="both"
+            stickyHeader
             sx={{
-              borderRadius: "12px",
-              overflow: "hidden",
-              p: 2,
-              boxShadow: "md",
-              maxWidth: "100%",
-              width: "100%",
+              minWidth: "100%",
+              "& thead": {
+                backgroundColor: "neutral.softBg",
+                "@media print": {
+                  backgroundColor: "#ddd",
+                },
+              },
+              "& th, & td": {
+                textAlign: "left",
+                px: 2,
+                py: 1.5,
+                "@media print": {
+                  px: 1,
+                  py: 1,
+                  fontSize: "12px",
+                  border: "1px solid #ccc",
+                },
+              },
               "@media print": {
-                boxShadow: "none",
-                p: 0,
-                borderRadius: 0,
-                overflow: "visible",
+                borderCollapse: "collapse",
+                width: "100%",
+                tableLayout: "fixed",
               },
             }}
           >
-            <Table
-              borderAxis="both"
-              stickyHeader
-              sx={{
-                minWidth: "100%",
-                "& thead": {
-                  backgroundColor: "neutral.softBg",
-                  "@media print": {
-                    backgroundColor: "#ddd",
-                  },
-                },
-                "& th, & td": {
-                  textAlign: "left",
-                  px: 2,
-                  py: 1.5,
-                  "@media print": {
-                    px: 1,
-                    py: 1,
-                    fontSize: "12px",
-                    border: "1px solid #ccc",
-                  },
-                },
-                "@media print": {
-                  borderCollapse: "collapse",
-                  width: "100%",
-                  tableLayout: "fixed",
-                },
-              }}
-            >
-              {/* Table Header */}
-              <thead>
-                <tr>
-                  <th>Credit Date</th>
-                  <th>Credit Mode</th>
-                  <th>Credited Amount (₹)</th>
-                  <th style={{ textAlign: "center" }}>
-                    <Checkbox
-                      color="primary"
-                      onChange={handleSelectAllCredit}
-                      checked={selectedCredits.length === creditHistory.length}
-                      // sx={{ '@media print': { display: 'none' } }}
-                    />
-                  </th>
-                </tr>
-              </thead>
+            {/* Table Header */}
+            <thead>
+              <tr>
+                <th>Credit Date</th>
+                {/* <th>Credit Updated TimeStamp</th> */}
+                <th>Credit Mode</th>
+                <th>Credited Amount (₹)</th>
+                <th style={{ textAlign: "center" }}>
+                  <Checkbox
+                    color="primary"
+                    onChange={handleSelectAllCredit}
+                    checked={selectedCredits.length === creditHistory.length}
+                  />
+                </th>
+              </tr>
+            </thead>
 
-              {/* Table Body */}
-              <tbody>
-                {creditHistory.map((row) => (
+            {/* Table Body */}
+            <tbody>
+              {creditHistory
+                .slice()
+                .sort((a, b) => {
+                  const dateA = new Date(a.cr_date || a.createdAt);
+                  const dateB = new Date(b.cr_date || b.createdAt);
+                  return dateA - dateB;
+                })
+                .map((row) => (
                   <tr key={row.id}>
                     <td>
-                      {new Date(row.cr_date).toLocaleDateString("en-IN", {
+                      {new Date(
+                        row.cr_date || row.createdAt
+                      ).toLocaleDateString("en-IN", {
                         day: "2-digit",
                         month: "short",
                         year: "numeric",
                       })}
                     </td>
+                    {/* <td>
+                        {row.updatedAt && !isNaN(new Date(row.updatedAt)) ? (
+                          <>
+                            {new Date(row.updatedAt).toLocaleDateString(
+                              "en-IN",
+                              {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              }
+                            )}
+                            ,{" "}
+                            {new Date(row.updatedAt).toLocaleTimeString(
+                              "en-IN",
+                              {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                hour12: true,
+                              }
+                            )}
+                          </>
+                        ) : (
+                          "NA"
+                        )}
+                      </td> */}
                     <td>{row.cr_mode}</td>
                     <td>₹ {row.cr_amount.toLocaleString("en-IN")}</td>
                     <td style={{ textAlign: "center" }}>
@@ -1792,15 +1892,25 @@ const Customer_Payment_Summary = () => {
                         color="primary"
                         checked={selectedCredits.includes(row._id)}
                         onChange={() => handleCreditCheckboxChange(row._id)}
-                        // sx={{ '@media print': { display: 'none' } }}
                       />
                     </td>
                   </tr>
                 ))}
-              </tbody>
+            </tbody>
 
-              {/* Total Row */}
-              <tfoot>
+            {/* Total Row */}
+
+            <tfoot>
+              {creditHistory.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={4}
+                    style={{ textAlign: "center", padding: "10px" }}
+                  >
+                    No Credit history available
+                  </td>
+                </tr>
+              ) : (
                 <tr style={{ fontWeight: "bold", backgroundColor: "#f5f5f5" }}>
                   <td
                     colSpan={2}
@@ -1813,11 +1923,11 @@ const Customer_Payment_Summary = () => {
                   </td>
                   <td />
                 </tr>
-              </tfoot>
-            </Table>
-          </Sheet>
-        </Box>
-      )}
+              )}
+            </tfoot>
+          </Table>
+        </Sheet>
+      </Box>
 
       {/* Debit History Section */}
 
@@ -1848,24 +1958,40 @@ const Customer_Payment_Summary = () => {
           <Box
             sx={{
               display: "flex",
-              alignItems: "center",
               flexDirection: { md: "row", xs: "column" },
+              alignItems: { md: "flex-end", xs: "stretch" },
+              gap: 2,
+              flexWrap: "wrap",
             }}
           >
-            <Input
-              label="Search Paid For"
-              value={debitSearch}
-              placeholder="Search here"
-              onChange={handleSearchDebit}
-              style={{ width: "250px" }}
-            />
-            <Input
-              type="date"
-              value={selectedDate}
-              onChange={handleDateFilter}
-              style={{ width: "200px", marginLeft: "5px" }}
-            />
+            <FormControl sx={{ minWidth: 250 }}>
+              <FormLabel>Search Paid For</FormLabel>
+              <Input
+                value={debitSearch}
+                placeholder="Enter name or vendor"
+                onChange={handleSearchDebit}
+              />
+            </FormControl>
+
+            <FormControl sx={{ minWidth: 200 }}>
+              <FormLabel>Start Date</FormLabel>
+              <Input
+                type="date"
+                value={startDate}
+                onChange={handleStartDateChange}
+              />
+            </FormControl>
+
+            <FormControl sx={{ minWidth: 200 }}>
+              <FormLabel>End Date</FormLabel>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={handleEndDateChange}
+              />
+            </FormControl>
           </Box>
+
           {(user?.name === "IT Team" ||
             user?.name === "Guddu Rani Dubey" ||
             user?.name === "Prachi Singh" ||
@@ -1932,6 +2058,7 @@ const Customer_Payment_Summary = () => {
             <thead>
               <tr>
                 <th>Debit Date</th>
+                <th>Updated Debit Timestamp</th>
                 <th>PO Number</th>
                 <th>Paid For</th>
                 <th>Paid To</th>
@@ -1963,6 +2090,26 @@ const Customer_Payment_Summary = () => {
                         year: "numeric",
                       })}
                     </td>
+                    <td>
+                      {row.updatedAt && !isNaN(new Date(row.updatedAt)) ? (
+                        <>
+                          {new Date(row.updatedAt).toLocaleDateString("en-IN", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                          ,{" "}
+                          {new Date(row.updatedAt).toLocaleTimeString("en-IN", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                          })}
+                        </>
+                      ) : (
+                        "NA"
+                      )}
+                    </td>
+
                     <td>{row.po_number}</td>
                     <td>{row.paid_for}</td>
                     <td>{row.vendor}</td>
@@ -1984,7 +2131,7 @@ const Customer_Payment_Summary = () => {
               {filteredDebits.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     style={{ textAlign: "center", padding: "10px" }}
                   >
                     No debit history available
@@ -1992,13 +2139,15 @@ const Customer_Payment_Summary = () => {
                 </tr>
               ) : (
                 <tr style={{ fontWeight: "bold", backgroundColor: "#f5f5f5" }}>
-                  <td colSpan={4} style={{ color: "red", textAlign: "right" }}>
+                  <td colSpan={5} style={{ color: "red", textAlign: "right" }}>
                     Total Debited:
                   </td>
-                  <td colSpan={2} style={{ color: "red" }}>
+
+                  <td colSpan={3} style={{ color: "red" }}>
                     ₹ {totalDebited.toLocaleString("en-IN")}
                   </td>
-                  <td></td>
+                  {/* <td></td> */}
+                  {/* <td></td> */}
                 </tr>
               )}
             </tfoot>
@@ -2286,6 +2435,7 @@ const Customer_Payment_Summary = () => {
             <thead>
               <tr>
                 <th>Adjust Date</th>
+                <th>Updated Adjust Timestamp</th>
                 <th>Adjustment Type</th>
                 <th>Reason</th>
                 <th>PO Number</th>
@@ -2314,6 +2464,19 @@ const Customer_Payment_Summary = () => {
                         day: "2-digit",
                         month: "short",
                         year: "numeric",
+                      })}
+                    </td>
+                    <td>
+                      {new Date(row.updatedAt).toLocaleDateString("en-IN", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}{" "}
+                      ,
+                      {new Date(row.updatedAt).toLocaleTimeString("en-IN", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: true,
                       })}
                     </td>
                     <td>{row.pay_type}</td>
@@ -2348,7 +2511,7 @@ const Customer_Payment_Summary = () => {
             {/* Total Row */}
             <tfoot>
               <tr style={{ fontWeight: "bold", backgroundColor: "#f5f5f5" }}>
-                <td colSpan={6} style={{ textAlign: "right" }}>
+                <td colSpan={7} style={{ textAlign: "right" }}>
                   Total:{" "}
                 </td>
                 <td>₹ {creditTotal.toLocaleString("en-IN")}</td>

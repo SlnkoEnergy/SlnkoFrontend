@@ -600,7 +600,7 @@ const GetBDHandoverSheetForm = ({ onBack }) => {
             level="body1"
             sx={{ fontWeight: "bold", marginBottom: 0.5 }}
           >
-            Site Address with Pin Code <span style={{ color: "red" }}>*</span>
+            Site/Delivery Address with Pin Code <span style={{ color: "red" }}>*</span>
           </Typography>
           <Input
             required
