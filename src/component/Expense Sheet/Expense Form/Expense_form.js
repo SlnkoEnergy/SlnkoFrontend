@@ -207,7 +207,11 @@ const Expense_Form = () => {
   function getCategoryOptionsByDepartment(department) {
     const common = officeAdminCategoryOptions;
 
-    if (department === "Projects" || department === "Engineering" || department === "Infra") {
+    if (
+      department === "Projects" ||
+      department === "Engineering" ||
+      department === "Infra"
+    ) {
       return [...common, ...categoryOptions];
     } else if (
       department === "BD" ||
@@ -283,12 +287,21 @@ const Expense_Form = () => {
       setIsSubmitting(false);
       return;
     }
+
     try {
-      const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
+      const userDetails = JSON.parse(localStorage.getItem("userDetails"));
+      const userID = userDetails?.userID;
+      const userRole = userDetails?.role;
+
       if (!userID) {
         toast.error("User ID not found. Please login again.");
         return;
       }
+
+      // console.log(userRole);
+
+      const statusToUse =
+        userRole === "manager" ? "manager approval" : "submitted";
 
       const items = rows.flatMap((row) =>
         (row.items || []).map((item) => ({
@@ -299,13 +312,13 @@ const Expense_Form = () => {
           },
           item_status_history: [
             {
-              status: "submitted",
+              status: statusToUse,
               remarks: item.item_status_history?.[0]?.remarks || "",
               user_id: userID,
               updatedAt: new Date().toISOString(),
             },
           ],
-          item_current_status: "submitted",
+          item_current_status: statusToUse,
         }))
       );
 
@@ -314,10 +327,10 @@ const Expense_Form = () => {
         disbursement_date: rows[0]?.disbursement_date ?? null,
         items,
         user_id: userID,
-        current_status: "submitted",
+        current_status: statusToUse,
         status_history: [
           {
-            status: "submitted",
+            status: statusToUse,
             remarks: rows[0]?.status_history?.[0]?.remarks || "",
             user_id: userID,
             updatedAt: new Date().toISOString(),
@@ -630,10 +643,12 @@ const Expense_Form = () => {
                   searchInputs[rowIndex] || ""
                 ).toLowerCase();
 
-                const isProjects =(user?.department === "Projects" || user?.department === "Infra");
+                const isProjects =
+                  user?.department === "Projects" ||
+                  user?.department === "Infra";
                 const isExecutive = user?.role === "executive";
                 const isSurveyor = user?.role === "surveyor";
-                console.log(isSurveyor);
+                // console.log(isSurveyor);
                 let filteredProjects = [];
 
                 if (isProjects) {
@@ -975,7 +990,8 @@ const Expense_Form = () => {
           {rows.map((row, rowIndex) => {
             const searchValue = (searchInputs[rowIndex] || "").toLowerCase();
 
-            const isProjects = (user?.department === "Projects" || user?.department === "Infra");
+            const isProjects =
+              user?.department === "Projects" || user?.department === "Infra";
             const isExecutive = user?.role === "executive";
             const isSurveyor = user?.role === "surveyor";
 

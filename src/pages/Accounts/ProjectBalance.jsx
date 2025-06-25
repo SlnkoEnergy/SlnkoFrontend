@@ -9,7 +9,7 @@ import React, { useRef } from "react";
 
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
-import { Snackbar } from "@mui/joy";
+import { FormControl, FormLabel, Input, Snackbar } from "@mui/joy";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../../component/Partials/Header";
@@ -129,6 +129,33 @@ function ProjectBalance() {
                 justifyContent: "center",
               }}
             >
+             <Box
+            sx={{
+              display: "flex",
+              flexDirection: { md: "row", xs: "column" },
+              alignItems: { md: "flex-end", xs: "stretch" },
+              gap: 2,
+              flexWrap: "wrap",
+            }}
+          >
+          
+              
+              <Input
+                type="date"
+                // value={startDate}
+                // onChange={handleCreditStartDateChange}
+              />
+           
+
+           <Typography mb={1}>to</Typography>
+              
+              <Input
+                type="date"
+                // value={endDate}
+                // onChange={handleCreditEndDateChange}
+              />
+         
+          </Box>
               {/* {(user?.name === "IT Team" ||
                 user?.name === "Guddu Rani Dubey" ||
                 user?.name === "Prachi Singh" ||

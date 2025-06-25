@@ -588,6 +588,16 @@ const UpdateExpense = () => {
                   })
                 }
               />
+              <Typography level="body-md" fontWeight="lg">
+                Employee Name:
+              </Typography>
+              <Input
+                type="text"
+                size="sm"
+                value={rows[0].emp_name || "NA"}
+                onChange={(e) => handleRowChange(0, "emp_name", e.target.value)}
+                placeholder="Enter employee name"
+              />
             </Box>
 
             {/* Right: Bulk Actions */}
@@ -853,51 +863,59 @@ const UpdateExpense = () => {
                         {(user?.role === "manager" ||
                           user?.role === "visitor" ||
                           user?.department === "admin" ||
-                          user?.name === "IT Team") && (
-                          <td style={{ padding: 8 }}>
-                            <Box display="flex" gap={1} justifyContent="center">
-                              <Button
-                                size="sm"
-                                variant={
-                                  item.item_current_status ===
-                                  "manager approval"
-                                    ? "solid"
-                                    : "outlined"
-                                }
-                                color="success"
-                                onClick={() =>
-                                  handleApproval(
-                                    rowIndex,
-                                    itemIndex,
+                          user?.name === "IT Team") &&
+                          !(
+                            user?.role === "manager" &&
+                            user?.name === item.emp_name
+                          ) && (
+                            <td style={{ padding: 8 }}>
+                              <Box
+                                display="flex"
+                                gap={1}
+                                justifyContent="center"
+                              >
+                                <Button
+                                  size="sm"
+                                  variant={
+                                    item.item_current_status ===
                                     "manager approval"
-                                  )
-                                }
-                                aria-label="Approve"
-                              >
-                                <CheckIcon />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant={
-                                  item.item_current_status === "rejected"
-                                    ? "solid"
-                                    : "outlined"
-                                }
-                                color="danger"
-                                onClick={() =>
-                                  handleApproval(
-                                    rowIndex,
-                                    itemIndex,
-                                    "rejected"
-                                  )
-                                }
-                                aria-label="Reject"
-                              >
-                                <CloseIcon />
-                              </Button>
-                            </Box>
-                          </td>
-                        )}
+                                      ? "solid"
+                                      : "outlined"
+                                  }
+                                  color="success"
+                                  onClick={() =>
+                                    handleApproval(
+                                      rowIndex,
+                                      itemIndex,
+                                      "manager approval"
+                                    )
+                                  }
+                                  aria-label="Approve"
+                                >
+                                  <CheckIcon />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant={
+                                    item.item_current_status === "rejected"
+                                      ? "solid"
+                                      : "outlined"
+                                  }
+                                  color="danger"
+                                  onClick={() =>
+                                    handleApproval(
+                                      rowIndex,
+                                      itemIndex,
+                                      "rejected"
+                                    )
+                                  }
+                                  aria-label="Reject"
+                                >
+                                  <CloseIcon />
+                                </Button>
+                              </Box>
+                            </td>
+                          )}
                       </tr>
                     ))
                   )}
