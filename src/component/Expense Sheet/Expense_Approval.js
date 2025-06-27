@@ -26,11 +26,15 @@ const ExpenseApproval = forwardRef(() => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedExpenses, setSelectedExpenses] = useState([]);
   const [selectedDepartment, setSelectedDepartment] = useState("");
-
+  const [selectedstatus, setSelectedstatus] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const { data: getAllUser = [] } = useGetLoginsQuery();
 
   const [user, setUser] = useState(null);
   const [department, setDepartment] = useState("");
+
+  const searchParam = selectedstatus ? selectedstatus : searchQuery;
 
   // 1. Get user data from localStorage
   useEffect(() => {
@@ -52,12 +56,95 @@ const ExpenseApproval = forwardRef(() => {
       ? {
           page: currentPage,
           department,
-          search: searchQuery,
+          search: searchParam,
+          from,
+    to,
         }
       : skipToken
   );
 
-  console.log("department:", department);
+   const renderFilters = () => {
+      const departments = [
+        "Accounts",
+        "HR",
+        "Engineering",
+        "Projects",
+        "Infra",
+        "CAM",
+        "Internal",
+        "SCM",
+        "IT Team",
+      ];
+  
+      const statuses = [
+      // { value: "draft", label: "Draft" },
+      { value: "submitted", label: "Pending" },
+      { value: "manager approval", label: "Manager Approved" },
+      { value: "hr approval", label: "HR Approved" },
+      { value: "final approval", label: "Approved" },
+      { value: "hold", label: "On Hold" },
+      { value: "rejected", label: "Rejected" },
+    ];
+
+  
+      return (
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 2,
+            alignItems: "center",
+            mb: 2,
+          }}
+        >
+          <FormControl sx={{ flex: 1 }} size="sm">
+            <FormLabel>Status</FormLabel>
+            <Select
+              value={selectedstatus}
+              onChange={(e, newValue) => {
+                setSelectedstatus(newValue);
+                setCurrentPage(1);
+              }}
+              size="sm"
+              placeholder="Select Status"
+            >
+              <Option value="">All Status</Option>
+              {statuses.map((status) => (
+                <Option key={status.value} value={status.value}>
+                  {status.label}
+                </Option>
+              ))}
+            </Select>
+          </FormControl>
+  
+          <FormControl size="sm" sx={{ minWidth: 140 }}>
+            <FormLabel>From Date</FormLabel>
+            <Input
+              type="date"
+              value={from}
+              onChange={(e) => {
+                setFrom(e.target.value);
+                setCurrentPage(1);
+              }}
+            />
+          </FormControl>
+  
+          <FormControl size="sm" sx={{ minWidth: 140 }}>
+            <FormLabel>To Date</FormLabel>
+            <Input
+              type="date"
+              value={to}
+              onChange={(e) => {
+                setTo(e.target.value);
+                setCurrentPage(1);
+              }}
+            />
+          </FormControl>
+        </Box>
+      );
+    };
+
+  // console.log("department:", department);
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -267,6 +354,7 @@ const ExpenseApproval = forwardRef(() => {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
+        {renderFilters()}
       </Box>
 
       <Sheet
@@ -482,16 +570,20 @@ const ExpenseApproval = forwardRef(() => {
 
                       if (status === "submitted") {
                         return (
-                          <Chip color="primary" variant="soft" size="sm">
+                          <Chip color="warning" variant="soft" size="sm">
                             Pending
                           </Chip>
                         );
-                      } else if (
-                        ["manager approval", "hr approval"].includes(status)
-                      ) {
+                      } else if (status === "manager approval") {
                         return (
-                          <Chip color="warning" variant="soft" size="sm">
-                            In Process
+                          <Chip color="info" variant="soft" size="sm">
+                            Manager Approved
+                          </Chip>
+                        );
+                      } else if (status === "hr approval") {
+                        return (
+                          <Chip color="primary" variant="soft" size="sm">
+                            HR Approved
                           </Chip>
                         );
                       } else if (status === "final approval") {

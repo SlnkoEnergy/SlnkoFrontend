@@ -242,14 +242,19 @@ function Dash_eng() {
           style={{
             cursor: "pointer",
             color: theme.vars.palette.text.primary,
-            textDecoration: "underline",
-            textDecorationStyle: "dotted",
+            fontSize: "1 rem",
+            fontWeight: 400,
+            textDecoration: "none",
+            transition: "color 0.2s ease-in-out",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = "red";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = theme.vars.palette.text.primary;
           }}
           onClick={() => {
-            const page = currentPage;
-            // const project_id = project_id;
-            // sessionStorage.setItem("eng_overview", projectId);
-            navigate(`/overview?page=${page}&project_id=${project_id}`);
+            navigate(`/overview?page=${currentPage}&project_id=${project_id}`);
           }}
         >
           {code || "-"}
@@ -463,7 +468,7 @@ function Dash_eng() {
                 style={{
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
-                  textAlign: "center",
+                  textAlign: "left",
                 }}
               >
                 <Checkbox
@@ -485,14 +490,14 @@ function Dash_eng() {
                 "State",
                 "Capacity(AC/DC)",
                 // "Progress",
-                "Action",
+                "Status",
               ].map((header, index) => (
                 <th
                   key={index}
                   style={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
-                    textAlign: "center",
+                    textAlign: "left",
                     fontWeight: "bold",
                   }}
                 >
@@ -504,7 +509,7 @@ function Dash_eng() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={7} style={{ padding: "8px", textAlign: "center" }}>
+                <td colSpan={7} style={{ padding: "8px", textAlign: "left" }}>
                   <Box
                     sx={{
                       fontStyle: "italic",
@@ -531,7 +536,7 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     <Checkbox
@@ -542,7 +547,13 @@ function Dash_eng() {
                       }
                     />
                   </td>
-                  <td>
+                  <td
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                    }}
+                  >
                     <ViewHandOver
                       currentPage={currentPage}
                       p_id={project.p_id}
@@ -552,7 +563,7 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.code || "-"}
@@ -561,7 +572,7 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     <Tooltip title="View Engineering Overview" arrow>
@@ -578,7 +589,7 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.name || "-"}
@@ -587,7 +598,7 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.customer || "-"}
@@ -596,7 +607,7 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.number || "-"}
@@ -605,7 +616,7 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.state || "-"}
@@ -614,7 +625,7 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.project_kwp && project.proposed_dc_capacity
@@ -625,7 +636,7 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                       color:
                         project.progress === "100%"
                           ? "#4caf50"
@@ -640,16 +651,17 @@ function Dash_eng() {
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
-                    <RowMenu currentPage={currentPage} p_id={project.p_id} />
+                    {/* <RowMenu currentPage={currentPage} p_id={project.p_id} /> */}
+                    Not defined
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={9} style={{ padding: "8px", textAlign: "center" }}>
+                <td colSpan={9} style={{ padding: "8px", textAlign: "left" }}>
                   <Box
                     sx={{
                       fontStyle: "italic",

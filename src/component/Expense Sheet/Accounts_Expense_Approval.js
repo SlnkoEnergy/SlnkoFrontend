@@ -18,21 +18,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
 // import Axios from "../utils/Axios";
-import {
-  Chip,
-  Modal,
-  ModalDialog,
-  Option,
-  Select,
-  Textarea,
-  useTheme,
-} from "@mui/joy";
-import {
-  useGetAllExpenseQuery,
-  useUpdateExpenseStatusOverallMutation,
-} from "../../redux/Expense/expenseSlice";
-import { Engineering } from "@mui/icons-material";
-import { TextAnnotation } from "asposepdfcloud/src/models/textAnnotation";
+import { Chip, Option, Select, useTheme } from "@mui/joy";
+import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
 
 const AccountsExpense = forwardRef(() => {
   const navigate = useNavigate();
@@ -42,12 +29,16 @@ const AccountsExpense = forwardRef(() => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedExpenses, setSelectedExpenses] = useState([]);
   const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [selectedstatus, setSelectedstatus] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+
+  const searchParam = selectedstatus ? selectedstatus : searchQuery;
+
   const { data: getExpense = [] } = useGetAllExpenseQuery({
     page: currentPage,
     department: selectedDepartment,
-    search: searchQuery,
+    search: searchParam,
     from,
     to,
   });
@@ -63,6 +54,16 @@ const AccountsExpense = forwardRef(() => {
       "Internal",
       "SCM",
       "IT Team",
+    ];
+
+    const statuses = [
+      // { value: "draft", label: "Draft" },
+      { value: "submitted", label: "Pending" },
+      { value: "manager approval", label: "Manager Approved" },
+      { value: "hr approval", label: "HR Approved" },
+      { value: "final approval", label: "Approved" },
+      { value: "hold", label: "On Hold" },
+      { value: "rejected", label: "Rejected" },
     ];
 
     return (
@@ -90,6 +91,26 @@ const AccountsExpense = forwardRef(() => {
             {departments.map((dept) => (
               <Option key={dept} value={dept}>
                 {dept}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl sx={{ flex: 1 }} size="sm">
+          <FormLabel>Status</FormLabel>
+          <Select
+            value={selectedstatus}
+            onChange={(e, newValue) => {
+              setSelectedstatus(newValue);
+              setCurrentPage(1);
+            }}
+            size="sm"
+            placeholder="Select Status"
+          >
+            <Option value="">All Status</Option>
+            {statuses.map((status) => (
+              <Option key={status.value} value={status.value}>
+                {status.label}
               </Option>
             ))}
           </Select>
@@ -152,43 +173,6 @@ const AccountsExpense = forwardRef(() => {
     () => (Array.isArray(getExpense?.data) ? getExpense.data : []),
     [getExpense]
   );
-
-  const filteredAndSortedData = expenses
-    .filter((expense) => {
-      const allowedStatuses = [
-        "hr approval",
-        "final approval",
-        "hold",
-        "rejected",
-      ];
-      const status = expense.current_status?.toLowerCase();
-      if (!allowedStatuses.includes(status)) return false;
-      const search = searchQuery.toLowerCase();
-      const matchesSearchQuery = [
-        "expense_code",
-        "emp_id",
-        "emp_name",
-        "status",
-      ].some((key) => expense[key]?.toLowerCase().includes(search));
-
-      return matchesSearchQuery;
-    })
-    .sort((a, b) => {
-      const search = searchQuery.toLowerCase();
-
-      const fields = ["expense_code", "emp_id", "emp_name", "status"];
-      for (let field of fields) {
-        const aValue = a[field]?.toLowerCase() || "";
-        const bValue = b[field]?.toLowerCase() || "";
-        const aMatch = aValue.includes(search);
-        const bMatch = bValue.includes(search);
-        if (aMatch && !bMatch) return -1;
-        if (!aMatch && bMatch) return 1;
-      }
-
-      // Fallback: sort by createdAt descending
-      return new Date(b.createdAt) - new Date(a.createdAt);
-    });
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -513,14 +497,22 @@ const AccountsExpense = forwardRef(() => {
                     {(() => {
                       const status = expense.current_status?.toLowerCase();
 
-                      if (
-                        status === "hr approval" ||
-                        status === "manager approval" ||
-                        status === "submitted"
-                      ) {
+                      if (status === "submitted") {
                         return (
                           <Chip color="warning" variant="soft" size="sm">
                             Pending
+                          </Chip>
+                        );
+                      } else if (status === "hr approval") {
+                        return (
+                          <Chip color="primary" variant="soft" size="sm">
+                            HR Approved
+                          </Chip>
+                        );
+                      } else if (status === "manager approval") {
+                        return (
+                          <Chip color="info" variant="soft" size="sm">
+                            Manager Approved
                           </Chip>
                         );
                       } else if (status === "final approval") {

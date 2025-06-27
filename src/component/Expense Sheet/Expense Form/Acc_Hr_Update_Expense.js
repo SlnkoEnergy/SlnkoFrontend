@@ -81,7 +81,7 @@ const UpdateExpenseAccounts = () => {
       total_requested_amount: "",
       total_approved_amount: "",
       disbursement_date: "",
-      comments: "",
+     
     },
   ]);
 

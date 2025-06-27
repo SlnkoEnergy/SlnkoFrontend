@@ -68,6 +68,7 @@ const AddPurchaseOrder = () => {
   const [vendors, setVendors] = useState([]);
   const [items, setItems] = useState([]);
   const [showOtherItem, setShowOtherItem] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -104,7 +105,6 @@ const AddPurchaseOrder = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // Don't allow negative manual entry for po_value
     if (name === "po_value" && parseFloat(value) < 0) {
       toast.warning("PO Value can't be Negative !!");
       return;
@@ -113,7 +113,6 @@ const AddPurchaseOrder = () => {
     setFormData((prev) => {
       const updated = { ...prev, [name]: value };
 
-      // Auto-calculate po_value only if po_basic or gst is updated
       if (name === "po_basic" || name === "gst") {
         const poBasic =
           parseFloat(name === "po_basic" ? value : updated.po_basic) || 0;
@@ -144,12 +143,16 @@ const AddPurchaseOrder = () => {
   };
 
   const handleSubmit = async (e) => {
-    const userData = getUserData(); // Get user data right before submitting
+    const userData = getUserData();
     if (!userData || !userData.name) {
       toast.error("User details not found. Please log in again.");
       return;
     }
     e.preventDefault();
+
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
     const dataToPost = {
       p_id: formData.code,
       po_number: formData.po_number,
@@ -173,10 +176,9 @@ const AddPurchaseOrder = () => {
         },
       });
 
-      // console.log("Add Po:", response);
-      toast.success("Purchase Order Successfully !!");
+      toast.success("Purchase Order Successfully Added!");
       navigate("/purchase-order");
-      // alert("PO added successfully!");
+
       setFormData({
         p_id: "",
         code: "",
@@ -194,6 +196,17 @@ const AddPurchaseOrder = () => {
       setShowOtherItem(false);
     } catch (error) {
       console.error("Error posting data:", error);
+      if (
+        error.response &&
+        error.response.status === 400 &&
+        error.response.data.message === "PO Number already used!"
+      ) {
+        toast.error("PO Number already used. Please enter a unique one.");
+      } else {
+        toast.error("Something went wrong. Please check your connection.");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -380,8 +393,13 @@ const AddPurchaseOrder = () => {
           </Grid>
 
           <Box sx={{ mt: 3, textAlign: "center" }}>
-            <Button type="submit" color="primary" variant="solid">
-              Submit
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              color="primary"
+              variant="solid"
+            >
+              {isSubmitting ? "Submitting..." : "Submit"}
             </Button>
             <Button
               color="neutral"

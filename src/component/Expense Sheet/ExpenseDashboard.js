@@ -38,7 +38,6 @@ const AllExpense = forwardRef((props, ref) => {
   });
 
   console.log(getExpense);
-  
 
   const renderFilters = () => {
     const departments = [
@@ -145,7 +144,7 @@ const AllExpense = forwardRef((props, ref) => {
   );
 
   console.log(expenses);
-  
+
   const filteredAndSortedData = expenses
     .filter((expense) => {
       if (!user || !user.name) return false;
@@ -159,7 +158,6 @@ const AllExpense = forwardRef((props, ref) => {
       const submittedBy = expense.emp_name?.trim() || "";
 
       console.log(userRole);
-      
 
       const allowedStatuses = [
         "submitted",
@@ -465,16 +463,20 @@ const AllExpense = forwardRef((props, ref) => {
 
                       if (status === "submitted") {
                         return (
-                          <Chip color="primary" variant="soft" size="sm">
+                          <Chip color="warning" variant="soft" size="sm">
                             Pending
                           </Chip>
                         );
-                      } else if (
-                        ["manager approval", "hr approval"].includes(status)
-                      ) {
+                      } else if (status === "manager approval") {
                         return (
-                          <Chip color="warning" variant="soft" size="sm">
-                            In Process
+                          <Chip color="info" variant="soft" size="sm">
+                            Manager Approved
+                          </Chip>
+                        );
+                      } else if (status === "hr approval") {
+                        return (
+                          <Chip color="primary" variant="soft" size="sm">
+                            HR Approved
                           </Chip>
                         );
                       } else if (status === "final approval") {
@@ -555,17 +557,23 @@ const AllExpense = forwardRef((props, ref) => {
 
             const getStatusChip = () => {
               switch (status) {
+                case "draft":
                 case "submitted":
                   return (
-                    <Chip color="primary" variant="soft" size="sm">
+                    <Chip color="warning" variant="soft" size="sm">
                       Pending
                     </Chip>
                   );
                 case "manager approval":
+                  return (
+                    <Chip color="info" variant="soft" size="sm">
+                      Manager Approved
+                    </Chip>
+                  );
                 case "hr approval":
                   return (
-                    <Chip color="warning" variant="soft" size="sm">
-                      In Process
+                    <Chip color="primary" variant="soft" size="sm">
+                      HR Approved
                     </Chip>
                   );
                 case "final approval":
