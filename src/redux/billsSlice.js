@@ -18,7 +18,8 @@ export const billsApi = createApi({
   endpoints: (builder) => ({
     // GET all bills
     getBills: builder.query({
-      query: () => "get-all-bilL-IT",
+      query: ({ page = 1, search = "", status }) =>
+        `get-all-bilL-IT?page=${page}&search=${search}&status=${status}`,
       providesTags: ["Bill"],
     }),
 

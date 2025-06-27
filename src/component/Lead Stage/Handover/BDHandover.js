@@ -552,7 +552,7 @@ const HandoverSheetForm = () => {
               mb: 0.5,
             }}
           >
-            Site Address with Pin Code <span style={{ color: "red" }}>*</span>
+            Site/Delivery Address with Pin Code <span style={{ color: "red" }}>*</span>
             <Tooltip title="Enable to enter village name" placement="top">
               <Switch
                 checked={showVillage}

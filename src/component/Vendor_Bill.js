@@ -15,6 +15,8 @@ import { useSnackbar } from "notistack";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Axios from "../utils/Axios";
+import { useGetBillsQuery } from "../redux/billsSlice";
+import { Option, Select } from "@mui/joy";
 
 function VendorBillSummary() {
   const [poData, setPoData] = useState([]);
@@ -25,6 +27,7 @@ function VendorBillSummary() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
+  const [selectedbill, setSelectedbill] = useState("");
 
   useEffect(() => {
     const userData = getUserData();
@@ -38,22 +41,55 @@ function VendorBillSummary() {
     }
     return null;
   };
+  const { data: getBill = [] } = useGetBillsQuery({
+    page: currentPage,
+    status: selectedbill,
+    search: searchQuery,
+  });
+
+  console.log(getBill);
+
+  const renderFilters = () => {
+    const bill_status = ["Fully Billed ", "Bill Pending"];
+
+    return (
+      <FormControl sx={{ flex: 1 }} size="sm">
+        <FormLabel>Bill Status</FormLabel>
+        <Select
+          value={selectedbill}
+          onChange={(e, newValue) => {
+            setSelectedbill(newValue);
+            setCurrentPage(1);
+          }}
+          size="sm"
+          placeholder="Select Department"
+        >
+          <Option value="">All status</Option>
+          {bill_status.map((status) => (
+            <Option key={status} value={status}>
+              {status}
+            </Option>
+          ))}
+        </Select>
+      </FormControl>
+    );
+  };
 
   // Fetch Purchase Order data (get-all-po)
   useEffect(() => {
     async function fetchPoData() {
       try {
-          const token = localStorage.getItem("authToken");
+        const token = localStorage.getItem("authToken");
         // console.log(token);
 
         if (!token) {
           throw new Error("No auth token found in localStorage.");
         }
         const response = await Axios.get("/get-all-pO-IT", {
-            headers: {
-              "x-auth-token": token,
-            },
-          });
+          headers: {
+            "x-auth-token": token,
+          },
+        });
         // console.log("PO Data:", response.data.data);
         setPoData(response.data.data);
       } catch (error) {
@@ -67,17 +103,17 @@ function VendorBillSummary() {
   useEffect(() => {
     async function fetchBillData() {
       try {
-           const token = localStorage.getItem("authToken");
+        const token = localStorage.getItem("authToken");
         // console.log(token);
 
         if (!token) {
           throw new Error("No auth token found in localStorage.");
         }
         const response = await Axios.get("/get-all-bilL-IT", {
-            headers: {
-              "x-auth-token": token,
-            },
-          });
+          headers: {
+            "x-auth-token": token,
+          },
+        });
         // console.log("Bill Data:", response.data.data); // Check Bill Data
         setBillData(response.data.data);
       } catch (error) {
@@ -148,21 +184,24 @@ function VendorBillSummary() {
 
     const handleAcceptance = async () => {
       try {
-           const token = localStorage.getItem("authToken");
+        const token = localStorage.getItem("authToken");
         // console.log(token);
 
         if (!token) {
           throw new Error("No auth token found in localStorage.");
         }
-        const response = await Axios.put("/accepted-by", {
-          bill_number: billNumber,
-          approved_by: user?.name,
-        },{
+        const response = await Axios.put(
+          "/accepted-by",
+          {
+            bill_number: billNumber,
+            approved_by: user?.name,
+          },
+          {
             headers: {
-              
               "x-auth-token": token,
             },
-          });
+          }
+        );
 
         if (response.status === 200) {
           setIsAccepted(true);

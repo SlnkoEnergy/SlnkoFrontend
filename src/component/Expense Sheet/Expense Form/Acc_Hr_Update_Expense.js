@@ -81,7 +81,7 @@ const UpdateExpenseAccounts = () => {
       total_requested_amount: "",
       total_approved_amount: "",
       disbursement_date: "",
-      comments: "",
+     
     },
   ]);
 
@@ -248,7 +248,11 @@ const UpdateExpenseAccounts = () => {
   function getCategoryOptionsByDepartment(department) {
     const common = officeAdminCategoryOptions;
 
-    if (department === "Projects" || department === "Engineering" || department === "Infra") {
+    if (
+      department === "Projects" ||
+      department === "Engineering" ||
+      department === "Infra"
+    ) {
       return [...common, ...categoryOptions];
     }
 
@@ -836,6 +840,16 @@ const UpdateExpenseAccounts = () => {
                     to: e.target.value,
                   })
                 }
+              />
+              <Typography level="body-md" fontWeight="lg">
+                Employee Name:
+              </Typography>
+              <Input
+                type="text"
+                size="sm"
+                value={rows[0].emp_name || "NA"}
+                onChange={(e) => handleRowChange(0, "emp_name", e.target.value)}
+                placeholder="Enter employee name"
               />
             </Box>
 
