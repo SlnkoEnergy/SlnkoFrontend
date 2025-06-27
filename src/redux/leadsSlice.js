@@ -41,6 +41,13 @@ export const leadsApi = createApi({
       refetchOnMountOrArgChange: true,
       pollingInterval: 5000,
     }),
+    getEntireLeadsProjects: builder.query({
+      query: () => "all-leads-projects",
+      providesTags: ["Lead"],
+      keepUnusedDataFor: 300,
+      refetchOnMountOrArgChange: true,
+      pollingInterval: 5000,
+    }),
     getInitialLeads: builder.query({
       query: () => "get-initial-bd-lead-streams",
       providesTags: ["Lead"],
@@ -355,4 +362,5 @@ export const {
   useUpdateWONLeadsMutation,
   useGetWonDataByIdQuery,
   // useGetHandOverQuery,
+  useGetEntireLeadsProjectsQuery
 } = leadsApi;

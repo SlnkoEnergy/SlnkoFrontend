@@ -18,19 +18,22 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
-import { useGetHandOverByIdQuery } from "../../redux/camsSlice";
 import {
+  useAddHandOverMutation,
+  useGetHandOverByIdQuery,
+} from "../../redux/camsSlice";
+import {
+  useGetEntireLeadsProjectsQuery,
+  useGetEntireLeadsQuery,
   useGetMasterInverterQuery,
   useGetModuleMasterQuery,
 } from "../../redux/leadsSlice";
+import { useGetProjectByPIdQuery } from "../../redux/projectsSlice";
+import { toast } from "react-toastify";
 
-const ViewHandoverSheetForm = ({ onBack, projectId }) => {
+const AddHandoverProject = ({ projectId }) => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [expanded, setExpanded] = useState(null);
-
-  console.log("selected",projectId)
-
   const states = [
     "Andhra Pradesh",
     "Arunachal Pradesh",
@@ -64,8 +67,65 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
   const BillingTypes = ["Composite", "Individual"];
   const landTypes = ["Leased", "Owned"];
   const [showVillage, setShowVillage] = useState(false);
+
+  const { data: getProject, isLoading } = useGetProjectByPIdQuery(projectId);
+
+  console.log("", getProject);
+  console.log("p_id", projectId);
+
+  useEffect(() => {
+    console.log(projectId);
+
+    if (!projectId || !getProject) return;
+
+    const project = getProject?.data[0];
+    if (!project) {
+      console.warn("No matching Project data found.");
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      customer_details: {
+        ...prev.customer_details,
+        code: project.code || "",
+        name: project.name || "",
+        customer: project.customer || "",
+        epc_developer: "",
+        site_address: {
+          village_name: project.site_address?.village_name || "",
+          district_name: project.site_address?.district_name || "",
+        },
+        number: project.number || "",
+        email: project.email || "",
+        p_group: project.p_group || "",
+        pan_no: "",
+        adharNumber_of_loa_holder: "",
+        state: project.state || "",
+        alt_number: project.alt_number || "",
+      },
+      project_detail: {
+        ...prev.project_detail,
+        project_kwp: project.project_kwp || "",
+        distance: project.distance || "",
+        tarrif: project.tarrif || "",
+        land: {
+          ...prev.project_detail.land,
+          acres: project.land || "",
+        },
+      },
+      other_details: {
+        ...prev.other_details,
+        service: project.service || "",
+        billing_type: project.billing_type || "",
+        project_status: project.project_status || "incomplete",
+      },
+    }));
+  }, [projectId, getProject]);
+
   const [formData, setFormData] = useState({
     id: "",
+    p_id: projectId,
     customer_details: {
       code: "",
       name: "",
@@ -155,9 +215,52 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
       msme_reg: "",
     },
     submitted_by: "",
-    status_of_handoversheet: "submitted",
+    status_of_handoversheet: "Approved",
     is_locked: "locked",
   });
+
+  const [addHandOver] = useAddHandOverMutation();
+
+
+
+
+const { data: leads } = useGetEntireLeadsProjectsQuery();
+
+console.log("leads",leads);
+
+  const handleSubmit = async () => {
+    try {
+      const payload = {
+        ...formData,
+        project_detail: {
+          ...formData.project_detail,
+          land: JSON.stringify(formData.project_detail.land),
+        },
+      };
+
+      const response = await addHandOver(payload).unwrap();
+      console.log(response);
+      toast.success("Handover submitted successfully");
+    } catch (error) {
+      toast.error("Failed to submit handover:", error);
+    }
+  };
+
+  useEffect(() => {
+    const project_kwp = getProject?.data[0]?.project_kwp || 0;
+    const overloading = Number(formData.project_detail.overloading || 0);
+
+    const proposed_dc_capacity = Number(project_kwp) * (1 + overloading / 100);
+
+    setFormData((prev) => ({
+      ...prev,
+      project_detail: {
+        ...prev.project_detail,
+        project_kwp: project_kwp,
+        proposed_dc_capacity: proposed_dc_capacity.toFixed(2),
+      },
+    }));
+  }, [getProject?.data, formData.project_detail.overloading]);
 
   const [moduleMakeOptions, setModuleMakeOptions] = useState([]);
   const [moduleTypeOptions, setModuleTypeOptions] = useState([]);
@@ -167,7 +270,7 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
   const [inverterSizeOptions, setInverterSizeOptions] = useState([]);
   const [inverterModelOptions, setInverterModelOptions] = useState([]);
   const [inverterTypeOptions, setInverterTypeOptions] = useState([]);
-  // const [handoverId, setHandoverId] = useState(null);
+
   const handlePrint = () => {
     window.print();
   };
@@ -243,15 +346,23 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
     }));
   };
 
-  const handleChange = (section, field, value) => {
+const handleChange = (section, key, value) => {
+  if (section) {
     setFormData((prev) => ({
       ...prev,
       [section]: {
         ...prev[section],
-        [field]: value,
+        [key]: value,
       },
     }));
-  };
+  } else {
+    setFormData((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  }
+};
+
 
   useEffect(() => {
     const userData = getUserData();
@@ -272,159 +383,8 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
     const userData = localStorage.getItem("userDetails");
     return userData ? JSON.parse(userData) : null;
   };
-  const LeadId = sessionStorage.getItem("view handover");
-  console.log("LeadId:", LeadId);
 
-  const p_id = projectId || searchParams.get("p_id");
-  // console.log(routes);
-
-  const queryParams = p_id ? { p_id } : { leadId: LeadId };
-
-  const {
-    data: handoverData,
-    isLoading,
-    isError,
-    error,
-  } = useGetHandOverByIdQuery(queryParams, {
-    skip: !p_id && !LeadId,
-  });
-
-  const handover = Array.isArray(handoverData?.data)
-    ? handoverData.data.find((item) => item.leadId === LeadId)
-    : handoverData?.data || null;
-
-  console.log("handoverData:", handoverData);
-
-  // 🎯 Populate Data from Handover if Available
-  useEffect(() => {
-    if (!handoverData) {
-      console.warn("No matching handover data found.");
-      return;
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      id: LeadId,
-      p_id: handover?.p_id || "",
-      customer_details: {
-        ...prev.customer_details,
-        code: handover?.customer_details?.code || "",
-        name: handover?.customer_details?.name || "",
-        customer: handover?.customer_details?.customer || "",
-        epc_developer: handover?.customer_details?.epc_developer || "",
-        // billing_address: handover?.customer_details?.billing_address || {
-        //   village_name: "",
-        //   district_name: "",
-        // },
-        site_address: handover?.customer_details?.site_address || {
-          village_name: "",
-          district_name: "",
-        },
-        site_google_coordinates:
-          handover?.customer_details?.site_google_coordinates || "",
-        number: handover?.customer_details?.number || "",
-        // gst_no: handover?.customer_details?.gst_no || "",
-        gender_of_Loa_holder:
-          handover?.customer_details?.gender_of_Loa_holder || "",
-        email: handover?.customer_details?.email || "",
-        p_group: handover?.customer_details?.p_group || "",
-        pan_no: handover?.customer_details?.pan_no || "",
-        adharNumber_of_loa_holder:
-          handover?.customer_details?.adharNumber_of_loa_holder || "",
-        state: handover?.customer_details?.state || "",
-        alt_number: handover?.customer_details?.alt_number || "",
-      },
-      order_details: {
-        ...prev.order_details,
-        type_business: handover?.order_details?.type_business || "",
-        tender_name: handover?.order_details?.tender_name || "",
-        discom_name: handover?.order_details?.discom_name || "",
-        design_date: handover?.order_details?.design_date || "",
-        feeder_code: handover?.order_details?.feeder_code || "",
-        feeder_name: handover?.order_details?.feeder_name || "",
-      },
-      project_detail: {
-        ...prev.project_detail,
-        project_type: handover?.project_detail?.project_type || "",
-        module_make_capacity:
-          handover?.project_detail?.module_make_capacity || "",
-        module_make: handover?.project_detail?.module_make || "",
-        module_make_other: handover?.project_detail?.module_make_other || "",
-        module_capacity: handover?.project_detail?.module_capacity || "",
-        module_type: handover?.project_detail?.module_type || "",
-        module_category: handover?.project_detail?.module_category || "",
-        evacuation_voltage: handover?.project_detail?.evacuation_voltage || "",
-        inverter_make_capacity:
-          handover?.project_detail?.inverter_make_capacity || "",
-        inverter_make: handover?.project_detail?.inverter_make || "",
-        inverter_make_other:
-          handover?.project_detail?.inverter_make_other || "",
-        inverter_type: handover?.project_detail?.inverter_type || "",
-        inverter_type_other:
-          handover?.project_detail?.inverter_type_other || "",
-        work_by_slnko: handover?.project_detail?.work_by_slnko || "",
-        topography_survey: handover?.project_detail?.topography_survey || "",
-        soil_test: handover?.project_detail?.soil_test || "",
-        purchase_supply_net_meter:
-          handover?.project_detail?.purchase_supply_net_meter || "",
-        liaisoning_net_metering:
-          handover?.project_detail?.liaisoning_net_metering || "",
-        ceig_ceg: handover?.project_detail?.ceig_ceg || "",
-        project_completion_date:
-          handover?.project_detail?.project_completion_date || "",
-        proposed_dc_capacity:
-          handover?.project_detail?.proposed_dc_capacity || "",
-        distance: handover?.project_detail?.distance || "",
-        tarrif: handover?.project_detail?.tarrif || "",
-        substation_name: handover?.project_detail?.substation_name || "",
-        overloading: handover?.project_detail?.overloading || "",
-        project_kwp: handover?.project_detail?.project_kwp || "",
-        land:
-          typeof handover?.project_detail?.land === "string"
-            ? JSON.parse(handover.project_detail.land)
-            : handover?.project_detail?.land || { type: "", acres: "" },
-        agreement_date: handover?.project_detail?.agreement_date || "",
-        project_component: handover?.project_detail?.project_component || "",
-        project_component_other:
-          handover?.project_detail?.project_component_other || "",
-        transmission_scope: handover?.project_detail?.transmission_scope || "",
-        loan_scope: handover?.project_detail?.loan_scope || "",
-      },
-      commercial_details: {
-        ...prev.commercial_details,
-        type: handover?.commercial_details?.type || "",
-        subsidy_amount: handover?.commercial_details?.subsidy_amount || "",
-      },
-      other_details: {
-        ...prev.other_details,
-        taken_over_by: handover?.other_details?.taken_over_by || "",
-        cam_member_name: handover?.other_details?.cam_member_name || "",
-        service: handover?.other_details?.service || "",
-        total_gst: handover?.other_details?.total_gst || "",
-        slnko_basic: handover?.other_details?.slnko_basic || "",
-        billing_type: handover?.other_details?.billing_type || "",
-        project_status: handover?.other_details?.project_status || "incomplete",
-        loa_number: handover?.other_details?.loa_number || "",
-        ppa_number: handover?.other_details?.ppa_number || "",
-        remark: handover?.other_details?.remark || "",
-        remarks_for_slnko: handover?.other_details?.remarks_for_slnko || "",
-        submitted_by_BD: handover?.other_details?.submitted_by_BD || "",
-      },
-      invoice_detail: {
-        ...prev.invoice_detail,
-        invoice_recipient: handover?.invoice_detail?.invoice_recipient || "",
-        invoicing_GST_no: handover?.invoice_detail?.invoicing_GST_no || "",
-        invoicing_GST_status:
-          handover?.invoice_detail?.invoicing_GST_status || "",
-        invoicing_address: handover?.invoice_detail?.invoicing_address || "",
-
-        msme_reg: handover?.invoice_detail?.msme_reg || "",
-      },
-      submitted_by: handover?.submitted_by || "-",
-      status_of_handoversheet: handover?.status_of_handoversheet,
-      is_locked: handover?.is_locked,
-    }));
-  }, [handover]);
+  const p_id = projectId;
 
   return (
     <Sheet
@@ -469,27 +429,6 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
             container
             spacing={2}
           >
-            {["Ranvijay Singh", "Rishav Mahato", "Dhruv Choudhary"].includes(
-              user?.name
-            ) && (
-              <Grid item xs={12} sm={6}>
-                <Typography
-                  level="body1"
-                  sx={{ fontWeight: "bold", marginBottom: 0.5 }}
-                >
-                  Project ID <span style={{ color: "red" }}>*</span>
-                </Typography>
-                <Input
-                  required
-                  fullWidth
-                  placeholder="Project ID"
-                  value={formData.customer_details.code}
-                  onChange={(e) =>
-                    handleChange("customer_details", "code", e.target.value)
-                  }
-                />
-              </Grid>
-            )}
             <Grid item xs={12} sm={6}>
               <Typography
                 level="body1"
@@ -501,6 +440,7 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
                 fullWidth
                 placeholder="Email"
                 value={formData.customer_details.email}
+                disabled
                 onChange={(e) =>
                   handleChange("customer_details", "email", e.target.value)
                 }
@@ -905,7 +845,7 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
                   )}
                 </Grid>
 
-               <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={6}>
                   <Typography level="body1">Inverter Type</Typography>
                   <Select
                     fullWidth
@@ -924,13 +864,12 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
                     <Option value="Other">Other</Option>
                   </Select>
 
-                 
                   {formData?.project_detail?.inverter_type === "Other" && (
                     <Input
                       placeholder="Enter inverter type"
                       fullWidth
                       value={
-                        formData?.project_detail?.inverter_type_other|| ""
+                        formData?.project_detail?.inverter_type_other || ""
                       }
                       onChange={(e) =>
                         handleChange(
@@ -1169,6 +1108,7 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
                 required
                 fullWidth
                 placeholder="Project ID"
+                disabled
                 value={formData.customer_details.code}
                 onChange={(e) =>
                   handleChange("customer_details", "code", e.target.value)
@@ -1187,6 +1127,7 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
                     value={formData.project_detail.tarrif}
                     placeholder="Tariff Rate"
                     required
+                    disabled
                     onChange={(e) =>
                       handleChange("project_detail", "tarrif", e.target.value)
                     }
@@ -1249,11 +1190,30 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
           <Typography level="h4">BD</Typography>
         </AccordionSummary>
         <AccordionDetails>
+
+
+
           <Grid
             sm={{ display: "flex", justifyContent: "center" }}
             container
             spacing={2}
           >
+
+
+
+
+<Autocomplete
+  fullWidth
+  required
+  placeholder={isLoading ? "Loading..." : "Select Lead Id"}
+  value={leads?.data.find((lead) => lead.id === formData.id) || null}
+  onChange={(_, value) => handleChange(null, "id", value?.id || "")}
+  options={leads?.data || []}
+  getOptionLabel={(option) => option.c_name || ""}
+  isOptionEqualToValue={(option, value) => option.id === value.id}
+/>
+
+
             <Grid item xs={12} sm={6}>
               <Typography
                 level="body1"
@@ -1266,6 +1226,7 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
                 fullWidth
                 placeholder="Enter Contact Person Name"
                 value={formData.customer_details.customer}
+                disabled
                 onChange={(e) =>
                   handleChange("customer_details", "customer", e.target.value)
                 }
@@ -1283,6 +1244,7 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
                 fullWidth
                 placeholder="Project Name"
                 value={formData.customer_details.name}
+                disabled
                 onChange={(e) =>
                   handleChange("customer_details", "name", e.target.value)
                 }
@@ -1298,6 +1260,7 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
               <Input
                 required
                 fullWidth
+                disabled
                 placeholder="NA, if not available..."
                 value={formData.customer_details.p_group}
                 onChange={(e) =>
@@ -1308,12 +1271,14 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
             <Grid item xs={12} sm={6}>
               <Typography
                 level="body1"
+                disabled
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
                 State <span style={{ color: "red" }}>*</span>
               </Typography>
               <Autocomplete
                 options={states}
+                disabled
                 value={formData.customer_details.state || null}
                 onChange={(e, value) =>
                   handleAutocompleteChange("customer_details", "state", value)
@@ -1405,6 +1370,7 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
                 fullWidth
                 placeholder="e.g. Varanasi 221001"
                 value={formData.customer_details.site_address.district_name}
+                disabled
                 onChange={(e) => {
                   const newDistrict = e.target.value;
                   handleChange("customer_details", "site_address", {
@@ -1435,6 +1401,7 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
                 <Textarea
                   fullWidth
                   placeholder="e.g. Chakia"
+                  disabled
                   value={formData.customer_details.site_address.village_name}
                   onChange={(e) => {
                     handleChange("customer_details", "site_address", {
@@ -1468,6 +1435,7 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
                 required
                 fullWidth
                 placeholder="Contact No."
+                disabled
                 value={formData.customer_details.number}
                 onChange={(e) =>
                   handleChange("customer_details", "number", e.target.value)
@@ -1485,6 +1453,7 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
                 fullWidth
                 placeholder="Alternate Contact No."
                 value={formData.customer_details.alt_number}
+                disabled
                 onChange={(e) =>
                   handleChange("customer_details", "alt_number", e.target.value)
                 }
@@ -1625,6 +1594,7 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
               <Input
                 value={formData.project_detail.project_kwp}
                 placeholder="Proposed AC Capacity (kWp)"
+                disabled
                 onChange={(e) =>
                   handleChange("project_detail", "project_kwp", e.target.value)
                 }
@@ -1650,7 +1620,7 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
               <Input
                 value={formData.project_detail.proposed_dc_capacity}
                 placeholder="Proposed DC Capacity (kWp)"
-                readOnly // Make it read-only since it's auto-calculated
+                readOnly
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -1883,8 +1853,8 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
                   </Typography>
                   <Input
                     value={formData.other_details.service}
+                    disabled
                     placeholder="Slnko Service Charge"
-                    readOnly
                   />
                 </Grid>
               </>
@@ -1938,6 +1908,7 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
       </Accordion>
 
       {/* Buttons */}
+
       <Grid
         container
         spacing={2}
@@ -1954,10 +1925,10 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
           }}
         >
           <Button
-            onClick={() => navigate(-1)}
             variant="solid"
             color="neutral"
             fullWidth
+            onClick={handleSubmit}
             sx={{
               padding: 1.5,
               fontSize: "1rem",
@@ -1965,7 +1936,7 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
               textAlign: "center",
             }}
           >
-            Back
+            Submit
           </Button>
         </Grid>
       </Grid>
@@ -1973,4 +1944,4 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
   );
 };
 
-export default ViewHandoverSheetForm;
+export default AddHandoverProject;

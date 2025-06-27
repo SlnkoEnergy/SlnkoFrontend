@@ -15,9 +15,12 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import AddIcon from "@mui/icons-material/Add";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
+import CloseIcon from "@mui/icons-material/Close";
 import {
   forwardRef,
   useEffect,
@@ -32,6 +35,9 @@ import {
   useDeleteProjectMutation,
   useGetProjectsQuery,
 } from "../redux/projectsSlice";
+import ViewHandoverSheetForm from "./Lead Stage/View_HandOver";
+import { Modal } from "@mui/joy";
+import AddHandoverProject from "./Lead Stage/AddHandoverProject";
 
 const AllProjects = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -45,6 +51,29 @@ const AllProjects = forwardRef((props, ref) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedProjects, setSelectedProjects] = useState([]);
+
+  const modalStyles = {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: "80vw",
+    maxHeight: "90vh",
+    bgcolor: "background.paper",
+    boxShadow: 24,
+    p: 3,
+    borderRadius: 2,
+    overflowY: "auto",
+  };
+
+  const [handoverMode, setHandoverMode] = useState(null);
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
+
+  const handleOpen = (p_id, mode) => {
+    setSelectedProjectId(p_id);
+    setHandoverMode(mode);
+    setOpen(true);
+  };
 
   // const states = ["California", "Texas", "New York", "Florida"];
 
@@ -72,7 +101,7 @@ const AllProjects = forwardRef((props, ref) => {
 
   const [deleteProject] = useDeleteProjectMutation();
 
-  console.log("getProject: ", getProject);
+  console.log("getProject: ", getProject.data);
 
   const [user, setUser] = useState(null);
 
@@ -438,6 +467,7 @@ const AllProjects = forwardRef((props, ref) => {
                 "Mobile",
                 "State",
                 "Slnko Service Charges (without GST)",
+                "Handover Status",
                 "",
               ].map((header, index) => (
                 <Box
@@ -558,6 +588,42 @@ const AllProjects = forwardRef((props, ref) => {
                       textAlign: "center",
                     }}
                   >
+                    {project.handover ? (
+                      <Box
+                        onClick={() => handleOpen(project.p_id, "view")}
+                        sx={{
+                          backgroundColor: "darkblue",
+                          borderRadius: "50%",
+                          padding: 1,
+                          cursor: "pointer",
+                          display: "inline-flex",
+                        }}
+                      >
+                        <VisibilityIcon sx={{ color: "white" }} />
+                      </Box>
+                    ) : (
+                      <Box
+                        onClick={() => handleOpen(project.p_id, "edit")}
+                        sx={{
+                          backgroundColor: "darkblue",
+                          borderRadius: "50%",
+                          padding: 1,
+                          cursor: "pointer",
+                          display: "inline-flex",
+                        }}
+                      >
+                        <AddIcon sx={{ color: "white" }} />
+                      </Box>
+                    )}
+                  </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
                     <RowMenu currentPage={currentPage} p_id={project.p_id} />
                   </Box>
                 </Box>
@@ -651,6 +717,29 @@ const AllProjects = forwardRef((props, ref) => {
           Next
         </Button>
       </Box>
+
+      <Modal open={open} onClose={() => setOpen(false)}>
+        <Box sx={{ ...modalStyles, position: "relative" }}>
+          <IconButton
+            onClick={() => setOpen(false)}
+            sx={{
+              position: "fixed",
+              top: 8,
+              right: 8,
+              color: "grey.900",
+              zIndex: 1,
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+
+          {handoverMode === "view" ? (
+            <ViewHandoverSheetForm projectId={selectedProjectId} />
+          ) : (
+            <AddHandoverProject projectId={selectedProjectId} />
+          )}
+        </Box>
+      </Modal>
     </>
   );
 });
