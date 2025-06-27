@@ -19,8 +19,6 @@ const AllExpense = forwardRef((props, ref) => {
   const navigate = useNavigate();
   const theme = useTheme();
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedExpenses, setSelectedExpenses] = useState([]);
