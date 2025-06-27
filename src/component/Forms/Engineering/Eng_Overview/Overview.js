@@ -17,6 +17,7 @@ import {
   useGetModuleCategoryByIdQuery,
   useUpdateModuleTemplateStatusMutation,
   useGetBoqProjectByProjectIdQuery,
+  useUpdateModuleTemplateRemarksMutation,
 } from "../../../../redux/Eng/templatesSlice";
 import { toast } from "react-toastify";
 
@@ -34,6 +35,14 @@ const Overview = () => {
   const [remarks, setRemarks] = useState("");
   const [showRemarksModal, setShowRemarksModal] = useState(false);
   const [activeTemplateId, setActiveTemplateId] = useState(null);
+  const [updateRemarks] = useUpdateModuleTemplateRemarksMutation();
+  const [showHoldModal, setShowHoldModal] = useState(false);
+  const [holdRemarks, setHoldRemarks] = useState("");
+  const [holdTemplateId, setHoldTemplateId] = useState(null);
+
+  const [showAddRemarksModal, setShowAddRemarksModal] = useState(false);
+  const [addRemarksText, setAddRemarksText] = useState("");
+  const [remarksTemplateId, setRemarksTemplateId] = useState(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userDetails");
@@ -47,7 +56,7 @@ const Overview = () => {
   }, []);
 
   const isEngineering = user?.department === "Engineering";
-  const isCAM = user?.department === "CAM";
+  const isCAM = user?.department === "CAM" || user?.department === "Projects";
   console.log("isCAM →", isCAM);
   const projectId = searchParams.get("project_id");
 
@@ -197,6 +206,144 @@ const Overview = () => {
       toast.error("Failed to update module category.");
     }
   };
+  const handleHold = async () => {
+    try {
+      const storedUser = JSON.parse(localStorage.getItem("userDetails"));
+      const department = storedUser?.department || "";
+      const userId = storedUser?.userId || storedUser?.name || "";
+
+      if (!holdTemplateId) {
+        toast.error("No template selected for hold.");
+        return;
+      }
+
+      if (!department || !userId) {
+        toast.error("User details missing.");
+        return;
+      }
+
+      // Step 1: Change status to "hold"
+      await updateStatus({
+        projectId,
+        moduleTemplateId: holdTemplateId,
+        statusData: {
+          status: "hold",
+        },
+      }).unwrap();
+
+      // Step 2: Add remarks separately
+      await updateRemarks({
+        projectId,
+        moduleTemplateId: holdTemplateId,
+        statusData: {
+          department,
+          userId,
+          text: holdRemarks.trim(),
+        },
+      }).unwrap();
+
+      toast.success("Template held successfully.");
+      setShowHoldModal(false);
+      setHoldRemarks("");
+      setHoldTemplateId(null);
+    } catch (err) {
+      console.error("❌ Hold failed:", err);
+      toast.error(err?.data?.message || "Failed to hold template.");
+    }
+  };
+
+  const handleUnhold = async (templateId) => {
+    try {
+      const storedUser = JSON.parse(localStorage.getItem("userDetails"));
+      const department = storedUser?.department || "";
+      const userId = storedUser?.userId || "";
+
+      await updateStatus({
+        projectId,
+        moduleTemplateId: templateId,
+        statusData: {
+          status: "submitted",
+          department: `${department}`,
+          userId: `${userId}`,
+          text: " ",
+        },
+      }).unwrap();
+
+      toast.success("Template unheld successfully.");
+    } catch (err) {
+      console.error("❌ Failed to unhold template:", err);
+      toast.error("Failed to unhold template.");
+    }
+  };
+
+  const handleSubmitHold = async () => {
+    try {
+      const storedUser = JSON.parse(localStorage.getItem("userDetails"));
+      const department = storedUser?.department;
+      const userId = storedUser?.userId || storedUser?.name;
+
+      if (!department) {
+        toast.error("Department not found.");
+        return;
+      }
+
+      await updateStatus({
+        projectId,
+        moduleTemplateId: holdTemplateId,
+        statusData: {
+          status: "hold",
+          department: department,
+          userId: userId,
+          text: holdRemarks.trim(),
+        },
+      }).unwrap();
+
+      toast.success("Template held successfully.");
+      setShowHoldModal(false);
+      setHoldRemarks("");
+      setHoldTemplateId(null);
+    } catch (err) {
+      console.error("❌ Hold failed:", err);
+      toast.error(err?.data?.message || "Failed to hold template.");
+    }
+  };
+
+  const handleAddRemarks = async () => {
+    if (!remarksTemplateId) {
+      toast.error("No template selected for remarks.");
+      return;
+    }
+
+    const storedUser = JSON.parse(localStorage.getItem("userDetails"));
+    const department = storedUser?.department || "";
+    const userId = storedUser?.userId || storedUser?.name || "";
+
+    if (!department || !userId) {
+      toast.error("User details missing.");
+      return;
+    }
+
+    try {
+      await updateRemarks({
+        projectId,
+        moduleTemplateId: remarksTemplateId,
+        statusData: {
+          department,
+          userId,
+          text: addRemarksText.trim(),
+        },
+      }).unwrap();
+
+      toast.success("Remarks added successfully.");
+      setShowAddRemarksModal(false);
+      setAddRemarksText("");
+      setRemarksTemplateId(null);
+      // Optionally refresh data here
+    } catch (err) {
+      console.error("❌ Failed to add remarks:", err);
+      toast.error("Failed to add remarks.");
+    }
+  };
 
   const handleStatusChange = (statusType, templateId) => {
     if (statusType === "revised") {
@@ -207,16 +354,21 @@ const Overview = () => {
 
   const handleApprove = async (templateId) => {
     try {
+      const storedUser = JSON.parse(localStorage.getItem("userDetails"));
+      const department = storedUser?.department || "";
+      const userId = storedUser?.userId || "";
       await updateStatus({
         projectId,
         moduleTemplateId: templateId,
         statusData: {
           status: "approved",
-          remarks: "",
+          text: " ",
+          department: `${department}`,
+          userId: `${userId}`,
         },
       }).unwrap();
+
       toast.success("Template approved!");
-      // Optionally refresh here
     } catch (err) {
       console.error("Approve failed:", err);
       toast.error("Failed to approve template.");
@@ -229,31 +381,30 @@ const Overview = () => {
       return;
     }
 
-    const statusData = {
-      status: "revised",
-      remarks: remarks.trim(),
-    };
-
-    console.log("📦 Sending:", {
-      projectId,
-      moduleTemplateId: activeTemplateId,
-      statusData,
-    });
-
     try {
+      const storedUser = JSON.parse(localStorage.getItem("userDetails"));
+      const department = storedUser?.department || "";
+      const userId = storedUser?.userId || "";
+
+      // Send all required fields to updateStatus
       await updateStatus({
         projectId,
         moduleTemplateId: activeTemplateId,
-        statusData,
+        statusData: {
+          status: "revised",
+          department: `${department}`,
+          userId: `${userId}`,
+          text: remarks.trim(),
+        },
       }).unwrap();
+
       toast.success("Template revised successfully.");
       setShowRemarksModal(false);
       setRemarks("");
       setActiveTemplateId(null);
-      // e.g. refetch or refresh
     } catch (err) {
       console.error("❌ Revision failed:", err);
-      toast.error("Failed to revise template.");
+      toast.error(err?.data?.message || "Failed to revise template.");
     }
   };
 
@@ -420,7 +571,8 @@ const Overview = () => {
 
                     {item.fileUploadEnabled &&
                       isEngineering &&
-                      !isUploadDisabled && (
+                      !isUploadDisabled &&
+                      item.latestStatus !== "hold" && ( // Disable upload if status is hold
                         <input
                           type="file"
                           multiple
@@ -480,26 +632,26 @@ const Overview = () => {
                       </Box>
                     )}
 
-                    {item.currentAttachments.length > 0 && (
-                      <Box sx={{ mt: 2 }}>
-                        <Typography level="body-xs" sx={{ fontWeight: 500 }}>
-                          📥 Current Attachments:
-                        </Typography>
-                        {item.currentAttachments.map((url, i) => (
-                          <ListItem key={i} sx={{ p: 0, mt: 0.5 }}>
-                            <a
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{ color: "#1976d2", fontSize: "14px" }}
-                            >
-                              📎 {url.split("/").pop()}
-                            </a>
-                          </ListItem>
-                        ))}
-                      </Box>
-                    )}
-
+                    {item.currentAttachments.length > 0 &&
+                      !(isCAM && item.latestStatus === "hold") && (
+                        <Box sx={{ mt: 2 }}>
+                          <Typography level="body-xs" sx={{ fontWeight: 500 }}>
+                            📥 Current Attachments:
+                          </Typography>
+                          {item.currentAttachments.map((url, i) => (
+                            <ListItem key={i} sx={{ p: 0, mt: 0.5 }}>
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ color: "#1976d2", fontSize: "14px" }}
+                              >
+                                📎 {url.split("/").pop()}
+                              </a>
+                            </ListItem>
+                          ))}
+                        </Box>
+                      )}
                     <Box sx={{ mt: 2 }}>
                       <Typography level="body-xs" sx={{ fontWeight: 500 }}>
                         Current Status:{" "}
@@ -511,41 +663,87 @@ const Overview = () => {
                           {item.latestStatus || "N/A"}
                         </Typography>
                         {item.latestStatus === "revised" &&
-                          item.latestRemarks && (
+                          Array.isArray(item.latestRemarks) &&
+                          item.latestRemarks.length > 0 && (
                             <>
                               {" — Remarks: "}
-                              <Typography component="span" level="body-xs">
-                                {item.latestRemarks}
+                              {item.latestRemarks.map((remark, i) => (
+                                <Typography
+                                  key={remark._id || i}
+                                  component="span"
+                                  level="body-xs"
+                                  sx={{ display: "block" }}
+                                >
+                                  {remark.department}: {remark.text}
+                                </Typography>
+                              ))}
+                            </>
+                          )}
+                        {/* Show hold remarks if applicable */}
+                        {item.latestStatus === "hold" &&
+                          Array.isArray(item.latestRemarks) &&
+                          item.latestRemarks.length > 0 && (
+                            <>
+                              <Typography sx={{ mt: 1, fontWeight: 500 }}>
+                                Hold Remarks:
                               </Typography>
+                              {item.latestRemarks.map((remark, i) => (
+                                <Typography
+                                  key={remark._id || i}
+                                  component="span"
+                                  level="body-xs"
+                                  sx={{ display: "block" }}
+                                >
+                                  {remark.department}: {remark.text}
+                                </Typography>
+                              ))}
                             </>
                           )}
                       </Typography>
                     </Box>
 
-                    {(item.attachmentUrls.length > 0 ||
-                      (isCAM && item.latestStatus === "submitted")) && (
-                      <Box
-                        sx={{
-                          position: "absolute",
-                          top: 12,
-                          right: 12,
-                          display: "flex",
-                          gap: 1,
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        {item.attachmentUrls.length > 0 && (
-                          <>
-                            <Button
-                              variant="outlined"
-                              size="sm"
-                              onClick={() =>
-                                handleLogsOpen(item.attachmentUrls)
-                              }
-                            >
-                              📂 Attachment Logs
-                            </Button>
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: 12,
+                        right: 12,
+                        display: "flex",
+                        gap: 1,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      {/* Attachment Logs & Add Boq */}
+                      {item.attachmentUrls?.length > 0 && (
+                        <>
+                          <Button
+                            variant="outlined"
+                            size="sm"
+                            onClick={() => handleLogsOpen(item.attachmentUrls)}
+                            disabled={isCAM && item.latestStatus === "hold"}
+                            sx={{
+                              opacity:
+                                isCAM && item.latestStatus === "hold" ? 0.5 : 1,
+                              pointerEvents:
+                                isCAM && item.latestStatus === "hold"
+                                  ? "none"
+                                  : "auto",
+                            }}
+                          >
+                            📂 Attachment Logs
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outlined"
+                            color="neutral"
+                            onClick={() => {
+                              setRemarksTemplateId(item.templateId);
+                              setShowAddRemarksModal(true);
+                            }}
+                          >
+                            📝 Add Remarks
+                          </Button>
 
+                          {!isCAM && (
                             <Button
                               variant="soft"
                               size="sm"
@@ -557,36 +755,67 @@ const Overview = () => {
                             >
                               Add Boq
                             </Button>
-                          </>
-                        )}
-                        {isCAM && item.latestStatus === "submitted" && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="soft"
-                              color="success"
-                              onClick={() => handleApprove(item.templateId)}
-                              disabled={isUpdating}
-                            >
-                              ✅ Approve
-                            </Button>
+                            
+                          )}
+                        </>
+                      )}
 
-                            <Button
-                              size="sm"
-                              variant="soft"
-                              color="warning"
-                              onClick={() => {
-                                setActiveTemplateId(item.templateId);
-                                setShowRemarksModal(true);
-                              }}
-                              disabled={isUpdating}
-                            >
-                              🔁 Revise
-                            </Button>
-                          </>
-                        )}
-                      </Box>
-                    )}
+                      {/* CAM Actions */}
+                      {isCAM && item.latestStatus === "submitted" && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="soft"
+                            color="success"
+                            onClick={() => handleApprove(item.templateId)}
+                            disabled={isUpdating}
+                          >
+                            ✅ Approve
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="soft"
+                            color="warning"
+                            onClick={() => {
+                              setActiveTemplateId(item.templateId);
+                              setShowRemarksModal(true);
+                            }}
+                            disabled={isUpdating}
+                          >
+                            🔁 Revise
+                          </Button>
+                        </>
+                      )}
+
+                      {/* Hold/Unhold for Engineering */}
+                      {isEngineering && item.latestStatus !== "hold" && (
+                        <Button
+                          size="sm"
+                          variant="soft"
+                          color="warning"
+                          onClick={() => {
+                            setHoldTemplateId(item.templateId);
+                            setShowHoldModal(true);
+                          }}
+                          disabled={isUpdating}
+                        >
+                          🚧 Hold
+                        </Button>
+                      )}
+
+                      {isEngineering && item.latestStatus === "hold" && (
+                        <Button
+                          size="sm"
+                          variant="soft"
+                          color="success"
+                          onClick={() => handleUnhold(item.templateId)}
+                          disabled={isUpdating}
+                        >
+                          🟢 Unhold
+                        </Button>
+                      )}
+                    </Box>
                   </Sheet>
                 );
               })
@@ -611,51 +840,55 @@ const Overview = () => {
       </Box>
 
       <Modal open={showLogsModal} onClose={() => setShowLogsModal(false)}>
-  <ModalDialog>
-    <Typography level="h5" sx={{ mb: 2 }}>
-      📂 Attachment Logs
-    </Typography>
-    {logModalData.length === 0 ? (
-      <Typography>No files uploaded.</Typography>
-    ) : (
-      <Box sx={{ maxHeight: 300, overflowY: "auto", pr: 1 }}>
-        <List>
-          {logModalData.map((revisionBlock, i) => (
-            <Box key={i} sx={{ mb: 2 }}>
-              <Typography
-                level="body-sm"
-                sx={{ fontWeight: 600, mb: 1, color: "primary.plainColor" }}
-              >
-                📁 {revisionBlock.revision}
-              </Typography>
-              {revisionBlock.urls.map((url, j) => (
-                <ListItem key={j} sx={{ p: 0, pl: 2 }}>
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: "#1976d2", fontSize: "14px" }}
-                  >
-                    📎 {url.split("/").pop()}
-                  </a>
-                </ListItem>
-              ))}
+        <ModalDialog>
+          <Typography level="h5" sx={{ mb: 2 }}>
+            📂 Attachment Logs
+          </Typography>
+          {logModalData.length === 0 ? (
+            <Typography>No files uploaded.</Typography>
+          ) : (
+            <Box sx={{ maxHeight: 300, overflowY: "auto", pr: 1 }}>
+              <List>
+                {logModalData.map((revisionBlock, i) => (
+                  <Box key={i} sx={{ mb: 2 }}>
+                    <Typography
+                      level="body-sm"
+                      sx={{
+                        fontWeight: 600,
+                        mb: 1,
+                        color: "primary.plainColor",
+                      }}
+                    >
+                      📁 {revisionBlock.revision}
+                    </Typography>
+                    {revisionBlock.urls.map((url, j) => (
+                      <ListItem key={j} sx={{ p: 0, pl: 2 }}>
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: "#1976d2", fontSize: "14px" }}
+                        >
+                          📎 {url.split("/").pop()}
+                        </a>
+                      </ListItem>
+                    ))}
+                  </Box>
+                ))}
+              </List>
             </Box>
-          ))}
-        </List>
-      </Box>
-    )}
-    <Box sx={{ textAlign: "right", mt: 2 }}>
-      <Button
-        variant="soft"
-        color="neutral"
-        onClick={() => setShowLogsModal(false)}
-      >
-        Close
-      </Button>
-    </Box>
-  </ModalDialog>
-</Modal>
+          )}
+          <Box sx={{ textAlign: "right", mt: 2 }}>
+            <Button
+              variant="soft"
+              color="neutral"
+              onClick={() => setShowLogsModal(false)}
+            >
+              Close
+            </Button>
+          </Box>
+        </ModalDialog>
+      </Modal>
 
       <Modal open={showRemarksModal} onClose={() => setShowRemarksModal(false)}>
         <ModalDialog>
@@ -695,6 +928,133 @@ const Overview = () => {
           </Box>
         </ModalDialog>
       </Modal>
+      <Modal open={showHoldModal} onClose={() => setShowHoldModal(false)}>
+        <ModalDialog>
+          <Typography level="h6">Enter Remarks for Hold</Typography>
+          <textarea
+            style={{
+              width: "100%",
+              minHeight: "100px",
+              border: "1px solid #ccc",
+              borderRadius: "8px",
+              padding: "8px",
+              marginTop: "8px",
+            }}
+            value={holdRemarks}
+            onChange={(e) => setHoldRemarks(e.target.value)}
+            placeholder="Write your remarks here..."
+          />
+          <Box
+            sx={{ mt: 2, display: "flex", justifyContent: "flex-end", gap: 1 }}
+          >
+            <Button
+              variant="soft"
+              color="neutral"
+              onClick={() => setShowHoldModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="solid"
+              color="warning"
+              onClick={handleSubmitHold}
+              disabled={!holdRemarks.trim()}
+            >
+              Submit
+            </Button>
+          </Box>
+        </ModalDialog>
+      </Modal>
+      <Modal open={showAddRemarksModal} onClose={() => setShowAddRemarksModal(false)}>
+  <ModalDialog sx={{ width: 400, maxHeight: 500 }}>
+    <Typography level="h6" sx={{ mb: 1 }}>
+      Chat - Remarks
+    </Typography>
+
+    <Box
+      sx={{
+        maxHeight: 300,
+        overflowY: "auto",
+        p: 1,
+        mb: 2,
+        bgcolor: "#f5f5f5",
+        borderRadius: "8px",
+      }}
+    >
+      {categoryData[selected]
+        ?.find((item) => item.templateId === remarksTemplateId)
+        ?.latestRemarks?.length > 0 ? (
+        categoryData[selected]
+          .find((item) => item.templateId === remarksTemplateId)
+          .latestRemarks.map((remark, i) => (
+            <Box
+              key={remark._id || i}
+              sx={{
+                display: "flex",
+                justifyContent:
+                  remark.department === "Engineering" ? "flex-start" : "flex-end",
+                mb: 1,
+              }}
+            >
+              <Box
+                sx={{
+                  maxWidth: "70%",
+                  p: 1.5,
+                  bgcolor:
+                    remark.department === "Engineering"
+                      ? "primary.softBg"
+                      : "success.softBg",
+                  color:
+                    remark.department === "Engineering"
+                      ? "primary.plainColor"
+                      : "success.plainColor",
+                  borderRadius: "12px",
+                  fontSize: "14px",
+                  wordBreak: "break-word",
+                }}
+              >
+                <Typography
+                  level="body-xs"
+                  sx={{ fontWeight: 600, mb: 0.5 }}
+                >
+                  {remark.department}
+                </Typography>
+                {remark.text}
+              </Box>
+            </Box>
+          ))
+      ) : (
+        <Typography level="body-sm" sx={{ textAlign: "center", mt: 2 }}>
+          No remarks yet.
+        </Typography>
+      )}
+    </Box>
+
+    <Box sx={{ display: "flex", gap: 1 }}>
+      <textarea
+        style={{
+          flexGrow: 1,
+          minHeight: "60px",
+          border: "1px solid #ccc",
+          borderRadius: "8px",
+          padding: "8px",
+        }}
+        value={addRemarksText}
+        onChange={(e) => setAddRemarksText(e.target.value)}
+        placeholder="Write a message..."
+      />
+      <Button
+        variant="solid"
+        color="primary"
+        onClick={handleAddRemarks}
+        disabled={!addRemarksText.trim()}
+      >
+        Send
+      </Button>
+    </Box>
+  </ModalDialog>
+</Modal>
+
     </Box>
   );
 };
