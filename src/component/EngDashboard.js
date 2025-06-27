@@ -83,28 +83,7 @@ function Dash_eng() {
       })
     : [];
 
-  // console.log(combinedData);
-
-  // const StatusIcon = ({ isLocked }) => {
-  //   return (
-  //     <Box
-  //       sx={{
-  //         display: "flex",
-  //         justifyContent: "center",
-  //         alignItems: "center",
-  //       }}
-  //     >
-  //       {isLocked ? (
-  //         <LockClosedIcon style={{ width: 20, height: 20, color: "#f44336" }} />
-  //       ) : (
-  //         <LockOpenIcon style={{ width: 20, height: 20, color: "#4caf50" }} />
-  //       )}
-  //     </Box>
-  //   );
-  // };
-
   const RowMenu = ({ currentPage, p_id, _id }) => {
-    // console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
 
     const [user, setUser] = useState(null);
 
@@ -136,76 +115,6 @@ function Dash_eng() {
           {(user?.name === "IT Team" ||
             user?.name === "admin".includes(user?.name)) && (
             <Menu size="sm" sx={{ minWidth: 200, p: 1 }}>
-              <MenuItem
-                color="primary"
-                onClick={() => {
-                  const page = currentPage;
-                  const projectId = _id;
-                  sessionStorage.setItem("view handover", projectId);
-                  navigate(`/overview?page=${page}&_id=${projectId}`);
-                }}
-              >
-                <ContentPasteGoIcon sx={{ mr: 1 }} />
-                <Typography>Handover Summary</Typography>
-              </MenuItem>
-
-              {/* <MenuItem
-                color="primary"
-                onClick={() => {
-                  const page = currentPage;
-                  const projectId = Number(p_id);
-                  sessionStorage.setItem("update handover", projectId);
-                  navigate("#");
-                }}
-              >
-                <HistoryIcon sx={{ mr: 1 }} />
-                <Typography>Cam Logs</Typography>
-              </MenuItem> */}
-
-              <MenuItem
-                color="primary"
-                onClick={() => {
-                  const page = currentPage;
-                  const projectId = String(p_id);
-                  localStorage.setItem("get-project", projectId);
-                  navigate("#");
-                }}
-              >
-                <DashboardCustomizeIcon sx={{ mr: 1 }} />
-                <Typography>View BOM Dashboard</Typography>
-              </MenuItem>
-
-              <MenuItem
-                color="primary"
-                onClick={() => {
-                  const page = currentPage;
-                  const projectId = String(p_id);
-                  sessionStorage.setItem("add_bom", projectId);
-                  navigate(`/add_bom?page=${page}&p_id=${projectId}`);
-                }}
-              >
-                <PlaylistAddIcon sx={{ mr: 1 }} />
-                <Typography>Add BOM</Typography>
-              </MenuItem>
-
-              <MenuItem
-                sx={{
-                  color: "primary.main",
-                  "&:hover": {
-                    backgroundColor: "primary.light",
-                    color: "white",
-                  },
-                }}
-                onClick={() => {
-                  const page = currentPage;
-                  const projectId = String(p_id);
-                  sessionStorage.setItem("process_tracker", projectId);
-                  navigate(`/process_track?page=${page}&p_id=${projectId}`);
-                }}
-              >
-                <TrackChangesIcon sx={{ mr: 1 }} />
-                <Typography>Process Tracker</Typography>
-              </MenuItem>
             </Menu>
           )}
         </Dropdown>
@@ -214,7 +123,7 @@ function Dash_eng() {
   };
 
   const ViewHandOver = ({ currentPage, p_id, code }) => {
-    // console.log("currentPage:", currentPage, "p_id:", p_id);
+ 
 
     return (
       <>
@@ -234,7 +143,6 @@ function Dash_eng() {
   };
 
   const ProjectOverView = ({ currentPage, project_id, code }) => {
-    // console.log("currentPage:", currentPage, "pproject_id:", pproject_id);
 
     return (
       <>
@@ -247,8 +155,6 @@ function Dash_eng() {
           }}
           onClick={() => {
             const page = currentPage;
-            // const project_id = project_id;
-            // sessionStorage.setItem("eng_overview", projectId);
             navigate(`/overview?page=${page}&project_id=${project_id}`);
           }}
         >
@@ -258,34 +164,7 @@ function Dash_eng() {
     );
   };
 
-  // const handleDelete = async () => {
-  //   if (selected.length === 0) {
-  //     toast.error("No offers selected for deletion.");
-  //     return;
-  //   }
 
-  //   try {
-  //     setLoading(true);
-  //     setError("");
-
-  //     for (const _id of selected) {
-  //       await Axios.delete(`/delete-offer/${_id}`);
-
-  //       setCommRate((prev) => prev.filter((item) => item._id !== _id));
-  //       setBdRateData((prev) => prev.filter((item) => item.offer_id !== _id));
-  //       setMergedData((prev) => prev.filter((item) => item.offer_id !== _id));
-  //     }
-
-  //     toast.success("Deleted successfully.");
-  //     setSelected([]);
-  //   } catch (err) {
-  //     console.error("Error deleting offers:", err);
-  //     setError(err.response?.data?.msg || "Failed to delete selected offers.");
-  //     toast.error("Failed to delete selected offers.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
