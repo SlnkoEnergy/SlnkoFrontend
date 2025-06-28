@@ -9,20 +9,19 @@ const AddBillForm = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
-  
- useEffect(() => {
-  const userData = getUserData();
-  setUser(userData);
-}, []);
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
 
-const getUserData = () => {
-  const userData = localStorage.getItem("userDetails");
-  if (userData) {
-    return JSON.parse(userData);
-  }
-  return null;
-};
-  
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+
   const [formValues, setFormValues] = useState({
     p_id: "",
     po_number: "",
@@ -35,12 +34,11 @@ const getUserData = () => {
     bill_value: "",
     bill_type: "",
     submitted_by: "",
-    approved_by:"",
+    approved_by: "",
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  
 
   const billTypes = [
     { label: "Final", value: "Final" },
@@ -55,7 +53,7 @@ const getUserData = () => {
     const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
-  
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -64,7 +62,7 @@ const getUserData = () => {
         const po = localStorage.getItem("po_no");
         const po_Number = po ? String(po) : null;
         // console.log("PO from localStorage:", po_Number);
-const token = localStorage.getItem("authToken");
+        const token = localStorage.getItem("authToken");
         const response = await Axios.get("/get-all-pO-IT", {
           headers: {
             "x-auth-token": token,
@@ -105,7 +103,7 @@ const token = localStorage.getItem("authToken");
     if (name === "bill_value") {
       const billValue = parseFloat(value);
       const poValue = parseFloat(formValues.po_value);
-  
+
       if (billValue > poValue) {
         toast.warning("Bill value cannot exceed PO value !!");
         return;
@@ -116,7 +114,6 @@ const token = localStorage.getItem("authToken");
       [name]: value,
     }));
   };
-  
 
   const handleAutocompleteChange = (_, newValue) => {
     setFormValues((prevValues) => ({
@@ -125,53 +122,36 @@ const token = localStorage.getItem("authToken");
     }));
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  const dataToPost = {
-    po_number: formValues.po_number,
-    bill_number: formValues.bill_number,
-    bill_date: formValues.bill_date,
-    bill_value: formValues.bill_value,
-    bill_type: formValues.bill_type,
-    submitted_by: user?.name,
-    approved_by: "",
-  };
+    const dataToPost = {
+      po_number: formValues.po_number,
+      bill_number: formValues.bill_number,
+      bill_date: formValues.bill_date,
+      bill_value: formValues.bill_value,
+      bill_type: formValues.bill_type,
+      submitted_by: user?.name,
+      approved_by: "",
+    };
 
-  try {
-    const token = localStorage.getItem("authToken");
+    try {
+      const token = localStorage.getItem("authToken");
 
-  const response = await Axios.post("/add-bilL-IT", dataToPost, {
-    headers: {
-      "x-auth-token": token,
-    },
-  });
-    
-    // Check if the response indicates that the bill number already exists
-    if (response.status === 400 && response.data.message === "Bill Number already used!") {
-      toast.warning("Bill number already exists!");
-      return;
-    }
+      await Axios.post("/add-bilL-IT", dataToPost, {
+        headers: {
+          "x-auth-token": token,
+        },
+      });
 
-    // If successful, show a success message
-    toast.success("Bill added successfully!");
-    localStorage.removeItem("po_no");
-    navigate("/purchase-order");
-
-  } catch (error) {
-    console.error("Error posting data:", error);
-
-    // Check if the error has a response and the expected error message
-    if (error.response && error.response.data && error.response.data.message === "Bill Number already used!") {
-      toast.warning("Bill number already exists!");
-    } else {
-      // Handle any other errors
+      toast.success("Bill added successfully!");
+      localStorage.removeItem("po_no");
+      navigate("/purchase-order");
+    } catch (error) {
+      console.error("Error posting data:", error);
       toast.error("An error occurred while adding the bill.");
     }
-  }
-};
-
-  
+  };
 
   return (
     <Box
@@ -179,8 +159,8 @@ const handleSubmit = async (e) => {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        
-        width:"100%",
+
+        width: "100%",
         minHeight: "100vh",
         backgroundColor: "background.level1",
         padding: "20px",

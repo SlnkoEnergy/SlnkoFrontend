@@ -1817,16 +1817,7 @@ const ProjectBalances = forwardRef((props, ref) => {
                               onChange={() => handleRowSelect(project._id)}
                             />
                           </Box>
-                          <Box
-                            component="td"
-                            sx={{
-                              ...cellStyle,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              minWidth: "40px",
-                            }}
-                          >
+                          <Box component="td" sx={cellStyle}>
                             <AddMoney
                               currentPage={currentPage}
                               p_id={project.p_id}

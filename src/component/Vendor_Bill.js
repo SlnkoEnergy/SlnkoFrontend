@@ -2,7 +2,10 @@ import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
+import HourglassBottomRoundedIcon from "@mui/icons-material/HourglassBottomRounded";
+import { keyframes } from "@emotion/react";
 import SearchIcon from "@mui/icons-material/Search";
+import { CircularProgress, Tooltip } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Chip from "@mui/joy/Chip";
@@ -10,21 +13,42 @@ import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
+import DownloadIcon from "@mui/icons-material/Download";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import Typography from "@mui/joy/Typography";
 import { useSnackbar } from "notistack";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Axios from "../utils/Axios";
+import {
+  useExportBillsMutation,
+  useGetBillsQuery,
+  useGetPaginatedBillsQuery,
+} from "../redux/billsSlice";
+import { Option, Select } from "@mui/joy";
+import { useMemo } from "react";
 
 function VendorBillSummary() {
-  const [poData, setPoData] = useState([]);
-  const [billData, setBillData] = useState([]);
-  const [matchingData, setMatchingData] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(15);
+  // const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
+  const [selectedbill, setSelectedbill] = useState("");
+  const initialPage = parseInt(searchParams.get("page")) || 1;
+  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [currentPage, setCurrentPage] = useState(initialPage);
+  const [perPage, setPerPage] = useState(initialPageSize);
+
+  const bounce = keyframes`
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+`;
 
   useEffect(() => {
     const userData = getUserData();
@@ -39,100 +63,94 @@ function VendorBillSummary() {
     return null;
   };
 
-  // Fetch Purchase Order data (get-all-po)
-  useEffect(() => {
-    async function fetchPoData() {
-      try {
-          const token = localStorage.getItem("authToken");
-        // console.log(token);
+  const { data: getBill = [], isLoading } = useGetPaginatedBillsQuery({
+    page: currentPage,
+    pageSize: perPage,
+    status: selectedbill,
+    search: searchQuery,
+  });
 
-        if (!token) {
-          throw new Error("No auth token found in localStorage.");
-        }
-        const response = await Axios.get("/get-all-pO-IT", {
-            headers: {
-              "x-auth-token": token,
-            },
-          });
-        // console.log("PO Data:", response.data.data);
-        setPoData(response.data.data);
-      } catch (error) {
-        console.error("Error fetching PO data:", error);
-      }
+  const [exportBills, { isLoading: isExporting }] = useExportBillsMutation();
+
+  const { data: getBillData = [], total = 0, count = 0 } = getBill;
+  const totalPages = Math.ceil(total / perPage);
+
+  const startIndex = (currentPage - 1) * perPage + 1;
+  const endIndex = Math.min(startIndex + count - 1, total);
+
+  const getPaginationRange = () => {
+    const siblings = 1;
+    const pages = [];
+
+    if (totalPages <= 5 + siblings * 2) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      const left = Math.max(currentPage - siblings, 2);
+      const right = Math.min(currentPage + siblings, totalPages - 1);
+
+      pages.push(1);
+      if (left > 2) pages.push("...");
+
+      for (let i = left; i <= right; i++) pages.push(i);
+
+      if (right < totalPages - 1) pages.push("...");
+      pages.push(totalPages);
     }
-    fetchPoData();
-  }, []);
 
-  // Fetch Bill data (get-all-bill)
-  useEffect(() => {
-    async function fetchBillData() {
-      try {
-           const token = localStorage.getItem("authToken");
-        // console.log(token);
-
-        if (!token) {
-          throw new Error("No auth token found in localStorage.");
-        }
-        const response = await Axios.get("/get-all-bilL-IT", {
-            headers: {
-              "x-auth-token": token,
-            },
-          });
-        // console.log("Bill Data:", response.data.data); // Check Bill Data
-        setBillData(response.data.data);
-      } catch (error) {
-        console.error("Error fetching Bill data:", error);
-      }
-    }
-    fetchBillData();
-  }, []);
-
-  useEffect(() => {
-    if (poData.length && billData.length) {
-      const matchedData = poData.flatMap((po) => {
-        const matchedBills = billData.filter(
-          (bill) => bill.po_number === po.po_number
-        );
-
-        if (matchedBills.length > 0) {
-          const totalBilled = matchedBills.reduce(
-            (sum, b) => sum + parseFloat(b.bill_value || 0),
-            0
-          );
-
-          return matchedBills.map((bill) => ({
-            p_id: po.p_id,
-            po_number: po.po_number,
-            vendor: po.vendor,
-            item: po.item,
-            bill_number: bill.bill_number,
-            bill_date: bill.bill_date,
-            bill_value: bill.bill_value,
-            po_value: po.po_value,
-            total_billed: totalBilled,
-            po_status:
-              totalBilled === po.po_value ? "Fully Billed" : "Bill Pending",
-            po_balance: po.po_value - totalBilled,
-            received: "Pending",
-            approved_by: bill.approved_by,
-            created_on: bill.created_on,
-            updatedAt: bill.updatedAt,
-          }));
-        }
-        return [];
-      });
-
-      // console.log("Matched Data:", matchedData);
-      setMatchingData(matchedData);
-    }
-  }, [poData, billData]);
+    return pages;
+  };
 
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
 
-  const BillAcceptance = ({ billNumber }) => {
-    const [isAccepted, setIsAccepted] = useState(false);
+  const bills = useMemo(
+    () => (Array.isArray(getBill?.data) ? getBill.data : []),
+    [getBill]
+  );
+
+  const paginatedPayments = bills;
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setSearchParams((prev) => {
+        return {
+          ...Object.fromEntries(prev.entries()),
+          page: String(page),
+        };
+      });
+    }
+  };
+
+  useEffect(() => {
+    const page = parseInt(searchParams.get("page")) || 1;
+    setCurrentPage(page);
+  }, [searchParams]);
+
+  const handleExport = async () => {
+    try {
+      const exportAll = !from || !to;
+
+      const res = await exportBills({
+        from,
+        to,
+        exportAll,
+      }).unwrap();
+
+      const url = URL.createObjectURL(res);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "bills_export.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export failed", err);
+      alert("Failed to export bills");
+    }
+  };
+
+  const BillAcceptance = ({ billNumber, approvedBy }) => {
+    const [isAccepted, setIsAccepted] = useState(Boolean(approvedBy));
     const [user, setUser] = useState(null);
     const { enqueueSnackbar } = useSnackbar();
 
@@ -148,21 +166,22 @@ function VendorBillSummary() {
 
     const handleAcceptance = async () => {
       try {
-           const token = localStorage.getItem("authToken");
-        // console.log(token);
+        const token = localStorage.getItem("authToken");
 
-        if (!token) {
-          throw new Error("No auth token found in localStorage.");
-        }
-        const response = await Axios.put("/accepted-by", {
-          bill_number: billNumber,
-          approved_by: user?.name,
-        },{
+        if (!token) throw new Error("No auth token found in localStorage.");
+
+        const response = await Axios.put(
+          "/accepted-by",
+          {
+            bill_number: billNumber,
+            approved_by: user?.name,
+          },
+          {
             headers: {
-              
               "x-auth-token": token,
             },
-          });
+          }
+        );
 
         if (response.status === 200) {
           setIsAccepted(true);
@@ -184,159 +203,173 @@ function VendorBillSummary() {
 
     return (
       <Box>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!isAccepted) {
-              handleAcceptance();
-            }
-          }}
-        >
-          <Box>
-            <Button
-              type="submit"
-              disabled={isAccepted}
+        {isAccepted ? (
+          <Tooltip
+            title={`Approved by: ${approvedBy || user?.name || "Unknown"}`}
+            variant="soft"
+          >
+            <Typography
+              level="body-sm"
               sx={{
-                width: "100%",
-                padding: "0.5rem",
-                backgroundColor: isAccepted ? "gray" : "#28a745",
-                color: "white",
-                cursor: isAccepted ? "not-allowed" : "pointer",
-                "&:hover": {
-                  backgroundColor: isAccepted ? "gray" : "#218838",
-                },
+                color: "#666",
+                fontWeight: 500,
+                mt: 0.5,
+                display: "flex",
+                flexDirection: "column",
+                cursor: "help",
               }}
             >
-              {isAccepted ? "Accepted" : "Accept"}
-            </Button>
-          </Box>
-        </form>
+              Approved
+            </Typography>
+          </Tooltip>
+        ) : (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleAcceptance();
+            }}
+          >
+            <IconButton
+              variant="solid"
+              color="success"
+              onClick={handleAcceptance}
+              size="sm"
+              sx={{
+                boxShadow: "0 2px 6px rgba(0, 128, 0, 0.2)",
+                transition: "all 0.2s ease-in-out",
+                "&:hover": {
+                  transform: "scale(1.1)",
+                  boxShadow: "0 4px 10px rgba(0, 128, 0, 0.3)",
+                  backgroundColor: "rgba(76, 175, 80, 0.15)",
+                  "& .CheckIcon": {
+                    color: "#000",
+                  },
+                },
+                cursor: "pointer",
+              }}
+            >
+              <CheckRoundedIcon className="CheckIcon" />
+            </IconButton>
+          </form>
+        )}
       </Box>
     );
   };
 
-  const BillingStatusChip = ({ status }) => {
+  const BillingStatusChip = ({ status, balance }) => {
+    const isFullyBilled = status === "Fully Billed" && balance === 0;
+    const isPending = status === "Bill Pending";
+
+    const label = isFullyBilled
+      ? "Fully Billed"
+      : isPending
+        ? `${balance} - Pending`
+        : status;
+
+    const icon = isFullyBilled ? (
+      <CheckRoundedIcon />
+    ) : isPending ? (
+      <AutorenewRoundedIcon />
+    ) : null;
+
+    const color = isFullyBilled ? "success" : isPending ? "warning" : "neutral";
+
     return (
-      <Chip
-        variant="soft"
-        size="sm"
-        startDecorator={
-          {
-            "Fully Billed": <CheckRoundedIcon />,
-            "Bill Pending": <AutorenewRoundedIcon />,
-          }[status]
-        }
-        color={
-          {
-            "Fully Billed": "success",
-            "Bill Pending": "warning",
-          }[status]
-        }
-      >
-        {status}
+      <Chip variant="soft" size="sm" startDecorator={icon} color={color}>
+        {label}
       </Chip>
     );
   };
 
-  const filteredAndSortedData = matchingData
-    .filter((payment) => {
-      const matchesSearchQuery = [
-        "bill_number",
-        "po_number",
-        "approved",
-        "projectCustomer",
-        "paid_for",
-      ].some((key) => payment[key]?.toLowerCase().includes(searchQuery));
+  const renderFilters = () => {
+    const bill_status = ["Fully Billed ", "Bill Pending"];
 
-      // const matchesDateFilter =
-      //   !dateFilter ||
-      //   new Date(payment.date).toLocaleDateString() ===
-      //     new Date(dateFilter).toLocaleDateString();
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 2,
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <FormControl sx={{ flex: 1 }} size="sm">
+          <FormLabel>Bill Status</FormLabel>
+          <Select
+            value={selectedbill}
+            onChange={(e, newValue) => {
+              setSelectedbill(newValue);
+              setCurrentPage(1);
+            }}
+            size="sm"
+            placeholder="Select Department"
+          >
+            <Option value="">All status</Option>
+            {bill_status.map((status) => (
+              <Option key={status} value={status}>
+                {status}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl size="sm" sx={{ minWidth: 140 }}>
+          <FormLabel>From Date</FormLabel>
+          <Input
+            type="date"
+            value={from}
+            onChange={(e) => {
+              setFrom(e.target.value);
+              setCurrentPage(1);
+            }}
+          />
+        </FormControl>
 
-      // const matchesStatusFilter =
-      //   !statusFilter || payment.approved === statusFilter;
-      // console.log("MatchVendors are: ", matchesStatusFilter);
+        <FormControl size="sm" sx={{ minWidth: 140 }}>
+          <FormLabel>To Date</FormLabel>
+          <Input
+            type="date"
+            value={to}
+            onChange={(e) => {
+              setTo(e.target.value);
+              setCurrentPage(1);
+            }}
+          />
+        </FormControl>
+        <Box mt={3} sx={{ display: "flex", gap: 1 }}>
+          <Button
+            variant="outlined"
+            size="sm"
+            color="primary"
+            onClick={() => handleExport(false)}
+            loading={isExporting}
+            disabled={!from || !to}
+            startDecorator={<CalendarMonthIcon />}
+          >
+            Export by Date
+          </Button>
 
-      // const matchesVendorFilter =
-      //   !vendorFilter || payment.vendor === vendorFilter;
-      // console.log("MatchVendors are: ", matchesVendorFilter);
-
-      return matchesSearchQuery;
-    })
-    .sort((a, b) => {
-      if (a.bill_number?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.bill_number?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.po_number.toLowerCase().includes(searchQuery)) return -1;
-      if (b.po_number.toLowerCase().includes(searchQuery)) return 1;
-      if (a.projectCustomer?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.projectCustomer?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.vendor?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.vendor?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.approved?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.approved?.toLowerCase().includes(searchQuery)) return 1;
-      return 0;
-    });
-
-  const generatePageNumbers = (currentPage, totalPages) => {
-    const pages = [];
-
-    if (currentPage > 2) {
-      pages.push(1);
-    }
-
-    if (currentPage > 3) {
-      pages.push("...");
-    }
-
-    for (
-      let i = Math.max(1, currentPage - 1);
-      i <= Math.min(totalPages, currentPage + 1);
-      i++
-    ) {
-      pages.push(i);
-    }
-
-    if (currentPage < totalPages - 2) {
-      pages.push("...");
-    }
-
-    if (currentPage < totalPages - 1) {
-      pages.push(totalPages);
-    }
-
-    return pages;
+          <Button
+            variant="soft"
+            size="sm"
+            color="neutral"
+            onClick={() => handleExport(true)}
+            loading={isExporting}
+            startDecorator={<DownloadIcon />}
+          >
+            Export All
+          </Button>
+        </Box>
+      </Box>
+    );
   };
-
-  useEffect(() => {
-    const page = parseInt(searchParams.get("page")) || 1;
-    setCurrentPage(page);
-  }, [searchParams]);
-
-  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
-
-  const paginatedPayments = filteredAndSortedData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  //   const paymentsWithFormattedDate = paginatedPayments.map((payment) => ({
-  //     ...payment,
-  //     formattedDate: formatDate(payment.dbt_date),
-  //   }));
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setSearchParams({ page });
-      setCurrentPage(page);
-    }
+  const RenderTableCell = ({ cell }) => {
+    return (
+      <Box component="td" sx={{ padding: 2, fontSize: 14, fontWeight: 600 }}>
+        {cell}
+      </Box>
+    );
   };
-
-  // const handleAcceptance = (index) => {
-  //   setMatchingData((prevData) =>
-  //     prevData.map((row, i) =>
-  //       i === index ? { ...row, received: "Accepted" } : row
-  //     )
-  //   );
-  // };
 
   return (
     <>
@@ -365,7 +398,7 @@ function VendorBillSummary() {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {/* {renderFilters()} */}
+        {renderFilters()}
       </Box>
 
       <Box
@@ -377,20 +410,6 @@ function VendorBillSummary() {
           minHeight: { xs: "100%", md: "0%" },
         }}
       >
-        {/* <Typography
-        level="h4"
-        component="h1"
-        sx={{
-          marginBottom: 3,
-          textAlign: "center",
-          fontWeight: "bold",
-          fontSize: "24px",
-          color: "primary.main",
-        }}
-      >
-        Vendor Bill Summary
-      </Typography> */}
-
         <Box
           component="table"
           sx={{
@@ -420,9 +439,9 @@ function VendorBillSummary() {
                 "PO Value",
                 "Total Billed",
                 "PO Status",
-                "PO Balance",
+                // "PO Balance",
                 "Received",
-                "Approved By",
+                // "Approved By",
                 "Created On",
               ].map((header, index) => (
                 <Box
@@ -442,72 +461,118 @@ function VendorBillSummary() {
           </Box>
 
           <Box component="tbody">
-            {paginatedPayments.length > 0 ? (
-              paginatedPayments.map((row, index) => (
+            {isLoading ? (
+              <Box component="tr">
                 <Box
-                  component="tr"
-                  key={index}
+                  component="td"
+                  colSpan={14}
                   sx={{
-                    backgroundColor:
-                      index % 2 === 0 ? "neutral.100" : "neutral.50",
-                    "&:hover": {
-                      backgroundColor: "neutral.200",
-                    },
+                    py: 5,
+                    textAlign: "center",
                   }}
                 >
-                  <Box component="td" sx={{ padding: 2 }}>
-                    {row.p_id}
-                  </Box>
-                  <Box component="td" sx={{ padding: 2 }}>
-                    {row.po_number}
-                  </Box>
-                  <Box component="td" sx={{ padding: 2 }}>
-                    {row.vendor}
-                  </Box>
-                  <Box component="td" sx={{ padding: 2 }}>
-                    {row.item}
-                  </Box>
-                  <Box component="td" sx={{ padding: 2 }}>
-                    {row.bill_number}
-                  </Box>
-                  <Box component="td" sx={{ padding: 2 }}>
-                    {new Date(row.bill_date).toISOString().slice(0, 10)}
-                  </Box>
-
-                  <Box component="td" sx={{ padding: 2 }}>
-                    {row.bill_value}
-                  </Box>
-                  <Box component="td" sx={{ padding: 2 }}>
-                    {row.po_value}
-                  </Box>
-                  <Box component="td" sx={{ padding: 2 }}>
-                    {row.total_billed}
-                  </Box>
-                  <Box component="td" sx={{ padding: 2 }}>
-                    <BillingStatusChip status={row.po_status} />
-                  </Box>
-                  <Box component="td" sx={{ padding: 2 }}>
-                    {row.po_balance}
-                  </Box>
-                  <Box component="td" sx={{ padding: 2 }}>
-                    <BillAcceptance billNumber={row.bill_number} />
-                  </Box>
-                  <Box component="td" sx={{ padding: 2 }}>
-                    {row.approved_by}
-                  </Box>
-                  <Box component="td" sx={{ padding: 2 }}>
-                    {row.updatedAt || row.created_on}
+                  <Box
+                    sx={{
+                      display: "inline-flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 1,
+                    }}
+                  >
+                    <CircularProgress size="sm" sx={{ color: "primary.500" }} />
+                    <Typography fontStyle="italic">
+                      Loading bills… please hang tight ⏳
+                    </Typography>
                   </Box>
                 </Box>
-              ))
+              </Box>
+            ) : paginatedPayments.length > 0 ? (
+              paginatedPayments.map((row, index) =>
+                row.bills.map((bill, billIndex) => (
+                  <Box
+                    component="tr"
+                    key={`${index}-${billIndex}`}
+                    sx={{
+                      backgroundColor:
+                        index % 2 === 0 ? "neutral.100" : "neutral.50",
+                      "&:hover": {
+                        backgroundColor: "neutral.200",
+                      },
+                    }}
+                  >
+                    <RenderTableCell cell={row?.p_id} />
+                    <Box
+                      component="td"
+                      sx={{ padding: 2, fontSize: 14, minWidth: 200 }}
+                    >
+                      {row.po_number}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{ padding: 2, fontSize: 14, minWidth: 250 }}
+                    >
+                      {row.vendor}
+                    </Box>
+                    <Box component="td" sx={{ padding: 2, fontSize: 14 }}>
+                      {row.item}
+                    </Box>
+                    <Box component="td" sx={{ padding: 2, fontSize: 14 }}>
+                      {bill.bill_number}
+                    </Box>
+                    <Box component="td" sx={{ padding: 2, fontSize: 14 }}>
+                      {new Date(bill.bill_date).toLocaleDateString()}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{ padding: 2, fontSize: 14, minWidth: 100 }}
+                    >
+                      ₹{bill.bill_value}
+                    </Box>
+                    <Box component="td" sx={{ padding: 2, fontSize: 14 }}>
+                      ₹{row.po_value}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{ padding: 2, fontSize: 14, minWidth: 110 }}
+                    >
+                      ₹{row.total_billed}
+                    </Box>
+                    <Box component="td" sx={{ padding: 2, fontSize: 14 }}>
+                      <BillingStatusChip
+                        status={row.po_status}
+                        balance={row.po_balance}
+                      />
+                    </Box>
+                    {/* <Box component="td" sx={{ padding: 2 }}>
+                      {row.po_balance}
+                    </Box> */}
+                    <Box component="td" sx={{ padding: 2 }}>
+                      <BillAcceptance
+                        billNumber={bill.bill_number}
+                        approvedBy={bill.approved_by}
+                      />
+                    </Box>
+                    {/* <Box component="td" sx={{ padding: 2 }}>
+                      {bill.approved_by}
+                    </Box> */}
+                    <Box
+                      component="td"
+                      sx={{ padding: 2, minWidth: 120, fontSize: 14 }}
+                    >
+                      {new Date(bill.created_on).toLocaleDateString()}
+                    </Box>
+                  </Box>
+                ))
+              )
             ) : (
               <Box component="tr">
                 <Box
                   component="td"
                   colSpan={14}
-                  sx={{ textAlign: "center", padding: 2 }}
+                  sx={{ textAlign: "center", p: 2 }}
                 >
-                  No matching data found
+                  No bills found.
                 </Box>
               </Box>
             )}
@@ -523,8 +588,8 @@ function VendorBillSummary() {
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
-          flexDirection: { xs: "column", md: "row" },
           alignItems: "center",
+          flexDirection: { xs: "column", md: "row" },
           marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
@@ -538,16 +603,25 @@ function VendorBillSummary() {
         >
           Previous
         </Button>
+
         <Box>
-          Showing {paginatedPayments.length} of {matchingData.length} results
+          {/* Showing page {currentPage} of {totalPages} ({total} results) */}
+          <Typography level="body-sm">
+            Showing {startIndex}–{endIndex} of {total} results
+          </Typography>
         </Box>
+
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
-          {generatePageNumbers(currentPage, totalPages).map((page, index) =>
-            typeof page === "number" ? (
+          {getPaginationRange().map((page, idx) =>
+            page === "..." ? (
+              <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
+                ...
+              </Box>
+            ) : (
               <IconButton
-                key={index}
+                key={page}
                 size="sm"
                 variant={page === currentPage ? "contained" : "outlined"}
                 color="neutral"
@@ -555,13 +629,27 @@ function VendorBillSummary() {
               >
                 {page}
               </IconButton>
-            ) : (
-              <Typography key={index} sx={{ px: 1, alignSelf: "center" }}>
-                {page}
-              </Typography>
             )
           )}
         </Box>
+
+        <FormControl size="sm" sx={{ minWidth: 120 }}>
+          {/* <FormLabel>Per Page</FormLabel> */}
+          <Select
+            value={perPage}
+            onChange={(e, newValue) => {
+              setPerPage(newValue);
+              setCurrentPage(1);
+            }}
+          >
+            {[10, 30, 60, 100].map((num) => (
+              <Option key={num} value={num}>
+                {num} perPage
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+
         <Button
           size="sm"
           variant="outlined"

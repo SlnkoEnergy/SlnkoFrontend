@@ -7,6 +7,7 @@ import Button from "@mui/joy/Button";
 import Input from "@mui/joy/Input";
 import Modal from "@mui/joy/Modal";
 import ModalDialog from "@mui/joy/ModalDialog";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import Sheet from "@mui/joy/Sheet";
 import Table from "@mui/joy/Table";
 import Typography from "@mui/joy/Typography";
@@ -64,7 +65,6 @@ const UpdateExpense = () => {
       total_requested_amount: "",
       total_approved_amount: "",
       disbursement_date: "",
-      comments: "",
     },
   ]);
 
@@ -268,16 +268,16 @@ const UpdateExpense = () => {
         })
       );
 
-      const isAnyRejected = updatedItems.some(
-        (item) => item.item_current_status === "rejected"
-      );
-
-      const overallStatus = isAnyRejected ? "rejected" : "manager approval";
-
       const totalApproved = updatedItems.reduce(
         (sum, item) => sum + (Number(item.approved_amount) || 0),
         0
       );
+
+      // ✅ Set overall status based on all items
+      const allItemsRejected = updatedItems.every(
+        (item) => item.item_current_status === "rejected"
+      );
+      const overallStatus = allItemsRejected ? "rejected" : "manager approval";
 
       const payload = {
         user_id: userID,
@@ -289,7 +289,7 @@ const UpdateExpense = () => {
           ...(rows[0].status_history || []),
           {
             status: overallStatus,
-            remarks: rows[0].comments || "",
+            remarks: rows[0].remarks || "",
             user_id: userID,
           },
         ],
@@ -363,10 +363,9 @@ const UpdateExpense = () => {
 
     const updatedItem = {
       ...updatedRow.items[itemIndex],
-      approvalStatus: status,
       item_current_status: status,
-      approvedAmount:
-        status === "rejected" ? 0 : updatedRow.items[itemIndex].approvedAmount,
+      approved_amount:
+        status === "rejected" ? 0 : updatedRow.items[itemIndex].approved_amount,
     };
 
     updatedRow.items[itemIndex] = updatedItem;
@@ -587,6 +586,16 @@ const UpdateExpense = () => {
                     to: e.target.value,
                   })
                 }
+              />
+              <Typography level="body-md" fontWeight="lg">
+                Employee Name:
+              </Typography>
+              <Input
+                type="text"
+                size="sm"
+                value={rows[0].emp_name || "NA"}
+                onChange={(e) => handleRowChange(0, "emp_name", e.target.value)}
+                placeholder="Enter employee name"
               />
             </Box>
 
@@ -846,6 +855,7 @@ const UpdateExpense = () => {
                               )
                             }
                             inputProps={{ min: 0 }}
+                            disabled={item.item_current_status === "rejected"}
                             sx={{ minWidth: 90 }}
                           />
                         </td>
@@ -853,51 +863,88 @@ const UpdateExpense = () => {
                         {(user?.role === "manager" ||
                           user?.role === "visitor" ||
                           user?.department === "admin" ||
-                          user?.name === "IT Team") && (
-                          <td style={{ padding: 8 }}>
-                            <Box display="flex" gap={1} justifyContent="center">
-                              <Button
-                                size="sm"
-                                variant={
-                                  item.item_current_status ===
-                                  "manager approval"
-                                    ? "solid"
-                                    : "outlined"
-                                }
-                                color="success"
-                                onClick={() =>
-                                  handleApproval(
-                                    rowIndex,
-                                    itemIndex,
+                          user?.name === "IT Team") &&
+                          !(
+                            user?.role === "manager" &&
+                            user?.name === item.emp_name
+                          ) && (
+                            <td style={{ padding: 8 }}>
+                              <Box display="flex" gap={1} alignItems="center">
+                                <Button
+                                  size="sm"
+                                  variant={
+                                    item.item_current_status ===
                                     "manager approval"
-                                  )
-                                }
-                                aria-label="Approve"
-                              >
-                                <CheckIcon />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant={
-                                  item.item_current_status === "rejected"
-                                    ? "solid"
-                                    : "outlined"
-                                }
-                                color="danger"
-                                onClick={() =>
-                                  handleApproval(
-                                    rowIndex,
-                                    itemIndex,
-                                    "rejected"
-                                  )
-                                }
-                                aria-label="Reject"
-                              >
-                                <CloseIcon />
-                              </Button>
-                            </Box>
-                          </td>
-                        )}
+                                      ? "solid"
+                                      : "outlined"
+                                  }
+                                  color="success"
+                                  onClick={() =>
+                                    handleApproval(
+                                      rowIndex,
+                                      itemIndex,
+                                      "manager approval"
+                                    )
+                                  }
+                                  aria-label="Approve"
+                                >
+                                  <CheckIcon />
+                                </Button>
+
+                                <Button
+                                  size="sm"
+                                  variant={
+                                    item.item_current_status === "rejected"
+                                      ? "solid"
+                                      : "outlined"
+                                  }
+                                  color="danger"
+                                  onClick={() =>
+                                    handleApproval(
+                                      rowIndex,
+                                      itemIndex,
+                                      "rejected"
+                                    )
+                                  }
+                                  aria-label="Reject"
+                                >
+                                  <CloseIcon />
+                                </Button>
+
+                                {item.item_current_status === "rejected" &&
+                                  item.remarks && (
+                                    <Tooltip
+                                      title={
+                                        <Sheet
+                                          variant="soft"
+                                          sx={{
+                                            p: 1,
+                                            borderRadius: "md",
+                                            maxWidth: 300,
+                                            fontSize: "0.85rem",
+                                            bgcolor: "error.light",
+                                            color: "error.dark",
+                                            boxShadow: "md",
+                                          }}
+                                        >
+                                          {item.remarks}
+                                        </Sheet>
+                                      }
+                                      arrow
+                                      placement="top"
+                                    >
+                                      <IconButton
+                                        size="sm"
+                                        color="warning"
+                                        sx={{ ml: 0.5 }}
+                                      >
+                                        <InfoOutlinedIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  )}
+                              </Box>
+                            </td>
+                          )}
                       </tr>
                     ))
                   )}
@@ -953,29 +1000,26 @@ const UpdateExpense = () => {
                       <b>Invoice Number:</b>{" "}
                       {item.invoice?.invoice_number || "NA"}
                     </span>
-                    {/* <Box>
-                      <b>Attachment:</b>{" "}
-                      {item.attachment_url ? (
-                        <Button
-                          component="a"
-                          href={item.attachment_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          download
+
+                    {item.item_current_status === "rejected" &&
+                      item.remarks && (
+                        <Sheet
                           variant="soft"
-                          color="primary"
-                          startDecorator={<DownloadIcon />}
-                          size="sm"
-                          sx={{ textTransform: "none" }}
+                          sx={{
+                            mt: 1,
+                            p: 1,
+                            borderRadius: "md",
+                            maxWidth: 400,
+                            fontSize: "0.875rem",
+                            bgcolor: "#fdecea", // light red
+                            color: "#b71c1c", // dark red text
+                            borderLeft: "4px solid #d32f2f",
+                          }}
                         >
-                          Download
-                        </Button>
-                      ) : (
-                        <span style={{ color: "#999", fontStyle: "italic" }}>
-                          No Attachment
-                        </span>
+                          <b>Rejection Reason:</b> {item.remarks}
+                        </Sheet>
                       )}
-                    </Box> */}
+
                     <Box>
                       <b>Attachment:</b>{" "}
                       {item.attachment_url ? (
@@ -1189,12 +1233,12 @@ const UpdateExpense = () => {
             placeholder="Enter reason..."
             value={
               rows[commentDialog.rowIndex]?.items?.[commentDialog.itemIndex]
-                ?.item_status_history?.[0]?.remarks || ""
+                ?.remarks || ""
             }
             onChange={(e) =>
               handleRowChange(
                 commentDialog.rowIndex,
-                "item_status_history.0.remarks",
+                "remarks",
                 e.target.value,
                 commentDialog.itemIndex
               )
@@ -1365,7 +1409,10 @@ const UpdateExpense = () => {
                   rows.forEach((row) => {
                     console.log("row:", rows);
                     row.items?.forEach((item) => {
-                      if (item.category === category) {
+                      if (
+                        item.category === category &&
+                        item.item_current_status !== "rejected"
+                      ) {
                         total += Number(item.invoice?.invoice_amount || 0);
 
                         if (
@@ -1421,8 +1468,10 @@ const UpdateExpense = () => {
                     </tr>
                   );
                 })}
+              </tbody>
 
-                {/* Grand Total */}
+              {/* Grand Total */}
+              <tfoot>
                 <tr>
                   <td>
                     <Typography level="body-md" fontWeight="lg">
@@ -1433,6 +1482,9 @@ const UpdateExpense = () => {
                     <Typography level="body-md" fontWeight="lg">
                       {rows
                         .flatMap((row) => row.items || [])
+                        .filter(
+                          (item) => item.item_current_status !== "rejected"
+                        )
                         .reduce(
                           (sum, item) =>
                             sum + Number(item.invoice?.invoice_amount || 0),
@@ -1447,19 +1499,21 @@ const UpdateExpense = () => {
                         .flatMap((row) => row.items || [])
                         .filter(
                           (item) =>
-                            item.item_current_status === "manager approval" ||
-                            (rows[0].current_status === "manager approval" &&
-                              Number(item.approved_amount || 0) > 0)
+                            item.item_current_status !== "rejected" &&
+                            (item.item_current_status === "manager approval" ||
+                              (rows[0].current_status === "manager approval" &&
+                                Number(item.approved_amount || 0) > 0))
                         )
                         .reduce(
-                          (sum, item) => sum + Number(item.approved_amount),
+                          (sum, item) =>
+                            sum + Number(item.approved_amount || 0),
                           0
                         )
                         .toFixed(2)}
                     </Typography>
                   </td>
                 </tr>
-              </tbody>
+              </tfoot>
             </Table>
             {/* Submit & Back Buttons */}
             <Box display="flex" justifyContent="center" p={2}>

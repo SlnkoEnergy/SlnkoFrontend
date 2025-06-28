@@ -27,7 +27,7 @@ function Accounts_Expense() {
 
     const handleExportToCSV = async () => {
       try {
-        const result = await triggerExport().unwrap(); // .unwrap() gives direct access to blob
+        const result = await triggerExport().unwrap();
         const blob = new Blob([result], { type: "text/csv" });
     
         const url = window.URL.createObjectURL(blob);
