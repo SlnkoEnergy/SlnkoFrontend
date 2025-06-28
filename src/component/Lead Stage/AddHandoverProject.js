@@ -241,8 +241,7 @@ const AddHandoverProject = ({ projectId }) => {
     const response = await addHandOver(payload).unwrap();
     console.log(response);
     toast.success("Handover submitted successfully");
-    
-
+    window.location.reload();
   } catch (error) {
     toast.error("Failed to submit handover: " + (error?.data?.message || error.message || "Unknown error"));
   }
@@ -1156,6 +1155,27 @@ const AddHandoverProject = ({ projectId }) => {
                     sx={{ width: "100%" }}
                   />
                 </Grid>
+
+                <Grid item xs={12} sm={6}>
+                              <Typography
+                                level="body1"
+                                sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                              >
+                                Billing By
+                              </Typography>
+                              <Select
+                                fullWidth
+                                placeholder="Select Billing"
+                                value={formData["other_details"]?.["billing_by"] || ""}
+                                onChange={(e, newValue) =>
+                                  handleChange("other_details", "billing_by", newValue)
+                                }
+                              >
+                                <Option value="Jharkhand">Slnko Energy Jharkhand</Option>
+                                <Option value="UP">Slnko Energy UP</Option>
+                                <Option value="Infra-UP">Slnko Infra UP</Option>
+                              </Select>
+                            </Grid>
 
                 <Grid item xs={12} sm={6}>
                   <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>

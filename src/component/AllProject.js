@@ -64,14 +64,14 @@ const AllProjects = forwardRef((props, ref) => {
     width: "45vw",
     maxHeight: "70vh",
     bgcolor: "white",
-    opacity:1,
+    opacity: 1,
     boxShadow: 36,
     p: 3,
     borderRadius: 2,
     overflowY: "auto",
   };
 
-    const modalStylesProject = {
+  const modalStylesProject = {
     position: "absolute",
     top: "50%",
     left: "50%",
@@ -79,7 +79,7 @@ const AllProjects = forwardRef((props, ref) => {
     width: "35vw",
     maxHeight: "70vh",
     bgcolor: "white",
-    opacity:1,
+    opacity: 1,
     boxShadow: 36,
     p: 3,
     borderRadius: 2,
@@ -527,7 +527,7 @@ const AllProjects = forwardRef((props, ref) => {
                       onChange={() => handleRowSelect(project._id)}
                     />
                   </Box>
-                  <Tooltip title="View project overview" arrow>
+                  <Tooltip title="View Project Details" arrow>
                     <Box
                       component="td"
                       sx={{
@@ -627,7 +627,9 @@ const AllProjects = forwardRef((props, ref) => {
                       >
                         <VisibilityIcon sx={{ color: "white" }} />
                       </Box>
-                    ) : (
+                    ) : ["IT Team","Guddu Rani Dubey", "Prachi Singh"].includes(
+                        user?.name
+                      ) ? (
                       <Box
                         onClick={() => handleOpen(project.p_id, "edit")}
                         sx={{
@@ -640,8 +642,19 @@ const AllProjects = forwardRef((props, ref) => {
                       >
                         <AddIcon sx={{ color: "white" }} />
                       </Box>
+                    ) : (
+                      <Tooltip title="Contact Internal Ops for Handover">
+                        <Typography
+                          textColor="#214b7b"
+                          fontWeight="600"
+                          sx={{ cursor: "pointer" }}
+                        >
+                          No Handover
+                        </Typography>
+                      </Tooltip>
                     )}
                   </Box>
+
                   <Box
                     component="td"
                     sx={{
