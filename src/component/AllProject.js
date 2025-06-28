@@ -36,8 +36,9 @@ import {
   useGetProjectsQuery,
 } from "../redux/projectsSlice";
 import ViewHandoverSheetForm from "./Lead Stage/View_HandOver";
-import { Modal } from "@mui/joy";
+import { Modal, Tooltip } from "@mui/joy";
 import AddHandoverProject from "./Lead Stage/AddHandoverProject";
+import View_Project from "./Forms/View_Project";
 
 const AllProjects = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -51,23 +52,23 @@ const AllProjects = forwardRef((props, ref) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedProjects, setSelectedProjects] = useState([]);
+  const [openProjectModal, setOpenProjectModal] = useState(false);
+  const [handoverMode, setHandoverMode] = useState(null);
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
 
   const modalStyles = {
     position: "absolute",
     top: "50%",
     left: "50%",
     transform: "translate(-50%, -50%)",
-    width: "80vw",
-    maxHeight: "90vh",
+    width: "70vw",
+    maxHeight: "70vh",
     bgcolor: "background.paper",
     boxShadow: 24,
     p: 3,
     borderRadius: 2,
     overflowY: "auto",
   };
-
-  const [handoverMode, setHandoverMode] = useState(null);
-  const [selectedProjectId, setSelectedProjectId] = useState(null);
 
   const handleOpen = (p_id, mode) => {
     setSelectedProjectId(p_id);
@@ -510,16 +511,25 @@ const AllProjects = forwardRef((props, ref) => {
                       onChange={() => handleRowSelect(project._id)}
                     />
                   </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {project.code}
-                  </Box>
+                  <Tooltip title="View project overview" arrow>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px dotted #888",
+                        padding: "8px",
+                        textAlign: "center",
+                        cursor: "pointer",
+                        "&:hover": { textDecoration: "underline" },
+                      }}
+                      onClick={() => {
+                        setSelectedProjectId(project.p_id);
+                        setOpenProjectModal(true);
+                      }}
+                    >
+                      {project.code}
+                    </Box>
+                  </Tooltip>
+
                   <Box
                     component="td"
                     sx={{
@@ -592,7 +602,7 @@ const AllProjects = forwardRef((props, ref) => {
                       <Box
                         onClick={() => handleOpen(project.p_id, "view")}
                         sx={{
-                          backgroundColor: "darkblue",
+                          backgroundColor: "#214b7b",
                           borderRadius: "50%",
                           padding: 1,
                           cursor: "pointer",
@@ -605,7 +615,7 @@ const AllProjects = forwardRef((props, ref) => {
                       <Box
                         onClick={() => handleOpen(project.p_id, "edit")}
                         sx={{
-                          backgroundColor: "darkblue",
+                          backgroundColor: "#214b7b",
                           borderRadius: "50%",
                           padding: 1,
                           cursor: "pointer",
@@ -692,20 +702,6 @@ const AllProjects = forwardRef((props, ref) => {
             )
           )}
         </Box>
-        {/* <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
-    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-      <IconButton
-        key={page}
-        size="sm"
-        variant={page === currentPage ? "contained" : "outlined"}
-        color="neutral"
-        onClick={() => handlePageChange(page)}
-      >
-        {page}
-      </IconButton>
-    ))}
-  </Box> */}
-
         <Button
           size="sm"
           variant="outlined"
@@ -720,24 +716,30 @@ const AllProjects = forwardRef((props, ref) => {
 
       <Modal open={open} onClose={() => setOpen(false)}>
         <Box sx={{ ...modalStyles, position: "relative" }}>
+          {handoverMode === "view" ? (
+            <ViewHandoverSheetForm projectId={selectedProjectId} />
+          ) : (
+            <AddHandoverProject projectId={selectedProjectId} />
+          )}
+        </Box>
+      </Modal>
+
+      <Modal open={openProjectModal} onClose={() => setOpenProjectModal(false)}>
+        <Box sx={{ ...modalStyles, position: "relative" }}>
           <IconButton
-            onClick={() => setOpen(false)}
+            onClick={() => setOpenProjectModal(false)}
             sx={{
               position: "fixed",
               top: 8,
               right: 8,
-              color: "grey.900",
+              color: "red",
               zIndex: 1,
             }}
           >
             <CloseIcon />
           </IconButton>
 
-          {handoverMode === "view" ? (
-            <ViewHandoverSheetForm projectId={selectedProjectId} />
-          ) : (
-            <AddHandoverProject projectId={selectedProjectId} />
-          )}
+          <View_Project projectId={selectedProjectId} />
         </Box>
       </Modal>
     </>

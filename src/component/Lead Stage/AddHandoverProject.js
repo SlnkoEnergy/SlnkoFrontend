@@ -23,7 +23,7 @@ import {
   useGetHandOverByIdQuery,
 } from "../../redux/camsSlice";
 import {
-  useGetEntireLeadsProjectsQuery,
+  useGetEntireWonLeadsProjectsQuery,
   useGetEntireLeadsQuery,
   useGetMasterInverterQuery,
   useGetModuleMasterQuery,
@@ -32,7 +32,6 @@ import { useGetProjectByPIdQuery } from "../../redux/projectsSlice";
 import { toast } from "react-toastify";
 
 const AddHandoverProject = ({ projectId }) => {
-  const navigate = useNavigate();
   const [expanded, setExpanded] = useState(null);
   const states = [
     "Andhra Pradesh",
@@ -221,30 +220,28 @@ const AddHandoverProject = ({ projectId }) => {
 
   const [addHandOver] = useAddHandOverMutation();
 
+  const { data: leads } = useGetEntireWonLeadsProjectsQuery();
 
-
-
-const { data: leads } = useGetEntireLeadsProjectsQuery();
-
-console.log("leads",leads);
+  console.log("leads", leads);
 
   const handleSubmit = async () => {
-    try {
-      const payload = {
-        ...formData,
-        project_detail: {
-          ...formData.project_detail,
-          land: JSON.stringify(formData.project_detail.land),
-        },
-      };
+  try {
+    const payload = {
+      ...formData,
+      project_detail: {
+        ...formData.project_detail,
+        land: JSON.stringify(formData.project_detail.land),
+      },
+    };
 
-      const response = await addHandOver(payload).unwrap();
-      console.log(response);
-      toast.success("Handover submitted successfully");
-    } catch (error) {
-      toast.error("Failed to submit handover:", error);
-    }
-  };
+    const response = await addHandOver(payload).unwrap();
+    console.log(response);
+    toast.success("Handover submitted successfully");
+    window.location.reload();
+  } catch (error) {
+    toast.error("Failed to submit handover: " + (error?.data?.message || error.message || "Unknown error"));
+  }
+};
 
   useEffect(() => {
     const project_kwp = getProject?.data[0]?.project_kwp || 0;
@@ -346,23 +343,22 @@ console.log("leads",leads);
     }));
   };
 
-const handleChange = (section, key, value) => {
-  if (section) {
-    setFormData((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
+  const handleChange = (section, key, value) => {
+    if (section) {
+      setFormData((prev) => ({
+        ...prev,
+        [section]: {
+          ...prev[section],
+          [key]: value,
+        },
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
         [key]: value,
-      },
-    }));
-  } else {
-    setFormData((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  }
-};
-
+      }));
+    }
+  };
 
   useEffect(() => {
     const userData = getUserData();
@@ -964,6 +960,8 @@ const handleChange = (section, key, value) => {
               </Grid>
 
               <Grid item xs={12} sm={6} md={3}>
+                
+
                 <Autocomplete
                   options={landTypes}
                   value={
@@ -1168,6 +1166,9 @@ const handleChange = (section, key, value) => {
                     InputProps={{
                       readOnly: true,
                     }}
+                      onChange={(e) =>
+                      handleChange("other_details", "total_gst", e.target.value)
+                    }
                     placeholder="Calculated Total GST"
                   />
                 </Grid>
@@ -1190,29 +1191,32 @@ const handleChange = (section, key, value) => {
           <Typography level="h4">BD</Typography>
         </AccordionSummary>
         <AccordionDetails>
-
-
-
+          
           <Grid
             sm={{ display: "flex", justifyContent: "center" }}
             container
             spacing={2}
           >
-
-
-
-
-<Autocomplete
-  fullWidth
-  required
-  placeholder={isLoading ? "Loading..." : "Select Lead Id"}
-  value={leads?.data.find((lead) => lead.id === formData.id) || null}
-  onChange={(_, value) => handleChange(null, "id", value?.id || "")}
-  options={leads?.data || []}
-  getOptionLabel={(option) => option.c_name || ""}
-  isOptionEqualToValue={(option, value) => option.id === value.id}
-/>
-
+            <Grid item xs={12} sm={6}>
+              <Typography
+                  level="body1"
+                  sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                >
+                  Lead
+                </Typography>
+            <Autocomplete
+              fullWidth
+              required
+              placeholder={isLoading ? "Loading..." : "Select Lead Id"}
+              value={
+                leads?.data.find((lead) => lead.id === formData.id) || null
+              }
+              onChange={(_, value) => handleChange(null, "id", value?.id || "")}
+              options={leads?.data || []}
+              getOptionLabel={(option) => option.id || ""}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+            />
+            </Grid>
 
             <Grid item xs={12} sm={6}>
               <Typography
