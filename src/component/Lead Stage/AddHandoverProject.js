@@ -226,6 +226,10 @@ const AddHandoverProject = ({ projectId }) => {
 
   const handleSubmit = async () => {
   try {
+    if (!formData.id){
+      toast.error("Lead Id is required!")
+      return;
+    };
     const payload = {
       ...formData,
       project_detail: {
@@ -237,7 +241,8 @@ const AddHandoverProject = ({ projectId }) => {
     const response = await addHandOver(payload).unwrap();
     console.log(response);
     toast.success("Handover submitted successfully");
-    window.location.reload();
+    
+
   } catch (error) {
     toast.error("Failed to submit handover: " + (error?.data?.message || error.message || "Unknown error"));
   }

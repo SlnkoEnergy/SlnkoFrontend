@@ -61,10 +61,26 @@ const AllProjects = forwardRef((props, ref) => {
     top: "50%",
     left: "50%",
     transform: "translate(-50%, -50%)",
-    width: "70vw",
+    width: "45vw",
     maxHeight: "70vh",
-    bgcolor: "background.paper",
-    boxShadow: 24,
+    bgcolor: "white",
+    opacity:1,
+    boxShadow: 36,
+    p: 3,
+    borderRadius: 2,
+    overflowY: "auto",
+  };
+
+    const modalStylesProject = {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: "35vw",
+    maxHeight: "70vh",
+    bgcolor: "white",
+    opacity:1,
+    boxShadow: 36,
     p: 3,
     borderRadius: 2,
     overflowY: "auto",
@@ -725,7 +741,7 @@ const AllProjects = forwardRef((props, ref) => {
       </Modal>
 
       <Modal open={openProjectModal} onClose={() => setOpenProjectModal(false)}>
-        <Box sx={{ ...modalStyles, position: "relative" }}>
+        <Box sx={{ ...modalStylesProject, position: "relative" }}>
           <IconButton
             onClick={() => setOpenProjectModal(false)}
             sx={{
