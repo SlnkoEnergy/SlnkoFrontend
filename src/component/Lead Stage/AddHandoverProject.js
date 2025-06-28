@@ -108,10 +108,16 @@ const AddHandoverProject = ({ projectId }) => {
         project_kwp: project.project_kwp || "",
         distance: project.distance || "",
         tarrif: project.tarrif || "",
-        land: {
-          ...prev.project_detail.land,
-          acres: project.land || "",
-        },
+        land: (() => {
+          try {
+            return typeof project?.land === "string" &&
+              project.land.startsWith("{")
+              ? JSON.parse(project.land)
+              : { type: project.land || "", acres: "" };
+          } catch {
+            return { type: "", acres: "" };
+          }
+        })(),
       },
       other_details: {
         ...prev.other_details,
@@ -225,27 +231,30 @@ const AddHandoverProject = ({ projectId }) => {
   console.log("leads", leads);
 
   const handleSubmit = async () => {
-  try {
-    if (!formData.id){
-      toast.error("Lead Id is required!")
-      return;
-    };
-    const payload = {
-      ...formData,
-      project_detail: {
-        ...formData.project_detail,
-        land: JSON.stringify(formData.project_detail.land),
-      },
-    };
+    try {
+      if (!formData.id) {
+        toast.error("Lead Id is required!");
+        return;
+      }
+      const payload = {
+        ...formData,
+        project_detail: {
+          ...formData.project_detail,
+          land: JSON.stringify(formData.project_detail.land),
+        },
+      };
 
-    const response = await addHandOver(payload).unwrap();
-    console.log(response);
-    toast.success("Handover submitted successfully");
-    window.location.reload();
-  } catch (error) {
-    toast.error("Failed to submit handover: " + (error?.data?.message || error.message || "Unknown error"));
-  }
-};
+      const response = await addHandOver(payload).unwrap();
+      console.log(response);
+      toast.success("Handover submitted successfully");
+      window.location.reload();
+    } catch (error) {
+      toast.error(
+        "Failed to submit handover: " +
+          (error?.data?.message || error.message || "Unknown error")
+      );
+    }
+  };
 
   useEffect(() => {
     const project_kwp = getProject?.data[0]?.project_kwp || 0;
@@ -816,11 +825,9 @@ const AddHandoverProject = ({ projectId }) => {
                       }
                     }}
                   >
-                    {inverterMakeOptions.map((option) => (
-                      <Option key={option} value={option}>
-                        {option}
-                      </Option>
-                    ))}
+                    <Option value="SUNGROW">SUNGROW</Option>
+                    <Option value="WATTPOWER">WATTPOWER</Option>
+                    <Option value="HITACHI">HITACHI</Option>
                     <Option value="Other">Other</Option>
                   </Select>
 
@@ -945,6 +952,7 @@ const AddHandoverProject = ({ projectId }) => {
                 <Input
                   name="acres"
                   type="text"
+                  disabled
                   placeholder="e.g. 5, 2, 3"
                   value={formData.project_detail?.land?.acres || ""}
                   onChange={(e) =>
@@ -964,10 +972,9 @@ const AddHandoverProject = ({ projectId }) => {
               </Grid>
 
               <Grid item xs={12} sm={6} md={3}>
-                
-
                 <Autocomplete
                   options={landTypes}
+                  disabled
                   value={
                     landTypes.includes(formData.project_detail?.land?.type)
                       ? formData.project_detail.land.type
@@ -1141,6 +1148,7 @@ const AddHandoverProject = ({ projectId }) => {
                   </Typography>
                   <Autocomplete
                     options={BillingTypes}
+                    disabled
                     value={formData?.other_details?.billing_type}
                     onChange={(e, value) =>
                       handleAutocompleteChange(
@@ -1157,25 +1165,25 @@ const AddHandoverProject = ({ projectId }) => {
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
-                              <Typography
-                                level="body1"
-                                sx={{ fontWeight: "bold", marginBottom: 0.5 }}
-                              >
-                                Billing By
-                              </Typography>
-                              <Select
-                                fullWidth
-                                placeholder="Select Billing"
-                                value={formData["other_details"]?.["billing_by"] || ""}
-                                onChange={(e, newValue) =>
-                                  handleChange("other_details", "billing_by", newValue)
-                                }
-                              >
-                                <Option value="Jharkhand">Slnko Energy Jharkhand</Option>
-                                <Option value="UP">Slnko Energy UP</Option>
-                                <Option value="Infra-UP">Slnko Infra UP</Option>
-                              </Select>
-                            </Grid>
+                  <Typography
+                    level="body1"
+                    sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                  >
+                    Billing By
+                  </Typography>
+                  <Select
+                    fullWidth
+                    placeholder="Select Billing"
+                    value={formData["other_details"]?.["billing_by"] || ""}
+                    onChange={(e, newValue) =>
+                      handleChange("other_details", "billing_by", newValue)
+                    }
+                  >
+                    <Option value="Jharkhand">Slnko Energy Jharkhand</Option>
+                    <Option value="UP">Slnko Energy UP</Option>
+                    <Option value="Infra-UP">Slnko Infra UP</Option>
+                  </Select>
+                </Grid>
 
                 <Grid item xs={12} sm={6}>
                   <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
@@ -1191,7 +1199,7 @@ const AddHandoverProject = ({ projectId }) => {
                     InputProps={{
                       readOnly: true,
                     }}
-                      onChange={(e) =>
+                    onChange={(e) =>
                       handleChange("other_details", "total_gst", e.target.value)
                     }
                     placeholder="Calculated Total GST"
@@ -1216,7 +1224,6 @@ const AddHandoverProject = ({ projectId }) => {
           <Typography level="h4">BD</Typography>
         </AccordionSummary>
         <AccordionDetails>
-          
           <Grid
             sm={{ display: "flex", justifyContent: "center" }}
             container
@@ -1224,23 +1231,25 @@ const AddHandoverProject = ({ projectId }) => {
           >
             <Grid item xs={12} sm={6}>
               <Typography
-                  level="body1"
-                  sx={{ fontWeight: "bold", marginBottom: 0.5 }}
-                >
-                  Lead
-                </Typography>
-            <Autocomplete
-              fullWidth
-              required
-              placeholder={isLoading ? "Loading..." : "Select Lead Id"}
-              value={
-                leads?.data.find((lead) => lead.id === formData.id) || null
-              }
-              onChange={(_, value) => handleChange(null, "id", value?.id || "")}
-              options={leads?.data || []}
-              getOptionLabel={(option) => option.id || ""}
-              isOptionEqualToValue={(option, value) => option.id === value.id}
-            />
+                level="body1"
+                sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+              >
+                Lead
+              </Typography>
+              <Autocomplete
+                fullWidth
+                required
+                placeholder={isLoading ? "Loading..." : "Select Lead Id"}
+                value={
+                  leads?.data.find((lead) => lead.id === formData.id) || null
+                }
+                onChange={(_, value) =>
+                  handleChange(null, "id", value?.id || "")
+                }
+                options={leads?.data || []}
+                getOptionLabel={(option) => option.id || ""}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+              />
             </Grid>
 
             <Grid item xs={12} sm={6}>
@@ -1787,6 +1796,7 @@ const AddHandoverProject = ({ projectId }) => {
                 <span style={{ color: "red" }}>*</span>
               </Typography>
               <Input
+                disabled
                 value={formData.project_detail.distance}
                 placeholder="Transmission Line"
                 onChange={(e) =>
