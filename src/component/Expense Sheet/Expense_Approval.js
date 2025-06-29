@@ -1,6 +1,14 @@
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
+import {
+  Chip,
+  CircularProgress,
+  Option,
+  Select,
+  Typography,
+  useTheme,
+} from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
@@ -9,14 +17,13 @@ import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
-import Typography from "@mui/joy/Typography";
+import { skipToken } from "@reduxjs/toolkit/query";
+import { Calendar } from "lucide-react";
 import { forwardRef, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-
-import { Chip, Option, Select, useTheme } from "@mui/joy";
 import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
 import { useGetLoginsQuery } from "../../redux/loginSlice";
-import { skipToken } from "@reduxjs/toolkit/query";
+
 const ExpenseApproval = forwardRef(() => {
   const navigate = useNavigate();
   const theme = useTheme();
@@ -46,7 +53,6 @@ const ExpenseApproval = forwardRef(() => {
     }
   }, []);
 
-
   const {
     data: getExpense = [],
     isLoading,
@@ -58,25 +64,25 @@ const ExpenseApproval = forwardRef(() => {
           department,
           search: searchParam,
           from,
-    to,
+          to,
         }
       : skipToken
   );
 
-   const renderFilters = () => {
-      const departments = [
-        "Accounts",
-        "HR",
-        "Engineering",
-        "Projects",
-        "Infra",
-        "CAM",
-        "Internal",
-        "SCM",
-        "IT Team",
-      ];
-  
-      const statuses = [
+  const renderFilters = () => {
+    const departments = [
+      "Accounts",
+      "HR",
+      "Engineering",
+      "Projects",
+      "Infra",
+      "CAM",
+      "Internal",
+      "SCM",
+      "IT Team",
+    ];
+
+    const statuses = [
       // { value: "draft", label: "Draft" },
       { value: "submitted", label: "Pending" },
       { value: "manager approval", label: "Manager Approved" },
@@ -86,63 +92,62 @@ const ExpenseApproval = forwardRef(() => {
       { value: "rejected", label: "Rejected" },
     ];
 
-  
-      return (
-        <Box
-          sx={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 2,
-            alignItems: "center",
-            mb: 2,
-          }}
-        >
-          <FormControl sx={{ flex: 1 }} size="sm">
-            <FormLabel>Status</FormLabel>
-            <Select
-              value={selectedstatus}
-              onChange={(e, newValue) => {
-                setSelectedstatus(newValue);
-                setCurrentPage(1);
-              }}
-              size="sm"
-              placeholder="Select Status"
-            >
-              <Option value="">All Status</Option>
-              {statuses.map((status) => (
-                <Option key={status.value} value={status.value}>
-                  {status.label}
-                </Option>
-              ))}
-            </Select>
-          </FormControl>
-  
-          <FormControl size="sm" sx={{ minWidth: 140 }}>
-            <FormLabel>From Date</FormLabel>
-            <Input
-              type="date"
-              value={from}
-              onChange={(e) => {
-                setFrom(e.target.value);
-                setCurrentPage(1);
-              }}
-            />
-          </FormControl>
-  
-          <FormControl size="sm" sx={{ minWidth: 140 }}>
-            <FormLabel>To Date</FormLabel>
-            <Input
-              type="date"
-              value={to}
-              onChange={(e) => {
-                setTo(e.target.value);
-                setCurrentPage(1);
-              }}
-            />
-          </FormControl>
-        </Box>
-      );
-    };
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 2,
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <FormControl sx={{ flex: 1 }} size="sm">
+          <FormLabel>Status</FormLabel>
+          <Select
+            value={selectedstatus}
+            onChange={(e, newValue) => {
+              setSelectedstatus(newValue);
+              setCurrentPage(1);
+            }}
+            size="sm"
+            placeholder="Select Status"
+          >
+            <Option value="">All Status</Option>
+            {statuses.map((status) => (
+              <Option key={status.value} value={status.value}>
+                {status.label}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl size="sm" sx={{ minWidth: 140 }}>
+          <FormLabel>From Date</FormLabel>
+          <Input
+            type="date"
+            value={from}
+            onChange={(e) => {
+              setFrom(e.target.value);
+              setCurrentPage(1);
+            }}
+          />
+        </FormControl>
+
+        <FormControl size="sm" sx={{ minWidth: 140 }}>
+          <FormLabel>To Date</FormLabel>
+          <Input
+            type="date"
+            value={to}
+            onChange={(e) => {
+              setTo(e.target.value);
+              setCurrentPage(1);
+            }}
+          />
+        </FormControl>
+      </Box>
+    );
+  };
 
   // console.log("department:", department);
 
@@ -271,46 +276,39 @@ const ExpenseApproval = forwardRef(() => {
     return pages;
   };
 
-  const ExpenseCode = ({ currentPage, expense_code }) => {
+  const ExpenseCode = ({ currentPage, expense_code, createdAt }) => {
+    const formattedDate = createdAt
+      ? new Date(createdAt).toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : "N/A";
     return (
       <>
-        <span
-          style={{
-            cursor: "pointer",
-            color: theme.vars.palette.text.primary,
-            textDecoration: "none",
-          }}
-          onClick={() => {
-            localStorage.setItem("edit_expense", expense_code);
-            navigate(
-              `/edit_expense?page=${currentPage}&expense_code=${expense_code}`
-            );
-          }}
-        >
-          {expense_code || "-"}
-        </span>
-      </>
-    );
-  };
-
-  const EmployeeName = ({ currentPage, emp_name, expense_code }) => {
-    return (
-      <>
-        <span
-          style={{
-            cursor: "pointer",
-            color: theme.vars.palette.text.primary,
-            textDecoration: "none",
-          }}
-          onClick={() => {
-            localStorage.setItem("edit_expense", expense_code);
-            navigate(
-              `/edit_expense?page=${currentPage}&expense_code=${expense_code}`
-            );
-          }}
-        >
-          {emp_name || "-"}
-        </span>
+        <Box>
+          <span
+            style={{ cursor: "pointer", fontWeight: 500 }}
+            onClick={() => {
+              localStorage.setItem("edit_expense", expense_code);
+              navigate(
+                `/edit_expense?page=${currentPage}&code=${expense_code}`
+              );
+            }}
+          >
+            {expense_code || "-"}
+          </span>
+        </Box>
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <Calendar size={12} />
+          <span style={{ fontSize: 12, fontWeight: 600 }}>
+            Created At:{" "}
+          </span>{" "}
+          &nbsp;
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+            {formattedDate}
+          </Typography>
+        </Box>
       </>
     );
   };
@@ -382,7 +380,7 @@ const ExpenseApproval = forwardRef(() => {
                 sx={{
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
-                  textAlign: "center",
+                  textAlign: "left",
                 }}
               >
                 <Checkbox
@@ -406,7 +404,6 @@ const ExpenseApproval = forwardRef(() => {
               </Box>
               {[
                 "Expense Code",
-                "Employee Code",
                 "Employee Name",
                 "Requested Amount",
                 "Approval Amount",
@@ -421,7 +418,7 @@ const ExpenseApproval = forwardRef(() => {
                   sx={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
-                    textAlign: "center",
+                    textAlign: "left",
                     fontWeight: "bold",
                   }}
                 >
@@ -431,7 +428,33 @@ const ExpenseApproval = forwardRef(() => {
             </Box>
           </Box>
           <Box component="tbody">
-            {paginatedExpenses.length > 0 ? (
+            {isLoading ? (
+              <Box component="tr">
+                <Box
+                  component="td"
+                  colSpan={9}
+                  sx={{
+                    py: 2,
+                    textAlign: "center",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "inline-flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 1,
+                    }}
+                  >
+                    <CircularProgress size="sm" sx={{ color: "primary.500" }} />
+                    <Typography fontStyle="italic">
+                      Loading expense… please hang tight ⏳
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+            ) : paginatedExpenses.length > 0 ? (
               paginatedExpenses.map((expense, index) => (
                 <Box
                   component="tr"
@@ -445,7 +468,7 @@ const ExpenseApproval = forwardRef(() => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     <Checkbox
@@ -460,20 +483,14 @@ const ExpenseApproval = forwardRef(() => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
-                    <Box
-                      sx={{
-                        display: "inline",
-                        textDecoration: "underline dotted",
-                        textUnderlineOffset: "2px",
-                        textDecorationColor: "#999",
-                      }}
-                    >
+                    <Box sx={{ fontSize: 15 }}>
                       <ExpenseCode
                         currentPage={currentPage}
                         expense_code={expense.expense_code}
+                        createdAt={expense.createdAt}
                       />
                     </Box>
                   </Box>
@@ -482,31 +499,21 @@ const ExpenseApproval = forwardRef(() => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize: 15,
                     }}
                   >
-                    {expense.emp_id || "-"}
+                    {expense.emp_name || "0"}
+                    <Box>
+                      <span style={{ fontSize: 12 }}>{expense.emp_id}</span>
+                    </Box>
                   </Box>
                   <Box
                     component="td"
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    <EmployeeName
-                      currentPage={currentPage}
-                      expense_code={expense.expense_code}
-                      emp_name={expense.emp_name}
-                    />
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {expense.total_requested_amount || "0"}
@@ -516,7 +523,7 @@ const ExpenseApproval = forwardRef(() => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {expense.total_approved_amount || "0"}
@@ -527,7 +534,7 @@ const ExpenseApproval = forwardRef(() => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {(() => {
@@ -547,7 +554,7 @@ const ExpenseApproval = forwardRef(() => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {expense.disbursement_date
@@ -562,7 +569,7 @@ const ExpenseApproval = forwardRef(() => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {(() => {
@@ -619,7 +626,7 @@ const ExpenseApproval = forwardRef(() => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   ></Box>
                 </Box>

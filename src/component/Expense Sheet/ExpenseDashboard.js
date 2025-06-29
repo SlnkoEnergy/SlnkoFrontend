@@ -1,6 +1,15 @@
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
+import {
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Option,
+  Select,
+  useTheme,
+} from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
@@ -10,11 +19,10 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
+import { Calendar } from "lucide-react";
 import { forwardRef, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Card, CardContent, Chip, Option, Select, useTheme } from "@mui/joy";
 import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
-import { Calendar } from "lucide-react";
 
 const AllExpense = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -30,7 +38,7 @@ const AllExpense = forwardRef((props, ref) => {
     setExpandedCard(expandedCard === id ? null : id);
   };
 
-  const { data: getExpense = [] } = useGetAllExpenseQuery({
+  const { data: getExpense = [], isLoading } = useGetAllExpenseQuery({
     page: currentPage,
     department: selectedDepartment,
     search: searchQuery,
@@ -245,7 +253,6 @@ const AllExpense = forwardRef((props, ref) => {
       </>
     );
   };
-  
 
   return (
     <>
@@ -354,7 +361,33 @@ const AllExpense = forwardRef((props, ref) => {
             </Box>
           </Box>
           <Box component="tbody">
-            {paginatedExpenses.length > 0 ? (
+            {isLoading ? (
+              <Box component="tr">
+                <Box
+                  component="td"
+                  colSpan={9}
+                  sx={{
+                    py: 2,
+                    textAlign: "center",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "inline-flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 1,
+                    }}
+                  >
+                    <CircularProgress size="sm" sx={{ color: "primary.500" }} />
+                    <Typography fontStyle="italic">
+                      Loading expense… please hang tight ⏳
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+            ) : paginatedExpenses.length > 0 ? (
               paginatedExpenses.map((expense, index) => (
                 <Box
                   component="tr"
@@ -400,7 +433,7 @@ const AllExpense = forwardRef((props, ref) => {
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
                       textAlign: "left",
-                      fontSize:15
+                      fontSize: 15,
                     }}
                   >
                     {expense.emp_name || "0"}
@@ -414,7 +447,7 @@ const AllExpense = forwardRef((props, ref) => {
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
                       textAlign: "left",
-                      fontSize:15
+                      fontSize: 15,
                     }}
                   >
                     {expense.total_requested_amount || "0"}
@@ -426,7 +459,7 @@ const AllExpense = forwardRef((props, ref) => {
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
                       textAlign: "left",
-                      fontSize:15
+                      fontSize: 15,
                     }}
                   >
                     {expense.total_approved_amount || "0"}
@@ -438,7 +471,7 @@ const AllExpense = forwardRef((props, ref) => {
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
                       textAlign: "left",
-                      fontSize:15
+                      fontSize: 15,
                     }}
                   >
                     {(() => {
@@ -459,7 +492,7 @@ const AllExpense = forwardRef((props, ref) => {
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
                       textAlign: "left",
-                      fontSize:15
+                      fontSize: 15,
                     }}
                   >
                     {expense.disbursement_date
@@ -475,7 +508,7 @@ const AllExpense = forwardRef((props, ref) => {
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
                       textAlign: "left",
-                      fontSize:15
+                      fontSize: 15,
                     }}
                   >
                     {(() => {
@@ -533,7 +566,7 @@ const AllExpense = forwardRef((props, ref) => {
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
                       textAlign: "left",
-                      fontSize:15
+                      fontSize: 15,
                     }}
                   ></Box>
                 </Box>
