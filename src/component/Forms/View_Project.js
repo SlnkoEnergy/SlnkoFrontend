@@ -1,11 +1,4 @@
-import {
-  Avatar,
-  Box,
-  Chip,
-  IconButton,
-  Typography,
-  Card,
-} from "@mui/joy";
+import { Avatar, Box, Chip, IconButton, Typography, Card } from "@mui/joy";
 
 import EmailRoundedIcon from "@mui/icons-material/EmailRounded";
 import PhoneRoundedIcon from "@mui/icons-material/PhoneRounded";
@@ -22,6 +15,8 @@ const View_Project = ({ projectId }) => {
     return (parts[0][0] + (parts[1]?.[0] || "")).toUpperCase();
   };
 
+  console.log("Project Details:", projectDetails?.site_address);
+
   return (
     <Box sx={{ p: { xs: 2, sm: 4 } }}>
       <Card
@@ -35,11 +30,7 @@ const View_Project = ({ projectId }) => {
           gap: 2,
         }}
       >
-        <Typography
-          textAlign="center"
-          fontWeight="bold"
-          fontSize="1.1rem"
-        >
+        <Typography textAlign="center" fontWeight="bold" fontSize="1.1rem">
           {projectDetails?.name}
         </Typography>
 
@@ -51,10 +42,7 @@ const View_Project = ({ projectId }) => {
             gap: 1.5,
           }}
         >
-          <Avatar
-            alt={projectDetails?.customer}
-            sx={{ width: 80, height: 80 }}
-          >
+          <Avatar alt={projectDetails?.customer} sx={{ width: 80, height: 80 }}>
             {getInitials(projectDetails?.customer)}
           </Avatar>
 
@@ -99,11 +87,16 @@ const View_Project = ({ projectId }) => {
           <Box sx={{ display: "flex", alignItems: "center", mt: 1, mb: 1 }}>
             <LocationOnRoundedIcon fontSize="small" />
             <Typography level="body-sm" sx={{ ml: 0.5 }}>
-              {[projectDetails?.site_address?.village_name,
-                projectDetails?.site_address?.district_name,
-                projectDetails?.state]
-                .filter(Boolean)
-                .join(", ")}
+              {typeof projectDetails?.site_address === "object" &&
+              projectDetails?.site_address !== null
+                ? [
+                    projectDetails?.site_address?.village_name,
+                    projectDetails?.site_address?.district_name,
+                    projectDetails?.state,
+                  ]
+                    .filter(Boolean)
+                    .join(", ")
+                : projectDetails?.site_address}
             </Typography>
           </Box>
 
@@ -117,13 +110,19 @@ const View_Project = ({ projectId }) => {
             <b>Substation Distance:</b> {projectDetails?.distance}
           </Typography>
           <Typography level="body-sm">
-            <b>Land Type:</b>{" "}
-            {projectDetails?.land && JSON.parse(projectDetails.land)?.type}
-          </Typography>
-          <Typography level="body-sm">
             <b>Land Available:</b>{" "}
-            {projectDetails?.land && JSON.parse(projectDetails.land)?.acres}
+            {(() => {
+              try {
+                const parsed = JSON.parse(projectDetails?.land);
+                const { acres, type } = parsed || {};
+                if (acres || type) return `${acres || ""} ${type || ""}`.trim();
+                return null; 
+              } catch {
+                return projectDetails?.land || "N/A";
+              }
+            })()}
           </Typography>
+
           <Typography level="body-sm">
             <b>Tariff:</b> {projectDetails?.tarrif}
           </Typography>
