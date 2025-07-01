@@ -14,8 +14,8 @@ import { forwardRef, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 // import Axios from "../utils/Axios";
-import { Chip, CircularProgress, Option, Select, useTheme } from "@mui/joy";
-import { Calendar } from "lucide-react";
+import { Chip, CircularProgress, Option, Select, Tooltip, useTheme } from "@mui/joy";
+import { Calendar, InfoIcon } from "lucide-react";
 import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
 
 const AccountsExpense = forwardRef(() => {
@@ -497,7 +497,10 @@ const AccountsExpense = forwardRef(() => {
                     }}
                   >
                     {(() => {
-                      const status = expense.current_status?.toLowerCase();
+                      const status =
+                        typeof expense.current_status === "string"
+                          ? expense.current_status
+                          : expense.current_status?.status;
 
                       if (status === "submitted") {
                         return (
@@ -531,9 +534,20 @@ const AccountsExpense = forwardRef(() => {
                         );
                       } else if (status === "rejected") {
                         return (
-                          <Chip color="danger" variant="soft" size="sm">
-                            Rejected
-                          </Chip>
+                          <Tooltip
+                            title={
+                              expense.current_status?.remarks || "No remarks"
+                            }
+                            arrow
+                          >
+                            <Chip
+                              icon={<InfoIcon fontSize="small" />}
+                              color="danger"
+                              variant="soft"
+                              size="sm"
+                              label="Rejected"
+                            />
+                          </Tooltip>
                         );
                       } else {
                         return (

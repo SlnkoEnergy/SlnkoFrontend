@@ -629,7 +629,10 @@ const HrExpense = forwardRef((props, ref) => {
                     }}
                   >
                     {(() => {
-                      const status = expense.current_status?.toLowerCase();
+                      const status =
+                        typeof expense.current_status === "string"
+                          ? expense.current_status
+                          : expense.current_status?.status || "";
 
                       if (status === "submitted" || status === "draft") {
                         return (
@@ -687,7 +690,11 @@ const HrExpense = forwardRef((props, ref) => {
                   >
                     <RowMenu
                       _id={expense._id}
-                      status={expense.current_status}
+                      status={
+                        typeof expense.current_status === "string"
+                          ? expense.current_status
+                          : expense.current_status?.status || "-"
+                      }
                     />
                   </Box>
                 </Box>

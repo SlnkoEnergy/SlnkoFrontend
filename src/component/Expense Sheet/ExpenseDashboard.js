@@ -1,3 +1,4 @@
+import InfoIcon from "@mui/icons-material/Info";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
@@ -8,6 +9,7 @@ import {
   CircularProgress,
   Option,
   Select,
+  Tooltip,
   useTheme,
 } from "@mui/joy";
 import Box from "@mui/joy/Box";
@@ -152,57 +154,45 @@ const AllExpense = forwardRef((props, ref) => {
 
   // console.log(expenses);
 
-  const filteredAndSortedData = expenses
-    .filter((expense) => {
-      if (!user || !user.name) return false;
+  const filteredAndSortedData = expenses.filter((expense) => {
+    if (!user || !user.name) return false;
 
-      const userName = user.name.trim();
-      const userRole = user.department?.trim();
-      const isAdmin =
-        userRole === "admin" ||
-        userRole === "superadmin" ||
-        (userRole === "HR" && userName !== "Manish Shah");
-      const submittedBy = expense.emp_name?.trim() || "";
+    const userName = user.name.trim();
+    const userRole = user.department?.trim();
+    const isAdmin =
+      userRole === "admin" ||
+      userRole === "superadmin" ||
+      (userRole === "HR" && userName !== "Manish Shah");
+    const submittedBy = expense.emp_name?.trim() || "";
 
-      console.log(userRole);
+    console.log(userRole);
 
-      const allowedStatuses = [
-        "submitted",
-        "manager approval",
-        "hr approval",
-        "final approval",
-        "hold",
-        "rejected",
-      ];
-      const status = expense.current_status?.toLowerCase();
-      if (!allowedStatuses.includes(status)) return false;
+    const allowedStatuses = [
+      "submitted",
+      "manager approval",
+      "hr approval",
+      "final approval",
+      "hold",
+      "rejected",
+    ];
+    const status =
+      typeof expense.current_status === "string"
+        ? expense.current_status
+        : expense.current_status?.status || "";
+    if (!allowedStatuses.includes(status)) return false;
 
-      const isSubmittedByUser = submittedBy === userName;
+    const isSubmittedByUser = submittedBy === userName;
 
-      const projectViewUsers = [
-        "Mayank Kumar",
-        "Shyam Singh",
-        "Raghav Kumar Jha",
-      ];
-      const canSeeProjects =
-        projectViewUsers.includes(userName) && userRole === "Projects";
+    const projectViewUsers = [
+      "Mayank Kumar",
+      "Shyam Singh",
+      "Raghav Kumar Jha",
+    ];
+    const canSeeProjects =
+      projectViewUsers.includes(userName) && userRole === "Projects";
 
-      return isAdmin || isSubmittedByUser || canSeeProjects;
-    })
-    .sort((a, b) => {
-      const aMatches = [a.expense_code, a.emp_name, a.current_status].some(
-        (val) => val?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-
-      const bMatches = [b.expense_code, b.emp_name, b.current_status].some(
-        (val) => val?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-
-      if (aMatches && !bMatches) return -1;
-      if (!aMatches && bMatches) return 1;
-
-      return new Date(b.createdAt) - new Date(a.createdAt);
-    });
+    return isAdmin || isSubmittedByUser || canSeeProjects;
+  });
 
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
@@ -512,7 +502,12 @@ const AllExpense = forwardRef((props, ref) => {
                     }}
                   >
                     {(() => {
-                      const status = expense.current_status?.toLowerCase();
+                      const status =
+                        typeof expense.current_status === "string"
+                          ? expense.current_status
+                          : expense.current_status?.status;
+
+                      // const status = rawStatus;
 
                       if (status === "submitted") {
                         return (
@@ -546,9 +541,20 @@ const AllExpense = forwardRef((props, ref) => {
                         );
                       } else if (status === "rejected") {
                         return (
-                          <Chip color="danger" variant="soft" size="sm">
-                            Rejected
-                          </Chip>
+                          <Tooltip
+                            title={
+                              expense.current_status?.remarks || "No remarks"
+                            }
+                            arrow
+                          >
+                            <Chip
+                              icon={<InfoIcon fontSize="small" />}
+                              color="danger"
+                              variant="soft"
+                              size="sm"
+                              label="Rejected"
+                            />
+                          </Tooltip>
                         );
                       } else {
                         return (
@@ -607,7 +613,10 @@ const AllExpense = forwardRef((props, ref) => {
             const disbursement = expense.disbursement_date
               ? new Date(expense.disbursement_date).toLocaleDateString("en-GB")
               : "-";
-            const status = expense.current_status?.toLowerCase();
+            const status =
+              typeof expense.current_status === "string"
+                ? expense.current_status
+                : expense.current_status?.status || "";
 
             const getStatusChip = () => {
               switch (status) {

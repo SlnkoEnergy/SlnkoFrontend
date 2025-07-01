@@ -1,11 +1,12 @@
+import { keyframes } from "@emotion/react";
 import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
+import DownloadIcon from "@mui/icons-material/Download";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import HourglassBottomRoundedIcon from "@mui/icons-material/HourglassBottomRounded";
-import { keyframes } from "@emotion/react";
 import SearchIcon from "@mui/icons-material/Search";
-import { CircularProgress, Tooltip } from "@mui/joy";
+import { CircularProgress, Option, Select, Tooltip } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Chip from "@mui/joy/Chip";
@@ -13,20 +14,15 @@ import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
-import DownloadIcon from "@mui/icons-material/Download";
-import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import Typography from "@mui/joy/Typography";
 import { useSnackbar } from "notistack";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import Axios from "../utils/Axios";
 import {
   useExportBillsMutation,
-  useGetBillsQuery,
   useGetPaginatedBillsQuery,
 } from "../redux/billsSlice";
-import { Option, Select } from "@mui/joy";
-import { useMemo } from "react";
+import Axios from "../utils/Axios";
 
 function VendorBillSummary() {
   // const [currentPage, setCurrentPage] = useState(1);
@@ -127,14 +123,22 @@ function VendorBillSummary() {
     setCurrentPage(page);
   }, [searchParams]);
 
-  const handleExport = async () => {
+  const formatDateToDDMMYYYY = (dateStr) => {
+    if (!dateStr) return null;
+    const [year, month, day] = dateStr.split("-");
+    return `${day}-${month}-${year}`;
+  };
+
+  const handleExport = async (isExportAll) => {
     try {
-      const exportAll = !from || !to;
+      const exportFrom = from ? formatDateToDDMMYYYY(from) : null;
+      const exportTo = to ? formatDateToDDMMYYYY(to) : null;
+      // const exportAll = !from || !to;
 
       const res = await exportBills({
-        from,
-        to,
-        exportAll,
+        from: exportFrom,
+        to: exportTo,
+        exportAll: isExportAll,
       }).unwrap();
 
       const url = URL.createObjectURL(res);

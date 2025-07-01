@@ -220,7 +220,12 @@ const ExpenseApproval = forwardRef(() => {
         "hold",
         "rejected",
       ];
-      const status = expense.current_status?.toLowerCase();
+      const status =
+      typeof expense.current_status === "string"
+        ? expense.current_status
+        : expense.current_status?.status || "";
+    if (!allowedStatuses.includes(status)) return false;
+
       if (!allowedStatuses.includes(status)) return false;
 
       const search = searchQuery.toLowerCase();
@@ -233,22 +238,7 @@ const ExpenseApproval = forwardRef(() => {
 
       return matchesSearchQuery;
     })
-    .sort((a, b) => {
-      const search = searchQuery.toLowerCase();
-      const fields = ["expense_code", "emp_id", "emp_name", "status"];
-
-      for (let field of fields) {
-        const aValue = a[field]?.toLowerCase() || "";
-        const bValue = b[field]?.toLowerCase() || "";
-        const aMatch = aValue.includes(search);
-        const bMatch = bValue.includes(search);
-
-        if (aMatch && !bMatch) return -1;
-        if (!aMatch && bMatch) return 1;
-      }
-
-      return new Date(b.createdAt) - new Date(a.createdAt);
-    });
+    
 
   const total = getExpense?.total || 0;
   const limit = getExpense?.limit || 10;
@@ -573,7 +563,12 @@ const ExpenseApproval = forwardRef(() => {
                     }}
                   >
                     {(() => {
-                      const status = expense.current_status?.toLowerCase();
+                      const status =
+                        typeof expense.current_status === "string"
+                          ? expense.current_status
+                          : expense.current_status?.status;
+
+                      
 
                       if (status === "submitted") {
                         return (
