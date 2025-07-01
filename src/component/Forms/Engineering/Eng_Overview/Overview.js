@@ -789,7 +789,7 @@ const Overview = () => {
                       )}
 
                       {/* Hold/Unhold for Engineering */}
-                      {isEngineering && item.latestStatus !== "hold" && (
+                      {isEngineering && (user?.name=== "Rishav Mahato" || user?.name==="Ranvijay Singh") &&item.latestStatus !== "hold" && (
                         <Button
                           size="sm"
                           variant="soft"
