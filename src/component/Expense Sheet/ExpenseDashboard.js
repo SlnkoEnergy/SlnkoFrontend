@@ -7,6 +7,8 @@ import {
   CardContent,
   Chip,
   CircularProgress,
+  Modal,
+  ModalDialog,
   Option,
   Select,
   Tooltip,
@@ -32,6 +34,7 @@ const AllExpense = forwardRef((props, ref) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
+  const [open, setOpen] = useState(false);
   const [selectedExpenses, setSelectedExpenses] = useState([]);
   const [expandedCard, setExpandedCard] = useState(null);
   const [selectedDepartment, setSelectedDepartment] = useState("");
@@ -540,21 +543,26 @@ const AllExpense = forwardRef((props, ref) => {
                           </Chip>
                         );
                       } else if (status === "rejected") {
+                        const remarks = expense.current_status?.remarks?.trim();
+
                         return (
-                          <Tooltip
-                            title={
-                              expense.current_status?.remarks || "No remarks"
-                            }
-                            arrow
+                          <Box
+                            display="inline-flex"
+                            alignItems="center"
+                            gap={1}
                           >
-                            <Chip
-                              icon={<InfoIcon fontSize="small" />}
-                              color="danger"
-                              variant="soft"
-                              size="sm"
-                              label="Rejected"
-                            />
-                          </Tooltip>
+                            <Chip variant="soft" color="danger" size="sm">
+                              Rejected
+                            </Chip>
+                            <Tooltip
+                              title={remarks || "Remarks not added"}
+                              arrow
+                            >
+                              <IconButton size="sm" color="danger">
+                                <InfoIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
                         );
                       } else {
                         return (
@@ -618,6 +626,8 @@ const AllExpense = forwardRef((props, ref) => {
                 ? expense.current_status
                 : expense.current_status?.status || "";
 
+                 const remarks = expense.current_status?.remarks?.trim() || "No remarks provided";
+
             const getStatusChip = () => {
               switch (status) {
                 case "draft":
@@ -653,9 +663,35 @@ const AllExpense = forwardRef((props, ref) => {
                   );
                 case "rejected":
                   return (
-                    <Chip color="danger" variant="soft" size="sm">
-                      Rejected
-                    </Chip>
+                    <>
+                      <Box
+                        display="flex"
+                        alignItems="center"
+                        gap={1}
+                        flexWrap="wrap"
+                      >
+                        <Chip variant="soft" color="danger" size="sm">
+                          Rejected
+                        </Chip>
+                        <IconButton
+                          size="sm"
+                          variant="outlined"
+                          color="danger"
+                          onClick={() => setOpen(true)}
+                        >
+                          <InfoIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+
+                      <Modal open={open} onClose={() => setOpen(false)}>
+                        <ModalDialog size="sm" layout="center">
+                          <Typography level="title-md" mb={1}>
+                            Rejection Reason
+                          </Typography>
+                          <Typography level="body-sm">{remarks}</Typography>
+                        </ModalDialog>
+                      </Modal>
+                    </>
                   );
                 default:
                   return (

@@ -2,6 +2,7 @@ import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
+import InfoIcon from "@mui/icons-material/Info";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
 import FormControl from "@mui/joy/FormControl";
@@ -14,8 +15,15 @@ import { forwardRef, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 // import Axios from "../utils/Axios";
-import { Chip, CircularProgress, Option, Select, Tooltip, useTheme } from "@mui/joy";
-import { Calendar, InfoIcon } from "lucide-react";
+import {
+  Chip,
+  CircularProgress,
+  Option,
+  Select,
+  Tooltip,
+  useTheme,
+} from "@mui/joy";
+import { Calendar } from "lucide-react";
 import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
 
 const AccountsExpense = forwardRef(() => {
@@ -533,21 +541,30 @@ const AccountsExpense = forwardRef(() => {
                           </Chip>
                         );
                       } else if (status === "rejected") {
+                        const remarks = expense.current_status?.remarks?.trim();
+
                         return (
-                          <Tooltip
-                            title={
-                              expense.current_status?.remarks || "No remarks"
-                            }
-                            arrow
+                          <Box
+                            display="inline-flex"
+                            alignItems="center"
+                            gap={1}
                           >
-                            <Chip
-                              icon={<InfoIcon fontSize="small" />}
-                              color="danger"
-                              variant="soft"
-                              size="sm"
-                              label="Rejected"
-                            />
-                          </Tooltip>
+                            <Chip variant="soft" color="danger" size="sm">
+                              Rejected
+                            </Chip>
+                            <Tooltip
+                              title={remarks || "Remarks not added"}
+                              arrow
+                            >
+                              <IconButton
+                                size="sm"
+                               
+                                color="danger"
+                              >
+                                <InfoIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
                         );
                       } else {
                         return (
