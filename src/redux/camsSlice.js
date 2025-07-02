@@ -2,7 +2,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { IdCardIcon } from "lucide-react";
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: "https://staging.api.slnkoprotrac.com/v1/",
+  baseUrl: `${process.env.REACT_APP_API_URL}/`,
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("authToken");
     // console.log("Token:", token);
@@ -28,10 +28,22 @@ export const camsApi = createApi({
       providesTags: ["CAM"],
     }),
 
-    getHandOverById: builder.query({
-      query: ({ leadId }) => `get-handoversheet?leadId=${leadId}`,
-      providesTags: ["CAM"],
-    }),
+  getHandOverById: builder.query({
+  query: ({ leadId, p_id, id }) => {
+    if (p_id) {
+      return `get-handoversheet?p_id=${p_id}`;
+    } else if (leadId) {
+      return `get-handoversheet?leadId=${leadId}`;
+    } else if (id) {
+      return `get-handoversheet?id=${id}`;
+    } else {
+      console.warn("getHandOver called with no valid identifier.");
+      return { url: "", method: "GET" };
+    }
+  },
+  providesTags: ["CAM"],
+}),
+
 
     addHandOver: builder.mutation({
       query: (newHandOver) => ({

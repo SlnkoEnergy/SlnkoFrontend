@@ -80,7 +80,7 @@ const Login = () => {
   //     sessionStorage.setItem("authToken", user.token);
   //     sessionStorage.setItem("authTokenExpiration", expiration.toString());
 
-  //     const response = await axios.get("https://api.slnkoprotrac.com/v1/get-all-useR-IT", {
+  //     const response = await axios.get("${process.env.REACT_APP_API_URL}/get-all-useR-IT", {
   //       headers: {
   //         "x-auth-token": user.token,
   //       },
@@ -148,7 +148,7 @@ const Login = () => {
         return;
       }
       const response = await axios.get(
-        "https://api.slnkoprotrac.com/v1/get-all-useR-IT",
+        `${process.env.REACT_APP_API_URL}/get-all-useR-IT`,
         {
           headers: {
             "x-auth-token": user.token,

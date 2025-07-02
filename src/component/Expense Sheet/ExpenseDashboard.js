@@ -1,6 +1,17 @@
+import InfoIcon from "@mui/icons-material/Info";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
+import {
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Option,
+  Select,
+  Tooltip,
+  useTheme,
+} from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
@@ -10,28 +21,94 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
+import { Calendar } from "lucide-react";
 import { forwardRef, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-// import Axios from "../utils/Axios";
-import { Card, CardContent, Chip, useTheme } from "@mui/joy";
 import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
 
 const AllExpense = forwardRef((props, ref) => {
   const navigate = useNavigate();
   const theme = useTheme();
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedExpenses, setSelectedExpenses] = useState([]);
   const [expandedCard, setExpandedCard] = useState(null);
+  const [selectedDepartment, setSelectedDepartment] = useState("");
 
   const toggleExpand = (id) => {
     setExpandedCard(expandedCard === id ? null : id);
   };
 
-  const { data: getExpense = [], isLoading, error } = useGetAllExpenseQuery();
+  const { data: getExpense = [], isLoading } = useGetAllExpenseQuery({
+    page: currentPage,
+    department: selectedDepartment,
+    search: searchQuery,
+  });
+
+  console.log(getExpense);
+
+  const renderFilters = () => {
+    const departments = [
+      "Accounts",
+      "HR",
+      "Engineering",
+      "Projects",
+      "Infra",
+      "CAM",
+      "Internal",
+      "SCM",
+      "IT Team",
+    ];
+
+    return (
+      <FormControl sx={{ flex: 1 }} size="sm">
+        <FormLabel>Department</FormLabel>
+        <Select
+          value={selectedDepartment}
+          onChange={(e, newValue) => {
+            setSelectedDepartment(newValue);
+            setCurrentPage(1);
+          }}
+          size="sm"
+          placeholder="Select Department"
+        >
+          <Option value="">All Departments</Option>
+          {departments.map((dept) => (
+            <Option key={dept} value={dept}>
+              {dept}
+            </Option>
+          ))}
+        </Select>
+      </FormControl>
+    );
+  };
+
+  const total = getExpense?.total || 0;
+  const limit = getExpense?.limit || 10;
+  const totalPages = Math.ceil(total / limit);
+
+  const getPaginationRange = () => {
+    const siblings = 1;
+    const pages = [];
+
+    if (totalPages <= 5 + siblings * 2) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      const left = Math.max(currentPage - siblings, 2);
+      const right = Math.min(currentPage + siblings, totalPages - 1);
+
+      pages.push(1);
+      if (left > 2) pages.push("...");
+
+      for (let i = left; i <= right; i++) pages.push(i);
+
+      if (right < totalPages - 1) pages.push("...");
+      pages.push(totalPages);
+    }
+
+    return pages;
+  };
 
   const [user, setUser] = useState(null);
 
@@ -55,7 +132,6 @@ const AllExpense = forwardRef((props, ref) => {
         ...new Set([...prevSelected, ...ids]),
       ]);
     } else {
-      // Remove only the IDs from current page
       const ids = paginatedExpenses.map((row) => row._id);
       setSelectedExpenses((prevSelected) =>
         prevSelected.filter((id) => !ids.includes(id))
@@ -76,149 +152,100 @@ const AllExpense = forwardRef((props, ref) => {
     [getExpense]
   );
 
-  const filteredAndSortedData = expenses
-    .filter((expense) => {
-      if (!user || !user.name) return false;
+  // console.log(expenses);
 
-      const userName = user.name.trim();
-      const userRole = user.department?.trim();
-      const isAdmin =
-        userRole === "admin" || userRole === "superadmin" || userRole === "HR";
-      const submittedBy = expense.emp_name?.trim() || "";
-      // const expenseDepartment = expense.department?.trim() || "";
+  const filteredAndSortedData = expenses.filter((expense) => {
+    if (!user || !user.name) return false;
 
-      const allowedStatuses = [
-        "submitted",
-        "manager approval",
-        "hr approval",
-        "final approval",
-        "hold",
-        "rejected",
-      ];
-      const status = expense.current_status?.toLowerCase();
-      if (!allowedStatuses.includes(status)) return false;
+    const userName = user.name.trim();
+    const userRole = user.department?.trim();
+    const isAdmin =
+      userRole === "admin" ||
+      userRole === "superadmin" ||
+      (userRole === "HR" && userName !== "Manish Shah");
+    const submittedBy = expense.emp_name?.trim() || "";
 
-      const matchesSearchQuery = [
-        "expense_code",
-        "emp_name",
-        "current_status",
-      ].some((key) =>
-        String(expense[key] || "")
-          .trim()
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase())
-      );
+    console.log(userRole);
 
-      const isSubmittedByUser = submittedBy === userName;
+    const allowedStatuses = [
+      "submitted",
+      "manager approval",
+      "hr approval",
+      "final approval",
+      "hold",
+      "rejected",
+    ];
+    const status =
+      typeof expense.current_status === "string"
+        ? expense.current_status
+        : expense.current_status?.status || "";
+    if (!allowedStatuses.includes(status)) return false;
 
-      const projectViewUsers = [
-        "Mayank Kumar",
-        "Shyam Singh",
-        "Raghav Kumar Jha",
-      ];
-      const canSeeProjects =
-        projectViewUsers.includes(userName) && userRole === "Projects";
+    const isSubmittedByUser = submittedBy === userName;
 
-      const internalViewUsers = ["Prachi Singh"];
-      const canSeeInternal =
-        internalViewUsers.includes(userName) && userRole === "Internal";
+    const projectViewUsers = [
+      "Mayank Kumar",
+      "Shyam Singh",
+      "Raghav Kumar Jha",
+    ];
+    const canSeeProjects =
+      projectViewUsers.includes(userName) && userRole === "Projects";
 
-      return (
-        matchesSearchQuery &&
-        (isAdmin || isSubmittedByUser || canSeeProjects || canSeeInternal)
-      );
-    })
-    .sort((a, b) => {
-      const aMatches = [a.expense_code, a.emp_name, a.current_status].some(
-        (val) => val?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-
-      const bMatches = [b.expense_code, b.emp_name, b.current_status].some(
-        (val) => val?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-
-      if (aMatches && !bMatches) return -1;
-      if (!aMatches && bMatches) return 1;
-
-      return new Date(b.createdAt) - new Date(a.createdAt);
-    });
-
-  const generatePageNumbers = (currentPage, totalPages) => {
-    const pages = [];
-
-    if (currentPage > 2) {
-      pages.push(1);
-    }
-
-    if (currentPage > 3) {
-      pages.push("...");
-    }
-
-    for (
-      let i = Math.max(1, currentPage - 1);
-      i <= Math.min(totalPages, currentPage + 1);
-      i++
-    ) {
-      pages.push(i);
-    }
-
-    if (currentPage < totalPages - 2) {
-      pages.push("...");
-    }
-
-    if (currentPage < totalPages - 1) {
-      pages.push(totalPages);
-    }
-
-    return pages;
-  };
+    return isAdmin || isSubmittedByUser || canSeeProjects;
+  });
 
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
   }, [searchParams]);
 
-  const totalPages = Math.ceil(
-    (filteredAndSortedData?.length || 0) / itemsPerPage
-  );
-
-  const paginatedExpenses = filteredAndSortedData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedExpenses = filteredAndSortedData;
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
-      setSearchParams({ page });
-      setCurrentPage(page);
+      setSearchParams({ page: String(page) });
     }
   };
 
-  const ExpenseCode = ({ currentPage, expense_code }) => {
-    // console.log("currentPage:", currentPage, "p_id:", p_id);
-
+  const ExpenseCode = ({ currentPage, expense_code, createdAt }) => {
+    const formattedDate = createdAt
+      ? new Date(createdAt).toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : "N/A";
     return (
       <>
-        <span
-          style={{
-            cursor: "pointer",
-            color: theme.vars.palette.text.primary,
-            textDecoration: "none",
-          }}
-          onClick={() => {
-            localStorage.setItem("edit_expense", expense_code);
-            navigate(`/edit_expense?page=${currentPage}&code=${expense_code}`);
-          }}
-        >
-          {expense_code || "-"}
-        </span>
+        <Box>
+          <span
+            style={{ cursor: "pointer", fontWeight: 500 }}
+            onClick={() => {
+              localStorage.setItem("edit_expense", expense_code);
+              navigate(
+                `/edit_expense?page=${currentPage}&code=${expense_code}`
+              );
+            }}
+          >
+            {expense_code || "-"}
+          </span>
+        </Box>
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <Calendar size={12} />
+          <span style={{ fontSize: 12, fontWeight: 600 }}>
+            Created At:{" "}
+          </span>{" "}
+          &nbsp;
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+            {formattedDate}
+          </Typography>
+        </Box>
       </>
     );
   };
 
   return (
     <>
-      {/* Tablet and Up Filters */}
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
@@ -243,7 +270,11 @@ const AllExpense = forwardRef((props, ref) => {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {/* {renderFilters()} */}
+
+        {user?.name === "Shruti Tripathi" ||
+          user?.department === "Accounts" ||
+          user?.department === "admin" ||
+          (user?.name === "IT Team" && renderFilters())}
       </Box>
 
       {/* Table */}
@@ -272,7 +303,7 @@ const AllExpense = forwardRef((props, ref) => {
                 sx={{
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
-                  textAlign: "center",
+                  textAlign: "left",
                 }}
               >
                 <Checkbox
@@ -310,7 +341,7 @@ const AllExpense = forwardRef((props, ref) => {
                   sx={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
-                    textAlign: "center",
+                    textAlign: "left",
                     fontWeight: "bold",
                   }}
                 >
@@ -320,7 +351,33 @@ const AllExpense = forwardRef((props, ref) => {
             </Box>
           </Box>
           <Box component="tbody">
-            {paginatedExpenses.length > 0 ? (
+            {isLoading ? (
+              <Box component="tr">
+                <Box
+                  component="td"
+                  colSpan={9}
+                  sx={{
+                    py: 2,
+                    textAlign: "center",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "inline-flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 1,
+                    }}
+                  >
+                    <CircularProgress size="sm" sx={{ color: "primary.500" }} />
+                    <Typography fontStyle="italic">
+                      Loading expense… please hang tight ⏳
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+            ) : paginatedExpenses.length > 0 ? (
               paginatedExpenses.map((expense, index) => (
                 <Box
                   component="tr"
@@ -334,7 +391,7 @@ const AllExpense = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     <Checkbox
@@ -349,20 +406,14 @@ const AllExpense = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
-                    <Box
-                      sx={{
-                        display: "inline",
-                        textDecoration: "underline dotted",
-                        textUnderlineOffset: "2px",
-                        textDecorationColor: "#999",
-                      }}
-                    >
+                    <Box sx={{ fontSize: 15 }}>
                       <ExpenseCode
                         currentPage={currentPage}
                         expense_code={expense.expense_code}
+                        createdAt={expense.createdAt}
                       />
                     </Box>
                   </Box>
@@ -371,17 +422,22 @@ const AllExpense = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize: 15,
                     }}
                   >
                     {expense.emp_name || "0"}
+                    <Box>
+                      <span style={{ fontSize: 12 }}>{expense.emp_id}</span>
+                    </Box>
                   </Box>
                   <Box
                     component="td"
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize: 15,
                     }}
                   >
                     {expense.total_requested_amount || "0"}
@@ -392,7 +448,8 @@ const AllExpense = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize: 15,
                     }}
                   >
                     {expense.total_approved_amount || "0"}
@@ -403,7 +460,8 @@ const AllExpense = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize: 15,
                     }}
                   >
                     {(() => {
@@ -423,7 +481,8 @@ const AllExpense = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize: 15,
                     }}
                   >
                     {expense.disbursement_date
@@ -438,24 +497,34 @@ const AllExpense = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize: 15,
                     }}
                   >
                     {(() => {
-                      const status = expense.current_status?.toLowerCase();
+                      const status =
+                        typeof expense.current_status === "string"
+                          ? expense.current_status
+                          : expense.current_status?.status;
+
+                      // const status = rawStatus;
 
                       if (status === "submitted") {
                         return (
-                          <Chip color="primary" variant="soft" size="sm">
+                          <Chip color="warning" variant="soft" size="sm">
                             Pending
                           </Chip>
                         );
-                      } else if (
-                        ["manager approval", "hr approval"].includes(status)
-                      ) {
+                      } else if (status === "manager approval") {
                         return (
-                          <Chip color="warning" variant="soft" size="sm">
-                            In Process
+                          <Chip color="info" variant="soft" size="sm">
+                            Manager Approved
+                          </Chip>
+                        );
+                      } else if (status === "hr approval") {
+                        return (
+                          <Chip color="primary" variant="soft" size="sm">
+                            HR Approved
                           </Chip>
                         );
                       } else if (status === "final approval") {
@@ -472,9 +541,20 @@ const AllExpense = forwardRef((props, ref) => {
                         );
                       } else if (status === "rejected") {
                         return (
-                          <Chip color="danger" variant="soft" size="sm">
-                            Rejected
-                          </Chip>
+                          <Tooltip
+                            title={
+                              expense.current_status?.remarks || "No remarks"
+                            }
+                            arrow
+                          >
+                            <Chip
+                              icon={<InfoIcon fontSize="small" />}
+                              color="danger"
+                              variant="soft"
+                              size="sm"
+                              label="Rejected"
+                            />
+                          </Tooltip>
                         );
                       } else {
                         return (
@@ -491,7 +571,8 @@ const AllExpense = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize: 15,
                     }}
                   ></Box>
                 </Box>
@@ -532,21 +613,30 @@ const AllExpense = forwardRef((props, ref) => {
             const disbursement = expense.disbursement_date
               ? new Date(expense.disbursement_date).toLocaleDateString("en-GB")
               : "-";
-            const status = expense.current_status?.toLowerCase();
+            const status =
+              typeof expense.current_status === "string"
+                ? expense.current_status
+                : expense.current_status?.status || "";
 
             const getStatusChip = () => {
               switch (status) {
+                case "draft":
                 case "submitted":
                   return (
-                    <Chip color="primary" variant="soft" size="sm">
+                    <Chip color="warning" variant="soft" size="sm">
                       Pending
                     </Chip>
                   );
                 case "manager approval":
+                  return (
+                    <Chip color="info" variant="soft" size="sm">
+                      Manager Approved
+                    </Chip>
+                  );
                 case "hr approval":
                   return (
-                    <Chip color="warning" variant="soft" size="sm">
-                      In Process
+                    <Chip color="primary" variant="soft" size="sm">
+                      HR Approved
                     </Chip>
                   );
                 case "final approval":
@@ -589,7 +679,7 @@ const AllExpense = forwardRef((props, ref) => {
                       <Box
                         sx={{
                           display: "inline",
-                          textDecoration: "underline dotted",
+
                           textUnderlineOffset: "2px",
                           textDecorationColor: "#999",
                         }}
@@ -597,6 +687,7 @@ const AllExpense = forwardRef((props, ref) => {
                         <ExpenseCode
                           currentPage={currentPage}
                           expense_code={expense.expense_code}
+                          createdAt={expense.createdAt}
                         />
                       </Box>
                     </Typography>
@@ -665,17 +756,22 @@ const AllExpense = forwardRef((props, ref) => {
         >
           Previous
         </Button>
+
         <Box>
-          Showing {paginatedExpenses.length} of {filteredAndSortedData.length}{" "}
-          results
+          Showing page {currentPage} of {totalPages} ({total} results)
         </Box>
+
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
-          {generatePageNumbers(currentPage, totalPages).map((page, index) =>
-            typeof page === "number" ? (
+          {getPaginationRange().map((page, idx) =>
+            page === "..." ? (
+              <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
+                ...
+              </Box>
+            ) : (
               <IconButton
-                key={index}
+                key={page}
                 size="sm"
                 variant={page === currentPage ? "contained" : "outlined"}
                 color="neutral"
@@ -683,10 +779,6 @@ const AllExpense = forwardRef((props, ref) => {
               >
                 {page}
               </IconButton>
-            ) : (
-              <Typography key={index} sx={{ px: 1, alignSelf: "center" }}>
-                {page}
-              </Typography>
             )
           )}
         </Box>

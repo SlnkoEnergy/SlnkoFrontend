@@ -18,7 +18,17 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 // import Axios from "../utils/Axios";
 
-import { Chip, Modal, ModalDialog, Textarea, useTheme } from "@mui/joy";
+import {
+  Chip,
+  CircularProgress,
+  Modal,
+  ModalDialog,
+  Option,
+  Select,
+  Textarea,
+  useTheme,
+} from "@mui/joy";
+import { Calendar } from "lucide-react";
 import {
   useGetAllExpenseQuery,
   useUpdateExpenseStatusOverallMutation,
@@ -27,18 +37,51 @@ import {
 const HrExpense = forwardRef((props, ref) => {
   const navigate = useNavigate();
   const theme = useTheme();
-  const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(12);
-  const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedExpenses, setSelectedExpenses] = useState([]);
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [selectedstatus, setSelectedstatus] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
 
-  const { data: getExpense = [], isLoading, error } = useGetAllExpenseQuery();
+  const searchParam = selectedstatus ? selectedstatus : searchQuery;
 
-  // console.log("getExpense: ", getExpense);
+  const { data: getExpense = [], isLoading } = useGetAllExpenseQuery({
+    page: currentPage,
+    department: selectedDepartment,
+    search: searchParam,
+    from,
+    to,
+  });
 
+  const total = getExpense?.total || 0;
+  const limit = getExpense?.limit || 10;
+  const totalPages = Math.ceil(total / limit);
+
+  const getPaginationRange = () => {
+    const siblings = 1;
+    const pages = [];
+
+    if (totalPages <= 5 + siblings * 2) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      const left = Math.max(currentPage - siblings, 2);
+      const right = Math.min(currentPage + siblings, totalPages - 1);
+
+      pages.push(1);
+      if (left > 2) pages.push("...");
+
+      for (let i = left; i <= right; i++) pages.push(i);
+
+      if (right < totalPages - 1) pages.push("...");
+      pages.push(totalPages);
+    }
+
+    return pages;
+  };
+  debugger;
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -61,12 +104,110 @@ const HrExpense = forwardRef((props, ref) => {
         ...new Set([...prevSelected, ...ids]),
       ]);
     } else {
-      // Remove only the IDs from current page
       const ids = paginatedExpenses.map((row) => row._id);
       setSelectedExpenses((prevSelected) =>
         prevSelected.filter((id) => !ids.includes(id))
       );
     }
+  };
+
+  const renderFilters = () => {
+    const departments = [
+      "Accounts",
+      "HR",
+      "Engineering",
+      "Projects",
+      "Infra",
+      "CAM",
+      "Internal",
+      "SCM",
+      "IT Team",
+    ];
+
+    const statuses = [
+      // { value: "draft", label: "Draft" },
+      { value: "submitted", label: "Pending" },
+      { value: "manager approval", label: "Manager Approved" },
+      { value: "hr approval", label: "HR Approved" },
+      { value: "final approval", label: "Approved" },
+      { value: "hold", label: "On Hold" },
+      { value: "rejected", label: "Rejected" },
+    ];
+
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 2,
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <FormControl sx={{ flex: 1 }} size="sm">
+          <FormLabel>Department</FormLabel>
+          <Select
+            value={selectedDepartment}
+            onChange={(e, newValue) => {
+              setSelectedDepartment(newValue);
+              setCurrentPage(1);
+            }}
+            size="sm"
+            placeholder="Select Department"
+          >
+            <Option value="">All Departments</Option>
+            {departments.map((dept) => (
+              <Option key={dept} value={dept}>
+                {dept}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl sx={{ flex: 1 }} size="sm">
+          <FormLabel>Status</FormLabel>
+          <Select
+            value={selectedstatus}
+            onChange={(e, newValue) => {
+              setSelectedstatus(newValue);
+              setCurrentPage(1);
+            }}
+            size="sm"
+            placeholder="Select Status"
+          >
+            <Option value="">All Status</Option>
+            {statuses.map((status) => (
+              <Option key={status.value} value={status.value}>
+                {status.label}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl size="sm" sx={{ minWidth: 140 }}>
+          <FormLabel>From Date</FormLabel>
+          <Input
+            type="date"
+            value={from}
+            onChange={(e) => {
+              setFrom(e.target.value);
+              setCurrentPage(1);
+            }}
+          />
+        </FormControl>
+
+        <FormControl size="sm" sx={{ minWidth: 140 }}>
+          <FormLabel>To Date</FormLabel>
+          <Input
+            type="date"
+            value={to}
+            onChange={(e) => {
+              setTo(e.target.value);
+              setCurrentPage(1);
+            }}
+          />
+        </FormControl>
+      </Box>
+    );
   };
 
   const handleRowSelect = (_id) => {
@@ -82,52 +223,12 @@ const HrExpense = forwardRef((props, ref) => {
     [getExpense]
   );
 
-  const filteredAndSortedData = expenses
-    .filter((expense) => {
-      const allowedStatuses = [
-        "manager approval",
-        "hr approval",
-        "final approval",
-        "hold",
-        "rejected",
-      ];
-      const status = expense.current_status?.toLowerCase();
-      if (!allowedStatuses.includes(status)) return false;
-
-      const search = searchQuery.toLowerCase();
-      const matchesSearchQuery = [
-        "expense_code",
-        "emp_id",
-        "emp_name",
-        "status",
-      ].some((key) => expense[key]?.toLowerCase().includes(search));
-
-      return matchesSearchQuery;
-    })
-    .sort((a, b) => {
-      const search = searchQuery.toLowerCase();
-
-      // Prioritize exact field matches
-      const fields = ["expense_code", "emp_id", "emp_name", "status"];
-      for (let field of fields) {
-        const aValue = a[field]?.toLowerCase() || "";
-        const bValue = b[field]?.toLowerCase() || "";
-        const aMatch = aValue.includes(search);
-        const bMatch = bValue.includes(search);
-        if (aMatch && !bMatch) return -1;
-        if (!aMatch && bMatch) return 1;
-      }
-
-      return new Date(b.createdAt) - new Date(a.createdAt);
-    });
-
   const RowMenu = ({ _id, status }) => {
     const [openModal, setOpenModal] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState("");
     const [remarks, setRemarks] = useState("");
     const [updateStatus] = useUpdateExpenseStatusOverallMutation();
 
-    // Disable all chips if current status is "hr approval"
     const disableActions = [
       "hr approval",
       "rejected",
@@ -223,101 +324,56 @@ const HrExpense = forwardRef((props, ref) => {
     );
   };
 
-  const ExpenseCode = ({ currentPage, expense_code }) => {
-    // console.log("currentPage:", currentPage, "p_id:", p_id);
-
-    return (
-      <>
-        <span
-          style={{
-            cursor: "pointer",
-            color: theme.vars.palette.text.primary,
-            textDecoration: "none",
-          }}
-          onClick={() => {
-            localStorage.setItem("edit_expense", expense_code);
-            navigate(
-              `/update_expense?page=${currentPage}&code=${expense_code}`
-            );
-          }}
-        >
-          {expense_code || "-"}
-        </span>
-      </>
-    );
-  };
-
-  const EmployeeName = ({ currentPage, expense_code, emp_name }) => {
-    // console.log("currentPage:", currentPage, "p_id:", p_id);
-
-    return (
-      <>
-        <span
-          style={{
-            cursor: "pointer",
-            color: theme.vars.palette.text.primary,
-            textDecoration: "none",
-          }}
-          onClick={() => {
-            localStorage.setItem("edit_expense", expense_code);
-            navigate(`/edit_expense?page=${currentPage}&code=${expense_code}`);
-          }}
-        >
-          {emp_name || "-"}
-        </span>
-      </>
-    );
-  };
-
-  const generatePageNumbers = (currentPage, totalPages) => {
-    const pages = [];
-
-    if (currentPage > 2) {
-      pages.push(1);
-    }
-
-    if (currentPage > 3) {
-      pages.push("...");
-    }
-
-    for (
-      let i = Math.max(1, currentPage - 1);
-      i <= Math.min(totalPages, currentPage + 1);
-      i++
-    ) {
-      pages.push(i);
-    }
-
-    if (currentPage < totalPages - 2) {
-      pages.push("...");
-    }
-
-    if (currentPage < totalPages - 1) {
-      pages.push(totalPages);
-    }
-
-    return pages;
-  };
-
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
   }, [searchParams]);
 
-  const totalPages = Math.ceil(
-    (filteredAndSortedData?.length || 0) / itemsPerPage
-  );
+  const paginatedExpenses = expenses;
 
-  const paginatedExpenses = filteredAndSortedData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  console.log("paginatedExpenses", paginatedExpenses);
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
-      setSearchParams({ page });
-      setCurrentPage(page);
+      setSearchParams({ page: String(page) });
     }
+  };
+
+  const ExpenseCode = ({ currentPage, expense_code, createdAt }) => {
+    const formattedDate = createdAt
+      ? new Date(createdAt).toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : "N/A";
+    return (
+      <>
+        <Box>
+          <span
+            style={{ cursor: "pointer", fontWeight: 500 }}
+            onClick={() => {
+              localStorage.setItem("edit_expense", expense_code);
+              navigate(
+                `/update_expense?page=${currentPage}&code=${expense_code}`
+              );
+            }}
+          >
+            {expense_code || "-"}
+          </span>
+        </Box>
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <Calendar size={12} />
+          <span style={{ fontSize: 12, fontWeight: 600 }}>
+            Created At:{" "}
+          </span>{" "}
+          &nbsp;
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+            {formattedDate}
+          </Typography>
+        </Box>
+      </>
+    );
   };
 
   return (
@@ -347,7 +403,7 @@ const HrExpense = forwardRef((props, ref) => {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {/* {renderFilters()} */}
+        {renderFilters()}
       </Box>
 
       {/* Table */}
@@ -376,7 +432,7 @@ const HrExpense = forwardRef((props, ref) => {
                 sx={{
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
-                  textAlign: "center",
+                  textAlign: "left",
                 }}
               >
                 <Checkbox
@@ -400,7 +456,6 @@ const HrExpense = forwardRef((props, ref) => {
               </Box>
               {[
                 "Expense Code",
-                "Employee Code",
                 "Employee Name",
                 "Requested Amount",
                 "Approval Amount",
@@ -415,7 +470,7 @@ const HrExpense = forwardRef((props, ref) => {
                   sx={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
-                    textAlign: "center",
+                    textAlign: "left",
                     fontWeight: "bold",
                   }}
                 >
@@ -425,7 +480,33 @@ const HrExpense = forwardRef((props, ref) => {
             </Box>
           </Box>
           <Box component="tbody">
-            {paginatedExpenses.length > 0 ? (
+            {isLoading ? (
+              <Box component="tr">
+                <Box
+                  component="td"
+                  colSpan={9}
+                  sx={{
+                    py: 2,
+                    textAlign: "center",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "inline-flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 1,
+                    }}
+                  >
+                    <CircularProgress size="sm" sx={{ color: "primary.500" }} />
+                    <Typography fontStyle="italic">
+                      Loading expense… please hang tight ⏳
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+            ) : paginatedExpenses.length > 0 ? (
               paginatedExpenses.map((expense, index) => (
                 <Box
                   component="tr"
@@ -439,7 +520,7 @@ const HrExpense = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     <Checkbox
@@ -454,20 +535,14 @@ const HrExpense = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
-                    <Box
-                      sx={{
-                        display: "inline",
-                        textDecoration: "underline dotted",
-                        textUnderlineOffset: "2px",
-                        textDecorationColor: "#999",
-                      }}
-                    >
+                    <Box sx={{ fontSize: 15 }}>
                       <ExpenseCode
                         currentPage={currentPage}
                         expense_code={expense.expense_code}
+                        createdAt={expense.createdAt}
                       />
                     </Box>
                   </Box>
@@ -476,31 +551,22 @@ const HrExpense = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize: 15,
                     }}
                   >
-                    {expense.emp_id || "-"}
+                    {expense.emp_name || "0"}
+                    <Box>
+                      <span style={{ fontSize: 12 }}>{expense.emp_id}</span>
+                    </Box>
                   </Box>
                   <Box
                     component="td"
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    <EmployeeName
-                      currentPage={currentPage}
-                      expense_code={expense.expense_code}
-                      emp_name={expense.emp_name}
-                    />
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize: 15,
                     }}
                   >
                     {expense.total_requested_amount || "0"}
@@ -510,7 +576,8 @@ const HrExpense = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize: 15,
                     }}
                   >
                     {expense.total_approved_amount || "0"}
@@ -521,7 +588,8 @@ const HrExpense = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize: 15,
                     }}
                   >
                     {(() => {
@@ -541,7 +609,8 @@ const HrExpense = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize: 15,
                     }}
                   >
                     {expense.disbursement_date
@@ -555,22 +624,32 @@ const HrExpense = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize: 15,
                     }}
                   >
                     {(() => {
-                      const status = expense.current_status?.toLowerCase();
+                      const status =
+                        typeof expense.current_status === "string"
+                          ? expense.current_status
+                          : expense.current_status?.status || "";
 
-                      if (status === "manager approval") {
+                      if (status === "submitted" || status === "draft") {
                         return (
-                          <Chip color="primary" variant="soft" size="sm">
+                          <Chip color="warning" variant="soft" size="sm">
                             Pending
                           </Chip>
                         );
-                      } else if (["hr approval"].includes(status)) {
+                      } else if (status === "manager approval") {
                         return (
-                          <Chip color="warning" variant="soft" size="sm">
-                            In Process
+                          <Chip color="info" variant="soft" size="sm">
+                            Manager Approved
+                          </Chip>
+                        );
+                      } else if (status === "hr approval") {
+                        return (
+                          <Chip color="primary" variant="soft" size="sm">
+                            HR Approved
                           </Chip>
                         );
                       } else if (status === "final approval") {
@@ -605,12 +684,17 @@ const HrExpense = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize: 15,
                     }}
                   >
                     <RowMenu
                       _id={expense._id}
-                      status={expense.current_status}
+                      status={
+                        typeof expense.current_status === "string"
+                          ? expense.current_status
+                          : expense.current_status?.status || "-"
+                      }
                     />
                   </Box>
                 </Box>
@@ -657,17 +741,22 @@ const HrExpense = forwardRef((props, ref) => {
         >
           Previous
         </Button>
+
         <Box>
-          Showing {paginatedExpenses.length} of {filteredAndSortedData.length}{" "}
-          results
+          Showing page {currentPage} of {totalPages} ({total} results)
         </Box>
+
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
-          {generatePageNumbers(currentPage, totalPages).map((page, index) =>
-            typeof page === "number" ? (
+          {getPaginationRange().map((page, idx) =>
+            page === "..." ? (
+              <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
+                ...
+              </Box>
+            ) : (
               <IconButton
-                key={index}
+                key={page}
                 size="sm"
                 variant={page === currentPage ? "contained" : "outlined"}
                 color="neutral"
@@ -675,10 +764,6 @@ const HrExpense = forwardRef((props, ref) => {
               >
                 {page}
               </IconButton>
-            ) : (
-              <Typography key={index} sx={{ px: 1, alignSelf: "center" }}>
-                {page}
-              </Typography>
             )
           )}
         </Box>

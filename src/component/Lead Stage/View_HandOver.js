@@ -16,7 +16,7 @@ import {
   Typography,
 } from "@mui/joy";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Img1 from "../../assets/HandOverSheet_Icon.jpeg";
 import { useGetHandOverByIdQuery } from "../../redux/camsSlice";
 import {
@@ -24,9 +24,13 @@ import {
   useGetModuleMasterQuery,
 } from "../../redux/leadsSlice";
 
-const ViewHandoverSheetForm = ({ onBack }) => {
+const ViewHandoverSheetForm = ({ onBack, projectId }) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [expanded, setExpanded] = useState(null);
+
+  console.log("selected",projectId)
+
   const states = [
     "Andhra Pradesh",
     "Arunachal Pradesh",
@@ -95,15 +99,16 @@ const ViewHandoverSheetForm = ({ onBack }) => {
       project_type: "",
       module_make_capacity: "",
       module_make: "",
+      module_make_other: "",
       module_capacity: "",
       module_type: "",
       module_category: "",
       evacuation_voltage: "",
       inverter_make_capacity: "",
       inverter_make: "",
+      inverter_make_other: "",
       inverter_type: "",
-      // inverter_size: "",
-      // inverter_model_no: "",
+      inverter_type_other: "",
       work_by_slnko: "",
       topography_survey: "",
 
@@ -135,6 +140,7 @@ const ViewHandoverSheetForm = ({ onBack }) => {
       slnko_basic: "",
       total_gst: "",
       billing_type: "",
+      billing_by: "",
       project_status: "incomplete",
       loa_number: "",
       ppa_number: "",
@@ -269,34 +275,36 @@ const ViewHandoverSheetForm = ({ onBack }) => {
   };
   const LeadId = sessionStorage.getItem("view handover");
   console.log("LeadId:", LeadId);
-  
-const {
-  data: handoverData,
-  isLoading,
-  isError,
-  error,
-} = useGetHandOverByIdQuery(
-  { leadId: LeadId },
-  { skip: !LeadId }
-);
 
- const handover = Array.isArray(handoverData?.data)
-   ? handoverData.data.find((item) => item.leadId === LeadId)
-   : handoverData?.data || null;
- 
+  const p_id = projectId || searchParams.get("p_id");
+  // console.log(routes);
 
-  console.log("handoverData:", handoverData);
+  const queryParams = p_id ? { p_id } : { leadId: LeadId };
 
-  // 🎯 Populate Data from Handover if Available
+  const {
+    data: handoverData,
+    isLoading,
+    isError,
+    error,
+  } = useGetHandOverByIdQuery(queryParams, {
+    skip: !p_id && !LeadId,
+  });
+
+  const handover = Array.isArray(handoverData?.data)
+    ? handoverData.data.find((item) => item.leadId === LeadId)
+    : handoverData?.data || null;
+
+  // console.log("handoverData:", handover);
+
   useEffect(() => {
-    if (!handoverData) {
+    if (!handover) {
       console.warn("No matching handover data found.");
       return;
     }
 
     setFormData((prev) => ({
       ...prev,
-       id: LeadId,
+      id: LeadId,
       p_id: handover?.p_id || "",
       customer_details: {
         ...prev.customer_details,
@@ -341,21 +349,21 @@ const {
         module_make_capacity:
           handover?.project_detail?.module_make_capacity || "",
         module_make: handover?.project_detail?.module_make || "",
+        module_make_other: handover?.project_detail?.module_make_other || "",
         module_capacity: handover?.project_detail?.module_capacity || "",
         module_type: handover?.project_detail?.module_type || "",
         module_category: handover?.project_detail?.module_category || "",
-        evacuation_voltage:
-          handover?.project_detail?.evacuation_voltage || "",
+        evacuation_voltage: handover?.project_detail?.evacuation_voltage || "",
         inverter_make_capacity:
           handover?.project_detail?.inverter_make_capacity || "",
         inverter_make: handover?.project_detail?.inverter_make || "",
+        inverter_make_other:
+          handover?.project_detail?.inverter_make_other || "",
         inverter_type: handover?.project_detail?.inverter_type || "",
-        // inverter_size: handover?.project_detail?.inverter_size || "",
-        // inverter_model_no:
-        //   handover?.project_detail?.inverter_model_no || "",
+        inverter_type_other:
+          handover?.project_detail?.inverter_type_other || "",
         work_by_slnko: handover?.project_detail?.work_by_slnko || "",
-        topography_survey:
-          handover?.project_detail?.topography_survey || "",
+        topography_survey: handover?.project_detail?.topography_survey || "",
         soil_test: handover?.project_detail?.soil_test || "",
         purchase_supply_net_meter:
           handover?.project_detail?.purchase_supply_net_meter || "",
@@ -376,12 +384,10 @@ const {
             ? JSON.parse(handover.project_detail.land)
             : handover?.project_detail?.land || { type: "", acres: "" },
         agreement_date: handover?.project_detail?.agreement_date || "",
-        project_component:
-          handover?.project_detail?.project_component || "",
+        project_component: handover?.project_detail?.project_component || "",
         project_component_other:
           handover?.project_detail?.project_component_other || "",
-        transmission_scope:
-          handover?.project_detail?.transmission_scope || "",
+        transmission_scope: handover?.project_detail?.transmission_scope || "",
         loan_scope: handover?.project_detail?.loan_scope || "",
       },
       commercial_details: {
@@ -397,8 +403,8 @@ const {
         total_gst: handover?.other_details?.total_gst || "",
         slnko_basic: handover?.other_details?.slnko_basic || "",
         billing_type: handover?.other_details?.billing_type || "",
-        project_status:
-          handover?.other_details?.project_status || "incomplete",
+        billing_by: handover?.other_details?.billing_by || "",
+        project_status: handover?.other_details?.project_status || "incomplete",
         loa_number: handover?.other_details?.loa_number || "",
         ppa_number: handover?.other_details?.ppa_number || "",
         remark: handover?.other_details?.remark || "",
@@ -407,13 +413,11 @@ const {
       },
       invoice_detail: {
         ...prev.invoice_detail,
-        invoice_recipient:
-          handover?.invoice_detail?.invoice_recipient || "",
+        invoice_recipient: handover?.invoice_detail?.invoice_recipient || "",
         invoicing_GST_no: handover?.invoice_detail?.invoicing_GST_no || "",
         invoicing_GST_status:
           handover?.invoice_detail?.invoicing_GST_status || "",
-        invoicing_address:
-          handover?.invoice_detail?.invoicing_address || "",
+        invoicing_address: handover?.invoice_detail?.invoicing_address || "",
 
         msme_reg: handover?.invoice_detail?.msme_reg || "",
       },
@@ -906,23 +910,38 @@ const {
                   <Typography level="body1">Inverter Type</Typography>
                   <Select
                     fullWidth
-                    value={formData["project_detail"]?.["inverter_type"] || ""}
-                    onChange={(e, newValue) =>
-                      handleChange("project_detail", "inverter_type", newValue)
-                    }
+                    value={formData?.project_detail?.inverter_type || ""}
+                    onChange={(_, newValue) => {
+                      if (newValue !== null) {
+                        handleChange(
+                          "project_detail",
+                          "inverter_type",
+                          newValue
+                        );
+                      }
+                    }}
                   >
-                    {inverterTypeOptions.length > 0 ? (
-                      inverterTypeOptions.map((type, index) => (
-                        <Option key={index} value={type}>
-                          {type}
-                        </Option>
-                      ))
-                    ) : (
-                      <Option disabled>No options available</Option>
-                    )}
-                    <Option value="TBD">TBD</Option>{" "}
-                    {/* ✅ Added "TBD" as an option */}
+                    <Option value="STRING INVERTER">STRING INVERTER</Option>
+                    <Option value="Other">Other</Option>
                   </Select>
+
+                  {formData?.project_detail?.inverter_type === "Other" && (
+                    <Input
+                      placeholder="Enter inverter type"
+                      fullWidth
+                      value={
+                        formData?.project_detail?.inverter_type_other || ""
+                      }
+                      onChange={(e) =>
+                        handleChange(
+                          "project_detail",
+                          "inverter_type_other",
+                          e.target.value
+                        )
+                      }
+                      sx={{ mt: 1 }}
+                    />
+                  )}
                 </Grid>
               </>
             )}
@@ -1193,6 +1212,26 @@ const {
                     sx={{ width: "100%" }}
                   />
                 </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography
+                    level="body1"
+                    sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+                  >
+                    Billing By
+                  </Typography>
+                  <Select
+                    fullWidth
+                    placeholder="Select Billing"
+                    value={formData["other_details"]?.["billing_by"] || ""}
+                    onChange={(e, newValue) =>
+                      handleChange("other_details", "billing_by", newValue)
+                    }
+                  >
+                    <Option value="Jharkhand">Slnko Energy Jharkhand</Option>
+                    <Option value="UP">Slnko Energy UP</Option>
+                    <Option value="Infra-UP">Slnko Infra UP</Option>
+                  </Select>
+                </Grid>
 
                 <Grid item xs={12} sm={6}>
                   <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
@@ -1370,7 +1409,7 @@ const {
                   mb: 0.5,
                 }}
               >
-                Site Address with Pin Code{" "}
+                Site/Delivery Address with Pin Code{" "}
                 <span style={{ color: "red" }}>*</span>
                 <Tooltip title="Enable to enter village name" placement="top">
                   <Switch
@@ -1935,7 +1974,7 @@ const {
           }}
         >
           <Button
-            onClick={() => navigate("/eng_dash")}
+            onClick={() => navigate(-1)}
             variant="solid"
             color="neutral"
             fullWidth

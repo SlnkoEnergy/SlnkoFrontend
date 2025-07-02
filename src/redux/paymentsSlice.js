@@ -1,7 +1,8 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { baseQuery } from "./auth/auth_variable";
 
 // const baseQuery = fetchBaseQuery({
-//   baseUrl: "https://api.slnkoprotrac.com/v1/",
+//   baseUrl: "${process.env.REACT_APP_API_URL}/",
 //   prepareHeaders: (headers) => {
 //     const token = localStorage.getItem("authToken");
 //     // console.log("Token:", token);
@@ -14,7 +15,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 export const paymentsApi = createApi({
   reducerPath: "paymentsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "https://api.slnkoprotrac.com/v1/",
+    baseUrl: `${process.env.REACT_APP_API_URL}/`,
     prepareHeaders: (headers) => {
       const token = localStorage.getItem("authToken");
 

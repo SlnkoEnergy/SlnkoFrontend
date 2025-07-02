@@ -29,6 +29,7 @@ import { useAddExpenseMutation } from "../../../redux/Expense/expenseSlice";
 
 const Expense_Form = () => {
   const navigate = useNavigate();
+
   const [rows, setRows] = useState([
     {
       items: [
@@ -74,6 +75,7 @@ const Expense_Form = () => {
       comments: "",
     },
   ]);
+  const [showError, setShowError] = useState(false);
 
   const [projectCodes, setProjectCodes] = useState([]);
   const [dropdownOpenIndex, setDropdownOpenIndex] = useState(null);
@@ -144,7 +146,6 @@ const Expense_Form = () => {
     "Site Stationery Expenses",
     "Site Miscellaneous Expenses",
     "Site Vehicle Repair and Maintenance Expense",
-    
   ];
 
   const categoryDescriptions = {
@@ -206,11 +207,17 @@ const Expense_Form = () => {
   function getCategoryOptionsByDepartment(department) {
     const common = officeAdminCategoryOptions;
 
-    if (department === "Projects" || department === "Engineering") {
+    if (
+      department === "Projects" ||
+      department === "Engineering" ||
+      department === "Infra"
+    ) {
       return [...common, ...categoryOptions];
-    }
-
-    if (department === "BD" || department === "Marketing") {
+    } else if (
+      department === "BD" ||
+      department === "Marketing" ||
+      department === "Internal"
+    ) {
       return [...common, ...bdAndSalesCategoryOptions];
     }
 
@@ -234,7 +241,7 @@ const Expense_Form = () => {
         const token = localStorage.getItem("authToken");
 
         const response = await axios.get(
-          "https://api.slnkoprotrac.com/v1/get-all-project-IT",
+          `${process.env.REACT_APP_API_URL}/get-all-project-IT`,
           {
             headers: {
               "x-auth-token": token,
@@ -261,14 +268,40 @@ const Expense_Form = () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
 
+    const hasMissingCategory = rows.some((row) =>
+      (row.items || []).some(
+        (item) => !item.category || item.category.trim() === ""
+      )
+    );
+
+    if (hasMissingCategory) {
+      toast.error("Please select Category for all items before submitting.");
+      setShowError(true);
+      setIsSubmitting(false);
+      return;
+    }
+
+    const { from, to } = rows[0]?.expense_term || {};
+    if (!from || !to) {
+      toast.error("Expense Term is required.");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
-      const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
-      console.log("userID:", userID);
+      const userDetails = JSON.parse(localStorage.getItem("userDetails"));
+      const userID = userDetails?.userID;
+      const userRole = userDetails?.role;
 
       if (!userID) {
         toast.error("User ID not found. Please login again.");
         return;
       }
+
+      // console.log(userRole);
+
+      const statusToUse =
+        userRole === "manager" ? "manager approval" : "submitted";
 
       const items = rows.flatMap((row) =>
         (row.items || []).map((item) => ({
@@ -279,26 +312,25 @@ const Expense_Form = () => {
           },
           item_status_history: [
             {
-              status: "submitted",
+              status: statusToUse,
               remarks: item.item_status_history?.[0]?.remarks || "",
               user_id: userID,
               updatedAt: new Date().toISOString(),
             },
           ],
-          item_current_status: "submitted",
+          item_current_status: statusToUse,
         }))
       );
 
       const cleanedData = {
         expense_term: rows[0]?.expense_term || {},
         disbursement_date: rows[0]?.disbursement_date ?? null,
-
         items,
         user_id: userID,
-        current_status: "submitted",
+        current_status: statusToUse,
         status_history: [
           {
-            status: "submitted",
+            status: statusToUse,
             remarks: rows[0]?.status_history?.[0]?.remarks || "",
             user_id: userID,
             updatedAt: new Date().toISOString(),
@@ -316,9 +348,9 @@ const Expense_Form = () => {
 
       const formData = new FormData();
 
-      items.forEach((item) => {
+      items.forEach((item, index) => {
         if (item.file) {
-          formData.append("files", item.file);
+          formData.append(`file_${index}`, item.file);
         }
       });
 
@@ -552,6 +584,7 @@ const Expense_Form = () => {
               type="date"
               size="sm"
               value={rows[0].expense_term.from}
+              required
               onChange={(e) =>
                 handleRowChange(0, "expense_term", {
                   ...rows[0].expense_term,
@@ -567,6 +600,7 @@ const Expense_Form = () => {
               type="date"
               size="sm"
               value={rows[0].expense_term.to}
+              required
               onChange={(e) =>
                 handleRowChange(0, "expense_term", {
                   ...rows[0].expense_term,
@@ -609,10 +643,12 @@ const Expense_Form = () => {
                   searchInputs[rowIndex] || ""
                 ).toLowerCase();
 
-                const isProjects = user?.department === "Projects";
+                const isProjects =
+                  user?.department === "Projects" ||
+                  user?.department === "Infra";
                 const isExecutive = user?.role === "executive";
                 const isSurveyor = user?.role === "surveyor";
-
+                // console.log(isSurveyor);
                 let filteredProjects = [];
 
                 if (isProjects) {
@@ -621,10 +657,13 @@ const Expense_Form = () => {
                   );
 
                   if (isSurveyor) {
-                    if (
-                      searchValue.includes("other") &&
-                      !filteredProjects.some((p) => p.code === "Other")
-                    ) {
+                    const lowerSearch = searchValue?.toLowerCase() || "";
+                    const includesOther = lowerSearch.includes("other");
+                    const alreadyHasOther = filteredProjects.some(
+                      (p) => p.code === "Other"
+                    );
+
+                    if (includesOther && !alreadyHasOther) {
                       filteredProjects.push({ code: "Other", name: "" });
                     }
                   }
@@ -747,6 +786,7 @@ const Expense_Form = () => {
                       <Select
                         size="sm"
                         variant="outlined"
+                        required="true"
                         value={row.items?.[0]?.category || ""}
                         onChange={(e, value) =>
                           handleItemChange(rowIndex, "category", value)
@@ -795,6 +835,11 @@ const Expense_Form = () => {
                           )
                         )}
                       </Select>
+                      {showError && !row.items?.[0]?.category && (
+                        <Typography level="body-xs" color="danger">
+                          Category is required
+                        </Typography>
+                      )}
                     </td>
 
                     {/* Description */}
@@ -945,7 +990,8 @@ const Expense_Form = () => {
           {rows.map((row, rowIndex) => {
             const searchValue = (searchInputs[rowIndex] || "").toLowerCase();
 
-            const isProjects = user?.department === "Projects";
+            const isProjects =
+              user?.department === "Projects" || user?.department === "Infra";
             const isExecutive = user?.role === "executive";
             const isSurveyor = user?.role === "surveyor";
 

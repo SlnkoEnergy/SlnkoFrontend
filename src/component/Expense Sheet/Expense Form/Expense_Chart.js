@@ -1,35 +1,34 @@
 import { ResponsivePie } from "@nivo/pie";
-import { useGetAllExpenseQuery } from "../../../redux/Expense/expenseSlice"; // Replace with actual API file path
+import {
+  useGetAllExpenseQuery,
+  useGetExpenseByIdQuery,
+} from "../../../redux/Expense/expenseSlice"; // Replace with actual API file path
 import React from "react";
 
 const PieChartStatic = () => {
-  const { data: response = {} } = useGetAllExpenseQuery();
-  const expenses = response.data || [];
+  const ExpenseCode = localStorage.getItem("edit_expense");
 
-  const expenseCode = localStorage.getItem("edit_expense");
+  const { data: response = {} } = useGetExpenseByIdQuery({
+    expense_code: ExpenseCode,
+  });
 
- 
-  const selectedExpense = expenses.find(
-    (expense) => expense.expense_code === expenseCode
-  );
+  const expenses = response?.data || [];
 
-  
+  console.log(expenses);
+
   const categoryMap = {};
 
-  if (selectedExpense) {
-    selectedExpense.items.forEach((item) => {
+  if (expenses && Array.isArray(expenses.items)) {
+    expenses.items.forEach((item) => {
       const category = item.category;
       const amount = Number(item.invoice?.invoice_amount) || 0;
 
-      if (categoryMap[category]) {
-        categoryMap[category] += amount;
-      } else {
-        categoryMap[category] = amount;
+      if (category) {
+        categoryMap[category] = (categoryMap[category] || 0) + amount;
       }
     });
   }
 
- 
   const pieData = Object.entries(categoryMap).map(([category, value]) => ({
     id: category,
     label: category,

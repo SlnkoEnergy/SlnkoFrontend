@@ -1,9 +1,11 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { baseQuery } from "../auth/auth_variable";
+
 
 export const engsBOSApi = createApi({
   reducerPath: "engsBOSApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "https://api.slnkoprotrac.com/v1/",
+    baseUrl: `${process.env.REACT_APP_API_URL}/`,
     prepareHeaders: (headers) => {
       const token = localStorage.getItem("authToken");
 

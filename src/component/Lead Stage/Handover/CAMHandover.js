@@ -101,15 +101,16 @@ const CamHandoverSheetForm = ({ onBack }) => {
       project_type: "",
       module_make_capacity: "",
       module_make: "",
+      module_make_other:"",
       module_capacity: "",
       module_type: "",
       module_category: "",
       evacuation_voltage: "",
       inverter_make_capacity: "",
       inverter_make: "",
+      inverter_make_other:"",
       inverter_type: "",
-      // inverter_size: "",
-      // inverter_model_no: "",
+      inverter_type_other:"",
       work_by_slnko: "",
       topography_survey: "",
 
@@ -141,6 +142,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
       slnko_basic: "",
       total_gst: "",
       billing_type: "",
+      billing_by:"",
       project_status: "incomplete",
       loa_number: "",
       ppa_number: "",
@@ -172,6 +174,11 @@ const CamHandoverSheetForm = ({ onBack }) => {
   const handlePrint = () => {
     window.print();
   };
+  const inverterTypeToSave =
+  formData.project_detail.inverter_type === "Other"
+    ? formData.project_detail.custom_inverter_type
+    : formData.project_detail.inverter_type;
+
   const [user, setUser] = useState(null);
 
   const { data: getModuleMaster = [] } = useGetModuleMasterQuery();
@@ -278,13 +285,15 @@ const CamHandoverSheetForm = ({ onBack }) => {
 
   // console.log("LeadId:", LeadId);
 
+  console.log("Fetching handover sheet with:", { id: LeadId });
+
   const {
     data: getHandOverSheet,
     isLoading,
     isError,
     error,
   } = useGetHandOverByIdQuery(
-    { leadId: LeadId },
+    { id: LeadId },
     {
       skip: !LeadId,
     }
@@ -327,6 +336,10 @@ const CamHandoverSheetForm = ({ onBack }) => {
         other_details: {
           ...prev.other_details,
           ...handoverData.other_details,
+        },
+        invoice_detail: {
+          ...prev.invoice_detail,
+          ...handoverData.invoice_detail,
         },
       }));
     }
@@ -475,6 +488,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
         total_gst: handoverData?.other_details?.total_gst || "",
         slnko_basic: handoverData?.other_details?.slnko_basic || "",
         billing_type: handoverData?.other_details?.billing_type || "",
+        billing_by: handoverData?.other_details?.billing_by || "",
         project_status:
           handoverData?.other_details?.project_status || "incomplete",
         loa_number: handoverData?.other_details?.loa_number || "",
@@ -648,7 +662,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
         commercial_details: { ...formData.commercial_details },
         other_details: { ...formData.other_details },
         invoice_detail: { ...formData.invoice_detail },
-        status_of_handoversheet: "Approved",
+        // status_of_handoversheet: "Approved",
         is_locked: "locked",
         submitted_by: user?.name,
       };
@@ -658,13 +672,11 @@ const CamHandoverSheetForm = ({ onBack }) => {
         status_of_handoversheet: "Approved",
       };
 
-      // console.log("Updating status...");
-      await updateStatusHandOver(statusPayload).unwrap();
-      toast.success("Handover sheet locked.");
-
-      // console.log("Updating form data...");
       await updateHandOver(updatedFormData).unwrap();
       toast.success("Project updated successfully.");
+
+      await updateStatusHandOver(statusPayload).unwrap();
+      toast.success("Handover sheet locked.");
 
       navigate("/cam_dash");
     } catch (error) {
@@ -987,7 +999,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
                     value={formData?.project_detail?.module_make || ""}
                     onChange={(_, newValue) => {
                       handleChange("project_detail", "module_make", newValue);
-                      // Clear the "Other" input when a different option is selected
                       if (newValue !== "Other") {
                         handleChange("project_detail", "module_make_other", "");
                       }
@@ -1096,10 +1107,9 @@ const CamHandoverSheetForm = ({ onBack }) => {
               <>
                 <Grid item xs={12} sm={6}>
                   <Typography level="body1">Inverter Make</Typography>
-
                   <Select
                     fullWidth
-                    value={formData["project_detail"]?.["inverter_make"] || ""}
+                    value={formData?.project_detail?.inverter_make || ""}
                     onChange={(_, newValue) => {
                       handleChange("project_detail", "inverter_make", newValue);
                       if (newValue !== "Other") {
@@ -1109,24 +1119,27 @@ const CamHandoverSheetForm = ({ onBack }) => {
                           ""
                         );
                       }
+
                     }}
                   >
-                    {inverterMakeOptions.map((option) => (
-                      <Option key={option} value={option}>
-                        {option}
-                      </Option>
-                    ))}
+                    {/* {moduleMakeOptions.length > 0 &&
+                      moduleMakeOptions.map((make, index) => (
+                        <Option key={index} value={make}>
+                          {make}
+                        </Option>
+                      ))} */}
+                    <Option value="SUNGROW">SUNGROW</Option>
+                    <Option value="WATTPOWER">WATTPOWER</Option>
+                    <Option value="HITACHI">HITACHI</Option>
                     <Option value="Other">Other</Option>
                   </Select>
 
-                  {formData["project_detail"]?.["inverter_make"] ===
-                    "Other" && (
+                  {formData?.project_detail?.inverter_make === "Other" && (
                     <Input
                       fullWidth
-                      placeholder="Enter other inverter make"
+                      placeholder="Enter other make"
                       value={
-                        formData["project_detail"]?.["inverter_make_other"] ||
-                        ""
+                        formData?.project_detail?.inverter_make_other || ""
                       }
                       onChange={(e) =>
                         handleChange(
@@ -1144,23 +1157,39 @@ const CamHandoverSheetForm = ({ onBack }) => {
                   <Typography level="body1">Inverter Type</Typography>
                   <Select
                     fullWidth
-                    value={formData["project_detail"]?.["inverter_type"] || ""}
-                    onChange={(e, newValue) =>
-                      handleChange("project_detail", "inverter_type", newValue)
-                    }
+                    value={formData?.project_detail?.inverter_type || ""}
+                    onChange={(_, newValue) => {
+                      if (newValue !== null) {
+                        handleChange(
+                          "project_detail",
+                          "inverter_type",
+                          newValue
+                        );
+                      }
+                    }}
                   >
-                    {inverterTypeOptions.length > 0 ? (
-                      inverterTypeOptions.map((type, index) => (
-                        <Option key={index} value={type}>
-                          {type}
-                        </Option>
-                      ))
-                    ) : (
-                      <Option disabled>No options available</Option>
-                    )}
-                    <Option value="TBD">TBD</Option>{" "}
-                    {/* ✅ Added "TBD" as an option */}
+                    <Option value="STRING INVERTER">STRING INVERTER</Option>
+                    <Option value="Other">Other</Option>
                   </Select>
+
+                  {/* Show text input if 'Other' is selected */}
+                  {formData?.project_detail?.inverter_type === "Other" && (
+                    <Input
+                      placeholder="Enter inverter type"
+                      fullWidth
+                      value={
+                        formData?.project_detail?.inverter_type_other|| ""
+                      }
+                      onChange={(e) =>
+                        handleChange(
+                          "project_detail",
+                          "inverter_type_other",
+                          e.target.value
+                        )
+                      }
+                      sx={{ mt: 1 }}
+                    />
+                  )}
                 </Grid>
               </>
             )}
@@ -1428,6 +1457,28 @@ const CamHandoverSheetForm = ({ onBack }) => {
               />
             </Grid>
 
+             <Grid item xs={12} sm={6}>
+              <Typography
+                level="body1"
+                sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+              >
+                Billing By
+              </Typography>
+              <Select
+                fullWidth
+                placeholder="Select Billing"
+                value={formData["other_details"]?.["billing_by"] || ""}
+                onChange={(e, newValue) =>
+                  handleChange("other_details", "billing_by", newValue)
+                }
+              >
+                <Option value="Jharkhand">Slnko Energy Jharkhand</Option>
+                <Option value="UP">Slnko Energy UP</Option>
+                <Option value="Infra-UP">Slnko Infra UP</Option>
+              </Select>
+            </Grid>
+
+
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 {formData?.other_details?.billing_type === "Composite"
@@ -1573,7 +1624,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
                   mb: 0.5,
                 }}
               >
-                Site Address with Pin Code{" "}
+                Site/Delivery Address with Pin Code{" "}
                 <span style={{ color: "red" }}>*</span>
                 <Tooltip title="Enable to enter village name" placement="top">
                   <Switch

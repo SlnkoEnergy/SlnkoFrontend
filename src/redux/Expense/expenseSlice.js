@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: "https://api.slnkoprotrac.com/v1/",
+  baseUrl: `${process.env.REACT_APP_API_URL}/`,
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("authToken");
     // console.log("Token:", token);
@@ -19,13 +19,15 @@ export const expensesApi = createApi({
   endpoints: (builder) => ({
     // GET: Fetch all expenses
     getAllExpense: builder.query({
-      query: () => "get-all-expense",
+      query: ({ page = 1, search = "", department, from = "", to = "" }) =>
+        `get-all-expense?page=${page}&search=${search}&department=${department}&from=${from}&to=${to}`,
       providesTags: ["Expense"],
     }),
 
-    // GET: Fetch single expense by ID
+    // GET: Fetch single expense by IDs
     getExpenseById: builder.query({
-      query: (_id) => `get-expense-by-id/${_id}`,
+      query: ({ expense_code }) =>
+        `get-expense-by-id?expense_code=${expense_code}`,
       providesTags: ["Expense"],
     }),
 
@@ -84,6 +86,28 @@ export const expensesApi = createApi({
       }),
       invalidatesTags: ["Expense"],
     }),
+    exportExpensesToCSV: builder.query({
+      query: () => ({
+        url: "expense-all-csv",
+        method: "GET",
+        responseHandler: (response) => response.blob(),
+      }),
+    }),
+    exportExpenseByIdToCSV: builder.query({
+      query: (expenseId) => ({
+        url: `expense-by-id-csv/${expenseId}`,
+        method: "GET",
+        responseHandler: (response) => response.blob(),
+      }),
+    }),
+
+    exportExpenseByIdToPDF: builder.query({
+      query: ({ expenseId, withAttachment }) => ({
+        url: `expense-pdf/${expenseId}?printAttachments=${withAttachment}`,
+        method: "GET",
+        responseHandler: (response) => response.blob(),
+      }),
+    }),
   }),
 });
 
@@ -96,4 +120,7 @@ export const {
   useDeleteExpenseMutation,
   useUpdateExpenseSheetMutation,
   useUpdateDisbursementDateMutation,
+  useLazyExportExpensesToCSVQuery,
+  useLazyExportExpenseByIdToCSVQuery,
+  useLazyExportExpenseByIdToPDFQuery,
 } = expensesApi;

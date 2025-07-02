@@ -1,12 +1,13 @@
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import DownloadIcon from "@mui/icons-material/Download";
-import { IconButton, Textarea, Tooltip } from "@mui/joy";
+import { IconButton, Stack, Textarea, Tooltip } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Input from "@mui/joy/Input";
 import Modal from "@mui/joy/Modal";
 import ModalDialog from "@mui/joy/ModalDialog";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import Sheet from "@mui/joy/Sheet";
 import Table from "@mui/joy/Table";
 import Typography from "@mui/joy/Typography";
@@ -15,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   useGetAllExpenseQuery,
+  useGetExpenseByIdQuery,
   useUpdateExpenseSheetMutation,
   useUpdateExpenseStatusOverallMutation,
 } from "../../../redux/Expense/expenseSlice";
@@ -63,13 +65,14 @@ const UpdateExpense = () => {
       total_requested_amount: "",
       total_approved_amount: "",
       disbursement_date: "",
-      comments: "",
     },
   ]);
 
   const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
   const [sharedRejectionComment, setSharedRejectionComment] = useState("");
   const [showRejectAllDialog, setShowRejectAllDialog] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
+
   const [commentDialog, setCommentDialog] = useState({
     open: false,
     rowIndex: null,
@@ -101,7 +104,6 @@ const UpdateExpense = () => {
     "Site Stationery Expenses",
     "Site Miscellaneous Expenses",
     "Site Vehicle Repair and Maintenance Expense",
-    
   ];
 
   const categoryDescriptions = {
@@ -163,11 +165,17 @@ const UpdateExpense = () => {
   function getCategoryOptionsByDepartment(department) {
     const common = officeAdminCategoryOptions;
 
-    if (department === "Projects" || department === "Engineering") {
+    if (
+      department === "Projects" ||
+      department === "Engineering" ||
+      department === "Infra"
+    ) {
       return [...common, ...categoryOptions];
-    }
-
-    if (department === "BD" || department === "Marketing") {
+    } else if (
+      department === "BD" ||
+      department === "Marketing" ||
+      department === "Internal"
+    ) {
       return [...common, ...bdAndSalesCategoryOptions];
     }
 
@@ -183,15 +191,18 @@ const UpdateExpense = () => {
     );
   }
 
-  const { data: response = {} } = useGetAllExpenseQuery();
-  const expenses = response.data || [];
+  const ExpenseCode = localStorage.getItem("edit_expense");
+
+  const { data: response = {} } = useGetExpenseByIdQuery({
+    expense_code: ExpenseCode,
+  });
+
+  const expenses = response?.data || [];
 
   const [updateExpense, { isLoading: isUpdating }] =
     useUpdateExpenseSheetMutation();
 
   const [updateStatus] = useUpdateExpenseStatusOverallMutation();
-
-  const ExpenseCode = localStorage.getItem("edit_expense");
 
   useEffect(() => {
     if (!ExpenseCode) {
@@ -199,23 +210,19 @@ const UpdateExpense = () => {
       return;
     }
 
-    if (!Array.isArray(expenses) || expenses.length === 0) {
-      console.warn("No expenses available");
+    if (!expenses || typeof expenses !== "object") {
+      console.warn("No valid expense data available");
       return;
     }
 
-    const matchedExpense = expenses.find(
-      (exp) => String(exp.expense_code).trim() === String(ExpenseCode).trim()
-    );
+    const isMatch =
+      String(expenses.expense_code).trim() === String(ExpenseCode).trim();
 
-    if (matchedExpense) {
-      const enrichedExpense = {
-        ...matchedExpense,
-      };
-
+    if (isMatch) {
+      const enrichedExpense = { ...expenses };
       setRows([enrichedExpense]);
     } else {
-      console.warn("No matching expense_code found");
+      console.warn("Expense code does not match");
     }
   }, [ExpenseCode, expenses]);
 
@@ -261,34 +268,34 @@ const UpdateExpense = () => {
         })
       );
 
-      // Check if any item is rejected
-      const isAnyRejected = updatedItems.some(
-        (item) => item.item_current_status === "rejected"
-      );
-
-      // Set overall status accordingly
-      const overallStatus = isAnyRejected ? "rejected" : "manager approval";
-
       const totalApproved = updatedItems.reduce(
         (sum, item) => sum + (Number(item.approved_amount) || 0),
         0
       );
 
+      // ✅ Set overall status based on all items
+      const allItemsRejected = updatedItems.every(
+        (item) => item.item_current_status === "rejected"
+      );
+      const overallStatus = allItemsRejected ? "rejected" : "manager approval";
+
       const payload = {
         user_id: userID,
         expense_code: ExpenseCode,
         current_status: overallStatus,
-        total_approved_amount: totalApproved,
+        total_approved_amount: String(totalApproved),
         items: updatedItems,
         status_history: [
           ...(rows[0].status_history || []),
           {
             status: overallStatus,
-            remarks: rows[0].comments || "",
+            remarks: rows[0].remarks || "",
             user_id: userID,
           },
         ],
       };
+
+      console.log("payload:", payload);
 
       await updateExpense({
         _id: expenseSheetId,
@@ -356,10 +363,9 @@ const UpdateExpense = () => {
 
     const updatedItem = {
       ...updatedRow.items[itemIndex],
-      approvalStatus: status,
       item_current_status: status,
-      approvedAmount:
-        status === "rejected" ? 0 : updatedRow.items[itemIndex].approvedAmount,
+      approved_amount:
+        status === "rejected" ? 0 : updatedRow.items[itemIndex].approved_amount,
     };
 
     updatedRow.items[itemIndex] = updatedItem;
@@ -456,14 +462,13 @@ const UpdateExpense = () => {
       const requests = rows.map((row) => {
         const approved_items = row.items.map((item) => ({
           _id: item._id,
-          approved_amount: Number(item?.approved_amount) || 0,
+          approved_amount: Number(item.invoice?.invoice_amount) || 0,
         }));
 
         return updateStatus({
           _id: row._id,
           status: "manager approval",
           approved_items,
-
           remarks: "",
         }).unwrap();
       });
@@ -471,24 +476,27 @@ const UpdateExpense = () => {
       await Promise.all(requests);
 
       const updatedRows = rows.map((row) => {
-        const updatedItems = row.items.map((item) => ({
-          ...item,
-          item_current_status: "manager approval",
-          current_status: "manager approval",
-          approved_amount: Number(item.approved_amount) || 0,
-        }));
+        const updatedItems = row.items.map((item) => {
+          const approvedAmount = Number(item.invoice?.invoice_amount) || 0;
+          return {
+            ...item,
+            item_current_status: "manager approval",
+            current_status: "manager approval",
+            approved_amount: approvedAmount,
+          };
+        });
 
         const total_approved_amount = updatedItems.reduce(
           (sum, item) => sum + item.approved_amount,
           0
         );
-
+        console.log(String(total_approved_amount));
         return {
           ...row,
           items: updatedItems,
           row_current_status: "manager approval",
           current_status: "manager approval",
-          approved_amount: total_approved_amount,
+          total_approved_amount: String(total_approved_amount),
         };
       });
 
@@ -509,10 +517,12 @@ const UpdateExpense = () => {
     "Submission Date",
     "Bill Amount",
     "Attachment",
+    "",
     "Invoice Number",
     "Approved Amount",
     ...(user?.role === "manager" ||
     user?.department === "admin" ||
+    user?.role === "visitor" ||
     user?.name === "IT Team"
       ? ["Approval"]
       : []),
@@ -577,6 +587,16 @@ const UpdateExpense = () => {
                   })
                 }
               />
+              <Typography level="body-md" fontWeight="lg">
+                Employee Name:
+              </Typography>
+              <Input
+                type="text"
+                size="sm"
+                value={rows[0].emp_name || "NA"}
+                onChange={(e) => handleRowChange(0, "emp_name", e.target.value)}
+                placeholder="Enter employee name"
+              />
             </Box>
 
             {/* Right: Bulk Actions */}
@@ -585,12 +605,14 @@ const UpdateExpense = () => {
                 "Engineering",
                 "BD",
                 "Projects",
+                "Infra",
                 "Internal",
                 "CAM",
                 "Accounts",
                 "HR",
               ].includes(user?.department) &&
                 user?.role === "manager") ||
+                user?.role === "visitor" ||
                 user?.name === "IT Team" ||
                 user?.department === "admin") && (
                 <>
@@ -687,7 +709,7 @@ const UpdateExpense = () => {
                             : ""}
                         </td>
                         <td>{item.invoice?.invoice_amount}</td>
-                        <td>
+                        {/* <td>
                           {item.attachment_url ? (
                             <Button
                               component="a"
@@ -710,7 +732,105 @@ const UpdateExpense = () => {
                               No Attachment
                             </span>
                           )}
+                        </td> */}
+
+                        <td>
+                          {item.attachment_url ? (
+                            <Stack direction="row" spacing={1}>
+                              {/* 👁️ View Button — show for images and PDFs */}
+                              {/\.(jpg|jpeg|png|webp|gif|pdf)$/i.test(
+                                item.attachment_url
+                              ) && (
+                                <Button
+                                  variant="soft"
+                                  color="neutral"
+                                  size="sm"
+                                  onClick={() =>
+                                    setPreviewImage(item.attachment_url)
+                                  }
+                                  sx={{ textTransform: "none" }}
+                                >
+                                  👁️ View
+                                </Button>
+                              )}
+
+                              {/* ⬇️ Download Button */}
+                              <Button
+                                component="a"
+                                href={item.attachment_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download
+                                variant="soft"
+                                color="primary"
+                                startDecorator={<DownloadIcon />}
+                                size="sm"
+                                sx={{ textTransform: "none" }}
+                              >
+                                Download
+                              </Button>
+                            </Stack>
+                          ) : (
+                            <span
+                              style={{ color: "#999", fontStyle: "italic" }}
+                            >
+                              No Attachment
+                            </span>
+                          )}
+
+                          {/* 📄 Preview Modal for Image or PDF */}
+                          <Modal
+                            open={!!previewImage}
+                            onClose={() => setPreviewImage(null)}
+                          >
+                            <ModalDialog>
+                              <Box sx={{ textAlign: "center" }}>
+                                {/* If image file */}
+                                {/\.(jpg|jpeg|png|webp|gif)$/i.test(
+                                  previewImage
+                                ) ? (
+                                  <img
+                                    src={previewImage}
+                                    alt="Preview"
+                                    style={{
+                                      maxWidth: "100%",
+                                      maxHeight: "70vh",
+                                      borderRadius: 8,
+                                    }}
+                                  />
+                                ) : previewImage?.endsWith(".pdf") ? (
+                                  <iframe
+                                    src={previewImage}
+                                    title="PDF Preview"
+                                    style={{
+                                      width: "100%",
+                                      height: "70vh",
+                                      border: "none",
+                                      borderRadius: 8,
+                                    }}
+                                  />
+                                ) : (
+                                  <Typography
+                                    level="body-sm"
+                                    sx={{ color: "gray" }}
+                                  >
+                                    ⚠️ Preview not available for this file type.
+                                  </Typography>
+                                )}
+
+                                <Button
+                                  onClick={() => setPreviewImage(null)}
+                                  sx={{ mt: 2 }}
+                                >
+                                  Close
+                                </Button>
+                              </Box>
+                            </ModalDialog>
+                          </Modal>
                         </td>
+
+                        <td></td>
+
                         <td>{item.invoice?.invoice_number || "NA"}</td>
                         {/* <td>{item.approved_amount || "-"}</td> */}
 
@@ -735,57 +855,96 @@ const UpdateExpense = () => {
                               )
                             }
                             inputProps={{ min: 0 }}
+                            disabled={item.item_current_status === "rejected"}
                             sx={{ minWidth: 90 }}
                           />
                         </td>
 
                         {(user?.role === "manager" ||
+                          user?.role === "visitor" ||
                           user?.department === "admin" ||
-                          user?.name === "IT Team") && (
-                          <td style={{ padding: 8 }}>
-                            <Box display="flex" gap={1} justifyContent="center">
-                              <Button
-                                size="sm"
-                                variant={
-                                  item.item_current_status ===
-                                  "manager approval"
-                                    ? "solid"
-                                    : "outlined"
-                                }
-                                color="success"
-                                onClick={() =>
-                                  handleApproval(
-                                    rowIndex,
-                                    itemIndex,
+                          user?.name === "IT Team") &&
+                          !(
+                            user?.role === "manager" &&
+                            user?.name === item.emp_name
+                          ) && (
+                            <td style={{ padding: 8 }}>
+                              <Box display="flex" gap={1} alignItems="center">
+                                <Button
+                                  size="sm"
+                                  variant={
+                                    item.item_current_status ===
                                     "manager approval"
-                                  )
-                                }
-                                aria-label="Approve"
-                              >
-                                <CheckIcon />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant={
-                                  item.item_current_status === "rejected"
-                                    ? "solid"
-                                    : "outlined"
-                                }
-                                color="danger"
-                                onClick={() =>
-                                  handleApproval(
-                                    rowIndex,
-                                    itemIndex,
-                                    "rejected"
-                                  )
-                                }
-                                aria-label="Reject"
-                              >
-                                <CloseIcon />
-                              </Button>
-                            </Box>
-                          </td>
-                        )}
+                                      ? "solid"
+                                      : "outlined"
+                                  }
+                                  color="success"
+                                  onClick={() =>
+                                    handleApproval(
+                                      rowIndex,
+                                      itemIndex,
+                                      "manager approval"
+                                    )
+                                  }
+                                  aria-label="Approve"
+                                >
+                                  <CheckIcon />
+                                </Button>
+
+                                <Button
+                                  size="sm"
+                                  variant={
+                                    item.item_current_status === "rejected"
+                                      ? "solid"
+                                      : "outlined"
+                                  }
+                                  color="danger"
+                                  onClick={() =>
+                                    handleApproval(
+                                      rowIndex,
+                                      itemIndex,
+                                      "rejected"
+                                    )
+                                  }
+                                  aria-label="Reject"
+                                >
+                                  <CloseIcon />
+                                </Button>
+
+                                {item.item_current_status === "rejected" &&
+                                  item.remarks && (
+                                    <Tooltip
+                                      title={
+                                        <Sheet
+                                          variant="soft"
+                                          sx={{
+                                            p: 1,
+                                            borderRadius: "md",
+                                            maxWidth: 300,
+                                            fontSize: "0.85rem",
+                                            bgcolor: "error.light",
+                                            color: "error.dark",
+                                            boxShadow: "md",
+                                          }}
+                                        >
+                                          {item.remarks}
+                                        </Sheet>
+                                      }
+                                      arrow
+                                      placement="top"
+                                    >
+                                      <IconButton
+                                        size="sm"
+                                        color="warning"
+                                        sx={{ ml: 0.5 }}
+                                      >
+                                        <InfoOutlinedIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  )}
+                              </Box>
+                            </td>
+                          )}
                       </tr>
                     ))
                   )}
@@ -841,29 +1000,120 @@ const UpdateExpense = () => {
                       <b>Invoice Number:</b>{" "}
                       {item.invoice?.invoice_number || "NA"}
                     </span>
+
+                    {item.item_current_status === "rejected" &&
+                      item.remarks && (
+                        <Sheet
+                          variant="soft"
+                          sx={{
+                            mt: 1,
+                            p: 1,
+                            borderRadius: "md",
+                            maxWidth: 400,
+                            fontSize: "0.875rem",
+                            bgcolor: "#fdecea", // light red
+                            color: "#b71c1c", // dark red text
+                            borderLeft: "4px solid #d32f2f",
+                          }}
+                        >
+                          <b>Rejection Reason:</b> {item.remarks}
+                        </Sheet>
+                      )}
+
                     <Box>
                       <b>Attachment:</b>{" "}
                       {item.attachment_url ? (
-                        <Button
-                          component="a"
-                          href={item.attachment_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          download
-                          variant="soft"
-                          color="primary"
-                          startDecorator={<DownloadIcon />}
-                          size="sm"
-                          sx={{ textTransform: "none" }}
-                        >
-                          Download
-                        </Button>
+                        <Stack direction="row" spacing={1}>
+                          {/* 👁️ View Button: show if image or PDF */}
+                          {/\.(jpg|jpeg|png|gif|webp|pdf)$/i.test(
+                            item.attachment_url
+                          ) && (
+                            <Button
+                              variant="soft"
+                              color="neutral"
+                              size="sm"
+                              onClick={() =>
+                                setPreviewImage(item.attachment_url)
+                              }
+                              sx={{ textTransform: "none" }}
+                            >
+                              👁️ View
+                            </Button>
+                          )}
+
+                          {/* ⬇️ Download Button */}
+                          <Button
+                            component="a"
+                            href={item.attachment_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                            variant="soft"
+                            color="primary"
+                            startDecorator={<DownloadIcon />}
+                            size="sm"
+                            sx={{ textTransform: "none" }}
+                          >
+                            Download
+                          </Button>
+                        </Stack>
                       ) : (
                         <span style={{ color: "#999", fontStyle: "italic" }}>
                           No Attachment
                         </span>
                       )}
+                      {/* Modal Preview */}
+                      <Modal
+                        open={!!previewImage}
+                        onClose={() => setPreviewImage(null)}
+                      >
+                        <ModalDialog>
+                          <Box sx={{ textAlign: "center" }}>
+                            {/* Render image if it's an image file */}
+                            {/\.(jpg|jpeg|png|gif|webp)$/i.test(
+                              previewImage
+                            ) ? (
+                              <img
+                                src={previewImage}
+                                alt="Preview"
+                                style={{
+                                  maxWidth: "100%",
+                                  maxHeight: "70vh",
+                                  borderRadius: 8,
+                                }}
+                              />
+                            ) : previewImage?.endsWith(".pdf") ? (
+                              <iframe
+                                src={previewImage}
+                                title="PDF Preview"
+                                style={{
+                                  width: "100%",
+                                  height: "70vh",
+                                  border: "none",
+                                  borderRadius: 8,
+                                }}
+                              />
+                            ) : (
+                              <Typography
+                                level="body-sm"
+                                sx={{ color: "gray" }}
+                              >
+                                ⚠️ Preview not available for this file type.
+                              </Typography>
+                            )}
+
+                            <Button
+                              onClick={() => setPreviewImage(null)}
+                              sx={{ mt: 2 }}
+                            >
+                              Close
+                            </Button>
+                          </Box>
+                        </ModalDialog>
+                      </Modal>
                     </Box>
+
+                    <Box></Box>
                     <Box>
                       <b>Approved Amount:</b>
                       <Input
@@ -890,6 +1140,7 @@ const UpdateExpense = () => {
                     </Box>
 
                     {(user?.role === "manager" ||
+                      user?.role === "visitor" ||
                       user?.department === "admin" ||
                       user?.name === "IT Team") &&
                       item.item_current_status === "submitted" && (
@@ -982,12 +1233,12 @@ const UpdateExpense = () => {
             placeholder="Enter reason..."
             value={
               rows[commentDialog.rowIndex]?.items?.[commentDialog.itemIndex]
-                ?.item_status_history?.[0]?.remarks || ""
+                ?.remarks || ""
             }
             onChange={(e) =>
               handleRowChange(
                 commentDialog.rowIndex,
-                "item_status_history.0.remarks",
+                "remarks",
                 e.target.value,
                 commentDialog.itemIndex
               )
@@ -1139,6 +1390,7 @@ const UpdateExpense = () => {
               </thead>
               <tbody>
                 {(user?.role === "manager" ||
+                user?.role === "visitor" ||
                 user?.department === "admin" ||
                 user?.department === "HR" ||
                 user?.name === "IT Team"
@@ -1155,12 +1407,17 @@ const UpdateExpense = () => {
                   let approvedTotal = 0;
 
                   rows.forEach((row) => {
+                    console.log("row:", rows);
                     row.items?.forEach((item) => {
-                      if (item.category === category) {
+                      if (
+                        item.category === category &&
+                        item.item_current_status !== "rejected"
+                      ) {
                         total += Number(item.invoice?.invoice_amount || 0);
 
                         if (
-                          item.item_current_status === "manager approval" &&
+                          (item.item_current_status === "manager approval" ||
+                            rows[0].current_status === "manager approval") &&
                           Number(item.approved_amount || 0) > 0
                         ) {
                           approvedTotal += Number(item.approved_amount);
@@ -1211,8 +1468,10 @@ const UpdateExpense = () => {
                     </tr>
                   );
                 })}
+              </tbody>
 
-                {/* Grand Total */}
+              {/* Grand Total */}
+              <tfoot>
                 <tr>
                   <td>
                     <Typography level="body-md" fontWeight="lg">
@@ -1223,6 +1482,9 @@ const UpdateExpense = () => {
                     <Typography level="body-md" fontWeight="lg">
                       {rows
                         .flatMap((row) => row.items || [])
+                        .filter(
+                          (item) => item.item_current_status !== "rejected"
+                        )
                         .reduce(
                           (sum, item) =>
                             sum + Number(item.invoice?.invoice_amount || 0),
@@ -1237,18 +1499,21 @@ const UpdateExpense = () => {
                         .flatMap((row) => row.items || [])
                         .filter(
                           (item) =>
-                            item.item_current_status === "manager approval" &&
-                            Number(item.approved_amount || 0) > 0
+                            item.item_current_status !== "rejected" &&
+                            (item.item_current_status === "manager approval" ||
+                              (rows[0].current_status === "manager approval" &&
+                                Number(item.approved_amount || 0) > 0))
                         )
                         .reduce(
-                          (sum, item) => sum + Number(item.approved_amount),
+                          (sum, item) =>
+                            sum + Number(item.approved_amount || 0),
                           0
                         )
                         .toFixed(2)}
                     </Typography>
                   </td>
                 </tr>
-              </tbody>
+              </tfoot>
             </Table>
             {/* Submit & Back Buttons */}
             <Box display="flex" justifyContent="center" p={2}>
@@ -1262,6 +1527,7 @@ const UpdateExpense = () => {
               >
                 {(user?.role === "manager" ||
                   user?.department === "admin" ||
+                  user?.role === "visitor" ||
                   user?.name === "IT Team") &&
                   rows[0]?.current_status === "submitted" && (
                     <Button

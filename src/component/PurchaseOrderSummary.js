@@ -102,17 +102,17 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         }
       
         const [PoResponse, BillResponse, payResponse] = await Promise.all([
-          axios.get("https://api.slnkoprotrac.com/v1/get-all-pO-IT", {
+          axios.get(`${process.env.REACT_APP_API_URL}/get-all-pO-IT`, {
             headers: {
               "x-auth-token": token,
             },
           }),
-          axios.get("https://api.slnkoprotrac.com/v1/get-all-bilL-IT", {
+          axios.get(`${process.env.REACT_APP_API_URL}/get-all-bilL-IT`, {
             headers: {
               "x-auth-token": token,
             },
           }),
-          axios.get("https://api.slnkoprotrac.com/v1/get-pay-summarY-IT", {
+          axios.get(`${process.env.REACT_APP_API_URL}/get-pay-summarY-IT`, {
             headers: {
               "x-auth-token": token,
             },

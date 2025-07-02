@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 // const baseQuery = fetchBaseQuery({
-//   baseUrl: "https://api.slnkoprotrac.com/v1/",
+//   baseUrl: "${process.env.REACT_APP_API_URL}/",
 //   prepareHeaders: (headers) => {
 //     const token = localStorage.getItem("authToken");
 //     console.log("Token:", token);
@@ -14,7 +14,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 export const leadsApi = createApi({
   reducerPath: "leadsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "https://staging.api.slnkoprotrac.com/v1/",
+    baseUrl: `${process.env.REACT_APP_API_URL}/`,
     prepareHeaders: (headers) => {
       const token = localStorage.getItem("authToken");
       // console.log(token);
@@ -36,6 +36,13 @@ export const leadsApi = createApi({
     }),
     getEntireLeads: builder.query({
       query: () => "get-all-lead",
+      providesTags: ["Lead"],
+      keepUnusedDataFor: 300,
+      refetchOnMountOrArgChange: true,
+      pollingInterval: 5000,
+    }),
+    getEntireWonLeadsProjects: builder.query({
+      query: () => "all-leads-won-projects",
       providesTags: ["Lead"],
       keepUnusedDataFor: 300,
       refetchOnMountOrArgChange: true,
@@ -288,7 +295,7 @@ export const leadsApi = createApi({
       invalidatesTags: ["Lead"],
     }),
 
-     getWonDataById: builder.query({
+    getWonDataById: builder.query({
       query: ({ leadId }) => `/get-won?leadId=${leadId}`,
       providesTags: ["CAM"],
     }),
@@ -355,4 +362,5 @@ export const {
   useUpdateWONLeadsMutation,
   useGetWonDataByIdQuery,
   // useGetHandOverQuery,
+  useGetEntireWonLeadsProjectsQuery
 } = leadsApi;

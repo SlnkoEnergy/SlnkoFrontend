@@ -9,6 +9,7 @@ import { engsModuleApi } from "../redux/Eng/modulesSlice";
 import { engsPoolingApi } from "../redux/Eng/poolingsSlice";
 import { engsTransformerApi } from "../redux/Eng/transformersSlice";
 import { expensesApi } from "../redux/Expense/expenseSlice";
+import { templatesApi } from "../redux/Eng/templatesSlice";
 import { billsApi } from "../redux/billsSlice";
 import { camsApi } from "../redux/camsSlice";
 import { commsApi } from "../redux/commsSlice";
@@ -19,6 +20,7 @@ import { paymentsApi } from "../redux/paymentsSlice";
 import { projectsApi } from "../redux/projectsSlice";
 import { purchasesApi } from "../redux/purchasesSlice";
 import { tasksApi } from "../redux/tasksSlice";
+import { masterSheetApi } from "../redux/Eng/masterSheet";
 
 export const store = configureStore({
   reducer: {
@@ -41,7 +43,9 @@ export const store = configureStore({
     [engsAcCableApi.reducerPath]: engsAcCableApi.reducer,
     [engsDcCableApi.reducerPath]: engsDcCableApi.reducer,
     [expensesApi.reducerPath]: expensesApi.reducer,
+    [templatesApi.reducerPath]: templatesApi.reducer,
     [billsApi.reducerPath]: billsApi.reducer,
+    [masterSheetApi.reducerPath]: masterSheetApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -64,6 +68,8 @@ export const store = configureStore({
       engsInverterApi.middleware,
       engsTransformerApi.middleware,
       expensesApi.middleware,
-      billsApi.middleware
+      templatesApi.middleware,
+      billsApi.middleware,
+      masterSheetApi.middleware
     ),
 });

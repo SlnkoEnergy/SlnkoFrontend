@@ -3,72 +3,28 @@ import Button from "@mui/joy/Button";
 import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider, useColorScheme } from "@mui/joy/styles";
 import { React, useState } from "react";
-// import Button from '@mui/joy/Button';
 import Breadcrumbs from "@mui/joy/Breadcrumbs";
 import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
-// import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../../component/Partials/Header";
 import Sidebar from "../../component/Partials/Sidebar";
-import InverterTab from "../../component/Modules/Eng_Inverter";
-import TransformerTab from "../../component/Modules/Eng_Transformer";
-import LTPanelTab from "../../component/Modules/Eng_LT";
-import HTPanelTab from "../../component/Modules/Eng_HT";
-import ACCableTab from "../../component/Modules/Eng_AC_Cable";
-import BOSTab from "../../component/Modules/Eng_BOS";
-import PoolingTab from "../../component/Modules/Eng_Pooling";
-import ModuleTab from "../../component/Modules/Eng_Modules";
-import DCCableTab from "../../component/Modules/Eng_DC_Cable";
+import { useGetAllMaterialCategoryQuery } from "../../redux/Eng/masterSheet";
+import Material_Category_Tab from "../../component/Modules/Material_Category";
 
 function ModuleSheet() {
-  const allEngRef = useRef();
   const navigate = useNavigate();
   const [selectedModule, setSelectedModule] = useState("Module");
+  const { data, isLoading } = useGetAllMaterialCategoryQuery();
+  const categoryData = data?.data || [];
 
-  const moduleOptions = [
-    "Module",
-    "Inverter",
-    "Transformer",
-    "LT Panel",
-    "HT Panel",
-    "AC Cable",
-    "DC Cable",
-    "BOS Items",
-    "Pooling Station",
-  ];
+  // Extract names for module options
+  const moduleOptions = categoryData.map((category) => category.name);
 
-  const handleExportToCSV = () => {
-    if (allEngRef.current?.exportToCSV) {
-      allEngRef.current.exportToCSV();
-    }
-  };
-
-  const renderModuleComponent = () => {
-    switch (selectedModule) {
-      case "Inverter":
-        return <InverterTab ref={allEngRef} />;
-      case "Transformer":
-        return <TransformerTab ref={allEngRef} />;
-      case "LT Panel":
-        return <LTPanelTab ref={allEngRef} />;
-      case "HT Panel":
-        return <HTPanelTab ref={allEngRef} />;
-      case "AC Cable":
-        return <ACCableTab ref={allEngRef} />;
-        case "DC Cable":
-        return <DCCableTab ref={allEngRef} />;
-        case "BOS Items":
-        return <BOSTab ref={allEngRef} />;
-        case "Pooling Station":
-        return <PoolingTab ref={allEngRef} />;
-      default:
-        return <ModuleTab ref={allEngRef} />;
-    }
-  };
+  const selectedModuleData =
+    categoryData.find((category) => category.name === selectedModule) || {};
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -78,49 +34,20 @@ function ModuleSheet() {
         selectedModule={selectedModule}
         setSelectedModule={setSelectedModule}
         moduleOptions={moduleOptions}
-        renderModuleComponent={renderModuleComponent}
-        handleExportToCSV={handleExportToCSV}
+        selectedModuleData={selectedModuleData}
+        categoryData={categoryData}
       />
     </CssVarsProvider>
   );
 }
-
-const getAddNewButtonLabel = (module) => {
-  if (module === "Module") return "Add New Module";
-  return `Add New ${module}+`;
-};
-
-const getAddNewRoute = (module) => {
-  switch (module) {
-    case "Inverter":
-      return "/add_inverter";
-    case "Transformer":
-      return "/add_transformer";
-    case "LT Panel":
-      return "/add_lt_panel";
-    case "HT Panel":
-      return "/add_ht_panel";
-    case "AC Cable":
-      return "/add_ac_cable";
-      case "DC Cable":
-      return "/add_dc_cable";
-    case "BOS Items":
-      return "/add_bos";
-    case "Pooling Station":
-      return "/add_pooling";
-    default:
-      return "/add_module";
-  }
-};
-
 
 function LeadPage({
   navigate,
   selectedModule,
   setSelectedModule,
   moduleOptions,
-  renderModuleComponent,
-  handleExportToCSV,
+  selectedModuleData,
+  categoryData,
 }) {
   const { mode } = useColorScheme();
 
@@ -128,7 +55,6 @@ function LeadPage({
     <Box sx={{ display: "flex", minHeight: "100dvh" }}>
       <Header />
       <Sidebar />
-
       <Box
         component="main"
         className="MainContent"
@@ -190,7 +116,6 @@ function LeadPage({
           }}
         >
           <Typography level="h2" component="h1">
-            {/* {selectedLead} Leads */}
             Engineering
           </Typography>
 
@@ -203,51 +128,29 @@ function LeadPage({
               justifyContent: "center",
             }}
           >
-            {/* {(selectedLead === "Won" ||
-              selectedLead === "Follow Up" ||
-              selectedLead === "Warm") && (
-              <Button
-                color="primary"
-                size="sm"
-                onClick={() => navigate("/comm_offer")}
-              >
-                Commercial Offer
-              </Button>
-            )} */}
-
-            {/* <Button
+            <Button
               color="primary"
               size="sm"
-              onClick={() => navigate("/add_module")}
+              onClick={() => navigate("/add_material_category")}
             >
-              Add New Module
-            </Button> */}
-            <Button
-  color="primary"
-  size="sm"
-  onClick={() => navigate(getAddNewRoute(selectedModule))}
->
-  {getAddNewButtonLabel(selectedModule)}
-</Button>
-
-
-            {/* {selectedLead === "Initial" && (
-              <Button
-                color="primary"
-                size="sm"
-                onClick={() => navigate("/add_lead")}
-              >
-                Add New Leads +
-              </Button>
-            )} */}
+              Add Material Category
+            </Button>
 
             <Button
               color="primary"
-              startDecorator={<DownloadRoundedIcon />}
               size="sm"
-              onClick={handleExportToCSV}
+              onClick={() => {
+                const selectedObj = categoryData.find(
+                  (cat) => cat.name === selectedModule
+                );
+                if (selectedObj?._id) {
+                  navigate(
+                    `/add_material?item=${selectedObj?.name}&_id=${selectedObj._id}`
+                  );
+                }
+              }}
             >
-              Export to CSV
+              {`Add ${selectedModule}`}
             </Button>
           </Box>
         </Box>
@@ -257,7 +160,7 @@ function LeadPage({
           component="ul"
           sx={{
             display: "flex",
-            flexDirection: {md:"row", xs:"column"},
+            flexDirection: { md: "row", xs: "column" },
             alignItems: "center",
             justifyContent: "flex-start",
             padding: 0,
@@ -301,7 +204,10 @@ function LeadPage({
           ))}
         </Box>
 
-        {renderModuleComponent()}
+        <Material_Category_Tab
+          selectedModuleData={selectedModuleData}
+          id={selectedModuleData._id}
+        />
       </Box>
     </Box>
   );

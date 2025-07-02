@@ -1,8 +1,8 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
+import { baseQuery } from "./auth/auth_variable";
 
 // const baseQuery = fetchBaseQuery({
-//   baseUrl: "https://api.slnkoprotrac.com/v1",
+//   baseUrl: "${process.env.REACT_APP_API_URL}",
 //   prepareHeaders: (headers) => {
 //     const token = localStorage.getItem("authToken");
 //     console.log("Token:", token);
@@ -13,11 +13,10 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 //   },
 // });
 
-
 export const projectsApi = createApi({
   reducerPath: "projectsApi",
-   baseQuery: fetchBaseQuery({
-    baseUrl: "https://api.slnkoprotrac.com/v1/",
+  baseQuery: fetchBaseQuery({
+    baseUrl: `${process.env.REACT_APP_API_URL}/`,
     prepareHeaders: (headers) => {
       const token = localStorage.getItem("authToken");
 
@@ -33,7 +32,6 @@ export const projectsApi = createApi({
     getProjects: builder.query({
       query: () => "get-all-projecT-IT",
       providesTags: ["Project"],
-      
     }),
     deleteProject: builder.mutation({
       query: (_id) => ({
@@ -58,13 +56,17 @@ export const projectsApi = createApi({
       }),
       invalidatesTags: ["Project"],
     }),
+    getProjectByPId: builder.query({
+      query: (p_id) => `project?p_id=${p_id}`,
+      providesTags: ["Project"],
+    }),
   }),
 });
 
-export const { 
-  useGetProjectsQuery, 
+export const {
+  useGetProjectsQuery,
   useDeleteProjectMutation,
   useAddProjectMutation,
-  useUpdateProjectMutation 
+  useUpdateProjectMutation,
+  useGetProjectByPIdQuery,
 } = projectsApi;
-

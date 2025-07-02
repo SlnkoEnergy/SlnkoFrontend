@@ -116,6 +116,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
       slnko_basic: "",
       total_gst: "",
       billing_type: "",
+      billing_by: "",
       project_status: "incomplete",
       remark: "",
       remarks_for_slnko: "",
@@ -230,7 +231,6 @@ const OpsHandoverSheetForm = ({ onBack }) => {
       console.log("Fetched handover data:", handoverData);
     }
   }, [handoverData, isLoading, error]);
-  
 
   useEffect(() => {
     if (getHandOverSheet?.data) {
@@ -503,6 +503,27 @@ const OpsHandoverSheetForm = ({ onBack }) => {
             </Grid>
 
             <Grid item xs={12} sm={6}>
+              <Typography
+                level="body1"
+                sx={{ fontWeight: "bold", marginBottom: 0.5 }}
+              >
+                Billing By
+              </Typography>
+              <Select
+                fullWidth
+                placeholder="Select Billing"
+                value={formData["other_details"]?.["billing_by"] || ""}
+                onChange={(e, newValue) =>
+                  handleChange("other_details", "billing_by", newValue)
+                }
+              >
+                <Option value="Jharkhand">Slnko Energy Jharkhand</Option>
+                <Option value="UP">Slnko Energy UP</Option>
+                <Option value="Infra-UP">Slnko Infra UP</Option>
+              </Select>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 {formData?.other_details?.billing_type === "Composite"
                   ? "Total Slnko Service Charge(with GST)"
@@ -656,7 +677,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                   mb: 0.5,
                 }}
               >
-                Site Address with Pin Code{" "}
+                Site/Delivery Address with Pin Code{" "}
                 <span style={{ color: "red" }}>*</span>
                 <Tooltip title="Enable to enter village name" placement="top">
                   <Switch
