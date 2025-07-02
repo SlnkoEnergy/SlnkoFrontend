@@ -62,7 +62,7 @@ const Overview = () => {
   }, []);
 
   const isEngineering = user?.department === "Engineering";
-  const isCAM = user?.department === "CAM" || user?.department === "Projects";
+  const isCAM = user?.department === "CAM" || user?.department === "Projects" ;
   console.log("isCAM →", isCAM);
   const projectId = searchParams.get("project_id");
 
@@ -83,7 +83,11 @@ const Overview = () => {
     Civil: [],
     plant_layout: [],
     boq: [],
-    summary: [],
+    Equipment:[],
+    Mechanical_Inspection:[],
+    Electrcial_Inspection:[],
+    summary: []
+    
   };
 
   const templates = data?.data || [];
@@ -105,6 +109,7 @@ const Overview = () => {
           description: template.description || "No description provided.",
           maxFiles: template.file_upload?.max_files || 0,
           fileUploadEnabled: template.file_upload?.enabled || false,
+          boqEnabled: template.boq?.enabled || false,
           attachmentUrls: rawUrls,
           currentAttachments: template.current_attachment || [],
           latestStatus,
@@ -770,7 +775,7 @@ const handlePreview = async (url) => {
                             📝 Add Remarks
                           </Button>
 
-                          {!isCAM && (
+                          {!isCAM && item?.boqEnabled && (
                             <Button
                               variant="soft"
                               size="sm"
