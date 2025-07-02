@@ -2009,7 +2009,14 @@ function Sidebar() {
           user?.department === "Internal" ||
           (user?.department === "Engineering" &&
             user?.name !== "Dhruv Choudhary" &&
-            user?.name !== "Rishav Mahato") ||
+            user?.name !== "Rishav Mahato" && 
+            user?.name !=="Piyush Rathour Raj" &&
+            user?.name !=="Rahul Bhati" &&
+            user?.name !=="Sachin Jangid" &&
+            user?.name !=="Vishal Kushwaha" &&
+            user?.name !=="Hitesh Jangid" &&
+           user?.emp_id !=="SE-184"&&
+           user?.emp_id !=="SE-193") ||
           user?.name === "Manish Shah" ||
           user?.department === "CAM" ? (
           <ListItem nested>
@@ -2057,7 +2064,14 @@ function Sidebar() {
           </ListItem>
         ) : user?.department === "Engineering" &&
           (user?.name === "Rishav Mahato" ||
-            user?.name === "Dhruv Choudhary") ? (
+            user?.name === "Dhruv Choudhary" || 
+          user?.name !=="Piyush Rathour Raj" ||
+            user?.name !=="Rahul Bhati" ||
+            user?.name !=="Sachin Jangid" ||
+            user?.name !=="Vishal Kushwaha" ||
+            user?.name !=="Hitesh Jangid" ||
+           user?.emp_id !=="SE-184"||
+           user?.emp_id !=="SE-193") ? (
           <List
             size="sm"
             sx={{

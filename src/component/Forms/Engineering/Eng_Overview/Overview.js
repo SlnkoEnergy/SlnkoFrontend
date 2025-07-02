@@ -44,6 +44,12 @@ const Overview = () => {
   const [addRemarksText, setAddRemarksText] = useState("");
   const [remarksTemplateId, setRemarksTemplateId] = useState(null);
 
+  const [previewFileUrl, setPreviewFileUrl] = useState(null);
+
+  const [previewType, setPreviewType] = useState("");
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+
   useEffect(() => {
     const storedUser = localStorage.getItem("userDetails");
     if (storedUser) {
@@ -56,7 +62,7 @@ const Overview = () => {
   }, []);
 
   const isEngineering = user?.department === "Engineering";
-  const isCAM = user?.department === "CAM" || user?.department === "Projects";
+  const isCAM = user?.department === "CAM" || user?.department === "Projects" ;
   console.log("isCAM →", isCAM);
   const projectId = searchParams.get("project_id");
 
@@ -77,7 +83,11 @@ const Overview = () => {
     Civil: [],
     plant_layout: [],
     boq: [],
-    summary: [],
+    Equipment:[],
+    Mechanical_Inspection:[],
+    Electrcial_Inspection:[],
+    summary: []
+    
   };
 
   const templates = data?.data || [];
@@ -99,6 +109,7 @@ const Overview = () => {
           description: template.description || "No description provided.",
           maxFiles: template.file_upload?.max_files || 0,
           fileUploadEnabled: template.file_upload?.enabled || false,
+          boqEnabled: template.boq?.enabled || false,
           attachmentUrls: rawUrls,
           currentAttachments: template.current_attachment || [],
           latestStatus,
@@ -428,6 +439,22 @@ const Overview = () => {
     setShowLogsModal(true);
   };
 
+const handlePreview = async (url) => {
+  if (/\.(pdf)$/i.test(url)) {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      setPreviewFileUrl(blobUrl);
+    } catch (error) {
+      toast.error("Unable to preview PDF file.");
+    }
+  } else {
+    setPreviewFileUrl(url);
+  }
+};
+
+
   return (
     <Box
       sx={{
@@ -632,26 +659,31 @@ const Overview = () => {
                       </Box>
                     )}
 
-                    {item.currentAttachments.length > 0 &&
-                      !(isCAM && item.latestStatus === "hold") && (
-                        <Box sx={{ mt: 2 }}>
-                          <Typography level="body-xs" sx={{ fontWeight: 500 }}>
-                            📥 Current Attachments:
-                          </Typography>
-                          {item.currentAttachments.map((url, i) => (
-                            <ListItem key={i} sx={{ p: 0, mt: 0.5 }}>
-                              <a
-                                href={url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ color: "#1976d2", fontSize: "14px" }}
-                              >
-                                📎 {url.split("/").pop()}
-                              </a>
-                            </ListItem>
-                          ))}
-                        </Box>
-                      )}
+                    {item.currentAttachments.map((url, i) => (
+  <ListItem key={i} sx={{ p: 0, mt: 0.5, display: "flex", gap: 1 }}>
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{ color: "#1976d2", fontSize: "14px" }}
+    >
+      📎 {url.split("/").pop()}
+    </a>
+    {/***** 👁️ View Button for images & pdf *****/}
+    {/\.(jpg|jpeg|png|gif|webp|pdf)$/i.test(url) && (
+      <Button
+        size="sm"
+        variant="plain"
+        onClick={() => setPreviewFileUrl(url)}
+      >
+        👁️ View
+      </Button>
+    )}
+  </ListItem>
+))}
+
+
+
                     <Box sx={{ mt: 2 }}>
                       <Typography level="body-xs" sx={{ fontWeight: 500 }}>
                         Current Status:{" "}
@@ -743,7 +775,7 @@ const Overview = () => {
                             📝 Add Remarks
                           </Button>
 
-                          {!isCAM && (
+                          {!isCAM && item?.boqEnabled && (
                             <Button
                               variant="soft"
                               size="sm"
@@ -755,7 +787,6 @@ const Overview = () => {
                             >
                               Add Boq
                             </Button>
-                            
                           )}
                         </>
                       )}
@@ -789,20 +820,23 @@ const Overview = () => {
                       )}
 
                       {/* Hold/Unhold for Engineering */}
-                      {isEngineering && item.latestStatus !== "hold" && (
-                        <Button
-                          size="sm"
-                          variant="soft"
-                          color="warning"
-                          onClick={() => {
-                            setHoldTemplateId(item.templateId);
-                            setShowHoldModal(true);
-                          }}
-                          disabled={isUpdating}
-                        >
-                          🚧 Hold
-                        </Button>
-                      )}
+                      {isEngineering &&
+                        (user?.name === "Rishav Mahato" ||
+                          user?.name === "Ranvijay Singh") &&
+                        item.latestStatus !== "hold" && (
+                          <Button
+                            size="sm"
+                            variant="soft"
+                            color="warning"
+                            onClick={() => {
+                              setHoldTemplateId(item.templateId);
+                              setShowHoldModal(true);
+                            }}
+                            disabled={isUpdating}
+                          >
+                            🚧 Hold
+                          </Button>
+                        )}
 
                       {isEngineering && item.latestStatus === "hold" && (
                         <Button
@@ -965,95 +999,174 @@ const Overview = () => {
           </Box>
         </ModalDialog>
       </Modal>
-      <Modal open={showAddRemarksModal} onClose={() => setShowAddRemarksModal(false)}>
-  <ModalDialog sx={{ width: 400, maxHeight: 500 }}>
-    <Typography level="h6" sx={{ mb: 1 }}>
-      Chat - Remarks
-    </Typography>
+      <Modal
+        open={showAddRemarksModal}
+        onClose={() => setShowAddRemarksModal(false)}
+      >
+        <ModalDialog sx={{ width: 400, maxHeight: 500 }}>
+          <Typography level="h6" sx={{ mb: 1 }}>
+            Chat - Remarks
+          </Typography>
 
-    <Box
-      sx={{
-        maxHeight: 300,
-        overflowY: "auto",
-        p: 1,
-        mb: 2,
-        bgcolor: "#f5f5f5",
-        borderRadius: "8px",
-      }}
-    >
-      {categoryData[selected]
-        ?.find((item) => item.templateId === remarksTemplateId)
-        ?.latestRemarks?.length > 0 ? (
-        categoryData[selected]
-          .find((item) => item.templateId === remarksTemplateId)
-          .latestRemarks.map((remark, i) => (
-            <Box
-              key={remark._id || i}
-              sx={{
-                display: "flex",
-                justifyContent:
-                  remark.department === "Engineering" ? "flex-start" : "flex-end",
-                mb: 1,
+          <Box
+            sx={{
+              maxHeight: 300,
+              overflowY: "auto",
+              p: 1,
+              mb: 2,
+              bgcolor: "#f5f5f5",
+              borderRadius: "8px",
+            }}
+          >
+            {categoryData[selected]?.find(
+              (item) => item.templateId === remarksTemplateId
+            )?.latestRemarks?.length > 0 ? (
+              categoryData[selected]
+                .find((item) => item.templateId === remarksTemplateId)
+                .latestRemarks.map((remark, i) => (
+                  <Box
+                    key={remark._id || i}
+                    sx={{
+                      display: "flex",
+                      justifyContent:
+                        remark.department === "Engineering"
+                          ? "flex-start"
+                          : "flex-end",
+                      mb: 1,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        maxWidth: "70%",
+                        p: 1.5,
+                        bgcolor:
+                          remark.department === "Engineering"
+                            ? "primary.softBg"
+                            : "success.softBg",
+                        color:
+                          remark.department === "Engineering"
+                            ? "primary.plainColor"
+                            : "success.plainColor",
+                        borderRadius: "12px",
+                        fontSize: "14px",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      <Typography
+                        level="body-xs"
+                        sx={{ fontWeight: 600, mb: 0.5 }}
+                      >
+                        {remark.department}
+                      </Typography>
+                      {remark.text}
+                    </Box>
+                  </Box>
+                ))
+            ) : (
+              <Typography level="body-sm" sx={{ textAlign: "center", mt: 2 }}>
+                No remarks yet.
+              </Typography>
+            )}
+          </Box>
+
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <textarea
+              style={{
+                flexGrow: 1,
+                minHeight: "60px",
+                border: "1px solid #ccc",
+                borderRadius: "8px",
+                padding: "8px",
               }}
+              value={addRemarksText}
+              onChange={(e) => setAddRemarksText(e.target.value)}
+              placeholder="Write a message..."
+            />
+            <Button
+              variant="solid"
+              color="primary"
+              onClick={handleAddRemarks}
+              disabled={!addRemarksText.trim()}
             >
-              <Box
-                sx={{
-                  maxWidth: "70%",
-                  p: 1.5,
-                  bgcolor:
-                    remark.department === "Engineering"
-                      ? "primary.softBg"
-                      : "success.softBg",
-                  color:
-                    remark.department === "Engineering"
-                      ? "primary.plainColor"
-                      : "success.plainColor",
-                  borderRadius: "12px",
-                  fontSize: "14px",
-                  wordBreak: "break-word",
-                }}
-              >
-                <Typography
-                  level="body-xs"
-                  sx={{ fontWeight: 600, mb: 0.5 }}
-                >
-                  {remark.department}
-                </Typography>
-                {remark.text}
-              </Box>
-            </Box>
-          ))
-      ) : (
-        <Typography level="body-sm" sx={{ textAlign: "center", mt: 2 }}>
-          No remarks yet.
+              Send
+            </Button>
+          </Box>
+        </ModalDialog>
+      </Modal>
+      <Modal open={!!previewFileUrl} onClose={() => { setPreviewFileUrl(null); setIframeLoaded(false); }}>
+  <ModalDialog
+    sx={{
+      width: "70vw",
+      height: "90vh",
+      maxWidth: "none",
+      maxHeight: "none",
+      p: 2,
+      display: "flex",
+      flexDirection: "column",
+    }}
+  >
+    <Box sx={{ flexGrow: 1, position: "relative", overflow: "auto" }}>
+  {/\.(jpg|jpeg|png|webp|gif)$/i.test(previewFileUrl) ? (
+    <img
+      src={previewFileUrl}
+      alt="Preview"
+      style={{
+        maxWidth: "100%",
+        maxHeight: "100%",
+        objectFit: "contain",
+        borderRadius: 8,
+        display: "block",
+        margin: "0 auto",
+      }}
+    />
+  ) : previewFileUrl?.endsWith(".pdf") ? (
+    <>
+      {!iframeLoaded && (
+        <Typography
+          level="body-sm"
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            color: "gray",
+          }}
+        >
+          ⏳ Loading Preview...
         </Typography>
       )}
-    </Box>
-
-    <Box sx={{ display: "flex", gap: 1 }}>
-      <textarea
+      <iframe
+        src={`https://docs.google.com/gview?url=${encodeURIComponent(previewFileUrl)}&embedded=true`}
+        title="PDF Preview"
         style={{
-          flexGrow: 1,
-          minHeight: "60px",
-          border: "1px solid #ccc",
-          borderRadius: "8px",
-          padding: "8px",
+          width: "100%",
+          height: "100%",
+          border: "none",
+          display: iframeLoaded ? "block" : "none",
+          borderRadius: 8,
         }}
-        value={addRemarksText}
-        onChange={(e) => setAddRemarksText(e.target.value)}
-        placeholder="Write a message..."
+        onLoad={() => setIframeLoaded(true)}
       />
-      <Button
-        variant="solid"
-        color="primary"
-        onClick={handleAddRemarks}
-        disabled={!addRemarksText.trim()}
-      >
-        Send
-      </Button>
-    </Box>
+    </>
+  ) : (
+    <Typography level="body-sm" sx={{ color: "gray" }}>
+      ⚠️ Preview not available for this file type.
+    </Typography>
+  )}
+</Box>
+
+
+    <Button
+      onClick={() => { setPreviewFileUrl(null); setIframeLoaded(false); }}
+      sx={{ mt: 2, alignSelf: "flex-end" }}
+    >
+      Close
+    </Button>
   </ModalDialog>
 </Modal>
+
+
+
 
     </Box>
   );
