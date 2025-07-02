@@ -9,6 +9,7 @@ import {
   Typography,
   Modal,
   ModalDialog,
+  IconButton,
 } from "@mui/joy";
 import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -20,11 +21,13 @@ import {
   useUpdateModuleTemplateRemarksMutation,
 } from "../../../../redux/Eng/templatesSlice";
 import { toast } from "react-toastify";
+import { ChevronLeftIcon } from "lucide-react";
 
 const Overview = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const [selected, setSelected] = useState("Electrical");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialCategory = searchParams.get("category") || "Electrical";
+  const [selected, setSelected] = useState(initialCategory);
   const [fileUploads, setFileUploads] = useState({});
   const [logModalData, setLogModalData] = useState([]);
   const [showLogsModal, setShowLogsModal] = useState(false);
@@ -62,9 +65,10 @@ const Overview = () => {
   }, []);
 
   const isEngineering = user?.department === "Engineering";
-  const isCAM = user?.department === "CAM" || user?.department === "Projects" ;
+  const isCAM = user?.department === "CAM" || user?.department === "Projects";
   console.log("isCAM →", isCAM);
   const projectId = searchParams.get("project_id");
+  const page = searchParams.get("page");
 
   const { data, isLoading } = useGetModuleCategoryByIdQuery(
     { projectId, engineering: selected },
@@ -83,11 +87,10 @@ const Overview = () => {
     Civil: [],
     plant_layout: [],
     boq: [],
-    Equipment:[],
-    Mechanical_Inspection:[],
-    Electrcial_Inspection:[],
-    summary: []
-    
+    Equipment: [],
+    Mechanical_Inspection: [],
+    Electrcial_Inspection: [],
+    summary: [],
   };
 
   const templates = data?.data || [];
@@ -439,21 +442,26 @@ const Overview = () => {
     setShowLogsModal(true);
   };
 
-const handlePreview = async (url) => {
-  if (/\.(pdf)$/i.test(url)) {
-    try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      setPreviewFileUrl(blobUrl);
-    } catch (error) {
-      toast.error("Unable to preview PDF file.");
-    }
-  } else {
-    setPreviewFileUrl(url);
-  }
-};
+  const handleCategorySelect = (category) => {
+    setSelected(category);
+    searchParams.set("category", category);
+    setSearchParams(searchParams);
+  };
 
+  const handlePreview = async (url) => {
+    if (/\.(pdf)$/i.test(url)) {
+      try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        setPreviewFileUrl(blobUrl);
+      } catch (error) {
+        toast.error("Unable to preview PDF file.");
+      }
+    } else {
+      setPreviewFileUrl(url);
+    }
+  };
 
   return (
     <Box
@@ -467,6 +475,15 @@ const handlePreview = async (url) => {
         marginLeft: "13%",
       }}
     >
+      <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+        <IconButton
+          onClick={() => navigate(`/eng_dash?page=${page}`)}
+          variant="soft"
+          color="neutral"
+        >
+          <ChevronLeftIcon />
+        </IconButton>
+      </Box>
       <Box sx={{ display: "flex", flexGrow: 1, gap: 3 }}>
         <Sheet
           variant="outlined"
@@ -488,7 +505,7 @@ const handlePreview = async (url) => {
                   fullWidth
                   variant={selected === category ? "solid" : "soft"}
                   color={selected === category ? "primary" : "neutral"}
-                  onClick={() => setSelected(category)}
+                  onClick={() => handleCategorySelect(category)}
                   sx={{ fontWeight: 600 }}
                   disabled={isLoading}
                 >
@@ -660,29 +677,30 @@ const handlePreview = async (url) => {
                     )}
 
                     {item.currentAttachments.map((url, i) => (
-  <ListItem key={i} sx={{ p: 0, mt: 0.5, display: "flex", gap: 1 }}>
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      style={{ color: "#1976d2", fontSize: "14px" }}
-    >
-      📎 {url.split("/").pop()}
-    </a>
-    {/***** 👁️ View Button for images & pdf *****/}
-    {/\.(jpg|jpeg|png|gif|webp|pdf)$/i.test(url) && (
-      <Button
-        size="sm"
-        variant="plain"
-        onClick={() => setPreviewFileUrl(url)}
-      >
-        👁️ View
-      </Button>
-    )}
-  </ListItem>
-))}
-
-
+                      <ListItem
+                        key={i}
+                        sx={{ p: 0, mt: 0.5, display: "flex", gap: 1 }}
+                      >
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: "#1976d2", fontSize: "14px" }}
+                        >
+                          📎 {url.split("/").pop()}
+                        </a>
+                        {/***** 👁️ View Button for images & pdf *****/}
+                        {/\.(jpg|jpeg|png|gif|webp|pdf)$/i.test(url) && (
+                          <Button
+                            size="sm"
+                            variant="plain"
+                            onClick={() => setPreviewFileUrl(url)}
+                          >
+                            👁️ View
+                          </Button>
+                        )}
+                      </ListItem>
+                    ))}
 
                     <Box sx={{ mt: 2 }}>
                       <Typography level="body-xs" sx={{ fontWeight: 500 }}>
@@ -781,7 +799,7 @@ const handlePreview = async (url) => {
                               size="sm"
                               onClick={() =>
                                 navigate(
-                                  `/add_boq?projectId=${projectId}&module_template=${item.templateId}`
+                                  `/add_boq?page=${page}&projectId=${projectId}&module_template=${item.templateId}&category=${selected}`
                                 )
                               }
                             >
@@ -1093,81 +1111,85 @@ const handlePreview = async (url) => {
           </Box>
         </ModalDialog>
       </Modal>
-      <Modal open={!!previewFileUrl} onClose={() => { setPreviewFileUrl(null); setIframeLoaded(false); }}>
-  <ModalDialog
-    sx={{
-      width: "70vw",
-      height: "90vh",
-      maxWidth: "none",
-      maxHeight: "none",
-      p: 2,
-      display: "flex",
-      flexDirection: "column",
-    }}
-  >
-    <Box sx={{ flexGrow: 1, position: "relative", overflow: "auto" }}>
-  {/\.(jpg|jpeg|png|webp|gif)$/i.test(previewFileUrl) ? (
-    <img
-      src={previewFileUrl}
-      alt="Preview"
-      style={{
-        maxWidth: "100%",
-        maxHeight: "100%",
-        objectFit: "contain",
-        borderRadius: 8,
-        display: "block",
-        margin: "0 auto",
-      }}
-    />
-  ) : previewFileUrl?.endsWith(".pdf") ? (
-    <>
-      {!iframeLoaded && (
-        <Typography
-          level="body-sm"
+      <Modal
+        open={!!previewFileUrl}
+        onClose={() => {
+          setPreviewFileUrl(null);
+          setIframeLoaded(false);
+        }}
+      >
+        <ModalDialog
           sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            color: "gray",
+            width: "70vw",
+            height: "90vh",
+            maxWidth: "none",
+            maxHeight: "none",
+            p: 2,
+            display: "flex",
+            flexDirection: "column",
           }}
         >
-          ⏳ Loading Preview...
-        </Typography>
-      )}
-      <iframe
-        src={`https://docs.google.com/gview?url=${encodeURIComponent(previewFileUrl)}&embedded=true`}
-        title="PDF Preview"
-        style={{
-          width: "100%",
-          height: "100%",
-          border: "none",
-          display: iframeLoaded ? "block" : "none",
-          borderRadius: 8,
-        }}
-        onLoad={() => setIframeLoaded(true)}
-      />
-    </>
-  ) : (
-    <Typography level="body-sm" sx={{ color: "gray" }}>
-      ⚠️ Preview not available for this file type.
-    </Typography>
-  )}
-</Box>
+          <Box sx={{ flexGrow: 1, position: "relative", overflow: "auto" }}>
+            {/\.(jpg|jpeg|png|webp|gif)$/i.test(previewFileUrl) ? (
+              <img
+                src={previewFileUrl}
+                alt="Preview"
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "100%",
+                  objectFit: "contain",
+                  borderRadius: 8,
+                  display: "block",
+                  margin: "0 auto",
+                }}
+              />
+            ) : previewFileUrl?.endsWith(".pdf") ? (
+              <>
+                {!iframeLoaded && (
+                  <Typography
+                    level="body-sm"
+                    sx={{
+                      position: "absolute",
+                      top: "50%",
+                      left: "50%",
+                      transform: "translate(-50%, -50%)",
+                      color: "gray",
+                    }}
+                  >
+                    ⏳ Loading Preview...
+                  </Typography>
+                )}
+                <iframe
+                  src={`https://docs.google.com/gview?url=${encodeURIComponent(previewFileUrl)}&embedded=true`}
+                  title="PDF Preview"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    border: "none",
+                    display: iframeLoaded ? "block" : "none",
+                    borderRadius: 8,
+                  }}
+                  onLoad={() => setIframeLoaded(true)}
+                />
+              </>
+            ) : (
+              <Typography level="body-sm" sx={{ color: "gray" }}>
+                ⚠️ Preview not available for this file type.
+              </Typography>
+            )}
+          </Box>
 
-
-    <Button
-      onClick={() => { setPreviewFileUrl(null); setIframeLoaded(false); }}
-      sx={{ mt: 2, alignSelf: "flex-end" }}
-    >
-      Close
-    </Button>
-  </ModalDialog>
-</Modal>
-
-
-
-
+          <Button
+            onClick={() => {
+              setPreviewFileUrl(null);
+              setIframeLoaded(false);
+            }}
+            sx={{ mt: 2, alignSelf: "flex-end" }}
+          >
+            Close
+          </Button>
+        </ModalDialog>
+      </Modal>
     </Box>
   );
 };

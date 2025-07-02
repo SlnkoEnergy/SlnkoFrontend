@@ -361,7 +361,7 @@ const UpdateExpenseAccounts = () => {
       const payload = {
         user_id: userID,
         expense_code: ExpenseCode,
-        current_status: "manager approval",
+        "current_status.status": "manager approval",
         total_approved_amount: totalApproved,
         items: updatedItems,
         status_history: [
@@ -520,7 +520,7 @@ const UpdateExpenseAccounts = () => {
         return {
           ...row,
           items: updatedItems,
-          current_status: "rejected",
+          "current_status.status": "rejected",
           approved_amount: 0,
           remarks: reason,
         };
@@ -564,7 +564,7 @@ const UpdateExpenseAccounts = () => {
         return {
           ...row,
           items: updatedItems,
-          current_status: "hold",
+          "current_status.status": "hold",
           remarks: reason,
         };
       });
@@ -656,7 +656,7 @@ const UpdateExpenseAccounts = () => {
         return {
           ...row,
           items: updatedItems,
-          current_status: "rejected",
+          "current_status.status": "rejected",
           approved_amount: 0,
           remarks: showAccountsRejectAllDialog,
         };
@@ -699,7 +699,7 @@ const UpdateExpenseAccounts = () => {
         return {
           ...row,
           items: updatedItems,
-          current_status: "hold",
+          "current_status.status": "hold",
           remarks: reason,
         };
       });
@@ -865,7 +865,7 @@ const UpdateExpenseAccounts = () => {
                     onClick={handleHrRejectAll}
                     disabled={rows.every((row) =>
                       ["rejected", "hold", "hr approval"].includes(
-                        row.current_status
+                        row.current_status.status
                       )
                     )}
                   >
@@ -877,7 +877,7 @@ const UpdateExpenseAccounts = () => {
                     onClick={handleHrHoldAll}
                     disabled={rows.every((row) =>
                       ["rejected", "hold", "hr approval"].includes(
-                        row.current_status
+                        row.current_status.status
                       )
                     )}
                   >
@@ -889,7 +889,7 @@ const UpdateExpenseAccounts = () => {
                     onClick={handleHrApproveAll}
                     disabled={rows.every((row) =>
                       ["rejected", "hold", "hr approval"].includes(
-                        row.current_status
+                        row.current_status.status
                       )
                     )}
                   >
@@ -910,7 +910,7 @@ const UpdateExpenseAccounts = () => {
                           "final approval",
                           "submitted",
                           "manager approval",
-                        ].includes(row.current_status)
+                        ].includes(row.current_status.status)
                       )}
                     >
                       Reject All
@@ -926,7 +926,7 @@ const UpdateExpenseAccounts = () => {
                           "final approval",
                           "submitted",
                           "manager approval",
-                        ].includes(row.current_status)
+                        ].includes(row.current_status.status)
                       )}
                     >
                       Hold All
@@ -942,7 +942,7 @@ const UpdateExpenseAccounts = () => {
                           "final approval",
                           "submitted",
                           "manager approval",
-                        ].includes(row.current_status)
+                        ].includes(row.current_status.status)
                       )}
                     >
                       Approve All
@@ -1750,7 +1750,7 @@ const UpdateExpenseAccounts = () => {
                 {(user?.role === "manager" ||
                   user?.department === "admin" ||
                   user?.name === "IT Team") &&
-                  rows[0]?.current_status === "submitted" && (
+                  rows[0]?.current_status.status === "submitted" && (
                     <Button
                       variant="solid"
                       color="primary"
@@ -1764,7 +1764,7 @@ const UpdateExpenseAccounts = () => {
                             "hr approval",
                             "final approval",
                             "hold",
-                          ].includes(rows[0]?.current_status))
+                          ].includes(rows[0]?.current_status.status))
                       }
                     >
                       Update Expense Sheet
@@ -1772,7 +1772,7 @@ const UpdateExpenseAccounts = () => {
                   )}
 
                 {user?.department === "Accounts" &&
-                  rows[0]?.current_status === "final approval" && (
+                  rows[0]?.current_status.status === "final approval" && (
                     <Box
                       display="flex"
                       alignItems="center"

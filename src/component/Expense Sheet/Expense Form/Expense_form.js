@@ -327,7 +327,7 @@ const Expense_Form = () => {
         disbursement_date: rows[0]?.disbursement_date ?? null,
         items,
         user_id: userID,
-        current_status: statusToUse,
+        "current_status.status": statusToUse,
         status_history: [
           {
             status: statusToUse,

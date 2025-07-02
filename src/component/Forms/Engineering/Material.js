@@ -12,6 +12,7 @@ import {
   useGetMaterialCategoryQuery,
 } from "../../../redux/Eng/masterSheet";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const Material = ({ item }) => {
   const [searchParams] = useSearchParams();
@@ -68,10 +69,11 @@ const handleSubmit = async (e) => {
 
   try {
     await createMaterial(payload).unwrap();
-    alert("Material created successfully");
-    navigate('/module_sheet');
+    toast.success("Material created successfully");
+    navigate(`/module_sheet?module=${item}`);
+    window.location.reload(); // Reload to reflect changes
   } catch (error) {
-    console.error("Failed to create material:", error);
+    toast.error("Failed to create material:");
   }
 };
 

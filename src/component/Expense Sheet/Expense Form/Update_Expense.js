@@ -282,7 +282,7 @@ const UpdateExpense = () => {
       const payload = {
         user_id: userID,
         expense_code: ExpenseCode,
-        current_status: overallStatus,
+        "current_status.status": overallStatus,
         total_approved_amount: String(totalApproved),
         items: updatedItems,
         status_history: [
@@ -481,7 +481,7 @@ const UpdateExpense = () => {
           return {
             ...item,
             item_current_status: "manager approval",
-            current_status: "manager approval",
+            "current_status.status": "manager approval",
             approved_amount: approvedAmount,
           };
         });
@@ -495,7 +495,7 @@ const UpdateExpense = () => {
           ...row,
           items: updatedItems,
           row_current_status: "manager approval",
-          current_status: "manager approval",
+          "current_status.status": "manager approval",
           total_approved_amount: String(total_approved_amount),
         };
       });
@@ -627,7 +627,7 @@ const UpdateExpense = () => {
                         "hr approval",
                         "manager approval",
                         "final approval",
-                      ].includes(row.current_status)
+                      ].includes(row.current_status.status)
                     )}
                   >
                     Reject All
@@ -643,7 +643,7 @@ const UpdateExpense = () => {
                         "hr approval",
                         "manager approval",
                         "final approval",
-                      ].includes(row.current_status)
+                      ].includes(row.current_status.status)
                     )}
                   >
                     Approve All
@@ -1411,13 +1411,13 @@ const UpdateExpense = () => {
                     row.items?.forEach((item) => {
                       if (
                         item.category === category &&
-                        item.item_current_status !== "rejected"
+                        item.item_current_status.status !== "rejected"
                       ) {
                         total += Number(item.invoice?.invoice_amount || 0);
 
                         if (
-                          (item.item_current_status === "manager approval" ||
-                            rows[0].current_status === "manager approval") &&
+                          (item.item_current_status.status === "manager approval" ||
+                            rows[0].current_status.status === "manager approval") &&
                           Number(item.approved_amount || 0) > 0
                         ) {
                           approvedTotal += Number(item.approved_amount);
@@ -1499,9 +1499,9 @@ const UpdateExpense = () => {
                         .flatMap((row) => row.items || [])
                         .filter(
                           (item) =>
-                            item.item_current_status !== "rejected" &&
-                            (item.item_current_status === "manager approval" ||
-                              (rows[0].current_status === "manager approval" &&
+                            item.item_current_status.status !== "rejected" &&
+                            (item.item_current_status.status === "manager approval" ||
+                              (rows[0].current_status.status === "manager approval" &&
                                 Number(item.approved_amount || 0) > 0))
                         )
                         .reduce(
@@ -1529,7 +1529,7 @@ const UpdateExpense = () => {
                   user?.department === "admin" ||
                   user?.role === "visitor" ||
                   user?.name === "IT Team") &&
-                  rows[0]?.current_status === "submitted" && (
+                  rows[0]?.current_status.status === "submitted" && (
                     <Button
                       variant="solid"
                       color="primary"
@@ -1543,7 +1543,7 @@ const UpdateExpense = () => {
                             "hr approval",
                             "final approval",
                             "hold",
-                          ].includes(rows[0]?.current_status))
+                          ].includes(rows[0]?.current_status.status))
                       }
                     >
                       Update Expense Sheet
