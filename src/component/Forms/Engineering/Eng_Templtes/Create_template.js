@@ -200,6 +200,9 @@ const CreateTemplate = () => {
                 <Option value="Electrical">Electrical</Option>
                 <Option value="plant_layout">Plant Layout</Option>
                 <Option value="boq">BOQ</Option>
+                <Option value="Equipment">Equipment</Option>
+                <Option value="Electrcial_Inspection">Electrical Inspection</Option>
+                <Option value="Mechanical_Inspection">Mechanical Inspection</Option>
               </Select>
             </FormControl>
           </Grid>
