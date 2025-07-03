@@ -318,7 +318,10 @@ const Expense_Form = () => {
               updatedAt: new Date().toISOString(),
             },
           ],
-          item_current_status: statusToUse,
+          item_current_status: {
+            status: statusToUse,
+            remarks: item.item_status_history?.[0]?.remarks || "",
+          },
         }))
       );
 
@@ -327,7 +330,10 @@ const Expense_Form = () => {
         disbursement_date: rows[0]?.disbursement_date ?? null,
         items,
         user_id: userID,
-        current_status: statusToUse,
+        current_status: {
+          status: statusToUse,
+          remarks: rows[0]?.status_history?.[0]?.remarks || "",
+        },
         status_history: [
           {
             status: statusToUse,

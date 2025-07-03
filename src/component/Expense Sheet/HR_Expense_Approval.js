@@ -2,6 +2,7 @@ import BlockIcon from "@mui/icons-material/Block";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
+import InfoIcon from "@mui/icons-material/Info";
 import PauseCircleIcon from "@mui/icons-material/PauseCircle";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
@@ -26,6 +27,7 @@ import {
   Option,
   Select,
   Textarea,
+  Tooltip,
   useTheme,
 } from "@mui/joy";
 import { Calendar } from "lucide-react";
@@ -665,10 +667,30 @@ const HrExpense = forwardRef((props, ref) => {
                           </Chip>
                         );
                       } else if (status === "rejected") {
+                        const remarks = expense.current_status?.remarks?.trim();
+
                         return (
-                          <Chip color="danger" variant="soft" size="sm">
-                            Rejected
-                          </Chip>
+                          <Box
+                            display="inline-flex"
+                            alignItems="center"
+                            gap={1}
+                          >
+                            <Chip variant="soft" color="danger" size="sm">
+                              Rejected
+                            </Chip>
+                            <Tooltip
+                              title={remarks || "Remarks not added"}
+                              arrow
+                            >
+                              <IconButton
+                                size="sm"
+                               
+                                color="danger"
+                              >
+                                <InfoIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
                         );
                       } else {
                         return (
