@@ -66,7 +66,7 @@ const Overview = () => {
 
   const isEngineering = user?.department === "Engineering";
   const isCAM = user?.department === "CAM" || user?.department === "Projects";
-  const isCAM = user?.department === "CAM" || user?.department === "Projects";
+ 
   console.log("isCAM →", isCAM);
   const projectId = searchParams.get("project_id");
   const page = searchParams.get("page");
