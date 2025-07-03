@@ -19,8 +19,8 @@ export const expensesApi = createApi({
   endpoints: (builder) => ({
     // GET: Fetch all expenses
     getAllExpense: builder.query({
-      query: ({ page = 1, search = "", department, from = "", to = "" }) =>
-        `get-all-expense?page=${page}&search=${search}&department=${department}&from=${from}&to=${to}`,
+      query: ({ page = 1, search = "", department, from = "", to = "", status = "" }) =>
+        `get-all-expense?page=${page}&search=${search}&department=${department}&from=${from}&to=${to}&status=${status}`,
       providesTags: ["Expense"],
     }),
 

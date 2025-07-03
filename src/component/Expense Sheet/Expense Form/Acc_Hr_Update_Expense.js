@@ -927,21 +927,22 @@ const UpdateExpenseAccounts = () => {
 
       const rawDate = disbursementData?.disbursement_date;
 
-      if (!rawDate || isNaN(new Date(rawDate).getTime())) {
+      if (!rawDate || typeof rawDate !== "string") {
         toast.error("Please select a valid disbursement date.");
         return;
       }
 
-      const disbursement_date = new Date(rawDate).toISOString();
+      const safeDateStr = rawDate.replace(/\//g, "-");
 
-      console.log("Updating disbursement with:", {
-        _id: expenseSheetId,
-        disbursement_date,
-      });
+      const isValid = /^\d{4}-\d{2}-\d{2}$/.test(safeDateStr);
+      if (!isValid) {
+        toast.error("Invalid disbursement date format.");
+        return;
+      }
 
       await updateDisbursement({
         _id: expenseSheetId,
-        disbursement_date,
+        disbursement_date: safeDateStr,
       }).unwrap();
 
       toast.success("Disbursement date updated successfully!");
@@ -951,12 +952,6 @@ const UpdateExpenseAccounts = () => {
       toast.error("An error occurred while submitting disbursement date.");
     }
   };
-
-  // const handleItemChange = (index, field, value) => {
-  //   setRows((prevRows) =>
-  //     prevRows.map((row, i) => (i === index ? { ...row, [field]: value } : row))
-  //   );
-  // };
 
   const tableHeaders = [
     "Project ID",
@@ -1055,7 +1050,12 @@ const UpdateExpenseAccounts = () => {
                     size="sm"
                     onClick={handleHrRejectAll}
                     disabled={rows.every((row) =>
-                      ["rejected", "hold", "hr approval","final approval"].includes(
+                      [
+                        "rejected",
+                        "hold",
+                        "hr approval",
+                        "final approval",
+                      ].includes(
                         typeof row.current_status === "string"
                           ? row.current_status
                           : row.current_status?.status
@@ -1069,7 +1069,12 @@ const UpdateExpenseAccounts = () => {
                     size="sm"
                     onClick={handleHrHoldAll}
                     disabled={rows.every((row) =>
-                      ["rejected", "hold", "hr approval","final approval"].includes(
+                      [
+                        "rejected",
+                        "hold",
+                        "hr approval",
+                        "final approval",
+                      ].includes(
                         typeof row.current_status === "string"
                           ? row.current_status
                           : row.current_status?.status
@@ -1083,7 +1088,12 @@ const UpdateExpenseAccounts = () => {
                     size="sm"
                     onClick={handleHrApproveAll}
                     disabled={rows.every((row) =>
-                      ["rejected", "hold", "hr approval","final approval"].includes(
+                      [
+                        "rejected",
+                        "hold",
+                        "hr approval",
+                        "final approval",
+                      ].includes(
                         typeof row.current_status === "string"
                           ? row.current_status
                           : row.current_status?.status
@@ -2003,8 +2013,8 @@ const UpdateExpenseAccounts = () => {
                   )}
 
                 {user?.department === "Accounts" &&
-                  (rows[0]?.current_status?.status ||
-                    rows[0]?.current_status) === "final approval" && (
+                  (rows?.current_status?.status || rows?.current_status) ===
+                    "final approval" && (
                     <Box
                       display="flex"
                       alignItems="center"
@@ -2037,6 +2047,7 @@ const UpdateExpenseAccounts = () => {
                           variant="solid"
                           color="success"
                           onClick={handleFinalApproval}
+                          disabled={!!disbursementData?.disbursement_date}
                         >
                           Final Approval
                         </Button>
