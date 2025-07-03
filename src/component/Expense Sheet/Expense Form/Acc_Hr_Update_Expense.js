@@ -1055,7 +1055,7 @@ const UpdateExpenseAccounts = () => {
                     size="sm"
                     onClick={handleHrRejectAll}
                     disabled={rows.every((row) =>
-                      ["rejected", "hold", "hr approval"].includes(
+                      ["rejected", "hold", "hr approval","final approval"].includes(
                         typeof row.current_status === "string"
                           ? row.current_status
                           : row.current_status?.status
@@ -1069,7 +1069,7 @@ const UpdateExpenseAccounts = () => {
                     size="sm"
                     onClick={handleHrHoldAll}
                     disabled={rows.every((row) =>
-                      ["rejected", "hold", "hr approval"].includes(
+                      ["rejected", "hold", "hr approval","final approval"].includes(
                         typeof row.current_status === "string"
                           ? row.current_status
                           : row.current_status?.status
@@ -1083,7 +1083,7 @@ const UpdateExpenseAccounts = () => {
                     size="sm"
                     onClick={handleHrApproveAll}
                     disabled={rows.every((row) =>
-                      ["rejected", "hold", "hr approval"].includes(
+                      ["rejected", "hold", "hr approval","final approval"].includes(
                         typeof row.current_status === "string"
                           ? row.current_status
                           : row.current_status?.status
