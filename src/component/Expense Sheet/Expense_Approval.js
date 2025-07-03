@@ -611,7 +611,7 @@ const ExpenseApproval = forwardRef(() => {
                               Rejected
                             </Chip>
                             <Tooltip
-                              title={remarks || "Remarks not added"}
+                              title={remarks || "Remarks not found"}
                               arrow
                             >
                               <IconButton size="sm" color="danger">

@@ -38,12 +38,13 @@ const AccountsExpense = forwardRef(() => {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
-  const searchParam = selectedstatus ? selectedstatus : searchQuery;
+  const searchParam = searchQuery;
 
   const { data: getExpense = [], isLoading } = useGetAllExpenseQuery({
     page: currentPage,
     department: selectedDepartment,
     search: searchParam,
+    status: selectedstatus,
     from,
     to,
   });
@@ -108,6 +109,7 @@ const AccountsExpense = forwardRef(() => {
             onChange={(e, newValue) => {
               setSelectedstatus(newValue);
               setCurrentPage(1);
+
             }}
             size="sm"
             placeholder="Select Status"
@@ -553,7 +555,7 @@ const AccountsExpense = forwardRef(() => {
                               Rejected
                             </Chip>
                             <Tooltip
-                              title={remarks || "Remarks not added"}
+                              title={remarks || "Remarks not found"}
                               arrow
                             >
                               <IconButton
