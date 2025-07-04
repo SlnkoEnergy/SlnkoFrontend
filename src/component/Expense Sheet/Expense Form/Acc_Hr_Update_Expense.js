@@ -946,7 +946,7 @@ const UpdateExpenseAccounts = () => {
       }).unwrap();
 
       toast.success("Disbursement date updated successfully!");
-      navigate("/expense_dashboard");
+      navigate("/expense_accounts");
     } catch (error) {
       console.error("Disbursement update failed:", error);
       toast.error("An error occurred while submitting disbursement date.");
@@ -2013,7 +2013,7 @@ const UpdateExpenseAccounts = () => {
                   )}
 
                 {user?.department === "Accounts" &&
-                  (rows?.current_status?.status || rows?.current_status) ===
+                  (rows[0]?.current_status?.status || rows[0]?.current_status) ===
                     "final approval" && (
                     <Box
                       display="flex"
@@ -2047,7 +2047,7 @@ const UpdateExpenseAccounts = () => {
                           variant="solid"
                           color="success"
                           onClick={handleFinalApproval}
-                          disabled={!!disbursementData?.disbursement_date}
+                          // disabled={!!disbursementData?.disbursement_date}
                         >
                           Final Approval
                         </Button>
