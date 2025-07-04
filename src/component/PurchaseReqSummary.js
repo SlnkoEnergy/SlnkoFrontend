@@ -34,7 +34,7 @@ import {
 
 import { toast } from "react-toastify";         
 
-function Dash_cam() {
+function PurchaseReqSummary() {
   const navigate = useNavigate();
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -752,43 +752,9 @@ function Dash_cam() {
         >
           Next
         </Button>
-        <Modal open={isPRModalOpen} onClose={() => setIsPRModalOpen(false)}>
-          <ModalDialog>
-            <ModalClose />
-            <Typography level="h5">Create Purchase Request</Typography>
-
-            <Sheet
-              sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}
-            >
-              <Typography level="body-sm">
-                Project: {selectedPRProject?.code || "-"}
-              </Typography>
-
-              {/* Item Multi-Select Dropdown */}
-              <Autocomplete
-                multiple
-                placeholder="Select Item(s)"
-                options={materialCategories || []}
-                getOptionLabel={(option) => option.name}
-                value={items}
-                onChange={(e, newValue) => {
-                  console.log("New Value Selected:", newValue); // Debugging
-                  setItems(newValue); // newValue is array of full objects
-                }}
-                isOptionEqualToValue={(option, value) =>
-                  option._id === value._id
-                }
-                size="sm"
-              />
-
-              <Button onClick={handlePRSubmit} loading={isPRCreating}>
-                {isPRCreating ? "Submitting..." : "Submit"}
-              </Button>
-            </Sheet>
-          </ModalDialog>
-        </Modal>
+        
       </Box>
     </>
   );
 }
-export default Dash_cam;
+export default PurchaseReqSummary;
