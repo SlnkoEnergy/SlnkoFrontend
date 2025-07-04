@@ -108,6 +108,7 @@ import Add_Material_Category from "../pages/Eng/Forms/Add_Material_Category";
 import Add_Material from "../pages/Eng/Forms/Add_Material";
 import AddBoq from "../pages/Eng/AddBoq";
 import View_Project from "../component/Forms/View_Project";
+import ProjectDetail from "../pages/CAM/ProjectDetail";
 
 function index() {
   return (
@@ -329,6 +330,14 @@ function index() {
         element={
           <PrivateRoute>
             <Approval_Dashboard />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/project_detail"
+        element={
+          <PrivateRoute>
+            <ProjectDetail />
           </PrivateRoute>
         }
       />

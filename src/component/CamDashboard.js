@@ -60,7 +60,7 @@ function Dash_cam() {
             const page = currentPage;
             // const project_id = project_id;
             // sessionStorage.setItem("eng_overview", projectId);
-            navigate(`/overview?page=${page}&project_id=${project_id}`);
+            navigate(`/project_detail?page=${page}&project_id=${project_id}`);
           }}
         >
           {code || "-"}
@@ -264,13 +264,7 @@ function Dash_cam() {
 
   const paginatedPayments = filteredAndSortedData;
 
-  // const totalPages = Math.ceil(currentPage / (1000 / itemsPerPage));
-
-  // const paginatedPayments = filteredAndSortedData;
-
   const draftPayments = paginatedPayments;
-  // console.log(paginatedPayments);
-  // console.log("Filtered and Sorted Data:", filteredAndSortedData);
 
   const handlePageChange = (page) => {
     if (page >= 1) {
@@ -281,41 +275,6 @@ function Dash_cam() {
 
   return (
     <>
-      {/* Mobile Filters */}
-      {/* <Sheet
-        className="SearchAndFilters-mobile"
-        sx={{ display: { xs: "", sm: "none" }, my: 1, gap: 1 }}
-      >
-        <Input
-          size="sm"
-          placeholder="Search"
-          startDecorator={<SearchIcon />}
-          sx={{ flexGrow: 1 }}
-        />
-        <IconButton
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          onClick={() => setOpen(true)}
-        >
-          <FilterAltIcon />
-        </IconButton>
-        <Modal open={open} onClose={() => setOpen(false)}>
-          <ModalDialog aria-labelledby="filter-modal" layout="fullscreen">
-            <ModalClose />
-            <Typography id="filter-modal" level="h2">
-              Filters
-            </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Sheet sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {renderFilters()}
-              <Button color="primary" onClick={() => setOpen(false)}>
-                Submit
-              </Button>
-            </Sheet>
-          </ModalDialog>
-        </Modal>
-      </Sheet> */}
       {/* Tablet and Up Filters */}
       <Box
         className="SearchAndFilters-tabletUp"
@@ -323,9 +282,7 @@ function Dash_cam() {
           marginLeft: { xl: "15%", lg: "18%" },
           borderRadius: "sm",
           py: 2,
-          // display: { xs: "none", sm: "flex" },
           display: "flex",
-          // flexDirection:{xs: "none", sm: "flex"}
           flexWrap: "wrap",
           gap: 1.5,
           "& > *": {
@@ -343,7 +300,6 @@ function Dash_cam() {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {/* {renderFilters()} */}
       </Box>
       {/* Table */}
       <Sheet
@@ -452,16 +408,6 @@ function Dash_cam() {
                       }
                     />
                   </td>
-
-                  {/* <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {project.code || "-"}
-                  </td> */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -469,7 +415,7 @@ function Dash_cam() {
                       textAlign: "center",
                     }}
                   >
-                    <Tooltip title="View Engineering Overview" arrow>
+                    <Tooltip title="View Project Detail" arrow>
                       <span>
                         <ProjectOverView
                           currentPage={currentPage}

@@ -10,8 +10,9 @@ import Sidebar from "../../component/Partials/Sidebar";
 import { useNavigate } from "react-router-dom";
 import HandoverApproval from "../../component/HandOver_Approval";
 import Header from "../../component/Partials/Header";
+import Project_Detail from "../../component/ProjectDetails";
 
-function Approval_Dashboard() {
+function ProjectDetail() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
@@ -77,7 +78,7 @@ function Approval_Dashboard() {
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                HandOver Approval
+                Project Detail
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -94,7 +95,7 @@ function Approval_Dashboard() {
             }}
           >
             <Typography level="h2" component="h1">
-              HandOver Approval
+              Project Detail
             </Typography>
             <Box
               sx={{
@@ -109,10 +110,10 @@ function Approval_Dashboard() {
             >
             </Box>
           </Box>
-          <HandoverApproval />
+          <Project_Detail />
         </Box>
       </Box>
     </CssVarsProvider>
   );
 }
-export default Approval_Dashboard;
+export default ProjectDetail;
