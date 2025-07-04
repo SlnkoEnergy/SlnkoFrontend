@@ -79,6 +79,21 @@ export const camsApi = createApi({
         body: { p_id, emp_id },
       }),
     }),
+  getProjectDropdown: builder.query({
+      query: () => "project-dropdown",
+    }),
+    getMaterialCategory: builder.query({
+  query: () => "engineering/material-category-drop",
+}),
+createPurchaseRequest: builder.mutation({
+  query: (payload) => ({
+    url: "purchaseRequest/purchase-request",
+    method: "POST",
+    body: { purchaseRequestData: payload },
+  }),
+  invalidatesTags: ["CAM"],
+}),
+
   }),
 });
 
@@ -90,4 +105,7 @@ export const {
   useUpdateHandOverMutation,
   useUpdateUnlockHandoversheetMutation,
   useUpdateStatusHandOverMutation,
+  useGetProjectDropdownQuery,
+  useGetMaterialCategoryQuery,
+  useCreatePurchaseRequestMutation, 
 } = camsApi;

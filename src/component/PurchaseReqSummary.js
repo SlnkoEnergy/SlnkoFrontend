@@ -34,7 +34,7 @@ import {
 
 import { toast } from "react-toastify";         
 
-function Dash_cam() {
+function PurchaseReqSummary() {
   const navigate = useNavigate();
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -113,7 +113,7 @@ function Dash_cam() {
             const page = currentPage;
             // const project_id = project_id;
             // sessionStorage.setItem("eng_overview", projectId);
-            navigate(`/project_detail?page=${page}&project_id=${project_id}`);
+            navigate(`/overview?page=${page}&project_id=${project_id}`);
           }}
         >
           {code || "-"}
@@ -321,7 +321,13 @@ function Dash_cam() {
 
   const paginatedPayments = filteredAndSortedData;
 
+  // const totalPages = Math.ceil(currentPage / (1000 / itemsPerPage));
+
+  // const paginatedPayments = filteredAndSortedData;
+
   const draftPayments = paginatedPayments;
+  // console.log(paginatedPayments);
+  // console.log("Filtered and Sorted Data:", filteredAndSortedData);
 
   const handlePageChange = (page) => {
     if (page >= 1) {
@@ -332,6 +338,41 @@ function Dash_cam() {
 
   return (
     <>
+      {/* Mobile Filters */}
+      {/* <Sheet
+        className="SearchAndFilters-mobile"
+        sx={{ display: { xs: "", sm: "none" }, my: 1, gap: 1 }}
+      >
+        <Input
+          size="sm"
+          placeholder="Search"
+          startDecorator={<SearchIcon />}
+          sx={{ flexGrow: 1 }}
+        />
+        <IconButton
+          size="sm"
+          variant="outlined"
+          color="neutral"
+          onClick={() => setOpen(true)}
+        >
+          <FilterAltIcon />
+        </IconButton>
+        <Modal open={open} onClose={() => setOpen(false)}>
+          <ModalDialog aria-labelledby="filter-modal" layout="fullscreen">
+            <ModalClose />
+            <Typography id="filter-modal" level="h2">
+              Filters
+            </Typography>
+            <Divider sx={{ my: 2 }} />
+            <Sheet sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              {renderFilters()}
+              <Button color="primary" onClick={() => setOpen(false)}>
+                Submit
+              </Button>
+            </Sheet>
+          </ModalDialog>
+        </Modal>
+      </Sheet> */}
       {/* Tablet and Up Filters */}
       <Box
         className="SearchAndFilters-tabletUp"
@@ -339,7 +380,9 @@ function Dash_cam() {
           marginLeft: { xl: "15%", lg: "18%" },
           borderRadius: "sm",
           py: 2,
+          // display: { xs: "none", sm: "flex" },
           display: "flex",
+          // flexDirection:{xs: "none", sm: "flex"}
           flexWrap: "wrap",
           gap: 1.5,
           "& > *": {
@@ -357,6 +400,7 @@ function Dash_cam() {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
+        {/* {renderFilters()} */}
       </Box>
       {/* Table */}
       <Sheet
@@ -466,6 +510,16 @@ function Dash_cam() {
                       }
                     />
                   </td>
+
+                  {/* <td
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.code || "-"}
+                  </td> */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -473,7 +527,7 @@ function Dash_cam() {
                       textAlign: "center",
                     }}
                   >
-                    <Tooltip title="View Project Detail" arrow>
+                    <Tooltip title="View Engineering Overview" arrow>
                       <span>
                         <ProjectOverView
                           currentPage={currentPage}
@@ -698,43 +752,9 @@ function Dash_cam() {
         >
           Next
         </Button>
-        <Modal open={isPRModalOpen} onClose={() => setIsPRModalOpen(false)}>
-          <ModalDialog>
-            <ModalClose />
-            <Typography level="h5">Create Purchase Request</Typography>
-
-            <Sheet
-              sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}
-            >
-              <Typography level="body-sm">
-                Project: {selectedPRProject?.code || "-"}
-              </Typography>
-
-              {/* Item Multi-Select Dropdown */}
-              <Autocomplete
-                multiple
-                placeholder="Select Item(s)"
-                options={materialCategories || []}
-                getOptionLabel={(option) => option.name}
-                value={items}
-                onChange={(e, newValue) => {
-                  console.log("New Value Selected:", newValue); // Debugging
-                  setItems(newValue); // newValue is array of full objects
-                }}
-                isOptionEqualToValue={(option, value) =>
-                  option._id === value._id
-                }
-                size="sm"
-              />
-
-              <Button onClick={handlePRSubmit} loading={isPRCreating}>
-                {isPRCreating ? "Submitting..." : "Submit"}
-              </Button>
-            </Sheet>
-          </ModalDialog>
-        </Modal>
+        
       </Box>
     </>
   );
 }
-export default Dash_cam;
+export default PurchaseReqSummary;
