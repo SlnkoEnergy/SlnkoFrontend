@@ -161,38 +161,50 @@ export default function Project_Detail() {
         {/* Right Section - Notes & Tasks */}
         <Card width="100%" sx={{ flex: 1, borderRadius: "lg", p: 2 }}>
           <Box flex={1}>
-      <Tabs value={tabValue} onChange={handleTabChange}>
-        <TabList>
-          <Tab>Handover Sheet</Tab>
-          <Tab>Engineering</Tab>
-          <Tab>Purchase Request</Tab>
-        </TabList>
+            <Tabs value={tabValue} onChange={handleTabChange}>
+              <TabList>
+                <Tab>Handover Sheet</Tab>
+                <Tab>Engineering</Tab>
+                <Tab>Purchase Request</Tab>
+              </TabList>
 
-        <TabPanel value={0}>
-          <Box
-            style={{
-              height: "60vh",
-              overflowY: "auto",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <CamHandoverSheetForm />
+              <TabPanel value={0}>
+                <Box
+                  style={{
+                    height: "60vh",
+                    overflowY: "auto",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <CamHandoverSheetForm />
+                </Box>
+              </TabPanel>
+
+              <TabPanel value={1}>
+                <Box
+                  display="flex"
+                  alignItems="flex-start"
+                  height="70vh"
+                  overflowY="auto"
+                >
+                  <Overview />
+                </Box>
+              </TabPanel>
+
+              <TabPanel value={2}>
+                <Box
+                  display="flex"
+                  alignItems="flex-start"
+                  height="70vh"
+                  overflowY="auto"
+                >
+                  <PurchaseRequestCard />
+                </Box>
+              </TabPanel>
+            </Tabs>
           </Box>
-        </TabPanel>
-
-        <TabPanel value={1}>
-          <Box display="flex" alignItems="flex-start" height="70vh" overflowY="auto">
-            <Overview />
-          </Box>
-        </TabPanel>
-
-        <TabPanel value={2}>
-          <PurchaseRequestCard />
-        </TabPanel>
-      </Tabs>
-    </Box>
         </Card>
       </Box>
 

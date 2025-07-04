@@ -5,7 +5,6 @@ const baseQuery = fetchBaseQuery({
   baseUrl: `${process.env.REACT_APP_API_URL}/`,
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("authToken");
-    // console.log("Token:", token);
     if (token) {
       headers.set("x-auth-token", token);
     }
@@ -28,22 +27,21 @@ export const camsApi = createApi({
       providesTags: ["CAM"],
     }),
 
-  getHandOverById: builder.query({
-  query: ({ leadId, p_id, id }) => {
-    if (p_id) {
-      return `get-handoversheet?p_id=${p_id}`;
-    } else if (leadId) {
-      return `get-handoversheet?leadId=${leadId}`;
-    } else if (id) {
-      return `get-handoversheet?id=${id}`;
-    } else {
-      console.warn("getHandOver called with no valid identifier.");
-      return { url: "", method: "GET" };
-    }
-  },
-  providesTags: ["CAM"],
-}),
-
+    getHandOverById: builder.query({
+      query: ({ leadId, p_id, id }) => {
+        if (p_id) {
+          return `get-handoversheet?p_id=${p_id}`;
+        } else if (leadId) {
+          return `get-handoversheet?leadId=${leadId}`;
+        } else if (id) {
+          return `get-handoversheet?id=${id}`;
+        } else {
+          console.warn("getHandOver called with no valid identifier.");
+          return { url: "", method: "GET" };
+        }
+      },
+      providesTags: ["CAM"],
+    }),
 
     addHandOver: builder.mutation({
       query: (newHandOver) => ({
@@ -79,27 +77,30 @@ export const camsApi = createApi({
         body: { p_id, emp_id },
       }),
     }),
-  getProjectDropdown: builder.query({
+
+    // Purchase Request
+    getProjectDropdown: builder.query({
       query: () => "project-dropdown",
     }),
     getMaterialCategory: builder.query({
-  query: () => "engineering/material-category-drop",
-}),
-createPurchaseRequest: builder.mutation({
-  query: (payload) => ({
-    url: "purchaseRequest/purchase-request",
-    method: "POST",
-    body: { purchaseRequestData: payload },
-  }),
-  invalidatesTags: ["CAM"],
-}),
-
+      query: () => "engineering/material-category-drop",
+    }),
+    createPurchaseRequest: builder.mutation({
+      query: (payload) => ({
+        url: "purchaseRequest/purchase-request",
+        method: "POST",
+        body: { purchaseRequestData: payload },
+      }),
+      invalidatesTags: ["CAM"],
+    }),
+    getAllPurchaseRequesr: builder.query({
+      query: () => "purchaseRequest/purchase-request",
+    }),
   }),
 });
 
 export const {
   useGetHandOverQuery,
-  // useGetBDHandOverQuery,
   useGetHandOverByIdQuery,
   useAddHandOverMutation,
   useUpdateHandOverMutation,
@@ -107,5 +108,6 @@ export const {
   useUpdateStatusHandOverMutation,
   useGetProjectDropdownQuery,
   useGetMaterialCategoryQuery,
-  useCreatePurchaseRequestMutation, 
+  useCreatePurchaseRequestMutation,
+  useGetAllPurchaseRequesrQuery,
 } = camsApi;
