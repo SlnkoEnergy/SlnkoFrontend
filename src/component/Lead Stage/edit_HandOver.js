@@ -102,15 +102,16 @@ const UpdateHandoverSheetForm = ({ onBack }) => {
       project_type: "",
       module_make_capacity: "",
       module_make: "",
+      module_make_other: "",
       module_capacity: "",
       module_type: "",
       module_category: "",
       evacuation_voltage: "",
       inverter_make_capacity: "",
       inverter_make: "",
+      inverter_make_other: "",
       inverter_type: "",
-      // inverter_size: "",
-      // inverter_model_no: "",
+      inverter_type_other: "",
       work_by_slnko: "",
       topography_survey: "",
       soil_test: "",
@@ -127,10 +128,9 @@ const UpdateHandoverSheetForm = ({ onBack }) => {
       land: { type: "", acres: "" },
       agreement_date: "",
       project_component: "",
-      project_component_other:"",
-      transmission_scope:"",
-      loan_scope:"",
-
+      project_component_other: "",
+      transmission_scope: "",
+      loan_scope: "",
     },
 
     commercial_details: {
@@ -146,7 +146,7 @@ const UpdateHandoverSheetForm = ({ onBack }) => {
       project_status: "incomplete",
       loa_number: "",
       ppa_number: "",
-      remark:"",
+      remark: "",
       submitted_by_BD: "",
     },
     invoice_detail: {
@@ -154,7 +154,7 @@ const UpdateHandoverSheetForm = ({ onBack }) => {
       invoicing_GST_no: "",
       invoicing_address: "",
       delivery_address: "",
-      msme_reg:"",
+      msme_reg: "",
     },
     submitted_by: "",
   });
@@ -325,124 +325,136 @@ const UpdateHandoverSheetForm = ({ onBack }) => {
   const LeadId = sessionStorage.getItem("update handover");
 
   // console.log("LeadId:", LeadId);
-const {
-  data: handoverData,
-  isLoading,
-  isError,
-  error,
-} = useGetHandOverByIdQuery(
-  { leadId: LeadId },
-  { skip: !LeadId }
-);
+  const {
+    data: handoverData,
+    isLoading,
+    isError,
+    error,
+  } = useGetHandOverByIdQuery({ leadId: LeadId }, { skip: !LeadId });
 
-// If your API returns single object, no need to find inside array
-// If it returns array, then keep the find logic
+  // If your API returns single object, no need to find inside array
+  // If it returns array, then keep the find logic
 
-// Defensive check: if API returns array, then use find; else assume object
-const handover = Array.isArray(handoverData?.data)
-  ? handoverData.data.find((item) => item.id === LeadId)
-  : handoverData?.data || null;
+  // Defensive check: if API returns array, then use find; else assume object
+  const handover = Array.isArray(handoverData?.data)
+    ? handoverData.data.find((item) => item.id === LeadId)
+    : handoverData?.data || null;
 
-useEffect(() => {
-  if (!handover) {
-    console.warn("No matching handover data found.");
-    return;
-  }
+  useEffect(() => {
+    if (!handover) {
+      console.warn("No matching handover data found.");
+      return;
+    }
 
-  setFormData((prev) => ({
-    ...prev,
-    p_id: handover?.p_id || "",
-    customer_details: {
-      ...prev.customer_details,
-      code: handover?.customer_details?.code || "",
-      name: handover?.customer_details?.name || "",
-      customer: handover?.customer_details?.customer || "",
-      epc_developer: handover?.customer_details?.epc_developer || "",
-      site_address: handover?.customer_details?.site_address || {
-        village_name: "",
-        district_name: "",
+    setFormData((prev) => ({
+      ...prev,
+      p_id: handover?.p_id || "",
+      customer_details: {
+        ...prev.customer_details,
+        code: handover?.customer_details?.code || "",
+        name: handover?.customer_details?.name || "",
+        customer: handover?.customer_details?.customer || "",
+        epc_developer: handover?.customer_details?.epc_developer || "",
+        site_address: handover?.customer_details?.site_address || {
+          village_name: "",
+          district_name: "",
+        },
+        site_google_coordinates:
+          handover?.customer_details?.site_google_coordinates || "",
+        number: handover?.customer_details?.number || "",
+        gender_of_Loa_holder:
+          handover?.customer_details?.gender_of_Loa_holder || "",
+        email: handover?.customer_details?.email || "",
+        p_group: handover?.customer_details?.p_group || "",
+        pan_no: handover?.customer_details?.pan_no || "",
+        adharNumber_of_loa_holder:
+          handover?.customer_details?.adharNumber_of_loa_holder || "",
+        state: handover?.customer_details?.state || "",
+        alt_number: handover?.customer_details?.alt_number || "",
       },
-      site_google_coordinates: handover?.customer_details?.site_google_coordinates || "",
-      number: handover?.customer_details?.number || "",
-      gender_of_Loa_holder: handover?.customer_details?.gender_of_Loa_holder || "",
-      email: handover?.customer_details?.email || "",
-      p_group: handover?.customer_details?.p_group || "",
-      pan_no: handover?.customer_details?.pan_no || "",
-      adharNumber_of_loa_holder: handover?.customer_details?.adharNumber_of_loa_holder || "",
-      state: handover?.customer_details?.state || "",
-      alt_number: handover?.customer_details?.alt_number || "",
-    },
-    order_details: {
-      ...prev.order_details,
-      type_business: handover?.order_details?.type_business || "",
-      tender_name: handover?.order_details?.tender_name || "",
-      discom_name: handover?.order_details?.discom_name || "",
-      design_date: handover?.order_details?.design_date || "",
-      feeder_code: handover?.order_details?.feeder_code || "",
-      feeder_name: handover?.order_details?.feeder_name || "",
-    },
-    project_detail: {
-      ...prev.project_detail,
-      project_type: handover?.project_detail?.project_type || "",
-      module_make_capacity: handover?.project_detail?.module_make_capacity || "",
-      module_make: handover?.project_detail?.module_make || "",
-      module_capacity: handover?.project_detail?.module_capacity || "",
-      module_type: handover?.project_detail?.module_type || "",
-      module_category: handover?.project_detail?.module_category || "",
-      evacuation_voltage: handover?.project_detail?.evacuation_voltage || "",
-      inverter_make_capacity: handover?.project_detail?.inverter_make_capacity || "",
-      inverter_make: handover?.project_detail?.inverter_make || "",
-      inverter_type: handover?.project_detail?.inverter_type || "",
-      work_by_slnko: handover?.project_detail?.work_by_slnko || "",
-      topography_survey: handover?.project_detail?.topography_survey || "",
-      soil_test: handover?.project_detail?.soil_test || "",
-      purchase_supply_net_meter: handover?.project_detail?.purchase_supply_net_meter || "",
-      liaisoning_net_metering: handover?.project_detail?.liaisoning_net_metering || "",
-      ceig_ceg: handover?.project_detail?.ceig_ceg || "",
-      project_completion_date: handover?.project_detail?.project_completion_date || "",
-      proposed_dc_capacity: handover?.project_detail?.proposed_dc_capacity || "",
-      distance: handover?.project_detail?.distance || "",
-      tarrif: handover?.project_detail?.tarrif || "",
-      substation_name: handover?.project_detail?.substation_name || "",
-      overloading: handover?.project_detail?.overloading || "",
-      project_kwp: handover?.project_detail?.project_kwp || "",
-      land: handover?.project_detail?.land
-        ? JSON.parse(handover.project_detail.land)
-        : { type: "", acres: "" },
-      agreement_date: handover?.project_detail?.agreement_date || "",
-      project_component: handover?.project_detail?.project_component || "",
-      project_component_other: handover?.project_detail?.project_component_other || "",
-      transmission_scope: handover?.project_detail?.transmission_scope || "",
-      loan_scope: handover?.project_detail?.loan_scope || "",
-    },
-    commercial_details: {
-      ...prev.commercial_details,
-      type: handover?.commercial_details?.type || "",
-      subsidy_amount: handover?.commercial_details?.subsidy_amount || "",
-    },
-    other_details: {
-      ...prev.other_details,
-      taken_over_by: handover?.other_details?.taken_over_by || "",
-      cam_member_name: handover?.other_details?.cam_member_name || "",
-      service: handover?.other_details?.service || "",
-      billing_type: handover?.other_details?.billing_type || "",
-      project_status: handover?.other_details?.project_status || "incomplete",
-      loa_number: handover?.other_details?.loa_number || "",
-      ppa_number: handover?.other_details?.ppa_number || "",
-      remark: handover?.other_details?.remark || "",
-      submitted_by_BD: handover?.other_details?.submitted_by_BD || "",
-    },
-    invoice_detail: {
-      ...prev.invoice_detail,
-      invoice_recipient: handover?.invoice_detail?.invoice_recipient || "",
-      invoicing_GST_no: handover?.invoice_detail?.invoicing_GST_no || "",
-      invoicing_address: handover?.invoice_detail?.invoicing_address || "",
-      delivery_address: handover?.invoice_detail?.delivery_address || "",
-      msme_reg: handover?.invoice_detail?.msme_reg || "",
-    },
-    submitted_by: handover?.submitted_by || "-",
-  }));
-}, [handover]);
+      order_details: {
+        ...prev.order_details,
+        type_business: handover?.order_details?.type_business || "",
+        tender_name: handover?.order_details?.tender_name || "",
+        discom_name: handover?.order_details?.discom_name || "",
+        design_date: handover?.order_details?.design_date || "",
+        feeder_code: handover?.order_details?.feeder_code || "",
+        feeder_name: handover?.order_details?.feeder_name || "",
+      },
+      project_detail: {
+        ...prev.project_detail,
+        project_type: handover?.project_detail?.project_type || "",
+        module_make_capacity:
+          handover?.project_detail?.module_make_capacity || "",
+        module_make: handover?.project_detail?.module_make || "",
+        module_make_other: handover?.project_detail?.module_make_other || "",
+        module_capacity: handover?.project_detail?.module_capacity || "",
+        module_type: handover?.project_detail?.module_type || "",
+        module_category: handover?.project_detail?.module_category || "",
+        evacuation_voltage: handover?.project_detail?.evacuation_voltage || "",
+        inverter_make_capacity:
+          handover?.project_detail?.inverter_make_capacity || "",
+        inverter_make: handover?.project_detail?.inverter_make || "",
+        inverter_make_other:
+          handover?.project_detail?.inverter_make_other || "",
+        inverter_type: handover?.project_detail?.inverter_type || "",
+        inverter_type_other:
+          handover?.project_detail?.inverter_type_other || "",
+        work_by_slnko: handover?.project_detail?.work_by_slnko || "",
+        topography_survey: handover?.project_detail?.topography_survey || "",
+        soil_test: handover?.project_detail?.soil_test || "",
+        purchase_supply_net_meter:
+          handover?.project_detail?.purchase_supply_net_meter || "",
+        liaisoning_net_metering:
+          handover?.project_detail?.liaisoning_net_metering || "",
+        ceig_ceg: handover?.project_detail?.ceig_ceg || "",
+        project_completion_date:
+          handover?.project_detail?.project_completion_date || "",
+        proposed_dc_capacity:
+          handover?.project_detail?.proposed_dc_capacity || "",
+        distance: handover?.project_detail?.distance || "",
+        tarrif: handover?.project_detail?.tarrif || "",
+        substation_name: handover?.project_detail?.substation_name || "",
+        overloading: handover?.project_detail?.overloading || "",
+        project_kwp: handover?.project_detail?.project_kwp || "",
+        land: handover?.project_detail?.land
+          ? JSON.parse(handover.project_detail.land)
+          : { type: "", acres: "" },
+        agreement_date: handover?.project_detail?.agreement_date || "",
+        project_component: handover?.project_detail?.project_component || "",
+        project_component_other:
+          handover?.project_detail?.project_component_other || "",
+        transmission_scope: handover?.project_detail?.transmission_scope || "",
+        loan_scope: handover?.project_detail?.loan_scope || "",
+      },
+      commercial_details: {
+        ...prev.commercial_details,
+        type: handover?.commercial_details?.type || "",
+        subsidy_amount: handover?.commercial_details?.subsidy_amount || "",
+      },
+      other_details: {
+        ...prev.other_details,
+        taken_over_by: handover?.other_details?.taken_over_by || "",
+        cam_member_name: handover?.other_details?.cam_member_name || "",
+        service: handover?.other_details?.service || "",
+        billing_type: handover?.other_details?.billing_type || "",
+        project_status: handover?.other_details?.project_status || "incomplete",
+        loa_number: handover?.other_details?.loa_number || "",
+        ppa_number: handover?.other_details?.ppa_number || "",
+        remark: handover?.other_details?.remark || "",
+        submitted_by_BD: handover?.other_details?.submitted_by_BD || "",
+      },
+      invoice_detail: {
+        ...prev.invoice_detail,
+        invoice_recipient: handover?.invoice_detail?.invoice_recipient || "",
+        invoicing_GST_no: handover?.invoice_detail?.invoicing_GST_no || "",
+        invoicing_address: handover?.invoice_detail?.invoicing_address || "",
+        delivery_address: handover?.invoice_detail?.delivery_address || "",
+        msme_reg: handover?.invoice_detail?.msme_reg || "",
+      },
+      submitted_by: handover?.submitted_by || "-",
+    }));
+  }, [handover]);
 
   const calculateDcCapacity = (ac, overloadingPercent) => {
     const acValue = parseFloat(ac);
@@ -545,8 +557,6 @@ useEffect(() => {
       }
     }
   };
-
-
 
   const sections = [
     {
@@ -836,7 +846,7 @@ useEffect(() => {
                       level="body1"
                       sx={{ fontWeight: "bold", marginBottom: 0.5 }}
                     >
-                      Site Address with Pin Code{" "}
+                      Site/Delivery Address with Pin Code{" "}
                       <span style={{ color: "red" }}>*</span>
                     </Typography>
                     <Input
@@ -1657,34 +1667,46 @@ useEffect(() => {
                       </Grid>
 
                       <Grid item xs={12} sm={6}>
-                        <Typography level="body1">
-                          Inverter Type<span style={{ color: "red" }}>*</span>
-                        </Typography>
+                        <Typography level="body1">Inverter Type</Typography>
                         <Select
                           fullWidth
-                          value={
-                            formData["project_detail"]?.["inverter_type"] || ""
-                          }
-                          onChange={(e, newValue) =>
-                            handleChange(
-                              "project_detail",
-                              "inverter_type",
-                              newValue
-                            )
-                          }
+                          value={formData?.project_detail?.inverter_type || ""}
+                          onChange={(_, newValue) => {
+                            if (newValue !== null) {
+                              handleChange(
+                                "project_detail",
+                                "inverter_type",
+                                newValue
+                              );
+                            }
+                          }}
                         >
-                          {inverterTypeOptions.length > 0 ? (
-                            inverterTypeOptions.map((type, index) => (
-                              <Option key={index} value={type}>
-                                {type}
-                              </Option>
-                            ))
-                          ) : (
-                            <Option disabled>No options available</Option>
-                          )}
-                          <Option value="TBD">TBD</Option>{" "}
-                          {/* ✅ Added "TBD" as an option */}
+                          <Option value="STRING INVERTER">
+                            STRING INVERTER
+                          </Option>
+                          <Option value="Other">Other</Option>
                         </Select>
+
+                        {/* Show text input if 'Other' is selected */}
+                        {formData?.project_detail?.inverter_type ===
+                          "Other" && (
+                          <Input
+                            placeholder="Enter inverter type"
+                            fullWidth
+                            value={
+                              formData?.project_detail?.inverter_type_other ||
+                              ""
+                            }
+                            onChange={(e) =>
+                              handleChange(
+                                "project_detail",
+                                "inverter_type_other",
+                                e.target.value
+                              )
+                            }
+                            sx={{ mt: 1 }}
+                          />
+                        )}
                       </Grid>
                     </>
                   )}

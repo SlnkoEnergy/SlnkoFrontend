@@ -15,9 +15,12 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import AddIcon from "@mui/icons-material/Add";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
+import CloseIcon from "@mui/icons-material/Close";
 import {
   forwardRef,
   useEffect,
@@ -32,6 +35,10 @@ import {
   useDeleteProjectMutation,
   useGetProjectsQuery,
 } from "../redux/projectsSlice";
+import ViewHandoverSheetForm from "./Lead Stage/View_HandOver";
+import { Modal, Tooltip } from "@mui/joy";
+import AddHandoverProject from "./Lead Stage/AddHandoverProject";
+import View_Project from "./Forms/View_Project";
 
 const AllProjects = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -45,6 +52,45 @@ const AllProjects = forwardRef((props, ref) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedProjects, setSelectedProjects] = useState([]);
+  const [openProjectModal, setOpenProjectModal] = useState(false);
+  const [handoverMode, setHandoverMode] = useState(null);
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
+
+  const modalStyles = {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: "45vw",
+    maxHeight: "70vh",
+    bgcolor: "white",
+    opacity: 1,
+    boxShadow: 36,
+    p: 3,
+    borderRadius: 2,
+    overflowY: "auto",
+  };
+
+  const modalStylesProject = {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: "35vw",
+    maxHeight: "70vh",
+    bgcolor: "white",
+    opacity: 1,
+    boxShadow: 36,
+    p: 3,
+    borderRadius: 2,
+    overflowY: "auto",
+  };
+
+  const handleOpen = (p_id, mode) => {
+    setSelectedProjectId(p_id);
+    setHandoverMode(mode);
+    setOpen(true);
+  };
 
   // const states = ["California", "Texas", "New York", "Florida"];
 
@@ -72,7 +118,7 @@ const AllProjects = forwardRef((props, ref) => {
 
   const [deleteProject] = useDeleteProjectMutation();
 
-  console.log("getProject: ", getProject);
+  console.log("getProject: ", getProject.data);
 
   const [user, setUser] = useState(null);
 
@@ -438,6 +484,7 @@ const AllProjects = forwardRef((props, ref) => {
                 "Mobile",
                 "State",
                 "Slnko Service Charges (without GST)",
+                "Handover Status",
                 "",
               ].map((header, index) => (
                 <Box
@@ -480,16 +527,25 @@ const AllProjects = forwardRef((props, ref) => {
                       onChange={() => handleRowSelect(project._id)}
                     />
                   </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {project.code}
-                  </Box>
+                  <Tooltip title="View Project Details" arrow>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px dotted #888",
+                        padding: "8px",
+                        textAlign: "center",
+                        cursor: "pointer",
+                        "&:hover": { textDecoration: "underline" },
+                      }}
+                      onClick={() => {
+                        setSelectedProjectId(project.p_id);
+                        setOpenProjectModal(true);
+                      }}
+                    >
+                      {project.code}
+                    </Box>
+                  </Tooltip>
+
                   <Box
                     component="td"
                     sx={{
@@ -550,6 +606,55 @@ const AllProjects = forwardRef((props, ref) => {
                   >
                     {project.service}
                   </Box>
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.handover ? (
+                      <Box
+                        onClick={() => handleOpen(project.p_id, "view")}
+                        sx={{
+                          backgroundColor: "#214b7b",
+                          borderRadius: "50%",
+                          padding: 1,
+                          cursor: "pointer",
+                          display: "inline-flex",
+                        }}
+                      >
+                        <VisibilityIcon sx={{ color: "white" }} />
+                      </Box>
+                    ) : ["IT Team","Guddu Rani Dubey", "Prachi Singh"].includes(
+                        user?.name
+                      ) ? (
+                      <Box
+                        onClick={() => handleOpen(project.p_id, "edit")}
+                        sx={{
+                          backgroundColor: "#214b7b",
+                          borderRadius: "50%",
+                          padding: 1,
+                          cursor: "pointer",
+                          display: "inline-flex",
+                        }}
+                      >
+                        <AddIcon sx={{ color: "white" }} />
+                      </Box>
+                    ) : (
+                      <Tooltip title="Contact Internal Ops for Handover">
+                        <Typography
+                          textColor="#214b7b"
+                          fontWeight="600"
+                          sx={{ cursor: "pointer" }}
+                        >
+                          No Handover
+                        </Typography>
+                      </Tooltip>
+                    )}
+                  </Box>
+
                   <Box
                     component="td"
                     sx={{
@@ -626,20 +731,6 @@ const AllProjects = forwardRef((props, ref) => {
             )
           )}
         </Box>
-        {/* <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
-    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-      <IconButton
-        key={page}
-        size="sm"
-        variant={page === currentPage ? "contained" : "outlined"}
-        color="neutral"
-        onClick={() => handlePageChange(page)}
-      >
-        {page}
-      </IconButton>
-    ))}
-  </Box> */}
-
         <Button
           size="sm"
           variant="outlined"
@@ -651,6 +742,35 @@ const AllProjects = forwardRef((props, ref) => {
           Next
         </Button>
       </Box>
+
+      <Modal open={open} onClose={() => setOpen(false)}>
+        <Box sx={{ ...modalStyles, position: "relative" }}>
+          {handoverMode === "view" ? (
+            <ViewHandoverSheetForm projectId={selectedProjectId} />
+          ) : (
+            <AddHandoverProject projectId={selectedProjectId} />
+          )}
+        </Box>
+      </Modal>
+
+      <Modal open={openProjectModal} onClose={() => setOpenProjectModal(false)}>
+        <Box sx={{ ...modalStylesProject, position: "relative" }}>
+          <IconButton
+            onClick={() => setOpenProjectModal(false)}
+            sx={{
+              position: "fixed",
+              top: 8,
+              right: 8,
+              color: "red",
+              zIndex: 1,
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+
+          <View_Project projectId={selectedProjectId} />
+        </Box>
+      </Modal>
     </>
   );
 });

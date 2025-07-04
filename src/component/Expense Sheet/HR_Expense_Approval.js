@@ -2,6 +2,7 @@ import BlockIcon from "@mui/icons-material/Block";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
+import InfoIcon from "@mui/icons-material/Info";
 import PauseCircleIcon from "@mui/icons-material/PauseCircle";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
@@ -20,13 +21,16 @@ import { toast } from "react-toastify";
 
 import {
   Chip,
+  CircularProgress,
   Modal,
   ModalDialog,
   Option,
   Select,
   Textarea,
+  Tooltip,
   useTheme,
 } from "@mui/joy";
+import { Calendar } from "lucide-react";
 import {
   useGetAllExpenseQuery,
   useUpdateExpenseStatusOverallMutation,
@@ -35,25 +39,24 @@ import {
 const HrExpense = forwardRef((props, ref) => {
   const navigate = useNavigate();
   const theme = useTheme();
-  const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(12);
-  const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedExpenses, setSelectedExpenses] = useState([]);
   const [selectedDepartment, setSelectedDepartment] = useState("");
-  const {
-    data: getExpense = [],
-    isLoading,
-    error,
-  } = useGetAllExpenseQuery({
+  const [selectedstatus, setSelectedstatus] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+
+  const searchParam = selectedstatus ? selectedstatus : searchQuery;
+
+  const { data: getExpense = [], isLoading } = useGetAllExpenseQuery({
     page: currentPage,
     department: selectedDepartment,
-    search: searchQuery,
+    search: searchParam,
+    from,
+    to,
   });
-
-
 
   const total = getExpense?.total || 0;
   const limit = getExpense?.limit || 10;
@@ -80,7 +83,7 @@ const HrExpense = forwardRef((props, ref) => {
 
     return pages;
   };
-debugger;
+  debugger;
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -116,32 +119,96 @@ debugger;
       "HR",
       "Engineering",
       "Projects",
+      "Infra",
       "CAM",
       "Internal",
       "SCM",
       "IT Team",
     ];
 
+    const statuses = [
+      // { value: "draft", label: "Draft" },
+      { value: "submitted", label: "Pending" },
+      { value: "manager approval", label: "Manager Approved" },
+      { value: "hr approval", label: "HR Approved" },
+      { value: "final approval", label: "Approved" },
+      { value: "hold", label: "On Hold" },
+      { value: "rejected", label: "Rejected" },
+    ];
+
     return (
-      <FormControl sx={{ flex: 1 }} size="sm">
-        <FormLabel>Department</FormLabel>
-        <Select
-          value={selectedDepartment}
-          onChange={(e, newValue) => {
-            setSelectedDepartment(newValue);
-            setCurrentPage(1);
-          }}
-          size="sm"
-          placeholder="Select Department"
-        >
-          <Option value="">All Departments</Option>
-          {departments.map((dept) => (
-            <Option key={dept} value={dept}>
-              {dept}
-            </Option>
-          ))}
-        </Select>
-      </FormControl>
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 2,
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <FormControl sx={{ flex: 1 }} size="sm">
+          <FormLabel>Department</FormLabel>
+          <Select
+            value={selectedDepartment}
+            onChange={(e, newValue) => {
+              setSelectedDepartment(newValue);
+              setCurrentPage(1);
+            }}
+            size="sm"
+            placeholder="Select Department"
+          >
+            <Option value="">All Departments</Option>
+            {departments.map((dept) => (
+              <Option key={dept} value={dept}>
+                {dept}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl sx={{ flex: 1 }} size="sm">
+          <FormLabel>Status</FormLabel>
+          <Select
+            value={selectedstatus}
+            onChange={(e, newValue) => {
+              setSelectedstatus(newValue);
+              setCurrentPage(1);
+            }}
+            size="sm"
+            placeholder="Select Status"
+          >
+            <Option value="">All Status</Option>
+            {statuses.map((status) => (
+              <Option key={status.value} value={status.value}>
+                {status.label}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl size="sm" sx={{ minWidth: 140 }}>
+          <FormLabel>From Date</FormLabel>
+          <Input
+            type="date"
+            value={from}
+            onChange={(e) => {
+              setFrom(e.target.value);
+              setCurrentPage(1);
+            }}
+          />
+        </FormControl>
+
+        <FormControl size="sm" sx={{ minWidth: 140 }}>
+          <FormLabel>To Date</FormLabel>
+          <Input
+            type="date"
+            value={to}
+            onChange={(e) => {
+              setTo(e.target.value);
+              setCurrentPage(1);
+            }}
+          />
+        </FormControl>
+      </Box>
     );
   };
 
@@ -158,51 +225,12 @@ debugger;
     [getExpense]
   );
 
-
-  const filteredAndSortedData = expenses
-    .filter((expense) => {
-      const allowedStatuses = [
-        "manager approval",
-        "hr approval",
-        "final approval",
-        "hold",
-        "rejected",
-      ];
-      const status = expense.current_status?.toLowerCase();
-      if (!allowedStatuses.includes(status)) return false;
-      const search = searchQuery.toLowerCase();
-      const matchesSearchQuery = [
-        "expense_code",
-        "emp_id",
-        "emp_name",
-        "status",
-      ].some((key) => expense[key]?.toLowerCase().includes(search));
-
-      return matchesSearchQuery;
-    })
-    .sort((a, b) => {
-      const search = searchQuery.toLowerCase();
-
-      const fields = ["expense_code", "emp_id", "emp_name", "status"];
-      for (let field of fields) {
-        const aValue = a[field]?.toLowerCase() || "";
-        const bValue = b[field]?.toLowerCase() || "";
-        const aMatch = aValue.includes(search);
-        const bMatch = bValue.includes(search);
-        if (aMatch && !bMatch) return -1;
-        if (!aMatch && bMatch) return 1;
-      }
-
-      return new Date(b.createdAt) - new Date(a.createdAt);
-    });
-
   const RowMenu = ({ _id, status }) => {
     const [openModal, setOpenModal] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState("");
     const [remarks, setRemarks] = useState("");
     const [updateStatus] = useUpdateExpenseStatusOverallMutation();
 
-    // Disable all chips if current status is "hr approval"
     const disableActions = [
       "hr approval",
       "rejected",
@@ -239,40 +267,6 @@ debugger;
         toast.error("Update failed");
         console.error(err);
       }
-    };
-    const renderFilters = () => {
-      const departments = [
-        "Accounts",
-        "HR",
-        "Engineering",
-        "Projects",
-        "CAM",
-        "Internal",
-        "SCM",
-        "IT Team",
-      ];
-
-      return (
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Department</FormLabel>
-          <Select
-            value={selectedDepartment}
-            onChange={(e, newValue) => {
-              setSelectedDepartment(newValue);
-              setCurrentPage(1);
-            }}
-            size="sm"
-            placeholder="Select Department"
-          >
-            <Option value="">All Departments</Option>
-            {departments.map((dept) => (
-              <Option key={dept} value={dept}>
-                {dept}
-              </Option>
-            ))}
-          </Select>
-        </FormControl>
-      );
     };
 
     return (
@@ -332,49 +326,6 @@ debugger;
     );
   };
 
-  const ExpenseCode = ({ currentPage, expense_code }) => {
-    return (
-      <>
-        <span
-          style={{
-            cursor: "pointer",
-            color: theme.vars.palette.text.primary,
-            textDecoration: "none",
-          }}
-          onClick={() => {
-            localStorage.setItem("edit_expense", expense_code);
-            navigate(
-              `/update_expense?page=${currentPage}&code=${expense_code}`
-            );
-          }}
-        >
-          {expense_code || "-"}
-        </span>
-      </>
-    );
-  };
-
-  const EmployeeName = ({ currentPage, expense_code, emp_name }) => {
-    return (
-      <>
-        <span
-          style={{
-            cursor: "pointer",
-            color: theme.vars.palette.text.primary,
-            textDecoration: "none",
-          }}
-          onClick={() => {
-            localStorage.setItem("edit_expense", expense_code);
-            navigate(`/edit_expense?page=${currentPage}&code=${expense_code}`);
-          }}
-        >
-          {emp_name || "-"}
-        </span>
-      </>
-    );
-  };
-
-  
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
@@ -383,12 +334,48 @@ debugger;
   const paginatedExpenses = expenses;
 
   console.log("paginatedExpenses", paginatedExpenses);
-  
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setSearchParams({ page: String(page) });
     }
+  };
+
+  const ExpenseCode = ({ currentPage, expense_code, createdAt }) => {
+    const formattedDate = createdAt
+      ? new Date(createdAt).toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : "N/A";
+    return (
+      <>
+        <Box>
+          <span
+            style={{ cursor: "pointer", fontWeight: 500 }}
+            onClick={() => {
+              localStorage.setItem("edit_expense", expense_code);
+              navigate(
+                `/update_expense?page=${currentPage}&code=${expense_code}`
+              );
+            }}
+          >
+            {expense_code || "-"}
+          </span>
+        </Box>
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <Calendar size={12} />
+          <span style={{ fontSize: 12, fontWeight: 600 }}>
+            Created At:{" "}
+          </span>{" "}
+          &nbsp;
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+            {formattedDate}
+          </Typography>
+        </Box>
+      </>
+    );
   };
 
   return (
@@ -447,7 +434,7 @@ debugger;
                 sx={{
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
-                  textAlign: "center",
+                  textAlign: "left",
                 }}
               >
                 <Checkbox
@@ -471,7 +458,6 @@ debugger;
               </Box>
               {[
                 "Expense Code",
-                "Employee Code",
                 "Employee Name",
                 "Requested Amount",
                 "Approval Amount",
@@ -486,7 +472,7 @@ debugger;
                   sx={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
-                    textAlign: "center",
+                    textAlign: "left",
                     fontWeight: "bold",
                   }}
                 >
@@ -496,7 +482,33 @@ debugger;
             </Box>
           </Box>
           <Box component="tbody">
-            {paginatedExpenses.length > 0 ? (
+            {isLoading ? (
+              <Box component="tr">
+                <Box
+                  component="td"
+                  colSpan={9}
+                  sx={{
+                    py: 2,
+                    textAlign: "center",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "inline-flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 1,
+                    }}
+                  >
+                    <CircularProgress size="sm" sx={{ color: "primary.500" }} />
+                    <Typography fontStyle="italic">
+                      Loading expense… please hang tight ⏳
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+            ) : paginatedExpenses.length > 0 ? (
               paginatedExpenses.map((expense, index) => (
                 <Box
                   component="tr"
@@ -510,7 +522,7 @@ debugger;
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     <Checkbox
@@ -525,20 +537,14 @@ debugger;
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
-                    <Box
-                      sx={{
-                        display: "inline",
-                        textDecoration: "underline dotted",
-                        textUnderlineOffset: "2px",
-                        textDecorationColor: "#999",
-                      }}
-                    >
+                    <Box sx={{ fontSize: 15 }}>
                       <ExpenseCode
                         currentPage={currentPage}
                         expense_code={expense.expense_code}
+                        createdAt={expense.createdAt}
                       />
                     </Box>
                   </Box>
@@ -547,31 +553,22 @@ debugger;
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize: 15,
                     }}
                   >
-                    {expense.emp_id || "-"}
+                    {expense.emp_name || "0"}
+                    <Box>
+                      <span style={{ fontSize: 12 }}>{expense.emp_id}</span>
+                    </Box>
                   </Box>
                   <Box
                     component="td"
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    <EmployeeName
-                      currentPage={currentPage}
-                      expense_code={expense.expense_code}
-                      emp_name={expense.emp_name}
-                    />
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize: 15,
                     }}
                   >
                     {expense.total_requested_amount || "0"}
@@ -581,7 +578,8 @@ debugger;
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize: 15,
                     }}
                   >
                     {expense.total_approved_amount || "0"}
@@ -592,7 +590,8 @@ debugger;
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize: 15,
                     }}
                   >
                     {(() => {
@@ -612,7 +611,8 @@ debugger;
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize: 15,
                     }}
                   >
                     {expense.disbursement_date
@@ -626,22 +626,32 @@ debugger;
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize: 15,
                     }}
                   >
                     {(() => {
-                      const status = expense.current_status?.toLowerCase();
+                      const status =
+                        typeof expense.current_status === "string"
+                          ? expense.current_status
+                          : expense.current_status?.status || "";
 
-                      if (status === "manager approval" || status === "submitted") {
+                      if (status === "submitted" || status === "draft") {
                         return (
-                          <Chip color="primary" variant="soft" size="sm">
+                          <Chip color="warning" variant="soft" size="sm">
                             Pending
                           </Chip>
                         );
-                      } else if (["hr approval"].includes(status)) {
+                      } else if (status === "manager approval") {
                         return (
-                          <Chip color="warning" variant="soft" size="sm">
-                            In Process
+                          <Chip color="info" variant="soft" size="sm">
+                            Manager Approved
+                          </Chip>
+                        );
+                      } else if (status === "hr approval") {
+                        return (
+                          <Chip color="primary" variant="soft" size="sm">
+                            HR Approved
                           </Chip>
                         );
                       } else if (status === "final approval") {
@@ -657,10 +667,30 @@ debugger;
                           </Chip>
                         );
                       } else if (status === "rejected") {
+                        const remarks = expense.current_status?.remarks?.trim();
+
                         return (
-                          <Chip color="danger" variant="soft" size="sm">
-                            Rejected
-                          </Chip>
+                          <Box
+                            display="inline-flex"
+                            alignItems="center"
+                            gap={1}
+                          >
+                            <Chip variant="soft" color="danger" size="sm">
+                              Rejected
+                            </Chip>
+                            <Tooltip
+                              title={remarks || "Remarks not found"}
+                              arrow
+                            >
+                              <IconButton
+                                size="sm"
+                               
+                                color="danger"
+                              >
+                                <InfoIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
                         );
                       } else {
                         return (
@@ -676,12 +706,17 @@ debugger;
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize: 15,
                     }}
                   >
                     <RowMenu
                       _id={expense._id}
-                      status={expense.current_status}
+                      status={
+                        typeof expense.current_status === "string"
+                          ? expense.current_status
+                          : expense.current_status?.status || "-"
+                      }
                     />
                   </Box>
                 </Box>

@@ -178,6 +178,18 @@ export const templatesApi = createApi({
       query: (projectId) => `get-boq-project-by-project?projectId=${projectId}`,
       providesTags: ["Template"],
     }),
+
+        updateModuleTemplateRemarks: builder.mutation({
+      query: ({ projectId, moduleTemplateId, statusData }) => ({
+        url: `${projectId}/moduletemplate/${moduleTemplateId}/remarkStatus`,
+        method: "PUT",
+        body: statusData,
+      }),
+      invalidatesTags: ["Template"],
+    }),
+
+   
+
   }),
 });
 
@@ -203,4 +215,5 @@ export const {
   useCreateBoqProjectMutation,
   useLazyGetBoqCategoryByIdAndKeyQuery,
   useGetBoqProjectByProjectIdQuery,
+  useUpdateModuleTemplateRemarksMutation,
 } = templatesApi;

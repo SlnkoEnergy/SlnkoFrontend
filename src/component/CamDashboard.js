@@ -208,9 +208,9 @@ function Dash_cam() {
           label="Approved"
           onClick={() => {
             const page = currentPage;
-            const projectId = String(id);
-            sessionStorage.setItem("submitInfo", projectId);
-            navigate(`/edit_cam_handover?page=${page}&id=${projectId}`);
+            const id = _id;
+            sessionStorage.setItem("submitInfo", id);
+            navigate(`/edit_cam_handover?page=${page}&id=${id}`);
           }}
           sx={{
             textTransform: "none",

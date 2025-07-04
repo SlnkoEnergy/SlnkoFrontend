@@ -107,6 +107,7 @@ import Update_Expense from "../pages/ExpenseSheet/Expense_Accounts_HR";
 import Add_Material_Category from "../pages/Eng/Forms/Add_Material_Category";
 import Add_Material from "../pages/Eng/Forms/Add_Material";
 import AddBoq from "../pages/Eng/AddBoq";
+import View_Project from "../component/Forms/View_Project";
 
 function index() {
   return (
@@ -302,6 +303,14 @@ function index() {
         element={
           <PrivateRoute>
             <AllProjects />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/view-project"
+        element={
+          <PrivateRoute>
+            <View_Project />
           </PrivateRoute>
         }
       />

@@ -7,6 +7,7 @@ import Button from "@mui/joy/Button";
 import Input from "@mui/joy/Input";
 import Modal from "@mui/joy/Modal";
 import ModalDialog from "@mui/joy/ModalDialog";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import Sheet from "@mui/joy/Sheet";
 import Table from "@mui/joy/Table";
 import Typography from "@mui/joy/Typography";
@@ -46,7 +47,11 @@ const UpdateExpense = () => {
           ],
           approved_amount: "",
           remarks: "",
-          item_current_status: "",
+          item_current_status: {
+            user_id:"",
+            remarks:"",
+            status:""
+          },
         },
       ],
       expense_term: {
@@ -64,7 +69,6 @@ const UpdateExpense = () => {
       total_requested_amount: "",
       total_approved_amount: "",
       disbursement_date: "",
-      comments: "",
     },
   ]);
 
@@ -165,7 +169,11 @@ const UpdateExpense = () => {
   function getCategoryOptionsByDepartment(department) {
     const common = officeAdminCategoryOptions;
 
-    if (department === "Projects" || department === "Engineering") {
+    if (
+      department === "Projects" ||
+      department === "Engineering" ||
+      department === "Infra"
+    ) {
       return [...common, ...categoryOptions];
     } else if (
       department === "BD" ||
@@ -243,50 +251,70 @@ const UpdateExpense = () => {
 
       const updatedItems = rows.flatMap((row) =>
         (row.items || []).map((item) => {
-          const status = item.item_current_status || "manager approval";
+          const status =
+            typeof item.item_current_status === "string"
+              ? item.item_current_status
+              : item.item_current_status?.status || "manager approval";
+
+          const approvedAmount =
+            item.approved_amount !== "" && item.approved_amount !== undefined
+              ? Number(item.approved_amount)
+              : Number(item.invoice?.invoice_amount || 0);
 
           return {
             ...item,
-            approved_amount:
-              item.approved_amount !== "" && item.approved_amount !== undefined
-                ? Number(item.approved_amount)
-                : Number(item.invoice?.invoice_amount || 0),
-            item_current_status: status,
+            approved_amount: approvedAmount,
+            item_current_status: {
+              status,
+              remarks: item.remarks || "",
+              user_id: userID,
+              updatedAt: new Date().toISOString(),
+            },
             item_status_history: [
               ...(item.item_status_history || []),
               {
                 status,
                 remarks: item.remarks || "",
                 user_id: userID,
+                updatedAt: new Date().toISOString(),
               },
             ],
           };
         })
       );
 
-      const isAnyRejected = updatedItems.some(
-        (item) => item.item_current_status === "rejected"
-      );
-
-      const overallStatus = isAnyRejected ? "rejected" : "manager approval";
-
       const totalApproved = updatedItems.reduce(
         (sum, item) => sum + (Number(item.approved_amount) || 0),
         0
       );
 
+      const allItemsRejected = updatedItems.every((item) => {
+        const status =
+          typeof item.item_current_status === "string"
+            ? item.item_current_status
+            : item.item_current_status?.status;
+
+        return status === "rejected";
+      });
+
+      const overallStatus = allItemsRejected ? "rejected" : "manager approval";
+
       const payload = {
         user_id: userID,
         expense_code: ExpenseCode,
-        current_status: overallStatus,
+        current_status: {
+          status: overallStatus,
+          remarks: rows[0]?.remarks?.trim() || "",
+        },
         total_approved_amount: String(totalApproved),
         items: updatedItems,
         status_history: [
-          ...(rows[0].status_history || []),
+          ...(rows[0]?.status_history || []),
           {
             status: overallStatus,
-            remarks: rows[0].comments || "",
+            remarks: rows[0]?.remarks?.trim() || "",
             user_id: userID,
+            updatedAt: new Date().toISOString(),
           },
         ],
       };
@@ -359,10 +387,9 @@ const UpdateExpense = () => {
 
     const updatedItem = {
       ...updatedRow.items[itemIndex],
-      approvalStatus: status,
       item_current_status: status,
-      approvedAmount:
-        status === "rejected" ? 0 : updatedRow.items[itemIndex].approvedAmount,
+      approved_amount:
+        status === "rejected" ? 0 : updatedRow.items[itemIndex].approved_amount,
     };
 
     updatedRow.items[itemIndex] = updatedItem;
@@ -399,33 +426,32 @@ const UpdateExpense = () => {
       toast.success("All sheets rejected successfully");
 
       const updated = rows.map((row) => {
+        const newStatus = {
+          status: "rejected",
+          remarks: sharedRejectionComment || "Rejected without comment",
+          user_id: userID,
+          updatedAt: new Date().toISOString(),
+        };
+
         const updatedItems = row.items.map((item) => ({
           ...item,
-          item_current_status: "rejected",
+          item_current_status: newStatus,
           remarks: sharedRejectionComment || "Rejected without comment",
           item_status_history: [
-            ...(item.item_status_history || []),
-            {
-              status: "rejected",
-              remarks: sharedRejectionComment || "Rejected without comment",
-              user_id: userID,
-              updatedAt: new Date().toISOString(),
-            },
+            ...(Array.isArray(item.item_status_history)
+              ? item.item_status_history
+              : []),
+            newStatus,
           ],
         }));
 
         return {
           ...row,
           items: updatedItems,
-          row_current_status: "rejected",
+          current_status: newStatus,
           status_history: [
-            ...(row.status_history || []),
-            {
-              status: "rejected",
-              remarks: sharedRejectionComment || "Rejected without comment",
-              user_id: userID,
-              updatedAt: new Date().toISOString(),
-            },
+            ...(Array.isArray(row.status_history) ? row.status_history : []),
+            newStatus,
           ],
         };
       });
@@ -456,6 +482,7 @@ const UpdateExpense = () => {
         return;
       }
 
+      // Send approval requests to backend
       const requests = rows.map((row) => {
         const approved_items = row.items.map((item) => ({
           _id: item._id,
@@ -464,35 +491,32 @@ const UpdateExpense = () => {
 
         return updateStatus({
           _id: row._id,
-          status: "manager approval",
           approved_items,
-          remarks: "",
+          remarks: "", // or shared approval comment if applicable
         }).unwrap();
       });
 
       await Promise.all(requests);
 
+      // Locally update rows without setting status manually
       const updatedRows = rows.map((row) => {
         const updatedItems = row.items.map((item) => {
           const approvedAmount = Number(item.invoice?.invoice_amount) || 0;
+
           return {
             ...item,
-            item_current_status: "manager approval",
-            current_status: "manager approval",
-            approved_amount: approvedAmount,
+            approved_amount: String(approvedAmount),
           };
         });
 
         const total_approved_amount = updatedItems.reduce(
-          (sum, item) => sum + item.approved_amount,
+          (sum, item) => sum + Number(item.approved_amount),
           0
         );
-        console.log(String(total_approved_amount));
+
         return {
           ...row,
           items: updatedItems,
-          row_current_status: "manager approval",
-          current_status: "manager approval",
           total_approved_amount: String(total_approved_amount),
         };
       });
@@ -564,7 +588,7 @@ const UpdateExpense = () => {
               <Input
                 type="date"
                 size="sm"
-                value={rows[0].expense_term.from?.slice(0, 10) || ""}
+                value={rows[0].expense_term?.from.slice(0, 10) || ""}
                 onChange={(e) =>
                   handleRowChange(0, "expense_term", {
                     ...rows[0].expense_term,
@@ -576,13 +600,23 @@ const UpdateExpense = () => {
               <Input
                 type="date"
                 size="sm"
-                value={rows[0].expense_term.to?.slice(0, 10) || ""}
+                value={rows[0].expense_term?.to.slice(0, 10) || ""}
                 onChange={(e) =>
                   handleRowChange(0, "expense_term", {
                     ...rows[0].expense_term,
                     to: e.target.value,
                   })
                 }
+              />
+              <Typography level="body-md" fontWeight="lg">
+                Employee Name:
+              </Typography>
+              <Input
+                type="text"
+                size="sm"
+                value={rows[0].emp_name || "NA"}
+                onChange={(e) => handleRowChange(0, "emp_name", e.target.value)}
+                placeholder="Enter employee name"
               />
             </Box>
 
@@ -592,6 +626,7 @@ const UpdateExpense = () => {
                 "Engineering",
                 "BD",
                 "Projects",
+                "Infra",
                 "Internal",
                 "CAM",
                 "Accounts",
@@ -606,31 +641,42 @@ const UpdateExpense = () => {
                     color="danger"
                     size="sm"
                     onClick={handleRejectAll}
-                    disabled={rows.every((row) =>
-                      [
+                    disabled={rows.every((row) => {
+                      const status =
+                        typeof row.current_status === "string"
+                          ? row.current_status
+                          : row.current_status?.status;
+
+                      return [
                         "rejected",
                         "hold",
                         "hr approval",
                         "manager approval",
                         "final approval",
-                      ].includes(row.current_status)
-                    )}
+                      ].includes(status);
+                    })}
                   >
                     Reject All
                   </Button>
+
                   <Button
                     color="success"
                     size="sm"
                     onClick={handleApproveAll}
-                    disabled={rows.every((row) =>
-                      [
+                    disabled={rows.every((row) => {
+                      const status =
+                        typeof row.current_status === "string"
+                          ? row.current_status
+                          : row.current_status?.status;
+
+                      return [
                         "rejected",
                         "hold",
                         "hr approval",
                         "manager approval",
                         "final approval",
-                      ].includes(row.current_status)
-                    )}
+                      ].includes(status);
+                    })}
                   >
                     Approve All
                   </Button>
@@ -841,6 +887,7 @@ const UpdateExpense = () => {
                               )
                             }
                             inputProps={{ min: 0 }}
+                            disabled={item.item_current_status === "rejected"}
                             sx={{ minWidth: 90 }}
                           />
                         </td>
@@ -848,51 +895,88 @@ const UpdateExpense = () => {
                         {(user?.role === "manager" ||
                           user?.role === "visitor" ||
                           user?.department === "admin" ||
-                          user?.name === "IT Team") && (
-                          <td style={{ padding: 8 }}>
-                            <Box display="flex" gap={1} justifyContent="center">
-                              <Button
-                                size="sm"
-                                variant={
-                                  item.item_current_status ===
-                                  "manager approval"
-                                    ? "solid"
-                                    : "outlined"
-                                }
-                                color="success"
-                                onClick={() =>
-                                  handleApproval(
-                                    rowIndex,
-                                    itemIndex,
+                          user?.name === "IT Team") &&
+                          !(
+                            user?.role === "manager" &&
+                            user?.name === item.emp_name
+                          ) && (
+                            <td style={{ padding: 8 }}>
+                              <Box display="flex" gap={1} alignItems="center">
+                                <Button
+                                  size="sm"
+                                  variant={
+                                    item.item_current_status ===
                                     "manager approval"
-                                  )
-                                }
-                                aria-label="Approve"
-                              >
-                                <CheckIcon />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant={
-                                  item.item_current_status === "rejected"
-                                    ? "solid"
-                                    : "outlined"
-                                }
-                                color="danger"
-                                onClick={() =>
-                                  handleApproval(
-                                    rowIndex,
-                                    itemIndex,
-                                    "rejected"
-                                  )
-                                }
-                                aria-label="Reject"
-                              >
-                                <CloseIcon />
-                              </Button>
-                            </Box>
-                          </td>
-                        )}
+                                      ? "solid"
+                                      : "outlined"
+                                  }
+                                  color="success"
+                                  onClick={() =>
+                                    handleApproval(
+                                      rowIndex,
+                                      itemIndex,
+                                      "manager approval"
+                                    )
+                                  }
+                                  aria-label="Approve"
+                                >
+                                  <CheckIcon />
+                                </Button>
+
+                                <Button
+                                  size="sm"
+                                  variant={
+                                    item.item_current_status === "rejected"
+                                      ? "solid"
+                                      : "outlined"
+                                  }
+                                  color="danger"
+                                  onClick={() =>
+                                    handleApproval(
+                                      rowIndex,
+                                      itemIndex,
+                                      "rejected"
+                                    )
+                                  }
+                                  aria-label="Reject"
+                                >
+                                  <CloseIcon />
+                                </Button>
+
+                                {item.item_current_status === "rejected" &&
+                                  item.remarks && (
+                                    <Tooltip
+                                      title={
+                                        <Sheet
+                                          variant="soft"
+                                          sx={{
+                                            p: 1,
+                                            borderRadius: "md",
+                                            maxWidth: 300,
+                                            fontSize: "0.85rem",
+                                            bgcolor: "error.light",
+                                            color: "error.dark",
+                                            boxShadow: "md",
+                                          }}
+                                        >
+                                          {item.remarks}
+                                        </Sheet>
+                                      }
+                                      arrow
+                                      placement="top"
+                                    >
+                                      <IconButton
+                                        size="sm"
+                                        color="warning"
+                                        sx={{ ml: 0.5 }}
+                                      >
+                                        <InfoOutlinedIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  )}
+                              </Box>
+                            </td>
+                          )}
                       </tr>
                     ))
                   )}
@@ -948,29 +1032,28 @@ const UpdateExpense = () => {
                       <b>Invoice Number:</b>{" "}
                       {item.invoice?.invoice_number || "NA"}
                     </span>
-                    {/* <Box>
-                      <b>Attachment:</b>{" "}
-                      {item.attachment_url ? (
-                        <Button
-                          component="a"
-                          href={item.attachment_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          download
+
+                    {(typeof item.item_current_status === "string"
+                      ? item.item_current_status
+                      : item.item_current_status?.status) === "rejected" &&
+                      item.remarks && (
+                        <Sheet
                           variant="soft"
-                          color="primary"
-                          startDecorator={<DownloadIcon />}
-                          size="sm"
-                          sx={{ textTransform: "none" }}
+                          sx={{
+                            mt: 1,
+                            p: 1,
+                            borderRadius: "md",
+                            maxWidth: 400,
+                            fontSize: "0.875rem",
+                            bgcolor: "#fdecea",
+                            color: "#b71c1c",
+                            borderLeft: "4px solid #d32f2f",
+                          }}
                         >
-                          Download
-                        </Button>
-                      ) : (
-                        <span style={{ color: "#999", fontStyle: "italic" }}>
-                          No Attachment
-                        </span>
+                          <b>Rejection Reason:</b> {item.remarks}
+                        </Sheet>
                       )}
-                    </Box> */}
+
                     <Box>
                       <b>Attachment:</b>{" "}
                       {item.attachment_url ? (
@@ -1090,51 +1173,58 @@ const UpdateExpense = () => {
                       />
                     </Box>
 
-                    {(user?.role === "manager" ||
-                      user?.role === "visitor" ||
-                      user?.department === "admin" ||
-                      user?.name === "IT Team") &&
-                      item.item_current_status === "submitted" && (
-                        <Box
-                          display="flex"
-                          justifyContent="center"
-                          gap={1}
-                          mt={1}
-                        >
-                          <Button
-                            size="sm"
-                            variant={
-                              item.item_current_status === "manager approval"
-                                ? "solid"
-                                : "outlined"
-                            }
-                            color="success"
-                            onClick={() =>
-                              handleApproval(
-                                rowIndex,
-                                itemIndex,
-                                "manager approval"
-                              )
-                            }
+                    {(() => {
+                      const status =
+                        typeof item.item_current_status === "string"
+                          ? item.item_current_status
+                          : item.item_current_status?.status;
+
+                      return (
+                        (user?.role === "manager" ||
+                          user?.role === "visitor" ||
+                          user?.department === "admin" ||
+                          user?.name === "IT Team") &&
+                        status === "submitted" && (
+                          <Box
+                            display="flex"
+                            justifyContent="center"
+                            gap={1}
+                            mt={1}
                           >
-                            <CheckIcon />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant={
-                              item.item_current_status === "rejected"
-                                ? "solid"
-                                : "outlined"
-                            }
-                            color="danger"
-                            onClick={() =>
-                              handleApproval(rowIndex, itemIndex, "rejected")
-                            }
-                          >
-                            <CloseIcon />
-                          </Button>
-                        </Box>
-                      )}
+                            <Button
+                              size="sm"
+                              variant={
+                                status === "manager approval"
+                                  ? "solid"
+                                  : "outlined"
+                              }
+                              color="success"
+                              onClick={() =>
+                                handleApproval(
+                                  rowIndex,
+                                  itemIndex,
+                                  "manager approval"
+                                )
+                              }
+                            >
+                              <CheckIcon />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={
+                                status === "rejected" ? "solid" : "outlined"
+                              }
+                              color="danger"
+                              onClick={() =>
+                                handleApproval(rowIndex, itemIndex, "rejected")
+                              }
+                            >
+                              <CloseIcon />
+                            </Button>
+                          </Box>
+                        )
+                      );
+                    })()}
                   </Box>
                 ))
               )}
@@ -1184,12 +1274,12 @@ const UpdateExpense = () => {
             placeholder="Enter reason..."
             value={
               rows[commentDialog.rowIndex]?.items?.[commentDialog.itemIndex]
-                ?.item_status_history?.[0]?.remarks || ""
+                ?.remarks || ""
             }
             onChange={(e) =>
               handleRowChange(
                 commentDialog.rowIndex,
-                "item_status_history.0.remarks",
+                "remarks",
                 e.target.value,
                 commentDialog.itemIndex
               )
@@ -1356,15 +1446,28 @@ const UpdateExpense = () => {
                 ).map((category, idx) => {
                   let total = 0;
                   let approvedTotal = 0;
-                  
+
                   rows.forEach((row) => {
-                  console.log("row:",rows);
                     row.items?.forEach((item) => {
-                      if (item.category === category) {
+                      const itemStatus =
+                        typeof item.item_current_status === "string"
+                          ? item.item_current_status
+                          : item.item_current_status?.status;
+
+                      const rowStatus =
+                        typeof row.current_status === "string"
+                          ? row.current_status
+                          : row.current_status?.status;
+
+                      if (
+                        item.category === category &&
+                        itemStatus !== "rejected"
+                      ) {
                         total += Number(item.invoice?.invoice_amount || 0);
 
                         if (
-                          (item.item_current_status === "manager approval" || rows[0].current_status === "manager approval") &&
+                          (itemStatus === "manager approval" ||
+                            rowStatus === "manager approval") &&
                           Number(item.approved_amount || 0) > 0
                         ) {
                           approvedTotal += Number(item.approved_amount);
@@ -1415,8 +1518,10 @@ const UpdateExpense = () => {
                     </tr>
                   );
                 })}
+              </tbody>
 
-                {/* Grand Total */}
+              {/* Grand Total */}
+              <tfoot>
                 <tr>
                   <td>
                     <Typography level="body-md" fontWeight="lg">
@@ -1427,6 +1532,13 @@ const UpdateExpense = () => {
                     <Typography level="body-md" fontWeight="lg">
                       {rows
                         .flatMap((row) => row.items || [])
+                        .filter((item) => {
+                          const status =
+                            typeof item.item_current_status === "string"
+                              ? item.item_current_status
+                              : item.item_current_status?.status;
+                          return status !== "rejected";
+                        })
                         .reduce(
                           (sum, item) =>
                             sum + Number(item.invoice?.invoice_amount || 0),
@@ -1439,20 +1551,34 @@ const UpdateExpense = () => {
                     <Typography level="body-md" fontWeight="lg">
                       {rows
                         .flatMap((row) => row.items || [])
-                        .filter(
-                          (item) =>
-                            item.item_current_status === "manager approval" || rows[0].current_status === "manager approval" &&
-                            Number(item.approved_amount || 0) > 0
-                        )
+                        .filter((item) => {
+                          const itemStatus =
+                            typeof item.item_current_status === "string"
+                              ? item.item_current_status
+                              : item.item_current_status?.status;
+
+                          const rowStatus =
+                            typeof rows[0]?.current_status === "string"
+                              ? rows[0]?.current_status
+                              : rows[0]?.current_status?.status;
+
+                          return (
+                            itemStatus !== "rejected" &&
+                            (itemStatus === "manager approval" ||
+                              (rowStatus === "manager approval" &&
+                                Number(item.approved_amount || 0) > 0))
+                          );
+                        })
                         .reduce(
-                          (sum, item) => sum + Number(item.approved_amount),
+                          (sum, item) =>
+                            sum + Number(item.approved_amount || 0),
                           0
                         )
                         .toFixed(2)}
                     </Typography>
                   </td>
                 </tr>
-              </tbody>
+              </tfoot>
             </Table>
             {/* Submit & Back Buttons */}
             <Box display="flex" justifyContent="center" p={2}>
@@ -1468,21 +1594,35 @@ const UpdateExpense = () => {
                   user?.department === "admin" ||
                   user?.role === "visitor" ||
                   user?.name === "IT Team") &&
-                  rows[0]?.current_status === "submitted" && (
+                  (() => {
+                    const rowStatus =
+                      typeof rows[0]?.current_status === "string"
+                        ? rows[0]?.current_status
+                        : rows[0]?.current_status?.status;
+
+                    return rowStatus === "submitted";
+                  })() && (
                     <Button
                       variant="solid"
                       color="primary"
                       onClick={handleSubmit}
                       disabled={
                         isUpdating ||
-                        (rows[0]?.total_approved_amount === 0 &&
-                          [
-                            "manager approval",
-                            "rejected",
-                            "hr approval",
-                            "final approval",
-                            "hold",
-                          ].includes(rows[0]?.current_status))
+                        (rows[0]?.total_approved_amount === "0" &&
+                          (() => {
+                            const rowStatus =
+                              typeof rows[0]?.current_status === "string"
+                                ? rows[0]?.current_status
+                                : rows[0]?.current_status?.status;
+
+                            return [
+                              "manager approval",
+                              "rejected",
+                              "hr approval",
+                              "final approval",
+                              "hold",
+                            ].includes(rowStatus);
+                          })())
                       }
                     >
                       Update Expense Sheet
