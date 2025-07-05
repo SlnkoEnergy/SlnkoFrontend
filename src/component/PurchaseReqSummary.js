@@ -20,18 +20,32 @@ function PurchaseReqSummary() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selecteditem, setSelecteditem] = useState("");
+  const [selectedstatus, setSelectedstatus] = useState("");
   const [selectedpovalue, setSelectedpovalue] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   const page = parseInt(searchParams.get("page")) || 1;
   const search = searchParams.get("search") || "";
+  const itemSearch = searchParams.get("itemSearch") || "";
+  const poValueSearch = searchParams.get("poValueSearch") || "";
+const statusSearch = searchParams.get("statusSearch") || "";
+
 
   const { data, isLoading } = useGetAllPurchaseRequestQuery({
     page,
     search,
     itemSearch,
-    poValueSearch
+    poValueSearch,
+    statusSearch
   });
+
+  useEffect(() => {
+    setCurrentPage(page);
+    setSearchQuery(search);
+    setSelecteditem(itemSearch);
+    setSelectedpovalue(poValueSearch);
+    setSelectedstatus(statusSearch);
+  }, [page, search, itemSearch, poValueSearch,statusSearch]);
 
   const purchaseRequests = data?.data || [];
   const totalCount = data?.totalCount || 0;
@@ -83,59 +97,74 @@ function PurchaseReqSummary() {
   };
 
   const renderFilters = () => {
-      const pr_status = ["submitted","approved", "po created",];
-  
-      return (
-        <Box
-          sx={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 2,
-            alignItems: "center",
-            mb: 2,
-          }}
-        >
-          <FormControl sx={{ flex: 1 }} size="sm">
-            <FormLabel>PR Status</FormLabel>
-            <Select
-              value={selectedbill}
-              onChange={(e, newValue) => {
-                setSelectedbill(newValue);
-                setCurrentPage(1);
-              }}
-              size="sm"
-              placeholder="Select Department"
-            >
-              <Option value="">All status</Option>
-              {pr_status.map((status) => (
-                <Option key={status} value={status}>
-                  {status}
-                </Option>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl sx={{ flex: 1 }} size="sm">
-            <FormLabel>Item Queue</FormLabel>
-            <Select
-              value={selectedbill}
-              onChange={(e, newValue) => {
-                setSelectedbill(newValue);
-                setCurrentPage(1);
-              }}
-              size="sm"
-              placeholder="Select Department"
-            >
-              <Option value="">All item</Option>
-              {bill_status.map((status) => (
-                <Option key={status} value={status}>
-                  {status}
-                </Option>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
-      );
-    };
+    const pr_status = ["submitted", "approved", "po_created"];
+    
+
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 2,
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <FormControl sx={{ flex: 1 }} size="sm">
+          <FormLabel>PR Status</FormLabel>
+          <Select
+            value={selectedstatus}
+            onChange={(e, newValue) => {
+              setSelectedstatus(newValue);
+              setCurrentPage(1);
+              setSearchParams({
+                page: 1,
+                search: searchQuery,
+                statusSearch: newValue || "",
+                itemSearch: selecteditem,
+                poValueSearch: selectedpovalue,
+              });
+            }}
+            size="sm"
+            placeholder="Select Status"
+          >
+            <Option value="">All status</Option>
+            {pr_status.map((status) => (
+              <Option key={status} value={status}>
+                {status}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl sx={{ flex: 1 }} size="sm">
+          <FormLabel>Item Queue</FormLabel>
+          <Select
+            value={selecteditem}
+            onChange={(e, newValue) => {
+              setSelecteditem(newValue);
+              setCurrentPage(1);
+              setSearchParams({
+                page: 1,
+                search: searchQuery,
+                statusItem: newValue || "",
+                statusSearch: selectedstatus,
+                poValueSearch: selectedpovalue,
+              });
+            }}
+            size="sm"
+            placeholder="Select Status"
+          >
+            <Option value="">All Items</Option>
+            {pr_status.map((status) => (
+              <Option key={status} value={status}>
+                {status}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+    );
+  };
 
   return (
     <>
