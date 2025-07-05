@@ -26,6 +26,7 @@ import {
   useGetMaterialCategoryQuery,
 } from "../redux/camsSlice";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { Calendar } from "lucide-react";
 
 function PurchaseReqSummary() {
   const [selected, setSelected] = useState([]);
@@ -112,9 +113,6 @@ function PurchaseReqSummary() {
   const { data: materialCategories, isLoading: isMaterialLoading } =
     useGetMaterialCategoryQuery();
 
-
- 
-
   const renderFilters = () => {
     const pr_status = ["submitted", "approved", "po_created", "delivered"];
     return (
@@ -183,41 +181,41 @@ function PurchaseReqSummary() {
     );
   };
 
-  const RenderPRNo = ({ currentPage, pr_no, createdAt }) => {
-      const formattedDate = createdAt
-        ? new Date(createdAt).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          })
-        : "N/A";
-      return (
-        <>
-          <Box>
-            <span
-              style={{ cursor: "pointer", fontWeight: 500 }}
-              onClick={() => {
-                navigate(
-                  `/purchase_detail?page=${currentPage}`
-                );
-              }}
-            >
-              {pr_no || "-"}
-            </span>
-          </Box>
-          <Box display="flex" alignItems="center" mt={0.5}>
-            <Calendar size={12} />
-            <span style={{ fontSize: 12, fontWeight: 600 }}>
-              Created At:{" "}
-            </span>{" "}
-            &nbsp;
-            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              {formattedDate}
-            </Typography>
-          </Box>
-        </>
-      );
-    };
+  const RenderPRNo = ({ pr_no, createdAt, project_id, item_id }) => {
+    const formattedDate = createdAt
+      ? new Date(createdAt).toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : "N/A";
+    return (
+      <>
+        <Box>
+          <span
+            style={{ cursor: "pointer", fontWeight: 500 }}
+            onClick={() =>
+              navigate(
+                `/purchase_detail?project_id=${project_id?._id}&item_id=${item_id._id}`
+              )
+            }
+          >
+            {pr_no || "-"}
+          </span>
+        </Box>
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <Calendar size={12} />
+          <span style={{ fontSize: 12, fontWeight: 600 }}>
+            Created At:{" "}
+          </span>{" "}
+          &nbsp;
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+            {formattedDate}
+          </Typography>
+        </Box>
+      </>
+    );
+  };
 
   return (
     <>
@@ -340,22 +338,18 @@ function PurchaseReqSummary() {
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
-                        textAlign: "center",
+                        textAlign: "left",
                         cursor: "pointer",
                         fontWeight: "600",
                       }}
-                      onClick={() =>
-                        navigate(
-                          `/purchase_detail?project_id=${row.project_id?._id}&item_id=${item.item_id._id}`
-                        )
-                      }
+                     
                     >
-                      {row.pr_no}
+                      <RenderPRNo pr_no={row.pr_no} createdAt={row.createdAt}/>
                     </td>
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       <Box>
@@ -503,7 +497,7 @@ function PurchaseReqSummary() {
         </Button>
       </Box>
 
-      <Modal open={open} onClose={handleClose}>
+      {/* <Modal open={open} onClose={handleClose}>
         <ModalDialog>
           <ModalClose />
           <Typography level="h5">Add Remarks</Typography>
@@ -518,7 +512,7 @@ function PurchaseReqSummary() {
             Submit
           </Button>
         </ModalDialog>
-      </Modal>
+      </Modal> */}
     </>
   );
 }
