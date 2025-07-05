@@ -37,14 +37,7 @@ function VendorBillSummary() {
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [perPage, setPerPage] = useState(initialPageSize);
 
-  const bounce = keyframes`
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
-`;
+
 
   useEffect(() => {
     const userData = getUserData();
