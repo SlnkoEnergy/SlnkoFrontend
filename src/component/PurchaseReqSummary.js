@@ -78,6 +78,19 @@ function PurchaseReqSummary() {
     );
   };
 
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case "submitted":
+        return "primary";
+      case "approved":
+        return "warning";
+      case "po_created":
+        return "success";
+      default:
+        return "default";
+    }
+  };
+
   return (
     <>
       {/* Search Bar */}
@@ -120,13 +133,24 @@ function PurchaseReqSummary() {
           maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
-        <Box component="table" sx={{ width: "100%", borderCollapse: "collapse" }}>
+        <Box
+          component="table"
+          sx={{ width: "100%", borderCollapse: "collapse" }}
+        >
           <thead>
             <tr>
-              <th style={{ borderBottom: "1px solid #ddd", padding: "8px", textAlign: "center" }}>
+              <th
+                style={{
+                  borderBottom: "1px solid #ddd",
+                  padding: "8px",
+                  textAlign: "center",
+                }}
+              >
                 <Checkbox
                   size="sm"
-                  checked={selected.length > 0 && selected.length === allItemIds.length}
+                  checked={
+                    selected.length > 0 && selected.length === allItemIds.length
+                  }
                   onChange={handleSelectAll}
                   indeterminate={
                     selected.length > 0 && selected.length < allItemIds.length
@@ -161,7 +185,10 @@ function PurchaseReqSummary() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={10} style={{ textAlign: "center", padding: "16px" }}>
+                <td
+                  colSpan={10}
+                  style={{ textAlign: "center", padding: "16px" }}
+                >
                   <CircularProgress size="sm" />
                 </td>
               </tr>
@@ -169,45 +196,117 @@ function PurchaseReqSummary() {
               purchaseRequests.flatMap((row) =>
                 row.items.map((item) => (
                   <tr key={item._id}>
-                    <td style={{ borderBottom: "1px solid #ddd", textAlign: "center" }}>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "center",
+                      }}
+                    >
                       <Checkbox
                         size="sm"
                         checked={selected.includes(item._id)}
                         onChange={() => handleRowSelect(item._id)}
                       />
                     </td>
-                    <td style={{ borderBottom: "1px solid #ddd", textAlign: "center" }}>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "center",
+                      }}
+                    >
                       <Box>
                         <Typography fontWeight="md">
                           {row.project_id?.code || "-"}
                         </Typography>
-                        <Typography level="body-xs" sx={{ color: "text.secondary" }}>
+                        <Typography
+                          level="body-xs"
+                          sx={{ color: "text.secondary" }}
+                        >
                           {row.project_id?.name || "-"}
                         </Typography>
                       </Box>
                     </td>
-                    <td style={{ borderBottom: "1px solid #ddd", textAlign: "center" }}>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "center",
+                      }}
+                    >
                       {item.item_id?.name || "-"}
                     </td>
-                    <td style={{ borderBottom: "1px solid #ddd", textAlign: "center" }}>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "center",
+                      }}
+                    >
                       {row.pr_no}
                     </td>
-                    <td style={{ borderBottom: "1px solid #ddd", textAlign: "center" }}>
-                      {item.current_status?.status || "N/A"}
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "center",
+                      }}
+                    >
+                      <Typography
+                        fontWeight="md"
+                        color={
+                          row.current_status?.status === "submitted"
+                            ? "primary"
+                            : row.current_status?.status === "approved"
+                              ? "warning"
+                              : row.current_status?.status === "po_created"
+                                ? "success"
+                                : "neutral"
+                        }
+                        level="body-sm"
+                      >
+                        {row.current_status?.status
+                          ? row.current_status.status
+                              .replace(/_/g, " ")
+                              .replace(/\b\w/g, (l) => l.toUpperCase())
+                          : "N/A"}
+                      </Typography>
                     </td>
-                    <td style={{ borderBottom: "1px solid #ddd", textAlign: "center" }}>
+
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "center",
+                      }}
+                    >
                       {row.eid || "-"}
                     </td>
-                    <td style={{ borderBottom: "1px solid #ddd", textAlign: "center" }}>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "center",
+                      }}
+                    >
                       {row.delivery_date || "-"}
                     </td>
-                    <td style={{ borderBottom: "1px solid #ddd", textAlign: "center" }}>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "center",
+                      }}
+                    >
                       {renderDelayChip(row.delay || "0 days")}
                     </td>
-                    <td style={{ borderBottom: "1px solid #ddd", textAlign: "center" }}>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "center",
+                      }}
+                    >
                       {row.total_po_count ?? 0}
                     </td>
-                    <td style={{ borderBottom: "1px solid #ddd", textAlign: "center" }}>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "center",
+                      }}
+                    >
                       ₹ {row.po_value?.toLocaleString("en-IN") || "0"}
                     </td>
                   </tr>
@@ -215,7 +314,10 @@ function PurchaseReqSummary() {
               )
             ) : (
               <tr>
-                <td colSpan={10} style={{ textAlign: "center", padding: "16px" }}>
+                <td
+                  colSpan={10}
+                  style={{ textAlign: "center", padding: "16px" }}
+                >
                   No data found
                 </td>
               </tr>
