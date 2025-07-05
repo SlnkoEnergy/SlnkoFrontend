@@ -110,6 +110,7 @@ import AddBoq from "../pages/Eng/AddBoq";
 import View_Project from "../component/Forms/View_Project";
 import ProjectDetail from "../pages/CAM/ProjectDetail";
 import PurchaseRequestSheet from "../pages/CAM/PurchaseRequest";
+import PurchaseReqDetails from "../pages/CAM/PurchaseRequestDetail";
 
 function index() {
   return (
@@ -339,6 +340,14 @@ function index() {
         element={
           <PrivateRoute>
             <ProjectDetail />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/purchase_detail"
+        element={
+          <PrivateRoute>
+            <PurchaseReqDetails />
           </PrivateRoute>
         }
       />
