@@ -1,7 +1,7 @@
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
-import { CircularProgress, Chip } from "@mui/joy";
+import { CircularProgress, Chip, Option, Select } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
@@ -19,6 +19,8 @@ function PurchaseReqSummary() {
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
+  const [selecteditem, setSelecteditem] = useState("");
+  const [selectedpovalue, setSelectedpovalue] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   const page = parseInt(searchParams.get("page")) || 1;
@@ -27,6 +29,8 @@ function PurchaseReqSummary() {
   const { data, isLoading } = useGetAllPurchaseRequestQuery({
     page,
     search,
+    itemSearch,
+    poValueSearch
   });
 
   const purchaseRequests = data?.data || [];
@@ -78,6 +82,61 @@ function PurchaseReqSummary() {
     );
   };
 
+  const renderFilters = () => {
+      const pr_status = ["submitted","approved", "po created",];
+  
+      return (
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 2,
+            alignItems: "center",
+            mb: 2,
+          }}
+        >
+          <FormControl sx={{ flex: 1 }} size="sm">
+            <FormLabel>PR Status</FormLabel>
+            <Select
+              value={selectedbill}
+              onChange={(e, newValue) => {
+                setSelectedbill(newValue);
+                setCurrentPage(1);
+              }}
+              size="sm"
+              placeholder="Select Department"
+            >
+              <Option value="">All status</Option>
+              {pr_status.map((status) => (
+                <Option key={status} value={status}>
+                  {status}
+                </Option>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl sx={{ flex: 1 }} size="sm">
+            <FormLabel>Item Queue</FormLabel>
+            <Select
+              value={selectedbill}
+              onChange={(e, newValue) => {
+                setSelectedbill(newValue);
+                setCurrentPage(1);
+              }}
+              size="sm"
+              placeholder="Select Department"
+            >
+              <Option value="">All item</Option>
+              {bill_status.map((status) => (
+                <Option key={status} value={status}>
+                  {status}
+                </Option>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+      );
+    };
+
   return (
     <>
       {/* Search Bar */}
@@ -104,6 +163,7 @@ function PurchaseReqSummary() {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
+        {renderFilters()}
       </Box>
 
       {/* Table */}
@@ -138,7 +198,7 @@ function PurchaseReqSummary() {
                 "Item Name",
                 "PR No.",
                 "Status",
-                "EID",
+                "ETD",
                 "Delivery Date",
                 "Delay",
                 "PO Count",
