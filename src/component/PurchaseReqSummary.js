@@ -1,7 +1,16 @@
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
-import { CircularProgress, Chip } from "@mui/joy";
+import {
+  CircularProgress,
+  Chip,
+  Tooltip,
+  Stack,
+  Modal,
+  ModalDialog,
+  ModalClose,
+  Textarea,
+} from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
@@ -14,6 +23,8 @@ import Typography from "@mui/joy/Typography";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useGetAllPurchaseRequestQuery } from "../redux/camsSlice";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
 
 function PurchaseReqSummary() {
   const [selected, setSelected] = useState([]);
@@ -76,6 +87,17 @@ function PurchaseReqSummary() {
         {delay}
       </Chip>
     );
+  };
+
+  const [open, setOpen] = useState(false);
+  const [remarks, setRemarks] = useState("");
+
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+
+  const handleReject = () => {
+    console.log("Remarks:", remarks);
+    handleClose();
   };
 
   const getStatusColor = (status) => {
@@ -158,15 +180,16 @@ function PurchaseReqSummary() {
                 />
               </th>
               {[
+                "PR No.",
                 "Project Code",
                 "Item Name",
-                "PR No.",
                 "Status",
                 "EID",
                 "Delivery Date",
                 "Delay",
                 "PO Count",
                 "PO Value with GST",
+                "Action",
               ].map((header, index) => (
                 <th
                   key={index}
@@ -212,6 +235,26 @@ function PurchaseReqSummary() {
                       style={{
                         borderBottom: "1px solid #ddd",
                         textAlign: "center",
+                        cursor: "pointer",
+                        fontWeight: "600",
+                      }}
+                    >
+                      <Tooltip
+                        title={
+                          row.current_status.status !== "approved"
+                            ? "Please Approve PR to create PO"
+                            : "Create PO"
+                        }
+                        arrow
+                      >
+                        <span>{row.pr_no}</span>
+                      </Tooltip>
+                    </td>
+
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "center",
                       }}
                     >
                       <Box>
@@ -234,14 +277,7 @@ function PurchaseReqSummary() {
                     >
                       {item.item_id?.name || "-"}
                     </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        textAlign: "center",
-                      }}
-                    >
-                      {row.pr_no}
-                    </td>
+
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
@@ -309,6 +345,59 @@ function PurchaseReqSummary() {
                     >
                       ₹ {row.po_value?.toLocaleString("en-IN") || "0"}
                     </td>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "center",
+                        padding: 2,
+                      }}
+                    >
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        justifyContent="center"
+                      >
+                        <Tooltip title="Approve PR" arrow placement="top">
+                          <Button
+                            color="success"
+                            variant="plain"
+                            sx={{
+                              borderRadius: "50%",
+                              width: 36,
+                              height: 36,
+                              minWidth: 0,
+                              boxShadow: "0 2px 6px rgba(0, 128, 0, 0.3)",
+                              "&:hover": {
+                                backgroundColor: "rgba(0, 128, 0, 0.1)",
+                              },
+                            }}
+                          >
+                            <CheckCircleIcon
+                              sx={{ color: "green", fontSize: 28 }}
+                            />
+                          </Button>
+                        </Tooltip>
+                        <Tooltip title="Reject PR" arrow placement="top">
+                          <Button
+                            color="danger"
+                            variant="plain"
+                            onClick={handleOpen}
+                            sx={{
+                              borderRadius: "50%",
+                              width: 36,
+                              height: 36,
+                              minWidth: 0,
+                              boxShadow: "0 2px 6px rgba(255, 0, 0, 0.3)",
+                              "&:hover": {
+                                backgroundColor: "rgba(255, 0, 0, 0.1)",
+                              },
+                            }}
+                          >
+                            <CancelIcon sx={{ color: "red", fontSize: 28 }} />
+                          </Button>
+                        </Tooltip>
+                      </Stack>
+                    </td>
                   </tr>
                 ))
               )
@@ -364,6 +453,23 @@ function PurchaseReqSummary() {
           Next
         </Button>
       </Box>
+
+      <Modal open={open} onClose={handleClose}>
+        <ModalDialog>
+          <ModalClose />
+          <Typography level="h5">Add Remarks</Typography>
+          <Textarea
+            minRows={3}
+            placeholder="Enter Rejection Remarks"
+            value={remarks}
+            onChange={(e) => setRemarks(e.target.value)}
+            sx={{ mt: 2 }}
+          />
+          <Button sx={{ mt: 2 }} onClick={handleReject} color="danger">
+            Submit
+          </Button>
+        </ModalDialog>
+      </Modal>
     </>
   );
 }
