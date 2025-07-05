@@ -16,7 +16,7 @@ import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
-import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
+import  { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
@@ -30,8 +30,6 @@ function PurchaseReqSummary() {
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
-  const [selecteditem, setSelecteditem] = useState("");
-  const [selectedpovalue, setSelectedpovalue] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   const page = parseInt(searchParams.get("page")) || 1;
@@ -40,8 +38,6 @@ function PurchaseReqSummary() {
   const { data, isLoading } = useGetAllPurchaseRequestQuery({
     page,
     search,
-    itemSearch,
-    poValueSearch
   });
 
   const purchaseRequests = data?.data || [];
@@ -99,7 +95,7 @@ function PurchaseReqSummary() {
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
-  const handleReject = () => {
+  const handleApprove = () => {
     console.log("Remarks:", remarks);
     handleClose();
   };
@@ -143,7 +139,6 @@ function PurchaseReqSummary() {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {renderFilters()}
       </Box>
 
       {/* Table */}
@@ -189,7 +184,7 @@ function PurchaseReqSummary() {
                 "Project Code",
                 "Item Name",
                 "Status",
-                "ETD",
+                "EID",
                 "Delivery Date",
                 "Delay",
                 "PO Count",
@@ -470,7 +465,7 @@ function PurchaseReqSummary() {
             onChange={(e) => setRemarks(e.target.value)}
             sx={{ mt: 2 }}
           />
-          <Button sx={{ mt: 2 }} onClick={handleReject} color="danger">
+          <Button sx={{ mt: 2 }} onClick={handleApprove} color="danger">
             Submit
           </Button>
         </ModalDialog>
