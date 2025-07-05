@@ -1,22 +1,31 @@
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
-import { CircularProgress, Chip, Option, Select } from "@mui/joy";
+import {
+  CircularProgress,
+  Chip,
+  Option,
+  Select,
+  Textarea,
+  ModalClose,
+  ModalDialog,
+  Modal,
+} from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
-import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
+import { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import {
   useGetAllPurchaseRequestQuery,
   useGetMaterialCategoryQuery,
 } from "../redux/camsSlice";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 function PurchaseReqSummary() {
   const [selected, setSelected] = useState([]);
@@ -26,12 +35,14 @@ function PurchaseReqSummary() {
   const [selectedstatus, setSelectedstatus] = useState("");
   const [selectedpovalue, setSelectedpovalue] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-
+  const [remarks, setRemarks] = useState();
   const page = parseInt(searchParams.get("page")) || 1;
   const search = searchParams.get("search") || "";
   const itemSearch = searchParams.get("itemSearch") || "";
   const poValueSearch = searchParams.get("poValueSearch") || "";
   const statusSearch = searchParams.get("statusSearch") || "";
+  const [open, setOpen] = useState();
+  const navigate = useNavigate();
 
   const { data, isLoading } = useGetAllPurchaseRequestQuery({
     page,
@@ -101,9 +112,11 @@ function PurchaseReqSummary() {
   const { data: materialCategories, isLoading: isMaterialLoading } =
     useGetMaterialCategoryQuery();
 
-  const renderFilters = () => {
-    const pr_status = ["submitted", "approved", "po_created"];
 
+ 
+
+  const renderFilters = () => {
+    const pr_status = ["submitted", "approved", "po_created", "delivered"];
     return (
       <Box
         sx={{
@@ -274,11 +287,11 @@ function PurchaseReqSummary() {
                 />
               </th>
               {[
+                "PR No.",
                 "Project Code",
                 "Item Name",
-                "PR No.",
                 "Status",
-                "ETD",
+                "EID",
                 "Delivery Date",
                 "Delay",
                 "PO Count",
@@ -327,7 +340,22 @@ function PurchaseReqSummary() {
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
-                        textAlign: "left",
+                        textAlign: "center",
+                        cursor: "pointer",
+                        fontWeight: "600",
+                      }}
+                      onClick={() =>
+                        navigate(
+                          `/purchase_detail?project_id=${row.project_id?._id}&item_id=${item.item_id._id}`
+                        )
+                      }
+                    >
+                      {row.pr_no}
+                    </td>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "center",
                       }}
                     >
                       <Box>
@@ -356,14 +384,6 @@ function PurchaseReqSummary() {
                         textAlign: "left",
                       }}
                     >
-                      {row.pr_no}
-                    </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
                       <Typography
                         fontWeight="md"
                         color={
@@ -373,7 +393,9 @@ function PurchaseReqSummary() {
                               ? "warning"
                               : row.current_status?.status === "po_created"
                                 ? "success"
-                                : "neutral"
+                                : row.current_status?.status === "delivered"
+                                  ? "neutral"
+                                  : "neutral"
                         }
                         level="body-sm"
                       >
@@ -480,6 +502,23 @@ function PurchaseReqSummary() {
           Next
         </Button>
       </Box>
+
+      <Modal open={open} onClose={handleClose}>
+        <ModalDialog>
+          <ModalClose />
+          <Typography level="h5">Add Remarks</Typography>
+          <Textarea
+            minRows={3}
+            placeholder="Enter Rejection Remarks"
+            value={remarks}
+            onChange={(e) => setRemarks(e.target.value)}
+            sx={{ mt: 2 }}
+          />
+          <Button sx={{ mt: 2 }} onClick={handleApprove} color="danger">
+            Submit
+          </Button>
+        </ModalDialog>
+      </Modal>
     </>
   );
 }
