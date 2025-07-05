@@ -1,7 +1,9 @@
 import BlockIcon from "@mui/icons-material/Block";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
+import HandshakeIcon from "@mui/icons-material/Handshake";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import SearchIcon from "@mui/icons-material/Search";
 import {
   Alert,
@@ -248,15 +250,22 @@ function PurchaseReqSummary() {
     top: "50%",
     left: "50%",
     transform: "translate(-50%, -50%)",
-    width: 400,
+    width: "100%",
+    maxWidth: 480,
     bgcolor: "background.paper",
-    borderRadius: 2,
+    borderRadius: 3,
     boxShadow: 24,
     p: 4,
+    display: "flex",
+    flexDirection: "column",
+    gap: 2,
   };
 
-  const PRActions = ({ _id }) => {
-    console.log("Purchase Request ID:", _id);
+  const PRActions = ({ _id, current_status }) => {
+    console.log("Current Status:", current_status.status);
+    console.log("ID:", _id);
+
+    const status = current_status?.status;
 
     const [open, setOpen] = useState(false);
     const [remarks, setRemarks] = useState("");
@@ -268,8 +277,8 @@ function PurchaseReqSummary() {
     const [updateStatus, { isLoading }] =
       useUpdatePurchaseRequestStatusMutation();
 
-    const handleChipClick = (status) => {
-      setSelectedStatus(status);
+    const handleChipClick = (newStatus) => {
+      setSelectedStatus(newStatus);
       setOpen(true);
     };
 
@@ -303,66 +312,157 @@ function PurchaseReqSummary() {
       setRemarks("");
     };
 
+    const renderStatusChip = () => {
+      switch (status) {
+        case "submitted":
+          return (
+            <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
+              <Chip
+                variant="soft"
+                color="success"
+                startDecorator={<CheckRoundedIcon />}
+                onClick={() => handleChipClick("approved")}
+                sx={{
+                  cursor: "pointer",
+                  textTransform: "none",
+                  fontWeight: 500,
+                }}
+              />
+
+              <Chip
+                variant="outlined"
+                color="danger"
+                startDecorator={<BlockIcon />}
+                onClick={() => handleChipClick("rejected")}
+                sx={{
+                  cursor: "pointer",
+                  textTransform: "none",
+                  fontWeight: 500,
+                }}
+              />
+            </Box>
+          );
+
+        case "rejected":
+          return (
+            <Chip
+              variant="outlined"
+              color="danger"
+              startDecorator={<BlockIcon />}
+            >
+              Rejected
+            </Chip>
+          );
+
+        case "approved":
+          return (
+            <Chip
+              variant="soft"
+              color="warning"
+              // startDecorator={<LocalShippingIcon />}
+            >
+              PO to be Raised
+            </Chip>
+          );
+
+        case "po_created":
+          return (
+            <Chip
+              variant="soft"
+              color="primary"
+              startDecorator={<LocalShippingIcon />}
+            >
+              Out for Delivery
+            </Chip>
+          );
+
+        case "delivered":
+          return (
+            <Chip
+              variant="solid"
+              color="primary"
+              startDecorator={<HandshakeIcon />}
+            >
+              Delivered
+            </Chip>
+          );
+
+        default:
+          return null;
+      }
+    };
+
     return (
       <>
-        <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
-          <Chip
-            variant="solid"
-            color="success"
-            label="Approved"
-            onClick={() => handleChipClick("approved")}
-            startDecorator={<CheckRoundedIcon />}
-            sx={{
-              textTransform: "none",
-              fontSize: "0.875rem",
-              fontWeight: 500,
-              borderRadius: "sm",
-            }}
-          />
-          <Chip
-            variant="outlined"
-            color="danger"
-            label="Rejected"
-            onClick={() => handleChipClick("rejected")}
-            startDecorator={<BlockIcon />}
-            sx={{
-              textTransform: "none",
-              fontSize: "0.875rem",
-              fontWeight: 500,
-              borderRadius: "sm",
-            }}
-          />
-        </Box>
+        {/* Render Status Chip */}
+        {renderStatusChip()}
 
+        {/* Show action chips only if not finalized */}
+        {/* {status === "submitted" && (
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+            <Chip
+              variant="solid"
+              color="success"
+              label="Approved"
+              onClick={() => handleChipClick("approved")}
+              startDecorator={<CheckRoundedIcon />}
+              sx={{
+                textTransform: "none",
+                fontSize: "0.875rem",
+                fontWeight: 500,
+              }}
+            />
+            <Chip
+              variant="outlined"
+              color="danger"
+              label="Rejected"
+              onClick={() => handleChipClick("rejected")}
+              startDecorator={<BlockIcon />}
+              sx={{
+                textTransform: "none",
+                fontSize: "0.875rem",
+                fontWeight: 500,
+              }}
+            />
+          </Box>
+        )} */}
+
+        {/* Modal for Remarks */}
         <Modal open={open} onClose={handleClose}>
           <Box sx={modalStyle}>
-            <Typography variant="h6" component="h2" mb={2}>
-              {selectedStatus} Remarks
+            <Typography level="h6" mb={2}>
+              {`${selectedStatus?.charAt(0).toUpperCase() + selectedStatus?.slice(1)} Remarks`}
             </Typography>
+
             <Textarea
-              label="Remarks"
-              fullWidth
-              multiline
+              placeholder="Enter remarks..."
               minRows={3}
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
             />
 
             <Box display="flex" justifyContent="flex-end" mt={3} gap={1}>
-              <Button onClick={handleClose} disabled={isLoading}>
+              <Button
+                onClick={handleClose}
+                disabled={isLoading}
+                variant="outlined"
+              >
                 Cancel
               </Button>
               <Button
                 onClick={handleSubmit}
-                variant="contained"
+                loading={isLoading}
+                variant="solid"
                 color="primary"
-                disabled={!remarks || isLoading}
+                disabled={!remarks}
               >
                 Confirm
               </Button>
             </Box>
           </Box>
         </Modal>
+
+        {/* Snackbar Feedback */}
         <Snackbar
           open={snackbarOpen}
           autoHideDuration={4000}
@@ -371,8 +471,8 @@ function PurchaseReqSummary() {
         >
           <Alert
             onClose={() => setSnackbarOpen(false)}
-            severity={snackbarSeverity}
-            sx={{ width: "100%" }}
+            color={snackbarSeverity}
+            variant="soft"
           >
             {snackbarMessage}
           </Alert>
@@ -620,7 +720,10 @@ function PurchaseReqSummary() {
                         textAlign: "left",
                       }}
                     >
-                      <PRActions _id={row._id} />
+                      <PRActions
+                        _id={row._id}
+                        current_status={row.current_status}
+                      />
                     </td>
                   </tr>
                 ))
