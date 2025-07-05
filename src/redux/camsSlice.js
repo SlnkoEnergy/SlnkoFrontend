@@ -1,8 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { IdCardIcon } from "lucide-react";
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: `${process.env.REACT_APP_API_URL}/`,
+  baseUrl: `${process.env.REACT_APP_API_URL}`,
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("authToken");
     if (token) {
@@ -124,6 +123,13 @@ export const camsApi = createApi({
         body: payload,
       }),
     }),
+    updatePurchaseRequestStatus: builder.mutation({
+      query: ({ id, status, remarks }) => ({
+        url: `/purchaseRequest/${id}/updatePurchaseRequestStatus`,
+        method: "PUT",
+        body: { status, remarks },
+      }),
+    }),
   }),
 });
 
@@ -138,6 +144,7 @@ export const {
   useGetMaterialCategoryQuery,
   useCreatePurchaseRequestMutation,
   useGetAllPurchaseRequestQuery,
+  useUpdatePurchaseRequestStatusMutation,
   useGetPurchaseRequestByIdQuery,
   useGetPurchaseRequestByProjectIdQuery,
   useGetPurchaseRequestQuery,

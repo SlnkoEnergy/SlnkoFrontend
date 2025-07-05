@@ -1,32 +1,35 @@
+import BlockIcon from "@mui/icons-material/Block";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
 import {
-  CircularProgress,
+  Alert,
   Chip,
+  CircularProgress,
+  Modal,
   Option,
   Select,
+  Snackbar,
   Textarea,
-  ModalClose,
-  ModalDialog,
-  Modal,
 } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
-import { iconButtonClasses } from "@mui/joy/IconButton";
+import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
+import { Calendar } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   useGetAllPurchaseRequestQuery,
   useGetMaterialCategoryQuery,
+  useUpdatePurchaseRequestStatusMutation,
 } from "../redux/camsSlice";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { Calendar } from "lucide-react";
 
 function PurchaseReqSummary() {
   const [selected, setSelected] = useState([]);
@@ -99,6 +102,28 @@ function PurchaseReqSummary() {
     if (newPage >= 1 && newPage <= totalPages) {
       setSearchParams({ page: newPage, search: searchQuery });
     }
+  };
+
+  const getPaginationRange = () => {
+    const siblings = 1;
+    const pages = [];
+
+    if (totalPages <= 5 + siblings * 2) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      const left = Math.max(currentPage - siblings, 2);
+      const right = Math.min(currentPage + siblings, totalPages - 1);
+
+      pages.push(1);
+      if (left > 2) pages.push("...");
+
+      for (let i = left; i <= right; i++) pages.push(i);
+
+      if (right < totalPages - 1) pages.push("...");
+      pages.push(totalPages);
+    }
+
+    return pages;
   };
 
   const renderDelayChip = (delay) => {
@@ -196,15 +221,20 @@ function PurchaseReqSummary() {
             style={{ cursor: "pointer", fontWeight: 500 }}
             onClick={() =>
               navigate(
+<<<<<<< HEAD
                 `/purchase_detail?project_id=${project_id}&item_id=${item_id}&pr_id=${pr_id}`
+=======
+                `/purchase_detail?project_id=${project_id}&item_id=${item_id}`
+>>>>>>> fd49993b1d5ca0b687625d788542bef1836f009f
               )
             }
           >
             {pr_no || "-"}
           </span>
         </Box>
-        <Box display="flex" alignItems="center" mt={0.5}>
+        <Box display="flex" alignItems="center">
           <Calendar size={12} />
+          &nbsp;
           <span style={{ fontSize: 12, fontWeight: 600 }}>
             Created At:{" "}
           </span>{" "}
@@ -213,6 +243,144 @@ function PurchaseReqSummary() {
             {formattedDate}
           </Typography>
         </Box>
+      </>
+    );
+  };
+
+  const modalStyle = {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: 400,
+    bgcolor: "background.paper",
+    borderRadius: 2,
+    boxShadow: 24,
+    p: 4,
+  };
+
+  const PRActions = ({ _id }) => {
+    console.log("Purchase Request ID:", _id);
+
+    const [open, setOpen] = useState(false);
+    const [remarks, setRemarks] = useState("");
+    const [selectedStatus, setSelectedStatus] = useState(null);
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState("");
+    const [snackbarSeverity, setSnackbarSeverity] = useState("success");
+
+    const [updateStatus, { isLoading }] =
+      useUpdatePurchaseRequestStatusMutation();
+
+    const handleChipClick = (status) => {
+      setSelectedStatus(status);
+      setOpen(true);
+    };
+
+    const handleSubmit = async () => {
+      try {
+        await updateStatus({
+          id: _id,
+          status: selectedStatus,
+          remarks,
+        }).unwrap();
+
+        setSnackbarMessage(`Status updated to ${selectedStatus}`);
+        setSnackbarSeverity("success");
+        setSnackbarOpen(true);
+
+        setOpen(false);
+        setRemarks("");
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } catch (err) {
+        console.error("Status update failed:", err);
+        setSnackbarMessage("Failed to update status");
+        setSnackbarSeverity("error");
+        setSnackbarOpen(true);
+      }
+    };
+
+    const handleClose = () => {
+      setOpen(false);
+      setRemarks("");
+    };
+
+    return (
+      <>
+        <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+          <Chip
+            variant="solid"
+            color="success"
+            label="Approved"
+            onClick={() => handleChipClick("approved")}
+            startDecorator={<CheckRoundedIcon />}
+            sx={{
+              textTransform: "none",
+              fontSize: "0.875rem",
+              fontWeight: 500,
+              borderRadius: "sm",
+            }}
+          />
+          <Chip
+            variant="outlined"
+            color="danger"
+            label="Rejected"
+            onClick={() => handleChipClick("rejected")}
+            startDecorator={<BlockIcon />}
+            sx={{
+              textTransform: "none",
+              fontSize: "0.875rem",
+              fontWeight: 500,
+              borderRadius: "sm",
+            }}
+          />
+        </Box>
+
+        <Modal open={open} onClose={handleClose}>
+          <Box sx={modalStyle}>
+            <Typography variant="h6" component="h2" mb={2}>
+              {selectedStatus} Remarks
+            </Typography>
+            <Textarea
+              label="Remarks"
+              fullWidth
+              multiline
+              minRows={3}
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+            />
+
+            <Box display="flex" justifyContent="flex-end" mt={3} gap={1}>
+              <Button onClick={handleClose} disabled={isLoading}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                variant="contained"
+                color="primary"
+                disabled={!remarks || isLoading}
+              >
+                Confirm
+              </Button>
+            </Box>
+          </Box>
+        </Modal>
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={4000}
+          onClose={() => setSnackbarOpen(false)}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        >
+          <Alert
+            onClose={() => setSnackbarOpen(false)}
+            severity={snackbarSeverity}
+            sx={{ width: "100%" }}
+          >
+            {snackbarMessage}
+          </Alert>
+        </Snackbar>
       </>
     );
   };
@@ -294,6 +462,7 @@ function PurchaseReqSummary() {
                 "Delay",
                 "PO Count",
                 "PO Value with GST",
+                "Actions",
               ].map((header, index) => (
                 <th
                   key={index}
@@ -346,9 +515,14 @@ function PurchaseReqSummary() {
                       <RenderPRNo
                         pr_no={row.pr_no}
                         createdAt={row.createdAt}
+<<<<<<< HEAD
                         project_id={row.project_id._id}
                         item_id={item.item_id?._id}
                         pr_id={row._id}
+=======
+                        project_id={row.project_id?._id}
+                        item_id={item.item_id._id}
+>>>>>>> fd49993b1d5ca0b687625d788542bef1836f009f
                       />
                     </td>
                     <td
@@ -446,6 +620,14 @@ function PurchaseReqSummary() {
                     >
                       ₹ {row.po_value?.toLocaleString("en-IN") || "0"}
                     </td>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "left",
+                      }}
+                    >
+                      <PRActions _id={row._id} />
+                    </td>
                   </tr>
                 ))
               )
@@ -465,14 +647,15 @@ function PurchaseReqSummary() {
 
       {/* Pagination */}
       <Box
+        className="Pagination-laptopUp"
         sx={{
           pt: 2,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          marginLeft: { lg: "18%", xl: "15%" },
+          flexDirection: { xs: "column", md: "row" },
+          marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
         <Button
@@ -487,7 +670,29 @@ function PurchaseReqSummary() {
         </Button>
 
         <Box>
-          Page {currentPage} of {totalPages}
+          Showing page {currentPage} of {totalPages} ({totalCount} results)
+        </Box>
+
+        <Box
+          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
+        >
+          {getPaginationRange().map((page, idx) =>
+            page === "..." ? (
+              <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
+                ...
+              </Box>
+            ) : (
+              <IconButton
+                key={page}
+                size="sm"
+                variant={page === currentPage ? "contained" : "outlined"}
+                color="neutral"
+                onClick={() => handlePageChange(page)}
+              >
+                {page}
+              </IconButton>
+            )
+          )}
         </Box>
 
         <Button
