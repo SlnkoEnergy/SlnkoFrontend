@@ -1,26 +1,17 @@
 import Box from "@mui/joy/Box";
 import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider } from "@mui/joy/styles";
-import React, { useEffect, useState } from "react";
-import Button from "@mui/joy/Button";
-// import Button from '@mui/joy/Button';
+import  { useEffect, useState } from "react";
 import Breadcrumbs from "@mui/joy/Breadcrumbs";
 import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
-// import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-// import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
-// import BuildRoundedIcon from "@mui/icons-material/BuildRounded";
-import { BriefcaseIcon } from "@heroicons/react/24/outline";
 import Sidebar from "../../component/Partials/Sidebar";
-
 import Header from "../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
-import Dash_cam from "../../component/CamDashboard";
 import PurchaseReqSummary from "../../component/PurchaseReqSummary";
 
 function PurchaseRequestSheet() {
-  const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -73,14 +64,6 @@ function PurchaseRequestSheet() {
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
               sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
-              {/* <Link
-                underline="none"
-                color="neutral"
-                href="#some-link"
-                aria-label="Home"
-              >
-                <HomeRoundedIcon />
-              </Link> */}
               <Link
                 underline="none"
                 color="neutral"
@@ -126,8 +109,6 @@ function PurchaseRequestSheet() {
             </Box>
           </Box>
           <PurchaseReqSummary />
-          {/* <OrderTable />
-          <OrderList /> */}
         </Box>
       </Box>
     </CssVarsProvider>

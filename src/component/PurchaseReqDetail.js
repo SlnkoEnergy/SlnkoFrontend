@@ -12,10 +12,12 @@ import {
   Tooltip,
   IconButton,
   Textarea,
+  Chip,
 } from "@mui/joy";
 import {
   useEditPurchaseRequestMutation,
   useGetPurchaseRequestQuery,
+  useUpdatePurchaseRequestStatusMutation,
 } from "../redux/camsSlice";
 import { useSearchParams } from "react-router-dom";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
@@ -63,6 +65,7 @@ const PurchaseReqDetail = () => {
 
       toast.success("ETD updated successfully!");
       setEtdDate("");
+      window.location.reload();
     } catch (error) {
       console.error("Error updating ETD:", error);
       toast.error(error?.data?.message || "Failed to update ETD.");
@@ -76,7 +79,9 @@ const PurchaseReqDetail = () => {
   const currentStatus =
     getPurchaseRequest?.purchase_request?.current_status?.status;
 
-  const handleOutForDelivery = () => {
+  const [updateStatus] = useUpdatePurchaseRequestStatusMutation();
+
+  const handleOutForDelivery = async () => {
     if (!remarks.trim()) {
       toast.error("Please enter remarks.");
       return;
@@ -87,20 +92,30 @@ const PurchaseReqDetail = () => {
         "Are you sure you want to change status to Out for Delivery?"
       )
     ) {
-      // handleStatusChange(pr_id, "out_for_delivery", remarks);
+      await updateStatus({
+        id: pr_id,
+        status: "out_for_delivery",
+        remarks,
+      }).unwrap();
+      window.location.reload();
       setOpenOutModal(false);
       setRemarks("");
     }
   };
 
-  const handleDeliveryDone = () => {
+  const handleDeliveryDone = async () => {
     if (!remarks.trim()) {
       toast.error("Please enter remarks.");
       return;
     }
 
     if (window.confirm("Are you sure you want to mark Delivery as Done?")) {
-      // handleStatusChange(pr_id, "delivery_done", remarks);
+      await updateStatus({
+        id: pr_id,
+        status: "delivered",
+        remarks,
+      }).unwrap();
+      window.location.reload();
       setOpenDeliveryDoneModal(false);
       setRemarks("");
     }
@@ -229,6 +244,39 @@ const PurchaseReqDetail = () => {
                 </Button>
               </>
             )}
+          </Stack>
+
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography
+              fontWeight={700}
+              level="body-sm"
+              textColor="text.secondary"
+            >
+              Status:
+            </Typography>
+
+            <Chip
+              color={
+                getPurchaseRequest?.purchase_request?.current_status?.status ===
+                "approved"
+                  ? "success"
+                  : getPurchaseRequest?.purchase_request?.current_status
+                        ?.status === "submitted"
+                    ? "primary"
+                    : getPurchaseRequest?.purchase_request?.current_status
+                          ?.status === "out_for_delivery"
+                      ? "warning"
+                      : getPurchaseRequest?.purchase_request?.current_status
+                            ?.status === "delivered"
+                        ? "success"
+                        : "neutral"
+              }
+              variant="soft"
+            >
+              {getPurchaseRequest?.purchase_request?.current_status?.status
+                ?.replace(/_/g, " ")
+                ?.replace(/\b\w/g, (c) => c.toUpperCase()) || "-"}
+            </Chip>
           </Stack>
 
           <Stack direction="row" spacing={2}>

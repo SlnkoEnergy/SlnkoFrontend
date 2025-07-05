@@ -128,9 +128,9 @@ const PurchaseRequestCard = () => {
                 <td>
                   {pr.items && pr.items.length > 0 ? (
                     <Typography color="success">
-                      {pr.items[0].current_status?.status === "draft"
+                      {pr.current_status?.status === "draft"
                         ? "PO Yet to be Created"
-                        : pr.items[0].current_status?.status
+                        : pr.current_status?.status
                             .split("_")
                             .map(
                               (word) =>
@@ -241,14 +241,17 @@ const PurchaseRequestCard = () => {
                               sx={{
                                 position: "absolute",
                                 height: 2,
-                                backgroundColor: isCompleted
-                                  ? "success.500"
-                                  : isActive
-                                    ? "primary.500"
-                                    : "neutral.300",
+                                backgroundColor:
+                                  step === "rejected"
+                                    ? "danger.500"
+                                    : isCompleted
+                                      ? "success.500"
+                                      : isActive
+                                        ? "primary.500"
+                                        : "neutral.300",
                                 top: "12px",
                                 left: "calc(51% + 10px)",
-                                right: "-70px",
+                                right: "-56px",
                                 zIndex: 0,
                               }}
                             />
@@ -256,18 +259,22 @@ const PurchaseRequestCard = () => {
 
                           <StepIndicator
                             variant={
-                              isCompleted
+                              step === "rejected"
                                 ? "solid"
-                                : isActive
-                                  ? "soft"
-                                  : "outlined"
+                                : isCompleted
+                                  ? "solid"
+                                  : isActive
+                                    ? "soft"
+                                    : "outlined"
                             }
                             color={
-                              isCompleted
-                                ? "success"
-                                : isActive
-                                  ? "primary"
-                                  : "neutral"
+                              step === "rejected"
+                                ? "danger"
+                                : isCompleted
+                                  ? "success"
+                                  : isActive
+                                    ? "primary"
+                                    : "neutral"
                             }
                             sx={{
                               width: 24,
@@ -284,12 +291,16 @@ const PurchaseRequestCard = () => {
                             mt={1}
                             textAlign="center"
                             sx={{
-                              fontWeight: isActive ? "md" : "sm",
-                              color: isCompleted
-                                ? "success.700"
-                                : isActive
-                                  ? "primary.700"
-                                  : "neutral.500",
+                              fontWeight:
+                                isActive || step === "rejected" ? "md" : "sm",
+                              color:
+                                step === "rejected"
+                                  ? "danger.700"
+                                  : isCompleted
+                                    ? "success.700"
+                                    : isActive
+                                      ? "primary.700"
+                                      : "neutral.500",
                               fontSize: "0.75rem",
                               maxWidth: 100,
                               whiteSpace: "nowrap",

@@ -221,11 +221,7 @@ function PurchaseReqSummary() {
             style={{ cursor: "pointer", fontWeight: 500 }}
             onClick={() =>
               navigate(
-<<<<<<< HEAD
                 `/purchase_detail?project_id=${project_id}&item_id=${item_id}&pr_id=${pr_id}`
-=======
-                `/purchase_detail?project_id=${project_id}&item_id=${item_id}`
->>>>>>> fd49993b1d5ca0b687625d788542bef1836f009f
               )
             }
           >
@@ -461,7 +457,7 @@ function PurchaseReqSummary() {
                 "Delivery Date",
                 "Delay",
                 "PO Count",
-                "PO Value with GST",
+                "PO Value",
                 "Actions",
               ].map((header, index) => (
                 <th
@@ -515,14 +511,9 @@ function PurchaseReqSummary() {
                       <RenderPRNo
                         pr_no={row.pr_no}
                         createdAt={row.createdAt}
-<<<<<<< HEAD
                         project_id={row.project_id._id}
                         item_id={item.item_id?._id}
                         pr_id={row._id}
-=======
-                        project_id={row.project_id?._id}
-                        item_id={item.item_id._id}
->>>>>>> fd49993b1d5ca0b687625d788542bef1836f009f
                       />
                     </td>
                     <td
@@ -586,7 +577,7 @@ function PurchaseReqSummary() {
                         textAlign: "left",
                       }}
                     >
-                      {row.etd || "-"}
+                      {row.etd ? new Date(row.etd).toLocaleDateString() : "-"}
                     </td>
                     <td
                       style={{
@@ -594,8 +585,11 @@ function PurchaseReqSummary() {
                         textAlign: "left",
                       }}
                     >
-                      {row.delivery_date || "-"}
+                      {row.delivery_date
+                        ? new Date(row.delivery_date).toLocaleDateString()
+                        : "-"}
                     </td>
+
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
