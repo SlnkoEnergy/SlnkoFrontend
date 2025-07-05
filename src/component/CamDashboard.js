@@ -32,7 +32,7 @@ import {
   useCreatePurchaseRequestMutation,
 } from "../redux/camsSlice";
 
-import { toast } from "react-toastify";         
+import { toast } from "react-toastify";
 
 function Dash_cam() {
   const navigate = useNavigate();
@@ -84,6 +84,8 @@ function Dash_cam() {
 
     const payload = {
       project_id: selectedPRProject?.project_id,
+      etd: null,
+      delivery_date: null,
       items: formattedItems, // Use plural to match expected backend field
     };
 

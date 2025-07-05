@@ -14,8 +14,16 @@ import Axios from "../../utils/Axios";
 import Select from "react-select";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { formatDate } from "date-fns";
 
-const AddPurchaseOrder = () => {
+const AddPurchaseOrder = ({
+  onClose,
+  pr_id,
+  item_id,
+  project_id,
+  item_name,
+  project_code,
+}) => {
   const navigate = useNavigate();
   const customStyles = {
     control: (provided) => ({
@@ -51,18 +59,19 @@ const AddPurchaseOrder = () => {
   };
 
   const [formData, setFormData] = useState({
-    p_id: "",
+    p_id: project_code,
     code: "",
     po_number: "",
     name: "",
     date: "",
-    item: "",
+    item: item_name,
     po_value: "",
     po_basic: "",
     gst: "",
     partial_billing: "",
     other: "",
     submitted_By: "",
+    pr_id: pr_id,
   });
   const [projectIDs, setProjectIDs] = useState([]);
   const [vendors, setVendors] = useState([]);
@@ -154,17 +163,18 @@ const AddPurchaseOrder = () => {
     setIsSubmitting(true);
 
     const dataToPost = {
-      p_id: formData.code,
+      p_id: project_code,
       po_number: formData.po_number,
       vendor: formData.name,
       date: formData.date,
-      item: formData.item === "Other" ? "Other" : formData.item,
+      item: item_id,
       other: formData.item === "Other" ? formData.other : "",
       po_value: formData.po_value,
       po_basic: formData.po_basic,
       gst: formData.gst,
       partial_billing: formData.partial_billing || "",
       submitted_By: userData.name,
+      pr_id: pr_id,
     };
 
     try {
@@ -177,8 +187,9 @@ const AddPurchaseOrder = () => {
       });
 
       toast.success("Purchase Order Successfully Added!");
-      navigate("/purchase-order");
-
+      if (onClose) onClose();
+      else navigate("/purchase-order");
+      window.location.reload();
       setFormData({
         p_id: "",
         code: "",
@@ -216,7 +227,6 @@ const AddPurchaseOrder = () => {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-
         width: "100%",
         minHeight: "100vh",
         backgroundColor: "background.level1",
@@ -250,22 +260,7 @@ const AddPurchaseOrder = () => {
               <Typography level="body1" fontWeight="bold" mb={1}>
                 Project ID
               </Typography>
-              <Select
-                styles={customStyles}
-                options={projectIDs.map((project) => ({
-                  value: project.code,
-                  label: project.code,
-                }))}
-                value={
-                  formData.code
-                    ? { value: formData.code, label: formData.code }
-                    : null
-                }
-                onChange={(selectedOption) =>
-                  handleAutocompleteChange("code", selectedOption?.value || "")
-                }
-                placeholder="Select Project ID"
-              />
+              <Input disabled value={formData.p_id} />
             </Grid>
 
             <Grid xs={12} md={4}>
@@ -318,20 +313,10 @@ const AddPurchaseOrder = () => {
 
             <Grid xs={12} md={4}>
               <Typography level="body1" fontWeight="bold" mb={1}>
-                Item Name
+                Item Category
               </Typography>
-              <Select
-                options={[...items, { value: "Other", label: "Other" }]}
-                value={
-                  formData.item
-                    ? { value: formData.item, label: formData.item }
-                    : null
-                }
-                onChange={(selectedOption) =>
-                  handleAutocompleteChange("item", selectedOption?.value || "")
-                }
-                placeholder="Select Item"
-              />
+
+              <Input disabled value={formData.item || "-"} />
             </Grid>
 
             <Grid xs={12} md={4}>
@@ -406,7 +391,9 @@ const AddPurchaseOrder = () => {
               variant="soft"
               href="po_dashboard.php"
               sx={{ ml: 2 }}
-              onClick={() => navigate("/purchase-order")}
+              onClick={() =>
+                onClose ? onClose() : navigate("/purchase-order")
+              }
             >
               Back
             </Button>

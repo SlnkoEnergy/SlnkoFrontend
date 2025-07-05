@@ -207,11 +207,6 @@ export default function Project_Detail() {
           </Box>
         </Card>
       </Box>
-
-      <Box mt={2} display="flex" justifyContent="flex-end" gap={1}>
-        <Button color="primary">Edit Details</Button>
-        <Button color="danger">Remove Lead</Button>
-      </Box>
     </Box>
   );
 }

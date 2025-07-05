@@ -47,8 +47,6 @@ const PurchaseRequestCard = () => {
 
   const pr_id = selectedPR?._id;
 
-  console.log("pr_id", pr_id);
-
   const { data: getPurchaseRequestById } = useGetPurchaseRequestByIdQuery(
     pr_id,
     {
@@ -58,15 +56,15 @@ const PurchaseRequestCard = () => {
 
   const PurchaseRequestId = getPurchaseRequestById?.data;
 
-  console.log("purchase", PurchaseRequestId);
-
   const handleToggleItems = () => setShowItems((prev) => !prev);
 
   const steps = [
-    "draft",
     "submitted",
     "approved",
     "po_created",
+    "out_for_delivery",
+    "delivery",
+    "rejected",
   ];
 
   return (
@@ -174,8 +172,8 @@ const PurchaseRequestCard = () => {
             maxWidth: 900,
             mx: "auto",
             mt: "10%",
-            maxHeight:'60vh', 
-            overflowY:'auto'
+            maxHeight: "60vh",
+            overflowY: "auto",
           }}
         >
           {selectedPR && (
@@ -218,7 +216,8 @@ const PurchaseRequestCard = () => {
                     }}
                   >
                     {steps.map((step, stepIndex) => {
-                      const currentStatus = PurchaseRequestId.current_status.status;
+                      const currentStatus =
+                        PurchaseRequestId.current_status.status;
                       const currentIndex = steps.indexOf(currentStatus);
 
                       const isCompleted = stepIndex <= currentIndex;
@@ -249,7 +248,7 @@ const PurchaseRequestCard = () => {
                                     : "neutral.300",
                                 top: "12px",
                                 left: "calc(51% + 10px)",
-                                right: "-91px",
+                                right: "-70px",
                                 zIndex: 0,
                               }}
                             />
@@ -336,7 +335,7 @@ const PurchaseRequestCard = () => {
 
               {/* Item List */}
               {showItems && PurchaseRequestId?.items?.length > 0 && (
-                <List sx={{ mt: 2}} >
+                <List sx={{ mt: 2 }}>
                   {PurchaseRequestId.items.map((item, idx) => (
                     <Card
                       key={idx}
@@ -355,18 +354,13 @@ const PurchaseRequestCard = () => {
                               : "No PO made"
                           }
                         >
-                          <Typography fontWeight={600} sx={{cursor:'pointer'}}>
+                          <Typography
+                            fontWeight={600}
+                            sx={{ cursor: "pointer" }}
+                          >
                             PO Count: {item.po_numbers?.length || 0}
                           </Typography>
                         </Tooltip>
-
-                        <Typography>
-                          Status:{" "}
-                          {item.current_status?.status
-                            .replace(/_/g, " ")
-                            .replace(/\b\w/g, (c) => c.toUpperCase()) ||
-                            "Draft"}
-                        </Typography>
                       </Box>
                     </Card>
                   ))}

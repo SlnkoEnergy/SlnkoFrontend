@@ -181,7 +181,7 @@ function PurchaseReqSummary() {
     );
   };
 
-  const RenderPRNo = ({ pr_no, createdAt, project_id, item_id }) => {
+  const RenderPRNo = ({ pr_no, createdAt, project_id, item_id, pr_id }) => {
     const formattedDate = createdAt
       ? new Date(createdAt).toLocaleDateString("en-IN", {
           day: "2-digit",
@@ -196,7 +196,7 @@ function PurchaseReqSummary() {
             style={{ cursor: "pointer", fontWeight: 500 }}
             onClick={() =>
               navigate(
-                `/purchase_detail?project_id=${project_id?._id}&item_id=${item_id._id}`
+                `/purchase_detail?project_id=${project_id}&item_id=${item_id}&pr_id=${pr_id}`
               )
             }
           >
@@ -289,7 +289,7 @@ function PurchaseReqSummary() {
                 "Project Code",
                 "Item Name",
                 "Status",
-                "EID",
+                "ETD",
                 "Delivery Date",
                 "Delay",
                 "PO Count",
@@ -342,9 +342,14 @@ function PurchaseReqSummary() {
                         cursor: "pointer",
                         fontWeight: "600",
                       }}
-                     
                     >
-                      <RenderPRNo pr_no={row.pr_no} createdAt={row.createdAt}/>
+                      <RenderPRNo
+                        pr_no={row.pr_no}
+                        createdAt={row.createdAt}
+                        project_id={row.project_id._id}
+                        item_id={item.item_id?._id}
+                        pr_id={row._id}
+                      />
                     </td>
                     <td
                       style={{
@@ -407,7 +412,7 @@ function PurchaseReqSummary() {
                         textAlign: "left",
                       }}
                     >
-                      {row.eid || "-"}
+                      {row.etd || "-"}
                     </td>
                     <td
                       style={{

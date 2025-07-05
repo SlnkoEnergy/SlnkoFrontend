@@ -113,6 +113,17 @@ export const camsApi = createApi({
         response || { data: [], totalCount: 0, totalPages: 1 },
       providesTags: ["CAM"],
     }),
+    getPurchaseRequest: builder.query({
+      query: ({ project_id, item_id, pr_id }) =>
+        `purchaseRequest/${project_id}/item/${item_id}/pr/${pr_id}`,
+    }),
+    editPurchaseRequest: builder.mutation({
+      query: ({ pr_id, payload }) => ({
+        url: `purchaseRequest/purchase-request/${pr_id}`,
+        method: "PUT",
+        body: payload,
+      }),
+    }),
   }),
 });
 
@@ -129,4 +140,6 @@ export const {
   useGetAllPurchaseRequestQuery,
   useGetPurchaseRequestByIdQuery,
   useGetPurchaseRequestByProjectIdQuery,
+  useGetPurchaseRequestQuery,
+  useEditPurchaseRequestMutation,
 } = camsApi;
