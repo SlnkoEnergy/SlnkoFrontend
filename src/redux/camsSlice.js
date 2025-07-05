@@ -93,9 +93,15 @@ export const camsApi = createApi({
       }),
       invalidatesTags: ["CAM"],
     }),
-    getAllPurchaseRequesr: builder.query({
+    getAllPurchaseRequest: builder.query({
       query: () => "purchaseRequest/purchase-request",
     }),
+    getPurchaseRequestById: builder.query({
+      query: (id) => `purchaseRequest/purchase-request/${id}`
+    }),
+    getPurchaseRequestByProjectId: builder.query({
+      query: (id) => `purchaseRequest/purchase-request-project_id?project_id=${id}`
+    })
   }),
 });
 
@@ -109,5 +115,7 @@ export const {
   useGetProjectDropdownQuery,
   useGetMaterialCategoryQuery,
   useCreatePurchaseRequestMutation,
-  useGetAllPurchaseRequesrQuery,
+  useGetAllPurchaseRequestQuery,
+  useGetPurchaseRequestByIdQuery,
+  useGetPurchaseRequestByProjectIdQuery
 } = camsApi;

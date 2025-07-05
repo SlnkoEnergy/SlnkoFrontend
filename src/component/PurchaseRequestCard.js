@@ -1,17 +1,38 @@
-import { Box, Table, Modal, Chip } from "@mui/joy";
+import {
+  Box,
+  Table,
+  Modal,
+  Chip,
+  ListItem,
+  List,
+  Stepper,
+  Step,
+  stepClasses,
+  Card,
+  StepIndicator,
+} from "@mui/joy";
 import Typography from "@mui/joy/Typography";
 import Tooltip from "@mui/joy/Tooltip";
 import { useState } from "react";
-import { useGetAllPurchaseRequesrQuery } from "../redux/camsSlice";
+import {
+  useGetPurchaseRequestByIdQuery,
+  useGetPurchaseRequestByProjectIdQuery,
+} from "../redux/camsSlice";
+import { useSearchParams } from "react-router-dom";
 
 const PurchaseRequestCard = () => {
+  const [searchParams] = useSearchParams();
+  const project_id = searchParams.get("project_id");
+
   const {
     data: getPurchaseRequest,
     isLoading,
     error,
-  } = useGetAllPurchaseRequesrQuery();
+  } = useGetPurchaseRequestByProjectIdQuery(project_id);
+
   const [openModal, setOpenModal] = useState(false);
   const [selectedPR, setSelectedPR] = useState(null);
+  const [showItems, setShowItems] = useState(false);
 
   const handleOpenModal = (pr) => {
     setSelectedPR(pr);
@@ -21,7 +42,32 @@ const PurchaseRequestCard = () => {
   const handleCloseModal = () => {
     setOpenModal(false);
     setSelectedPR(null);
+    setShowItems(false);
   };
+
+  const pr_id = selectedPR?._id;
+
+  console.log("pr_id", pr_id);
+
+  const { data: getPurchaseRequestById } = useGetPurchaseRequestByIdQuery(
+    pr_id,
+    {
+      skip: !pr_id,
+    }
+  );
+
+  const PurchaseRequestId = getPurchaseRequestById?.data;
+
+  console.log("purchase", PurchaseRequestId);
+
+  const handleToggleItems = () => setShowItems((prev) => !prev);
+
+  const steps = [
+    "draft",
+    "submitted",
+    "approved",
+    "po_created",
+  ];
 
   return (
     <Box
@@ -29,7 +75,6 @@ const PurchaseRequestCard = () => {
         p: 2,
         borderRadius: "md",
         boxShadow: "sm",
-        maxWidth: 800,
         mx: "auto",
         maxHeight: "70vh",
         overflowY: "auto",
@@ -49,33 +94,17 @@ const PurchaseRequestCard = () => {
       >
         <thead>
           <tr>
-            <th style={{ width: "40%" }}>
-              <Typography level="body-sm" color="neutral">
-                PR No
-              </Typography>
-            </th>
-            <th style={{ width: "20%" }}>
-              <Typography level="body-sm" color="neutral">
-                Created On
-              </Typography>
-            </th>
-            <th style={{ width: "20%" }}>
-              <Typography level="body-sm" color="neutral">
-                Created By
-              </Typography>
-            </th>
-            <th style={{ width: "20%" }}>
-              <Typography level="body-sm" color="neutral">
-                Status
-              </Typography>
-            </th>
+            <th style={{ width: "40%" }}>PR No</th>
+            <th style={{ width: "20%" }}>Created On</th>
+            <th style={{ width: "20%" }}>Created By</th>
+            <th style={{ width: "20%" }}>Status</th>
           </tr>
         </thead>
         <tbody>
           {getPurchaseRequest && getPurchaseRequest.length > 0 ? (
             getPurchaseRequest.map((pr) => (
               <tr key={pr._id}>
-                <td style={{ wordBreak: "break-word", whiteSpace: "normal" }}>
+                <td>
                   <Tooltip title="View Details">
                     <Chip
                       size="sm"
@@ -101,14 +130,16 @@ const PurchaseRequestCard = () => {
                 <td>
                   {pr.items && pr.items.length > 0 ? (
                     <Typography color="success">
-                      {pr.items[0].current_status?.status
-                        ? pr.items[0].current_status.status
-                            .charAt(0)
-                            .toUpperCase() +
-                          pr.items[0].current_status.status
-                            .slice(1)
-                            .toLowerCase()
-                        : "N/A"}
+                      {pr.items[0].current_status?.status === "draft"
+                        ? "PO Yet to be Created"
+                        : pr.items[0].current_status?.status
+                            .split("_")
+                            .map(
+                              (word) =>
+                                word.charAt(0).toUpperCase() +
+                                word.slice(1).toLowerCase()
+                            )
+                            .join(" ")}
                     </Typography>
                   ) : (
                     <Typography color="neutral">N/A</Typography>
@@ -132,7 +163,6 @@ const PurchaseRequestCard = () => {
         </tbody>
       </Table>
 
-      {/* Modal */}
       <Modal open={openModal} onClose={handleCloseModal}>
         <Box
           sx={{
@@ -141,37 +171,208 @@ const PurchaseRequestCard = () => {
             bgcolor: "background.body",
             boxShadow: "lg",
             minWidth: 300,
-            maxWidth: 500,
+            maxWidth: 900,
             mx: "auto",
             mt: "10%",
+            maxHeight:'60vh', 
+            overflowY:'auto'
           }}
         >
-          <Typography level="h6" mb={2}>
-            Purchase Request Details
-          </Typography>
-          {selectedPR ? (
+          {selectedPR && (
             <>
-              <Typography>
-                <strong>PR No:</strong> {selectedPR.pr_no}
+              <Typography level="h4" mb={2} textAlign="center" color="primary">
+                Purchase Request Details
               </Typography>
-              <Typography>
-                <strong>Created By:</strong> {selectedPR.created_by?.name}
-              </Typography>
-              <Typography>
-                <strong>Project ID:</strong> {selectedPR.project_id}
-              </Typography>
-              <Typography>
-                <strong>PO Number:</strong> {selectedPR.po_number || "N/A"}
-              </Typography>
-              <Typography>
-                <strong>PO Value:</strong> {selectedPR.po_value || "N/A"}
-              </Typography>
-              <Typography>
-                <strong>Total Items:</strong> {selectedPR.items?.length || 0}
-              </Typography>
+
+              <Box mb={2} display="flex" gap={2}>
+                <Typography>
+                  <strong>PR No:</strong>{" "}
+                  <Chip size="sm" color="primary" variant="soft">
+                    {selectedPR.pr_no}
+                  </Chip>
+                </Typography>
+                <Typography>
+                  <strong>Created By:</strong>{" "}
+                  <Chip size="sm" color="primary" variant="soft">
+                    {selectedPR.created_by?.name}
+                  </Chip>
+                </Typography>
+              </Box>
+
+              {/* Stepper */}
+              {PurchaseRequestId?.current_status && (
+                <Box
+                  sx={{
+                    backgroundColor: "#f4f7fb",
+                    p: 2,
+                    borderRadius: 2,
+                    mt: 1,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      position: "relative",
+                    }}
+                  >
+                    {steps.map((step, stepIndex) => {
+                      const currentStatus = PurchaseRequestId.current_status.status;
+                      const currentIndex = steps.indexOf(currentStatus);
+
+                      const isCompleted = stepIndex <= currentIndex;
+                      const isActive = stepIndex === currentIndex;
+                      const isLast = stepIndex === steps.length - 1;
+
+                      return (
+                        <Box
+                          key={step}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            flexDirection: "column",
+                            flex: 1,
+                            position: "relative",
+                            zIndex: 1,
+                          }}
+                        >
+                          {!isLast && (
+                            <Box
+                              sx={{
+                                position: "absolute",
+                                height: 2,
+                                backgroundColor: isCompleted
+                                  ? "success.500"
+                                  : isActive
+                                    ? "primary.500"
+                                    : "neutral.300",
+                                top: "12px",
+                                left: "calc(51% + 10px)",
+                                right: "-91px",
+                                zIndex: 0,
+                              }}
+                            />
+                          )}
+
+                          <StepIndicator
+                            variant={
+                              isCompleted
+                                ? "solid"
+                                : isActive
+                                  ? "soft"
+                                  : "outlined"
+                            }
+                            color={
+                              isCompleted
+                                ? "success"
+                                : isActive
+                                  ? "primary"
+                                  : "neutral"
+                            }
+                            sx={{
+                              width: 24,
+                              height: 24,
+                              fontSize: 14,
+                              fontWeight: "bold",
+                            }}
+                          >
+                            {stepIndex + 1}
+                          </StepIndicator>
+
+                          <Typography
+                            level="body-xs"
+                            mt={1}
+                            textAlign="center"
+                            sx={{
+                              fontWeight: isActive ? "md" : "sm",
+                              color: isCompleted
+                                ? "success.700"
+                                : isActive
+                                  ? "primary.700"
+                                  : "neutral.500",
+                              fontSize: "0.75rem",
+                              maxWidth: 100,
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {step === "draft"
+                              ? "PO Yet to be Created"
+                              : step
+                                  .replace(/_/g, " ")
+                                  .replace(/\b\w/g, (c) => c.toUpperCase())}
+                          </Typography>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </Box>
+              )}
+
+              {/* Info Summary */}
+              <Box display={"flex"} gap={2} mt={2}>
+                <Tooltip
+                  title={showItems ? "Click to close" : "Click to see items"}
+                >
+                  <Typography
+                    onClick={handleToggleItems}
+                    sx={{ cursor: "pointer", textDecoration: "underline" }}
+                  >
+                    <strong>Total Items:</strong>{" "}
+                    {selectedPR.items?.length || 0}
+                  </Typography>
+                </Tooltip>
+
+                <Typography>
+                  <strong>Total Number of PO:</strong>{" "}
+                  {PurchaseRequestId?.overall_total_number_of_po || 0}
+                </Typography>
+
+                <Typography>
+                  <strong>Total PO Value:</strong> ₹{" "}
+                  {PurchaseRequestId?.overall_total_po_value_with_gst || 0}
+                </Typography>
+              </Box>
+
+              {/* Item List */}
+              {showItems && PurchaseRequestId?.items?.length > 0 && (
+                <List sx={{ mt: 2}} >
+                  {PurchaseRequestId.items.map((item, idx) => (
+                    <Card
+                      key={idx}
+                      variant="soft"
+                      sx={{ mb: 2, p: 2, maxHeight: "40vh", overflowY: "auto" }}
+                    >
+                      <Box display={"flex"} gap={2} alignItems={"center"}>
+                        <Chip size="lg" color="primary" variant="soft">
+                          {item.item_id?.name || "-"}
+                        </Chip>
+
+                        <Tooltip
+                          title={
+                            item?.po_numbers?.length > 0
+                              ? item.po_numbers.join(", ")
+                              : "No PO made"
+                          }
+                        >
+                          <Typography fontWeight={600} sx={{cursor:'pointer'}}>
+                            PO Count: {item.po_numbers?.length || 0}
+                          </Typography>
+                        </Tooltip>
+
+                        <Typography>
+                          Status:{" "}
+                          {item.current_status?.status
+                            .replace(/_/g, " ")
+                            .replace(/\b\w/g, (c) => c.toUpperCase()) ||
+                            "Draft"}
+                        </Typography>
+                      </Box>
+                    </Card>
+                  ))}
+                </List>
+              )}
             </>
-          ) : (
-            <Typography>No details available.</Typography>
           )}
         </Box>
       </Modal>
