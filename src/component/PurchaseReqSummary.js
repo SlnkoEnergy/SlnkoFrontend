@@ -30,6 +30,8 @@ function PurchaseReqSummary() {
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
+  const [selecteditem, setSelecteditem] = useState("");
+  const [selectedpovalue, setSelectedpovalue] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   const page = parseInt(searchParams.get("page")) || 1;
@@ -38,6 +40,8 @@ function PurchaseReqSummary() {
   const { data, isLoading } = useGetAllPurchaseRequestQuery({
     page,
     search,
+    itemSearch,
+    poValueSearch
   });
 
   const purchaseRequests = data?.data || [];
@@ -139,6 +143,7 @@ function PurchaseReqSummary() {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
+        {renderFilters()}
       </Box>
 
       {/* Table */}
@@ -184,7 +189,7 @@ function PurchaseReqSummary() {
                 "Project Code",
                 "Item Name",
                 "Status",
-                "EID",
+                "ETD",
                 "Delivery Date",
                 "Delay",
                 "PO Count",
