@@ -94,19 +94,25 @@ export const camsApi = createApi({
       invalidatesTags: ["CAM"],
     }),
     getPurchaseRequestById: builder.query({
-      query: (id) => `purchaseRequest/purchase-request/${id}`
+      query: (id) => `purchaseRequest/purchase-request/${id}`,
     }),
     getPurchaseRequestByProjectId: builder.query({
-      query: (id) => `purchaseRequest/purchase-request-project_id?project_id=${id}`
+      query: (id) =>
+        `purchaseRequest/purchase-request-project_id?project_id=${id}`,
     }),
-     getAllPurchaseRequest: builder.query({
-      query: ({ page = 1, search = "", itemSearch = "", poValueSearch = "" }) =>
-        `purchaseRequest/purchase-request?page=${page}&search=${search}&itemSearch=${itemSearch}&poValueSearch=${poValueSearch}`,
-      transformResponse: (response) => response || { data: [], totalCount: 0, totalPages: 1 },
+    getAllPurchaseRequest: builder.query({
+      query: ({
+        page = 1,
+        search = "",
+        itemSearch = "",
+        poValueSearch = "",
+        statusSearch,
+      }) =>
+        `purchaseRequest/purchase-request?page=${page}&search=${search}&itemSearch=${itemSearch}&poValueSearch=${poValueSearch}&statusSearch=${statusSearch}`,
+      transformResponse: (response) =>
+        response || { data: [], totalCount: 0, totalPages: 1 },
       providesTags: ["CAM"],
     }),
-  
-
   }),
 });
 
@@ -122,5 +128,5 @@ export const {
   useCreatePurchaseRequestMutation,
   useGetAllPurchaseRequestQuery,
   useGetPurchaseRequestByIdQuery,
-  useGetPurchaseRequestByProjectIdQuery
+  useGetPurchaseRequestByProjectIdQuery,
 } = camsApi;

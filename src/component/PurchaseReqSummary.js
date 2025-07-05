@@ -4,41 +4,58 @@ import SearchIcon from "@mui/icons-material/Search";
 import {
   CircularProgress,
   Chip,
-  Tooltip,
-  Stack,
-  Modal,
-  ModalDialog,
-  ModalClose,
+  Option,
+  Select,
   Textarea,
+  ModalClose,
+  ModalDialog,
+  Modal,
 } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
-import  { iconButtonClasses } from "@mui/joy/IconButton";
+import { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useGetAllPurchaseRequestQuery } from "../redux/camsSlice";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CancelIcon from "@mui/icons-material/Cancel";
 
 function PurchaseReqSummary() {
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
+  const [selecteditem, setSelecteditem] = useState("");
+  const [selectedstatus, setSelectedstatus] = useState("");
+  const [selectedpovalue, setSelectedpovalue] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-
+  const [remarks, setRemarks] = useState();
   const page = parseInt(searchParams.get("page")) || 1;
   const search = searchParams.get("search") || "";
+  const itemSearch = searchParams.get("itemSearch") || "";
+  const poValueSearch = searchParams.get("poValueSearch") || "";
+  const statusSearch = searchParams.get("statusSearch") || "";
+  const [open, setOpen] = useState();
+  const navigate = useNavigate();
 
   const { data, isLoading } = useGetAllPurchaseRequestQuery({
     page,
     search,
+    itemSearch,
+    poValueSearch,
+    statusSearch,
   });
+
+  useEffect(() => {
+    setCurrentPage(page);
+    setSearchQuery(search);
+    setSelecteditem(itemSearch);
+    setSelectedpovalue(poValueSearch);
+    setSelectedstatus(statusSearch);
+  }, [page, search, itemSearch, poValueSearch, statusSearch]);
 
   const purchaseRequests = data?.data || [];
   const totalCount = data?.totalCount || 0;
@@ -89,9 +106,6 @@ function PurchaseReqSummary() {
     );
   };
 
-  const [open, setOpen] = useState(false);
-  const [remarks, setRemarks] = useState("");
-
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
@@ -100,17 +114,72 @@ function PurchaseReqSummary() {
     handleClose();
   };
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case "submitted":
-        return "primary";
-      case "approved":
-        return "warning";
-      case "po_created":
-        return "success";
-      default:
-        return "default";
-    }
+  const renderFilters = () => {
+    const pr_status = ["submitted", "approved", "po_created", "delivered"];
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 2,
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <FormControl sx={{ flex: 1 }} size="sm">
+          <FormLabel>PR Status</FormLabel>
+          <Select
+            value={selectedstatus}
+            onChange={(e, newValue) => {
+              setSelectedstatus(newValue);
+              setCurrentPage(1);
+              setSearchParams({
+                page: 1,
+                search: searchQuery,
+                statusSearch: newValue || "",
+                itemSearch: selecteditem,
+                poValueSearch: selectedpovalue,
+              });
+            }}
+            size="sm"
+            placeholder="Select Status"
+          >
+            <Option value="">All status</Option>
+            {pr_status.map((status) => (
+              <Option key={status} value={status}>
+                {status}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl sx={{ flex: 1 }} size="sm">
+          <FormLabel>Item Queue</FormLabel>
+          <Select
+            value={selecteditem}
+            onChange={(e, newValue) => {
+              setSelecteditem(newValue);
+              setCurrentPage(1);
+              setSearchParams({
+                page: 1,
+                search: searchQuery,
+                statusItem: newValue || "",
+                statusSearch: selectedstatus,
+                poValueSearch: selectedpovalue,
+              });
+            }}
+            size="sm"
+            placeholder="Select Status"
+          >
+            <Option value="">All Items</Option>
+            {pr_status.map((status) => (
+              <Option key={status} value={status}>
+                {status}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+    );
   };
 
   return (
@@ -139,6 +208,7 @@ function PurchaseReqSummary() {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
+        {renderFilters()}
       </Box>
 
       {/* Table */}
@@ -189,7 +259,6 @@ function PurchaseReqSummary() {
                 "Delay",
                 "PO Count",
                 "PO Value with GST",
-                "Action",
               ].map((header, index) => (
                 <th
                   key={index}
@@ -238,19 +307,14 @@ function PurchaseReqSummary() {
                         cursor: "pointer",
                         fontWeight: "600",
                       }}
+                      onClick={() =>
+                        navigate(
+                          `/purchase_detail?project_id=${row.project_id?._id}&item_id=${item.item_id._id}`
+                        )
+                      }
                     >
-                      <Tooltip
-                        title={
-                          row.current_status.status !== "approved"
-                            ? "Please Approve PR to create PO"
-                            : "Create PO"
-                        }
-                        arrow
-                      >
-                        <span>{row.pr_no}</span>
-                      </Tooltip>
+                      {row.pr_no}
                     </td>
-
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
@@ -277,7 +341,6 @@ function PurchaseReqSummary() {
                     >
                       {item.item_id?.name || "-"}
                     </td>
-
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
@@ -293,7 +356,9 @@ function PurchaseReqSummary() {
                               ? "warning"
                               : row.current_status?.status === "po_created"
                                 ? "success"
-                                : "neutral"
+                                : row.current_status?.status === "delivered"
+                                  ? "neutral"
+                                  : "neutral"
                         }
                         level="body-sm"
                       >
@@ -344,59 +409,6 @@ function PurchaseReqSummary() {
                       }}
                     >
                       ₹ {row.po_value?.toLocaleString("en-IN") || "0"}
-                    </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        textAlign: "center",
-                        padding: 2,
-                      }}
-                    >
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        justifyContent="center"
-                      >
-                        <Tooltip title="Approve PR" arrow placement="top">
-                          <Button
-                            color="success"
-                            variant="plain"
-                            sx={{
-                              borderRadius: "50%",
-                              width: 36,
-                              height: 36,
-                              minWidth: 0,
-                              boxShadow: "0 2px 6px rgba(0, 128, 0, 0.3)",
-                              "&:hover": {
-                                backgroundColor: "rgba(0, 128, 0, 0.1)",
-                              },
-                            }}
-                          >
-                            <CheckCircleIcon
-                              sx={{ color: "green", fontSize: 28 }}
-                            />
-                          </Button>
-                        </Tooltip>
-                        <Tooltip title="Reject PR" arrow placement="top">
-                          <Button
-                            color="danger"
-                            variant="plain"
-                            onClick={handleOpen}
-                            sx={{
-                              borderRadius: "50%",
-                              width: 36,
-                              height: 36,
-                              minWidth: 0,
-                              boxShadow: "0 2px 6px rgba(255, 0, 0, 0.3)",
-                              "&:hover": {
-                                backgroundColor: "rgba(255, 0, 0, 0.1)",
-                              },
-                            }}
-                          >
-                            <CancelIcon sx={{ color: "red", fontSize: 28 }} />
-                          </Button>
-                        </Tooltip>
-                      </Stack>
                     </td>
                   </tr>
                 ))
