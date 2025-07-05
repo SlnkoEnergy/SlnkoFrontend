@@ -93,15 +93,20 @@ export const camsApi = createApi({
       }),
       invalidatesTags: ["CAM"],
     }),
-    getAllPurchaseRequest: builder.query({
-      query: () => "purchaseRequest/purchase-request",
-    }),
     getPurchaseRequestById: builder.query({
       query: (id) => `purchaseRequest/purchase-request/${id}`
     }),
     getPurchaseRequestByProjectId: builder.query({
       query: (id) => `purchaseRequest/purchase-request-project_id?project_id=${id}`
-    })
+    }),
+     getAllPurchaseRequest: builder.query({
+      query: ({ page = 1, search = "", itemSearch = "", poValueSearch = "" }) =>
+        `purchaseRequest/purchase-request?page=${page}&search=${search}&itemSearch=${itemSearch}&poValueSearch=${poValueSearch}`,
+      transformResponse: (response) => response || { data: [], totalCount: 0, totalPages: 1 },
+      providesTags: ["CAM"],
+    }),
+  
+
   }),
 });
 
