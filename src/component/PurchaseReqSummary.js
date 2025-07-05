@@ -13,7 +13,10 @@ import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useGetAllPurchaseRequestQuery } from "../redux/camsSlice";
+import {
+  useGetAllPurchaseRequestQuery,
+  useGetMaterialCategoryQuery,
+} from "../redux/camsSlice";
 
 function PurchaseReqSummary() {
   const [selected, setSelected] = useState([]);
@@ -28,15 +31,14 @@ function PurchaseReqSummary() {
   const search = searchParams.get("search") || "";
   const itemSearch = searchParams.get("itemSearch") || "";
   const poValueSearch = searchParams.get("poValueSearch") || "";
-const statusSearch = searchParams.get("statusSearch") || "";
-
+  const statusSearch = searchParams.get("statusSearch") || "";
 
   const { data, isLoading } = useGetAllPurchaseRequestQuery({
     page,
     search,
     itemSearch,
     poValueSearch,
-    statusSearch
+    statusSearch,
   });
 
   useEffect(() => {
@@ -45,7 +47,7 @@ const statusSearch = searchParams.get("statusSearch") || "";
     setSelecteditem(itemSearch);
     setSelectedpovalue(poValueSearch);
     setSelectedstatus(statusSearch);
-  }, [page, search, itemSearch, poValueSearch,statusSearch]);
+  }, [page, search, itemSearch, poValueSearch, statusSearch]);
 
   const purchaseRequests = data?.data || [];
   const totalCount = data?.totalCount || 0;
@@ -96,9 +98,11 @@ const statusSearch = searchParams.get("statusSearch") || "";
     );
   };
 
+  const { data: materialCategories, isLoading: isMaterialLoading } =
+    useGetMaterialCategoryQuery();
+
   const renderFilters = () => {
     const pr_status = ["submitted", "approved", "po_created"];
-    
 
     return (
       <Box
@@ -146,18 +150,18 @@ const statusSearch = searchParams.get("statusSearch") || "";
               setSearchParams({
                 page: 1,
                 search: searchQuery,
-                statusItem: newValue || "",
+                itemSearch: newValue || "",
                 statusSearch: selectedstatus,
                 poValueSearch: selectedpovalue,
               });
             }}
             size="sm"
-            placeholder="Select Status"
+            placeholder="Select Item"
           >
             <Option value="">All Items</Option>
-            {pr_status.map((status) => (
-              <Option key={status} value={status}>
-                {status}
+            {materialCategories?.data?.map((item) => (
+              <Option key={item.name} value={item.name}>
+                {item.name}
               </Option>
             ))}
           </Select>
@@ -165,6 +169,42 @@ const statusSearch = searchParams.get("statusSearch") || "";
       </Box>
     );
   };
+
+  const RenderPRNo = ({ currentPage, pr_no, createdAt }) => {
+      const formattedDate = createdAt
+        ? new Date(createdAt).toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })
+        : "N/A";
+      return (
+        <>
+          <Box>
+            <span
+              style={{ cursor: "pointer", fontWeight: 500 }}
+              onClick={() => {
+                navigate(
+                  `/purchase_detail?page=${currentPage}`
+                );
+              }}
+            >
+              {pr_no || "-"}
+            </span>
+          </Box>
+          <Box display="flex" alignItems="center" mt={0.5}>
+            <Calendar size={12} />
+            <span style={{ fontSize: 12, fontWeight: 600 }}>
+              Created At:{" "}
+            </span>{" "}
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {formattedDate}
+            </Typography>
+          </Box>
+        </>
+      );
+    };
 
   return (
     <>
@@ -219,7 +259,7 @@ const statusSearch = searchParams.get("statusSearch") || "";
                 style={{
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
-                  textAlign: "center",
+                  textAlign: "left",
                 }}
               >
                 <Checkbox
@@ -249,7 +289,7 @@ const statusSearch = searchParams.get("statusSearch") || "";
                   style={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
-                    textAlign: "center",
+                    textAlign: "left",
                     fontWeight: "bold",
                   }}
                 >
@@ -275,7 +315,7 @@ const statusSearch = searchParams.get("statusSearch") || "";
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       <Checkbox
@@ -287,7 +327,7 @@ const statusSearch = searchParams.get("statusSearch") || "";
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       <Box>
@@ -305,7 +345,7 @@ const statusSearch = searchParams.get("statusSearch") || "";
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {item.item_id?.name || "-"}
@@ -313,7 +353,7 @@ const statusSearch = searchParams.get("statusSearch") || "";
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {row.pr_no}
@@ -321,7 +361,7 @@ const statusSearch = searchParams.get("statusSearch") || "";
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       <Typography
@@ -348,7 +388,7 @@ const statusSearch = searchParams.get("statusSearch") || "";
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {row.eid || "-"}
@@ -356,7 +396,7 @@ const statusSearch = searchParams.get("statusSearch") || "";
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {row.delivery_date || "-"}
@@ -364,7 +404,7 @@ const statusSearch = searchParams.get("statusSearch") || "";
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {renderDelayChip(row.delay || "0 days")}
@@ -372,7 +412,7 @@ const statusSearch = searchParams.get("statusSearch") || "";
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       {row.total_po_count ?? 0}
@@ -380,7 +420,7 @@ const statusSearch = searchParams.get("statusSearch") || "";
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       ₹ {row.po_value?.toLocaleString("en-IN") || "0"}
