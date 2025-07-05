@@ -2,14 +2,14 @@ import { Box, Table, Modal, Chip } from "@mui/joy";
 import Typography from "@mui/joy/Typography";
 import Tooltip from "@mui/joy/Tooltip";
 import { useState } from "react";
-import { useGetAllPurchaseRequesrQuery } from "../redux/camsSlice";
+import { useGetAllPurchaseRequestQuery } from "../redux/camsSlice";
 
 const PurchaseRequestCard = () => {
   const {
     data: getPurchaseRequest,
     isLoading,
     error,
-  } = useGetAllPurchaseRequesrQuery();
+  } = useGetAllPurchaseRequestQuery();
   const [openModal, setOpenModal] = useState(false);
   const [selectedPR, setSelectedPR] = useState(null);
 

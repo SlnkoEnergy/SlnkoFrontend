@@ -93,9 +93,14 @@ export const camsApi = createApi({
       }),
       invalidatesTags: ["CAM"],
     }),
-    getAllPurchaseRequesr: builder.query({
-      query: () => "purchaseRequest/purchase-request",
+     getAllPurchaseRequest: builder.query({
+      query: ({ page = 1, search = "", itemSearch = "", poValueSearch = "" }) =>
+        `purchaseRequest/purchase-request?page=${page}&search=${search}&itemSearch=${itemSearch}&poValueSearch=${poValueSearch}`,
+      transformResponse: (response) => response || { data: [], totalCount: 0, totalPages: 1 },
+      providesTags: ["CAM"],
     }),
+  
+
   }),
 });
 
@@ -109,5 +114,5 @@ export const {
   useGetProjectDropdownQuery,
   useGetMaterialCategoryQuery,
   useCreatePurchaseRequestMutation,
-  useGetAllPurchaseRequesrQuery,
+  useGetAllPurchaseRequestQuery,
 } = camsApi;
