@@ -165,7 +165,7 @@ export default function Project_Detail() {
               <TabList>
                 <Tab>Handover Sheet</Tab>
                 <Tab>Engineering</Tab>
-                <Tab>Purchase Request</Tab>
+                <Tab>Purchase Summary</Tab>
               </TabList>
 
               <TabPanel value={0}>
