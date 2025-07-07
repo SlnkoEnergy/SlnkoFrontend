@@ -35,7 +35,7 @@ import {
 } from "../redux/purchasesSlice";
 import { Option, Select } from "@mui/joy";
 import { useMemo } from "react";
-import { Calendar, Store } from "lucide-react";
+import { Calendar, FileCheck, Store } from "lucide-react";
 
 const PurchaseOrderSummary = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -154,7 +154,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             ))}
           </Select>
         </FormControl>
-        <FormControl sx={{ flex: 1 }} size="sm">
+        {/* <FormControl sx={{ flex: 1 }} size="sm">
           <FormLabel>Select Type</FormLabel>
           <Select
             value={selectedpo}
@@ -172,7 +172,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
               </Option>
             ))}
           </Select>
-        </FormControl>
+        </FormControl> */}
         <FormControl size="sm" sx={{ minWidth: 140 }}>
           <FormLabel>From Date</FormLabel>
           <Input
@@ -434,11 +434,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const isFullyBilled = type === "Final";
     const isPending = type === "Partial";
 
-    const label = isFullyBilled
-      ? "Final"
-      : isPending
-        ? "Partial"
-        : type;
+    const label = isFullyBilled ? "Final" : isPending ? "Partial" : type;
 
     // const icon = isFullyBilled ? (
     //   <CheckRoundedIcon />
@@ -452,6 +448,23 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       <Chip variant="soft" size="sm" color={color}>
         {label}
       </Chip>
+    );
+  };
+    const RenderPid = ({ p_id, pr_no }) => {
+    return (
+      <>
+        <Box>
+          <span style={{ cursor: "pointer", fontWeight: 500 }}>
+            {p_id || "-"}
+          </span>
+        </Box>
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <FileCheck size={12} />
+          <span style={{ fontSize: 12, fontWeight: 500 }}>PR_No : </span>{" "}
+          &nbsp;
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>{pr_no || "0"}</Typography>
+        </Box>
+      </>
     );
   };
 
@@ -631,11 +644,11 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         textAlign: "left",
                         borderBottom: "1px solid",
                         fontSize: 15,
-                        minWidth: 250,
-                        fontWeight: 500,
+                        minWidth: 350,
+                        // fontWeight: 500,
                       }}
                     >
-                      {po.p_id}
+                      <RenderPid p_id={po.p_id} pr_no={po.pr_no} />
                     </Box>
                     <Box
                       component="td"
