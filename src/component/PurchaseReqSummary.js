@@ -469,7 +469,6 @@ function PurchaseReqSummary() {
                 "Delay",
                 "PO Number",
                 "PO Value",
-                "Actions",
               ].map((header, index) => (
                 <th
                   key={index}
@@ -495,7 +494,7 @@ function PurchaseReqSummary() {
   ) : purchaseRequests.length > 0 ? (
     purchaseRequests.flatMap((row) =>
       row.items.map((item) => (
-        <tr key={`${row._id}-${item.item_id?._id || item._id}`}>
+        <tr key={item._id}>
           <td style={{ borderBottom: "1px solid #ddd", textAlign: "left" }}>
             <Checkbox
               size="sm"
@@ -528,24 +527,20 @@ function PurchaseReqSummary() {
           </td>
 
           <td style={{ borderBottom: "1px solid #ddd", textAlign: "left" }}>
-            <Typography
-              fontWeight="md"
-              color={
-                row.current_status?.status === "submitted" ? "primary" :
-                row.current_status?.status === "approved" ? "warning" :
-                row.current_status?.status === "po_created" ? "success" :
-                row.current_status?.status === "delivered" ? "neutral" :
-                "neutral"
-              }
-              level="body-sm"
-            >
-              {row.current_status?.status
-                ? row.current_status.status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
-                : "N/A"}
-            </Typography>
+            {row.items?.every((itm) => !itm.status || itm.status.length === 0) ? (
+              <Typography fontWeight="md" level="body-sm">
+                N/A
+              </Typography>
+            ) : (
+              row.items?.map((itm, i) =>
+                itm.status?.map((st, j) => (
+                  <Typography key={`${i}-${j}`} fontWeight="md" level="body-sm">
+                    {st.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                  </Typography>
+                ))
+              )
+            )}
           </td>
-
-         
 
           <td style={{ borderBottom: "1px solid #ddd", textAlign: "left" }}>
             {renderDelayChip(row.delay || "0 days")}
@@ -557,10 +552,22 @@ function PurchaseReqSummary() {
                 arrow
                 placement="top"
                 title={
-                  <Box sx={{ bgcolor: "primary.softBg", color: "primary.solidColor", p: 1, borderRadius: "sm", minWidth: "150px" }}>
-                    <Typography level="body-sm" fontWeight="md">PO Numbers:</Typography>
+                  <Box
+                    sx={{
+                      bgcolor: "primary.softBg",
+                      color: "primary.solidColor",
+                      p: 1,
+                      borderRadius: "sm",
+                      minWidth: "150px",
+                    }}
+                  >
+                    <Typography level="body-sm" fontWeight="md">
+                      PO Numbers:
+                    </Typography>
                     {row.po_numbers.map((po, idx) => (
-                      <Typography key={`${row._id}-${idx}`} level="body-xs">• {po}</Typography>
+                      <Typography key={idx} level="body-xs">
+                        • {po}
+                      </Typography>
                     ))}
                   </Box>
                 }
@@ -569,7 +576,14 @@ function PurchaseReqSummary() {
                   <Chip
                     size="sm"
                     variant="soft"
-                    sx={{ position: "relative", display: "inline-flex", alignItems: "center", paddingRight: row.po_numbers.length > 1 ? "24px" : "12px", maxWidth: "200px", cursor: "pointer" }}
+                    sx={{
+                      position: "relative",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      paddingRight: row.po_numbers.length > 1 ? "24px" : "12px",
+                      maxWidth: "200px",
+                      cursor: "pointer",
+                    }}
                   >
                     {row.po_numbers[0]}
                     {row.po_numbers.length > 1 && (
@@ -577,7 +591,15 @@ function PurchaseReqSummary() {
                         size="xs"
                         variant="solid"
                         color="primary"
-                        sx={{ position: "absolute", right: 2, top: -2, fontSize: "10px", height: 18, width: 20, zIndex: 1 }}
+                        sx={{
+                          position: "absolute",
+                          right: 2,
+                          top: -2,
+                          fontSize: "10px",
+                          height: 18,
+                          width: 20,
+                          zIndex: 1,
+                        }}
                       >
                         +{row.po_numbers.length - 1}
                       </Avatar>
@@ -585,15 +607,9 @@ function PurchaseReqSummary() {
                   </Chip>
                 </Box>
               </Tooltip>
-            ) : "-"}
-          </td>
-
-          <td style={{ borderBottom: "1px solid #ddd", textAlign: "left" }}>
-            ₹ {row.po_value?.toLocaleString("en-IN") || "0"}
-          </td>
-
-          <td style={{ borderBottom: "1px solid #ddd", textAlign: "left" }}>
-            <PRActions _id={row._id} current_status={row.current_status} />
+            ) : (
+              "-"
+            )}
           </td>
         </tr>
       ))
@@ -601,11 +617,12 @@ function PurchaseReqSummary() {
   ) : (
     <tr>
       <td colSpan={10} style={{ textAlign: "center", padding: "16px" }}>
-        No data found
+        No Data Found
       </td>
     </tr>
   )}
 </tbody>
+
 
         </Box>
       </Sheet>

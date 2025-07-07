@@ -12,13 +12,11 @@ import {
   Chip,
 } from "@mui/joy";
 import {
-  useEditPurchaseRequestMutation,
   useGetPurchaseRequestQuery,
 } from "../redux/camsSlice";
 import PurchaseOrderSummary from "./PurchaseOrderSummary";
 import { useSearchParams } from "react-router-dom";
 import ADDPO from "../component/Forms/Add_Po";
-import { toast } from "react-toastify";
 
 const PurchaseReqDetail = () => {
   const [searchParams] = useSearchParams();
@@ -73,13 +71,8 @@ const PurchaseReqDetail = () => {
 
   const currentStatus =
     getPurchaseRequest?.purchase_request?.current_status?.status;
-
-
-    
-
-
   
-
+  console.log("pr_id", getPurchaseRequest?.purchase_request?._id);
   
 
   return (
@@ -92,7 +85,6 @@ const PurchaseReqDetail = () => {
         mt: 8,
         width: "100%",
         minHeight: "100vh",
-        // backgroundColor: "background.level1",
       }}
     >
       {/* PR Details Sheet */}
@@ -206,23 +198,23 @@ const PurchaseReqDetail = () => {
             </Typography>
             <Chip
               color={
-                getPurchaseRequest?.purchase_request?.current_status?.status ===
+                getPurchaseRequest?.item?.current_status?.status ===
                 "approved"
                   ? "success"
-                  : getPurchaseRequest?.purchase_request?.current_status
+                  : getPurchaseRequest?.item?.current_status
                         ?.status === "submitted"
                     ? "primary"
-                    : getPurchaseRequest?.purchase_request?.current_status
+                    : getPurchaseRequest?.item?.current_status
                           ?.status === "out_for_delivery"
                       ? "warning"
-                      : getPurchaseRequest?.purchase_request?.current_status
+                      : getPurchaseRequest?.item?.current_status
                             ?.status === "delivered"
                         ? "success"
                         : "neutral"
               }
               variant="soft"
             >
-              {getPurchaseRequest?.purchase_request?.current_status?.status
+              {getPurchaseRequest?.item?.current_status?.status
                 ?.replace(/_/g, " ")
                 ?.replace(/\b\w/g, (c) => c.toUpperCase()) || "-"}
             </Chip>
@@ -230,7 +222,7 @@ const PurchaseReqDetail = () => {
 
           <Tooltip
             title={
-              getPurchaseRequest?.purchase_request?.etd === null
+              getPurchaseRequest?.item?.etd === null
                 ? "Please select ETD first"
                 : ""
             }
@@ -240,7 +232,6 @@ const PurchaseReqDetail = () => {
                 size="sm"
                 variant="outlined"
                 onClick={() => setOpen(true)}
-                disabled={getPurchaseRequest?.purchase_request?.etd === null}
               >
                 + Add PO
               </Button>
@@ -249,8 +240,8 @@ const PurchaseReqDetail = () => {
         </Box>
       </Sheet>
 
-      <PurchaseOrderSummary project_code={getPurchaseRequest?.purchase_request?.project?.code} />
-
+      <PurchaseOrderSummary project_code={getPurchaseRequest?.purchase_request?.project?.code} pr_id={getPurchaseRequest?.purchase_request?._id?.toString()} />
+      
       
       {/* Add PO Modal */}
       <Modal

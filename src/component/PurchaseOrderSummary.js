@@ -1,7 +1,6 @@
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import EditNoteIcon from "@mui/icons-material/EditNote";
 import HistoryIcon from "@mui/icons-material/History";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
@@ -19,11 +18,12 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
-import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import EditNoteIcon from "@mui/icons-material/EditNote";
 import DownloadIcon from "@mui/icons-material/Download";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
+import CloseIcon from "@mui/icons-material/Close";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
@@ -31,8 +31,9 @@ import {
   useExportPosMutation,
   useGetPaginatedPOsQuery,
   useUpdateEtdOrDeliveryDateMutation,
+  useUpdatePurchasesStatusMutation,
 } from "../redux/purchasesSlice";
-import { Option, Select } from "@mui/joy";
+import { Modal, Option, Select, Tooltip } from "@mui/joy";
 import { useMemo } from "react";
 import { Calendar, FileCheck, Store } from "lucide-react";
 import {
@@ -43,19 +44,27 @@ import {
   DialogActions,
 } from "@mui/joy";
 
+
 const PurchaseOrderSummary = forwardRef((props, ref) => {
-  const { project_code } = props;
+  const { project_code, pr_id } = props;
   const navigate = useNavigate();
+  const [po, setPO] = useState("");
   const [selectedpo, setSelectedpo] = useState("");
   const [selectedtype, setSelectedtype] = useState("");
   const [selected, setSelected] = useState([]);
+  const [selectedPoNumber, setSelectedPoNumber] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [modalAction, setModalAction] = useState("");
+  const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
   const [currentPage, setCurrentPage] = useState(initialPage);
+  const [openModal, setOpenModal] = useState(false);
+  const [nextStatus, setNextStatus] = useState("");
+  const [remarks, setRemarks] = useState("");
   const [perPage, setPerPage] = useState(initialPageSize);
   const location = useLocation();
   const isFromCAM = location.pathname === "/project_detail";
@@ -71,7 +80,20 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     search: searchQuery,
     type: selectedtype,
     project_id: isFromCAM || isFromPR ? project_code : "",
+    pr_id: isFromPR && pr_id ? pr_id.toString() : "",
   });
+
+  const handleOpen = (po_number, action) => {
+    setSelectedPoNumber(po_number);
+    setModalAction(action);
+    setOpen(true);
+  };
+  const handleClose = () => {
+    setOpen(false);
+    setSelectedPoNumber("");
+    setModalAction("");
+  };
+
   const [exportPos, { isLoading: isExporting }] = useExportPosMutation();
   const [updateEtdOrDeliveryDate] = useUpdateEtdOrDeliveryDateMutation();
   const { data: getPoData = [], total = 0, count = 0 } = getPO;
@@ -182,7 +204,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             ))}
           </Select>
         </FormControl> */}
-        <FormControl size="sm" sx={{ minWidth: 140 }}>
+        {/* <FormControl size="sm" sx={{ minWidth: 140 }}>
           <FormLabel>From Date</FormLabel>
           <Input
             type="date"
@@ -203,9 +225,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
               setCurrentPage(1);
             }}
           />
-        </FormControl>
+        </FormControl> */}
         <Box mt={3} sx={{ display: "flex", gap: 1 }}>
-          <Button
+          {/* <Button
             variant="outlined"
             size="sm"
             color="primary"
@@ -215,7 +237,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             startDecorator={<CalendarMonthIcon />}
           >
             Export by Date
-          </Button>
+          </Button> */}
 
           <Button
             variant="soft"
@@ -232,7 +254,33 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     );
   };
 
-  const RowMenu = ({ currentPage, po_number }) => {
+
+  const [updateStatus] = useUpdatePurchasesStatusMutation();
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const handleStatusChange = async (current_status) => {
+    try {
+      const updatedStatus =
+        selectedStatus === "out_for_delivery"
+          ? "delivered"
+          : "out_for_delivery";
+
+      await updateStatus({
+        id: po,
+        status: updatedStatus,
+        remarks,
+      }).unwrap();
+
+      toast.success("Status Updated Successfully");
+      setRemarks("");
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (err) {
+      toast.error("Failed to update status");
+    }
+  };
+
+  const RowMenu = ({ currentPage, po_number, current_status }) => {
     const [user, setUser] = useState(null);
 
     useEffect(() => {
@@ -248,6 +296,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       return null;
     };
 
+    // console.log("current", current_status);
+
     return (
       <Dropdown>
         <MenuButton
@@ -260,80 +310,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         </MenuButton>
         <Menu size="sm" sx={{ minWidth: 140 }}>
           {(user?.name === "IT Team" ||
-            user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Prachi Singh" ||
-            user?.department === "admin" ||
-            user?.name === "Ajay Singh" ||
-            user?.name === "Aryan Maheshwari" ||
-            user?.name === "Sarthak Sharma" ||
-            user?.name === "Naresh Kumar" ||
-            user?.name === "Shubham Gupta") && (
-            <MenuItem
-              onClick={() => {
-                const page = currentPage;
-                const po = po_number;
-                localStorage.setItem("po_no", po);
-                navigate(`/add_bill?page=${page}&po_number=${po}`);
-              }}
-            >
-              {" "}
-              <AddCircleOutlineIcon />
-              <Typography>Add Bill</Typography>
-            </MenuItem>
-          )}
-          <MenuItem
-            onClick={() => {
-              const page = currentPage;
-              const po = po_number;
-              localStorage.setItem("get-po", po);
-              navigate(`/bill_history?page=${page}&po_number=${po}`);
-            }}
-          >
-            <HistoryIcon />
-            <Typography>Bill History</Typography>
-          </MenuItem>
-          <Divider sx={{ backgroundColor: "lightblue" }} />
-          {(user?.name === "IT Team" ||
-            user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Prachi Singh" ||
-            user?.department === "admin" ||
-            user?.name === "Ajay Singh" ||
-            user?.name === "Aryan Maheshwari" ||
-            user?.name === "Sarthak Sharma" ||
-            user?.name === "Shubham Gupta" ||
-            user?.name === "Naresh Kumar" ||
-            user?.name === "Sandeep Yadav" ||
-            user?.name === "Som Narayan Jha" ||
-            user?.name === "Saresh") && (
-            <MenuItem
-              onClick={() => {
-                const page = currentPage;
-                const po = po_number;
-                // const ID = _id
-                localStorage.setItem("edit-po", po);
-                navigate(`/edit_po?page=${page}&po_number=${po}`);
-              }}
-            >
-              <EditNoteIcon />
-              <Typography>Edit PO</Typography>
-            </MenuItem>
-          )}
-          <MenuItem
-            onClick={() => {
-              const page = currentPage;
-              const po = po_number;
-              localStorage.setItem("get-po", po);
-              navigate(`/po_history?page=${page}&po_number=${po}`);
-            }}
-          >
-            <HistoryIcon />
-            <Typography>PO History</Typography>
-          </MenuItem>
-          {/* <Divider sx={{ backgroundColor: "lightblue" }} /> */}
-          {/* <MenuItem color="primary" style={{ fontWeight: "bold" }}>
-            Adjust Bill
-          </MenuItem> */}
-          {(user?.name === "IT Team" ||
             user?.name === "admin" ||
             user?.name === "Guddu Rani Dubey" ||
             user?.name === "Prachi Singh" ||
@@ -342,31 +318,20 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             user?.name === "Shubham Gupta") && (
             <MenuItem
               onClick={() => {
-                const page = currentPage;
-                const po = po_number;
-                localStorage.setItem("edit_bill", po);
-                navigate(`/edit_bill?page=${page}&po_number=${po}`);
+                if (current_status?.status === "out_for_delivery") {
+                  setNextStatus("delivered");
+                } else {
+                  setNextStatus("out_for_delivery");
+                }
+                setOpenModal(true);
+                setPO(po_number);
+                setSelectedStatus(current_status?.status);
               }}
             >
-              {" "}
               <EditNoteIcon />
-              <Typography>Edit Bill</Typography>
+              <Typography>Change Status</Typography>
             </MenuItem>
           )}
-          {/* <Divider sx={{ backgroundColor: "lightblue" }} />
-                      {(user?.name === "IT Team" ||
-                        user?.name === "Guddu Rani Dubey" ||
-                        user?.name === "Prachi Singh" ||
-                        user?.name === "admin") && (
-                        <MenuItem
-                          color="danger"
-                          disabled={selectedProjects.length === 0}
-                          onClick={handleDelete}
-                        >
-                          <DeleteIcon />
-                          <Typography>Delete</Typography>
-                        </MenuItem>
-                      )} */}
         </Menu>
       </Dropdown>
     );
@@ -463,7 +428,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         </Box>
         <Box display="flex" alignItems="center" mt={0.5}>
           <FileCheck size={12} />
-          <span style={{ fontSize: 12, fontWeight: 500 }}>PR_No : </span> &nbsp;
+          <span style={{ fontSize: 12, fontWeight: 500 }}>PR No : </span> &nbsp;
           <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
             {pr_no || "0"}
           </Typography>
@@ -645,7 +610,57 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       </>
     );
   };
-  const EditPo = ({ po_number, currentPage }) => {};
+ 
+
+  const EditPo = ({ po_number }) => (
+    <Tooltip title="Edit PO" placement="top">
+      <IconButton color="primary" onClick={() => handleOpen(po_number, "edit")}>
+        <EditNoteIcon />
+      </IconButton>
+    </Tooltip>
+  );
+
+  const ViewPOHistory = ({ po_number }) => (
+    <Tooltip title="View PO History" placement="top">
+      <IconButton color="primary" onClick={() => handleOpen(po_number, "view")}>
+        <History />
+      </IconButton>
+    </Tooltip>
+  );
+
+  const RenderTotalBilled = ({ total_billed = 0, po_value = 0 , po_number}) => {
+    const formattedAmount = new Intl.NumberFormat("en-IN", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(Number(total_billed) || 0);
+
+    const canAddBilling = Number(po_value) !== Number(total_billed);
+
+    return (
+      <Box>
+        <Typography sx={{ fontSize: 14 }}>
+          ₹ {formattedAmount}
+        </Typography>
+
+        <Box display="flex" gap={1} mt={0.5}>
+          {canAddBilling && (
+            <Tooltip title="Add Billing">
+              <IconButton size="small" color="primary" onClick={() => handleOpen(po_number, "add_bill")}>
+                <CirclePlus size={18} />
+              </IconButton>
+            </Tooltip>
+          )}
+
+          <Tooltip title="View Billing History">
+            <IconButton size="small" color="secondary" onClick={() => handleOpen(po_number, "view_bill")}>
+              <History size={18} />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Box>
+    );
+  };
+
 
   return (
     <>
@@ -727,6 +742,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                   />
                 </Box>
                 {[
+                  "",
+                  "",
                   "Project ID",
                   "PO Number",
                   "Partial Billing",
@@ -778,6 +795,26 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         }
                         color={selected.includes(po.id) ? "primary" : "neutral"}
                       />
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: "8px",
+                        textAlign: "left",
+                        borderBottom: "1px solid",
+                      }}
+                    >
+                      <ViewPOHistory po_number={po.po_number} />
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: "8px",
+                        textAlign: "left",
+                        borderBottom: "1px solid",
+                      }}
+                    >
+                      <EditPo po_number={po.po_number} />
                     </Box>
                     <Box
                       component="td"
@@ -888,15 +925,11 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         padding: 1,
                         textAlign: "left",
                         borderBottom: "1px solid",
-                        fontSize: 14,
+                        
                         minWidth: 150,
                       }}
                     >
-                      ₹
-                      {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 2,
-                      }).format(po.total_billed) || 0}
+                      <RenderTotalBilled total_billed={po.total_billed} po_value={po.po_value} po_number={po.po_number} />
                     </Box>
 
                     <Box
@@ -910,6 +943,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       <RowMenu
                         currentPage={currentPage}
                         po_number={po.po_number}
+                      
+                        current_status={po.current_status}
                       />
                     </Box>
                   </Box>
@@ -1015,7 +1050,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           >
             {[10, 30, 60, 100].map((num) => (
               <Option key={num} value={num}>
-                {num} perPage
+                {num}/Page
               </Option>
             ))}
           </Select>
@@ -1031,7 +1066,99 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         >
           Next
         </Button>
+
+        <Modal open={openModal} onClose={() => setOpenModal(false)}>
+          <Sheet
+            variant="outlined"
+            sx={{
+              maxWidth: 400,
+              borderRadius: "md",
+              p: 3,
+              boxShadow: "lg",
+              mx: "auto",
+              mt: "10%",
+            }}
+          >
+            <Typography level="h5" mb={1}>
+              Confirm Status Change
+            </Typography>
+            <Typography mb={2}>
+              Do you want to change status to{" "}
+              <b>{nextStatus.replace(/_/g, " ")}</b>?
+            </Typography>
+
+            <Textarea
+              placeholder="Enter remarks..."
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              minRows={3}
+              sx={{ mb: 2 }}
+            />
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "1rem",
+              }}
+            >
+              <Button variant="plain" onClick={() => setOpenModal(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="solid"
+                color="primary"
+                disabled={!remarks.trim()}
+                onClick={handleStatusChange}
+              >
+                Confirm
+              </Button>
+            </div>
+          </Sheet>
+        </Modal>
       </Box>
+
+      <Modal open={open} onClose={handleClose}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            bgcolor: "background.paper",
+            boxShadow: 24,
+            p: 2,
+            borderRadius: 2,
+            minWidth: 500,
+          }}
+        >
+          <IconButton
+            onClick={handleClose}
+            sx={{
+              position: "absolute",
+              top: 20,
+              right: 15,
+              color: "grey.500",
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+
+          {modalAction === "edit" && (
+            <UpdatePurchaseOrder po_number={selectedPoNumber} />
+          )}
+          {modalAction === "view" && (
+            <PoHistoryTable po_number={selectedPoNumber} />
+          )}
+          {modalAction === "add_bill" && (
+            <AddBillForm po_number={selectedPoNumber} />
+          )} 
+          {modalAction === "view_bill" && (
+            <BillHistoryTable po_number={selectedPoNumber} />
+          )}
+
+        </Box>
+      </Modal>
     </>
   );
 });
