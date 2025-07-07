@@ -20,6 +20,8 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import DownloadIcon from "@mui/icons-material/Download";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
@@ -27,183 +29,199 @@ import axios from "axios";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
-
-// function descendingComparator(a, b, orderBy) {
-//   if (b[orderBy] < a[orderBy]) {
-//     return -1;
-//   }
-//   if (b[orderBy] > a[orderBy]) {
-//     return 1;
-//   }
-//   return 0;
-// }
-
-// function getComparator(order, orderBy) {
-//   return order === "desc"
-//     ? (a, b) => descendingComparator(a, b, orderBy)
-//     : (a, b) => -descendingComparator(a, b, orderBy);
-// }
+import {
+  useExportPosMutation,
+  useGetPaginatedPOsQuery,
+} from "../redux/purchasesSlice";
+import { Option, Select } from "@mui/joy";
+import { useMemo } from "react";
+import { Calendar, FileCheck, Store } from "lucide-react";
 
 const PurchaseOrderSummary = forwardRef((props, ref) => {
   const navigate = useNavigate();
-  const [pos, setPos] = useState([]);
-  const [bills, setBills] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [stateFilter, setStateFilter] = useState("");
-  const [open, setOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(15);
+  const [selectedpo, setSelectedpo] = useState("");
+  const [selectedtype, setSelectedtype] = useState("");
   const [selected, setSelected] = useState([]);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [total_Billed, setTotal_Billed] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
+  const initialPage = parseInt(searchParams.get("page")) || 1;
+  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
+  const [currentPage, setCurrentPage] = useState(initialPage);
+  const [perPage, setPerPage] = useState(initialPageSize);
 
-  // const renderFilters = () => (
-  //   <>
-  //     <FormControl size="sm">
-  //       <FormLabel>State</FormLabel>
-  //       <Select
-  //         size="sm"
-  //         placeholder="Filter by state"
-  //         onChange={(e) => setStateFilter(e.target.value)}
-  //         slotProps={{ button: { sx: { whiteSpace: "nowrap" } } }}
-  //       >
-  //         <Option value="">All</Option>
-  //         <Option value="A">A</Option>
-  //         <Option value="B">B</Option>
-  //         <Option value="C">C</Option>
-  //         <Option value="D">D</Option>
-  //       </Select>
-  //     </FormControl>
-  //     <FormControl size="sm">
-  //       <FormLabel>Customer</FormLabel>
-  //       <Select size="sm" placeholder="All">
-  //         <Option value="all">All</Option>
-  //         <Option value="olivia">Olivia Rhye</Option>
-  //         <Option value="steve">Steve Hampton</Option>
-  //         <Option value="ciaran">Ciaran Murray</Option>
-  //         <Option value="marina">Marina Macdonald</Option>
-  //         <Option value="charles">Charles Fulton</Option>
-  //         <Option value="jay">Jay Hoper</Option>
-  //       </Select>
-  //     </FormControl>
-  //   </>
-  // );
+  const {
+    data: getPO = [],
+    isLoading,
+    error,
+  } = useGetPaginatedPOsQuery({
+    page: currentPage,
+    pageSize: perPage,
+    status: selectedpo,
+    search: searchQuery,
+    type: selectedtype,
+  });
 
-  useEffect(() => {
-    const fetchTableData = async () => {
-      try {
-        const token = localStorage.getItem("authToken");
-        console.log(token);
+  const [exportPos, { isLoading: isExporting }] = useExportPosMutation();
 
-        if (!token) {
-          throw new Error("No auth token found in localStorage.");
-        }
-      
-        const [PoResponse, BillResponse, payResponse] = await Promise.all([
-          axios.get(`${process.env.REACT_APP_API_URL}/get-all-pO-IT`, {
-            headers: {
-              "x-auth-token": token,
-            },
-          }),
-          axios.get(`${process.env.REACT_APP_API_URL}/get-all-bilL-IT`, {
-            headers: {
-              "x-auth-token": token,
-            },
-          }),
-          axios.get(`${process.env.REACT_APP_API_URL}/get-pay-summarY-IT`, {
-            headers: {
-              "x-auth-token": token,
-            },
-          }),
-        ]);
-        
-        const PoData = PoResponse.data.data || [];
-        const BillData = BillResponse.data.data || [];
-        const payData = payResponse.data.data || [];
+  const { data: getPoData = [], total = 0, count = 0 } = getPO;
+  const totalPages = Math.ceil(total / perPage);
 
-        const updatedPoData = PoData.map((po) => {
-          const poBills = BillData.filter(
-            (bill) => bill.po_number === po.po_number
-          );
+  const startIndex = (currentPage - 1) * perPage + 1;
+  const endIndex = Math.min(startIndex + count - 1, total);
 
-          const totalBill = poBills.reduce((sum, bill) => {
-            const billValue = parseFloat(bill.bill_value) || 0;
-            return sum + billValue;
-          }, 0);
+  const getPaginationRange = () => {
+    const siblings = 1;
+    const pages = [];
 
-          const totalPaidAmount = payData
-            .filter(
-              (pay) =>
-                pay.po_number === po.po_number &&
-                pay.approved === "Approved" &&
-                pay.utr
-            )
-            .reduce((sum, pay) => sum + (parseFloat(pay.amount_paid) || 0), 0);
+    if (totalPages <= 5 + siblings * 2) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      const left = Math.max(currentPage - siblings, 2);
+      const right = Math.min(currentPage + siblings, totalPages - 1);
 
-          // Format the total paid amount
-          const formattedPaidAmount = totalPaidAmount.toLocaleString("en-IN");
+      pages.push(1);
+      if (left > 2) pages.push("...");
 
-          // Improved logging to show the total paid amount
-          // console.log(`PO Number: ${po.po_number}, Total Paid Amount:`, formattedPaidAmount);
+      for (let i = left; i <= right; i++) pages.push(i);
 
-          const latestBill = poBills.sort(
-            (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
-          )[0];
-          const billingTypes = latestBill ? latestBill.type.trim() : "-";
+      if (right < totalPages - 1) pages.push("...");
+      pages.push(totalPages);
+    }
 
-          const formattedTotal = totalBill.toLocaleString("en-IN");
+    return pages;
+  };
 
-          const billStatus =
-            totalBill >= parseFloat(po.po_value)
-              ? "Fully Billed"
-              : "Bill Pending";
+  const formatDateToDDMMYYYY = (dateStr) => {
+    if (!dateStr) return null;
+    const [year, month, day] = dateStr.split("-");
+    return `${day}-${month}-${year}`;
+  };
 
-          return {
-            ...po,
-            totalBill,
-            formattedTotal,
-            billingTypes,
-            bill_status: billStatus,
-            paidAmount: formattedPaidAmount,
-          };
-        });
+  const handleExport = async (isExportAll) => {
+    try {
+      const exportFrom = from ? formatDateToDDMMYYYY(from) : null;
+      const exportTo = to ? formatDateToDDMMYYYY(to) : null;
+      const res = await exportPos({
+        from: exportFrom,
+        to: exportTo,
+        exportAll: isExportAll,
+      }).unwrap();
 
-        console.log("Updated PO Data:", updatedPoData);
+      const url = URL.createObjectURL(res);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "po_export.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export failed", err);
+      alert("Failed to export bills");
+    }
+  };
 
-        setPos(updatedPoData);
-      } catch (err) {
-        console.error("Error fetching table data:", err);
-        setError(
-          <span
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "5px",
-              color: "red",
-              justifyContent: "center",
-              flexDirection: "column",
-              padding: "20px",
+  const renderFilters = () => {
+    const po_status = ["Fully Billed ", "Bill Pending"];
+    const po_type = ["Final", "Partial"];
+
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 2,
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <FormControl sx={{ flex: 1 }} size="sm">
+          <FormLabel>PO Status</FormLabel>
+          <Select
+            value={selectedpo}
+            onChange={(e, newValue) => {
+              setSelectedpo(newValue);
+              setCurrentPage(1);
             }}
+            size="sm"
+            placeholder="Select Status"
           >
-            <PermScanWifiIcon />
-            <Typography
-              fontStyle={"italic"}
-              fontWeight={"600"}
-              sx={{ color: "#0a6bcc" }}
-            >
-              Sit Back! Internet Connection will be back soon..
-            </Typography>
-          </span>
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
+            <Option value="">All status</Option>
+            {po_status.map((status) => (
+              <Option key={status} value={status}>
+                {status}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+        {/* <FormControl sx={{ flex: 1 }} size="sm">
+          <FormLabel>Select Type</FormLabel>
+          <Select
+            value={selectedpo}
+            onChange={(e, newValue) => {
+              setSelectedtype(newValue);
+              setCurrentPage(1);
+            }}
+            size="sm"
+            placeholder="Select Type"
+          >
+            <Option value="">All status</Option>
+            {po_type.map((status) => (
+              <Option key={status} value={status}>
+                {status}
+              </Option>
+            ))}
+          </Select>
+        </FormControl> */}
+        <FormControl size="sm" sx={{ minWidth: 140 }}>
+          <FormLabel>From Date</FormLabel>
+          <Input
+            type="date"
+            value={from}
+            onChange={(e) => {
+              setFrom(e.target.value);
+              setCurrentPage(1);
+            }}
+          />
+        </FormControl>
+        <FormControl size="sm" sx={{ minWidth: 140 }}>
+          <FormLabel>To Date</FormLabel>
+          <Input
+            type="date"
+            value={to}
+            onChange={(e) => {
+              setTo(e.target.value);
+              setCurrentPage(1);
+            }}
+          />
+        </FormControl>
+        <Box mt={3} sx={{ display: "flex", gap: 1 }}>
+          <Button
+            variant="outlined"
+            size="sm"
+            color="primary"
+            onClick={() => handleExport(false)}
+            loading={isExporting}
+            disabled={!from || !to}
+            startDecorator={<CalendarMonthIcon />}
+          >
+            Export by Date
+          </Button>
 
-    fetchTableData();
-  }, []);
+          <Button
+            variant="soft"
+            size="sm"
+            color="neutral"
+            onClick={() => handleExport(true)}
+            loading={isExporting}
+            startDecorator={<DownloadIcon />}
+          >
+            Export All
+          </Button>
+        </Box>
+      </Box>
+    );
+  };
 
   const RowMenu = ({ currentPage, po_number }) => {
     const [user, setUser] = useState(null);
@@ -269,16 +287,15 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           {(user?.name === "IT Team" ||
             user?.name === "Guddu Rani Dubey" ||
             user?.name === "Prachi Singh" ||
-            user?.department=== "admin" ||
+            user?.department === "admin" ||
             user?.name === "Ajay Singh" ||
             user?.name === "Aryan Maheshwari" ||
             user?.name === "Sarthak Sharma" ||
             user?.name === "Shubham Gupta" ||
             user?.name === "Naresh Kumar" ||
-          user?.name === "Sandeep Yadav" ||
+            user?.name === "Sandeep Yadav" ||
             user?.name === "Som Narayan Jha" ||
-            user?.name === "Saresh"
-          ) && (
+            user?.name === "Saresh") && (
             <MenuItem
               onClick={() => {
                 const page = currentPage;
@@ -327,7 +344,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
               <Typography>Edit Bill</Typography>
             </MenuItem>
           )}
-            {/* <Divider sx={{ backgroundColor: "lightblue" }} />
+          {/* <Divider sx={{ backgroundColor: "lightblue" }} />
                       {(user?.name === "IT Team" ||
                         user?.name === "Guddu Rani Dubey" ||
                         user?.name === "Prachi Singh" ||
@@ -346,29 +363,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     );
   };
 
-  const BillingStatusChip = ({ status }) => {
-    return (
-      <Chip
-        variant="soft"
-        size="sm"
-        startDecorator={
-          {
-            "Fully Billed": <CheckRoundedIcon />,
-            "Bill Pending": <AutorenewRoundedIcon />,
-          }[status]
-        }
-        color={
-          {
-            "Fully Billed": "success",
-            "Bill Pending": "warning",
-          }[status]
-        }
-      >
-        {status}
-      </Chip>
-    );
-  };
-
   const handleSelectAll = (event) => {
     if (event.target.checked) {
       setSelected(paginatedPo.map((row) => row.id));
@@ -377,41 +371,15 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     }
   };
 
+  const Pos = useMemo(
+    () => (Array.isArray(getPO?.data) ? getPO.data : []),
+    [getPO]
+  );
+  const paginatedPo = Pos;
+
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
-
-  const filteredAndSortedData = pos
-    .filter((po) => {
-      const matchesSearchQuery = [
-        "p_id",
-        "po_number",
-        "bill_status",
-        "vendor",
-      ].some((key) => po[key]?.toLowerCase().includes(searchQuery));
-      // Apply the state filter
-      // const matchesStateFilter =
-      //   !stateFilter || project.state === stateFilter;
-      // console.log("MatchStates are: ", matchesStateFilter);
-
-      // Apply the customer filter
-      // const matchesCustomerFilter =
-      //   !customerFilter || project.customer === customerFilter;
-
-      // Combine all filters
-      return matchesSearchQuery;
-    })
-    .sort((a, b) => {
-      if (a.p_id?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.p_id?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.po_number?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.po_number?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.bill_status?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.bill_status?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.vendor?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.vendor?.toLowerCase().includes(searchQuery)) return 1;
-      return 0;
-    });
 
   const handleRowSelect = (id, isSelected) => {
     setSelected((prevSelected) =>
@@ -421,34 +389,15 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     );
   };
 
-  const generatePageNumbers = (currentPage, totalPages) => {
-    const pages = [];
-
-    if (currentPage > 2) {
-      pages.push(1);
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setSearchParams((prev) => {
+        return {
+          ...Object.fromEntries(prev.entries()),
+          page: String(page),
+        };
+      });
     }
-
-    if (currentPage > 3) {
-      pages.push("...");
-    }
-
-    for (
-      let i = Math.max(1, currentPage - 1);
-      i <= Math.min(totalPages, currentPage + 1);
-      i++
-    ) {
-      pages.push(i);
-    }
-
-    if (currentPage < totalPages - 2) {
-      pages.push("...");
-    }
-
-    if (currentPage < totalPages - 1) {
-      pages.push(totalPages);
-    }
-
-    return pages;
   };
 
   useEffect(() => {
@@ -456,129 +405,110 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     setCurrentPage(page);
   }, [searchParams]);
 
-  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
+  const BillingStatusChip = ({ status }) => {
+    const isFullyBilled = status === "Fully Billed";
+    const isPending = status === "Bill Pending";
 
-  const formatDate = (dateString) => {
-    if (!dateString) {
-      return "-";
-    }
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-      console.warn(`Invalid date value: "${dateString}"`);
-      return "-";
-    }
-    const options = { day: "2-digit", month: "short", year: "numeric" };
-    return new Intl.DateTimeFormat("en-GB", options)
-      .format(date)
-      .replace(/ /g, "/");
+    const label = isFullyBilled
+      ? "Fully Billed"
+      : isPending
+        ? "Pending"
+        : status;
+
+    const icon = isFullyBilled ? (
+      <CheckRoundedIcon />
+    ) : isPending ? (
+      <AutorenewRoundedIcon />
+    ) : null;
+
+    const color = isFullyBilled ? "success" : isPending ? "warning" : "neutral";
+
+    return (
+      <Chip variant="soft" size="sm" startDecorator={icon} color={color}>
+        {label}
+      </Chip>
+    );
   };
 
-  const paginatedPo = filteredAndSortedData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-  const paymentsWithFormattedDate = paginatedPo.map((po) => ({
-    ...po,
-    formattedDate: formatDate(po.date),
-  }));
+  const BillingTypeChip = ({ type }) => {
+    const isFullyBilled = type === "Final";
+    const isPending = type === "Partial";
 
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setSearchParams({ page });
-      setCurrentPage(page);
-    }
+    const label = isFullyBilled ? "Final" : isPending ? "Partial" : type;
+
+    // const icon = isFullyBilled ? (
+    //   <CheckRoundedIcon />
+    // ) : isPending ? (
+    //   <AutorenewRoundedIcon />
+    // ) : null;
+
+    const color = isFullyBilled ? "primary" : isPending ? "danger" : "neutral";
+
+    return (
+      <Chip variant="soft" size="sm" color={color}>
+        {label}
+      </Chip>
+    );
+  };
+    const RenderPid = ({ p_id, pr_no }) => {
+    return (
+      <>
+        <Box>
+          <span style={{ cursor: "pointer", fontWeight: 500 }}>
+            {p_id || "-"}
+          </span>
+        </Box>
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <FileCheck size={12} />
+          <span style={{ fontSize: 12, fontWeight: 500 }}>PR_No : </span>{" "}
+          &nbsp;
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>{pr_no || "0"}</Typography>
+        </Box>
+      </>
+    );
   };
 
-  // if (loading) {
-  //   return <Typography>Loading...</Typography>;
-  // }
+  const RenderPONumber = ({ po_number, date }) => {
+    return (
+      <>
+        <Box>
+          <span style={{ cursor: "pointer", fontWeight: 400 }}>
+            {po_number || "-"}
+          </span>
+        </Box>
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <Calendar size={12} />
+          <span style={{ fontSize: 12, fontWeight: 600 }}>PO Date : </span>{" "}
+          &nbsp;
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>{date}</Typography>
+        </Box>
+      </>
+    );
+  };
 
-  // if (error) {
-  //   return <Typography color="danger">{error}</Typography>;
-  // }
-
-  useImperativeHandle(ref, () => ({
-    exportToCSV() {
-      // console.log("Exporting data to CSV...");
-      const headers = [
-        "Project ID",
-        "PO Number",
-        "PO Date",
-        "Partial Billing",
-        "Item Name",
-        "Vendor",
-        "PO Value with GST",
-        "Advance Paid",
-        "Bill Status",
-        "Total Billed",
-        // "Action",
-      ];
-
-      const rows = pos.map((po) => [
-        po.p_id || "-",
-        po.po_number || "-",
-        po.date || "-",
-        po.billingTypes || "-",
-        po.item || "-",
-        po.vendor || "-",
-        po.po_value || "-",
-        po.amount_paid || "0",
-        po.bill_status || "-",
-        po.totalBill || "0",
-        // po.action || "-",
-      ]);
-
-      const csvContent = [
-        headers.join(","),
-        ...rows.map((row) => row.join(",")),
-      ].join("\n");
-
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "PurchaseOrder_Summary.csv";
-      link.click();
-    },
-  }));
+  const RenderItem_Vendor = ({ vendor, item }) => {
+    return (
+      <>
+        <Box>
+          <span style={{ cursor: "pointer", fontWeight: 400, fontSize: 14 }}>
+            {item}
+          </span>
+        </Box>
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <Store size={12} color="green" />
+          &nbsp;
+          <span style={{ fontSize: 12, fontWeight: 600 }}>Vendor : </span>{" "}
+          &nbsp;
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+            {vendor}
+          </Typography>
+        </Box>
+      </>
+    );
+  };
 
   return (
     <>
-      {/* Mobile Filters */}
-      {/* <Sheet
-        className="SearchAndFilters-mobile"
-        sx={{ display: { xs: "flex", sm: "none" }, my: 1, gap: 1 }}
-      >
-        <Input
-          size="sm"
-          placeholder="Search"
-          startDecorator={<SearchIcon />}
-          sx={{ flexGrow: 1 }}
-        />
-        <IconButton
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          onClick={() => setOpen(true)}
-        >
-          <FilterAltIcon />
-        </IconButton>
-        <Modal open={open} onClose={() => setOpen(false)}>
-          <ModalDialog aria-labelledby="filter-modal" layout="fullscreen">
-            <ModalClose />
-            <Typography id="filter-modal" level="h2">
-              Filters
-            </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Sheet sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {renderFilters()}
-              <Button color="primary" onClick={() => setOpen(false)}>
-                Submit
-              </Button>
-            </Sheet>
-          </ModalDialog>
-        </Modal>
-      </Sheet> */}
-
       {/* Tablet and Up Filters */}
       <Box
         className="SearchAndFilters-tabletUp"
@@ -604,7 +534,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {/* {renderFilters()} */}
+        {renderFilters()}
       </Box>
 
       {/* Table */}
@@ -626,7 +556,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           <Typography color="danger" textAlign="center">
             {error}
           </Typography>
-        ) : loading ? (
+        ) : isLoading ? (
           <Typography textAlign="center">Loading...</Typography>
         ) : (
           <Box
@@ -639,7 +569,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                   component="th"
                   sx={{
                     padding: 1,
-                    textAlign: "center",
+                    textAlign: "left",
                     borderBottom: "1px solid",
                     fontWeight: "bold",
                   }}
@@ -647,11 +577,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                   <Checkbox
                     indeterminate={
                       selected.length > 0 &&
-                      selected.length !== paymentsWithFormattedDate.length
+                      selected.length !== paginatedPo.length
                     }
-                    checked={
-                      selected.length === paymentsWithFormattedDate.length
-                    }
+                    checked={selected.length === paginatedPo.length}
                     onChange={handleSelectAll}
                     color={selected.length > 0 ? "primary" : "neutral"}
                   />
@@ -659,11 +587,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                 {[
                   "Project ID",
                   "PO Number",
-                  "PO Date",
                   "Partial Billing",
                   "Item Name",
-                  "Vendor",
-                  "PO Value with GST",
+                  "PO Value(incl. GST)",
                   "Advance Paid",
                   "Bill Status",
                   "Total Billed",
@@ -675,7 +601,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                     key={header}
                     sx={{
                       padding: 1,
-                      textAlign: "center",
+                      textAlign: "left",
                       borderBottom: "1px solid",
                       fontWeight: "bold",
                     }}
@@ -686,8 +612,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
               </Box>
             </Box>
             <Box component="tbody">
-              {paymentsWithFormattedDate.length > 0 ? (
-                paymentsWithFormattedDate.map((po) => (
+              {paginatedPo.length > 0 ? (
+                paginatedPo.map((po) => (
                   <Box
                     component="tr"
                     key={po.id}
@@ -699,7 +625,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       component="td"
                       sx={{
                         padding: 1,
-                        textAlign: "center",
+                        textAlign: "left",
                         borderBottom: "1px solid",
                       }}
                     >
@@ -714,73 +640,67 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                     <Box
                       component="td"
                       sx={{
-                        padding: 1,
-                        textAlign: "center",
+                        padding: "8px",
+                        textAlign: "left",
                         borderBottom: "1px solid",
+                        fontSize: 15,
+                        minWidth: 350,
+                        // fontWeight: 500,
                       }}
                     >
-                      {po.p_id}
+                      <RenderPid p_id={po.p_id} pr_no={po.pr_no} />
                     </Box>
                     <Box
                       component="td"
                       sx={{
                         padding: 1,
-                        textAlign: "center",
+                        textAlign: "left",
                         borderBottom: "1px solid",
+                        fontSize: 14,
+                        minWidth: 250,
                       }}
                     >
-                      {po.po_number}
+                      <RenderPONumber po_number={po.po_number} date={po.date} />
                     </Box>
                     <Box
                       component="td"
                       sx={{
                         padding: 1,
-                        textAlign: "center",
+                        textAlign: "left",
                         borderBottom: "1px solid",
+                        fontSize: 14,
+                        minWidth: 150,
                       }}
                     >
-                      {po.formattedDate}
+                      <BillingTypeChip type={po.type} />
                     </Box>
                     <Box
                       component="td"
                       sx={{
                         padding: 1,
-                        textAlign: "center",
+                        textAlign: "left",
                         borderBottom: "1px solid",
+
+                        minWidth: 350,
                       }}
                     >
-                      {po.billingTypes || "-"}
+                      <RenderItem_Vendor
+                        item={po.item === "Other" ? "other" : po.item}
+                        vendor={po.vendor}
+                      />
                     </Box>
+
                     <Box
                       component="td"
                       sx={{
                         padding: 1,
-                        textAlign: "center",
+                        textAlign: "left",
                         borderBottom: "1px solid",
+                        fontSize: 14,
+                        minWidth: 200,
                       }}
                     >
-                      {po.item === "Other" || po.item === "other"
-                        ? po.other
-                        : po.item}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        padding: 1,
-                        textAlign: "center",
-                        borderBottom: "1px solid",
-                      }}
-                    >
-                      {po.vendor}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        padding: 1,
-                        textAlign: "center",
-                        borderBottom: "1px solid",
-                      }}
-                    >
+                      ₹
                       {new Intl.NumberFormat("en-IN", {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
@@ -790,85 +710,53 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       component="td"
                       sx={{
                         padding: 1,
-                        textAlign: "center",
+                        textAlign: "left",
                         borderBottom: "1px solid",
+                        fontSize: 14,
+                        minWidth: 150,
                       }}
                     >
-                      {/* {new Intl.NumberFormat("en-IN", {
+                      ₹
+                      {new Intl.NumberFormat("en-IN", {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
-                      }).format(po.paidAmount)} */}
-                      {po.paidAmount || "0"}
+                      }).format(po.amount_paid) || "0"}
                     </Box>
                     <Box
                       component="td"
                       sx={{
                         padding: 1,
-                        textAlign: "center",
+                        textAlign: "left",
                         borderBottom: "1px solid",
+                        fontSize: 14,
+                        minWidth: 150,
                       }}
                     >
-                      <BillingStatusChip status={po.bill_status} />
-                      {/* {po.bill_status || "-"} */}
-                      {/* {po.bill_status === "Fully Billed" ? (
-                        <Chip
-                          label="Fully Billed"
-                          color="success"
-                          size="small"
-                          sx={{
-                            fontWeight: "bold",
-                            backgroundColor: "green",
-                            color: "white",
-                          }}
-                        />
-                      ) : (
-                        <Chip
-                          label="Bill Pending"
-                          color="warning"
-                          size="small"
-                          sx={{
-                            fontWeight: "bold",
-                            backgroundColor: "orange",
-                            color: "white",
-                          }}
-                        />
-                      )} */}
+                      <BillingStatusChip status={po.partial_billing} />
                     </Box>
-                    {/* <Box
-                      component="td"
-                      sx={{
-                        padding: 1,
-                        textAlign: "center",
-                        borderBottom: "1px solid",
-                      }}
-                    >
-                      {po.bill_delay || "-"}
-                    </Box> */}
+
                     <Box
                       component="td"
                       sx={{
                         padding: 1,
-                        textAlign: "center",
+                        textAlign: "left",
                         borderBottom: "1px solid",
+                        fontSize: 14,
+                        minWidth: 150,
                       }}
                     >
-                      {po.formattedTotal || "-"}
+                      ₹
+                      {new Intl.NumberFormat("en-IN", {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2,
+                      }).format(po.total_billed) || 0}
                     </Box>
-                    {/* <Box
-                      component="td"
-                      sx={{
-                        padding: 1,
-                        textAlign: "center",
-                        borderBottom: "1px solid",
-                      }}
-                    >
-                      {po.action || "-"}
-                    </Box> */}
+
                     <Box
                       component="td"
                       sx={{
                         padding: 1,
-                        textAlign: "center",
+                        textAlign: "left",
                         borderBottom: "1px solid",
                       }}
                     >
@@ -924,8 +812,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
+          flexDirection: { xs: "column", md: "row" },
           marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
@@ -941,17 +829,23 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         </Button>
 
         <Box>
-          Showing {paymentsWithFormattedDate.length} of{" "}
-          {filteredAndSortedData.length} results
+          {/* Showing page {currentPage} of {totalPages} ({total} results) */}
+          <Typography level="body-sm">
+            Showing {startIndex}–{endIndex} of {total} results
+          </Typography>
         </Box>
 
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
-          {generatePageNumbers(currentPage, totalPages).map((page, index) =>
-            typeof page === "number" ? (
+          {getPaginationRange().map((page, idx) =>
+            page === "..." ? (
+              <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
+                ...
+              </Box>
+            ) : (
               <IconButton
-                key={index}
+                key={page}
                 size="sm"
                 variant={page === currentPage ? "contained" : "outlined"}
                 color="neutral"
@@ -959,27 +853,26 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
               >
                 {page}
               </IconButton>
-            ) : (
-              <Typography key={index} sx={{ px: 1, alignSelf: "center" }}>
-                {page}
-              </Typography>
             )
           )}
         </Box>
 
-        {/* <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
-    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-      <IconButton
-        key={page}
-        size="sm"
-        variant={page === currentPage ? "contained" : "outlined"}
-        color="neutral"
-        onClick={() => handlePageChange(page)}
-      >
-        {page}
-      </IconButton>
-    ))}
-  </Box> */}
+        <FormControl size="sm" sx={{ minWidth: 120 }}>
+          {/* <FormLabel>Per Page</FormLabel> */}
+          <Select
+            value={perPage}
+            onChange={(e, newValue) => {
+              setPerPage(newValue);
+              setCurrentPage(1);
+            }}
+          >
+            {[10, 30, 60, 100].map((num) => (
+              <Option key={num} value={num}>
+                {num} perPage
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
 
         <Button
           size="sm"
