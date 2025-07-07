@@ -30,6 +30,7 @@ import NoData from "../assets/alert-bell.svg";
 import {
   useExportPosMutation,
   useGetPaginatedPOsQuery,
+  useUpdatePurchasesStatusMutation,
 } from "../redux/purchasesSlice";
 import { Modal, Option, Select, Tooltip } from "@mui/joy";
 import { useMemo } from "react";
@@ -47,9 +48,11 @@ import PoHistoryTable from "./PO_History";
 import AddBillForm from "./Forms/Add_Bill";
 import BillHistoryTable from "./Bill_History";
 
+
 const PurchaseOrderSummary = forwardRef((props, ref) => {
-  const { project_code } = props;
+  const { project_code, pr_id } = props;
   const navigate = useNavigate();
+  const [po, setPO] = useState("");
   const [selectedpo, setSelectedpo] = useState("");
   const [selectedtype, setSelectedtype] = useState("");
   const [selected, setSelected] = useState([]);
@@ -63,6 +66,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
   const [currentPage, setCurrentPage] = useState(initialPage);
+  const [openModal, setOpenModal] = useState(false);
+  const [nextStatus, setNextStatus] = useState("");
+  const [remarks, setRemarks] = useState("");
   const [perPage, setPerPage] = useState(initialPageSize);
   const location = useLocation();
   const isFromCAM = location.pathname === "/project_detail";
@@ -78,6 +84,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     search: searchQuery,
     type: selectedtype,
     project_id: isFromCAM || isFromPR ? project_code : "",
+    pr_id: isFromPR && pr_id ? pr_id.toString() : "",
   });
 
   const handleOpen = (po_number, action) => {
@@ -252,6 +259,181 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   };
 
 
+  const [updateStatus] = useUpdatePurchasesStatusMutation();
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const handleStatusChange = async (current_status) => {
+    try {
+      const updatedStatus =
+        selectedStatus === "out_for_delivery"
+          ? "delivered"
+          : "out_for_delivery";
+
+      await updateStatus({
+        id: po,
+        status: updatedStatus,
+        remarks,
+      }).unwrap();
+
+      toast.success("Status Updated Successfully");
+      setRemarks("");
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (err) {
+      toast.error("Failed to update status");
+    }
+  };
+
+  const RowMenu = ({ currentPage, po_number, current_status }) => {
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+      const userData = getUserData();
+      setUser(userData);
+    }, []);
+
+    const getUserData = () => {
+      const userData = localStorage.getItem("userDetails");
+      if (userData) {
+        return JSON.parse(userData);
+      }
+      return null;
+    };
+
+    console.log("current", current_status);
+
+    return (
+      <Dropdown>
+        <MenuButton
+          slots={{ root: IconButton }}
+          slotProps={{
+            root: { variant: "plain", color: "neutral", size: "sm" },
+          }}
+        >
+          <MoreHorizRoundedIcon />
+        </MenuButton>
+        <Menu size="sm" sx={{ minWidth: 140 }}>
+          {(user?.name === "IT Team" ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Prachi Singh" ||
+            user?.department === "admin" ||
+            user?.name === "Ajay Singh" ||
+            user?.name === "Aryan Maheshwari" ||
+            user?.name === "Sarthak Sharma" ||
+            user?.name === "Naresh Kumar" ||
+            user?.name === "Shubham Gupta") && (
+            <MenuItem
+              onClick={() => {
+                const page = currentPage;
+                const po = po_number;
+                localStorage.setItem("po_no", po);
+                navigate(`/add_bill?page=${page}&po_number=${po}`);
+              }}
+            >
+              {" "}
+              <AddCircleOutlineIcon />
+              <Typography>Add Bill</Typography>
+            </MenuItem>
+          )}
+          <MenuItem
+            onClick={() => {
+              const page = currentPage;
+              const po = po_number;
+              localStorage.setItem("get-po", po);
+              navigate(`/bill_history?page=${page}&po_number=${po}`);
+            }}
+          >
+            <HistoryIcon />
+            <Typography>Bill History</Typography>
+          </MenuItem>
+          <Divider sx={{ backgroundColor: "lightblue" }} />
+          {(user?.name === "IT Team" ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Prachi Singh" ||
+            user?.department === "admin" ||
+            user?.name === "Ajay Singh" ||
+            user?.name === "Aryan Maheshwari" ||
+            user?.name === "Sarthak Sharma" ||
+            user?.name === "Shubham Gupta" ||
+            user?.name === "Naresh Kumar" ||
+            user?.name === "Sandeep Yadav" ||
+            user?.name === "Som Narayan Jha" ||
+            user?.name === "Saresh") && (
+            <MenuItem
+              onClick={() => {
+                const page = currentPage;
+                const po = po_number;
+                // const ID = _id
+                localStorage.setItem("edit-po", po);
+                navigate(`/edit_po?page=${page}&po_number=${po}`);
+              }}
+            >
+              <EditNoteIcon />
+              <Typography>Edit PO</Typography>
+            </MenuItem>
+          )}
+          <MenuItem
+            onClick={() => {
+              const page = currentPage;
+              const po = po_number;
+              localStorage.setItem("get-po", po);
+              navigate(`/po_history?page=${page}&po_number=${po}`);
+            }}
+          >
+            <HistoryIcon />
+            <Typography>PO History</Typography>
+          </MenuItem>
+          {/* <Divider sx={{ backgroundColor: "lightblue" }} /> */}
+          {/* <MenuItem color="primary" style={{ fontWeight: "bold" }}>
+            Adjust Bill
+          </MenuItem> */}
+          {(user?.name === "IT Team" ||
+            user?.name === "admin" ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Prachi Singh" ||
+            user?.name === "Ajay Singh" ||
+            user?.name === "Naresh Kumar" ||
+            user?.name === "Shubham Gupta") && (
+            <MenuItem
+              onClick={() => {
+                const page = currentPage;
+                const po = po_number;
+                localStorage.setItem("edit_bill", po);
+                navigate(`/edit_bill?page=${page}&po_number=${po}`);
+              }}
+            >
+              {" "}
+              <EditNoteIcon />
+              <Typography>Edit Bill</Typography>
+            </MenuItem>
+          )}
+          {(user?.name === "IT Team" ||
+            user?.name === "admin" ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Prachi Singh" ||
+            user?.name === "Ajay Singh" ||
+            user?.name === "Naresh Kumar" ||
+            user?.name === "Shubham Gupta") && (
+            <MenuItem
+              onClick={() => {
+                if (current_status?.status === "out_for_delivery") {
+                  setNextStatus("delivered");
+                } else {
+                  setNextStatus("out_for_delivery");
+                }
+                setOpenModal(true);
+                setPO(po_number);
+                setSelectedStatus(current_status?.status);
+              }}
+            >
+              <EditNoteIcon />
+              <Typography>Change Status</Typography>
+            </MenuItem>
+          )}
+        </Menu>
+      </Dropdown>
+    );
+  };
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -344,7 +526,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         </Box>
         <Box display="flex" alignItems="center" mt={0.5}>
           <FileCheck size={12} />
-          <span style={{ fontSize: 12, fontWeight: 500 }}>PR_No : </span> &nbsp;
+          <span style={{ fontSize: 12, fontWeight: 500 }}>PR No : </span> &nbsp;
           <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
             {pr_no || "0"}
           </Typography>
@@ -438,6 +620,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       </Box>
     );
   };
+
 
   return (
     <>
@@ -712,10 +895,12 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         borderBottom: "1px solid",
                       }}
                     >
-                      {/* <RowMenu
+                      <RowMenu
                         currentPage={currentPage}
                         po_number={po.po_number}
-                      /> */}
+                      
+                        current_status={po.current_status}
+                      />
                     </Box>
                   </Box>
                 ))
@@ -836,6 +1021,56 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         >
           Next
         </Button>
+
+        <Modal open={openModal} onClose={() => setOpenModal(false)}>
+          <Sheet
+            variant="outlined"
+            sx={{
+              maxWidth: 400,
+              borderRadius: "md",
+              p: 3,
+              boxShadow: "lg",
+              mx: "auto",
+              mt: "10%",
+            }}
+          >
+            <Typography level="h5" mb={1}>
+              Confirm Status Change
+            </Typography>
+            <Typography mb={2}>
+              Do you want to change status to{" "}
+              <b>{nextStatus.replace(/_/g, " ")}</b>?
+            </Typography>
+
+            <Textarea
+              placeholder="Enter remarks..."
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              minRows={3}
+              sx={{ mb: 2 }}
+            />
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "1rem",
+              }}
+            >
+              <Button variant="plain" onClick={() => setOpenModal(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="solid"
+                color="primary"
+                disabled={!remarks.trim()}
+                onClick={handleStatusChange}
+              >
+                Confirm
+              </Button>
+            </div>
+          </Sheet>
+        </Modal>
       </Box>
 
       <Modal open={open} onClose={handleClose}>

@@ -21,8 +21,8 @@ export const purchasesApi = createApi({
       providesTags: ["Purchase"],
     }),
     getPaginatedPOs: builder.query({
-      query: ({ page = 1, search = "", status, pageSize = 10, type, project_id }) =>
-        `get-paginated-po?page=${page}&search=${search}&status=${status}&pageSize=${pageSize}&type=${type}&project_id=${project_id}`,
+      query: ({ page = 1, search = "", status, pageSize = 10, type, project_id, pr_id }) =>
+        `get-paginated-po?page=${page}&search=${search}&status=${status}&pageSize=${pageSize}&type=${type}&project_id=${project_id}&pr_id=${pr_id}`,
       transformResponse: (response) => ({
         data: response.data || [],
         total: response.meta?.total || 0,
@@ -71,6 +71,19 @@ export const purchasesApi = createApi({
       }),
       invalidatesTags: ["Purchase"],
     }),
+   updatePurchasesStatus: builder.mutation({
+  query: ({ id, status, remarks }) => ({
+    url: `/updateStatusPO`,
+    method: "PUT",
+    body: {
+      id,
+      status,
+      remarks,
+    },
+  }),
+  invalidatesTags: ["Purchase"],
+}),
+
   }),
 });
 
@@ -81,4 +94,5 @@ export const {
   useExportPosMutation,
   useAddPurchasesMutation,
   useUpdatePurchasesMutation,
+  useUpdatePurchasesStatusMutation
 } = purchasesApi;
