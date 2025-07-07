@@ -71,6 +71,17 @@ export const purchasesApi = createApi({
       }),
       invalidatesTags: ["Purchase"],
     }),
+
+   updateEtdOrDeliveryDate: builder.mutation({
+  query: ({ po_number, etd, delivery_date }) => ({
+    url: `/${encodeURIComponent(po_number)}/updateEtdOrDelivery`,
+    method: "PUT",
+    body: { etd, delivery_date },
+  }),
+  invalidatesTags: ["Purchase"],
+}),
+
+
   }),
 });
 
@@ -81,4 +92,5 @@ export const {
   useExportPosMutation,
   useAddPurchasesMutation,
   useUpdatePurchasesMutation,
+   useUpdateEtdOrDeliveryDateMutation,
 } = purchasesApi;

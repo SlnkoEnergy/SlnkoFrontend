@@ -30,13 +30,21 @@ import NoData from "../assets/alert-bell.svg";
 import {
   useExportPosMutation,
   useGetPaginatedPOsQuery,
+  useUpdateEtdOrDeliveryDateMutation,
 } from "../redux/purchasesSlice";
 import { Option, Select } from "@mui/joy";
 import { useMemo } from "react";
 import { Calendar, FileCheck, Store } from "lucide-react";
+import {
+  Modal,
+  ModalDialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from "@mui/joy";
 
 const PurchaseOrderSummary = forwardRef((props, ref) => {
-    const { project_code } = props;
+  const { project_code } = props;
   const navigate = useNavigate();
   const [selectedpo, setSelectedpo] = useState("");
   const [selectedtype, setSelectedtype] = useState("");
@@ -65,7 +73,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     project_id: isFromCAM || isFromPR ? project_code : "",
   });
   const [exportPos, { isLoading: isExporting }] = useExportPosMutation();
-
+  const [updateEtdOrDeliveryDate] = useUpdateEtdOrDeliveryDateMutation();
   const { data: getPoData = [], total = 0, count = 0 } = getPO;
   const totalPages = Math.ceil(total / perPage);
 
@@ -463,7 +471,46 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       </>
     );
   };
-  const RenderPONumber = ({ po_number, date }) => {
+  const RenderPONumber = ({
+    po_number,
+    date,
+    etd,
+    delivery_date,
+    current_status,
+  }) => {
+    const [etdDate, setEtdDate] = useState(etd || "");
+    const [deliveryDate, setDeliveryDate] = useState(delivery_date || "");
+    const [updateEtdOrDeliveryDate] = useUpdateEtdOrDeliveryDateMutation();
+    const [confirmType, setConfirmType] = useState("");
+    const [etdTempDate, setEtdTempDate] = useState("");
+    const [deliveryTempDate, setDeliveryTempDate] = useState("");
+    const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
+
+    const formatDate = (dateStr) => {
+      if (!dateStr) return "-";
+      const dateObj = new Date(dateStr);
+      if (isNaN(dateObj)) return "-";
+      return dateObj.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    };
+
+    const handleDateChange = async (newEtd, newDelivery) => {
+      try {
+        await updateEtdOrDeliveryDate({
+          po_number,
+          etd: newEtd,
+          delivery_date: newDelivery,
+        }).unwrap();
+        alert("Dates Updated Successfully");
+      } catch (err) {
+        console.error("Failed to update dates:", err);
+        alert("Failed to update dates");
+      }
+    };
+
     return (
       <>
         <Box>
@@ -471,15 +518,113 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             {po_number || "-"}
           </span>
         </Box>
+
+        {/* PO Date */}
         <Box display="flex" alignItems="center" mt={0.5}>
           <Calendar size={12} />
-          <span style={{ fontSize: 12, fontWeight: 600 }}>PO Date : </span>{" "}
+          <span style={{ fontSize: 12, fontWeight: 600 }}>PO Date : </span>
           &nbsp;
-          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>{date}</Typography>
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+            {formatDate(date)}
+          </Typography>
         </Box>
+
+        {/* ETD Date */}
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <Calendar size={12} />
+          <span style={{ fontSize: 12, fontWeight: 600 }}>ETD Date : </span>
+          &nbsp;
+          {etdDate ? (
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {formatDate(etdDate)}
+            </Typography>
+          ) : (
+            <input
+              type="date"
+              value={etdDate}
+              onChange={(e) => {
+                setEtdTempDate(e.target.value);
+                setConfirmType("etd");
+                setOpenConfirmDialog(true);
+              }}
+              style={{
+                fontSize: "12px",
+                padding: "2px 4px",
+                borderRadius: "4px",
+                border: "1px solid lightgray",
+              }}
+            />
+          )}
+        </Box>
+
+        {/* Delivery Date - Only if status is delivered */}
+        {current_status?.status?.toLowerCase() === "delivered" && (
+          <Box display="flex" alignItems="center" mt={0.5}>
+            <Calendar size={12} />
+            <span style={{ fontSize: 12, fontWeight: 600 }}>
+              Delivery Date :{" "}
+            </span>
+            &nbsp;
+            {deliveryDate ? (
+              <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+                {formatDate(deliveryDate)}
+              </Typography>
+            ) : (
+              <input
+                type="date"
+                value={deliveryDate}
+                onChange={(e) => {
+                  setDeliveryTempDate(e.target.value);
+                  setConfirmType("delivery");
+                  setOpenConfirmDialog(true);
+                }}
+                style={{
+                  fontSize: "12px",
+                  padding: "2px 4px",
+                  borderRadius: "4px",
+                  border: "1px solid lightgray",
+                }}
+              />
+            )}
+          </Box>
+        )}
+
+        {/* Global Dialog - Always exists in DOM */}
+        <Modal
+          open={openConfirmDialog}
+          onClose={() => setOpenConfirmDialog(false)}
+        >
+          <ModalDialog>
+            <DialogTitle>Confirm Submission</DialogTitle>
+            <DialogContent>
+              Are you sure you want to submit this date?
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setOpenConfirmDialog(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={async () => {
+                  setOpenConfirmDialog(false);
+                  if (confirmType === "etd") {
+                    setEtdDate(etdTempDate);
+                    await handleDateChange(etdTempDate, deliveryDate);
+                  } else if (confirmType === "delivery") {
+                    setDeliveryDate(deliveryTempDate);
+                    await handleDateChange(etdDate, deliveryTempDate);
+                  }
+                }}
+                variant="solid"
+              >
+                Confirm
+              </Button>
+            </DialogActions>
+          </ModalDialog>
+        </Modal>
       </>
     );
   };
+
   const RenderItem_Vendor = ({ vendor, item }) => {
     return (
       <>
@@ -500,9 +645,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       </>
     );
   };
-  const EditPo = ({ po_number, currentPage }) => {
-
-  }
+  const EditPo = ({ po_number, currentPage }) => {};
 
   return (
     <>
@@ -659,7 +802,12 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         minWidth: 250,
                       }}
                     >
-                      <RenderPONumber po_number={po.po_number} date={po.date} />
+                      <RenderPONumber
+                        po_number={po.po_number}
+                        date={po.date}
+                        etd={po.etd}
+                        delivery_date={po.delivery_date}
+                      />
                     </Box>
                     <Box
                       component="td"

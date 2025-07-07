@@ -29,10 +29,13 @@ import Typography from "@mui/joy/Typography";
 import { Calendar } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 import {
   useGetAllPurchaseRequestQuery,
   useGetMaterialCategoryQuery,
-  useUpdatePurchaseRequestStatusMutation,
+
 } from "../redux/camsSlice";
 
 function PurchaseReqSummary() {
@@ -49,7 +52,8 @@ function PurchaseReqSummary() {
   const itemSearch = searchParams.get("itemSearch") || "";
   const poValueSearch = searchParams.get("poValueSearch") || "";
   const statusSearch = searchParams.get("statusSearch") || "";
-  const [open, setOpen] = useState();
+
+
   const navigate = useNavigate();
 
   const { data, isLoading } = useGetAllPurchaseRequestQuery({
@@ -59,6 +63,7 @@ function PurchaseReqSummary() {
     poValueSearch,
     statusSearch,
   });
+
 
   useEffect(() => {
     setCurrentPage(page);
@@ -273,38 +278,12 @@ function PurchaseReqSummary() {
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState("success");
 
-    const [updateStatus, { isLoading }] =
-      useUpdatePurchaseRequestStatusMutation();
 
     const handleChipClick = (newStatus) => {
       setSelectedStatus(newStatus);
       setOpen(true);
     };
 
-    const handleSubmit = async () => {
-      try {
-        await updateStatus({
-          id: _id,
-          status: selectedStatus,
-          remarks,
-        }).unwrap();
-
-        setSnackbarMessage(`Status updated to ${selectedStatus}`);
-        setSnackbarSeverity("success");
-        setSnackbarOpen(true);
-
-        setOpen(false);
-        setRemarks("");
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
-      } catch (err) {
-        console.error("Status update failed:", err);
-        setSnackbarMessage("Failed to update status");
-        setSnackbarSeverity("error");
-        setSnackbarOpen(true);
-      }
-    };
 
     const handleClose = () => {
       setOpen(false);
@@ -394,41 +373,6 @@ function PurchaseReqSummary() {
     return (
       <>
         {renderStatusChip()}
-
-        {/* Modal for Remarks */}
-        <Modal open={open} onClose={handleClose}>
-          <Box sx={modalStyle}>
-            <Typography level="h6" mb={2}>
-              {`${selectedStatus?.charAt(0).toUpperCase() + selectedStatus?.slice(1)} Remarks`}
-            </Typography>
-
-            <Textarea
-              placeholder="Enter remarks..."
-              minRows={3}
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-            />
-
-            <Box display="flex" justifyContent="flex-end" mt={3} gap={1}>
-              <Button
-                onClick={handleClose}
-                disabled={isLoading}
-                variant="outlined"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                loading={isLoading}
-                variant="solid"
-                color="primary"
-                disabled={!remarks}
-              >
-                Confirm
-              </Button>
-            </Box>
-          </Box>
-        </Modal>
 
         {/* Snackbar Feedback */}
         <Snackbar
@@ -521,8 +465,7 @@ function PurchaseReqSummary() {
                 "Project Code",
                 "Item Name",
                 "Status",
-                "ETD",
-                "Delivery Date",
+                
                 "Delay",
                 "PO Number",
                 "PO Value",
@@ -542,235 +485,128 @@ function PurchaseReqSummary() {
               ))}
             </tr>
           </thead>
-          <tbody>
-            {isLoading ? (
-              <tr>
-                <td
-                  colSpan={10}
-                  style={{ textAlign: "center", padding: "16px" }}
-                >
-                  <CircularProgress size="sm" />
-                </td>
-              </tr>
-            ) : purchaseRequests.length > 0 ? (
-              purchaseRequests.flatMap((row) =>
-                row.items.map((item) => (
-                  <tr key={item._id}>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      <Checkbox
-                        size="sm"
-                        checked={selected.includes(item._id)}
-                        onChange={() => handleRowSelect(item._id)}
-                      />
-                    </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        textAlign: "left",
-                        cursor: "pointer",
-                        fontWeight: "600",
-                      }}
-                    >
-                      <RenderPRNo
-                        pr_no={row.pr_no}
-                        createdAt={row.createdAt}
-                        project_id={row.project_id._id}
-                        item_id={item.item_id?._id}
-                        pr_id={row._id}
-                      />
-                    </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      <Box>
-                        <Typography fontWeight="md">
-                          {row.project_id?.code || "-"}
-                        </Typography>
-                        <Typography
-                          level="body-xs"
-                          sx={{ color: "text.secondary" }}
-                        >
-                          {row.project_id?.name || "-"}
-                        </Typography>
-                      </Box>
-                    </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      {item.item_id?.name || "-"}
-                    </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      <Typography
-                        fontWeight="md"
-                        color={
-                          row.current_status?.status === "submitted"
-                            ? "primary"
-                            : row.current_status?.status === "approved"
-                              ? "warning"
-                              : row.current_status?.status === "po_created"
-                                ? "success"
-                                : row.current_status?.status === "delivered"
-                                  ? "neutral"
-                                  : "neutral"
-                        }
-                        level="body-sm"
+         <tbody>
+  {isLoading ? (
+    <tr>
+      <td colSpan={10} style={{ textAlign: "center", padding: "16px" }}>
+        <CircularProgress size="sm" />
+      </td>
+    </tr>
+  ) : purchaseRequests.length > 0 ? (
+    purchaseRequests.flatMap((row) =>
+      row.items.map((item) => (
+        <tr key={`${row._id}-${item.item_id?._id || item._id}`}>
+          <td style={{ borderBottom: "1px solid #ddd", textAlign: "left" }}>
+            <Checkbox
+              size="sm"
+              checked={selected.includes(item._id)}
+              onChange={() => handleRowSelect(item._id)}
+            />
+          </td>
+
+          <td style={{ borderBottom: "1px solid #ddd", textAlign: "left", cursor: "pointer", fontWeight: "600" }}>
+            <RenderPRNo
+              pr_no={row.pr_no}
+              createdAt={row.createdAt}
+              project_id={row.project_id._id}
+              item_id={item.item_id?._id}
+              pr_id={row._id}
+            />
+          </td>
+
+          <td style={{ borderBottom: "1px solid #ddd", textAlign: "left" }}>
+            <Box>
+              <Typography fontWeight="md">{row.project_id?.code || "-"}</Typography>
+              <Typography level="body-xs" sx={{ color: "text.secondary" }}>
+                {row.project_id?.name || "-"}
+              </Typography>
+            </Box>
+          </td>
+
+          <td style={{ borderBottom: "1px solid #ddd", textAlign: "left" }}>
+            {item.item_id?.name || "-"}
+          </td>
+
+          <td style={{ borderBottom: "1px solid #ddd", textAlign: "left" }}>
+            <Typography
+              fontWeight="md"
+              color={
+                row.current_status?.status === "submitted" ? "primary" :
+                row.current_status?.status === "approved" ? "warning" :
+                row.current_status?.status === "po_created" ? "success" :
+                row.current_status?.status === "delivered" ? "neutral" :
+                "neutral"
+              }
+              level="body-sm"
+            >
+              {row.current_status?.status
+                ? row.current_status.status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
+                : "N/A"}
+            </Typography>
+          </td>
+
+         
+
+          <td style={{ borderBottom: "1px solid #ddd", textAlign: "left" }}>
+            {renderDelayChip(row.delay || "0 days")}
+          </td>
+
+          <td style={{ borderBottom: "1px solid #ddd", textAlign: "left" }}>
+            {row.total_po_count && row.po_numbers?.length > 0 ? (
+              <Tooltip
+                arrow
+                placement="top"
+                title={
+                  <Box sx={{ bgcolor: "primary.softBg", color: "primary.solidColor", p: 1, borderRadius: "sm", minWidth: "150px" }}>
+                    <Typography level="body-sm" fontWeight="md">PO Numbers:</Typography>
+                    {row.po_numbers.map((po, idx) => (
+                      <Typography key={`${row._id}-${idx}`} level="body-xs">• {po}</Typography>
+                    ))}
+                  </Box>
+                }
+              >
+                <Box>
+                  <Chip
+                    size="sm"
+                    variant="soft"
+                    sx={{ position: "relative", display: "inline-flex", alignItems: "center", paddingRight: row.po_numbers.length > 1 ? "24px" : "12px", maxWidth: "200px", cursor: "pointer" }}
+                  >
+                    {row.po_numbers[0]}
+                    {row.po_numbers.length > 1 && (
+                      <Avatar
+                        size="xs"
+                        variant="solid"
+                        color="primary"
+                        sx={{ position: "absolute", right: 2, top: -2, fontSize: "10px", height: 18, width: 20, zIndex: 1 }}
                       >
-                        {row.current_status?.status
-                          ? row.current_status.status
-                              .replace(/_/g, " ")
-                              .replace(/\b\w/g, (l) => l.toUpperCase())
-                          : "N/A"}
-                      </Typography>
-                    </td>
+                        +{row.po_numbers.length - 1}
+                      </Avatar>
+                    )}
+                  </Chip>
+                </Box>
+              </Tooltip>
+            ) : "-"}
+          </td>
 
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      {row.etd ? new Date(row.etd).toLocaleDateString() : "-"}
-                    </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      {row.delivery_date
-                        ? new Date(row.delivery_date).toLocaleDateString()
-                        : "-"}
-                    </td>
+          <td style={{ borderBottom: "1px solid #ddd", textAlign: "left" }}>
+            ₹ {row.po_value?.toLocaleString("en-IN") || "0"}
+          </td>
 
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      {renderDelayChip(row.delay || "0 days")}
-                    </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      {row.total_po_count && row.po_numbers?.length > 0 ? (
-                        <Tooltip
-                          arrow
-                          placement="top"
-                          title={
-                            <Box
-                              sx={{
-                                bgcolor: "primary.softBg",
-                                color: "primary.solidColor",
-                                p: 1,
-                                borderRadius: "sm",
-                                minWidth: "150px",
-                              }}
-                            >
-                              <Typography level="body-sm" fontWeight="md">
-                                PO Numbers:
-                              </Typography>
-                              {row.po_numbers.map((po, idx) => (
-                                <Typography key={idx} level="body-xs">
-                                  • {po}
-                                </Typography>
-                              ))}
-                            </Box>
-                          }
-                        >
-                          <Box>
-                            <Chip
-                              size="sm"
-                              variant="soft"
-                              sx={{
-                                position: "relative",
-                                display: "inline-flex",
-                                alignItems: "center",
-                                paddingRight:
-                                  row.po_numbers.length > 1 ? "24px" : "12px",
-                                maxWidth: "200px",
-                                cursor: "pointer",
-                              }}
-                            >
-                              {row.po_numbers[0]}
-                              {row.po_numbers.length > 1 && (
-                                <Avatar
-                                  size="xs"
-                                  variant="solid"
-                                  color="primary"
-                                  sx={{
-                                    position: "absolute",
-                                    right: 2,
-                                    top: -2,
-                                    fontSize: "10px",
-                                    height: 18,
-                                    width: 20,
-                                    zIndex: 1,
-                                  }}
-                                >
-                                  +{row.po_numbers.length - 1}
-                                </Avatar>
-                              )}
-                            </Chip>
-                          </Box>
-                        </Tooltip>
-                      ) : (
-                        "-"
-                      )}
-                    </td>
+          <td style={{ borderBottom: "1px solid #ddd", textAlign: "left" }}>
+            <PRActions _id={row._id} current_status={row.current_status} />
+          </td>
+        </tr>
+      ))
+    )
+  ) : (
+    <tr>
+      <td colSpan={10} style={{ textAlign: "center", padding: "16px" }}>
+        No data found
+      </td>
+    </tr>
+  )}
+</tbody>
 
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      ₹ {row.po_value?.toLocaleString("en-IN") || "0"}
-                    </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      <PRActions
-                        _id={row._id}
-                        current_status={row.current_status}
-                      />
-                    </td>
-                  </tr>
-                ))
-              )
-            ) : (
-              <tr>
-                <td
-                  colSpan={10}
-                  style={{ textAlign: "center", padding: "16px" }}
-                >
-                  No data found
-                </td>
-              </tr>
-            )}
-          </tbody>
         </Box>
       </Sheet>
 

@@ -4,7 +4,7 @@ import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import LockIcon from "@mui/icons-material/Lock";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
 import SearchIcon from "@mui/icons-material/Search";
-import { Chip, CircularProgress, Option, Select } from "@mui/joy";
+import { Chip, CircularProgress, Dropdown, Menu, MenuButton, MenuItem, Option, Select, TextField } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
@@ -24,6 +24,8 @@ import ModalDialog from "@mui/joy/ModalDialog";
 import ModalClose from "@mui/joy/ModalClose";
 import Autocomplete from "@mui/joy/Autocomplete";
 import Textarea from "@mui/joy/Textarea";
+import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
+import CheckBoxIcon from "@mui/icons-material/CheckBox";
 
 import {
   useGetHandOverQuery,
@@ -48,6 +50,9 @@ function Dash_cam() {
   const [prNo, setPrNo] = useState("");
   const [quantity, setQuantity] = useState("");
   const [remarks, setRemarks] = useState("");
+  
+const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
+const checkedIcon = <CheckBoxIcon fontSize="small" />;
   const {
     data: getHandOverSheet = {},
     isLoading,
@@ -700,41 +705,75 @@ function Dash_cam() {
         >
           Next
         </Button>
-        <Modal open={isPRModalOpen} onClose={() => setIsPRModalOpen(false)}>
-          <ModalDialog>
-            <ModalClose />
-            <Typography level="h5">Create Purchase Request</Typography>
+      <Modal open={isPRModalOpen} onClose={() => setIsPRModalOpen(false)}>
+  <ModalDialog
+    sx={{
+      width: 500,           // Increased Modal Width
+      borderRadius: "md",
+      boxShadow: "lg",
+      p: 3,
+      overflow: "visible",
+    }}
+  >
+    <ModalClose />
+    <Typography level="h5" sx={{ mb: 1 }}>
+      Create Purchase Request
+    </Typography>
 
-            <Sheet
-              sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}
-            >
-              <Typography level="body-sm">
-                Project: {selectedPRProject?.code || "-"}
-              </Typography>
+    <Sheet
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+        mt: 1,
+      }}
+    >
+      <Typography level="body-sm" sx={{ color: "neutral.500" }}>
+        Project:{" "}
+        <Typography component="span" fontWeight="md">
+          {selectedPRProject?.code || "-"}
+        </Typography>
+      </Typography>
 
-              {/* Item Multi-Select Dropdown */}
-              <Autocomplete
-                multiple
-                placeholder="Select Item(s)"
-                options={materialCategories || []}
-                getOptionLabel={(option) => option.name}
-                value={items}
-                onChange={(e, newValue) => {
-                  console.log("New Value Selected:", newValue); // Debugging
-                  setItems(newValue); // newValue is array of full objects
-                }}
-                isOptionEqualToValue={(option, value) =>
-                  option._id === value._id
-                }
-                size="sm"
-              />
+      {/* Clean Autocomplete with Well-Spaced Checkboxes */}
+      <Autocomplete
+        multiple
+        options={materialCategories || []}
+        disableCloseOnSelect
+        getOptionLabel={(option) => option.name}
+        isOptionEqualToValue={(option, value) => option._id === value._id}
+        value={items}
+        onChange={(e, newValue) => setItems(newValue)}
+        renderOption={(props, option, { selected }) => (
+          <li {...props} style={{ display: "flex", alignItems: "center", padding: "6px 12px" }}>
+            <Checkbox
+              icon={icon}
+              checkedIcon={checkedIcon}
+              style={{ marginRight: 8 }}
+              checked={selected}
+            />
+            {option.name}
+          </li>
+        )}
+        renderInput={(params) => (
+          <TextField {...params} placeholder="Select Item(s)" size="small" />
+        )}
+      />
 
-              <Button onClick={handlePRSubmit} loading={isPRCreating}>
-                {isPRCreating ? "Submitting..." : "Submit"}
-              </Button>
-            </Sheet>
-          </ModalDialog>
-        </Modal>
+      <Button
+        onClick={handlePRSubmit}
+        loading={isPRCreating}
+        sx={{ mt: 1 }}
+      >
+        {isPRCreating ? "Submitting..." : "Submit"}
+      </Button>
+    </Sheet>
+  </ModalDialog>
+</Modal>
+
+
+
+
       </Box>
     </>
   );

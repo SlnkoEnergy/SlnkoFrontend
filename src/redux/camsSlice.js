@@ -123,13 +123,7 @@ export const camsApi = createApi({
         body: payload,
       }),
     }),
-    updatePurchaseRequestStatus: builder.mutation({
-      query: ({ id, status, remarks }) => ({
-        url: `/purchaseRequest/${id}/updatePurchaseRequestStatus`,
-        method: "PUT",
-        body: { status, remarks },
-      }),
-    }),
+    
   }),
 });
 
@@ -144,9 +138,9 @@ export const {
   useGetMaterialCategoryQuery,
   useCreatePurchaseRequestMutation,
   useGetAllPurchaseRequestQuery,
-  useUpdatePurchaseRequestStatusMutation,
   useGetPurchaseRequestByIdQuery,
   useGetPurchaseRequestByProjectIdQuery,
   useGetPurchaseRequestQuery,
   useEditPurchaseRequestMutation,
+
 } = camsApi;

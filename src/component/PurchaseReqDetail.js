@@ -14,7 +14,6 @@ import {
 import {
   useEditPurchaseRequestMutation,
   useGetPurchaseRequestQuery,
-  useUpdatePurchaseRequestStatusMutation,
 } from "../redux/camsSlice";
 import PurchaseOrderSummary from "./PurchaseOrderSummary";
 import { useSearchParams } from "react-router-dom";
@@ -75,47 +74,13 @@ const PurchaseReqDetail = () => {
   const currentStatus =
     getPurchaseRequest?.purchase_request?.current_status?.status;
 
-  const [updateStatus] = useUpdatePurchaseRequestStatusMutation();
 
-  const handleOutForDelivery = async () => {
-    if (!remarks.trim()) {
-      toast.error("Please enter remarks.");
-      return;
-    }
+    
 
-    if (
-      window.confirm(
-        "Are you sure you want to change status to Out for Delivery?"
-      )
-    ) {
-      await updateStatus({
-        id: pr_id,
-        status: "out_for_delivery",
-        remarks,
-      }).unwrap();
-      window.location.reload();
-      setOpenOutModal(false);
-      setRemarks("");
-    }
-  };
 
-  const handleDeliveryDone = async () => {
-    if (!remarks.trim()) {
-      toast.error("Please enter remarks.");
-      return;
-    }
+  
 
-    if (window.confirm("Are you sure you want to mark Delivery as Done?")) {
-      await updateStatus({
-        id: pr_id,
-        status: "delivered",
-        remarks,
-      }).unwrap();
-      window.location.reload();
-      setOpenDeliveryDoneModal(false);
-      setRemarks("");
-    }
-  };
+  
 
   return (
     <Container
