@@ -7,6 +7,7 @@ import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import SearchIcon from "@mui/icons-material/Search";
 import {
   Alert,
+  Avatar,
   Chip,
   CircularProgress,
   Modal,
@@ -14,6 +15,7 @@ import {
   Select,
   Snackbar,
   Textarea,
+  Tooltip,
 } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
@@ -262,9 +264,6 @@ function PurchaseReqSummary() {
   };
 
   const PRActions = ({ _id, current_status }) => {
-    console.log("Current Status:", current_status?.status);
-    console.log("ID:", _id);
-
     const status = current_status?.status;
 
     const [open, setOpen] = useState(false);
@@ -394,38 +393,7 @@ function PurchaseReqSummary() {
 
     return (
       <>
-        {/* Render Status Chip */}
         {renderStatusChip()}
-
-        {/* Show action chips only if not finalized */}
-        {/* {status === "submitted" && (
-          <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
-            <Chip
-              variant="solid"
-              color="success"
-              label="Approved"
-              onClick={() => handleChipClick("approved")}
-              startDecorator={<CheckRoundedIcon />}
-              sx={{
-                textTransform: "none",
-                fontSize: "0.875rem",
-                fontWeight: 500,
-              }}
-            />
-            <Chip
-              variant="outlined"
-              color="danger"
-              label="Rejected"
-              onClick={() => handleChipClick("rejected")}
-              startDecorator={<BlockIcon />}
-              sx={{
-                textTransform: "none",
-                fontSize: "0.875rem",
-                fontWeight: 500,
-              }}
-            />
-          </Box>
-        )} */}
 
         {/* Modal for Remarks */}
         <Modal open={open} onClose={handleClose}>
@@ -556,7 +524,7 @@ function PurchaseReqSummary() {
                 "ETD",
                 "Delivery Date",
                 "Delay",
-                "PO Count",
+                "PO Number",
                 "PO Value",
                 "Actions",
               ].map((header, index) => (
@@ -704,8 +672,72 @@ function PurchaseReqSummary() {
                         textAlign: "left",
                       }}
                     >
-                      {row.total_po_count ?? 0}
+                      {row.total_po_count && row.po_numbers?.length > 0 ? (
+                        <Tooltip
+                          arrow
+                          placement="top"
+                          title={
+                            <Box
+                              sx={{
+                                bgcolor: "primary.softBg",
+                                color: "primary.solidColor",
+                                p: 1,
+                                borderRadius: "sm",
+                                minWidth: "150px",
+                              }}
+                            >
+                              <Typography level="body-sm" fontWeight="md">
+                                PO Numbers:
+                              </Typography>
+                              {row.po_numbers.map((po, idx) => (
+                                <Typography key={idx} level="body-xs">
+                                  • {po}
+                                </Typography>
+                              ))}
+                            </Box>
+                          }
+                        >
+                          <Box>
+                            <Chip
+                              size="sm"
+                              variant="soft"
+                              sx={{
+                                position: "relative",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                paddingRight:
+                                  row.po_numbers.length > 1 ? "24px" : "12px",
+                                maxWidth: "200px",
+                                cursor: "pointer",
+                              }}
+                            >
+                              {row.po_numbers[0]}
+                              {row.po_numbers.length > 1 && (
+                                <Avatar
+                                  size="xs"
+                                  variant="solid"
+                                  color="primary"
+                                  sx={{
+                                    position: "absolute",
+                                    right: 2,
+                                    top: -2,
+                                    fontSize: "10px",
+                                    height: 18,
+                                    width: 20,
+                                    zIndex: 1,
+                                  }}
+                                >
+                                  +{row.po_numbers.length - 1}
+                                </Avatar>
+                              )}
+                            </Chip>
+                          </Box>
+                        </Tooltip>
+                      ) : (
+                        "-"
+                      )}
                     </td>
+
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
