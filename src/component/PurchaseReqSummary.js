@@ -521,12 +521,9 @@ function PurchaseReqSummary() {
                 "Project Code",
                 "Item Name",
                 "Status",
-                "ETD",
-                "Delivery Date",
                 "Delay",
                 "PO Number",
                 "PO Value",
-                "Actions",
               ].map((header, index) => (
                 <th
                   key={index}
@@ -615,49 +612,24 @@ function PurchaseReqSummary() {
                         borderBottom: "1px solid #ddd",
                         textAlign: "left",
                       }}
-                    >
-                      <Typography
-                        fontWeight="md"
-                        color={
-                          row.current_status?.status === "submitted"
-                            ? "primary"
-                            : row.current_status?.status === "approved"
-                              ? "warning"
-                              : row.current_status?.status === "po_created"
-                                ? "success"
-                                : row.current_status?.status === "delivered"
-                                  ? "neutral"
-                                  : "neutral"
-                        }
-                        level="body-sm"
                       >
-                        {row.current_status?.status
-                          ? row.current_status.status
-                              .replace(/_/g, " ")
-                              .replace(/\b\w/g, (l) => l.toUpperCase())
-                          : "N/A"}
-                      </Typography>
-                    </td>
+                {row.items?.every(item => !item.status || item.status.length === 0) ? (
+  <Typography fontWeight="md" level="body-sm">
+    N/A
+  </Typography>
+) : (
+  row.items?.map((item, i) =>
+    item.status?.map((st, j) => (
+      <Typography key={`${i}-${j}`} fontWeight="md" level="body-sm">
+        {st.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+      </Typography>
+    ))
+  )
+)}
 
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      {row.etd ? new Date(row.etd).toLocaleDateString() : "-"}
-                    </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      {row.delivery_date
-                        ? new Date(row.delivery_date).toLocaleDateString()
-                        : "-"}
-                    </td>
 
+
+                    </td>
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",

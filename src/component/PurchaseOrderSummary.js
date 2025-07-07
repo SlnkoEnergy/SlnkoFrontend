@@ -24,20 +24,23 @@ import DownloadIcon from "@mui/icons-material/Download";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
 import {
   useExportPosMutation,
   useGetPaginatedPOsQuery,
+  useUpdatePurchasesStatusMutation,
 } from "../redux/purchasesSlice";
-import { Option, Select } from "@mui/joy";
+import { Modal, Option, Select, Textarea } from "@mui/joy";
 import { useMemo } from "react";
 import { Calendar, FileCheck, Store } from "lucide-react";
+import { toast } from "react-toastify";
 
 const PurchaseOrderSummary = forwardRef((props, ref) => {
-    const { project_code } = props;
+  const { project_code, pr_id } = props;
   const navigate = useNavigate();
+  const [po, setPO] = useState("");
   const [selectedpo, setSelectedpo] = useState("");
   const [selectedtype, setSelectedtype] = useState("");
   const [selected, setSelected] = useState([]);
@@ -48,6 +51,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
   const [currentPage, setCurrentPage] = useState(initialPage);
+  const [openModal, setOpenModal] = useState(false);
+  const [nextStatus, setNextStatus] = useState("");
+  const [remarks, setRemarks] = useState("");
   const [perPage, setPerPage] = useState(initialPageSize);
   const location = useLocation();
   const isFromCAM = location.pathname === "/project_detail";
@@ -63,6 +69,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     search: searchQuery,
     type: selectedtype,
     project_id: isFromCAM || isFromPR ? project_code : "",
+    pr_id: isFromPR && pr_id ? pr_id.toString() : "",
   });
   const [exportPos, { isLoading: isExporting }] = useExportPosMutation();
 
@@ -224,7 +231,32 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     );
   };
 
-  const RowMenu = ({ currentPage, po_number }) => {
+  const [updateStatus] = useUpdatePurchasesStatusMutation();
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const handleStatusChange = async (current_status) => {
+    try {
+      const updatedStatus =
+        selectedStatus === "out_for_delivery"
+          ? "delivered"
+          : "out_for_delivery";
+
+      await updateStatus({
+        id: po,
+        status: updatedStatus,
+        remarks,
+      }).unwrap();
+
+      toast.success("Status Updated Successfully");
+      setRemarks("");
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (err) {
+      toast.error("Failed to update status");
+    }
+  };
+
+  const RowMenu = ({ currentPage, po_number, current_status }) => {
     const [user, setUser] = useState(null);
 
     useEffect(() => {
@@ -239,6 +271,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       }
       return null;
     };
+
+    console.log("current", current_status);
 
     return (
       <Dropdown>
@@ -345,20 +379,29 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
               <Typography>Edit Bill</Typography>
             </MenuItem>
           )}
-          {/* <Divider sx={{ backgroundColor: "lightblue" }} />
-                      {(user?.name === "IT Team" ||
-                        user?.name === "Guddu Rani Dubey" ||
-                        user?.name === "Prachi Singh" ||
-                        user?.name === "admin") && (
-                        <MenuItem
-                          color="danger"
-                          disabled={selectedProjects.length === 0}
-                          onClick={handleDelete}
-                        >
-                          <DeleteIcon />
-                          <Typography>Delete</Typography>
-                        </MenuItem>
-                      )} */}
+          {(user?.name === "IT Team" ||
+            user?.name === "admin" ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Prachi Singh" ||
+            user?.name === "Ajay Singh" ||
+            user?.name === "Naresh Kumar" ||
+            user?.name === "Shubham Gupta") && (
+            <MenuItem
+              onClick={() => {
+                if (current_status?.status === "out_for_delivery") {
+                  setNextStatus("delivered");
+                } else {
+                  setNextStatus("out_for_delivery");
+                }
+                setOpenModal(true);
+                setPO(po_number);
+                setSelectedStatus(current_status?.status);
+              }}
+            >
+              <EditNoteIcon />
+              <Typography>Change Status</Typography>
+            </MenuItem>
+          )}
         </Menu>
       </Dropdown>
     );
@@ -455,7 +498,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         </Box>
         <Box display="flex" alignItems="center" mt={0.5}>
           <FileCheck size={12} />
-          <span style={{ fontSize: 12, fontWeight: 500 }}>PR_No : </span> &nbsp;
+          <span style={{ fontSize: 12, fontWeight: 500 }}>PR No : </span> &nbsp;
           <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
             {pr_no || "0"}
           </Typography>
@@ -500,9 +543,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       </>
     );
   };
-  const EditPo = ({ po_number, currentPage }) => {
-
-  }
+  const EditPo = ({ po_number, currentPage }) => {};
 
   return (
     <>
@@ -762,6 +803,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       <RowMenu
                         currentPage={currentPage}
                         po_number={po.po_number}
+                        current_status={po.current_status}
                       />
                     </Box>
                   </Box>
@@ -883,6 +925,56 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         >
           Next
         </Button>
+
+        <Modal open={openModal} onClose={() => setOpenModal(false)}>
+          <Sheet
+            variant="outlined"
+            sx={{
+              maxWidth: 400,
+              borderRadius: "md",
+              p: 3,
+              boxShadow: "lg",
+              mx: "auto",
+              mt: "10%",
+            }}
+          >
+            <Typography level="h5" mb={1}>
+              Confirm Status Change
+            </Typography>
+            <Typography mb={2}>
+              Do you want to change status to{" "}
+              <b>{nextStatus.replace(/_/g, " ")}</b>?
+            </Typography>
+
+            <Textarea
+              placeholder="Enter remarks..."
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              minRows={3}
+              sx={{ mb: 2 }}
+            />
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "1rem",
+              }}
+            >
+              <Button variant="plain" onClick={() => setOpenModal(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="solid"
+                color="primary"
+                disabled={!remarks.trim()}
+                onClick={handleStatusChange}
+              >
+                Confirm
+              </Button>
+            </div>
+          </Sheet>
+        </Modal>
       </Box>
     </>
   );

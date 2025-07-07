@@ -12,14 +12,11 @@ import {
   Chip,
 } from "@mui/joy";
 import {
-  useEditPurchaseRequestMutation,
   useGetPurchaseRequestQuery,
-  useUpdatePurchaseRequestStatusMutation,
 } from "../redux/camsSlice";
 import PurchaseOrderSummary from "./PurchaseOrderSummary";
 import { useSearchParams } from "react-router-dom";
 import ADDPO from "../component/Forms/Add_Po";
-import { toast } from "react-toastify";
 
 const PurchaseReqDetail = () => {
   const [searchParams] = useSearchParams();
@@ -33,89 +30,10 @@ const PurchaseReqDetail = () => {
     error,
   } = useGetPurchaseRequestQuery({ project_id, item_id, pr_id });
 
-  const [etdDate, setEtdDate] = useState("");
-  const [updateETD, { isLoading: isSubmitting }] =
-    useEditPurchaseRequestMutation();
-
-  const handleETDSubmit = async (pr_id) => {
-    if (!etdDate) {
-      toast.error("Please select ETD date.");
-      return;
-    }
-
-    if (!pr_id) {
-      toast.error("Purchase Request ID is missing.");
-      return;
-    }
-
-    const payload = {
-      purchaseRequestData: {
-        etd: etdDate,
-      },
-    };
-
-    try {
-      console.log("Payload being sent for ETD update:", payload);
-
-      await updateETD({ pr_id, payload }).unwrap();
-
-      toast.success("ETD updated successfully!");
-      setEtdDate("");
-      window.location.reload();
-    } catch (error) {
-      console.error("Error updating ETD:", error);
-      toast.error(error?.data?.message || "Failed to update ETD.");
-    }
-  };
-
-  const [remarks, setRemarks] = useState("");
-  const [openOutModal, setOpenOutModal] = useState(false);
-  const [openDeliveryDoneModal, setOpenDeliveryDoneModal] = useState(false);
-
-  const currentStatus =
-    getPurchaseRequest?.purchase_request?.current_status?.status;
-
-  const [updateStatus] = useUpdatePurchaseRequestStatusMutation();
-
-  const handleOutForDelivery = async () => {
-    if (!remarks.trim()) {
-      toast.error("Please enter remarks.");
-      return;
-    }
-
-    if (
-      window.confirm(
-        "Are you sure you want to change status to Out for Delivery?"
-      )
-    ) {
-      await updateStatus({
-        id: pr_id,
-        status: "out_for_delivery",
-        remarks,
-      }).unwrap();
-      window.location.reload();
-      setOpenOutModal(false);
-      setRemarks("");
-    }
-  };
-
-  const handleDeliveryDone = async () => {
-    if (!remarks.trim()) {
-      toast.error("Please enter remarks.");
-      return;
-    }
-
-    if (window.confirm("Are you sure you want to mark Delivery as Done?")) {
-      await updateStatus({
-        id: pr_id,
-        status: "delivered",
-        remarks,
-      }).unwrap();
-      window.location.reload();
-      setOpenDeliveryDoneModal(false);
-      setRemarks("");
-    }
-  };
+   
+  
+  console.log("pr_id", getPurchaseRequest?.purchase_request?._id);
+  
 
   return (
     <Container
@@ -127,7 +45,6 @@ const PurchaseReqDetail = () => {
         mt: 8,
         width: "100%",
         minHeight: "100vh",
-        // backgroundColor: "background.level1",
       }}
     >
       {/* PR Details Sheet */}
@@ -241,23 +158,23 @@ const PurchaseReqDetail = () => {
             </Typography>
             <Chip
               color={
-                getPurchaseRequest?.purchase_request?.current_status?.status ===
+                getPurchaseRequest?.item?.current_status?.status ===
                 "approved"
                   ? "success"
-                  : getPurchaseRequest?.purchase_request?.current_status
+                  : getPurchaseRequest?.item?.current_status
                         ?.status === "submitted"
                     ? "primary"
-                    : getPurchaseRequest?.purchase_request?.current_status
+                    : getPurchaseRequest?.item?.current_status
                           ?.status === "out_for_delivery"
                       ? "warning"
-                      : getPurchaseRequest?.purchase_request?.current_status
+                      : getPurchaseRequest?.item?.current_status
                             ?.status === "delivered"
                         ? "success"
                         : "neutral"
               }
               variant="soft"
             >
-              {getPurchaseRequest?.purchase_request?.current_status?.status
+              {getPurchaseRequest?.item?.current_status?.status
                 ?.replace(/_/g, " ")
                 ?.replace(/\b\w/g, (c) => c.toUpperCase()) || "-"}
             </Chip>
@@ -265,7 +182,7 @@ const PurchaseReqDetail = () => {
 
           <Tooltip
             title={
-              getPurchaseRequest?.purchase_request?.etd === null
+              getPurchaseRequest?.item?.etd === null
                 ? "Please select ETD first"
                 : ""
             }
@@ -275,7 +192,6 @@ const PurchaseReqDetail = () => {
                 size="sm"
                 variant="outlined"
                 onClick={() => setOpen(true)}
-                disabled={getPurchaseRequest?.purchase_request?.etd === null}
               >
                 + Add PO
               </Button>
@@ -284,8 +200,8 @@ const PurchaseReqDetail = () => {
         </Box>
       </Sheet>
 
-      <PurchaseOrderSummary project_code={getPurchaseRequest?.purchase_request?.project?.code} />
-
+      <PurchaseOrderSummary project_code={getPurchaseRequest?.purchase_request?.project?.code} pr_id={getPurchaseRequest?.purchase_request?._id?.toString()} />
+      
       
       {/* Add PO Modal */}
       <Modal
