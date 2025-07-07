@@ -488,6 +488,55 @@ const {
     );
   };
 
+  // if (error) {
+  //   return <Typography color="danger">{error}</Typography>;
+  // }
+
+  useImperativeHandle(ref, () => ({
+    exportToCSV() {
+      // console.log("Exporting data to CSV...");
+      const headers = [
+        "Project ID",
+        "PO Number",
+        "PO Date",
+        "Partial Billing",
+        "Item Name",
+        "Vendor",
+        "PO Value with GST",
+        "Advance Paid",
+        "Bill Status",
+        "Total Billed",
+        // "Action",
+      ];
+
+      const rows = Pos.map((po) => [
+        po.p_id || "-",
+        po.po_number || "-",
+        po.date || "-",
+        po.billingTypes || "-",
+        po.item || "-",
+        po.vendor || "-",
+        po.po_value || "-",
+        po.amount_paid || "0",
+        po.bill_status || "-",
+        po.totalBill || "0",
+        // po.action || "-",
+      ]);
+
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row) => row.join(",")),
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "PurchaseOrder_Summary.csv";
+      link.click();
+    },
+  }));
+  
+
   const RenderItem_Vendor = ({ vendor, item }) => {
     return (
       <>
