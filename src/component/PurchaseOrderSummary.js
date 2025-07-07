@@ -507,7 +507,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         // "Action",
       ];
 
-      const rows = pos.map((po) => [
+      const rows = Pos.map((po) => [
         po.p_id || "-",
         po.po_number || "-",
         po.date || "-",
