@@ -21,7 +21,7 @@ import {
 import { useSearchParams } from "react-router-dom";
 import POSummary from "../pages/SCM/POSummary";
 import PurchaseOrder from "../component/PurchaseOrderSummary";
-const PurchaseRequestCard = () => {
+const PurchaseRequestCard = ({project_code}) => {
   const [searchParams] = useSearchParams();
   const project_id = searchParams.get("project_id");
 
@@ -384,7 +384,7 @@ const PurchaseRequestCard = () => {
     //   </Modal>
     // </Box>
     <>
-     <PurchaseOrder />
+     <PurchaseOrder project_code={project_code}/>
     </>
   );
 };

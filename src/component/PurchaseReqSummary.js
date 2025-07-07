@@ -262,7 +262,7 @@ function PurchaseReqSummary() {
   };
 
   const PRActions = ({ _id, current_status }) => {
-    console.log("Current Status:", current_status.status);
+    console.log("Current Status:", current_status?.status);
     console.log("ID:", _id);
 
     const status = current_status?.status;

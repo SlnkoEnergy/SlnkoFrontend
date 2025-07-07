@@ -21,8 +21,8 @@ export const purchasesApi = createApi({
       providesTags: ["Purchase"],
     }),
     getPaginatedPOs: builder.query({
-      query: ({ page = 1, search = "", status, pageSize = 10, type }) =>
-        `get-paginated-po?page=${page}&search=${search}&status=${status}&pageSize=${pageSize}&type=${type}`,
+      query: ({ page = 1, search = "", status, pageSize = 10, type, project_id }) =>
+        `get-paginated-po?page=${page}&search=${search}&status=${status}&pageSize=${pageSize}&type=${type}&project_id=${project_id}`,
       transformResponse: (response) => ({
         data: response.data || [],
         total: response.meta?.total || 0,

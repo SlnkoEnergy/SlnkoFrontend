@@ -199,7 +199,7 @@ export default function Project_Detail() {
                  
                   overflowY="auto"
                 >
-                  <PurchaseRequestCard />
+                  <PurchaseRequestCard project_code={projectDetails?.code} />
                 </Box>
               </TabPanel>
             </Tabs>
