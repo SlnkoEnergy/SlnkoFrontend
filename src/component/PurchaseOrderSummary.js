@@ -27,7 +27,7 @@ import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import axios from "axios";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
 import {
   useExportPosMutation,
@@ -37,7 +37,7 @@ import { Option, Select } from "@mui/joy";
 import { useMemo } from "react";
 import { Calendar, FileCheck, Store } from "lucide-react";
 
-const PurchaseOrderSummary = forwardRef((props, ref) => {
+const PurchaseOrderSummary = forwardRef((props, ref, project_code) => {
   const navigate = useNavigate();
   const [selectedpo, setSelectedpo] = useState("");
   const [selectedtype, setSelectedtype] = useState("");
@@ -50,19 +50,21 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [perPage, setPerPage] = useState(initialPageSize);
-
-  const {
-    data: getPO = [],
-    isLoading,
-    error,
-  } = useGetPaginatedPOsQuery({
-    page: currentPage,
-    pageSize: perPage,
-    status: selectedpo,
-    search: searchQuery,
-    type: selectedtype,
-  });
-
+  const location = useLocation();
+  const isFromCAM = location.pathname === "/project_detail"
+  const isFromPR = location.pathname === "/purchase_detail"
+const {
+  data: getPO = [],
+  isLoading,
+  error,
+} = useGetPaginatedPOsQuery({
+  page: currentPage,
+  pageSize: perPage,
+  status: selectedpo,
+  search: searchQuery,
+  type: selectedtype,
+  project_id: isFromCAM || isFromPR ? project_code : "",
+});
   const [exportPos, { isLoading: isExporting }] = useExportPosMutation();
 
   const { data: getPoData = [], total = 0, count = 0 } = getPO;
@@ -486,6 +488,55 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     );
   };
 
+  // if (error) {
+  //   return <Typography color="danger">{error}</Typography>;
+  // }
+
+  useImperativeHandle(ref, () => ({
+    exportToCSV() {
+      // console.log("Exporting data to CSV...");
+      const headers = [
+        "Project ID",
+        "PO Number",
+        "PO Date",
+        "Partial Billing",
+        "Item Name",
+        "Vendor",
+        "PO Value with GST",
+        "Advance Paid",
+        "Bill Status",
+        "Total Billed",
+        // "Action",
+      ];
+
+      const rows = Pos.map((po) => [
+        po.p_id || "-",
+        po.po_number || "-",
+        po.date || "-",
+        po.billingTypes || "-",
+        po.item || "-",
+        po.vendor || "-",
+        po.po_value || "-",
+        po.amount_paid || "0",
+        po.bill_status || "-",
+        po.totalBill || "0",
+        // po.action || "-",
+      ]);
+
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row) => row.join(",")),
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "PurchaseOrder_Summary.csv";
+      link.click();
+    },
+  }));
+  
+
   const RenderItem_Vendor = ({ vendor, item }) => {
     return (
       <>
@@ -513,7 +564,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
+         marginLeft: isFromCAM || isFromPR ? 0 : { xl: "15%", lg: "18%" },
+
           borderRadius: "sm",
           py: 2,
           display: "flex",
@@ -542,14 +594,14 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "initial" },
+          display: isFromCAM || isFromPR ?'flex': { xs: "none", sm: "initial" },
           width: "100%",
           borderRadius: "sm",
           flexShrink: 1,
           overflow: "auto",
           minHeight: 0,
-          marginLeft: { xl: "15%", lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%" },
+          marginLeft: isFromCAM || isFromPR? 0: { xl: "15%", lg: "18%" },
+          maxWidth:isFromCAM || isFromPR ? '100%': { lg: "85%", sm: "100%" },
         }}
       >
         {error ? (
@@ -814,7 +866,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           display: "flex",
           alignItems: "center",
           flexDirection: { xs: "column", md: "row" },
-          marginLeft: { xl: "15%", lg: "18%" },
+          marginLeft: isFromCAM || isFromPR ? 0:{ xl: "15%", lg: "18%" },
         }}
       >
         <Button

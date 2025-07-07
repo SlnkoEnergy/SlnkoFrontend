@@ -195,12 +195,11 @@ export default function Project_Detail() {
 
               <TabPanel value={2}>
                 <Box
-                  display="flex"
-                  alignItems="flex-start"
-                  height="70vh"
+                  
+                 
                   overflowY="auto"
                 >
-                  <PurchaseRequestCard />
+                  <PurchaseRequestCard project_code={projectDetails?.code} />
                 </Box>
               </TabPanel>
             </Tabs>

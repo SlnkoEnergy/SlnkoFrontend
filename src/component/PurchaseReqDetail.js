@@ -19,6 +19,8 @@ import {
   useGetPurchaseRequestQuery,
   useUpdatePurchaseRequestStatusMutation,
 } from "../redux/camsSlice";
+import BillHistoryTable from "./Bill_History";
+import PurchaseOrderSummary from "./PurchaseOrderSummary";
 import { useSearchParams } from "react-router-dom";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import DoneIcon from "@mui/icons-material/Done";
@@ -126,7 +128,7 @@ const PurchaseReqDetail = () => {
       sx={{
         display: "flex",
         flexDirection: "column",
-        ml: "14%",
+        ml: "20%",
         gap: 2,
         mt: 8,
         width: "100%",
@@ -148,11 +150,14 @@ const PurchaseReqDetail = () => {
         <Typography level="h4" textAlign="center" mb={2}>
           PR Details
         </Typography>
-        <Stack
-          direction="row"
-          spacing={4}
-          flexWrap="wrap"
-          justifyContent={"space-evenly"}
+
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: 2,
+            alignItems: "center",
+          }}
         >
           <Stack direction="row" spacing={1} alignItems="center">
             <Typography
@@ -206,209 +211,6 @@ const PurchaseReqDetail = () => {
             </Typography>
           </Stack>
 
-          <Stack direction="row" spacing={2} alignItems="center">
-            <Typography
-              fontWeight={700}
-              level="body-sm"
-              textColor="text.secondary"
-            >
-              ETD:
-            </Typography>
-
-            {getPurchaseRequest?.purchase_request?.etd ? (
-              <Typography level="body-md">
-                {new Date(
-                  getPurchaseRequest.purchase_request.etd
-                ).toLocaleDateString()}
-              </Typography>
-            ) : (
-              <>
-                <Input
-                  name="etd"
-                  type="date"
-                  value={etdDate}
-                  onChange={(e) => setEtdDate(e.target.value)}
-                  required
-                  sx={{ minWidth: 160 }}
-                />
-
-                <Button
-                  size="sm"
-                  variant="solid"
-                  color="primary"
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => handleETDSubmit(pr_id)}
-                >
-                  {isSubmitting ? "Submitting..." : "Submit"}
-                </Button>
-              </>
-            )}
-          </Stack>
-
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Typography
-              fontWeight={700}
-              level="body-sm"
-              textColor="text.secondary"
-            >
-              Status:
-            </Typography>
-
-            <Chip
-              color={
-                getPurchaseRequest?.purchase_request?.current_status?.status ===
-                "approved"
-                  ? "success"
-                  : getPurchaseRequest?.purchase_request?.current_status
-                        ?.status === "submitted"
-                    ? "primary"
-                    : getPurchaseRequest?.purchase_request?.current_status
-                          ?.status === "out_for_delivery"
-                      ? "warning"
-                      : getPurchaseRequest?.purchase_request?.current_status
-                            ?.status === "delivered"
-                        ? "success"
-                        : "neutral"
-              }
-              variant="soft"
-            >
-              {getPurchaseRequest?.purchase_request?.current_status?.status
-                ?.replace(/_/g, " ")
-                ?.replace(/\b\w/g, (c) => c.toUpperCase()) || "-"}
-            </Chip>
-          </Stack>
-
-          <Stack direction="row" spacing={2}>
-            {currentStatus === "approved" && (
-              <>
-                <IconButton
-                  variant="solid"
-                  color="primary"
-                  onClick={() => setOpenOutModal(true)}
-                >
-                  <LocalShippingIcon />
-                </IconButton>
-
-                <Modal
-                  open={openOutModal}
-                  onClose={() => setOpenOutModal(false)}
-                >
-                  <ModalDialog>
-                    <Typography level="h5" mb={2}>
-                      Out for Delivery Remarks
-                    </Typography>
-                    <Textarea
-                      minRows={3}
-                      placeholder="Enter remarks..."
-                      value={remarks}
-                      onChange={(e) => setRemarks(e.target.value)}
-                    />
-                    <Stack
-                      direction="row"
-                      justifyContent="flex-end"
-                      mt={2}
-                      spacing={2}
-                    >
-                      <Button
-                        variant="plain"
-                        onClick={() => setOpenOutModal(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        variant="solid"
-                        color="primary"
-                        onClick={handleOutForDelivery}
-                      >
-                        Confirm
-                      </Button>
-                    </Stack>
-                  </ModalDialog>
-                </Modal>
-              </>
-            )}
-
-            {currentStatus === "out_for_delivery" && (
-              <>
-                <Button
-                  size="sm"
-                  variant="solid"
-                  color="success"
-                  startDecorator={<DoneIcon />}
-                  onClick={() => setOpenDeliveryDoneModal(true)}
-                >
-                  Delivery Done
-                </Button>
-
-                <Modal
-                  open={openDeliveryDoneModal}
-                  onClose={() => setOpenDeliveryDoneModal(false)}
-                >
-                  <ModalDialog>
-                    <Typography level="h5" mb={2}>
-                      Delivery Done Remarks
-                    </Typography>
-                    <Textarea
-                      minRows={3}
-                      placeholder="Enter remarks..."
-                      value={remarks}
-                      onChange={(e) => setRemarks(e.target.value)}
-                    />
-                    <Stack
-                      direction="row"
-                      justifyContent="flex-end"
-                      mt={2}
-                      spacing={2}
-                    >
-                      <Button
-                        variant="plain"
-                        onClick={() => setOpenDeliveryDoneModal(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        variant="solid"
-                        color="success"
-                        onClick={handleDeliveryDone}
-                      >
-                        Confirm
-                      </Button>
-                    </Stack>
-                  </ModalDialog>
-                </Modal>
-              </>
-            )}
-          </Stack>
-        </Stack>
-      </Sheet>
-      {/* PO Details Sheet */}
-      <Sheet
-        variant="outlined"
-        sx={{
-          borderRadius: "md",
-          boxShadow: "sm",
-          padding: 3,
-          minWidth: 400,
-          bgcolor: "background.surface",
-          maxHeight: "40vh",
-          overflowY: "auto",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <Typography level="h4" textAlign="center" mb={2}>
-          PO Details
-        </Typography>
-
-        <Stack
-          direction="row"
-          spacing={2}
-          flexWrap="wrap"
-          justifyContent="space-between"
-          alignItems="center"
-          mb={2}
-        >
           <Stack direction="row" spacing={1} alignItems="center">
             <Typography
               fontWeight={700}
@@ -435,6 +237,38 @@ const PurchaseReqDetail = () => {
             </Typography>
           </Stack>
 
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography
+              fontWeight={700}
+              level="body-sm"
+              textColor="text.secondary"
+            >
+              Status:
+            </Typography>
+            <Chip
+              color={
+                getPurchaseRequest?.purchase_request?.current_status?.status ===
+                "approved"
+                  ? "success"
+                  : getPurchaseRequest?.purchase_request?.current_status
+                        ?.status === "submitted"
+                    ? "primary"
+                    : getPurchaseRequest?.purchase_request?.current_status
+                          ?.status === "out_for_delivery"
+                      ? "warning"
+                      : getPurchaseRequest?.purchase_request?.current_status
+                            ?.status === "delivered"
+                        ? "success"
+                        : "neutral"
+              }
+              variant="soft"
+            >
+              {getPurchaseRequest?.purchase_request?.current_status?.status
+                ?.replace(/_/g, " ")
+                ?.replace(/\b\w/g, (c) => c.toUpperCase()) || "-"}
+            </Chip>
+          </Stack>
+
           <Tooltip
             title={
               getPurchaseRequest?.purchase_request?.etd === null
@@ -453,49 +287,12 @@ const PurchaseReqDetail = () => {
               </Button>
             </span>
           </Tooltip>
-        </Stack>
-
-        <Box
-          sx={{
-            border: "1px solid",
-            borderColor: "divider",
-            borderRadius: "sm",
-            flex: 1,
-            overflowY: "auto",
-            p: 1,
-            maxHeight: "40vh",
-          }}
-        >
-          {getPurchaseRequest?.po_details?.length > 0 ? (
-            getPurchaseRequest.po_details.map((po, index) => (
-              <Stack
-                key={po._id || index}
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                spacing={2}
-                sx={{
-                  p: 1,
-                  borderBottom: "1px solid",
-                  borderColor: "divider",
-                }}
-              >
-                <Typography level="body-md" fontWeight={600}>
-                  {po.po_number}
-                </Typography>
-                <Typography level="body-md">
-                  ₹ {po.total_value_with_gst}
-                </Typography>
-              </Stack>
-            ))
-          ) : (
-            <Typography textAlign="center" color="neutral" mt={2}>
-              No PO Records Found
-            </Typography>
-          )}
         </Box>
       </Sheet>
 
+      <PurchaseOrderSummary />
+
+      
       {/* Add PO Modal */}
       <Modal
         open={open}

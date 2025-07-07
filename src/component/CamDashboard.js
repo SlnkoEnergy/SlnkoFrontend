@@ -101,7 +101,7 @@ function Dash_cam() {
     }
   };
 
-  const ProjectOverView = ({ currentPage, project_id, code }) => {
+  const ProjectOverView = ({ currentPage, project_id, code, id }) => {
     return (
       <>
         <span
@@ -113,8 +113,7 @@ function Dash_cam() {
           }}
           onClick={() => {
             const page = currentPage;
-            // const project_id = project_id;
-            // sessionStorage.setItem("eng_overview", projectId);
+            sessionStorage.setItem("submitInfo", id);
             navigate(`/project_detail?page=${page}&project_id=${project_id}`);
           }}
         >
@@ -481,6 +480,7 @@ function Dash_cam() {
                           currentPage={currentPage}
                           project_id={project.project_id}
                           code={project.code}
+                          id={project._id}
                         />
                       </span>
                     </Tooltip>
