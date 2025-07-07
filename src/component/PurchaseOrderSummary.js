@@ -51,20 +51,20 @@ const PurchaseOrderSummary = forwardRef((props, ref, project_code) => {
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [perPage, setPerPage] = useState(initialPageSize);
   const location = useLocation();
-  const isFromCAM = location.pathname === "/project_detail"
-  const isFromPR = location.pathname === "/purchase_detail"
-const {
-  data: getPO = [],
-  isLoading,
-  error,
-} = useGetPaginatedPOsQuery({
-  page: currentPage,
-  pageSize: perPage,
-  status: selectedpo,
-  search: searchQuery,
-  type: selectedtype,
-  project_id: isFromCAM || isFromPR ? project_code : "",
-});
+  const isFromCAM = location.pathname === "/project_detail";
+  const isFromPR = location.pathname === "/purchase_detail";
+  const {
+    data: getPO = [],
+    isLoading,
+    error,
+  } = useGetPaginatedPOsQuery({
+    page: currentPage,
+    pageSize: perPage,
+    status: selectedpo,
+    search: searchQuery,
+    type: selectedtype,
+    project_id: isFromCAM || isFromPR ? project_code : "",
+  });
   const [exportPos, { isLoading: isExporting }] = useExportPosMutation();
 
   const { data: getPoData = [], total = 0, count = 0 } = getPO;
@@ -438,12 +438,6 @@ const {
 
     const label = isFullyBilled ? "Final" : isPending ? "Partial" : type;
 
-    // const icon = isFullyBilled ? (
-    //   <CheckRoundedIcon />
-    // ) : isPending ? (
-    //   <AutorenewRoundedIcon />
-    // ) : null;
-
     const color = isFullyBilled ? "primary" : isPending ? "danger" : "neutral";
 
     return (
@@ -452,7 +446,7 @@ const {
       </Chip>
     );
   };
-    const RenderPid = ({ p_id, pr_no }) => {
+  const RenderPid = ({ p_id, pr_no }) => {
     return (
       <>
         <Box>
@@ -462,14 +456,14 @@ const {
         </Box>
         <Box display="flex" alignItems="center" mt={0.5}>
           <FileCheck size={12} />
-          <span style={{ fontSize: 12, fontWeight: 500 }}>PR_No : </span>{" "}
-          &nbsp;
-          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>{pr_no || "0"}</Typography>
+          <span style={{ fontSize: 12, fontWeight: 500 }}>PR_No : </span> &nbsp;
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+            {pr_no || "0"}
+          </Typography>
         </Box>
       </>
     );
   };
-
   const RenderPONumber = ({ po_number, date }) => {
     return (
       <>
@@ -487,56 +481,6 @@ const {
       </>
     );
   };
-
-  // if (error) {
-  //   return <Typography color="danger">{error}</Typography>;
-  // }
-
-  useImperativeHandle(ref, () => ({
-    exportToCSV() {
-      // console.log("Exporting data to CSV...");
-      const headers = [
-        "Project ID",
-        "PO Number",
-        "PO Date",
-        "Partial Billing",
-        "Item Name",
-        "Vendor",
-        "PO Value with GST",
-        "Advance Paid",
-        "Bill Status",
-        "Total Billed",
-        // "Action",
-      ];
-
-      const rows = Pos.map((po) => [
-        po.p_id || "-",
-        po.po_number || "-",
-        po.date || "-",
-        po.billingTypes || "-",
-        po.item || "-",
-        po.vendor || "-",
-        po.po_value || "-",
-        po.amount_paid || "0",
-        po.bill_status || "-",
-        po.totalBill || "0",
-        // po.action || "-",
-      ]);
-
-      const csvContent = [
-        headers.join(","),
-        ...rows.map((row) => row.join(",")),
-      ].join("\n");
-
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "PurchaseOrder_Summary.csv";
-      link.click();
-    },
-  }));
-  
-
   const RenderItem_Vendor = ({ vendor, item }) => {
     return (
       <>
@@ -557,6 +501,9 @@ const {
       </>
     );
   };
+  const EditPo = ({ po_number, currentPage }) => {
+    
+  }
 
   return (
     <>
@@ -564,7 +511,7 @@ const {
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
-         marginLeft: isFromCAM || isFromPR ? 0 : { xl: "15%", lg: "18%" },
+          marginLeft: isFromCAM || isFromPR ? 0 : { xl: "15%", lg: "18%" },
 
           borderRadius: "sm",
           py: 2,
@@ -594,14 +541,15 @@ const {
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: isFromCAM || isFromPR ?'flex': { xs: "none", sm: "initial" },
+          display:
+            isFromCAM || isFromPR ? "flex" : { xs: "none", sm: "initial" },
           width: "100%",
           borderRadius: "sm",
           flexShrink: 1,
           overflow: "auto",
           minHeight: 0,
-          marginLeft: isFromCAM || isFromPR? 0: { xl: "15%", lg: "18%" },
-          maxWidth:isFromCAM || isFromPR ? '100%': { lg: "85%", sm: "100%" },
+          marginLeft: isFromCAM || isFromPR ? 0 : { xl: "15%", lg: "18%" },
+          maxWidth: isFromCAM || isFromPR ? "100%" : { lg: "85%", sm: "100%" },
         }}
       >
         {error ? (
@@ -866,7 +814,7 @@ const {
           display: "flex",
           alignItems: "center",
           flexDirection: { xs: "column", md: "row" },
-          marginLeft: isFromCAM || isFromPR ? 0:{ xl: "15%", lg: "18%" },
+          marginLeft: isFromCAM || isFromPR ? 0 : { xl: "15%", lg: "18%" },
         }}
       >
         <Button
