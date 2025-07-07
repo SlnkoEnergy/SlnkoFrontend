@@ -35,7 +35,6 @@ import "react-toastify/dist/ReactToastify.css";
 import {
   useGetAllPurchaseRequestQuery,
   useGetMaterialCategoryQuery,
-
 } from "../redux/camsSlice";
 
 function PurchaseReqSummary() {
@@ -53,7 +52,6 @@ function PurchaseReqSummary() {
   const poValueSearch = searchParams.get("poValueSearch") || "";
   const statusSearch = searchParams.get("statusSearch") || "";
 
-
   const navigate = useNavigate();
 
   const { data, isLoading } = useGetAllPurchaseRequestQuery({
@@ -63,7 +61,6 @@ function PurchaseReqSummary() {
     poValueSearch,
     statusSearch,
   });
-
 
   useEffect(() => {
     setCurrentPage(page);
@@ -278,12 +275,10 @@ function PurchaseReqSummary() {
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState("success");
 
-
     const handleChipClick = (newStatus) => {
       setSelectedStatus(newStatus);
       setOpen(true);
     };
-
 
     const handleClose = () => {
       setOpen(false);
@@ -483,151 +478,207 @@ function PurchaseReqSummary() {
               ))}
             </tr>
           </thead>
-         <tbody>
-  {isLoading ? (
-    <tr>
-      <td colSpan={10} style={{ textAlign: "center", padding: "16px" }}>
-        <CircularProgress size="sm" />
-      </td>
-    </tr>
-  ) : purchaseRequests.length > 0 ? (
-    purchaseRequests.flatMap((row) =>
-      row.items.map((item) => (
-        <tr key={item._id}>
-          <td style={{ borderBottom: "1px solid #ddd", textAlign: "left" }}>
-            <Checkbox
-              size="sm"
-              checked={selected.includes(item._id)}
-              onChange={() => handleRowSelect(item._id)}
-            />
-          </td>
+          <tbody>
+            {isLoading ? (
+              <tr>
+                <td
+                  colSpan={10}
+                  style={{ textAlign: "center", padding: "16px" }}
+                >
+                  <CircularProgress size="sm" />
+                </td>
+              </tr>
+            ) : purchaseRequests.length > 0 ? (
+              purchaseRequests.flatMap((row) =>
+                row.items.map((item) => (
+                  <tr key={item._id}>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "left",
+                      }}
+                    >
+                      <Checkbox
+                        size="sm"
+                        checked={selected.includes(item._id)}
+                        onChange={() => handleRowSelect(item._id)}
+                      />
+                    </td>
 
-          <td style={{ borderBottom: "1px solid #ddd", textAlign: "left", cursor: "pointer", fontWeight: "600" }}>
-            <RenderPRNo
-              pr_no={row.pr_no}
-              createdAt={row.createdAt}
-              project_id={row.project_id._id}
-              item_id={item.item_id?._id}
-              pr_id={row._id}
-            />
-          </td>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        fontWeight: "600",
+                      }}
+                    >
+                      <RenderPRNo
+                        pr_no={row.pr_no}
+                        createdAt={row.createdAt}
+                        project_id={row.project_id._id}
+                        item_id={item.item_id?._id}
+                        pr_id={row._id}
+                      />
+                    </td>
 
-          <td style={{ borderBottom: "1px solid #ddd", textAlign: "left" }}>
-            <Box>
-              <Typography fontWeight="md">{row.project_id?.code || "-"}</Typography>
-              <Typography level="body-xs" sx={{ color: "text.secondary" }}>
-                {row.project_id?.name || "-"}
-              </Typography>
-            </Box>
-          </td>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "left",
+                      }}
+                    >
+                      <Box>
+                        <Typography fontWeight="md">
+                          {row.project_id?.code || "-"}
+                        </Typography>
+                        <Typography
+                          level="body-xs"
+                          sx={{ color: "text.secondary" }}
+                        >
+                          {row.project_id?.name || "-"}
+                        </Typography>
+                      </Box>
+                    </td>
 
-          <td style={{ borderBottom: "1px solid #ddd", textAlign: "left" }}>
-            {item.item_id?.name || "-"}
-          </td>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "left",
+                      }}
+                    >
+                      {item.item_id?.name || "-"}
+                    </td>
 
-          <td style={{ borderBottom: "1px solid #ddd", textAlign: "left" }}>
-            {row.items?.every((itm) => !itm.status || itm.status.length === 0) ? (
-              <Typography fontWeight="md" level="body-sm">
-                N/A
-              </Typography>
-            ) : (
-              row.items?.map((itm, i) =>
-                itm.status?.map((st, j) => (
-                  <Typography key={`${i}-${j}`} fontWeight="md" level="body-sm">
-                    {st.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
-                  </Typography>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "left",
+                      }}
+                    >
+                      {row.items?.every(
+                        (itm) => !itm.status || itm.status.length === 0
+                      ) ? (
+                        <Typography fontWeight="md" level="body-sm">
+                          N/A
+                        </Typography>
+                      ) : (
+                        [
+                          ...new Set(
+                            row.items?.flatMap((itm) => itm.status || [])
+                          ),
+                        ].map((st, i) => (
+                          <Typography key={i} fontWeight="md" level="body-sm">
+                            {st
+                              .replace(/_/g, " ")
+                              .replace(/\b\w/g, (l) => l.toUpperCase())}
+                          </Typography>
+                        ))
+                      )}
+                    </td>
+
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "left",
+                      }}
+                    >
+                      {renderDelayChip(row.delay || "0 days")}
+                    </td>
+
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "left",
+                      }}
+                    >
+                      {row.total_po_count && row.po_numbers?.length > 0 ? (
+                        <Tooltip
+                          arrow
+                          placement="top"
+                          title={
+                            <Box
+                              sx={{
+                                bgcolor: "primary.softBg",
+                                color: "primary.solidColor",
+                                p: 1,
+                                borderRadius: "sm",
+                                minWidth: "150px",
+                              }}
+                            >
+                              <Typography level="body-sm" fontWeight="md">
+                                PO Numbers:
+                              </Typography>
+                              {row.po_numbers.map((po, idx) => (
+                                <Typography key={idx} level="body-xs">
+                                  • {po}
+                                </Typography>
+                              ))}
+                            </Box>
+                          }
+                        >
+                          <Box>
+                            <Chip
+                              size="sm"
+                              variant="soft"
+                              sx={{
+                                position: "relative",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                paddingRight:
+                                  row.po_numbers.length > 1 ? "24px" : "12px",
+                                maxWidth: "200px",
+                                cursor: "pointer",
+                              }}
+                            >
+                              {row.po_numbers[0]}
+                              {row.po_numbers.length > 1 && (
+                                <Avatar
+                                  size="xs"
+                                  variant="solid"
+                                  color="primary"
+                                  sx={{
+                                    position: "absolute",
+                                    right: 2,
+                                    top: -2,
+                                    fontSize: "10px",
+                                    height: 18,
+                                    width: 20,
+                                    zIndex: 1,
+                                  }}
+                                >
+                                  +{row.po_numbers.length - 1}
+                                </Avatar>
+                              )}
+                            </Chip>
+                          </Box>
+                        </Tooltip>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "left",
+                      }}
+                    >
+                      {row.po_value || "-"}
+                    </td>
+                  </tr>
                 ))
               )
-            )}
-          </td>
-
-          <td style={{ borderBottom: "1px solid #ddd", textAlign: "left" }}>
-            {renderDelayChip(row.delay || "0 days")}
-          </td>
-
-          <td style={{ borderBottom: "1px solid #ddd", textAlign: "left" }}>
-            {row.total_po_count && row.po_numbers?.length > 0 ? (
-              <Tooltip
-                arrow
-                placement="top"
-                title={
-                  <Box
-                    sx={{
-                      bgcolor: "primary.softBg",
-                      color: "primary.solidColor",
-                      p: 1,
-                      borderRadius: "sm",
-                      minWidth: "150px",
-                    }}
-                  >
-                    <Typography level="body-sm" fontWeight="md">
-                      PO Numbers:
-                    </Typography>
-                    {row.po_numbers.map((po, idx) => (
-                      <Typography key={idx} level="body-xs">
-                        • {po}
-                      </Typography>
-                    ))}
-                  </Box>
-                }
-              >
-                <Box>
-                  <Chip
-                    size="sm"
-                    variant="soft"
-                    sx={{
-                      position: "relative",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      paddingRight: row.po_numbers.length > 1 ? "24px" : "12px",
-                      maxWidth: "200px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {row.po_numbers[0]}
-                    {row.po_numbers.length > 1 && (
-                      <Avatar
-                        size="xs"
-                        variant="solid"
-                        color="primary"
-                        sx={{
-                          position: "absolute",
-                          right: 2,
-                          top: -2,
-                          fontSize: "10px",
-                          height: 18,
-                          width: 20,
-                          zIndex: 1,
-                        }}
-                      >
-                        +{row.po_numbers.length - 1}
-                      </Avatar>
-                    )}
-                  </Chip>
-                </Box>
-              </Tooltip>
             ) : (
-              "-"
+              <tr>
+                <td
+                  colSpan={10}
+                  style={{ textAlign: "center", padding: "16px" }}
+                >
+                  No Data Found
+                </td>
+              </tr>
             )}
-          </td>
-          <td style={{ borderBottom: "1px solid #ddd", textAlign: "left" }}>
-           
-                {row.po_value || "-"}
-
-          </td>
-        </tr>
-      ))
-    )
-  ) : (
-    <tr>
-      <td colSpan={10} style={{ textAlign: "center", padding: "16px" }}>
-        No Data Found
-      </td>
-    </tr>
-  )}
-</tbody>
-
-
+          </tbody>
         </Box>
       </Sheet>
 

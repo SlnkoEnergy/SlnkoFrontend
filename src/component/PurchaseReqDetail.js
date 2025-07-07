@@ -26,6 +26,7 @@ const PurchaseReqDetail = () => {
   const item_id = searchParams.get("item_id");
   const pr_id = searchParams.get("pr_id");
   const [open, setOpen] = useState(false);
+
   const {
     data: getPurchaseRequest,
     isLoading,
@@ -71,10 +72,13 @@ const PurchaseReqDetail = () => {
   const [openOutModal, setOpenOutModal] = useState(false);
   const [openDeliveryDoneModal, setOpenDeliveryDoneModal] = useState(false);
 
-  const currentStatus =
-    getPurchaseRequest?.purchase_request?.current_status?.status;
+  // ✅ Use correct status from item.status
+  const itemStatus = getPurchaseRequest?.item?.status;
 
-  console.log("pr_id", getPurchaseRequest?.purchase_request?._id);
+  // ✅ Console logs for debugging
+  console.log("Full API response:", getPurchaseRequest);
+  console.log("Item object:", getPurchaseRequest?.item);
+  console.log("Item status:", itemStatus);
 
   return (
     <Container
@@ -189,6 +193,7 @@ const PurchaseReqDetail = () => {
             </Typography>
           </Stack>
 
+          {/* ✅ Correct Status Display */}
           <Stack direction="row" spacing={1} alignItems="center">
             <Typography
               fontWeight={700}
@@ -199,22 +204,20 @@ const PurchaseReqDetail = () => {
             </Typography>
             <Chip
               color={
-                getPurchaseRequest?.item?.current_status?.status === "approved"
+                itemStatus === "approved"
                   ? "success"
-                  : getPurchaseRequest?.item?.current_status?.status ===
-                      "submitted"
+                  : itemStatus === "submitted"
                     ? "primary"
-                    : getPurchaseRequest?.item?.current_status?.status ===
-                        "out_for_delivery"
+                    : itemStatus === "out_for_delivery"
                       ? "warning"
-                      : getPurchaseRequest?.item?.current_status?.status ===
-                          "delivered"
+                      : itemStatus === "delivered" ||
+                          itemStatus === "fully_delivered"
                         ? "success"
                         : "neutral"
               }
               variant="soft"
             >
-              {getPurchaseRequest?.item?.current_status?.status
+              {itemStatus
                 ?.replace(/_/g, " ")
                 ?.replace(/\b\w/g, (c) => c.toUpperCase()) || "-"}
             </Chip>
