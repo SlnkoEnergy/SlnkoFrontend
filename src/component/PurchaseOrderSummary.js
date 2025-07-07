@@ -1,7 +1,6 @@
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import EditNoteIcon from "@mui/icons-material/EditNote";
 import HistoryIcon from "@mui/icons-material/History";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
@@ -19,11 +18,12 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
-import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import EditNoteIcon from "@mui/icons-material/EditNote";
 import DownloadIcon from "@mui/icons-material/Download";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
+import CloseIcon from "@mui/icons-material/Close";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
@@ -31,18 +31,33 @@ import {
   useExportPosMutation,
   useGetPaginatedPOsQuery,
 } from "../redux/purchasesSlice";
-import { Option, Select } from "@mui/joy";
+import { Modal, Option, Select, Tooltip } from "@mui/joy";
 import { useMemo } from "react";
-import { Calendar, FileCheck, Store } from "lucide-react";
+import {
+  Calendar,
+  CirclePlus,
+  FileCheck,
+  FileClock,
+  History,
+  Pencil,
+  Store,
+} from "lucide-react";
+import UpdatePurchaseOrder from "./Forms/Edit_Po";
+import PoHistoryTable from "./PO_History";
+import AddBillForm from "./Forms/Add_Bill";
+import BillHistoryTable from "./Bill_History";
 
 const PurchaseOrderSummary = forwardRef((props, ref) => {
-    const { project_code } = props;
+  const { project_code } = props;
   const navigate = useNavigate();
   const [selectedpo, setSelectedpo] = useState("");
   const [selectedtype, setSelectedtype] = useState("");
   const [selected, setSelected] = useState([]);
+  const [selectedPoNumber, setSelectedPoNumber] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [modalAction, setModalAction] = useState("");
+  const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const initialPage = parseInt(searchParams.get("page")) || 1;
@@ -64,6 +79,18 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     type: selectedtype,
     project_id: isFromCAM || isFromPR ? project_code : "",
   });
+
+  const handleOpen = (po_number, action) => {
+    setSelectedPoNumber(po_number);
+    setModalAction(action);
+    setOpen(true);
+  };
+  const handleClose = () => {
+    setOpen(false);
+    setSelectedPoNumber("");
+    setModalAction("");
+  };
+
   const [exportPos, { isLoading: isExporting }] = useExportPosMutation();
 
   const { data: getPoData = [], total = 0, count = 0 } = getPO;
@@ -174,7 +201,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             ))}
           </Select>
         </FormControl> */}
-        <FormControl size="sm" sx={{ minWidth: 140 }}>
+        {/* <FormControl size="sm" sx={{ minWidth: 140 }}>
           <FormLabel>From Date</FormLabel>
           <Input
             type="date"
@@ -195,9 +222,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
               setCurrentPage(1);
             }}
           />
-        </FormControl>
+        </FormControl> */}
         <Box mt={3} sx={{ display: "flex", gap: 1 }}>
-          <Button
+          {/* <Button
             variant="outlined"
             size="sm"
             color="primary"
@@ -207,7 +234,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             startDecorator={<CalendarMonthIcon />}
           >
             Export by Date
-          </Button>
+          </Button> */}
 
           <Button
             variant="soft"
@@ -224,145 +251,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     );
   };
 
-  const RowMenu = ({ currentPage, po_number }) => {
-    const [user, setUser] = useState(null);
 
-    useEffect(() => {
-      const userData = getUserData();
-      setUser(userData);
-    }, []);
-
-    const getUserData = () => {
-      const userData = localStorage.getItem("userDetails");
-      if (userData) {
-        return JSON.parse(userData);
-      }
-      return null;
-    };
-
-    return (
-      <Dropdown>
-        <MenuButton
-          slots={{ root: IconButton }}
-          slotProps={{
-            root: { variant: "plain", color: "neutral", size: "sm" },
-          }}
-        >
-          <MoreHorizRoundedIcon />
-        </MenuButton>
-        <Menu size="sm" sx={{ minWidth: 140 }}>
-          {(user?.name === "IT Team" ||
-            user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Prachi Singh" ||
-            user?.department === "admin" ||
-            user?.name === "Ajay Singh" ||
-            user?.name === "Aryan Maheshwari" ||
-            user?.name === "Sarthak Sharma" ||
-            user?.name === "Naresh Kumar" ||
-            user?.name === "Shubham Gupta") && (
-            <MenuItem
-              onClick={() => {
-                const page = currentPage;
-                const po = po_number;
-                localStorage.setItem("po_no", po);
-                navigate(`/add_bill?page=${page}&po_number=${po}`);
-              }}
-            >
-              {" "}
-              <AddCircleOutlineIcon />
-              <Typography>Add Bill</Typography>
-            </MenuItem>
-          )}
-          <MenuItem
-            onClick={() => {
-              const page = currentPage;
-              const po = po_number;
-              localStorage.setItem("get-po", po);
-              navigate(`/bill_history?page=${page}&po_number=${po}`);
-            }}
-          >
-            <HistoryIcon />
-            <Typography>Bill History</Typography>
-          </MenuItem>
-          <Divider sx={{ backgroundColor: "lightblue" }} />
-          {(user?.name === "IT Team" ||
-            user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Prachi Singh" ||
-            user?.department === "admin" ||
-            user?.name === "Ajay Singh" ||
-            user?.name === "Aryan Maheshwari" ||
-            user?.name === "Sarthak Sharma" ||
-            user?.name === "Shubham Gupta" ||
-            user?.name === "Naresh Kumar" ||
-            user?.name === "Sandeep Yadav" ||
-            user?.name === "Som Narayan Jha" ||
-            user?.name === "Saresh") && (
-            <MenuItem
-              onClick={() => {
-                const page = currentPage;
-                const po = po_number;
-                // const ID = _id
-                localStorage.setItem("edit-po", po);
-                navigate(`/edit_po?page=${page}&po_number=${po}`);
-              }}
-            >
-              <EditNoteIcon />
-              <Typography>Edit PO</Typography>
-            </MenuItem>
-          )}
-          <MenuItem
-            onClick={() => {
-              const page = currentPage;
-              const po = po_number;
-              localStorage.setItem("get-po", po);
-              navigate(`/po_history?page=${page}&po_number=${po}`);
-            }}
-          >
-            <HistoryIcon />
-            <Typography>PO History</Typography>
-          </MenuItem>
-          {/* <Divider sx={{ backgroundColor: "lightblue" }} /> */}
-          {/* <MenuItem color="primary" style={{ fontWeight: "bold" }}>
-            Adjust Bill
-          </MenuItem> */}
-          {(user?.name === "IT Team" ||
-            user?.name === "admin" ||
-            user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Prachi Singh" ||
-            user?.name === "Ajay Singh" ||
-            user?.name === "Naresh Kumar" ||
-            user?.name === "Shubham Gupta") && (
-            <MenuItem
-              onClick={() => {
-                const page = currentPage;
-                const po = po_number;
-                localStorage.setItem("edit_bill", po);
-                navigate(`/edit_bill?page=${page}&po_number=${po}`);
-              }}
-            >
-              {" "}
-              <EditNoteIcon />
-              <Typography>Edit Bill</Typography>
-            </MenuItem>
-          )}
-          {/* <Divider sx={{ backgroundColor: "lightblue" }} />
-                      {(user?.name === "IT Team" ||
-                        user?.name === "Guddu Rani Dubey" ||
-                        user?.name === "Prachi Singh" ||
-                        user?.name === "admin") && (
-                        <MenuItem
-                          color="danger"
-                          disabled={selectedProjects.length === 0}
-                          onClick={handleDelete}
-                        >
-                          <DeleteIcon />
-                          <Typography>Delete</Typography>
-                        </MenuItem>
-                      )} */}
-        </Menu>
-      </Dropdown>
-    );
-  };
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -500,9 +389,55 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       </>
     );
   };
-  const EditPo = ({ po_number, currentPage }) => {
 
-  }
+  const EditPo = ({ po_number }) => (
+    <Tooltip title="Edit PO" placement="top">
+      <IconButton color="primary" onClick={() => handleOpen(po_number, "edit")}>
+        <EditNoteIcon />
+      </IconButton>
+    </Tooltip>
+  );
+
+  const ViewPOHistory = ({ po_number }) => (
+    <Tooltip title="View PO History" placement="top">
+      <IconButton color="primary" onClick={() => handleOpen(po_number, "view")}>
+        <History />
+      </IconButton>
+    </Tooltip>
+  );
+
+  const RenderTotalBilled = ({ total_billed = 0, po_value = 0 , po_number}) => {
+    const formattedAmount = new Intl.NumberFormat("en-IN", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(Number(total_billed) || 0);
+
+    const canAddBilling = Number(po_value) !== Number(total_billed);
+
+    return (
+      <Box>
+        <Typography sx={{ fontSize: 14 }}>
+          ₹ {formattedAmount}
+        </Typography>
+
+        <Box display="flex" gap={1} mt={0.5}>
+          {canAddBilling && (
+            <Tooltip title="Add Billing">
+              <IconButton size="small" color="primary" onClick={() => handleOpen(po_number, "add_bill")}>
+                <CirclePlus size={18} />
+              </IconButton>
+            </Tooltip>
+          )}
+
+          <Tooltip title="View Billing History">
+            <IconButton size="small" color="secondary" onClick={() => handleOpen(po_number, "view_bill")}>
+              <History size={18} />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Box>
+    );
+  };
 
   return (
     <>
@@ -584,6 +519,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                   />
                 </Box>
                 {[
+                  "",
+                  "",
                   "Project ID",
                   "PO Number",
                   "Partial Billing",
@@ -635,6 +572,26 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         }
                         color={selected.includes(po.id) ? "primary" : "neutral"}
                       />
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: "8px",
+                        textAlign: "left",
+                        borderBottom: "1px solid",
+                      }}
+                    >
+                      <ViewPOHistory po_number={po.po_number} />
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: "8px",
+                        textAlign: "left",
+                        borderBottom: "1px solid",
+                      }}
+                    >
+                      <EditPo po_number={po.po_number} />
                     </Box>
                     <Box
                       component="td"
@@ -740,15 +697,11 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         padding: 1,
                         textAlign: "left",
                         borderBottom: "1px solid",
-                        fontSize: 14,
+                        
                         minWidth: 150,
                       }}
                     >
-                      ₹
-                      {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 2,
-                      }).format(po.total_billed) || 0}
+                      <RenderTotalBilled total_billed={po.total_billed} po_value={po.po_value} po_number={po.po_number} />
                     </Box>
 
                     <Box
@@ -759,10 +712,10 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         borderBottom: "1px solid",
                       }}
                     >
-                      <RowMenu
+                      {/* <RowMenu
                         currentPage={currentPage}
                         po_number={po.po_number}
-                      />
+                      /> */}
                     </Box>
                   </Box>
                 ))
@@ -867,7 +820,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           >
             {[10, 30, 60, 100].map((num) => (
               <Option key={num} value={num}>
-                {num} perPage
+                {num}/Page
               </Option>
             ))}
           </Select>
@@ -884,6 +837,48 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           Next
         </Button>
       </Box>
+
+      <Modal open={open} onClose={handleClose}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            bgcolor: "background.paper",
+            boxShadow: 24,
+            p: 2,
+            borderRadius: 2,
+            minWidth: 500,
+          }}
+        >
+          <IconButton
+            onClick={handleClose}
+            sx={{
+              position: "absolute",
+              top: 20,
+              right: 15,
+              color: "grey.500",
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+
+          {modalAction === "edit" && (
+            <UpdatePurchaseOrder po_number={selectedPoNumber} />
+          )}
+          {modalAction === "view" && (
+            <PoHistoryTable po_number={selectedPoNumber} />
+          )}
+          {modalAction === "add_bill" && (
+            <AddBillForm po_number={selectedPoNumber} />
+          )} 
+          {modalAction === "view_bill" && (
+            <BillHistoryTable po_number={selectedPoNumber} />
+          )}
+
+        </Box>
+      </Modal>
     </>
   );
 });

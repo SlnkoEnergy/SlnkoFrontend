@@ -42,13 +42,9 @@ import View_Project from "./Forms/View_Project";
 
 const AllProjects = forwardRef((props, ref) => {
   const navigate = useNavigate();
-  // const [projects, setProjects] = useState([]);
-  // const [loading, setLoading] = useState(true);
-  // const [error, setError] = useState(null);
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
-  const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedProjects, setSelectedProjects] = useState([]);
