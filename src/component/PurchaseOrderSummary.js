@@ -300,7 +300,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       return null;
     };
 
-    console.log("current", current_status);
+    // console.log("current", current_status);
 
     return (
       <Dropdown>
@@ -313,100 +313,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           <MoreHorizRoundedIcon />
         </MenuButton>
         <Menu size="sm" sx={{ minWidth: 140 }}>
-          {(user?.name === "IT Team" ||
-            user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Prachi Singh" ||
-            user?.department === "admin" ||
-            user?.name === "Ajay Singh" ||
-            user?.name === "Aryan Maheshwari" ||
-            user?.name === "Sarthak Sharma" ||
-            user?.name === "Naresh Kumar" ||
-            user?.name === "Shubham Gupta") && (
-            <MenuItem
-              onClick={() => {
-                const page = currentPage;
-                const po = po_number;
-                localStorage.setItem("po_no", po);
-                navigate(`/add_bill?page=${page}&po_number=${po}`);
-              }}
-            >
-              {" "}
-              <AddCircleOutlineIcon />
-              <Typography>Add Bill</Typography>
-            </MenuItem>
-          )}
-          <MenuItem
-            onClick={() => {
-              const page = currentPage;
-              const po = po_number;
-              localStorage.setItem("get-po", po);
-              navigate(`/bill_history?page=${page}&po_number=${po}`);
-            }}
-          >
-            <HistoryIcon />
-            <Typography>Bill History</Typography>
-          </MenuItem>
-          <Divider sx={{ backgroundColor: "lightblue" }} />
-          {(user?.name === "IT Team" ||
-            user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Prachi Singh" ||
-            user?.department === "admin" ||
-            user?.name === "Ajay Singh" ||
-            user?.name === "Aryan Maheshwari" ||
-            user?.name === "Sarthak Sharma" ||
-            user?.name === "Shubham Gupta" ||
-            user?.name === "Naresh Kumar" ||
-            user?.name === "Sandeep Yadav" ||
-            user?.name === "Som Narayan Jha" ||
-            user?.name === "Saresh") && (
-            <MenuItem
-              onClick={() => {
-                const page = currentPage;
-                const po = po_number;
-                // const ID = _id
-                localStorage.setItem("edit-po", po);
-                navigate(`/edit_po?page=${page}&po_number=${po}`);
-              }}
-            >
-              <EditNoteIcon />
-              <Typography>Edit PO</Typography>
-            </MenuItem>
-          )}
-          <MenuItem
-            onClick={() => {
-              const page = currentPage;
-              const po = po_number;
-              localStorage.setItem("get-po", po);
-              navigate(`/po_history?page=${page}&po_number=${po}`);
-            }}
-          >
-            <HistoryIcon />
-            <Typography>PO History</Typography>
-          </MenuItem>
-          {/* <Divider sx={{ backgroundColor: "lightblue" }} /> */}
-          {/* <MenuItem color="primary" style={{ fontWeight: "bold" }}>
-            Adjust Bill
-          </MenuItem> */}
-          {(user?.name === "IT Team" ||
-            user?.name === "admin" ||
-            user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Prachi Singh" ||
-            user?.name === "Ajay Singh" ||
-            user?.name === "Naresh Kumar" ||
-            user?.name === "Shubham Gupta") && (
-            <MenuItem
-              onClick={() => {
-                const page = currentPage;
-                const po = po_number;
-                localStorage.setItem("edit_bill", po);
-                navigate(`/edit_bill?page=${page}&po_number=${po}`);
-              }}
-            >
-              {" "}
-              <EditNoteIcon />
-              <Typography>Edit Bill</Typography>
-            </MenuItem>
-          )}
           {(user?.name === "IT Team" ||
             user?.name === "admin" ||
             user?.name === "Guddu Rani Dubey" ||
