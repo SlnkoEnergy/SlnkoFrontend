@@ -65,9 +65,6 @@ const {
   type: selectedtype,
   project_id: isFromCAM || isFromPR ? project_code : "",
 });
-
-
-
   const [exportPos, { isLoading: isExporting }] = useExportPosMutation();
 
   const { data: getPoData = [], total = 0, count = 0 } = getPO;
