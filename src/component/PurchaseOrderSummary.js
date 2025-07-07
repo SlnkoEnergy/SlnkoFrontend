@@ -25,7 +25,7 @@ import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import axios from "axios";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
 
 // function descendingComparator(a, b, orderBy) {
@@ -540,7 +540,10 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       link.click();
     },
   }));
-
+  
+  const location = useLocation();
+  const isFromCAM = location.pathname === "/project_detail"
+  console.log("isFromCAM", isFromCAM)
   return (
     <>
       {/* Mobile Filters */}
@@ -583,7 +586,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
+          marginLeft: isFromCAM ? "0%" : { xl: "15%", lg: "18%" },
           borderRadius: "sm",
           py: 2,
           display: "flex",
@@ -607,21 +610,22 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         {/* {renderFilters()} */}
       </Box>
 
-      {/* Table */}
-      <Sheet
-        className="OrderTableContainer"
-        variant="outlined"
-        sx={{
-          display: { xs: "none", sm: "initial" },
-          width: "100%",
-          borderRadius: "sm",
-          flexShrink: 1,
-          overflow: "auto",
-          minHeight: 0,
-          marginLeft: { xl: "15%", lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%" },
-        }}
-      >
+    <Sheet
+  className="OrderTableContainer"
+  variant="outlined"
+  sx={{
+    display: isFromCAM ?'flex' :{ xs: "none", sm: "initial" },
+    width: "100%",
+    borderRadius: "sm",
+    flexShrink: 1,
+    overflow: "auto",
+    minHeight: 0,
+    marginLeft: isFromCAM ? "0%" : { xl: "15%", lg: "18%" },
+    maxWidth: { lg: "100%", sm: "100%" },
+  }}
+>
+
+      
         {error ? (
           <Typography color="danger" textAlign="center">
             {error}
