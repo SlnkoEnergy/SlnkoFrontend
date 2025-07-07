@@ -8,10 +8,7 @@ import {
   Container,
   Modal,
   ModalDialog,
-  Input,
   Tooltip,
-  IconButton,
-  Textarea,
   Chip,
 } from "@mui/joy";
 import {
@@ -19,11 +16,8 @@ import {
   useGetPurchaseRequestQuery,
   useUpdatePurchaseRequestStatusMutation,
 } from "../redux/camsSlice";
-import BillHistoryTable from "./Bill_History";
 import PurchaseOrderSummary from "./PurchaseOrderSummary";
 import { useSearchParams } from "react-router-dom";
-import LocalShippingIcon from "@mui/icons-material/LocalShipping";
-import DoneIcon from "@mui/icons-material/Done";
 import ADDPO from "../component/Forms/Add_Po";
 import { toast } from "react-toastify";
 
@@ -290,7 +284,7 @@ const PurchaseReqDetail = () => {
         </Box>
       </Sheet>
 
-      <PurchaseOrderSummary />
+      <PurchaseOrderSummary project_code={getPurchaseRequest?.purchase_request?.project?.code} />
 
       
       {/* Add PO Modal */}

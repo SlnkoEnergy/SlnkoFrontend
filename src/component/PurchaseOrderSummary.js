@@ -6,7 +6,6 @@ import HistoryIcon from "@mui/icons-material/History";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
-import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
@@ -25,7 +24,6 @@ import DownloadIcon from "@mui/icons-material/Download";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import axios from "axios";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
@@ -37,7 +35,8 @@ import { Option, Select } from "@mui/joy";
 import { useMemo } from "react";
 import { Calendar, FileCheck, Store } from "lucide-react";
 
-const PurchaseOrderSummary = forwardRef((props, ref, project_code) => {
+const PurchaseOrderSummary = forwardRef((props, ref) => {
+    const { project_code } = props;
   const navigate = useNavigate();
   const [selectedpo, setSelectedpo] = useState("");
   const [selectedtype, setSelectedtype] = useState("");
@@ -502,7 +501,7 @@ const PurchaseOrderSummary = forwardRef((props, ref, project_code) => {
     );
   };
   const EditPo = ({ po_number, currentPage }) => {
-    
+
   }
 
   return (
