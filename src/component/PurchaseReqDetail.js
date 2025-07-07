@@ -128,7 +128,7 @@ const PurchaseReqDetail = () => {
       sx={{
         display: "flex",
         flexDirection: "column",
-        ml: "14%",
+        ml: "20%",
         gap: 2,
         mt: 8,
         width: "100%",
@@ -292,7 +292,7 @@ const PurchaseReqDetail = () => {
 
       <PurchaseOrderSummary />
 
-      <BillHistoryTable />
+      
       {/* Add PO Modal */}
       <Modal
         open={open}

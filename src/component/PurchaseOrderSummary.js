@@ -564,7 +564,7 @@ const {
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
-         marginLeft: isFromCAM ? 0 : { xl: "15%", lg: "18%" },
+         marginLeft: isFromCAM || isFromPR ? 0 : { xl: "15%", lg: "18%" },
 
           borderRadius: "sm",
           py: 2,
@@ -594,14 +594,14 @@ const {
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "initial" },
+          display: isFromCAM || isFromPR ?'flex': { xs: "none", sm: "initial" },
           width: "100%",
           borderRadius: "sm",
           flexShrink: 1,
           overflow: "auto",
           minHeight: 0,
-          marginLeft: { xl: "15%", lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%" },
+          marginLeft: isFromCAM || isFromPR? 0: { xl: "15%", lg: "18%" },
+          maxWidth:isFromCAM || isFromPR ? '100%': { lg: "85%", sm: "100%" },
         }}
       >
         {error ? (
@@ -866,7 +866,7 @@ const {
           display: "flex",
           alignItems: "center",
           flexDirection: { xs: "column", md: "row" },
-          marginLeft: { xl: "15%", lg: "18%" },
+          marginLeft: isFromCAM || isFromPR ? 0:{ xl: "15%", lg: "18%" },
         }}
       >
         <Button
