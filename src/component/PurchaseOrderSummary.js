@@ -26,6 +26,10 @@ import Typography from "@mui/joy/Typography";
 import CloseIcon from "@mui/icons-material/Close";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import UpdatePurchaseOrder from "../component/Forms/Edit_Po";
+import PoHistoryTable from "../component/PO_History";
+import AddBillForm from "../component/Forms/Add_Bill";
+import BillHistoryTable from "../component/Bill_History";
 import NoData from "../assets/alert-bell.svg";
 import {
   useExportPosMutation,
@@ -33,9 +37,9 @@ import {
   useUpdateEtdOrDeliveryDateMutation,
   useUpdatePurchasesStatusMutation,
 } from "../redux/purchasesSlice";
-import { Modal, Option, Select, Tooltip } from "@mui/joy";
+import {  Option, Select, Textarea, Tooltip } from "@mui/joy";
 import { useMemo } from "react";
-import { Calendar, FileCheck, Store } from "lucide-react";
+import { Calendar, CirclePlus, FileCheck, History, Store } from "lucide-react";
 import {
   Modal,
   ModalDialog,
@@ -43,6 +47,7 @@ import {
   DialogContent,
   DialogActions,
 } from "@mui/joy";
+import { toast } from "react-toastify";
 
 
 const PurchaseOrderSummary = forwardRef((props, ref) => {

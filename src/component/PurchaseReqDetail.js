@@ -12,11 +12,13 @@ import {
   Chip,
 } from "@mui/joy";
 import {
+  useEditPurchaseRequestMutation,
   useGetPurchaseRequestQuery,
 } from "../redux/camsSlice";
 import PurchaseOrderSummary from "./PurchaseOrderSummary";
 import { useSearchParams } from "react-router-dom";
 import ADDPO from "../component/Forms/Add_Po";
+import { toast } from "react-toastify";
 
 const PurchaseReqDetail = () => {
   const [searchParams] = useSearchParams();
@@ -71,9 +73,8 @@ const PurchaseReqDetail = () => {
 
   const currentStatus =
     getPurchaseRequest?.purchase_request?.current_status?.status;
-  
+
   console.log("pr_id", getPurchaseRequest?.purchase_request?._id);
-  
 
   return (
     <Container
@@ -198,17 +199,16 @@ const PurchaseReqDetail = () => {
             </Typography>
             <Chip
               color={
-                getPurchaseRequest?.item?.current_status?.status ===
-                "approved"
+                getPurchaseRequest?.item?.current_status?.status === "approved"
                   ? "success"
-                  : getPurchaseRequest?.item?.current_status
-                        ?.status === "submitted"
+                  : getPurchaseRequest?.item?.current_status?.status ===
+                      "submitted"
                     ? "primary"
-                    : getPurchaseRequest?.item?.current_status
-                          ?.status === "out_for_delivery"
+                    : getPurchaseRequest?.item?.current_status?.status ===
+                        "out_for_delivery"
                       ? "warning"
-                      : getPurchaseRequest?.item?.current_status
-                            ?.status === "delivered"
+                      : getPurchaseRequest?.item?.current_status?.status ===
+                          "delivered"
                         ? "success"
                         : "neutral"
               }
@@ -240,9 +240,11 @@ const PurchaseReqDetail = () => {
         </Box>
       </Sheet>
 
-      <PurchaseOrderSummary project_code={getPurchaseRequest?.purchase_request?.project?.code} pr_id={getPurchaseRequest?.purchase_request?._id?.toString()} />
-      
-      
+      <PurchaseOrderSummary
+        project_code={getPurchaseRequest?.purchase_request?.project?.code}
+        pr_id={getPurchaseRequest?.purchase_request?._id?.toString()}
+      />
+
       {/* Add PO Modal */}
       <Modal
         open={open}

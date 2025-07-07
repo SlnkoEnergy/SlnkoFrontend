@@ -465,7 +465,6 @@ function PurchaseReqSummary() {
                 "Project Code",
                 "Item Name",
                 "Status",
-                
                 "Delay",
                 "PO Number",
                 "PO Value",
@@ -610,6 +609,11 @@ function PurchaseReqSummary() {
             ) : (
               "-"
             )}
+          </td>
+          <td style={{ borderBottom: "1px solid #ddd", textAlign: "left" }}>
+           
+                {row.po_value || "-"}
+
           </td>
         </tr>
       ))
