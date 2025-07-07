@@ -64,7 +64,8 @@ const ExpenseApproval = forwardRef(() => {
       ? {
           page: currentPage,
           department,
-          search: searchParam,
+          search: searchQuery,
+          status: selectedstatus,
           from,
           to,
         }
