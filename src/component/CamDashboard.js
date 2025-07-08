@@ -4,7 +4,17 @@ import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import LockIcon from "@mui/icons-material/Lock";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
 import SearchIcon from "@mui/icons-material/Search";
-import { Chip, CircularProgress, Dropdown, Menu, MenuButton, MenuItem, Option, Select, TextField } from "@mui/joy";
+import {
+  Chip,
+  CircularProgress,
+  Dropdown,
+  Menu,
+  MenuButton,
+  MenuItem,
+  Option,
+  Select,
+  TextField,
+} from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
@@ -26,6 +36,7 @@ import Autocomplete from "@mui/joy/Autocomplete";
 import Textarea from "@mui/joy/Textarea";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
+import AddCircleIcon from "@mui/icons-material/AddCircle";
 
 import {
   useGetHandOverQuery,
@@ -50,9 +61,9 @@ function Dash_cam() {
   const [prNo, setPrNo] = useState("");
   const [quantity, setQuantity] = useState("");
   const [remarks, setRemarks] = useState("");
-  
-const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
-const checkedIcon = <CheckBoxIcon fontSize="small" />;
+
+  const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
+  const checkedIcon = <CheckBoxIcon fontSize="small" />;
   const {
     data: getHandOverSheet = {},
     isLoading,
@@ -115,6 +126,7 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
             color: theme.vars.palette.text.primary,
             textDecoration: "underline",
             textDecorationStyle: "dotted",
+            fontSize: "14px",
           }}
           onClick={() => {
             const page = currentPage;
@@ -177,6 +189,7 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
               color: theme.vars.palette.text.primary,
               textDecoration: "underline",
               textDecorationStyle: "dotted",
+              fontSize: "14px",
             }}
             onClick={() => {
               const page = currentPage;
@@ -273,7 +286,7 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
           }}
           sx={{
             textTransform: "none",
-            fontSize: "0.875rem",
+            fontSize: "14px",
             fontWeight: 500,
             borderRadius: "sm",
           }}
@@ -354,10 +367,9 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
         }}
       >
         <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search here</FormLabel>
           <Input
             size="sm"
-            placeholder="Search by Pay ID, Customer, or Name"
+            placeholder="Search by Project ID, Customer"
             startDecorator={<SearchIcon />}
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
@@ -381,7 +393,7 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
       >
         <Box
           component="table"
-          sx={{ width: "100%", borderCollapse: "collapse" }}
+          sx={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}
         >
           <thead>
             <tr style={{ backgroundColor: "neutral.softBg" }}>
@@ -419,7 +431,7 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
                   style={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
-                    textAlign: "center",
+                    textAlign: "left",
                     fontWeight: "bold",
                   }}
                 >
@@ -461,7 +473,7 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     <Checkbox
@@ -476,7 +488,7 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     <Tooltip title="View Project Detail" arrow>
@@ -494,7 +506,7 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.customer || "-"}
@@ -504,7 +516,7 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.number || "-"}
@@ -514,7 +526,7 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.state || "-"}
@@ -523,7 +535,7 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.scheme || "-"}
@@ -533,7 +545,7 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.project_kwp && project.proposed_dc_capacity
@@ -545,7 +557,7 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.total_gst || "-"}
@@ -555,7 +567,7 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     <StatusChip
@@ -571,7 +583,7 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     <RowMenu
@@ -584,15 +596,25 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
                     style={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.is_locked === "locked" &&
                     project.status_of_handoversheet === "Approved" ? (
                       <Button
-                        size="sm"
+                        size="xm"
                         variant="soft"
                         color="primary"
+                        startDecorator={
+                          <AddCircleIcon sx={{ marginRight: 0.8 }} />
+                        }
+                        sx={{
+                          fontSize: "14px",
+                          height: "35px",
+                          padding: "0 16px",
+                          minHeight: "20px",
+                          lineHeight: "1.5",
+                        }}
                         onClick={() => handleCreatePR(project)}
                       >
                         Create PR
@@ -605,7 +627,7 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
               ))
             ) : (
               <tr>
-                <td colSpan={9} style={{ padding: "8px", textAlign: "center" }}>
+                <td colSpan={9} style={{ padding: "8px", textAlign: "left" }}>
                   <Box
                     sx={{
                       fontStyle: "italic",
@@ -705,75 +727,84 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
         >
           Next
         </Button>
-      <Modal open={isPRModalOpen} onClose={() => setIsPRModalOpen(false)}>
-  <ModalDialog
-    sx={{
-      width: 500,           // Increased Modal Width
-      borderRadius: "md",
-      boxShadow: "lg",
-      p: 3,
-      overflow: "visible",
-    }}
-  >
-    <ModalClose />
-    <Typography level="h5" sx={{ mb: 1 }}>
-      Create Purchase Request
-    </Typography>
+        <Modal open={isPRModalOpen} onClose={() => setIsPRModalOpen(false)}>
+          <ModalDialog
+            sx={{
+              width: 500, // Increased Modal Width
+              borderRadius: "md",
+              boxShadow: "lg",
+              p: 3,
+              overflow: "visible",
+            }}
+          >
+            <ModalClose />
+            <Typography level="h5" sx={{ mb: 1 }}>
+              Create Purchase Request
+            </Typography>
 
-    <Sheet
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 2,
-        mt: 1,
-      }}
-    >
-      <Typography level="body-sm" sx={{ color: "neutral.500" }}>
-        Project:{" "}
-        <Typography component="span" fontWeight="md">
-          {selectedPRProject?.code || "-"}
-        </Typography>
-      </Typography>
+            <Sheet
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+                mt: 1,
+              }}
+            >
+              <Typography level="body-sm" sx={{ color: "neutral.500" }}>
+                Project:{" "}
+                <Typography component="span" fontWeight="md">
+                  {selectedPRProject?.code || "-"}
+                </Typography>
+              </Typography>
 
-      {/* Clean Autocomplete with Well-Spaced Checkboxes */}
-      <Autocomplete
-        multiple
-        options={materialCategories || []}
-        disableCloseOnSelect
-        getOptionLabel={(option) => option.name}
-        isOptionEqualToValue={(option, value) => option._id === value._id}
-        value={items}
-        onChange={(e, newValue) => setItems(newValue)}
-        renderOption={(props, option, { selected }) => (
-          <li {...props} style={{ display: "flex", alignItems: "center", padding: "6px 12px" }}>
-            <Checkbox
-              icon={icon}
-              checkedIcon={checkedIcon}
-              style={{ marginRight: 8 }}
-              checked={selected}
-            />
-            {option.name}
-          </li>
-        )}
-        renderInput={(params) => (
-          <TextField {...params} placeholder="Select Item(s)" size="small" />
-        )}
-      />
+              {/* Clean Autocomplete with Well-Spaced Checkboxes */}
+              <Autocomplete
+                multiple
+                options={materialCategories || []}
+                disableCloseOnSelect
+                getOptionLabel={(option) => option.name}
+                isOptionEqualToValue={(option, value) =>
+                  option._id === value._id
+                }
+                value={items}
+                onChange={(e, newValue) => setItems(newValue)}
+                renderOption={(props, option, { selected }) => (
+                  <li
+                    {...props}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "6px 12px",
+                    }}
+                  >
+                    <Checkbox
+                      icon={icon}
+                      checkedIcon={checkedIcon}
+                      style={{ marginRight: 8 }}
+                      checked={selected}
+                    />
+                    {option.name}
+                  </li>
+                )}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder="Select Item(s)"
+                    size="small"
+                  />
+                )}
+              />
 
-      <Button
-        onClick={handlePRSubmit}
-        loading={isPRCreating}
-        sx={{ mt: 1 }}
-      >
-        {isPRCreating ? "Submitting..." : "Submit"}
-      </Button>
-    </Sheet>
-  </ModalDialog>
-</Modal>
-
-
-
-
+              <Button
+                onClick={handlePRSubmit}
+                loading={isPRCreating}
+                sx={{ mt: 1 }}
+              >
+                {isPRCreating ? "Submitting..." : "Submit"}
+              </Button>
+            </Sheet>
+          </ModalDialog>
+        </Modal>
       </Box>
     </>
   );

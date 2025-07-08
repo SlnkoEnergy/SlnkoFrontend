@@ -9,7 +9,7 @@ COPY .env.dev .env.dev
 COPY .env.stag .env.stag
 
 # Pick correct .env file based on branch
-RUN if [ "$BRANCH" = "prod" ]; then \
+RUN if [ "$BRANCH" = "production" ]; then \
       cp .env.prod .env; \
     elif [ "$BRANCH" = "staging" ]; then \
       cp .env.stag .env; \
@@ -32,7 +32,7 @@ ARG BRANCH=dev
 ENV DOMAIN_NAME=slnkoprotrac.com
 RUN if [ "$BRANCH" = "staging" ]; then \
       export DOMAIN_NAME=staging.slnkoprotrac.com; \
-    elif [ "$BRANCH" != "prod" ]; then \
+    elif [ "$BRANCH" != "production" ]; then \
       export DOMAIN_NAME=dev.slnkoprotrac.com; \
     fi
 
