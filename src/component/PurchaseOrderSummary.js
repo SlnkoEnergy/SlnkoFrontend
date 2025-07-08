@@ -366,7 +366,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const paginatedPo = Pos;
 
   const handleSearch = (query) => {
-    setSearchQuery(query.toLowerCase());
+    setSearchQuery(query?.toLowerCase());
   };
 
   const handleRowSelect = (id, isSelected) => {
@@ -537,7 +537,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         </Box>
 
         {/* Delivery Date - Only if status is delivered */}
-        {current_status.toLowerCase() === "delivered" && (
+        {current_status?.toLowerCase() === "delivered" && (
           <Box display="flex" alignItems="center" mt={0.5}>
             <Calendar size={12} />
             <span style={{ fontSize: 12, fontWeight: 600 }}>
@@ -996,16 +996,16 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         }}
                       >
                         <Tooltip
-                          title={po.current_status.remarks || "No remarks"}
+                          title={po?.current_status?.remarks || "No remarks"}
                           arrow
                         >
                           <Typography
                             sx={{
                               fontWeight: "bold",
                               color:
-                                po.current_status.status === "delivered"
+                                po?.current_status?.status === "delivered"
                                   ? "green"
-                                  : po.current_status.status ===
+                                  : po?.current_status?.status ===
                                       "out_for_delivery"
                                     ? "orange"
                                     : "red",
@@ -1013,7 +1013,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                               cursor: "pointer",
                             }}
                           >
-                            {po.current_status.status.replace(/_/g, " ")}
+                            {po?.current_status?.status.replace(/_/g, " ")}
                           </Typography>
                         </Tooltip>
                       </Box>
