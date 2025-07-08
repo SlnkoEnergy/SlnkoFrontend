@@ -36,7 +36,7 @@ import {
   useUpdateEtdOrDeliveryDateMutation,
   useUpdatePurchasesStatusMutation,
 } from "../redux/purchasesSlice";
-import { Option, Select, Textarea, Tooltip } from "@mui/joy";
+import { Divider, Option, Select, Textarea, Tooltip } from "@mui/joy";
 import { useMemo } from "react";
 import { Calendar, CirclePlus, FileCheck, History, Store } from "lucide-react";
 import {
@@ -351,30 +351,26 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     );
   };
 
-  const handleSelectAll = (event) => {
-    if (event.target.checked) {
-      setSelected(paginatedPo.map((row) => row.id));
-    } else {
-      setSelected([]);
-    }
-  };
-
-  const Pos = useMemo(
-    () => (Array.isArray(getPO?.data) ? getPO.data : []),
-    [getPO]
-  );
-  const paginatedPo = Pos;
+  const paginatedPo = useMemo(() => {
+    return Array.isArray(getPO?.data) ? getPO.data : [];
+  }, [getPO]);
 
   const handleSearch = (query) => {
     setSearchQuery(query?.toLowerCase());
   };
 
-  const handleRowSelect = (id, isSelected) => {
-    setSelected((prevSelected) =>
-      isSelected
-        ? [...prevSelected, id]
-        : prevSelected.filter((item) => item !== id)
+  const handleRowSelect = (_id) => {
+    setSelected((prev) =>
+      prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
     );
+  };
+
+  const handleSelectAll = (event) => {
+    if (event.target.checked) {
+      setSelected(paginatedPo.map((row) => row._id));
+    } else {
+      setSelected([]);
+    }
   };
 
   const handlePageChange = (page) => {
@@ -450,55 +446,31 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       </>
     );
   };
-  const RenderPONumber = ({
-    po_number,
-    date,
-    etd,
-    delivery_date,
-    current_status,
-  }) => {
-    const [etdDate, setEtdDate] = useState(etd || "");
-    const [deliveryDate, setDeliveryDate] = useState(delivery_date || "");
-    const [updateEtdOrDeliveryDate] = useUpdateEtdOrDeliveryDateMutation();
-    const [confirmType, setConfirmType] = useState("");
-    const [etdTempDate, setEtdTempDate] = useState("");
-    const [deliveryTempDate, setDeliveryTempDate] = useState("");
-    const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
+const RenderPONumber = ({ po_number, date }) => {
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "-";
+    const dateObj = new Date(dateStr);
+    if (isNaN(dateObj)) return "-";
+    return dateObj.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
 
-    const formatDate = (dateStr) => {
-      if (!dateStr) return "-";
-      const dateObj = new Date(dateStr);
-      if (isNaN(dateObj)) return "-";
-      return dateObj.toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      });
-    };
-
-    const handleDateChange = async (newEtd, newDelivery) => {
-      try {
-        await updateEtdOrDeliveryDate({
-          po_number,
-          etd: newEtd,
-          delivery_date: newDelivery,
-        }).unwrap();
-        alert("Dates Updated Successfully");
-      } catch (err) {
-        console.error("Failed to update dates:", err);
-        alert("Failed to update dates");
-      }
-    };
-
-    return (
-      <>
+  return (
+    <>
+      {/* PO Number */}
+      {po_number && (
         <Box>
           <span style={{ cursor: "pointer", fontWeight: 400 }}>
-            {po_number || "-"}
+            {po_number}
           </span>
         </Box>
+      )}
 
-        {/* PO Date */}
+      {/* PO Date */}
+      {date && (
         <Box display="flex" alignItems="center" mt={0.5}>
           <Calendar size={12} />
           <span style={{ fontSize: 12, fontWeight: 600 }}>PO Date : </span>
@@ -507,34 +479,75 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             {formatDate(date)}
           </Typography>
         </Box>
+      )}
+    </>
+  );
+};
 
-        {/* ETD Date */}
-        <Box display="flex" alignItems="center" mt={0.5}>
-          <Calendar size={12} />
-          <span style={{ fontSize: 12, fontWeight: 600 }}>ETD Date : </span>
-          &nbsp;
-          {etdDate ? (
-            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              {formatDate(etdDate)}
-            </Typography>
-          ) : (
-            <input
-              type="date"
-              value={etdDate}
-              onChange={(e) => {
-                setEtdTempDate(e.target.value);
-                setConfirmType("etd");
-                setOpenConfirmDialog(true);
-              }}
-              style={{
-                fontSize: "12px",
-                padding: "2px 4px",
-                borderRadius: "4px",
-                border: "1px solid lightgray",
-              }}
-            />
-          )}
-        </Box>
+
+const RenderStatusDates = ({ etd, delivery_date, current_status, po_number }) => {
+  const [etdDate, setEtdDate] = useState(etd || "");
+  const [deliveryDate, setDeliveryDate] = useState(delivery_date || "");
+  const [updateEtdOrDeliveryDate] = useUpdateEtdOrDeliveryDateMutation();
+  const [confirmType, setConfirmType] = useState("");
+  const [etdTempDate, setEtdTempDate] = useState("");
+  const [deliveryTempDate, setDeliveryTempDate] = useState("");
+  const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "-";
+    const dateObj = new Date(dateStr);
+    if (isNaN(dateObj)) return "-";
+    return dateObj.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const handleDateChange = async (newEtd, newDelivery) => {
+    try {
+      await updateEtdOrDeliveryDate({
+        po_number,
+        etd: newEtd,
+        delivery_date: newDelivery,
+      }).unwrap();
+      alert("Dates Updated Successfully");
+    } catch (err) {
+      console.error("Failed to update dates:", err);
+      alert("Failed to update dates");
+    }
+  };
+
+  return (
+    <>
+      {/* ETD Date */}
+      <Box display="flex" alignItems="center" mt={0.5}>
+        <Calendar size={12} />
+        <span style={{ fontSize: 12, fontWeight: 600 }}>ETD Date : </span>
+        &nbsp;
+        {etdDate ? (
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+            {formatDate(etdDate)}
+          </Typography>
+        ) : (
+          <input
+            type="date"
+            value={etdDate}
+            onChange={(e) => {
+              setEtdTempDate(e.target.value);
+              setConfirmType("etd");
+              setOpenConfirmDialog(true);
+            }}
+            style={{
+              fontSize: "12px",
+              padding: "2px 4px",
+              borderRadius: "4px",
+              border: "1px solid lightgray",
+            }}
+          />
+        )}
+      </Box>
 
         {/* Delivery Date - Only if status is delivered */}
         {current_status?.toLowerCase() === "delivered" && (
@@ -567,42 +580,40 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             )}
           </Box>
         )}
+      {/* Confirmation Modal */}
+      <Modal
+        open={openConfirmDialog}
+        onClose={() => setOpenConfirmDialog(false)}
+      >
+        <ModalDialog>
+          <DialogTitle>Confirm Submission</DialogTitle>
+          <DialogContent>
+            Are you sure you want to submit this date?
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenConfirmDialog(false)}>Cancel</Button>
+            <Button
+              variant="solid"
+              onClick={async () => {
+                setOpenConfirmDialog(false);
+                if (confirmType === "etd") {
+                  setEtdDate(etdTempDate);
+                  await handleDateChange(etdTempDate, deliveryDate);
+                } else if (confirmType === "delivery") {
+                  setDeliveryDate(deliveryTempDate);
+                  await handleDateChange(etdDate, deliveryTempDate);
+                }
+              }}
+            >
+              Confirm
+            </Button>
+          </DialogActions>
+        </ModalDialog>
+      </Modal>
+    </>
+  );
+};
 
-        {/* Global Dialog - Always exists in DOM */}
-        <Modal
-          open={openConfirmDialog}
-          onClose={() => setOpenConfirmDialog(false)}
-        >
-          <ModalDialog>
-            <DialogTitle>Confirm Submission</DialogTitle>
-            <DialogContent>
-              Are you sure you want to submit this date?
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setOpenConfirmDialog(false)}>
-                Cancel
-              </Button>
-              <Button
-                onClick={async () => {
-                  setOpenConfirmDialog(false);
-                  if (confirmType === "etd") {
-                    setEtdDate(etdTempDate);
-                    await handleDateChange(etdTempDate, deliveryDate);
-                  } else if (confirmType === "delivery") {
-                    setDeliveryDate(deliveryTempDate);
-                    await handleDateChange(etdDate, deliveryTempDate);
-                  }
-                }}
-                variant="solid"
-              >
-                Confirm
-              </Button>
-            </DialogActions>
-          </ModalDialog>
-        </Modal>
-      </>
-    );
-  };
 
   const RenderItem_Vendor = ({ vendor, item }) => {
     return (
@@ -642,22 +653,34 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   );
 
   const RenderTotalBilled = ({ total_billed = 0, po_value = 0, po_number }) => {
-    const formattedAmount = new Intl.NumberFormat("en-IN", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(Number(total_billed) || 0);
+    const billed = Number(total_billed);
+    const value = Number(po_value);
 
-    const canAddBilling = Number(po_value) !== Number(total_billed);
+    const showAddBilling = billed < value;
+    const showBillingHistory = billed > 0;
+
+    const formattedAmount =
+      billed > 0
+        ? new Intl.NumberFormat("en-IN", {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+          }).format(billed)
+        : null;
 
     return (
-      <Box>
-        <Typography sx={{ fontSize: 14 }}>₹ {formattedAmount}</Typography>
+      <Box display="flex" flexDirection="column" alignItems="flex-start">
+        {formattedAmount && (
+          <Typography level="body-sm" fontWeight="md" color="neutral">
+            ₹ {formattedAmount}
+          </Typography>
+        )}
 
-        <Box display="flex" gap={1} mt={0.5}>
-          {canAddBilling && (
+        <Box display="flex" alignItems="center" gap={1} mt={0.5}>
+          {showAddBilling && (
             <Tooltip title="Add Billing">
               <IconButton
-                size="small"
+                size="sm"
+                variant="outlined"
                 color="primary"
                 onClick={() => handleOpen(po_number, "add_bill")}
               >
@@ -666,15 +689,18 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             </Tooltip>
           )}
 
-          <Tooltip title="View Billing History">
-            <IconButton
-              size="small"
-              color="secondary"
-              onClick={() => handleOpen(po_number, "view_bill")}
-            >
-              <History size={18} />
-            </IconButton>
-          </Tooltip>
+          {showBillingHistory && (
+            <Tooltip title="View Billing History">
+              <IconButton
+                size="sm"
+                variant="outlined"
+                color="neutral"
+                onClick={() => handleOpen(po_number, "view_bill")}
+              >
+                <History size={18} />
+              </IconButton>
+            </Tooltip>
+          )}
         </Box>
       </Box>
     );
@@ -752,7 +778,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                   <Checkbox
                     indeterminate={
                       selected.length > 0 &&
-                      selected.length !== paginatedPo.length
+                      selected.length < paginatedPo.length
                     }
                     checked={selected.length === paginatedPo.length}
                     onChange={handleSelectAll}
@@ -773,10 +799,10 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                   "Status",
                   "Delay",
                   "",
-                ].map((header) => (
+                ].map((header, index) => (
                   <Box
                     component="th"
-                    key={header}
+                    key={index}
                     sx={{
                       padding: 1,
                       textAlign: "left",
@@ -791,7 +817,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             </Box>
             <Box component="tbody">
               {paginatedPo.length > 0 ? (
-                paginatedPo.map((po) => {
+                paginatedPo.map((po, index) => {
                   let etd = null;
                   let delay = 0;
                   const now = new Date();
@@ -817,7 +843,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                   return (
                     <Box
                       component="tr"
-                      key={po.id}
+                      key={index}
                       sx={{
                         "&:hover": { backgroundColor: "neutral.plainHoverBg" },
                       }}
@@ -831,12 +857,10 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         }}
                       >
                         <Checkbox
-                          checked={selected.includes(po.id)}
-                          onChange={(event) =>
-                            handleRowSelect(po.id, event.target.checked)
-                          }
+                          checked={selected.includes(po._id)}
+                          onChange={() => handleRowSelect(po._id)}
                           color={
-                            selected.includes(po.id) ? "primary" : "neutral"
+                            selected.includes(po._id) ? "primary" : "neutral"
                           }
                         />
                       </Box>
@@ -992,7 +1016,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                           padding: 1,
                           textAlign: "left",
                           borderBottom: "1px solid",
-                          minWidth: 150,
+                          minWidth: 280, 
+                          width: 300,
                         }}
                       >
                         <Tooltip
@@ -1016,6 +1041,14 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                             {po?.current_status?.status.replace(/_/g, " ")}
                           </Typography>
                         </Tooltip>
+
+                        {/* Render PO Number Info Below the Status */}
+                        <RenderStatusDates 
+                          etd={po.etd}
+                          delivery_date={po.delivery_date}
+                          current_status={po?.current_status?.status}
+                           po_number={po.po_number}
+                        />
                       </Box>
 
                       <Box
@@ -1058,19 +1091,22 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       </Box>
 
                       <Box
-                        component="td"
-                        sx={{
-                          padding: 1,
-                          textAlign: "left",
-                          borderBottom: "1px solid",
-                        }}
-                      >
-                        <RowMenu
-                          currentPage={currentPage}
-                          po_number={po.po_number}
-                          current_status={po.current_status}
-                        />
-                      </Box>
+  component="td"
+  sx={{
+    padding: 1,
+    textAlign: "left",
+    borderBottom: "1px solid",
+  }}
+>
+  {po?.current_status?.status !== "delivered" && (
+    <RowMenu
+      currentPage={currentPage}
+      po_number={po.po_number}
+      current_status={po.current_status}
+    />
+  )}
+</Box>
+
                     </Box>
                   );
                 })
