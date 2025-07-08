@@ -134,21 +134,7 @@ function Comm_Offer() {
 
               {(user?.name === "IT Team" ||
                 user?.department === "admin" ||
-                user?.name === "Navin Kumar Gautam" ||
-                user?.name === "Mohd Shakir Khan" ||
-                user?.name === "Shiv Ram Tathagat" ||
-                user?.name === "Kana Sharma" ||
-                user?.name === "Ketan Kumar Jha" ||
-                user?.name === "Vibhav Upadhyay" ||
-                user?.name === "Shantanu Sameer" ||
-                user?.name === "Arnav Shahi" ||
-                user?.name === "Shambhavi Gupta" ||
-                user?.name === "Geeta" ||
-                user?.name === "Anudeep Kumar" ||
-                user?.name === "Ashish Jha" ||
-                user?.name === "Abhishek Sawhney" ||
-            user?.name === "Ankit Dikshit" ||
-            user?.name === "Kunal Kumar") && (
+               user?.department === "BD") && (
                 <Button
                   color="primary"
                   size="sm"

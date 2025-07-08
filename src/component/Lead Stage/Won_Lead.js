@@ -729,37 +729,50 @@ const StandByRequest = forwardRef((props, ref) => {
                         lead.substationDistance || "-",
                         lead.date || "-",
 
-                        <Chip
-                          variant="soft"
-                          color={
-                            statusInfo.status === "submitted" ||
-                            statusInfo.status === "Approved"
-                              ? "success"
-                              : statusInfo.status === "Rejected"
-                                ? "danger"
-                                : statusInfo.status === "draft"
-                                  ? "warning"
-                                  : "neutral"
-                          }
-                          size="sm"
-                          endDecorator={
+                        <Tooltip
+                          title={
                             statusInfo.status === "Rejected" &&
-                            statusInfo.comment ? (
-                              <Tooltip title={statusInfo.comment}>
-                                <InfoOutlined fontSize="small" />
-                              </Tooltip>
-                            ) : null
+                            statusInfo.comment
+                              ? statusInfo.comment
+                              : ""
+                          }
+                          disableHoverListener={
+                            !(
+                              statusInfo.status === "Rejected" &&
+                              statusInfo.comment
+                            )
                           }
                         >
-                          {statusInfo.status === "submitted" ||
-                          statusInfo.status === "Approved"
-                            ? "Submitted"
-                            : statusInfo.status === "Rejected"
-                              ? "Rejected"
-                              : statusInfo.status === "draft"
-                                ? "In Process"
-                                : "Pending"}
-                        </Chip>,
+                          <Chip
+                            variant="soft"
+                            color={
+                              statusInfo.status === "submitted" ||
+                              statusInfo.status === "Approved"
+                                ? "success"
+                                : statusInfo.status === "Rejected"
+                                  ? "danger"
+                                  : statusInfo.status === "draft"
+                                    ? "warning"
+                                    : "neutral"
+                            }
+                            size="sm"
+                            endDecorator={
+                              statusInfo.status === "Rejected" &&
+                              statusInfo.comment ? (
+                                <InfoOutlined fontSize="small" />
+                              ) : null
+                            }
+                          >
+                            {statusInfo.status === "submitted" ||
+                            statusInfo.status === "Approved"
+                              ? "Submitted"
+                              : statusInfo.status === "Rejected"
+                                ? "Rejected"
+                                : statusInfo.status === "draft"
+                                  ? "In Process"
+                                  : "Pending"}
+                          </Chip>
+                        </Tooltip>,
 
                         statusInfo.submittedBy || "-",
                         <RowMenu
@@ -782,6 +795,7 @@ const StandByRequest = forwardRef((props, ref) => {
             {paginatedData.map((lead) => {
               const isExpanded = expandedRows.includes(lead._id);
               const statusInfo = getStatusDetails(lead.leadId);
+
               return (
                 <Box
                   key={lead._id}

@@ -36,7 +36,7 @@ import {
   useUpdateEtdOrDeliveryDateMutation,
   useUpdatePurchasesStatusMutation,
 } from "../redux/purchasesSlice";
-import { Option, Select, Textarea, Tooltip } from "@mui/joy";
+import { Divider, Option, Select, Textarea, Tooltip } from "@mui/joy";
 import { useMemo } from "react";
 import { Calendar, CirclePlus, FileCheck, History, Store } from "lucide-react";
 import {
@@ -351,30 +351,26 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     );
   };
 
-  const handleSelectAll = (event) => {
-    if (event.target.checked) {
-      setSelected(paginatedPo.map((row) => row.id));
-    } else {
-      setSelected([]);
-    }
-  };
-
-  const Pos = useMemo(
-    () => (Array.isArray(getPO?.data) ? getPO.data : []),
-    [getPO]
-  );
-  const paginatedPo = Pos;
+  const paginatedPo = useMemo(() => {
+    return Array.isArray(getPO?.data) ? getPO.data : [];
+  }, [getPO]);
 
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
 
-  const handleRowSelect = (id, isSelected) => {
-    setSelected((prevSelected) =>
-      isSelected
-        ? [...prevSelected, id]
-        : prevSelected.filter((item) => item !== id)
+  const handleRowSelect = (_id) => {
+    setSelected((prev) =>
+      prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
     );
+  };
+
+  const handleSelectAll = (event) => {
+    if (event.target.checked) {
+      setSelected(paginatedPo.map((row) => row._id));
+    } else {
+      setSelected([]);
+    }
   };
 
   const handlePageChange = (page) => {
@@ -536,8 +532,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           )}
         </Box>
 
-        {/* Delivery Date - Only if status is delivered */}
-        {current_status.toLowerCase() === "delivered" && (
+        {current_status === "delivered" && (
           <Box display="flex" alignItems="center" mt={0.5}>
             <Calendar size={12} />
             <span style={{ fontSize: 12, fontWeight: 600 }}>
@@ -568,7 +563,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           </Box>
         )}
 
-        {/* Global Dialog - Always exists in DOM */}
         <Modal
           open={openConfirmDialog}
           onClose={() => setOpenConfirmDialog(false)}
@@ -642,22 +636,34 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   );
 
   const RenderTotalBilled = ({ total_billed = 0, po_value = 0, po_number }) => {
-    const formattedAmount = new Intl.NumberFormat("en-IN", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(Number(total_billed) || 0);
+    const billed = Number(total_billed);
+    const value = Number(po_value);
 
-    const canAddBilling = Number(po_value) !== Number(total_billed);
+    const showAddBilling = billed < value;
+    const showBillingHistory = billed > 0;
+
+    const formattedAmount =
+      billed > 0
+        ? new Intl.NumberFormat("en-IN", {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+          }).format(billed)
+        : null;
 
     return (
-      <Box>
-        <Typography sx={{ fontSize: 14 }}>₹ {formattedAmount}</Typography>
+      <Box display="flex" flexDirection="column" alignItems="flex-start">
+        {formattedAmount && (
+          <Typography level="body-sm" fontWeight="md" color="neutral">
+            ₹ {formattedAmount}
+          </Typography>
+        )}
 
-        <Box display="flex" gap={1} mt={0.5}>
-          {canAddBilling && (
+        <Box display="flex" alignItems="center" gap={1} mt={0.5}>
+          {showAddBilling && (
             <Tooltip title="Add Billing">
               <IconButton
-                size="small"
+                size="sm"
+                variant="outlined"
                 color="primary"
                 onClick={() => handleOpen(po_number, "add_bill")}
               >
@@ -666,15 +672,18 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             </Tooltip>
           )}
 
-          <Tooltip title="View Billing History">
-            <IconButton
-              size="small"
-              color="secondary"
-              onClick={() => handleOpen(po_number, "view_bill")}
-            >
-              <History size={18} />
-            </IconButton>
-          </Tooltip>
+          {showBillingHistory && (
+            <Tooltip title="View Billing History">
+              <IconButton
+                size="sm"
+                variant="outlined"
+                color="neutral"
+                onClick={() => handleOpen(po_number, "view_bill")}
+              >
+                <History size={18} />
+              </IconButton>
+            </Tooltip>
+          )}
         </Box>
       </Box>
     );
@@ -752,7 +761,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                   <Checkbox
                     indeterminate={
                       selected.length > 0 &&
-                      selected.length !== paginatedPo.length
+                      selected.length < paginatedPo.length
                     }
                     checked={selected.length === paginatedPo.length}
                     onChange={handleSelectAll}
@@ -773,10 +782,10 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                   "Status",
                   "Delay",
                   "",
-                ].map((header) => (
+                ].map((header, index) => (
                   <Box
                     component="th"
-                    key={header}
+                    key={index}
                     sx={{
                       padding: 1,
                       textAlign: "left",
@@ -791,7 +800,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             </Box>
             <Box component="tbody">
               {paginatedPo.length > 0 ? (
-                paginatedPo.map((po) => {
+                paginatedPo.map((po, index) => {
                   let etd = null;
                   let delay = 0;
                   const now = new Date();
@@ -817,7 +826,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                   return (
                     <Box
                       component="tr"
-                      key={po.id}
+                      key={index}
                       sx={{
                         "&:hover": { backgroundColor: "neutral.plainHoverBg" },
                       }}
@@ -831,12 +840,10 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         }}
                       >
                         <Checkbox
-                          checked={selected.includes(po.id)}
-                          onChange={(event) =>
-                            handleRowSelect(po.id, event.target.checked)
-                          }
+                          checked={selected.includes(po._id)}
+                          onChange={() => handleRowSelect(po._id)}
                           color={
-                            selected.includes(po.id) ? "primary" : "neutral"
+                            selected.includes(po._id) ? "primary" : "neutral"
                           }
                         />
                       </Box>
@@ -996,16 +1003,16 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         }}
                       >
                         <Tooltip
-                          title={po.current_status.remarks || "No remarks"}
+                          title={po?.current_status?.remarks || "No remarks"}
                           arrow
                         >
                           <Typography
                             sx={{
                               fontWeight: "bold",
                               color:
-                                po.current_status.status === "delivered"
+                                po.current_status?.status === "delivered"
                                   ? "green"
-                                  : po.current_status.status ===
+                                  : po.current_status?.status ===
                                       "out_for_delivery"
                                     ? "orange"
                                     : "red",
@@ -1013,7 +1020,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                               cursor: "pointer",
                             }}
                           >
-                            {po.current_status.status.replace(/_/g, " ")}
+                            {po.current_status?.status.replace(/_/g, " ")}
                           </Typography>
                         </Tooltip>
                       </Box>

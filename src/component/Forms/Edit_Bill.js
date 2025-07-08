@@ -13,11 +13,11 @@ import { toast } from "react-toastify";
 import Img7 from "../../assets/update-po.png";
 import Axios from "../../utils/Axios";
 
-const UpdateBillForm = ({ po_number }) => {
+const UpdateBillForm = ({ _id }) => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
-  console.log("PO Number from props:", po_number);
+  console.log("PO Number from props:", _id);
 
   useEffect(() => {
     const userData = getUserData();
@@ -70,77 +70,57 @@ const UpdateBillForm = ({ po_number }) => {
     return `${year}-${month}-${day}`;
   };
 
-  const [searchParams] = useSearchParams();
-
-  const poNumberFromStorage = po_number || searchParams.get("po_number");
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         const token = localStorage.getItem("authToken");
-        console.log("Fetching data for PO Number:", poNumberFromStorage);
 
         const config = {
           headers: {
             "x-auth-token": token,
           },
+          params: {
+            _id,
+          },
         };
 
-        const [poRes, billRes] = await Promise.all([
-          Axios.get("/get-all-pO-IT", config),
-          Axios.get("/get-all-bilL-IT", config),
-        ]);
+        const billRes = await Axios.get("/get-bill-by-id", config);
+        const allBills = Array.isArray(billRes.data?.data) ? billRes.data.data : [];
 
-        const allPOs = Array.isArray(poRes.data?.data) ? poRes.data.data : [];
-        const allBills = Array.isArray(billRes.data?.data)
-          ? billRes.data.data
-          : [];
+        setGetFormValues({ AllBill: allBills });
 
-        console.log("All POs:", allPOs);
-        console.log("All Bills:", allBills);
+        const matchingBill = allBills.find((bill) => bill._id === _id);
 
-        setGetFormValues({ AllPo: allPOs, AllBill: allBills });
-
-        const matchingPO = allPOs.find(
-          (item) => String(item.po_number) === String(poNumberFromStorage)
-        );
-        const matchingBill = allBills.find(
-          (bill) => String(bill.po_number) === String(poNumberFromStorage)
-        );
-
-        console.log("Matching PO:", matchingPO);
-        console.log("Matching Bill:", matchingBill);
-
-        if (matchingPO) {
-          setFormValues((prev) => ({
-            ...prev,
-            p_id: matchingPO.p_id || "",
-            po_number: matchingPO.po_number || "",
-            vendor: matchingPO.vendor || "",
-            date: formatDate(matchingPO.date),
-            item: matchingPO.item || "",
-            po_value: matchingPO.po_value || "",
-
-            _id: matchingBill?._id || "",
-            bill_number: matchingBill?.bill_number || "",
-            bill_date: formatDate(matchingBill?.bill_date),
-            bill_value: matchingBill?.bill_value || "",
-            type: matchingBill?.type || "",
-          }));
+        if (matchingBill) {
+          setFormValues({
+            _id: matchingBill._id || "",
+            bill_number: matchingBill.bill_number || "",
+            bill_date: formatDate(matchingBill.bill_date),
+            bill_value: matchingBill.bill_value || "",
+            type: matchingBill.type || "",
+            po_number: matchingBill.po_number || "",
+            p_id: matchingBill.poData?.p_id || "",
+            vendor: matchingBill.poData?.vendor || "",
+            item: matchingBill.poData?.item || "",
+            po_value: matchingBill.poData?.po_value || "",
+            date: formatDate(matchingBill.poData?.date),
+            submitted_by: user?.username || "",
+          });
         }
       } catch (err) {
-        console.error("Error fetching PO or Bill data:", err);
-        setError("Failed to fetch PO or Bill data.");
+        console.error("Error fetching bill data:", err);
+        setError("Failed to fetch bill data.");
       } finally {
         setLoading(false);
       }
     };
 
-    if (poNumberFromStorage) {
+    if (_id) {
       fetchData();
     }
-  }, [poNumberFromStorage]);
+  }, [_id, user?.name]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -257,6 +237,7 @@ const UpdateBillForm = ({ po_number }) => {
               onChange={handleChange}
               variant="outlined"
               sx={{ padding: "10px", borderRadius: "8px" }}
+              readOnly
             />
           </Grid>
           <Grid xs={12} md={4}>
@@ -271,6 +252,7 @@ const UpdateBillForm = ({ po_number }) => {
               required
               variant="outlined"
               sx={{ padding: "10px", borderRadius: "8px" }}
+              readOnly
             />
           </Grid>
           <Grid xs={12} md={4}>
@@ -285,6 +267,7 @@ const UpdateBillForm = ({ po_number }) => {
               required
               variant="outlined"
               sx={{ padding: "10px", borderRadius: "8px" }}
+              readOnly
             />
           </Grid>
 
@@ -295,13 +278,14 @@ const UpdateBillForm = ({ po_number }) => {
             </Typography>
             <Input
               fullWidth
-              type="date"
+             
               name="date"
-              value={formValues.date} // Ensure this is yyyy-MM-dd
+              value={formValues.date}
               onChange={handleChange}
               required
               variant="outlined"
               sx={{ padding: "10px", borderRadius: "8px" }}
+              readOnly
             />
           </Grid>
           <Grid xs={12} md={4}>
@@ -316,6 +300,7 @@ const UpdateBillForm = ({ po_number }) => {
               required
               variant="outlined"
               sx={{ padding: "10px", borderRadius: "8px" }}
+              readOnly
             />
           </Grid>
           <Grid xs={12} md={4}>
@@ -330,6 +315,7 @@ const UpdateBillForm = ({ po_number }) => {
               required
               variant="outlined"
               sx={{ padding: "10px", borderRadius: "8px" }}
+              readOnly
             />
           </Grid>
 
