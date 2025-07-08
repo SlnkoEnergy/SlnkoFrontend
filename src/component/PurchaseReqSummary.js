@@ -510,8 +510,8 @@ function PurchaseReqSummary() {
                     >
                       <Checkbox
                         size="sm"
-                        checked={selected.includes(item._id)}
-                        onChange={() => handleRowSelect(item._id)}
+                        checked={selected.includes(item?._id)}
+                        onChange={() => handleRowSelect(item?._id)}
                       />
                     </td>
 
@@ -526,9 +526,9 @@ function PurchaseReqSummary() {
                       <RenderPRNo
                         pr_no={row.pr_no}
                         createdAt={row.createdAt}
-                        project_id={row.project_id._id}
-                        item_id={item.item_id?._id}
-                        pr_id={row._id}
+                        project_id={row?.project_id?._id}
+                        item_id={item?.item_id?._id}
+                        pr_id={row?._id}
                         createdBy={row?.created_by?.name}
                       />
                     </td>
