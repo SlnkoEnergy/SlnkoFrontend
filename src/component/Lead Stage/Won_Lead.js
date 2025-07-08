@@ -239,10 +239,6 @@ const StandByRequest = forwardRef((props, ref) => {
             color="primary"
             onClick={() => {
               const page = currentPage;
-              // const leadId = String(leadId);
-              // const projectID = Number(p_id);
-              // localStorage.setItem("add_task_won", leadId);
-              // localStorage.setItem("p_id", projectID);
               navigate(`/add_task_won?page=${page}&leadId=${leadId}`);
             }}
           >
@@ -253,10 +249,6 @@ const StandByRequest = forwardRef((props, ref) => {
             color="primary"
             onClick={() => {
               const page = currentPage;
-              // const leadId = leadId;
-              // const projectID = Number(p_id);
-              // localStorage.setItem("hand_Over", leadId1);
-              // localStorage.setItem("p_id", projectID);
               navigate(`/hand_over?page=${page}&leadId=${leadId}`);
             }}
           >
@@ -288,7 +280,7 @@ const StandByRequest = forwardRef((props, ref) => {
   };
 
   const ViewHandOver = ({ currentPage, leadId }) => {
-    // console.log("currentPage:", currentPage, "p_id:", p_id);
+   
 
     return (
       <>
