@@ -51,6 +51,11 @@ function PurchaseReqSummary() {
   const itemSearch = searchParams.get("itemSearch") || "";
   const poValueSearch = searchParams.get("poValueSearch") || "";
   const statusSearch = searchParams.get("statusSearch") || "";
+const [createdDateRange, setCreatedDateRange] = useState([null, null]); // [from, to]
+const [etdDateRange, setEtdDateRange] = useState([null, null]); // [from, to]
+const formatDate = (date) => {
+  return date ? new Date(date).toISOString().split("T")[0] : "";
+};
 
   const navigate = useNavigate();
 
@@ -60,6 +65,10 @@ function PurchaseReqSummary() {
     itemSearch,
     poValueSearch,
     statusSearch,
+    etdFrom: etdDateRange[0] || "",
+  etdTo: etdDateRange[1] || "",
+  createdFrom: createdDateRange[0] || "",
+  createdTo: createdDateRange[1] || "",
   });
 
   useEffect(() => {
@@ -206,6 +215,94 @@ function PurchaseReqSummary() {
             ))}
           </Select>
         </FormControl>
+        <FormControl sx={{ flex: 1 }} size="sm">
+  <FormLabel>Created At</FormLabel>
+  <Box sx={{ display: "flex", gap: 1 }}>
+    <Input
+      type="date"
+      size="sm"
+      value={createdDateRange[0] || ""}
+      onChange={(e) => {
+        const from = e.target.value;
+        const to = createdDateRange[1];
+        setCreatedDateRange([from, to]);
+        setSearchParams({
+          page: 1,
+          search: searchQuery,
+          itemSearch: selecteditem,
+          statusSearch: selectedstatus,
+          poValueSearch: selectedpovalue,
+          createdFrom: from,
+          createdTo: to,
+        });
+      }}
+    />
+    <Input
+      type="date"
+      size="sm"
+      value={createdDateRange[1] || ""}
+      onChange={(e) => {
+        const from = createdDateRange[0];
+        const to = e.target.value;
+        setCreatedDateRange([from, to]);
+        setSearchParams({
+          page: 1,
+          search: searchQuery,
+          itemSearch: selecteditem,
+          statusSearch: selectedstatus,
+          poValueSearch: selectedpovalue,
+          createdFrom: from,
+          createdTo: to,
+        });
+      }}
+    />
+  </Box>
+</FormControl>
+
+<FormControl sx={{ flex: 1 }} size="sm">
+  <FormLabel>ETD Date</FormLabel>
+  <Box sx={{ display: "flex", gap: 1 }}>
+    <Input
+      type="date"
+      size="sm"
+      value={etdDateRange[0] || ""}
+      onChange={(e) => {
+        const from = e.target.value;
+        const to = etdDateRange[1];
+        setEtdDateRange([from, to]);
+        setSearchParams({
+          page: 1,
+          search: searchQuery,
+          itemSearch: selecteditem,
+          statusSearch: selectedstatus,
+          poValueSearch: selectedpovalue,
+          etdFrom: from,
+          etdTo: to,
+        });
+      }}
+    />
+    <Input
+      type="date"
+      size="sm"
+      value={etdDateRange[1] || ""}
+      onChange={(e) => {
+        const from = etdDateRange[0];
+        const to = e.target.value;
+        setEtdDateRange([from, to]);
+        setSearchParams({
+          page: 1,
+          search: searchQuery,
+          itemSearch: selecteditem,
+          statusSearch: selectedstatus,
+          poValueSearch: selectedpovalue,
+          etdFrom: from,
+          etdTo: to,
+        });
+      }}
+    />
+  </Box>
+</FormControl>
+
       </Box>
     );
   };
@@ -510,8 +607,8 @@ function PurchaseReqSummary() {
                     >
                       <Checkbox
                         size="sm"
-                        checked={selected.includes(item._id)}
-                        onChange={() => handleRowSelect(item._id)}
+                        checked={selected.includes(item?._id)}
+                        onChange={() => handleRowSelect(item?._id)}
                       />
                     </td>
 
@@ -526,9 +623,9 @@ function PurchaseReqSummary() {
                       <RenderPRNo
                         pr_no={row.pr_no}
                         createdAt={row.createdAt}
-                        project_id={row.project_id._id}
-                        item_id={item.item_id?._id}
-                        pr_id={row._id}
+                        project_id={row?.project_id?._id}
+                        item_id={item?.item_id?._id}
+                        pr_id={row?._id}
                         createdBy={row?.created_by?.name}
                       />
                     </td>
