@@ -1,11 +1,9 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { IdCardIcon } from "lucide-react";
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: `${process.env.REACT_APP_API_URL}/`,
+  baseUrl: `${process.env.REACT_APP_API_URL}`,
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("authToken");
-    // console.log("Token:", token);
     if (token) {
       headers.set("x-auth-token", token);
     }
@@ -28,22 +26,21 @@ export const camsApi = createApi({
       providesTags: ["CAM"],
     }),
 
-  getHandOverById: builder.query({
-  query: ({ leadId, p_id, id }) => {
-    if (p_id) {
-      return `get-handoversheet?p_id=${p_id}`;
-    } else if (leadId) {
-      return `get-handoversheet?leadId=${leadId}`;
-    } else if (id) {
-      return `get-handoversheet?id=${id}`;
-    } else {
-      console.warn("getHandOver called with no valid identifier.");
-      return { url: "", method: "GET" };
-    }
-  },
-  providesTags: ["CAM"],
-}),
-
+    getHandOverById: builder.query({
+      query: ({ leadId, p_id, id }) => {
+        if (p_id) {
+          return `get-handoversheet?p_id=${p_id}`;
+        } else if (leadId) {
+          return `get-handoversheet?leadId=${leadId}`;
+        } else if (id) {
+          return `get-handoversheet?id=${id}`;
+        } else {
+          console.warn("getHandOver called with no valid identifier.");
+          return { url: "", method: "GET" };
+        }
+      },
+      providesTags: ["CAM"],
+    }),
 
     addHandOver: builder.mutation({
       query: (newHandOver) => ({
@@ -79,15 +76,77 @@ export const camsApi = createApi({
         body: { p_id, emp_id },
       }),
     }),
+
+    // Purchase Request
+    getProjectDropdown: builder.query({
+      query: () => "project-dropdown",
+    }),
+    getMaterialCategory: builder.query({
+      query: () => "engineering/material-category-drop",
+    }),
+    createPurchaseRequest: builder.mutation({
+      query: (payload) => ({
+        url: "purchaseRequest/purchase-request",
+        method: "POST",
+        body: { purchaseRequestData: payload },
+      }),
+      invalidatesTags: ["CAM"],
+    }),
+    getPurchaseRequestById: builder.query({
+      query: (id) => `purchaseRequest/purchase-request/${id}`,
+    }),
+    getPurchaseRequestByProjectId: builder.query({
+      query: (id) =>
+        `purchaseRequest/purchase-request-project_id?project_id=${id}`,
+    }),
+ getAllPurchaseRequest: builder.query({
+  query: ({
+    page = 1,
+    search = "",
+    itemSearch = "",
+    poValueSearch = "",
+    statusSearch = "",
+    createdFrom = "",
+    createdTo = "",
+    etdFrom = "",
+    etdTo = "",
+  }) =>
+    `purchaseRequest/purchase-request?page=${page}&search=${search}&itemSearch=${itemSearch}&poValueSearch=${poValueSearch}&statusSearch=${statusSearch}&createdFrom=${createdFrom}&createdTo=${createdTo}&etdFrom=${etdFrom}&etdTo=${etdTo}`,
+  transformResponse: (response) =>
+    response || { data: [], totalCount: 0, totalPages: 1 },
+  providesTags: ["CAM"],
+}),
+
+
+    getPurchaseRequest: builder.query({
+      query: ({ project_id, item_id, pr_id }) =>
+        `purchaseRequest/${project_id}/item/${item_id}/pr/${pr_id}`,
+    }),
+    editPurchaseRequest: builder.mutation({
+      query: ({ pr_id, payload }) => ({
+        url: `purchaseRequest/purchase-request/${pr_id}`,
+        method: "PUT",
+        body: payload,
+      }),
+    }),
+    
   }),
 });
 
 export const {
   useGetHandOverQuery,
-  // useGetBDHandOverQuery,
   useGetHandOverByIdQuery,
   useAddHandOverMutation,
   useUpdateHandOverMutation,
   useUpdateUnlockHandoversheetMutation,
   useUpdateStatusHandOverMutation,
+  useGetProjectDropdownQuery,
+  useGetMaterialCategoryQuery,
+  useCreatePurchaseRequestMutation,
+  useGetAllPurchaseRequestQuery,
+  useGetPurchaseRequestByIdQuery,
+  useGetPurchaseRequestByProjectIdQuery,
+  useGetPurchaseRequestQuery,
+  useEditPurchaseRequestMutation,
+
 } = camsApi;

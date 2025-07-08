@@ -48,12 +48,13 @@ const HrExpense = forwardRef((props, ref) => {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
-  const searchParam = selectedstatus ? selectedstatus : searchQuery;
+  const searchParam = searchQuery;
 
   const { data: getExpense = [], isLoading } = useGetAllExpenseQuery({
     page: currentPage,
     department: selectedDepartment,
     search: searchParam,
+    status: selectedstatus,
     from,
     to,
   });

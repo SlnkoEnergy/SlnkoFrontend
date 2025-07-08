@@ -4,7 +4,7 @@ import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import LockIcon from "@mui/icons-material/Lock";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
 import SearchIcon from "@mui/icons-material/Search";
-import { Chip, CircularProgress } from "@mui/joy";
+import { Chip, CircularProgress, Dropdown, Menu, MenuButton, MenuItem, Option, Select, TextField } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
@@ -19,9 +19,19 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Tooltip from "@mui/joy/Tooltip";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
+import Modal from "@mui/joy/Modal";
+import ModalDialog from "@mui/joy/ModalDialog";
+import ModalClose from "@mui/joy/ModalClose";
+import Autocomplete from "@mui/joy/Autocomplete";
+import Textarea from "@mui/joy/Textarea";
+import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
+import CheckBoxIcon from "@mui/icons-material/CheckBox";
+
 import {
   useGetHandOverQuery,
   useUpdateHandOverMutation,
+  useGetMaterialCategoryQuery,
+  useCreatePurchaseRequestMutation,
 } from "../redux/camsSlice";
 
 import { toast } from "react-toastify";
@@ -34,7 +44,15 @@ function Dash_cam() {
   const [user, setUser] = useState(null);
   const theme = useTheme();
   const [currentPage, setCurrentPage] = useState(1);
-
+  const [isPRModalOpen, setIsPRModalOpen] = useState(false);
+  const [selectedPRProject, setSelectedPRProject] = useState(null);
+  const [items, setItems] = useState([]);
+  const [prNo, setPrNo] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [remarks, setRemarks] = useState("");
+  
+const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
+const checkedIcon = <CheckBoxIcon fontSize="small" />;
   const {
     data: getHandOverSheet = {},
     isLoading,
@@ -44,9 +62,51 @@ function Dash_cam() {
     search: searchQuery,
     status: "submitted,Approved",
   });
-  const ProjectOverView = ({ currentPage, project_id, code }) => {
-    // console.log("currentPage:", currentPage, "pproject_id:", pproject_id);
+  const { data: materialCategoryData = {}, isLoading: isCategoryLoading } =
+    useGetMaterialCategoryQuery();
 
+  const materialCategories = materialCategoryData?.data || [];
+
+  const [createPurchaseRequest, { isLoading: isPRCreating }] =
+    useCreatePurchaseRequestMutation();
+
+  const handlePRSubmit = async () => {
+    if (!selectedPRProject?.project_id) {
+      toast.error("Project ID is missing.");
+      return;
+    }
+
+    if (items.length === 0) {
+      toast.error("Please select at least one item.");
+      return;
+    }
+
+    console.log("Items state at submit:", items); // Debug line
+
+    const formattedItems = items.map((item) => ({
+      item_id: item._id,
+    }));
+
+    const payload = {
+      project_id: selectedPRProject?.project_id,
+      etd: null,
+      delivery_date: null,
+      items: formattedItems, // Use plural to match expected backend field
+    };
+
+    console.log("Payload being sent:", payload);
+
+    try {
+      const response = await createPurchaseRequest(payload).unwrap();
+      toast.success("Purchase Request created successfully!");
+      setIsPRModalOpen(false);
+      setItems([]);
+    } catch (error) {
+      toast.error(error?.data?.message || "Failed to create Purchase Request.");
+    }
+  };
+
+  const ProjectOverView = ({ currentPage, project_id, code, id }) => {
     return (
       <>
         <span
@@ -58,9 +118,8 @@ function Dash_cam() {
           }}
           onClick={() => {
             const page = currentPage;
-            // const project_id = project_id;
-            // sessionStorage.setItem("eng_overview", projectId);
-            navigate(`/overview?page=${page}&project_id=${project_id}`);
+            sessionStorage.setItem("submitInfo", id);
+            navigate(`/project_detail?page=${page}&project_id=${project_id}`);
           }}
         >
           {code || "-"}
@@ -227,6 +286,10 @@ function Dash_cam() {
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
+  const handleCreatePR = (project) => {
+    setSelectedPRProject(project);
+    setIsPRModalOpen(true);
+  };
 
   const filteredAndSortedData = useMemo(() => {
     return HandOverSheet.filter((project) =>
@@ -264,13 +327,7 @@ function Dash_cam() {
 
   const paginatedPayments = filteredAndSortedData;
 
-  // const totalPages = Math.ceil(currentPage / (1000 / itemsPerPage));
-
-  // const paginatedPayments = filteredAndSortedData;
-
   const draftPayments = paginatedPayments;
-  // console.log(paginatedPayments);
-  // console.log("Filtered and Sorted Data:", filteredAndSortedData);
 
   const handlePageChange = (page) => {
     if (page >= 1) {
@@ -281,41 +338,6 @@ function Dash_cam() {
 
   return (
     <>
-      {/* Mobile Filters */}
-      {/* <Sheet
-        className="SearchAndFilters-mobile"
-        sx={{ display: { xs: "", sm: "none" }, my: 1, gap: 1 }}
-      >
-        <Input
-          size="sm"
-          placeholder="Search"
-          startDecorator={<SearchIcon />}
-          sx={{ flexGrow: 1 }}
-        />
-        <IconButton
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          onClick={() => setOpen(true)}
-        >
-          <FilterAltIcon />
-        </IconButton>
-        <Modal open={open} onClose={() => setOpen(false)}>
-          <ModalDialog aria-labelledby="filter-modal" layout="fullscreen">
-            <ModalClose />
-            <Typography id="filter-modal" level="h2">
-              Filters
-            </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Sheet sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {renderFilters()}
-              <Button color="primary" onClick={() => setOpen(false)}>
-                Submit
-              </Button>
-            </Sheet>
-          </ModalDialog>
-        </Modal>
-      </Sheet> */}
       {/* Tablet and Up Filters */}
       <Box
         className="SearchAndFilters-tabletUp"
@@ -323,9 +345,7 @@ function Dash_cam() {
           marginLeft: { xl: "15%", lg: "18%" },
           borderRadius: "sm",
           py: 2,
-          // display: { xs: "none", sm: "flex" },
           display: "flex",
-          // flexDirection:{xs: "none", sm: "flex"}
           flexWrap: "wrap",
           gap: 1.5,
           "& > *": {
@@ -343,7 +363,6 @@ function Dash_cam() {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {/* {renderFilters()} */}
       </Box>
       {/* Table */}
       <Sheet
@@ -393,6 +412,7 @@ function Dash_cam() {
                 "Slnko Service Charges (with GST)",
                 "Status",
                 "Action",
+                "Purchsase Request",
               ].map((header, index) => (
                 <th
                   key={index}
@@ -452,16 +472,6 @@ function Dash_cam() {
                       }
                     />
                   </td>
-
-                  {/* <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {project.code || "-"}
-                  </td> */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -469,12 +479,13 @@ function Dash_cam() {
                       textAlign: "center",
                     }}
                   >
-                    <Tooltip title="View Engineering Overview" arrow>
+                    <Tooltip title="View Project Detail" arrow>
                       <span>
                         <ProjectOverView
                           currentPage={currentPage}
                           project_id={project.project_id}
                           code={project.code}
+                          id={project._id}
                         />
                       </span>
                     </Tooltip>
@@ -568,6 +579,27 @@ function Dash_cam() {
                       id={project.id}
                       _id={project._id}
                     />
+                  </td>
+                  <td
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {project.is_locked === "locked" &&
+                    project.status_of_handoversheet === "Approved" ? (
+                      <Button
+                        size="sm"
+                        variant="soft"
+                        color="primary"
+                        onClick={() => handleCreatePR(project)}
+                      >
+                        Create PR
+                      </Button>
+                    ) : (
+                      "-"
+                    )}
                   </td>
                 </tr>
               ))
@@ -673,6 +705,75 @@ function Dash_cam() {
         >
           Next
         </Button>
+      <Modal open={isPRModalOpen} onClose={() => setIsPRModalOpen(false)}>
+  <ModalDialog
+    sx={{
+      width: 500,           // Increased Modal Width
+      borderRadius: "md",
+      boxShadow: "lg",
+      p: 3,
+      overflow: "visible",
+    }}
+  >
+    <ModalClose />
+    <Typography level="h5" sx={{ mb: 1 }}>
+      Create Purchase Request
+    </Typography>
+
+    <Sheet
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+        mt: 1,
+      }}
+    >
+      <Typography level="body-sm" sx={{ color: "neutral.500" }}>
+        Project:{" "}
+        <Typography component="span" fontWeight="md">
+          {selectedPRProject?.code || "-"}
+        </Typography>
+      </Typography>
+
+      {/* Clean Autocomplete with Well-Spaced Checkboxes */}
+      <Autocomplete
+        multiple
+        options={materialCategories || []}
+        disableCloseOnSelect
+        getOptionLabel={(option) => option.name}
+        isOptionEqualToValue={(option, value) => option._id === value._id}
+        value={items}
+        onChange={(e, newValue) => setItems(newValue)}
+        renderOption={(props, option, { selected }) => (
+          <li {...props} style={{ display: "flex", alignItems: "center", padding: "6px 12px" }}>
+            <Checkbox
+              icon={icon}
+              checkedIcon={checkedIcon}
+              style={{ marginRight: 8 }}
+              checked={selected}
+            />
+            {option.name}
+          </li>
+        )}
+        renderInput={(params) => (
+          <TextField {...params} placeholder="Select Item(s)" size="small" />
+        )}
+      />
+
+      <Button
+        onClick={handlePRSubmit}
+        loading={isPRCreating}
+        sx={{ mt: 1 }}
+      >
+        {isPRCreating ? "Submitting..." : "Submit"}
+      </Button>
+    </Sheet>
+  </ModalDialog>
+</Modal>
+
+
+
+
       </Box>
     </>
   );

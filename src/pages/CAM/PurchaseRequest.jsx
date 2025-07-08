@@ -1,18 +1,17 @@
 import Box from "@mui/joy/Box";
 import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider } from "@mui/joy/styles";
-import { useEffect, useState } from "react";
+import  { useEffect, useState } from "react";
 import Breadcrumbs from "@mui/joy/Breadcrumbs";
 import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import Sidebar from "../../component/Partials/Sidebar";
-import { useNavigate } from "react-router-dom";
-import HandoverApproval from "../../component/HandOver_Approval";
 import Header from "../../component/Partials/Header";
+import { useNavigate } from "react-router-dom";
+import PurchaseReqSummary from "../../component/PurchaseReqSummary";
 
-function Approval_Dashboard() {
-  const navigate = useNavigate();
+function PurchaseRequestSheet() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -27,7 +26,6 @@ function Approval_Dashboard() {
     }
     return null;
   };
-
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -77,7 +75,7 @@ function Approval_Dashboard() {
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                HandOver Approval
+                Purchase Request
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -94,7 +92,7 @@ function Approval_Dashboard() {
             }}
           >
             <Typography level="h2" component="h1">
-              HandOver Approval
+              Purchase Request Dashboard
             </Typography>
             <Box
               sx={{
@@ -107,12 +105,13 @@ function Approval_Dashboard() {
                 justifyContent: "center",
               }}
             >
+              
             </Box>
           </Box>
-          <HandoverApproval />
+          <PurchaseReqSummary />
         </Box>
       </Box>
     </CssVarsProvider>
   );
 }
-export default Approval_Dashboard;
+export default PurchaseRequestSheet;
