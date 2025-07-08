@@ -3,7 +3,14 @@ import Box from "@mui/joy/Box";
 import Typography from "@mui/joy/Typography";
 import CloseIcon from "@mui/icons-material/Close";
 import EditNoteIcon from "@mui/icons-material/EditNote";
-import { Grid, Button, Tooltip, IconButton, Modal } from "@mui/joy";
+import {
+  Grid,
+  Button,
+  Tooltip,
+  IconButton,
+  Modal,
+  CircularProgress,
+} from "@mui/joy";
 import Axios from "../utils/Axios";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import UpdateBillForm from "./Forms/Edit_Bill";
@@ -13,7 +20,7 @@ const BillHistoryTable = ({ po_number }) => {
   const [poNumber, setPoNumber] = useState(null);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const [selectedPoNumber, setSelectedPoNumber] = useState("");
+  const [selectedId, setSelectedId] = useState("");
   const [modalAction, setModalAction] = useState("");
 
   const [searchParams] = useSearchParams();
@@ -35,9 +42,9 @@ const BillHistoryTable = ({ po_number }) => {
         });
         const fetchedPoNumber = poResponse.data;
         setPoNumber(fetchedPoNumber);
-        console.log("Enriched POs are:", fetchedPoNumber);
+        // console.log("Enriched POs are:", fetchedPoNumber);
 
-        const billResponse = await Axios.get("/get-all-bilL-IT", {
+        const billResponse = await Axios.get("/get-bill-by-id", {
           headers: {
             "x-auth-token": token,
           },
@@ -58,6 +65,7 @@ const BillHistoryTable = ({ po_number }) => {
               ? `${date.getFullYear()}-${date.toLocaleString("default", { month: "short" })}-${String(date.getDate()).padStart(2, "0")}`
               : "";
             return {
+              _id: bill._id || "",
               po_number: bill.po_number || "",
               bill_number: bill.bill_number || "",
               bill_value: bill.bill_value.toLocaleString("en-IN") || "",
@@ -78,25 +86,25 @@ const BillHistoryTable = ({ po_number }) => {
     fetchData();
   }, [poNumberFromStorage]);
 
-  const handleOpen = (po_number, action) => {
-    setSelectedPoNumber(po_number);
+  const handleOpen = (_id, action) => {
+    setSelectedId(_id);
     setModalAction(action);
     setOpen(true);
   };
 
   const handleClose = () => {
     setOpen(false);
-    setSelectedPoNumber("");
+    setSelectedId("");
     setModalAction("");
   };
 
-  const EditBill = ({ po_number }) => {
-    console.log("PO Number in EditBill:", po_number);
+  const EditBill = ({ _id }) => {
+    console.log("PO Number in EditBill:", _id);
     return (
       <Tooltip title="Edit Bill" placement="top">
         <IconButton
           color="primary"
-          onClick={() => handleOpen(po_number, "edit_bill")}
+          onClick={() => handleOpen(_id, "edit_bill")}
         >
           <EditNoteIcon />
         </IconButton>
@@ -127,14 +135,6 @@ const BillHistoryTable = ({ po_number }) => {
       </Typography> */}
 
       {/* Loading Indicator */}
-      {loading && (
-        <Typography
-          variant="body1"
-          sx={{ textAlign: "center", marginBottom: 2 }}
-        >
-          Loading...
-        </Typography>
-      )}
 
       {/* Table */}
       <Box
@@ -177,49 +177,51 @@ const BillHistoryTable = ({ po_number }) => {
 
         {/* Table Body */}
         <Box component="tbody">
-          {billHistoryData.length > 0 ? (
+          {loading ? (
+            <tr>
+              <td colSpan={14}>
+                <Box
+                  sx={{
+                    py: 5,
+                    textAlign: "center",
+                    display: "inline-flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 1,
+                    width: "100%",
+                  }}
+                >
+                  <CircularProgress size="sm" sx={{ color: "primary.500" }} />
+                  <Typography fontStyle="italic">
+                    Loading history… please hang tight ⏳
+                  </Typography>
+                </Box>
+              </td>
+            </tr>
+          ) : billHistoryData.length > 0 ? (
             billHistoryData.map((row, index) => (
-              <Box
-                component="tr"
+              <tr
                 key={index}
-                sx={{
-                  backgroundColor:
-                    index % 2 === 0 ? "neutral.100" : "neutral.50",
-                  "&:hover": {
-                    backgroundColor: "neutral.200",
-                  },
+                style={{
+                  backgroundColor: index % 2 === 0 ? "#f5f5f5" : "#fafafa",
                 }}
               >
-                <Box component="td" sx={{ padding: 2 }}>
-                  <EditBill po_number={row.po_number} />
-                </Box>
-                <Box component="td" sx={{ padding: 2 }}>
-                  {row.bill_number}
-                </Box>
-                <Box component="td" sx={{ padding: 2 }}>
-                  {row.bill_date}
-                </Box>
-                <Box component="td" sx={{ padding: 2 }}>
-                  {row.bill_value}
-                </Box>
-                <Box component="td" sx={{ padding: 2 }}>
-                  {row.submitted_by}
-                </Box>
-              </Box>
+                <td style={{ padding: 8 }}>
+                  <EditBill _id={row._id} />
+                </td>
+                <td style={{ padding: 8 }}>{row.bill_number}</td>
+                <td style={{ padding: 8 }}>{row.bill_date}</td>
+                <td style={{ padding: 8 }}>{row.bill_value}</td>
+                <td style={{ padding: 8 }}>{row.submitted_by}</td>
+              </tr>
             ))
           ) : (
-            <Box
-              component="tr"
-              sx={{
-                textAlign: "center",
-                padding: 2,
-                backgroundColor: "neutral.50",
-              }}
-            >
-              <Box component="td" colSpan={5} sx={{ padding: 2 }}>
+            <tr style={{ backgroundColor: "#fafafa" }}>
+              <td colSpan={5} style={{ padding: 16, textAlign: "center" }}>
                 No matching bill data found.
-              </Box>
-            </Box>
+              </td>
+            </tr>
           )}
         </Box>
       </Box>
@@ -250,9 +252,7 @@ const BillHistoryTable = ({ po_number }) => {
             <CloseIcon />
           </IconButton>
 
-          {modalAction === "edit_bill" && (
-            <UpdateBillForm po_number={selectedPoNumber} />
-          )}
+          {modalAction === "edit_bill" && <UpdateBillForm _id={selectedId} />}
         </Box>
       </Modal>
     </Box>

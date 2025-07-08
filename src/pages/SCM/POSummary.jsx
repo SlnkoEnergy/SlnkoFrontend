@@ -166,14 +166,14 @@ function POSummary() {
                     >
                       Add Vendor +
                     </Button>
-                    <Button
+                    {/* <Button
                       color="primary"
                       startDecorator={<DownloadRoundedIcon />}
                       size="sm"
                       onClick={handleExportToCSV}
                     >
                       Export to CSV
-                    </Button>
+                    </Button> */}
                   </>
                 )}
               </Box>
