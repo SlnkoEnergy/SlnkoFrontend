@@ -82,6 +82,8 @@ const AllProjects = forwardRef((props, ref) => {
     overflowY: "auto",
   };
 
+  
+
   const handleOpen = (p_id, mode) => {
     setSelectedProjectId(p_id);
     setHandoverMode(mode);
@@ -144,7 +146,7 @@ const AllProjects = forwardRef((props, ref) => {
           >
             <MoreHorizRoundedIcon />
           </MenuButton>
-          <Menu size="sm" sx={{ minWidth: 140 }}>
+          <Menu size="sm" sx={{ minWidth: 140, fontSize:"14px" }}>
             <MenuItem
               color="primary"
               onClick={() => {
@@ -444,6 +446,7 @@ const AllProjects = forwardRef((props, ref) => {
           flexShrink: 1,
           overflow: "auto",
           minHeight: 0,
+          fontSize:"14px",
           marginLeft: { xl: "15%", lg: "18%" },
           maxWidth: { lg: "85%", sm: "100%" },
         }}
@@ -489,8 +492,9 @@ const AllProjects = forwardRef((props, ref) => {
                   sx={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
-                    textAlign: "center",
+                    textAlign: "left",
                     fontWeight: "bold",
+                    fontSize:"14px",
                   }}
                 >
                   {header}
@@ -513,7 +517,8 @@ const AllProjects = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize:"14px",
                     }}
                   >
                     <Checkbox
@@ -529,7 +534,7 @@ const AllProjects = forwardRef((props, ref) => {
                       sx={{
                         borderBottom: "1px dotted #888",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                         cursor: "pointer",
                         "&:hover": { textDecoration: "underline" },
                       }}
@@ -547,7 +552,7 @@ const AllProjects = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.customer}
@@ -557,7 +562,7 @@ const AllProjects = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.name}
@@ -567,7 +572,7 @@ const AllProjects = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.email}
@@ -577,7 +582,7 @@ const AllProjects = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.number}
@@ -587,7 +592,7 @@ const AllProjects = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.state}
@@ -597,7 +602,7 @@ const AllProjects = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.service}
@@ -607,7 +612,7 @@ const AllProjects = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.handover ? (
@@ -656,7 +661,7 @@ const AllProjects = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     <RowMenu currentPage={currentPage} p_id={project.p_id} />
@@ -670,7 +675,7 @@ const AllProjects = forwardRef((props, ref) => {
                   colSpan={9}
                   sx={{
                     padding: "8px",
-                    textAlign: "center",
+                    textAlign: "left",
                     fontStyle: "italic",
                   }}
                 >
