@@ -42,6 +42,22 @@ function POSummary() {
       poSummaryRef.current.exportToCSV();
     }
   };
+
+  const allowedUsers = [
+    "IT Team",
+    "Guddu Rani Dubey",
+    "Prachi Singh",
+    "Ajay Singh",
+    "Aryan Maheshwari",
+    "Sarthak Sharma",
+    "Naresh Kumar",
+    "Shubham Gupta",
+    "Gagan Tayal",
+  ];
+
+  const isAllowed =
+    allowedUsers.includes(user?.name) || user?.department === "admin";
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -120,15 +136,8 @@ function POSummary() {
             <Typography level="h2" component="h1">
               Purchase Order Summary
             </Typography>
-            {(user?.name === "IT Team" ||
-              user?.name === "Guddu Rani Dubey" ||
-              user?.name === "Prachi Singh" ||
-              user?.department === "admin" ||
-              user?.name === "Ajay Singh" ||
-              user?.name === "Aryan Maheshwari" ||
-              user?.name === "Sarthak Sharma" ||
-              user?.name === "Naresh Kumar" ||
-              user?.name === "Shubham Gupta") && (
+
+            {isAllowed && (
               <Box
                 sx={{
                   display: "flex",
@@ -147,21 +156,26 @@ function POSummary() {
                 >
                   Add PO +
                 </Button>
-                <Button
-                  color="primary"
-                  size="sm"
-                  onClick={() => navigate("/add_vendor")}
-                >
-                  Add Vendor +
-                </Button>
-                <Button
-                  color="primary"
-                  startDecorator={<DownloadRoundedIcon />}
-                  size="sm"
-                  onClick={handleExportToCSV}
-                >
-                  Export to CSV
-                </Button>
+
+                {user?.name !== "Gagan Tayal" && (
+                  <>
+                    <Button
+                      color="primary"
+                      size="sm"
+                      onClick={() => navigate("/add_vendor")}
+                    >
+                      Add Vendor +
+                    </Button>
+                    <Button
+                      color="primary"
+                      startDecorator={<DownloadRoundedIcon />}
+                      size="sm"
+                      onClick={handleExportToCSV}
+                    >
+                      Export to CSV
+                    </Button>
+                  </>
+                )}
               </Box>
             )}
           </Box>
