@@ -32,7 +32,7 @@ ARG BRANCH=dev
 ENV DOMAIN_NAME=slnkoprotrac.com
 RUN if [ "$BRANCH" = "staging" ]; then \
       export DOMAIN_NAME=staging.slnkoprotrac.com; \
-    elif [ "$BRANCH" != "prod" ]; then \
+    elif [ "$BRANCH" != "production" ]; then \
       export DOMAIN_NAME=dev.slnkoprotrac.com; \
     fi
 
