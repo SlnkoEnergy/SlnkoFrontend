@@ -26,5 +26,5 @@ jobs:
             docker build -t prod_frontend_staging .
             docker stop prod_frontend_staging || true
             docker rm prod_frontend_staging || true
-            docker run --name prod_frontend_staging -p 5007:80 -d --env-file .env.prod prod_frontend_staging
+            docker run --name prod_frontend_staging -p 5007:80 -d --env-file .env.stag prod_frontend_staging
           EOF
