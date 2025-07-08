@@ -40,7 +40,7 @@ RUN if [ "$BRANCH" = "staging" ]; then \
 COPY --from=build /protrac/frontend/build /usr/share/nginx/html
 
 # Copy the nginx config template
-COPY nginx.conf.template /etc/nginx/nginx.conf.template
+COPY nginx.conf /etc/nginx/nginx.conf.template
 
 # Install envsubst to replace variables in nginx config
 RUN apk add --no-cache gettext
