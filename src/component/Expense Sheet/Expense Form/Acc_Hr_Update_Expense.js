@@ -63,7 +63,11 @@ const UpdateExpenseAccounts = () => {
           ],
           approved_amount: "",
           remarks: "",
-          item_current_status: "",
+          item_current_status: {
+            user_id: "",
+            remarks: "",
+            status: "",
+          },
         },
       ],
       expense_term: {
@@ -81,7 +85,6 @@ const UpdateExpenseAccounts = () => {
       total_requested_amount: "",
       total_approved_amount: "",
       disbursement_date: "",
-     
     },
   ]);
 
@@ -314,8 +317,6 @@ const UpdateExpenseAccounts = () => {
       const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
       const ExpenseCode = localStorage.getItem("edit_expense");
 
-      debugger;
-
       if (!userID) {
         toast.error("User ID not found. Please login again.");
         return;
@@ -332,22 +333,35 @@ const UpdateExpenseAccounts = () => {
 
       const updatedItems = rows.flatMap((row) =>
         (row.items || []).map((item) => {
-          const status = item.item_current_status || "manager approval";
+          const statusValue =
+            typeof item.item_current_status === "string"
+              ? item.item_current_status
+              : item.item_current_status?.status || "manager approval";
+
+          const approvedAmount =
+            item.approved_amount !== "" && item.approved_amount !== undefined
+              ? Number(item.approved_amount)
+              : Number(item.invoice?.invoice_amount || 0);
+
+          const statusObj = {
+            status: statusValue,
+            remarks: item.remarks || "",
+            user_id: userID,
+            updatedAt: new Date().toISOString(),
+          };
 
           return {
             ...item,
-            approved_amount:
-              item.approved_amount !== "" && item.approved_amount !== undefined
-                ? Number(item.approved_amount)
-                : Number(item.invoice?.invoice_amount || 0),
-            item_current_status: status,
+            approved_amount: approvedAmount,
+            item_current_status: {
+              ...(typeof item.item_current_status === "object"
+                ? item.item_current_status
+                : {}),
+              ...statusObj, // Overwrite or add
+            },
             item_status_history: [
               ...(item.item_status_history || []),
-              {
-                status,
-                remarks: item.remarks || "",
-                user_id: userID,
-              },
+              statusObj,
             ],
           };
         })
@@ -358,23 +372,21 @@ const UpdateExpenseAccounts = () => {
         0
       );
 
+      const currentStatusObj = {
+        status: "manager approval",
+        remarks: rows[0]?.remarks?.trim() || "",
+        user_id: userID,
+        updatedAt: new Date().toISOString(),
+      };
+
       const payload = {
         user_id: userID,
         expense_code: ExpenseCode,
-        current_status: "manager approval",
-        total_approved_amount: totalApproved,
+        current_status: currentStatusObj,
+        total_approved_amount: String(totalApproved),
         items: updatedItems,
-        status_history: [
-          ...(rows[0].status_history || []),
-          {
-            status: "manager approval",
-            remarks: rows[0].comments || "",
-            user_id: userID,
-          },
-        ],
+        status_history: [...(rows[0]?.status_history || []), currentStatusObj],
       };
-
-      debugger;
 
       await updateExpense({
         _id: expenseSheetId,
@@ -434,6 +446,8 @@ const UpdateExpenseAccounts = () => {
   };
 
   const handleApproval = (rowIndex, itemIndex, status) => {
+    const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
+
     const updatedRows = [...rows];
     const updatedRow = {
       ...updatedRows[rowIndex],
@@ -443,7 +457,15 @@ const UpdateExpenseAccounts = () => {
     updatedRow.items[itemIndex] = {
       ...updatedRow.items[itemIndex],
       approvalStatus: status,
-      item_current_status: status,
+      item_current_status: {
+        status,
+        remarks:
+          status === "rejected"
+            ? updatedRow.items[itemIndex].remarks || ""
+            : "",
+        user_id: userID,
+        updatedAt: new Date().toISOString(),
+      },
     };
 
     updatedRows[rowIndex] = updatedRow;
@@ -460,13 +482,24 @@ const UpdateExpenseAccounts = () => {
 
   const applyHrApproveAll = async () => {
     try {
+      const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
+      if (!userID) {
+        toast.error("User ID not found. Please login again.");
+        return;
+      }
+
       const updated = rows.map((row) => {
         const updatedItems = row.items.map((item) => {
           const invoiceAmount = Number(item.invoice?.invoice_amount) || 0;
 
           return {
             ...item,
-            item_current_status: "hr approval",
+            item_current_status: {
+              status: "hr approval",
+              remarks: item.remarks || "",
+              user_id: userID,
+              updatedAt: new Date().toISOString(),
+            },
             approved_amount: invoiceAmount,
           };
         });
@@ -509,18 +542,54 @@ const UpdateExpenseAccounts = () => {
 
   const applyHrRejectAll = async (reason) => {
     try {
+      const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
+      if (!userID) {
+        toast.error("User ID not found. Please login again.");
+        return;
+      }
+
+      const timestamp = new Date().toISOString();
+
       const updated = rows.map((row) => {
         const updatedItems = row.items.map((item) => ({
           ...item,
-          item_current_status: "rejected",
           approved_amount: 0,
           remarks: reason,
+          item_current_status: {
+            status: "rejected",
+            remarks: reason,
+            user_id: userID,
+            updatedAt: timestamp,
+          },
+          item_status_history: [
+            ...(item.item_status_history || []),
+            {
+              status: "rejected",
+              remarks: reason,
+              user_id: userID,
+              updatedAt: timestamp,
+            },
+          ],
         }));
 
         return {
           ...row,
           items: updatedItems,
-          current_status: "rejected",
+          current_status: {
+            status: "rejected",
+            remarks: reason,
+            user_id: userID,
+            updatedAt: timestamp,
+          },
+          status_history: [
+            ...(row.status_history || []),
+            {
+              status: "rejected",
+              remarks: reason,
+              user_id: userID,
+              updatedAt: timestamp,
+            },
+          ],
           approved_amount: 0,
           remarks: reason,
         };
@@ -554,17 +623,53 @@ const UpdateExpenseAccounts = () => {
 
   const applyHrHoldAll = async (reason) => {
     try {
+      const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
+      if (!userID) {
+        toast.error("User ID not found. Please login again.");
+        return;
+      }
+
+      const timestamp = new Date().toISOString();
+
       const updated = rows.map((row) => {
         const updatedItems = row.items.map((item) => ({
           ...item,
-          item_current_status: "hold",
           remarks: reason,
+          item_current_status: {
+            status: "hold",
+            remarks: reason,
+            user_id: userID,
+            updatedAt: timestamp,
+          },
+          item_status_history: [
+            ...(item.item_status_history || []),
+            {
+              status: "hold",
+              remarks: reason,
+              user_id: userID,
+              updatedAt: timestamp,
+            },
+          ],
         }));
 
         return {
           ...row,
           items: updatedItems,
-          current_status: "hold",
+          current_status: {
+            status: "hold",
+            remarks: reason,
+            user_id: userID,
+            updatedAt: timestamp,
+          },
+          status_history: [
+            ...(row.status_history || []),
+            {
+              status: "hold",
+              remarks: reason,
+              user_id: userID,
+              updatedAt: timestamp,
+            },
+          ],
           remarks: reason,
         };
       });
@@ -583,7 +688,7 @@ const UpdateExpenseAccounts = () => {
 
       toast.success("All items put on hold successfully");
       setShowHoldAllDialog(false);
-      setHoldReason(""); // clear input
+      setHoldReason("");
     } catch (error) {
       console.error("Failed to hold all items:", error);
       toast.error("Failed to hold all items");
@@ -596,14 +701,33 @@ const UpdateExpenseAccounts = () => {
 
   const applyAccountsApproveAll = async () => {
     try {
+      const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
+      if (!userID) {
+        toast.error("User ID not found. Please login again.");
+        return;
+      }
+
+      const timestamp = new Date().toISOString();
+
       const updated = rows.map((row) => {
         const updatedItems = row.items.map((item) => {
           const invoiceAmount = Number(item.invoice?.invoice_amount) || 0;
 
+          const statusObj = {
+            status: "final approval",
+            remarks: "",
+            user_id: userID,
+            updatedAt: timestamp,
+          };
+
           return {
             ...item,
-            item_current_status: "final approval",
             approved_amount: invoiceAmount,
+            item_current_status: statusObj,
+            item_status_history: [
+              ...(item.item_status_history || []),
+              statusObj,
+            ],
           };
         });
 
@@ -612,10 +736,19 @@ const UpdateExpenseAccounts = () => {
           0
         );
 
+        const rowStatusObj = {
+          status: "final approval",
+          remarks: "",
+          user_id: userID,
+          updatedAt: timestamp,
+        };
+
         return {
           ...row,
           items: updatedItems,
           approved_amount: totalApprovedAmount,
+          current_status: rowStatusObj,
+          status_history: [...(row.status_history || []), rowStatusObj],
         };
       });
 
@@ -634,8 +767,8 @@ const UpdateExpenseAccounts = () => {
       toast.success("Accounts approved successfully");
       setAccountsApproveConfirmOpen(false);
     } catch (error) {
-      console.error("Failed to HR approve all items:", error);
-      toast.error("Failed to HR approve all items");
+      console.error("Failed to approve all items:", error);
+      toast.error("Failed to approve all items");
     }
   };
 
@@ -645,20 +778,50 @@ const UpdateExpenseAccounts = () => {
 
   const applyAccountsRejectAll = async () => {
     try {
+      const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
+      if (!userID) {
+        toast.error("User ID not found. Please login again.");
+        return;
+      }
+
+      const reason = showAccountsRejectAllDialog;
+      const timestamp = new Date().toISOString();
+
       const updated = rows.map((row) => {
-        const updatedItems = row.items.map((item) => ({
-          ...item,
-          item_current_status: "rejected",
-          approved_amount: 0,
-          remarks: showAccountsRejectAllDialog,
-        }));
+        const updatedItems = row.items.map((item) => {
+          const statusObj = {
+            status: "rejected",
+            remarks: reason,
+            user_id: userID,
+            updatedAt: timestamp,
+          };
+
+          return {
+            ...item,
+            approved_amount: 0,
+            remarks: reason,
+            item_current_status: statusObj,
+            item_status_history: [
+              ...(item.item_status_history || []),
+              statusObj,
+            ],
+          };
+        });
+
+        const rowStatusObj = {
+          status: "rejected",
+          remarks: reason,
+          user_id: userID,
+          updatedAt: timestamp,
+        };
 
         return {
           ...row,
           items: updatedItems,
-          current_status: "rejected",
+          current_status: rowStatusObj,
+          status_history: [...(row.status_history || []), rowStatusObj],
           approved_amount: 0,
-          remarks: showAccountsRejectAllDialog,
+          remarks: reason,
         };
       });
 
@@ -670,7 +833,7 @@ const UpdateExpenseAccounts = () => {
             _id: row._id,
             status: "rejected",
             approved_amount: 0,
-            remarks: showAccountsRejectAllDialog,
+            remarks: reason,
           }).unwrap()
         )
       );
@@ -689,17 +852,46 @@ const UpdateExpenseAccounts = () => {
 
   const applyAccountsHoldAll = async (reason) => {
     try {
+      const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
+      if (!userID) {
+        toast.error("User ID not found. Please login again.");
+        return;
+      }
+
+      const timestamp = new Date().toISOString();
+
       const updated = rows.map((row) => {
-        const updatedItems = row.items.map((item) => ({
-          ...item,
-          item_current_status: "hold",
+        const updatedItems = row.items.map((item) => {
+          const statusObj = {
+            status: "hold",
+            remarks: reason,
+            user_id: userID,
+            updatedAt: timestamp,
+          };
+
+          return {
+            ...item,
+            remarks: reason,
+            item_current_status: statusObj,
+            item_status_history: [
+              ...(item.item_status_history || []),
+              statusObj,
+            ],
+          };
+        });
+
+        const rowStatusObj = {
+          status: "hold",
           remarks: reason,
-        }));
+          user_id: userID,
+          updatedAt: timestamp,
+        };
 
         return {
           ...row,
           items: updatedItems,
-          current_status: "hold",
+          current_status: rowStatusObj,
+          status_history: [...(row.status_history || []), rowStatusObj],
           remarks: reason,
         };
       });
@@ -718,7 +910,7 @@ const UpdateExpenseAccounts = () => {
 
       toast.success("All items put on hold successfully");
       setAccountsShowHoldAllDialog(false);
-      setAccountsHoldReason(""); // Clear reason after success
+      setAccountsHoldReason("");
     } catch (error) {
       console.error("Failed to hold all items:", error);
       toast.error("Failed to hold all items");
@@ -735,37 +927,31 @@ const UpdateExpenseAccounts = () => {
 
       const rawDate = disbursementData?.disbursement_date;
 
-      // ✅ Ensure a valid date is selected before submission
-      if (!rawDate || isNaN(new Date(rawDate).getTime())) {
+      if (!rawDate || typeof rawDate !== "string") {
         toast.error("Please select a valid disbursement date.");
         return;
       }
 
-      const disbursement_date = new Date(rawDate).toISOString();
+      const safeDateStr = rawDate.replace(/\//g, "-");
 
-      console.log("Updating disbursement with:", {
-        _id: expenseSheetId,
-        disbursement_date,
-      });
+      const isValid = /^\d{4}-\d{2}-\d{2}$/.test(safeDateStr);
+      if (!isValid) {
+        toast.error("Invalid disbursement date format.");
+        return;
+      }
 
       await updateDisbursement({
         _id: expenseSheetId,
-        disbursement_date,
+        disbursement_date: safeDateStr,
       }).unwrap();
 
       toast.success("Disbursement date updated successfully!");
-      navigate("/expense_dashboard");
+      navigate("/expense_accounts");
     } catch (error) {
       console.error("Disbursement update failed:", error);
       toast.error("An error occurred while submitting disbursement date.");
     }
   };
-
-  // const handleItemChange = (index, field, value) => {
-  //   setRows((prevRows) =>
-  //     prevRows.map((row, i) => (i === index ? { ...row, [field]: value } : row))
-  //   );
-  // };
 
   const tableHeaders = [
     "Project ID",
@@ -864,8 +1050,15 @@ const UpdateExpenseAccounts = () => {
                     size="sm"
                     onClick={handleHrRejectAll}
                     disabled={rows.every((row) =>
-                      ["rejected", "hold", "hr approval"].includes(
-                        row.current_status
+                      [
+                        "rejected",
+                        "hold",
+                        "hr approval",
+                        "final approval",
+                      ].includes(
+                        typeof row.current_status === "string"
+                          ? row.current_status
+                          : row.current_status?.status
                       )
                     )}
                   >
@@ -876,8 +1069,15 @@ const UpdateExpenseAccounts = () => {
                     size="sm"
                     onClick={handleHrHoldAll}
                     disabled={rows.every((row) =>
-                      ["rejected", "hold", "hr approval"].includes(
-                        row.current_status
+                      [
+                        "rejected",
+                        "hold",
+                        "hr approval",
+                        "final approval",
+                      ].includes(
+                        typeof row.current_status === "string"
+                          ? row.current_status
+                          : row.current_status?.status
                       )
                     )}
                   >
@@ -888,8 +1088,15 @@ const UpdateExpenseAccounts = () => {
                     size="sm"
                     onClick={handleHrApproveAll}
                     disabled={rows.every((row) =>
-                      ["rejected", "hold", "hr approval"].includes(
-                        row.current_status
+                      [
+                        "rejected",
+                        "hold",
+                        "hr approval",
+                        "final approval",
+                      ].includes(
+                        typeof row.current_status === "string"
+                          ? row.current_status
+                          : row.current_status?.status
                       )
                     )}
                   >
@@ -910,7 +1117,11 @@ const UpdateExpenseAccounts = () => {
                           "final approval",
                           "submitted",
                           "manager approval",
-                        ].includes(row.current_status)
+                        ].includes(
+                          typeof row.current_status === "string"
+                            ? row.current_status
+                            : row.current_status?.status
+                        )
                       )}
                     >
                       Reject All
@@ -926,7 +1137,11 @@ const UpdateExpenseAccounts = () => {
                           "final approval",
                           "submitted",
                           "manager approval",
-                        ].includes(row.current_status)
+                        ].includes(
+                          typeof row.current_status === "string"
+                            ? row.current_status
+                            : row.current_status?.status
+                        )
                       )}
                     >
                       Hold All
@@ -942,18 +1157,15 @@ const UpdateExpenseAccounts = () => {
                           "final approval",
                           "submitted",
                           "manager approval",
-                        ].includes(row.current_status)
+                        ].includes(
+                          typeof row.current_status === "string"
+                            ? row.current_status
+                            : row.current_status?.status
+                        )
                       )}
                     >
                       Approve All
                     </Button>
-                    {/* <Button
-                      onClick={() => handleExportCSVById(rows[0]?._id)}
-                      size="sm"
-                      variant="outlined"
-                    >
-                      Export CSV
-                    </Button> */}
 
                     <Stack direction="row" spacing={1}>
                       <Button
@@ -1314,7 +1526,9 @@ const UpdateExpenseAccounts = () => {
                     {(user?.role === "manager" ||
                       user?.department === "admin" ||
                       user?.name === "IT Team") &&
-                      item.item_current_status === "submitted" && (
+                      (typeof item.item_current_status === "string"
+                        ? item.item_current_status === "submitted"
+                        : item.item_current_status?.status === "submitted") && (
                         <Box
                           display="flex"
                           justifyContent="center"
@@ -1324,7 +1538,10 @@ const UpdateExpenseAccounts = () => {
                           <Button
                             size="sm"
                             variant={
-                              item.item_current_status === "manager approval"
+                              (typeof item.item_current_status === "string"
+                                ? item.item_current_status
+                                : item.item_current_status?.status) ===
+                              "manager approval"
                                 ? "solid"
                                 : "outlined"
                             }
@@ -1342,7 +1559,10 @@ const UpdateExpenseAccounts = () => {
                           <Button
                             size="sm"
                             variant={
-                              item.item_current_status === "rejected"
+                              (typeof item.item_current_status === "string"
+                                ? item.item_current_status
+                                : item.item_current_status?.status) ===
+                              "rejected"
                                 ? "solid"
                                 : "outlined"
                             }
@@ -1640,13 +1860,22 @@ const UpdateExpenseAccounts = () => {
 
                   rows.forEach((row) => {
                     row.items?.forEach((item) => {
-                      if (item.category === category) {
+                      const itemStatus =
+                        typeof item.item_current_status === "string"
+                          ? item.item_current_status
+                          : item.item_current_status?.status;
+
+                      if (
+                        item.category === category &&
+                        itemStatus !== "rejected"
+                      ) {
                         total += Number(item.invoice?.invoice_amount || 0);
 
                         if (
-                          item.item_current_status === "manager approval" ||
+                          itemStatus === "manager approval" ||
                           (item.approved_amount !== undefined &&
-                            item.approved_amount !== null)
+                            item.approved_amount !== null &&
+                            Number(item.approved_amount) > 0)
                         ) {
                           approvedTotal += Number(item.approved_amount || 0);
                         }
@@ -1720,12 +1949,20 @@ const UpdateExpenseAccounts = () => {
                     <Typography level="body-md" fontWeight="lg">
                       {rows
                         .flatMap((row) => row.items || [])
-                        .filter(
-                          (item) =>
-                            item.item_current_status === "manager approval" ||
-                            (item.approved_amount !== undefined &&
-                              item.approved_amount !== null)
-                        )
+                        .filter((item) => {
+                          const status =
+                            typeof item.item_current_status === "string"
+                              ? item.item_current_status
+                              : item.item_current_status?.status;
+
+                          return (
+                            status !== "rejected" &&
+                            (status === "manager approval" ||
+                              (item.approved_amount !== undefined &&
+                                item.approved_amount !== null &&
+                                Number(item.approved_amount) > 0))
+                          );
+                        })
                         .reduce(
                           (sum, item) =>
                             sum + Number(item.approved_amount || 0),
@@ -1750,21 +1987,25 @@ const UpdateExpenseAccounts = () => {
                 {(user?.role === "manager" ||
                   user?.department === "admin" ||
                   user?.name === "IT Team") &&
-                  rows[0]?.current_status === "submitted" && (
+                  (rows[0]?.current_status?.status ||
+                    rows[0]?.current_status) === "submitted" && (
                     <Button
                       variant="solid"
                       color="primary"
                       onClick={handleSubmit}
                       disabled={
                         isUpdating ||
-                        (rows[0]?.total_approved_amount === 0 &&
+                        (Number(rows[0]?.total_approved_amount || 0) === 0 &&
                           [
                             "manager approval",
                             "rejected",
                             "hr approval",
                             "final approval",
                             "hold",
-                          ].includes(rows[0]?.current_status))
+                          ].includes(
+                            rows[0]?.current_status?.status ||
+                              rows[0]?.current_status
+                          ))
                       }
                     >
                       Update Expense Sheet
@@ -1772,7 +2013,8 @@ const UpdateExpenseAccounts = () => {
                   )}
 
                 {user?.department === "Accounts" &&
-                  rows[0]?.current_status === "final approval" && (
+                  (rows[0]?.current_status?.status || rows[0]?.current_status) ===
+                    "final approval" && (
                     <Box
                       display="flex"
                       alignItems="center"
@@ -1805,6 +2047,7 @@ const UpdateExpenseAccounts = () => {
                           variant="solid"
                           color="success"
                           onClick={handleFinalApproval}
+                          // disabled={!!disbursementData?.disbursement_date}
                         >
                           Final Approval
                         </Button>

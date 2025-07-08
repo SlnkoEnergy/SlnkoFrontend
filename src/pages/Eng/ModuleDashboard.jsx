@@ -2,27 +2,27 @@ import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider, useColorScheme } from "@mui/joy/styles";
-import { React, useState } from "react";
+import React, { useState } from "react";
 import Breadcrumbs from "@mui/joy/Breadcrumbs";
 import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import { useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Header from "../../component/Partials/Header";
 import Sidebar from "../../component/Partials/Sidebar";
 import { useGetAllMaterialCategoryQuery } from "../../redux/Eng/masterSheet";
 import Material_Category_Tab from "../../component/Modules/Material_Category";
+import { IconButton } from "@mui/joy";
+import { ChevronLeftIcon } from "lucide-react";
 
 function ModuleSheet() {
   const navigate = useNavigate();
-  const [selectedModule, setSelectedModule] = useState("Module");
+  const [searchParams] = useSearchParams();
+const [selectedModule, setSelectedModule] = useState(() => searchParams.get("module") || "Module");
   const { data, isLoading } = useGetAllMaterialCategoryQuery();
   const categoryData = data?.data || [];
 
-  // Extract names for module options
   const moduleOptions = categoryData.map((category) => category.name);
-
   const selectedModuleData =
     categoryData.find((category) => category.name === selectedModule) || {};
 
@@ -50,6 +50,15 @@ function LeadPage({
   categoryData,
 }) {
   const { mode } = useColorScheme();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const handleClick = (item) => {
+    setSelectedModule(item);
+    searchParams.set("module", item);
+    setSearchParams(searchParams);
+  };
+  
+
 
   return (
     <Box sx={{ display: "flex", minHeight: "100dvh" }}>
@@ -74,6 +83,8 @@ function LeadPage({
           gap: 1,
         }}
       >
+
+        
         {/* Breadcrumb Navigation */}
         <Box
           sx={{
@@ -115,6 +126,7 @@ function LeadPage({
             marginLeft: { xl: "15%", lg: "18%" },
           }}
         >
+           
           <Typography level="h2" component="h1">
             Engineering
           </Typography>
@@ -145,7 +157,7 @@ function LeadPage({
                 );
                 if (selectedObj?._id) {
                   navigate(
-                    `/add_material?item=${selectedObj?.name}&_id=${selectedObj._id}`
+                    `/add_material?item=${selectedObj.name}&_id=${selectedObj._id}`
                   );
                 }
               }}
@@ -171,7 +183,6 @@ function LeadPage({
         >
           {moduleOptions.map((item, index) => (
             <Box
-              // component="li"
               key={index}
               sx={{
                 padding: "8px 15px",
@@ -184,8 +195,8 @@ function LeadPage({
                       ? "#007bff"
                       : "#86c3ff"
                     : selectedModule === item
-                      ? "#007bff"
-                      : "black",
+                    ? "#007bff"
+                    : "black",
                 borderRadius: "8px",
                 transition: "0.3s",
                 "&:hover": {
@@ -197,7 +208,7 @@ function LeadPage({
                   color: "white",
                 }),
               }}
-              onClick={() => setSelectedModule(item)}
+              onClick={() => handleClick(item)}
             >
               {item}
             </Box>

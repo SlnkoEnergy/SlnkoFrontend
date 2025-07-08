@@ -12,7 +12,7 @@ import {
   ModalDialog,
   Typography,
 } from "@mui/joy";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   useGetBoqProjectQuery,
   useUpdateBoqProjectMutation,
@@ -20,6 +20,7 @@ import {
   useCreateBoqProjectMutation,
   useLazyGetBoqCategoryByIdAndKeyQuery,
 } from "../../../redux/Eng/templatesSlice";
+import { toast } from "react-toastify";
 
 const AddBOQ = () => {
   const [searchParams] = useSearchParams();
@@ -33,6 +34,8 @@ const AddBOQ = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [openModal, setOpenModal] = useState(false);
   const [dataVersion, setDataVersion] = useState(0);
+  const page = searchParams.get("page");;
+  const navigate = useNavigate();
 
   const { data: projectRes, isLoading: isProjectLoading } =
     useGetBoqProjectQuery(
@@ -51,6 +54,8 @@ const AddBOQ = () => {
   const template_id = boqTemplates[0]?._id;
   const [updateBoqProject, { isLoading: isSubmitting }] =
     useUpdateBoqProjectMutation();
+  
+  
 
   const boqCategoryIdProject = boqTemplates[0]?.boq_category;
   const projectData = projectRes?.data || {};
@@ -66,6 +71,7 @@ const AddBOQ = () => {
 
   const boqName = projectData?.items?.[0]?.boqCategoryDetails?.name || " ";
   const boqCategoryId = projectData?.items?.[0]?.boqCategoryDetails?._id || " ";
+  const category = searchParams.get("category");
 
   const handleChange = (key) => (e) => {
     const value = e.target.value;
@@ -118,11 +124,12 @@ const AddBOQ = () => {
         module_template,
         data: formattedData,
       }).unwrap();
-      alert("BOQ updated successfully!");
+      toast.success("BOQ updated successfully!");
       setDataVersion((v) => v + 1);
+      navigate(`/overview?page=${page}&project_id=${projectId}&category=${category}`);
     } catch (error) {
       console.error("Update failed", error);
-      alert("Failed to update BOQ");
+      toast.error("Failed to update BOQ");
     }
   };
 

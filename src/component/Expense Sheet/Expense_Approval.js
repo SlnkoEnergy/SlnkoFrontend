@@ -1,11 +1,13 @@
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
+import InfoIcon from "@mui/icons-material/Info";
 import SearchIcon from "@mui/icons-material/Search";
 import {
   Chip,
   CircularProgress,
   Option,
   Select,
+  Tooltip,
   Typography,
   useTheme,
 } from "@mui/joy";
@@ -62,7 +64,8 @@ const ExpenseApproval = forwardRef(() => {
       ? {
           page: currentPage,
           department,
-          search: searchParam,
+          search: searchQuery,
+          status: selectedstatus,
           from,
           to,
         }
@@ -179,66 +182,64 @@ const ExpenseApproval = forwardRef(() => {
     [getExpense]
   );
 
-  const filteredAndSortedData = expenses
-    .filter((expense) => {
-      const matchedUser = getAllUser?.data?.find(
-        (u) => u.name === expense.emp_name
-      );
-      if (!matchedUser) return false;
+  const filteredAndSortedData = expenses.filter((expense) => {
+    const matchedUser = getAllUser?.data?.find(
+      (u) => u.name === expense.emp_name
+    );
+    if (!matchedUser) return false;
 
-      const allowedDepartments = [
-        "Accounts",
-        "Projects",
-        "Infra",
-        "BD",
-        "OPS",
-        "CAM",
-        "HR",
-        "SCM",
-        "Engineering",
-        "Internal",
-      ];
+    const allowedDepartments = [
+      "Accounts",
+      "Projects",
+      "Infra",
+      "BD",
+      "OPS",
+      "CAM",
+      "HR",
+      "SCM",
+      "Engineering",
+      "Internal",
+    ];
 
-      const isManager = user?.role === "manager" || user?.role === "visitor";
+    const isManager = user?.role === "manager" || user?.role === "visitor";
 
-      allowedDepartments.includes(user?.department);
+    allowedDepartments.includes(user?.department);
 
-      const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+    const isAdmin = user?.role === "admin" || user?.role === "superadmin";
 
-      if (
-        !isAdmin &&
-        !(isManager && matchedUser.department === user?.department)
-      ) {
-        return false;
-      }
+    if (
+      !isAdmin &&
+      !(isManager && matchedUser.department === user?.department)
+    ) {
+      return false;
+    }
 
-      const allowedStatuses = [
-        "submitted",
-        "manager approval",
-        "hr approval",
-        "final approval",
-        "hold",
-        "rejected",
-      ];
-      const status =
+    const allowedStatuses = [
+      "submitted",
+      "manager approval",
+      "hr approval",
+      "final approval",
+      "hold",
+      "rejected",
+    ];
+    const status =
       typeof expense.current_status === "string"
         ? expense.current_status
         : expense.current_status?.status || "";
     if (!allowedStatuses.includes(status)) return false;
 
-      if (!allowedStatuses.includes(status)) return false;
+    if (!allowedStatuses.includes(status)) return false;
 
-      const search = searchQuery.toLowerCase();
-      const matchesSearchQuery = [
-        "expense_code",
-        "emp_id",
-        "emp_name",
-        "status",
-      ].some((key) => expense[key]?.toLowerCase().includes(search));
+    const search = searchQuery.toLowerCase();
+    const matchesSearchQuery = [
+      "expense_code",
+      "emp_id",
+      "emp_name",
+      "status",
+    ].some((key) => expense[key]?.toLowerCase().includes(search));
 
-      return matchesSearchQuery;
-    })
-    
+    return matchesSearchQuery;
+  });
 
   const total = getExpense?.total || 0;
   const limit = getExpense?.limit || 10;
@@ -568,8 +569,6 @@ const ExpenseApproval = forwardRef(() => {
                           ? expense.current_status
                           : expense.current_status?.status;
 
-                      
-
                       if (status === "submitted") {
                         return (
                           <Chip color="warning" variant="soft" size="sm">
@@ -601,10 +600,26 @@ const ExpenseApproval = forwardRef(() => {
                           </Chip>
                         );
                       } else if (status === "rejected") {
+                        const remarks = expense.current_status?.remarks?.trim();
+
                         return (
-                          <Chip color="danger" variant="soft" size="sm">
-                            Rejected
-                          </Chip>
+                          <Box
+                            display="inline-flex"
+                            alignItems="center"
+                            gap={1}
+                          >
+                            <Chip variant="soft" color="danger" size="sm">
+                              Rejected
+                            </Chip>
+                            <Tooltip
+                              title={remarks || "Remarks not found"}
+                              arrow
+                            >
+                              <IconButton size="sm" color="danger">
+                                <InfoIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
                         );
                       } else {
                         return (
