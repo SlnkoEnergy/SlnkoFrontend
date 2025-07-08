@@ -9,7 +9,7 @@ COPY .env.dev .env.dev
 COPY .env.stag .env.stag
 
 # Pick correct .env file based on branch
-RUN if [ "$BRANCH" = "prod" ]; then \
+RUN if [ "$BRANCH" = "production" ]; then \
       cp .env.prod .env; \
     elif [ "$BRANCH" = "staging" ]; then \
       cp .env.stag .env; \
