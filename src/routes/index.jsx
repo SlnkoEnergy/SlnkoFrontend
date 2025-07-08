@@ -378,20 +378,20 @@ function index() {
         }
       />
       <Route
-      path="/add_material_category"
-      element={
-        <PrivateRoute>
-          <Add_Material_Category />
-        </PrivateRoute>
-      }
+        path="/add_material_category"
+        element={
+          <PrivateRoute>
+            <Add_Material_Category />
+          </PrivateRoute>
+        }
       />
       <Route
-      path="/add_material"
-      element={
-        <PrivateRoute>
-          <Add_Material />
-        </PrivateRoute>
-      }
+        path="/add_material"
+        element={
+          <PrivateRoute>
+            <Add_Material />
+          </PrivateRoute>
+        }
       />
       <Route
         path="/add_folder"
@@ -420,7 +420,7 @@ function index() {
         }
       />
 
-<Route
+      <Route
         path="/overview"
         element={
           <PrivateRoute>

@@ -68,9 +68,6 @@ const PurchaseReqDetail = () => {
     }
   };
 
-  const [remarks, setRemarks] = useState("");
-  const [openOutModal, setOpenOutModal] = useState(false);
-  const [openDeliveryDoneModal, setOpenDeliveryDoneModal] = useState(false);
 
   // ✅ Use correct status from item.status
   const itemStatus = getPurchaseRequest?.item?.status;
@@ -246,6 +243,7 @@ const PurchaseReqDetail = () => {
       <PurchaseOrderSummary
         project_code={getPurchaseRequest?.purchase_request?.project?.code}
         pr_id={getPurchaseRequest?.purchase_request?._id?.toString()}
+        item_id={getPurchaseRequest?.item?.item_id?._id?.toString()}
       />
 
       {/* Add PO Modal */}

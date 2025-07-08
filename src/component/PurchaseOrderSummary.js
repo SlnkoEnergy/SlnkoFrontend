@@ -51,7 +51,7 @@ import { toast } from "react-toastify";
 
 
 const PurchaseOrderSummary = forwardRef((props, ref) => {
-  const { project_code, pr_id } = props;
+  const { project_code, pr_id, item_id } = props;
   const navigate = useNavigate();
   const [po, setPO] = useState("");
   const [selectedpo, setSelectedpo] = useState("");
@@ -86,6 +86,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     type: selectedtype,
     project_id: isFromCAM || isFromPR ? project_code : "",
     pr_id: isFromPR && pr_id ? pr_id.toString() : "",
+    item_id: isFromPR && item_id ? item_id.toString() : "",
   });
 
   const handleOpen = (po_number, action) => {
@@ -948,7 +949,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       <RowMenu
                         currentPage={currentPage}
                         po_number={po.po_number}
-                      
                         current_status={po.current_status}
                       />
                     </Box>

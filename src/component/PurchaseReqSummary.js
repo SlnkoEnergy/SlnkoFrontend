@@ -26,7 +26,7 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { Calendar } from "lucide-react";
+import { Calendar, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -84,9 +84,7 @@ function PurchaseReqSummary() {
     setSearchParams({ page: 1, search: query });
   };
 
-  const allItemIds = purchaseRequests.flatMap((row) =>
-    row.items.map((item) => item._id)
-  );
+  const allItemIds = purchaseRequests?.data?.item;
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -212,7 +210,7 @@ function PurchaseReqSummary() {
     );
   };
 
-  const RenderPRNo = ({ pr_no, createdAt, project_id, item_id, pr_id }) => {
+  const RenderPRNo = ({ pr_no, createdAt, createdBy, project_id, item_id, pr_id }) => {
     const formattedDate = createdAt
       ? new Date(createdAt).toLocaleDateString("en-IN", {
           day: "2-digit",
@@ -243,6 +241,17 @@ function PurchaseReqSummary() {
           &nbsp;
           <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
             {formattedDate}
+          </Typography>
+        </Box>
+        <Box display="flex" alignItems="center">
+          <User size={12} />
+          &nbsp;
+          <span style={{ fontSize: 12, fontWeight: 600 }}>
+            Created By:{" "}
+          </span>{" "}
+          &nbsp;
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+            {createdBy}
           </Typography>
         </Box>
       </>
@@ -460,7 +469,6 @@ function PurchaseReqSummary() {
                 "Project Code",
                 "Item Name",
                 "Status",
-                "Delay",
                 "PO Number",
                 "PO Value",
               ].map((header, index) => (
@@ -489,9 +497,11 @@ function PurchaseReqSummary() {
                 </td>
               </tr>
             ) : purchaseRequests.length > 0 ? (
-              purchaseRequests.flatMap((row) =>
-                row.items.map((item) => (
-                  <tr key={item._id}>
+              purchaseRequests.map((row) => {
+                const item = row.item;
+
+                return (
+                  <tr key={item?._id}>
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
@@ -519,6 +529,7 @@ function PurchaseReqSummary() {
                         project_id={row.project_id._id}
                         item_id={item.item_id?._id}
                         pr_id={row._id}
+                        createdBy={row?.created_by?.name}
                       />
                     </td>
 
@@ -547,7 +558,7 @@ function PurchaseReqSummary() {
                         textAlign: "left",
                       }}
                     >
-                      {item.item_id?.name || "-"}
+                      {item?.item_id?.name || "-"}
                     </td>
 
                     <td
@@ -556,25 +567,13 @@ function PurchaseReqSummary() {
                         textAlign: "left",
                       }}
                     >
-                      {row.items?.every(
-                        (itm) => !itm.status || itm.status.length === 0
-                      ) ? (
-                        <Typography fontWeight="md" level="body-sm">
-                          N/A
-                        </Typography>
-                      ) : (
-                        [
-                          ...new Set(
-                            row.items?.flatMap((itm) => itm.status || [])
-                          ),
-                        ].map((st, i) => (
-                          <Typography key={i} fontWeight="md" level="body-sm">
-                            {st
+                      <Chip variant="soft" color="neutral">
+                        {row.item?.status
+                          ? row.item.status
                               .replace(/_/g, " ")
-                              .replace(/\b\w/g, (l) => l.toUpperCase())}
-                          </Typography>
-                        ))
-                      )}
+                              .replace(/\b\w/g, (c) => c.toUpperCase())
+                          : "-"}
+                      </Chip>
                     </td>
 
                     <td
@@ -583,16 +582,7 @@ function PurchaseReqSummary() {
                         textAlign: "left",
                       }}
                     >
-                      {renderDelayChip(row.delay || "0 days")}
-                    </td>
-
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      {row.total_po_count && row.po_numbers?.length > 0 ? (
+                      {row.po_numbers?.length > 0 ? (
                         <Tooltip
                           arrow
                           placement="top"
@@ -657,6 +647,7 @@ function PurchaseReqSummary() {
                         "-"
                       )}
                     </td>
+
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
@@ -666,8 +657,8 @@ function PurchaseReqSummary() {
                       {row.po_value || "-"}
                     </td>
                   </tr>
-                ))
-              )
+                );
+              })
             ) : (
               <tr>
                 <td
@@ -743,23 +734,6 @@ function PurchaseReqSummary() {
           Next
         </Button>
       </Box>
-
-      {/* <Modal open={open} onClose={handleClose}>
-        <ModalDialog>
-          <ModalClose />
-          <Typography level="h5">Add Remarks</Typography>
-          <Textarea
-            minRows={3}
-            placeholder="Enter Rejection Remarks"
-            value={remarks}
-            onChange={(e) => setRemarks(e.target.value)}
-            sx={{ mt: 2 }}
-          />
-          <Button sx={{ mt: 2 }} onClick={handleApprove} color="danger">
-            Submit
-          </Button>
-        </ModalDialog>
-      </Modal> */}
     </>
   );
 }
