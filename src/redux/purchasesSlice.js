@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: `${process.env.REACT_APP_API_URL}/`,
+  baseUrl: `${process.env.REACT_APP_API_URL}`,
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("authToken");
     // console.log("Token:", token);
@@ -19,19 +19,42 @@ export const purchasesApi = createApi({
     getPurchases: builder.query({
       query: () => "get-all-pO-IT",
       providesTags: ["Purchase"],
-      // transformResponse: (response) => response.data || [],
     }),
+    getPaginatedPOs: builder.query({
+      query: ({ page = 1, search = "", status, pageSize = 10, type, project_id, pr_id, item_id }) =>
+        `get-paginated-po?page=${page}&search=${search}&status=${status}&pageSize=${pageSize}&type=${type}&project_id=${project_id}&pr_id=${pr_id}&item_id=${item_id}`,
+      transformResponse: (response) => ({
+        data: response.data || [],
+        total: response.meta?.total || 0,
+        count: response.meta?.count || 0,
+      }),
+      providesTags: ["Purchase"],
+    }),
+
     getItems: builder.query({
       query: () => "get-iteM-IT",
       providesTags: ["Purchase"],
     }),
-    // deleteProject: builder.mutation({
-    //   query: (_id) => ({
-    //     url: `delete-by-id-IT/${_id}`,
-    //     method: "DELETE",
-    //   }),
-    //   invalidatesTags: ["Project"],
-    // }),
+
+    exportPos: builder.mutation({
+      query: ({ from, to, exportAll }) => {
+        const params = new URLSearchParams();
+
+        if (exportAll) {
+          params.set("export", "all");
+        } else {
+          params.set("from", from);
+          params.set("to", to);
+        }
+
+        return {
+          url: `get-export-po?${params}`,
+          method: "GET",
+          responseHandler: (response) => response.blob(),
+        };
+      },
+    }),
+
     addPurchases: builder.mutation({
       query: (newPurchase) => ({
         url: "/Add-purchase-ordeR-IT",
@@ -48,13 +71,40 @@ export const purchasesApi = createApi({
       }),
       invalidatesTags: ["Purchase"],
     }),
+
+   updateEtdOrDeliveryDate: builder.mutation({
+  query: ({ po_number, etd, delivery_date }) => ({
+    url: `/${encodeURIComponent(po_number)}/updateEtdOrDelivery`,
+    method: "PUT",
+    body: { etd, delivery_date },
+  }),
+  invalidatesTags: ["Purchase"],
+}),
+
+   updatePurchasesStatus: builder.mutation({
+  query: ({ id, status, remarks }) => ({
+    url: `/updateStatusPO`,
+    method: "PUT",
+    body: {
+      id,
+      status,
+      remarks,
+    },
+  }),
+  invalidatesTags: ["Purchase"],
+}),
+
+
   }),
 });
 
 export const {
   useGetPurchasesQuery,
   useGetItemsQuery,
-  //   useDeleteProjectMutation,
+  useGetPaginatedPOsQuery,
+  useExportPosMutation,
   useAddPurchasesMutation,
   useUpdatePurchasesMutation,
+   useUpdateEtdOrDeliveryDateMutation,
+  useUpdatePurchasesStatusMutation
 } = purchasesApi;

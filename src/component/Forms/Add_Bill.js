@@ -1,11 +1,11 @@
 import { Autocomplete, Box, Button, Grid, Input, Typography } from "@mui/joy";
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import Img10 from "../../assets/pay-request.png";
 import Axios from "../../utils/Axios";
 
-const AddBillForm = () => {
+const AddBillForm = ({po_number}) => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
@@ -54,13 +54,17 @@ const AddBillForm = () => {
     return `${year}-${month}-${day}`;
   };
 
+      const [searchParams] = useSearchParams();
+    
+      const po_Number = po_number || searchParams.get("po_number");
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
 
-        const po = localStorage.getItem("po_no");
-        const po_Number = po ? String(po) : null;
+        // const po = localStorage.getItem("po_no");
+        // const po_Number = po ? String(po) : null;
         // console.log("PO from localStorage:", po_Number);
         const token = localStorage.getItem("authToken");
         const response = await Axios.get("/get-all-pO-IT", {
@@ -96,7 +100,7 @@ const AddBillForm = () => {
     };
 
     fetchData();
-  }, []);
+  }, [po_Number]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -145,8 +149,7 @@ const AddBillForm = () => {
       });
 
       toast.success("Bill added successfully!");
-      localStorage.removeItem("po_no");
-      navigate("/purchase-order");
+      window.location.reload(setTimeout(3000));
     } catch (error) {
       console.error("Error posting data:", error);
       toast.error("An error occurred while adding the bill.");
@@ -154,18 +157,7 @@ const AddBillForm = () => {
   };
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-
-        width: "100%",
-        minHeight: "100vh",
-        backgroundColor: "background.level1",
-        padding: "20px",
-      }}
-    >
+   
       <Box
         sx={{
           maxWidth: 900,
@@ -355,23 +347,11 @@ const AddBillForm = () => {
               >
                 Submit
               </Button>
-              <Button
-                variant="soft"
-                color="neutral"
-                onClick={() => navigate("/purchase-order")}
-                sx={{
-                  padding: "10px 30px",
-                  borderRadius: "8px",
-                  ":hover": { backgroundColor: "#e0e0e0" },
-                }}
-              >
-                Back
-              </Button>
             </Grid>
           </Grid>
         </form>
       </Box>
-    </Box>
+   
   );
 };
 

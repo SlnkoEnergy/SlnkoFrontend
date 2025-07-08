@@ -281,9 +281,7 @@ console.log("HandOverSheet Data:", HandOverSheet);
           marginLeft: { xl: "15%", lg: "18%" },
           borderRadius: "sm",
           py: 2,
-          // display: { xs: "none", sm: "flex" },
           display: "flex",
-          // flexDirection:{xs: "none", sm: "flex"}
           flexWrap: "wrap",
           gap: 1.5,
           "& > *": {
@@ -301,7 +299,6 @@ console.log("HandOverSheet Data:", HandOverSheet);
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {/* {renderFilters()} */}
       </Box>
       {/* Table */}
       <Sheet

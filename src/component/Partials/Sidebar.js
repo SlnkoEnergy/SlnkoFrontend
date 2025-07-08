@@ -360,10 +360,17 @@ function Sidebar() {
                   </ListItemButton>
                 )}
               >
-                <List>
+                <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
                     <ListItemButton onClick={() => navigate("/cam_dash")}>
                       Dashboard
+                    </ListItemButton>
+                  </ListItem>
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/purchase_request")}
+                    >
+                      Purchase Request
                     </ListItemButton>
                   </ListItem>
                 </List>
