@@ -7,13 +7,10 @@ import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import Sidebar from "../../component/Partials/Sidebar";
-import { useNavigate } from "react-router-dom";
-import HandoverApproval from "../../component/HandOver_Approval";
 import Header from "../../component/Partials/Header";
 import Project_Detail from "../../component/ProjectDetails";
 
 function ProjectDetail() {
-  const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
   useEffect(() => {
