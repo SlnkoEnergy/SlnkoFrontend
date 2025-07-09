@@ -45,7 +45,7 @@ const ExpenseApproval = forwardRef(() => {
 
   const searchParam = selectedstatus ? selectedstatus : searchQuery;
 
-  // 1. Get user data from localStorage
+
   useEffect(() => {
     const userDataString = localStorage.getItem("userDetails");
     if (userDataString) {
@@ -55,38 +55,27 @@ const ExpenseApproval = forwardRef(() => {
     }
   }, []);
 
-  const {
-    data: getExpense = [],
-    isLoading,
-    error,
-  } = useGetAllExpenseQuery(
-    department
-      ? {
-          page: currentPage,
-          department,
-          search: searchQuery,
-          status: selectedstatus,
-          from,
-          to,
-        }
-      : skipToken
-  );
+const {
+  data: getExpense = [],
+  isLoading,
+  error,
+} = useGetAllExpenseQuery(
+  department
+    ? {
+        page: currentPage,
+        department: department === "admin" ? "" : department,
+        search: searchQuery,
+        status: selectedstatus,
+        from,
+        to,
+      }
+    : skipToken
+);
 
   const renderFilters = () => {
-    const departments = [
-      "Accounts",
-      "HR",
-      "Engineering",
-      "Projects",
-      "Infra",
-      "CAM",
-      "Internal",
-      "SCM",
-      "IT Team",
-    ];
+   
 
     const statuses = [
-      // { value: "draft", label: "Draft" },
       { value: "submitted", label: "Pending" },
       { value: "manager approval", label: "Manager Approved" },
       { value: "hr approval", label: "HR Approved" },
@@ -152,7 +141,6 @@ const ExpenseApproval = forwardRef(() => {
     );
   };
 
-  // console.log("department:", department);
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -181,65 +169,6 @@ const ExpenseApproval = forwardRef(() => {
     () => (Array.isArray(getExpense?.data) ? getExpense.data : []),
     [getExpense]
   );
-
-  const filteredAndSortedData = expenses.filter((expense) => {
-    const matchedUser = getAllUser?.data?.find(
-      (u) => u.name === expense.emp_name
-    );
-    if (!matchedUser) return false;
-
-    const allowedDepartments = [
-      "Accounts",
-      "Projects",
-      "Infra",
-      "BD",
-      "OPS",
-      "CAM",
-      "HR",
-      "SCM",
-      "Engineering",
-      "Internal",
-    ];
-
-    const isManager = user?.role === "manager" || user?.role === "visitor";
-
-    allowedDepartments.includes(user?.department);
-
-    const isAdmin = user?.role === "admin" || user?.role === "superadmin";
-
-    if (
-      !isAdmin &&
-      !(isManager && matchedUser.department === user?.department)
-    ) {
-      return false;
-    }
-
-    const allowedStatuses = [
-      "submitted",
-      "manager approval",
-      "hr approval",
-      "final approval",
-      "hold",
-      "rejected",
-    ];
-    const status =
-      typeof expense.current_status === "string"
-        ? expense.current_status
-        : expense.current_status?.status || "";
-    if (!allowedStatuses.includes(status)) return false;
-
-    if (!allowedStatuses.includes(status)) return false;
-
-    const search = searchQuery.toLowerCase();
-    const matchesSearchQuery = [
-      "expense_code",
-      "emp_id",
-      "emp_name",
-      "status",
-    ].some((key) => expense[key]?.toLowerCase().includes(search));
-
-    return matchesSearchQuery;
-  });
 
   const total = getExpense?.total || 0;
   const limit = getExpense?.limit || 10;
@@ -309,7 +238,7 @@ const ExpenseApproval = forwardRef(() => {
     setCurrentPage(page);
   }, [searchParams]);
 
-  const paginatedExpenses = filteredAndSortedData;
+  const paginatedExpenses = expenses;
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
