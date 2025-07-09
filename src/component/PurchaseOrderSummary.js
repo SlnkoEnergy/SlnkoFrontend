@@ -51,6 +51,7 @@ import {
   CalendarSearch,
   CirclePlus,
   FileCheck,
+  Handshake,
   History,
   Store,
 } from "lucide-react";
@@ -1255,7 +1256,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                             cursor: "pointer",
                           }}
                         >
-                          {po?.current_status?.status.replace(/_/g, " ")}
+                         <Handshake size={18}  /> {po?.current_status?.status.replace(/_/g, " ")}
                         </Typography>
                       </Tooltip>
 
