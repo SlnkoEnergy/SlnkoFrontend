@@ -65,7 +65,6 @@ import { toast } from "react-toastify";
 
 const PurchaseOrderSummary = forwardRef((props, ref) => {
   const { project_code, pr_id, item_id } = props;
-  const navigate = useNavigate();
   const [po, setPO] = useState("");
   const [selectedpo, setSelectedpo] = useState("");
   const [selectedtype, setSelectedtype] = useState("");
@@ -78,9 +77,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [openFilter, setOpenFilter] = useState(false);
-  const [showETD, setShowETD] = useState(false);
-  const [showPODate, setShowPODate] = useState(false);
-  const [showDelivery, setShowDelivery] = useState(false);
   const [etdFrom, setEtdFrom] = useState("");
   const [etdTo, setEtdTo] = useState("");
   const [poFrom, setPoFrom] = useState("");
@@ -88,7 +84,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const [deliveryFrom, setDeliveryFrom] = useState("");
   const [deliveryTo, setDeliveryTo] = useState("");
   const [activeDateFilter, setActiveDateFilter] = useState("");
-
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
   const [currentPage, setCurrentPage] = useState(initialPage);
@@ -96,6 +91,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const [nextStatus, setNextStatus] = useState("");
   const [remarks, setRemarks] = useState("");
   const [perPage, setPerPage] = useState(initialPageSize);
+  
   const location = useLocation();
   const isFromCAM = location.pathname === "/project_detail";
   const isFromPR = location.pathname === "/purchase_detail";
@@ -290,7 +286,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   //   );
   // };
 
-
   const handleDateFilterSelect = (type) => {
     setActiveDateFilter(type);
     setOpenFilter(false);
@@ -307,39 +302,38 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           gap: 1.5,
         }}
       >
-
         <FormControl sx={{ flex: 1 }} size="sm">
           <FormLabel>PO Status</FormLabel>
           <Select
-           value={selectedpo}
+            value={selectedpo}
             onChange={(e, newValue) => {
               setSelectedpo(newValue);
-             setCurrentPage(1);
+              setCurrentPage(1);
             }}
-          size="sm"
-          placeholder="Select Status"
-  >
-         <Option value="">All status</Option>
+            size="sm"
+            placeholder="Select Status"
+          >
+            <Option value="">All status</Option>
             {po_status.map((status) => (
-               <Option key={status} value={status}>
+              <Option key={status} value={status}>
                 {status}
               </Option>
             ))}
-           </Select>
+          </Select>
         </FormControl>
 
         <Box mt={3} sx={{ display: "flex", gap: 1 }}>
-           <Button
-             variant="soft"
-             size="sm"
-             color="neutral"
-             onClick={() => handleExport(true)}
-             loading={isExporting}
-             startDecorator={<DownloadIcon />}
-           >
-             Export All
-           </Button>
-          </Box>
+          <Button
+            variant="soft"
+            size="sm"
+            color="neutral"
+            onClick={() => handleExport(true)}
+            loading={isExporting}
+            startDecorator={<DownloadIcon />}
+          >
+            Export All
+          </Button>
+        </Box>
 
         <Dropdown open={openFilter} onOpenChange={setOpenFilter}>
           <MenuButton
@@ -347,8 +341,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             slotProps={{
               root: { variant: "soft", size: "sm", color: "neutral" },
             }}
-            
-            sx={{mt:3}}
+            sx={{ mt: 3 }}
           >
             <CalendarSearch />
           </MenuButton>
@@ -356,17 +349,18 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             <MenuItem onClick={() => handleDateFilterSelect("etd")}>
               ETD Date
             </MenuItem>
-           
+            <MenuItem onClick={() => handleDateFilterSelect("rtd")}>
+              RTD Date
+            </MenuItem>
             <MenuItem onClick={() => handleDateFilterSelect("delivery")}>
               Delivery Date
-            </MenuItem> 
+            </MenuItem>
             {/* <MenuItem onClick={() => handleDateFilterSelect("po")}>
               PO Date
             </MenuItem> */}
           </Menu>
         </Dropdown>
 
-        
         {activeDateFilter && (
           <Sheet
             variant="outlined"
@@ -435,20 +429,22 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             </Box>
           </Sheet>
         )}
-
-         
       </Box>
     );
   };
 
   const [updateStatus] = useUpdatePurchasesStatusMutation();
   const [selectedStatus, setSelectedStatus] = useState("");
-  const handleStatusChange = async (current_status) => {
+  const handleStatusChange = async () => {
     try {
+      const nextStatusMap = {
+        ready_to_dispatch: "out_for_delivery",
+        out_for_delivery: "delivered",
+        delivered: "ready_to_dispatch",
+      };
+
       const updatedStatus =
-        selectedStatus === "out_for_delivery"
-          ? "delivered"
-          : "out_for_delivery";
+        nextStatusMap[selectedStatus] ?? "ready_to_dispatch";
 
       await updateStatus({
         id: po,
@@ -458,6 +454,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
       toast.success("Status Updated Successfully");
       setRemarks("");
+
       setTimeout(() => {
         window.location.reload();
       }, 1000);
@@ -514,10 +511,12 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             ) : (
               <MenuItem
                 onClick={() => {
-                  if (current_status?.status === "out_for_delivery") {
+                  if (current_status?.status === "ready_to_dispatch") {
+                    setNextStatus("out_for_delivery");
+                  } else if (current_status?.status === "out_for_delivery") {
                     setNextStatus("delivered");
                   } else {
-                    setNextStatus("out_for_delivery");
+                    setNextStatus("ready_to_dispatch");
                   }
                   setOpenModal(true);
                   setPO(po_number);
@@ -668,11 +667,13 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
   const RenderStatusDates = ({
     etd,
+    rtd,
     delivery_date,
     current_status,
     po_number,
   }) => {
     const [etdDate, setEtdDate] = useState(etd || "");
+    const [rtdDate, setRtdDate] = useState(rtd || "");
     const [deliveryDate, setDeliveryDate] = useState(delivery_date || "");
     const [updateEtdOrDeliveryDate] = useUpdateEtdOrDeliveryDateMutation();
     const [confirmType, setConfirmType] = useState("");
@@ -732,6 +733,21 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                 border: "1px solid lightgray",
               }}
             />
+          )}
+        </Box>
+
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <Calendar size={12} />
+          <span style={{ fontSize: 12, fontWeight: 600 }}>RTD  Date : </span>
+          &nbsp;
+          {rtdDate ? (
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {formatDate(rtdDate)}
+            </Typography>
+          ) : (
+            <Typography sx={{fontSize:12, fontWeight:400}}>
+             ⚠️ RTD Not Found
+            </Typography>
           )}
         </Box>
 
@@ -1025,16 +1041,17 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
               paginatedPo.map((po, index) => {
                 let etd = null;
                 let delay = 0;
+                
                 const now = new Date();
-                const deliveredDate = po.delivery_date
-                  ? new Date(po.delivery_date)
+                const dispatch_date = po.dispatch_date
+                  ? new Date(po.dispatch_date)
                   : null;
 
                 if (po.etd) {
                   etd = new Date(po.etd);
 
-                  if (deliveredDate) {
-                    const timeDiff = deliveredDate - etd;
+                  if (dispatch_date) {
+                    const timeDiff = dispatch_date - etd;
                     delay = Math.max(
                       0,
                       Math.floor(timeDiff / (1000 * 60 * 60 * 24))
@@ -1116,10 +1133,11 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       }}
                     >
                       <RenderPONumber
-                        po_number={po.po_number}
-                        date={po.date}
-                        etd={po.etd}
-                        delivery_date={po.delivery_date}
+                        po_number={po?.po_number}
+                        date={po?.date}
+                        etd={po?.etd}
+                        rtd={po?.dispatch_date}
+                        delivery_date={po?.delivery_date}
                         current_status={po?.current_status?.status}
                       />
                     </Box>
@@ -1249,10 +1267,10 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
                       {/* Render PO Number Info Below the Status */}
                       <RenderStatusDates
-                        etd={po.etd}
-                        delivery_date={po.delivery_date}
+                        etd={po?.etd}
+                        delivery_date={po?.delivery_date}
                         current_status={po?.current_status?.status}
-                        po_number={po.po_number}
+                        po_number={po?.po_number}
                       />
                     </Box>
 
@@ -1303,7 +1321,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         borderBottom: "1px solid",
                       }}
                     >
-                      {po?.current_status?.status !== "delivered" && (
+                      {po?.current_status?.status !== "delivered" && po?.etd !== null && (
                         <RowMenu
                           currentPage={currentPage}
                           po_number={po.po_number}
