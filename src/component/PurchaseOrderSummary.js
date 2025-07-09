@@ -349,15 +349,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             <MenuItem onClick={() => handleDateFilterSelect("etd")}>
               ETD Date
             </MenuItem>
-            <MenuItem onClick={() => handleDateFilterSelect("rtd")}>
-              RTD Date
-            </MenuItem>
             <MenuItem onClick={() => handleDateFilterSelect("delivery")}>
               Delivery Date
             </MenuItem>
-            {/* <MenuItem onClick={() => handleDateFilterSelect("po")}>
-              PO Date
-            </MenuItem> */}
           </Menu>
         </Dropdown>
 
@@ -1267,6 +1261,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
                       {/* Render PO Number Info Below the Status */}
                       <RenderStatusDates
+                        rtd={po?.dispatch_date}
                         etd={po?.etd}
                         delivery_date={po?.delivery_date}
                         current_status={po?.current_status?.status}
