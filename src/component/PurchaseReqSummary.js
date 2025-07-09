@@ -10,11 +10,9 @@ import {
   Avatar,
   Chip,
   CircularProgress,
-  Modal,
   Option,
   Select,
   Snackbar,
-  Textarea,
   Tooltip,
 } from "@mui/joy";
 import Box from "@mui/joy/Box";
@@ -26,7 +24,7 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { Calendar, User } from "lucide-react";
+import { Calendar, Handshake, PackageCheck, Truck, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -51,11 +49,11 @@ function PurchaseReqSummary() {
   const itemSearch = searchParams.get("itemSearch") || "";
   const poValueSearch = searchParams.get("poValueSearch") || "";
   const statusSearch = searchParams.get("statusSearch") || "";
-const [createdDateRange, setCreatedDateRange] = useState([null, null]); // [from, to]
-const [etdDateRange, setEtdDateRange] = useState([null, null]); // [from, to]
-const formatDate = (date) => {
-  return date ? new Date(date).toISOString().split("T")[0] : "";
-};
+  const [createdDateRange, setCreatedDateRange] = useState([null, null]); // [from, to]
+  const [etdDateRange, setEtdDateRange] = useState([null, null]); // [from, to]
+  const formatDate = (date) => {
+    return date ? new Date(date).toISOString().split("T")[0] : "";
+  };
 
   const navigate = useNavigate();
 
@@ -66,9 +64,9 @@ const formatDate = (date) => {
     poValueSearch,
     statusSearch,
     etdFrom: etdDateRange[0] || "",
-  etdTo: etdDateRange[1] || "",
-  createdFrom: createdDateRange[0] || "",
-  createdTo: createdDateRange[1] || "",
+    etdTo: etdDateRange[1] || "",
+    createdFrom: createdDateRange[0] || "",
+    createdTo: createdDateRange[1] || "",
   });
 
   useEffect(() => {
@@ -139,15 +137,6 @@ const formatDate = (date) => {
     return pages;
   };
 
-  const renderDelayChip = (delay) => {
-    const isDelayed = delay !== "0 days";
-    return (
-      <Chip size="sm" color={isDelayed ? "danger" : "success"} variant="solid">
-        {delay}
-      </Chip>
-    );
-  };
-
   const { data: materialCategories, isLoading: isMaterialLoading } =
     useGetMaterialCategoryQuery();
 
@@ -216,98 +205,104 @@ const formatDate = (date) => {
           </Select>
         </FormControl>
         <FormControl sx={{ flex: 1 }} size="sm">
-  <FormLabel>Created At</FormLabel>
-  <Box sx={{ display: "flex", gap: 1 }}>
-    <Input
-      type="date"
-      size="sm"
-      value={createdDateRange[0] || ""}
-      onChange={(e) => {
-        const from = e.target.value;
-        const to = createdDateRange[1];
-        setCreatedDateRange([from, to]);
-        setSearchParams({
-          page: 1,
-          search: searchQuery,
-          itemSearch: selecteditem,
-          statusSearch: selectedstatus,
-          poValueSearch: selectedpovalue,
-          createdFrom: from,
-          createdTo: to,
-        });
-      }}
-    />
-    <Input
-      type="date"
-      size="sm"
-      value={createdDateRange[1] || ""}
-      onChange={(e) => {
-        const from = createdDateRange[0];
-        const to = e.target.value;
-        setCreatedDateRange([from, to]);
-        setSearchParams({
-          page: 1,
-          search: searchQuery,
-          itemSearch: selecteditem,
-          statusSearch: selectedstatus,
-          poValueSearch: selectedpovalue,
-          createdFrom: from,
-          createdTo: to,
-        });
-      }}
-    />
-  </Box>
-</FormControl>
+          <FormLabel>Created At</FormLabel>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Input
+              type="date"
+              size="sm"
+              value={createdDateRange[0] || ""}
+              onChange={(e) => {
+                const from = e.target.value;
+                const to = createdDateRange[1];
+                setCreatedDateRange([from, to]);
+                setSearchParams({
+                  page: 1,
+                  search: searchQuery,
+                  itemSearch: selecteditem,
+                  statusSearch: selectedstatus,
+                  poValueSearch: selectedpovalue,
+                  createdFrom: from,
+                  createdTo: to,
+                });
+              }}
+            />
+            <Input
+              type="date"
+              size="sm"
+              value={createdDateRange[1] || ""}
+              onChange={(e) => {
+                const from = createdDateRange[0];
+                const to = e.target.value;
+                setCreatedDateRange([from, to]);
+                setSearchParams({
+                  page: 1,
+                  search: searchQuery,
+                  itemSearch: selecteditem,
+                  statusSearch: selectedstatus,
+                  poValueSearch: selectedpovalue,
+                  createdFrom: from,
+                  createdTo: to,
+                });
+              }}
+            />
+          </Box>
+        </FormControl>
 
-<FormControl sx={{ flex: 1 }} size="sm">
-  <FormLabel>ETD Date</FormLabel>
-  <Box sx={{ display: "flex", gap: 1 }}>
-    <Input
-      type="date"
-      size="sm"
-      value={etdDateRange[0] || ""}
-      onChange={(e) => {
-        const from = e.target.value;
-        const to = etdDateRange[1];
-        setEtdDateRange([from, to]);
-        setSearchParams({
-          page: 1,
-          search: searchQuery,
-          itemSearch: selecteditem,
-          statusSearch: selectedstatus,
-          poValueSearch: selectedpovalue,
-          etdFrom: from,
-          etdTo: to,
-        });
-      }}
-    />
-    <Input
-      type="date"
-      size="sm"
-      value={etdDateRange[1] || ""}
-      onChange={(e) => {
-        const from = etdDateRange[0];
-        const to = e.target.value;
-        setEtdDateRange([from, to]);
-        setSearchParams({
-          page: 1,
-          search: searchQuery,
-          itemSearch: selecteditem,
-          statusSearch: selectedstatus,
-          poValueSearch: selectedpovalue,
-          etdFrom: from,
-          etdTo: to,
-        });
-      }}
-    />
-  </Box>
-</FormControl>
-
+        <FormControl sx={{ flex: 1 }} size="sm">
+          <FormLabel>ETD Date</FormLabel>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Input
+              type="date"
+              size="sm"
+              value={etdDateRange[0] || ""}
+              onChange={(e) => {
+                const from = e.target.value;
+                const to = etdDateRange[1];
+                setEtdDateRange([from, to]);
+                setSearchParams({
+                  page: 1,
+                  search: searchQuery,
+                  itemSearch: selecteditem,
+                  statusSearch: selectedstatus,
+                  poValueSearch: selectedpovalue,
+                  etdFrom: from,
+                  etdTo: to,
+                });
+              }}
+            />
+            <Input
+              type="date"
+              size="sm"
+              value={etdDateRange[1] || ""}
+              onChange={(e) => {
+                const from = etdDateRange[0];
+                const to = e.target.value;
+                setEtdDateRange([from, to]);
+                setSearchParams({
+                  page: 1,
+                  search: searchQuery,
+                  itemSearch: selecteditem,
+                  statusSearch: selectedstatus,
+                  poValueSearch: selectedpovalue,
+                  etdFrom: from,
+                  etdTo: to,
+                });
+              }}
+            />
+          </Box>
+        </FormControl>
       </Box>
     );
   };
 
-  const RenderPRNo = ({ pr_no, createdAt, createdBy, project_id, item_id, pr_id }) => {
+  const RenderPRNo = ({
+    pr_no,
+    createdAt,
+    createdBy,
+    project_id,
+    item_id,
+    pr_id,
+  }) => {
     const formattedDate = createdAt
       ? new Date(createdAt).toLocaleDateString("en-IN", {
           day: "2-digit",
@@ -355,143 +350,30 @@ const formatDate = (date) => {
     );
   };
 
-  const modalStyle = {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    width: "100%",
-    maxWidth: 480,
-    bgcolor: "background.paper",
-    borderRadius: 3,
-    boxShadow: 24,
-    p: 4,
-    display: "flex",
-    flexDirection: "column",
-    gap: 2,
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "ready_to_dispatch":
+        return <PackageCheck size={18} style={{ marginRight: 6 }} />;
+      case "out_for_delivery":
+        return <Truck size={18} style={{ marginRight: 6 }} />;
+      case "delivered":
+        return <Handshake size={18} style={{ marginRight: 6 }} />;
+      default:
+        return null;
+    }
   };
 
-  const PRActions = ({ _id, current_status }) => {
-    const status = current_status?.status;
-
-    const [open, setOpen] = useState(false);
-    const [remarks, setRemarks] = useState("");
-    const [selectedStatus, setSelectedStatus] = useState(null);
-    const [snackbarOpen, setSnackbarOpen] = useState(false);
-    const [snackbarMessage, setSnackbarMessage] = useState("");
-    const [snackbarSeverity, setSnackbarSeverity] = useState("success");
-
-    const handleChipClick = (newStatus) => {
-      setSelectedStatus(newStatus);
-      setOpen(true);
-    };
-
-    const handleClose = () => {
-      setOpen(false);
-      setRemarks("");
-    };
-
-    const renderStatusChip = () => {
-      switch (status) {
-        case "submitted":
-          return (
-            <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
-              <Chip
-                variant="soft"
-                color="success"
-                startDecorator={<CheckRoundedIcon />}
-                onClick={() => handleChipClick("approved")}
-                sx={{
-                  cursor: "pointer",
-                  textTransform: "none",
-                  fontWeight: 500,
-                }}
-              />
-
-              <Chip
-                variant="outlined"
-                color="danger"
-                startDecorator={<BlockIcon />}
-                onClick={() => handleChipClick("rejected")}
-                sx={{
-                  cursor: "pointer",
-                  textTransform: "none",
-                  fontWeight: 500,
-                }}
-              />
-            </Box>
-          );
-
-        case "rejected":
-          return (
-            <Chip
-              variant="outlined"
-              color="danger"
-              startDecorator={<BlockIcon />}
-            >
-              Rejected
-            </Chip>
-          );
-
-        case "approved":
-          return (
-            <Chip
-              variant="soft"
-              color="warning"
-              // startDecorator={<LocalShippingIcon />}
-            >
-              PO to be Raised
-            </Chip>
-          );
-
-        case "po_created":
-          return (
-            <Chip
-              variant="soft"
-              color="primary"
-              startDecorator={<LocalShippingIcon />}
-            >
-              Out for Delivery
-            </Chip>
-          );
-
-        case "delivered":
-          return (
-            <Chip
-              variant="solid"
-              color="primary"
-              startDecorator={<HandshakeIcon />}
-            >
-              Delivered
-            </Chip>
-          );
-
-        default:
-          return null;
-      }
-    };
-
-    return (
-      <>
-        {renderStatusChip()}
-
-        {/* Snackbar Feedback */}
-        <Snackbar
-          open={snackbarOpen}
-          autoHideDuration={4000}
-          onClose={() => setSnackbarOpen(false)}
-          anchorOrigin={{ vertical: "top", horizontal: "center" }}
-        >
-          <Alert
-            onClose={() => setSnackbarOpen(false)}
-            color={snackbarSeverity}
-            variant="soft"
-          >
-            {snackbarMessage}
-          </Alert>
-        </Snackbar>
-      </>
-    );
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "ready_to_dispatch":
+        return "red";
+      case "out_for_delivery":
+        return "orange";
+      case "delivered":
+        return "green";
+      default:
+        return "error";
+    }
   };
 
   return (
@@ -664,13 +546,21 @@ const formatDate = (date) => {
                         textAlign: "left",
                       }}
                     >
-                      <Chip variant="soft" color="neutral">
-                        {row.item?.status
-                          ? row.item.status
-                              .replace(/_/g, " ")
-                              .replace(/\b\w/g, (c) => c.toUpperCase())
-                          : "-"}
-                      </Chip>
+                      <Box
+                        sx={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          py: 0.5,
+                          borderRadius: "16px",
+                          color: getStatusColor(row?.item?.status),
+                          fontWeight: 600,
+                          fontSize: "1rem",
+                          textTransform: "capitalize",
+                        }}
+                      >
+                        {getStatusIcon(row?.item?.status)}
+                        {row?.item?.status?.replace(/_/g, " ")}
+                      </Box>
                     </td>
 
                     <td

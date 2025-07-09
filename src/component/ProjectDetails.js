@@ -194,11 +194,7 @@ export default function Project_Detail() {
               </TabPanel>
 
               <TabPanel value={2}>
-                <Box
-                  
-                 
-                  overflowY="auto"
-                >
+                <Box overflowY="auto">
                   <PurchaseRequestCard project_code={projectDetails?.code} />
                 </Box>
               </TabPanel>

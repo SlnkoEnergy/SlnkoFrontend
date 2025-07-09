@@ -19,6 +19,7 @@ import PurchaseOrderSummary from "./PurchaseOrderSummary";
 import { useSearchParams } from "react-router-dom";
 import ADDPO from "../component/Forms/Add_Po";
 import { toast } from "react-toastify";
+import { Handshake, PackageCheck, Truck } from "lucide-react";
 
 const PurchaseReqDetail = () => {
   const [searchParams] = useSearchParams();
@@ -68,14 +69,34 @@ const PurchaseReqDetail = () => {
     }
   };
 
-
   // ✅ Use correct status from item.status
   const itemStatus = getPurchaseRequest?.item?.status;
 
-  // ✅ Console logs for debugging
-  console.log("Full API response:", getPurchaseRequest);
-  console.log("Item object:", getPurchaseRequest?.item);
-  console.log("Item status:", itemStatus);
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "ready_to_dispatch":
+        return <PackageCheck size={18} style={{ marginRight: 6 }} />;
+      case "out_for_delivery":
+        return <Truck size={18} style={{ marginRight: 6 }} />;
+      case "delivered":
+        return <Handshake size={18} style={{ marginRight: 6 }} />;
+      default:
+        return null;
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "ready_to_dispatch":
+        return "red";
+      case "out_for_delivery":
+        return "orange";
+      case "delivered":
+        return "green";
+      default:
+        return "error";
+    }
+  };
 
   return (
     <Container
@@ -199,25 +220,21 @@ const PurchaseReqDetail = () => {
             >
               Status:
             </Typography>
-            <Chip
-              color={
-                itemStatus === "approved"
-                  ? "success"
-                  : itemStatus === "submitted"
-                    ? "primary"
-                    : itemStatus === "out_for_delivery"
-                      ? "warning"
-                      : itemStatus === "delivered" ||
-                          itemStatus === "fully_delivered"
-                        ? "success"
-                        : "neutral"
-              }
-              variant="soft"
+            <Box
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                py: 0.5,
+                borderRadius: "16px",
+                color: getStatusColor(itemStatus),
+                fontWeight: 600,
+                fontSize: "1rem",
+                textTransform: "capitalize",
+              }}
             >
-              {itemStatus
-                ?.replace(/_/g, " ")
-                ?.replace(/\b\w/g, (c) => c.toUpperCase()) || "-"}
-            </Chip>
+              {getStatusIcon(itemStatus)}
+              {itemStatus?.replace(/_/g, " ")}
+            </Box>
           </Stack>
 
           <Tooltip
