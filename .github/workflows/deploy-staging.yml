@@ -1,30 +1,30 @@
-# name: Deploy to Hostinger VPS (Staging)
+name: Deploy to Hostinger VPS (Staging)
 
-# on:
-#   push:
-#     branches:
-#       - staging
+on:
+  push:
+    branches:
+      - staging
 
-# jobs:
-#   deploy:
-#     runs-on: ubuntu-latest
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
 
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v3
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-#       - name: Set up SSH
-#         uses: webfactory/ssh-agent@v0.9.0
-#         with:
-#           ssh-private-key: ${{ secrets.HOSTINGER_SSH_KEY }}
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.HOSTINGER_SSH_KEY }}
 
-#       - name: Deploy via SSH
-#         run: |
-#           ssh -o StrictHostKeyChecking=no ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} << 'EOF'
-#             cd ~/Protrac/SlnkoFrontend && git checkout staging
-#             git pull origin staging
-#             docker build -t prod_frontend_staging .
-#             docker stop prod_frontend_staging || true
-#             docker rm prod_frontend_staging || true
-#             docker run --name prod_frontend_staging -p 5007:80 -d --env-file .env.stag prod_frontend_staging
-#           EOF
+      - name: Deploy via SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} << 'EOF'
+            cd ~/Protrac/SlnkoFrontend && git checkout staging
+            git pull origin staging
+            docker build --build-arg ENV=stag --build-arg SERVER_NAME=staging.slnkoprotrac.com -t prod_frontend_staging .
+            docker stop prod_frontend_staging || true
+            docker rm prod_frontend_staging || true
+            docker run --name prod_frontend_staging -p 5007:80 -d prod_frontend_staging
+          EOF
