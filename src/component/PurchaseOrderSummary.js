@@ -36,7 +36,14 @@ import {
   useUpdateEtdOrDeliveryDateMutation,
   useUpdatePurchasesStatusMutation,
 } from "../redux/purchasesSlice";
-import { Divider, Option, Select, Textarea, Tooltip } from "@mui/joy";
+import {
+  CircularProgress,
+  Divider,
+  Option,
+  Select,
+  Textarea,
+  Tooltip,
+} from "@mui/joy";
 import { useMemo } from "react";
 import { Calendar, CirclePlus, FileCheck, History, Store } from "lucide-react";
 import {
@@ -99,7 +106,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     setModalAction("");
   };
 
-  const [exportPos, { isLoading: isExporting }] = useExportPosMutation();
+  const [exportPos, { loading: isExporting }] = useExportPosMutation();
   const [updateEtdOrDeliveryDate] = useUpdateEtdOrDeliveryDateMutation();
   const { data: getPoData = [], total = 0, count = 0 } = getPO;
   const totalPages = Math.ceil(total / perPage);
@@ -446,108 +453,112 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       </>
     );
   };
-const RenderPONumber = ({ po_number, date }) => {
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "-";
-    const dateObj = new Date(dateStr);
-    if (isNaN(dateObj)) return "-";
-    return dateObj.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+  const RenderPONumber = ({ po_number, date }) => {
+    const formatDate = (dateStr) => {
+      if (!dateStr) return "-";
+      const dateObj = new Date(dateStr);
+      if (isNaN(dateObj)) return "-";
+      return dateObj.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    };
+
+    return (
+      <>
+        {/* PO Number */}
+        {po_number && (
+          <Box>
+            <span style={{ cursor: "pointer", fontWeight: 400 }}>
+              {po_number}
+            </span>
+          </Box>
+        )}
+
+        {/* PO Date */}
+        {date && (
+          <Box display="flex" alignItems="center" mt={0.5}>
+            <Calendar size={12} />
+            <span style={{ fontSize: 12, fontWeight: 600 }}>PO Date : </span>
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {formatDate(date)}
+            </Typography>
+          </Box>
+        )}
+      </>
+    );
   };
 
-  return (
-    <>
-      {/* PO Number */}
-      {po_number && (
-        <Box>
-          <span style={{ cursor: "pointer", fontWeight: 400 }}>
-            {po_number}
-          </span>
-        </Box>
-      )}
+  const RenderStatusDates = ({
+    etd,
+    delivery_date,
+    current_status,
+    po_number,
+  }) => {
+    const [etdDate, setEtdDate] = useState(etd || "");
+    const [deliveryDate, setDeliveryDate] = useState(delivery_date || "");
+    const [updateEtdOrDeliveryDate] = useUpdateEtdOrDeliveryDateMutation();
+    const [confirmType, setConfirmType] = useState("");
+    const [etdTempDate, setEtdTempDate] = useState("");
+    const [deliveryTempDate, setDeliveryTempDate] = useState("");
+    const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
 
-      {/* PO Date */}
-      {date && (
+    const formatDate = (dateStr) => {
+      if (!dateStr) return "-";
+      const dateObj = new Date(dateStr);
+      if (isNaN(dateObj)) return "-";
+      return dateObj.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    };
+
+    const handleDateChange = async (newEtd, newDelivery) => {
+      try {
+        await updateEtdOrDeliveryDate({
+          po_number,
+          etd: newEtd,
+          delivery_date: newDelivery,
+        }).unwrap();
+        alert("Dates Updated Successfully");
+      } catch (err) {
+        console.error("Failed to update dates:", err);
+        alert("Failed to update dates");
+      }
+    };
+
+    return (
+      <>
+        {/* ETD Date */}
         <Box display="flex" alignItems="center" mt={0.5}>
           <Calendar size={12} />
-          <span style={{ fontSize: 12, fontWeight: 600 }}>PO Date : </span>
+          <span style={{ fontSize: 12, fontWeight: 600 }}>ETD Date : </span>
           &nbsp;
-          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-            {formatDate(date)}
-          </Typography>
+          {etdDate ? (
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {formatDate(etdDate)}
+            </Typography>
+          ) : (
+            <input
+              type="date"
+              value={etdDate}
+              onChange={(e) => {
+                setEtdTempDate(e.target.value);
+                setConfirmType("etd");
+                setOpenConfirmDialog(true);
+              }}
+              style={{
+                fontSize: "12px",
+                padding: "2px 4px",
+                borderRadius: "4px",
+                border: "1px solid lightgray",
+              }}
+            />
+          )}
         </Box>
-      )}
-    </>
-  );
-};
-
-
-const RenderStatusDates = ({ etd, delivery_date, current_status, po_number }) => {
-  const [etdDate, setEtdDate] = useState(etd || "");
-  const [deliveryDate, setDeliveryDate] = useState(delivery_date || "");
-  const [updateEtdOrDeliveryDate] = useUpdateEtdOrDeliveryDateMutation();
-  const [confirmType, setConfirmType] = useState("");
-  const [etdTempDate, setEtdTempDate] = useState("");
-  const [deliveryTempDate, setDeliveryTempDate] = useState("");
-  const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "-";
-    const dateObj = new Date(dateStr);
-    if (isNaN(dateObj)) return "-";
-    return dateObj.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
-  const handleDateChange = async (newEtd, newDelivery) => {
-    try {
-      await updateEtdOrDeliveryDate({
-        po_number,
-        etd: newEtd,
-        delivery_date: newDelivery,
-      }).unwrap();
-      alert("Dates Updated Successfully");
-    } catch (err) {
-      console.error("Failed to update dates:", err);
-      alert("Failed to update dates");
-    }
-  };
-
-  return (
-    <>
-      {/* ETD Date */}
-      <Box display="flex" alignItems="center" mt={0.5}>
-        <Calendar size={12} />
-        <span style={{ fontSize: 12, fontWeight: 600 }}>ETD Date : </span>
-        &nbsp;
-        {etdDate ? (
-          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-            {formatDate(etdDate)}
-          </Typography>
-        ) : (
-          <input
-            type="date"
-            value={etdDate}
-            onChange={(e) => {
-              setEtdTempDate(e.target.value);
-              setConfirmType("etd");
-              setOpenConfirmDialog(true);
-            }}
-            style={{
-              fontSize: "12px",
-              padding: "2px 4px",
-              borderRadius: "4px",
-              border: "1px solid lightgray",
-            }}
-          />
-        )}
-      </Box>
 
         {/* Delivery Date - Only if status is delivered */}
         {current_status?.toLowerCase() === "delivered" && (
@@ -580,40 +591,41 @@ const RenderStatusDates = ({ etd, delivery_date, current_status, po_number }) =>
             )}
           </Box>
         )}
-      {/* Confirmation Modal */}
-      <Modal
-        open={openConfirmDialog}
-        onClose={() => setOpenConfirmDialog(false)}
-      >
-        <ModalDialog>
-          <DialogTitle>Confirm Submission</DialogTitle>
-          <DialogContent>
-            Are you sure you want to submit this date?
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenConfirmDialog(false)}>Cancel</Button>
-            <Button
-              variant="solid"
-              onClick={async () => {
-                setOpenConfirmDialog(false);
-                if (confirmType === "etd") {
-                  setEtdDate(etdTempDate);
-                  await handleDateChange(etdTempDate, deliveryDate);
-                } else if (confirmType === "delivery") {
-                  setDeliveryDate(deliveryTempDate);
-                  await handleDateChange(etdDate, deliveryTempDate);
-                }
-              }}
-            >
-              Confirm
-            </Button>
-          </DialogActions>
-        </ModalDialog>
-      </Modal>
-    </>
-  );
-};
-
+        {/* Confirmation Modal */}
+        <Modal
+          open={openConfirmDialog}
+          onClose={() => setOpenConfirmDialog(false)}
+        >
+          <ModalDialog>
+            <DialogTitle>Confirm Submission</DialogTitle>
+            <DialogContent>
+              Are you sure you want to submit this date?
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setOpenConfirmDialog(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="solid"
+                onClick={async () => {
+                  setOpenConfirmDialog(false);
+                  if (confirmType === "etd") {
+                    setEtdDate(etdTempDate);
+                    await handleDateChange(etdTempDate, deliveryDate);
+                  } else if (confirmType === "delivery") {
+                    setDeliveryDate(deliveryTempDate);
+                    await handleDateChange(etdDate, deliveryTempDate);
+                  }
+                }}
+              >
+                Confirm
+              </Button>
+            </DialogActions>
+          </ModalDialog>
+        </Modal>
+      </>
+    );
+  };
 
   const RenderItem_Vendor = ({ vendor, item }) => {
     return (
@@ -753,21 +765,48 @@ const RenderStatusDates = ({ etd, delivery_date, current_status, po_number }) =>
           maxWidth: isFromCAM || isFromPR ? "100%" : { lg: "85%", sm: "100%" },
         }}
       >
-        {error ? (
-          <Typography color="danger" textAlign="center">
-            {error}
-          </Typography>
-        ) : isLoading ? (
-          <Typography textAlign="center">Loading...</Typography>
-        ) : (
-          <Box
-            component="table"
-            sx={{ width: "100%", borderCollapse: "collapse" }}
-          >
-            <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
-              <Box component="tr">
+        <Box
+          component="table"
+          sx={{ width: "100%", borderCollapse: "collapse" }}
+        >
+          <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
+            <Box component="tr">
+              <Box
+                component="th"
+                sx={{
+                  padding: 1,
+                  textAlign: "left",
+                  borderBottom: "1px solid",
+                  fontWeight: "bold",
+                }}
+              >
+                <Checkbox
+                  indeterminate={
+                    selected.length > 0 && selected.length < paginatedPo.length
+                  }
+                  checked={selected.length === paginatedPo.length}
+                  onChange={handleSelectAll}
+                  color={selected.length > 0 ? "primary" : "neutral"}
+                />
+              </Box>
+              {[
+                "",
+                "",
+                "Project ID",
+                "PO Number",
+                "Partial Billing",
+                "Item Name",
+                "PO Value(incl. GST)",
+                "Advance Paid",
+                "Bill Status",
+                "Total Billed",
+                "Status",
+                "Delay",
+                "",
+              ].map((header, index) => (
                 <Box
                   component="th"
+                  key={index}
                   sx={{
                     padding: 1,
                     textAlign: "left",
@@ -775,376 +814,363 @@ const RenderStatusDates = ({ etd, delivery_date, current_status, po_number }) =>
                     fontWeight: "bold",
                   }}
                 >
-                  <Checkbox
-                    indeterminate={
-                      selected.length > 0 &&
-                      selected.length < paginatedPo.length
-                    }
-                    checked={selected.length === paginatedPo.length}
-                    onChange={handleSelectAll}
-                    color={selected.length > 0 ? "primary" : "neutral"}
-                  />
+                  {header}
                 </Box>
-                {[
-                  "",
-                  "",
-                  "Project ID",
-                  "PO Number",
-                  "Partial Billing",
-                  "Item Name",
-                  "PO Value(incl. GST)",
-                  "Advance Paid",
-                  "Bill Status",
-                  "Total Billed",
-                  "Status",
-                  "Delay",
-                  "",
-                ].map((header, index) => (
-                  <Box
-                    component="th"
-                    key={index}
-                    sx={{
-                      padding: 1,
-                      textAlign: "left",
-                      borderBottom: "1px solid",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {header}
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-            <Box component="tbody">
-              {paginatedPo.length > 0 ? (
-                paginatedPo.map((po, index) => {
-                  let etd = null;
-                  let delay = 0;
-                  const now = new Date();
-                  const deliveredDate = po.delivery_date
-                    ? new Date(po.delivery_date)
-                    : null;
-
-                  if (po.etd) {
-                    etd = new Date(po.etd);
-
-                    if (deliveredDate) {
-                      const timeDiff = deliveredDate - etd;
-                      delay = Math.max(
-                        0,
-                        Math.floor(timeDiff / (1000 * 60 * 60 * 24))
-                      );
-                    } else if (now > etd) {
-                      const timeDiff = now - etd;
-                      delay = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-                    }
-                  }
-
-                  return (
-                    <Box
-                      component="tr"
-                      key={index}
-                      sx={{
-                        "&:hover": { backgroundColor: "neutral.plainHoverBg" },
-                      }}
-                    >
-                      <Box
-                        component="td"
-                        sx={{
-                          padding: 1,
-                          textAlign: "left",
-                          borderBottom: "1px solid",
-                        }}
-                      >
-                        <Checkbox
-                          checked={selected.includes(po._id)}
-                          onChange={() => handleRowSelect(po._id)}
-                          color={
-                            selected.includes(po._id) ? "primary" : "neutral"
-                          }
-                        />
-                      </Box>
-
-                      <Box
-                        component="td"
-                        sx={{
-                          padding: 1,
-                          textAlign: "left",
-                          borderBottom: "1px solid",
-                        }}
-                      >
-                        <ViewPOHistory po_number={po.po_number} />
-                      </Box>
-
-                      <Box
-                        component="td"
-                        sx={{
-                          padding: 1,
-                          textAlign: "left",
-                          borderBottom: "1px solid",
-                        }}
-                      >
-                        <EditPo po_number={po.po_number} />
-                      </Box>
-
-                      <Box
-                        component="td"
-                        sx={{
-                          padding: 1,
-                          textAlign: "left",
-                          borderBottom: "1px solid",
-                          fontSize: 15,
-                          minWidth: 350,
-                        }}
-                      >
-                        <RenderPid p_id={po.p_id} pr_no={po.pr_no} />
-                      </Box>
-
-                      <Box
-                        component="td"
-                        sx={{
-                          padding: 1,
-                          textAlign: "left",
-                          borderBottom: "1px solid",
-                          fontSize: 14,
-                          minWidth: 250,
-                        }}
-                      >
-                        <RenderPONumber
-                          po_number={po.po_number}
-                          date={po.date}
-                          etd={po.etd}
-                          delivery_date={po.delivery_date}
-                          current_status={po?.current_status?.status}
-                        />
-                      </Box>
-
-                      <Box
-                        component="td"
-                        sx={{
-                          padding: 1,
-                          textAlign: "left",
-                          borderBottom: "1px solid",
-                          fontSize: 14,
-                          minWidth: 150,
-                        }}
-                      >
-                        <BillingTypeChip type={po.type} />
-                      </Box>
-
-                      <Box
-                        component="td"
-                        sx={{
-                          padding: 1,
-                          textAlign: "left",
-                          borderBottom: "1px solid",
-                          minWidth: 350,
-                        }}
-                      >
-                        <RenderItem_Vendor
-                          item={po.item === "Other" ? "other" : po.item}
-                          vendor={po.vendor}
-                        />
-                      </Box>
-
-                      <Box
-                        component="td"
-                        sx={{
-                          padding: 1,
-                          textAlign: "left",
-                          borderBottom: "1px solid",
-                          fontSize: 14,
-                          minWidth: 200,
-                        }}
-                      >
-                        ₹
-                        {new Intl.NumberFormat("en-IN", {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 2,
-                        }).format(po.po_value)}
-                      </Box>
-
-                      <Box
-                        component="td"
-                        sx={{
-                          padding: 1,
-                          textAlign: "left",
-                          borderBottom: "1px solid",
-                          fontSize: 14,
-                          minWidth: 150,
-                        }}
-                      >
-                        ₹
-                        {new Intl.NumberFormat("en-IN", {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 2,
-                        }).format(po.amount_paid) || "0"}
-                      </Box>
-
-                      <Box
-                        component="td"
-                        sx={{
-                          padding: 1,
-                          textAlign: "left",
-                          borderBottom: "1px solid",
-                          fontSize: 14,
-                          minWidth: 150,
-                        }}
-                      >
-                        <BillingStatusChip status={po.partial_billing} />
-                      </Box>
-
-                      <Box
-                        component="td"
-                        sx={{
-                          padding: 1,
-                          textAlign: "left",
-                          borderBottom: "1px solid",
-                          minWidth: 150,
-                        }}
-                      >
-                        <RenderTotalBilled
-                          total_billed={po.total_billed}
-                          po_value={po.po_value}
-                          po_number={po.po_number}
-                        />
-                      </Box>
-
-                      <Box
-                        component="td"
-                        sx={{
-                          padding: 1,
-                          textAlign: "left",
-                          borderBottom: "1px solid",
-                          minWidth: 280, 
-                          width: 300,
-                        }}
-                      >
-                        <Tooltip
-                          title={po?.current_status?.remarks || "No remarks"}
-                          arrow
-                        >
-                          <Typography
-                            sx={{
-                              fontWeight: "bold",
-                              color:
-                                po?.current_status?.status === "delivered"
-                                  ? "green"
-                                  : po?.current_status?.status ===
-                                      "out_for_delivery"
-                                    ? "orange"
-                                    : "red",
-                              textTransform: "capitalize",
-                              cursor: "pointer",
-                            }}
-                          >
-                            {po?.current_status?.status.replace(/_/g, " ")}
-                          </Typography>
-                        </Tooltip>
-
-                        {/* Render PO Number Info Below the Status */}
-                        <RenderStatusDates 
-                          etd={po.etd}
-                          delivery_date={po.delivery_date}
-                          current_status={po?.current_status?.status}
-                           po_number={po.po_number}
-                        />
-                      </Box>
-
-                      <Box
-                        component="td"
-                        sx={{
-                          padding: 1,
-                          textAlign: "left",
-                          borderBottom: "1px solid",
-                          minWidth: 150,
-                        }}
-                      >
-                        {etd ? (
-                          delay > 0 ? (
-                            <Typography
-                              sx={{ color: "red", fontSize: 13, mt: 0.5 }}
-                            >
-                              ⏱ Delayed by {delay} day{delay > 1 ? "s" : ""}
-                            </Typography>
-                          ) : (
-                            <Typography
-                              sx={{ color: "green", fontSize: 13, mt: 0.5 }}
-                            >
-                              ✅ No delay
-                            </Typography>
-                          )
-                        ) : (
-                          <Typography
-                            sx={{
-                              color: "gray",
-                              fontSize: 13,
-                              mt: 0.5,
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 0.5,
-                            }}
-                          >
-                            ⚠️ ETD NOT FOUND
-                          </Typography>
-                        )}
-                      </Box>
-
-                      <Box
-  component="td"
-  sx={{
-    padding: 1,
-    textAlign: "left",
-    borderBottom: "1px solid",
-  }}
->
-  {po?.current_status?.status !== "delivered" && (
-    <RowMenu
-      currentPage={currentPage}
-      po_number={po.po_number}
-      current_status={po.current_status}
-    />
-  )}
-</Box>
-
-                    </Box>
-                  );
-                })
-              ) : (
-                <Box component="tr">
-                  <Box
-                    component="td"
-                    colSpan={13}
-                    sx={{
-                      padding: 2,
-                      textAlign: "center",
-                      fontStyle: "italic",
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        fontStyle: "italic",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <img
-                        src={NoData}
-                        alt="No data Image"
-                        style={{ width: "50px", height: "50px" }}
-                      />
-                      <Typography fontStyle={"italic"}>
-                        No PO available
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-              )}
+              ))}
             </Box>
           </Box>
-        )}
+          <Box component="tbody">
+            {error ? (
+              <Typography color="danger" textAlign="center">
+                {error}
+              </Typography>
+            ) : isLoading ? (
+              <tr>
+                <td
+                  colSpan={13}
+                  style={{ padding: "8px", textAlign: "center" }}
+                >
+                  <Box
+                    sx={{
+                      fontStyle: "italic",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <CircularProgress size="sm" sx={{ marginBottom: "8px" }} />
+                    <Typography fontStyle="italic">Loading Po's… please hang tight ⏳</Typography>
+                  </Box>
+                </td>
+              </tr>
+            ) : paginatedPo.length > 0 ? (
+              paginatedPo.map((po, index) => {
+                let etd = null;
+                let delay = 0;
+                const now = new Date();
+                const deliveredDate = po.delivery_date
+                  ? new Date(po.delivery_date)
+                  : null;
+
+                if (po.etd) {
+                  etd = new Date(po.etd);
+
+                  if (deliveredDate) {
+                    const timeDiff = deliveredDate - etd;
+                    delay = Math.max(
+                      0,
+                      Math.floor(timeDiff / (1000 * 60 * 60 * 24))
+                    );
+                  } else if (now > etd) {
+                    const timeDiff = now - etd;
+                    delay = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                  }
+                }
+
+                return (
+                  <Box
+                    component="tr"
+                    key={index}
+                    sx={{
+                      "&:hover": { backgroundColor: "neutral.plainHoverBg" },
+                    }}
+                  >
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "left",
+                        borderBottom: "1px solid",
+                      }}
+                    >
+                      <Checkbox
+                        checked={selected.includes(po._id)}
+                        onChange={() => handleRowSelect(po._id)}
+                        color={
+                          selected.includes(po._id) ? "primary" : "neutral"
+                        }
+                      />
+                    </Box>
+
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "left",
+                        borderBottom: "1px solid",
+                      }}
+                    >
+                      <ViewPOHistory po_number={po.po_number} />
+                    </Box>
+
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "left",
+                        borderBottom: "1px solid",
+                      }}
+                    >
+                      <EditPo po_number={po.po_number} />
+                    </Box>
+
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "left",
+                        borderBottom: "1px solid",
+                        fontSize: 15,
+                        minWidth: 350,
+                      }}
+                    >
+                      <RenderPid p_id={po.p_id} pr_no={po.pr_no} />
+                    </Box>
+
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "left",
+                        borderBottom: "1px solid",
+                        fontSize: 14,
+                        minWidth: 250,
+                      }}
+                    >
+                      <RenderPONumber
+                        po_number={po.po_number}
+                        date={po.date}
+                        etd={po.etd}
+                        delivery_date={po.delivery_date}
+                        current_status={po?.current_status?.status}
+                      />
+                    </Box>
+
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "left",
+                        borderBottom: "1px solid",
+                        fontSize: 14,
+                        minWidth: 150,
+                      }}
+                    >
+                      <BillingTypeChip type={po.type} />
+                    </Box>
+
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "left",
+                        borderBottom: "1px solid",
+                        minWidth: 350,
+                      }}
+                    >
+                      <RenderItem_Vendor
+                        item={po.item === "Other" ? "other" : po.item}
+                        vendor={po.vendor}
+                      />
+                    </Box>
+
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "left",
+                        borderBottom: "1px solid",
+                        fontSize: 14,
+                        minWidth: 200,
+                      }}
+                    >
+                      ₹
+                      {new Intl.NumberFormat("en-IN", {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2,
+                      }).format(po.po_value)}
+                    </Box>
+
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "left",
+                        borderBottom: "1px solid",
+                        fontSize: 14,
+                        minWidth: 150,
+                      }}
+                    >
+                      ₹
+                      {new Intl.NumberFormat("en-IN", {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2,
+                      }).format(po.amount_paid) || "0"}
+                    </Box>
+
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "left",
+                        borderBottom: "1px solid",
+                        fontSize: 14,
+                        minWidth: 150,
+                      }}
+                    >
+                      <BillingStatusChip status={po.partial_billing} />
+                    </Box>
+
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "left",
+                        borderBottom: "1px solid",
+                        minWidth: 150,
+                      }}
+                    >
+                      <RenderTotalBilled
+                        total_billed={po.total_billed}
+                        po_value={po.po_value}
+                        po_number={po.po_number}
+                      />
+                    </Box>
+
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "left",
+                        borderBottom: "1px solid",
+                        minWidth: 280,
+                        width: 300,
+                      }}
+                    >
+                      <Tooltip
+                        title={po?.current_status?.remarks || "No remarks"}
+                        arrow
+                      >
+                        <Typography
+                          sx={{
+                            fontWeight: "bold",
+                            color:
+                              po?.current_status?.status === "delivered"
+                                ? "green"
+                                : po?.current_status?.status ===
+                                    "out_for_delivery"
+                                  ? "orange"
+                                  : "red",
+                            textTransform: "capitalize",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {po?.current_status?.status.replace(/_/g, " ")}
+                        </Typography>
+                      </Tooltip>
+
+                      {/* Render PO Number Info Below the Status */}
+                      <RenderStatusDates
+                        etd={po.etd}
+                        delivery_date={po.delivery_date}
+                        current_status={po?.current_status?.status}
+                        po_number={po.po_number}
+                      />
+                    </Box>
+
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "left",
+                        borderBottom: "1px solid",
+                        minWidth: 150,
+                      }}
+                    >
+                      {etd ? (
+                        delay > 0 ? (
+                          <Typography
+                            sx={{ color: "red", fontSize: 13, mt: 0.5 }}
+                          >
+                            ⏱ Delayed by {delay} day{delay > 1 ? "s" : ""}
+                          </Typography>
+                        ) : (
+                          <Typography
+                            sx={{ color: "green", fontSize: 13, mt: 0.5 }}
+                          >
+                            ✅ No delay
+                          </Typography>
+                        )
+                      ) : (
+                        <Typography
+                          sx={{
+                            color: "gray",
+                            fontSize: 13,
+                            mt: 0.5,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                          }}
+                        >
+                          ⚠️ ETD NOT FOUND
+                        </Typography>
+                      )}
+                    </Box>
+
+                    <Box
+                      component="td"
+                      sx={{
+                        padding: 1,
+                        textAlign: "left",
+                        borderBottom: "1px solid",
+                      }}
+                    >
+                      {po?.current_status?.status !== "delivered" && (
+                        <RowMenu
+                          currentPage={currentPage}
+                          po_number={po.po_number}
+                          current_status={po.current_status}
+                        />
+                      )}
+                    </Box>
+                  </Box>
+                );
+              })
+            ) : (
+              <Box component="tr">
+                <Box
+                  component="td"
+                  colSpan={13}
+                  sx={{
+                    padding: 2,
+                    textAlign: "center",
+                    fontStyle: "italic",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      fontStyle: "italic",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <img
+                      src={NoData}
+                      alt="No data Image"
+                      style={{ width: "50px", height: "50px" }}
+                    />
+                    <Typography fontStyle={"italic"}>
+                      No PO available
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+            )}
+          </Box>
+        </Box>
       </Sheet>
 
       {/* Pagination */}
