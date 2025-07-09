@@ -24,7 +24,7 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { Calendar, User } from "lucide-react";
+import { Calendar, Handshake, PackageCheck, Truck, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -49,11 +49,11 @@ function PurchaseReqSummary() {
   const itemSearch = searchParams.get("itemSearch") || "";
   const poValueSearch = searchParams.get("poValueSearch") || "";
   const statusSearch = searchParams.get("statusSearch") || "";
-const [createdDateRange, setCreatedDateRange] = useState([null, null]); // [from, to]
-const [etdDateRange, setEtdDateRange] = useState([null, null]); // [from, to]
-const formatDate = (date) => {
-  return date ? new Date(date).toISOString().split("T")[0] : "";
-};
+  const [createdDateRange, setCreatedDateRange] = useState([null, null]); // [from, to]
+  const [etdDateRange, setEtdDateRange] = useState([null, null]); // [from, to]
+  const formatDate = (date) => {
+    return date ? new Date(date).toISOString().split("T")[0] : "";
+  };
 
   const navigate = useNavigate();
 
@@ -64,9 +64,9 @@ const formatDate = (date) => {
     poValueSearch,
     statusSearch,
     etdFrom: etdDateRange[0] || "",
-  etdTo: etdDateRange[1] || "",
-  createdFrom: createdDateRange[0] || "",
-  createdTo: createdDateRange[1] || "",
+    etdTo: etdDateRange[1] || "",
+    createdFrom: createdDateRange[0] || "",
+    createdTo: createdDateRange[1] || "",
   });
 
   useEffect(() => {
@@ -137,7 +137,6 @@ const formatDate = (date) => {
     return pages;
   };
 
-
   const { data: materialCategories, isLoading: isMaterialLoading } =
     useGetMaterialCategoryQuery();
 
@@ -206,98 +205,104 @@ const formatDate = (date) => {
           </Select>
         </FormControl>
         <FormControl sx={{ flex: 1 }} size="sm">
-  <FormLabel>Created At</FormLabel>
-  <Box sx={{ display: "flex", gap: 1 }}>
-    <Input
-      type="date"
-      size="sm"
-      value={createdDateRange[0] || ""}
-      onChange={(e) => {
-        const from = e.target.value;
-        const to = createdDateRange[1];
-        setCreatedDateRange([from, to]);
-        setSearchParams({
-          page: 1,
-          search: searchQuery,
-          itemSearch: selecteditem,
-          statusSearch: selectedstatus,
-          poValueSearch: selectedpovalue,
-          createdFrom: from,
-          createdTo: to,
-        });
-      }}
-    />
-    <Input
-      type="date"
-      size="sm"
-      value={createdDateRange[1] || ""}
-      onChange={(e) => {
-        const from = createdDateRange[0];
-        const to = e.target.value;
-        setCreatedDateRange([from, to]);
-        setSearchParams({
-          page: 1,
-          search: searchQuery,
-          itemSearch: selecteditem,
-          statusSearch: selectedstatus,
-          poValueSearch: selectedpovalue,
-          createdFrom: from,
-          createdTo: to,
-        });
-      }}
-    />
-  </Box>
-</FormControl>
+          <FormLabel>Created At</FormLabel>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Input
+              type="date"
+              size="sm"
+              value={createdDateRange[0] || ""}
+              onChange={(e) => {
+                const from = e.target.value;
+                const to = createdDateRange[1];
+                setCreatedDateRange([from, to]);
+                setSearchParams({
+                  page: 1,
+                  search: searchQuery,
+                  itemSearch: selecteditem,
+                  statusSearch: selectedstatus,
+                  poValueSearch: selectedpovalue,
+                  createdFrom: from,
+                  createdTo: to,
+                });
+              }}
+            />
+            <Input
+              type="date"
+              size="sm"
+              value={createdDateRange[1] || ""}
+              onChange={(e) => {
+                const from = createdDateRange[0];
+                const to = e.target.value;
+                setCreatedDateRange([from, to]);
+                setSearchParams({
+                  page: 1,
+                  search: searchQuery,
+                  itemSearch: selecteditem,
+                  statusSearch: selectedstatus,
+                  poValueSearch: selectedpovalue,
+                  createdFrom: from,
+                  createdTo: to,
+                });
+              }}
+            />
+          </Box>
+        </FormControl>
 
-<FormControl sx={{ flex: 1 }} size="sm">
-  <FormLabel>ETD Date</FormLabel>
-  <Box sx={{ display: "flex", gap: 1 }}>
-    <Input
-      type="date"
-      size="sm"
-      value={etdDateRange[0] || ""}
-      onChange={(e) => {
-        const from = e.target.value;
-        const to = etdDateRange[1];
-        setEtdDateRange([from, to]);
-        setSearchParams({
-          page: 1,
-          search: searchQuery,
-          itemSearch: selecteditem,
-          statusSearch: selectedstatus,
-          poValueSearch: selectedpovalue,
-          etdFrom: from,
-          etdTo: to,
-        });
-      }}
-    />
-    <Input
-      type="date"
-      size="sm"
-      value={etdDateRange[1] || ""}
-      onChange={(e) => {
-        const from = etdDateRange[0];
-        const to = e.target.value;
-        setEtdDateRange([from, to]);
-        setSearchParams({
-          page: 1,
-          search: searchQuery,
-          itemSearch: selecteditem,
-          statusSearch: selectedstatus,
-          poValueSearch: selectedpovalue,
-          etdFrom: from,
-          etdTo: to,
-        });
-      }}
-    />
-  </Box>
-</FormControl>
-
+        <FormControl sx={{ flex: 1 }} size="sm">
+          <FormLabel>ETD Date</FormLabel>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Input
+              type="date"
+              size="sm"
+              value={etdDateRange[0] || ""}
+              onChange={(e) => {
+                const from = e.target.value;
+                const to = etdDateRange[1];
+                setEtdDateRange([from, to]);
+                setSearchParams({
+                  page: 1,
+                  search: searchQuery,
+                  itemSearch: selecteditem,
+                  statusSearch: selectedstatus,
+                  poValueSearch: selectedpovalue,
+                  etdFrom: from,
+                  etdTo: to,
+                });
+              }}
+            />
+            <Input
+              type="date"
+              size="sm"
+              value={etdDateRange[1] || ""}
+              onChange={(e) => {
+                const from = etdDateRange[0];
+                const to = e.target.value;
+                setEtdDateRange([from, to]);
+                setSearchParams({
+                  page: 1,
+                  search: searchQuery,
+                  itemSearch: selecteditem,
+                  statusSearch: selectedstatus,
+                  poValueSearch: selectedpovalue,
+                  etdFrom: from,
+                  etdTo: to,
+                });
+              }}
+            />
+          </Box>
+        </FormControl>
       </Box>
     );
   };
 
-  const RenderPRNo = ({ pr_no, createdAt, createdBy, project_id, item_id, pr_id }) => {
+  const RenderPRNo = ({
+    pr_no,
+    createdAt,
+    createdBy,
+    project_id,
+    item_id,
+    pr_id,
+  }) => {
     const formattedDate = createdAt
       ? new Date(createdAt).toLocaleDateString("en-IN", {
           day: "2-digit",
@@ -343,6 +348,32 @@ const formatDate = (date) => {
         </Box>
       </>
     );
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "ready_to_dispatch":
+        return <PackageCheck size={18} style={{ marginRight: 6 }} />;
+      case "out_for_delivery":
+        return <Truck size={18} style={{ marginRight: 6 }} />;
+      case "delivered":
+        return <Handshake size={18} style={{ marginRight: 6 }} />;
+      default:
+        return null;
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "ready_to_dispatch":
+        return "red";
+      case "out_for_delivery":
+        return "orange";
+      case "delivered":
+        return "green";
+      default:
+        return "error";
+    }
   };
 
   return (
@@ -515,13 +546,21 @@ const formatDate = (date) => {
                         textAlign: "left",
                       }}
                     >
-                      <Chip variant="soft" color="neutral">
-                        {row.item?.status
-                          ? row.item.status
-                              .replace(/_/g, " ")
-                              .replace(/\b\w/g, (c) => c.toUpperCase())
-                          : "-"}
-                      </Chip>
+                      <Box
+                        sx={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          py: 0.5,
+                          borderRadius: "16px",
+                          color: getStatusColor(row?.item?.status),
+                          fontWeight: 600,
+                          fontSize: "1rem",
+                          textTransform: "capitalize",
+                        }}
+                      >
+                        {getStatusIcon(row?.item?.status)}
+                        {row?.item?.status?.replace(/_/g, " ")}
+                      </Box>
                     </td>
 
                     <td

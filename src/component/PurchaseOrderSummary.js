@@ -53,7 +53,9 @@ import {
   FileCheck,
   Handshake,
   History,
+  PackageCheck,
   Store,
+  Truck,
 } from "lucide-react";
 import {
   Modal,
@@ -92,7 +94,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const [nextStatus, setNextStatus] = useState("");
   const [remarks, setRemarks] = useState("");
   const [perPage, setPerPage] = useState(initialPageSize);
-  
+
   const location = useLocation();
   const isFromCAM = location.pathname === "/project_detail";
   const isFromPR = location.pathname === "/purchase_detail";
@@ -733,15 +735,15 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
         <Box display="flex" alignItems="center" mt={0.5}>
           <Calendar size={12} />
-          <span style={{ fontSize: 12, fontWeight: 600 }}>RTD  Date : </span>
+          <span style={{ fontSize: 12, fontWeight: 600 }}>RTD Date : </span>
           &nbsp;
           {rtdDate ? (
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
               {formatDate(rtdDate)}
             </Typography>
           ) : (
-            <Typography sx={{fontSize:12, fontWeight:400}}>
-             ⚠️ RTD Not Found
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              ⚠️ RTD Not Found
             </Typography>
           )}
         </Box>
@@ -904,6 +906,32 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     );
   };
 
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "ready_to_dispatch":
+        return <PackageCheck size={18} style={{ marginRight: 6 }} />;
+      case "out_for_delivery":
+        return <Truck size={18} style={{ marginRight: 6 }} />;
+      case "delivered":
+        return <Handshake size={18} style={{ marginRight: 6 }} />;
+      default:
+        return null;
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "ready_to_dispatch":
+        return "red";
+      case "out_for_delivery":
+        return "orange";
+      case "delivered":
+        return "green";
+      default:
+        return "error";
+    }
+  };
+
   return (
     <>
       {/* Tablet and Up Filters */}
@@ -1036,7 +1064,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
               paginatedPo.map((po, index) => {
                 let etd = null;
                 let delay = 0;
-                
+
                 const now = new Date();
                 const dispatch_date = po.dispatch_date
                   ? new Date(po.dispatch_date)
@@ -1242,22 +1270,22 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         title={po?.current_status?.remarks || "No remarks"}
                         arrow
                       >
-                        <Typography
+                        <Box
                           sx={{
-                            fontWeight: "bold",
-                            color:
-                              po?.current_status?.status === "delivered"
-                                ? "green"
-                                : po?.current_status?.status ===
-                                    "out_for_delivery"
-                                  ? "orange"
-                                  : "red",
-                            textTransform: "capitalize",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            py: 0.5,
+                            borderRadius: "16px",
+                            color: getStatusColor(po?.current_status?.status),
+                            fontWeight: 600,
                             cursor: "pointer",
+                            fontSize: "1rem",
+                            textTransform: "capitalize",
                           }}
                         >
-                         <Handshake size={18}  /> {po?.current_status?.status.replace(/_/g, " ")}
-                        </Typography>
+                          {getStatusIcon(po?.current_status?.status)}
+                          {po?.current_status?.status.replace(/_/g, " ")}
+                        </Box>
                       </Tooltip>
 
                       {/* Render PO Number Info Below the Status */}
@@ -1317,13 +1345,14 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         borderBottom: "1px solid",
                       }}
                     >
-                      {po?.current_status?.status !== "delivered" && po?.etd !== null && (
-                        <RowMenu
-                          currentPage={currentPage}
-                          po_number={po.po_number}
-                          current_status={po.current_status}
-                        />
-                      )}
+                      {po?.current_status?.status !== "delivered" &&
+                        po?.etd !== null && (
+                          <RowMenu
+                            currentPage={currentPage}
+                            po_number={po.po_number}
+                            current_status={po.current_status}
+                          />
+                        )}
                     </Box>
                   </Box>
                 );
