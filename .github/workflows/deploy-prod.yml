@@ -23,8 +23,8 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} << 'EOF'
             cd ~/Protrac/SlnkoFrontend && git checkout main
             git pull origin main
-            docker build -t prod_frontend .
+            docker build --build-arg ENV=prod --build-arg SERVER_NAME=slnkoprotrac.com -t prod_frontend .
             docker stop prod_frontend || true
             docker rm prod_frontend || true
-            docker run --name prod_frontend -p 5004:80 -d --env-file .env.prod prod_frontend
+            docker run --name prod_frontend -p 5004:80 -d prod_frontend
           EOF
