@@ -491,16 +491,25 @@ function Dash_cam() {
                       textAlign: "left",
                     }}
                   >
-                    <Tooltip title="View Project Detail" arrow>
-                      <span>
-                        <ProjectOverView
-                          currentPage={currentPage}
-                          project_id={project.project_id}
-                          code={project.code}
-                          id={project._id}
-                        />
-                      </span>
-                    </Tooltip>
+                    {project.is_locked === "locked" && project.status_of_handoversheet === "Approved" ? (
+  <Tooltip title="View Project Detail" arrow>
+    <span>
+      <ProjectOverView
+        currentPage={currentPage}
+        project_id={project?.project_id}
+        code={project?.code}
+        id={project?._id}
+      />
+    </span>
+  </Tooltip>
+) : (
+  <Tooltip title="No Project Found" arrow>
+    <span style={{ pointerEvents: "none", opacity: 1 }}>
+      <button disabled>{project?.code}</button>
+    </span>
+  </Tooltip>
+)}
+
                   </td>
                   <td
                     style={{
