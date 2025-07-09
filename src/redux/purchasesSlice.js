@@ -21,8 +21,21 @@ export const purchasesApi = createApi({
       providesTags: ["Purchase"],
     }),
     getPaginatedPOs: builder.query({
-      query: ({ page = 1, search = "", status, pageSize = 10, type, project_id, pr_id, item_id }) =>
-        `get-paginated-po?page=${page}&search=${search}&status=${status}&pageSize=${pageSize}&type=${type}&project_id=${project_id}&pr_id=${pr_id}&item_id=${item_id}`,
+      query: ({
+        page = 1,
+        search = "",
+        status,
+        pageSize = 10,
+        type,
+        project_id,
+        pr_id,
+        item_id,
+        etdFrom,
+        etdTo,
+        deliveryFrom,
+        deliveryTo,
+      }) =>
+        `get-paginated-po?page=${page}&search=${search}&status=${status}&pageSize=${pageSize}&type=${type}&project_id=${project_id}&pr_id=${pr_id}&item_id=${item_id}&etdFrom=${etdFrom}&etdTo=${etdTo}&deliveryFrom=${deliveryFrom}&deliveryTo=${deliveryTo}`,
       transformResponse: (response) => ({
         data: response.data || [],
         total: response.meta?.total || 0,
@@ -72,29 +85,27 @@ export const purchasesApi = createApi({
       invalidatesTags: ["Purchase"],
     }),
 
-   updateEtdOrDeliveryDate: builder.mutation({
-  query: ({ po_number, etd, delivery_date }) => ({
-    url: `/${encodeURIComponent(po_number)}/updateEtdOrDelivery`,
-    method: "PUT",
-    body: { etd, delivery_date },
-  }),
-  invalidatesTags: ["Purchase"],
-}),
+    updateEtdOrDeliveryDate: builder.mutation({
+      query: ({ po_number, etd, delivery_date }) => ({
+        url: `/${encodeURIComponent(po_number)}/updateEtdOrDelivery`,
+        method: "PUT",
+        body: { etd, delivery_date },
+      }),
+      invalidatesTags: ["Purchase"],
+    }),
 
-   updatePurchasesStatus: builder.mutation({
-  query: ({ id, status, remarks }) => ({
-    url: `/updateStatusPO`,
-    method: "PUT",
-    body: {
-      id,
-      status,
-      remarks,
-    },
-  }),
-  invalidatesTags: ["Purchase"],
-}),
-
-
+    updatePurchasesStatus: builder.mutation({
+      query: ({ id, status, remarks }) => ({
+        url: `/updateStatusPO`,
+        method: "PUT",
+        body: {
+          id,
+          status,
+          remarks,
+        },
+      }),
+      invalidatesTags: ["Purchase"],
+    }),
   }),
 });
 
@@ -105,6 +116,6 @@ export const {
   useExportPosMutation,
   useAddPurchasesMutation,
   useUpdatePurchasesMutation,
-   useUpdateEtdOrDeliveryDateMutation,
-  useUpdatePurchasesStatusMutation
+  useUpdateEtdOrDeliveryDateMutation,
+  useUpdatePurchasesStatusMutation,
 } = purchasesApi;

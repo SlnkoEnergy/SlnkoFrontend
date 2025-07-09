@@ -17,6 +17,7 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
+import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import EditNoteIcon from "@mui/icons-material/EditNote";
 import DownloadIcon from "@mui/icons-material/Download";
 import MenuItem from "@mui/joy/MenuItem";
@@ -45,7 +46,14 @@ import {
   Tooltip,
 } from "@mui/joy";
 import { useMemo } from "react";
-import { Calendar, CirclePlus, FileCheck, History, Store } from "lucide-react";
+import {
+  Calendar,
+  CalendarSearch,
+  CirclePlus,
+  FileCheck,
+  History,
+  Store,
+} from "lucide-react";
 import {
   Modal,
   ModalDialog,
@@ -69,6 +77,18 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
+  const [openFilter, setOpenFilter] = useState(false);
+  const [showETD, setShowETD] = useState(false);
+  const [showPODate, setShowPODate] = useState(false);
+  const [showDelivery, setShowDelivery] = useState(false);
+  const [etdFrom, setEtdFrom] = useState("");
+  const [etdTo, setEtdTo] = useState("");
+  const [poFrom, setPoFrom] = useState("");
+  const [poTo, setPoTo] = useState("");
+  const [deliveryFrom, setDeliveryFrom] = useState("");
+  const [deliveryTo, setDeliveryTo] = useState("");
+  const [activeDateFilter, setActiveDateFilter] = useState("");
+
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
   const [currentPage, setCurrentPage] = useState(initialPage);
@@ -90,6 +110,10 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     status: selectedpo,
     search: searchQuery,
     type: selectedtype,
+    etdFrom: etdFrom,
+    etdTo: etdTo,
+    deliveryFrom: deliveryFrom,
+    deliveryTo: deliveryTo,
     project_id: isFromCAM || isFromPR ? project_code : "",
     pr_id: isFromPR && pr_id ? pr_id.toString() : "",
     item_id: isFromPR && item_id ? item_id.toString() : "",
@@ -164,104 +188,255 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     }
   };
 
+  // const renderFilters = () => {
+  //   const po_status = ["Fully Billed ", "Bill Pending"];
+  //   const po_type = ["Final", "Partial"];
+
+  //   return (
+  //     <Box
+  //       sx={{
+  //         display: "flex",
+  //         flexWrap: "wrap",
+  //         gap: 2,
+  //         alignItems: "center",
+  //         mb: 2,
+  //       }}
+  //     >
+  //       <FormControl sx={{ flex: 1 }} size="sm">
+  //         <FormLabel>PO Status</FormLabel>
+  //         <Select
+  //           value={selectedpo}
+  //           onChange={(e, newValue) => {
+  //             setSelectedpo(newValue);
+  //             setCurrentPage(1);
+  //           }}
+  //           size="sm"
+  //           placeholder="Select Status"
+  //         >
+  //           <Option value="">All status</Option>
+  //           {po_status.map((status) => (
+  //             <Option key={status} value={status}>
+  //               {status}
+  //             </Option>
+  //           ))}
+  //         </Select>
+  //       </FormControl>
+  //       {/* <FormControl sx={{ flex: 1 }} size="sm">
+  //         <FormLabel>Select Type</FormLabel>
+  //         <Select
+  //           value={selectedpo}
+  //           onChange={(e, newValue) => {
+  //             setSelectedtype(newValue);
+  //             setCurrentPage(1);
+  //           }}
+  //           size="sm"
+  //           placeholder="Select Type"
+  //         >
+  //           <Option value="">All status</Option>
+  //           {po_type.map((status) => (
+  //             <Option key={status} value={status}>
+  //               {status}
+  //             </Option>
+  //           ))}
+  //         </Select>
+  //       </FormControl> */}
+  //       {/* <FormControl size="sm" sx={{ minWidth: 140 }}>
+  //         <FormLabel>From Date</FormLabel>
+  //         <Input
+  //           type="date"
+  //           value={from}
+  //           onChange={(e) => {
+  //             setFrom(e.target.value);
+  //             setCurrentPage(1);
+  //           }}
+  //         />
+  //       </FormControl>
+  //       <FormControl size="sm" sx={{ minWidth: 140 }}>
+  //         <FormLabel>To Date</FormLabel>
+  //         <Input
+  //           type="date"
+  //           value={to}
+  //           onChange={(e) => {
+  //             setTo(e.target.value);
+  //             setCurrentPage(1);
+  //           }}
+  //         />
+  //       </FormControl> */}
+  //       <Box mt={3} sx={{ display: "flex", gap: 1 }}>
+  //         {/* <Button
+  //           variant="outlined"
+  //           size="sm"
+  //           color="primary"
+  //           onClick={() => handleExport(false)}
+  //           loading={isExporting}
+  //           disabled={!from || !to}
+  //           startDecorator={<CalendarMonthIcon />}
+  //         >
+  //           Export by Date
+  //         </Button> */}
+
+  //         <Button
+  //           variant="soft"
+  //           size="sm"
+  //           color="neutral"
+  //           onClick={() => handleExport(true)}
+  //           loading={isExporting}
+  //           startDecorator={<DownloadIcon />}
+  //         >
+  //           Export All
+  //         </Button>
+  //       </Box>
+  //     </Box>
+  //   );
+  // };
+
+
+  const handleDateFilterSelect = (type) => {
+    setActiveDateFilter(type);
+    setOpenFilter(false);
+  };
   const renderFilters = () => {
-    const po_status = ["Fully Billed ", "Bill Pending"];
-    const po_type = ["Final", "Partial"];
+    const po_status = ["Fully Billed", "Bill Pending"];
 
     return (
       <Box
         sx={{
+          position: "relative",
           display: "flex",
-          flexWrap: "wrap",
-          gap: 2,
           alignItems: "center",
-          mb: 2,
+          gap: 1.5,
         }}
       >
+
         <FormControl sx={{ flex: 1 }} size="sm">
           <FormLabel>PO Status</FormLabel>
           <Select
-            value={selectedpo}
+           value={selectedpo}
             onChange={(e, newValue) => {
               setSelectedpo(newValue);
-              setCurrentPage(1);
+             setCurrentPage(1);
             }}
-            size="sm"
-            placeholder="Select Status"
-          >
-            <Option value="">All status</Option>
+          size="sm"
+          placeholder="Select Status"
+  >
+         <Option value="">All status</Option>
             {po_status.map((status) => (
-              <Option key={status} value={status}>
+               <Option key={status} value={status}>
                 {status}
               </Option>
             ))}
-          </Select>
+           </Select>
         </FormControl>
-        {/* <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Select Type</FormLabel>
-          <Select
-            value={selectedpo}
-            onChange={(e, newValue) => {
-              setSelectedtype(newValue);
-              setCurrentPage(1);
-            }}
-            size="sm"
-            placeholder="Select Type"
-          >
-            <Option value="">All status</Option>
-            {po_type.map((status) => (
-              <Option key={status} value={status}>
-                {status}
-              </Option>
-            ))}
-          </Select>
-        </FormControl> */}
-        {/* <FormControl size="sm" sx={{ minWidth: 140 }}>
-          <FormLabel>From Date</FormLabel>
-          <Input
-            type="date"
-            value={from}
-            onChange={(e) => {
-              setFrom(e.target.value);
-              setCurrentPage(1);
-            }}
-          />
-        </FormControl>
-        <FormControl size="sm" sx={{ minWidth: 140 }}>
-          <FormLabel>To Date</FormLabel>
-          <Input
-            type="date"
-            value={to}
-            onChange={(e) => {
-              setTo(e.target.value);
-              setCurrentPage(1);
-            }}
-          />
-        </FormControl> */}
-        <Box mt={3} sx={{ display: "flex", gap: 1 }}>
-          {/* <Button
-            variant="outlined"
-            size="sm"
-            color="primary"
-            onClick={() => handleExport(false)}
-            loading={isExporting}
-            disabled={!from || !to}
-            startDecorator={<CalendarMonthIcon />}
-          >
-            Export by Date
-          </Button> */}
 
-          <Button
-            variant="soft"
-            size="sm"
-            color="neutral"
-            onClick={() => handleExport(true)}
-            loading={isExporting}
-            startDecorator={<DownloadIcon />}
+        <Box mt={3} sx={{ display: "flex", gap: 1 }}>
+           <Button
+             variant="soft"
+             size="sm"
+             color="neutral"
+             onClick={() => handleExport(true)}
+             loading={isExporting}
+             startDecorator={<DownloadIcon />}
+           >
+             Export All
+           </Button>
+          </Box>
+
+        <Dropdown open={openFilter} onOpenChange={setOpenFilter}>
+          <MenuButton
+            slots={{ root: IconButton }}
+            slotProps={{
+              root: { variant: "soft", size: "sm", color: "neutral" },
+            }}
+            
+            sx={{mt:3}}
           >
-            Export All
-          </Button>
-        </Box>
+            <CalendarSearch />
+          </MenuButton>
+          <Menu placement="bottom-start">
+            <MenuItem onClick={() => handleDateFilterSelect("etd")}>
+              ETD Date
+            </MenuItem>
+           
+            <MenuItem onClick={() => handleDateFilterSelect("delivery")}>
+              Delivery Date
+            </MenuItem> 
+            {/* <MenuItem onClick={() => handleDateFilterSelect("po")}>
+              PO Date
+            </MenuItem> */}
+          </Menu>
+        </Dropdown>
+
+        
+        {activeDateFilter && (
+          <Sheet
+            variant="outlined"
+            sx={{
+              position: "absolute",
+              top: "120%",
+              zIndex: 10,
+              mt: 1,
+              backgroundColor: "background.body",
+              boxShadow: "md",
+              borderRadius: "sm",
+              p: 2,
+              width: 320,
+            }}
+          >
+            <Typography level="body-sm" fontWeight="bold" gutterBottom>
+              {activeDateFilter === "etd"
+                ? "ETD Date Range"
+                : activeDateFilter === "po"
+                  ? "PO Date Range"
+                  : "Delivery Date Range"}
+            </Typography>
+
+            <Box display="flex" gap={1}>
+              <FormControl size="sm" sx={{ flex: 1 }}>
+                <FormLabel>From</FormLabel>
+                <Input
+                  type="date"
+                  value={
+                    activeDateFilter === "etd"
+                      ? etdFrom
+                      : activeDateFilter === "po"
+                        ? poFrom
+                        : deliveryFrom
+                  }
+                  onChange={(e) => {
+                    if (activeDateFilter === "etd") setEtdFrom(e.target.value);
+                    if (activeDateFilter === "po") setPoFrom(e.target.value);
+                    if (activeDateFilter === "delivery")
+                      setDeliveryFrom(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                />
+              </FormControl>
+
+              <FormControl size="sm" sx={{ flex: 1 }}>
+                <FormLabel>To</FormLabel>
+                <Input
+                  type="date"
+                  value={
+                    activeDateFilter === "etd"
+                      ? etdTo
+                      : activeDateFilter === "po"
+                        ? poTo
+                        : deliveryTo
+                  }
+                  onChange={(e) => {
+                    if (activeDateFilter === "etd") setEtdTo(e.target.value);
+                    if (activeDateFilter === "po") setPoTo(e.target.value);
+                    if (activeDateFilter === "delivery")
+                      setDeliveryTo(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                />
+              </FormControl>
+            </Box>
+          </Sheet>
+        )}
+
+         
       </Box>
     );
   };
@@ -840,7 +1015,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                     }}
                   >
                     <CircularProgress size="sm" sx={{ marginBottom: "8px" }} />
-                    <Typography fontStyle="italic">Loading Po's… please hang tight ⏳</Typography>
+                    <Typography fontStyle="italic">
+                      Loading Po's… please hang tight ⏳
+                    </Typography>
                   </Box>
                 </td>
               </tr>
