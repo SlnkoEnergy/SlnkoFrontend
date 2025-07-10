@@ -149,13 +149,7 @@ function POSummary() {
                   justifyContent: "center",
                 }}
               >
-                <Button
-                  color="primary"
-                  size="sm"
-                  onClick={() => navigate("/add_po")}
-                >
-                  Add PO +
-                </Button>
+               
 
                 {user?.name !== "Gagan Tayal" && (
                   <>
