@@ -165,6 +165,7 @@ export default function Project_Detail() {
               <TabList>
                 <Tab>Handover Sheet</Tab>
                 <Tab>Engineering</Tab>
+                <Tab>Material Scope</Tab>
                 <Tab>Purchase Summary</Tab>
               </TabList>
 
@@ -193,7 +194,18 @@ export default function Project_Detail() {
                 </Box>
               </TabPanel>
 
-              <TabPanel value={2}>
+               <TabPanel value={2}>
+                <Box
+                  display="flex"
+                  alignItems="flex-start"
+                  height="70vh"
+                  overflowY="auto"
+                >
+                  <Overview />
+                </Box>
+              </TabPanel>
+
+              <TabPanel value={3}>
                 <Box overflowY="auto">
                   <PurchaseRequestCard project_code={projectDetails?.code} />
                 </Box>
