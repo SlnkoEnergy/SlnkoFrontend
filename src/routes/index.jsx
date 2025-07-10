@@ -108,6 +108,9 @@ import Add_Material_Category from "../pages/Eng/Forms/Add_Material_Category";
 import Add_Material from "../pages/Eng/Forms/Add_Material";
 import AddBoq from "../pages/Eng/AddBoq";
 import View_Project from "../component/Forms/View_Project";
+import ProjectDetail from "../pages/CAM/ProjectDetail";
+import PurchaseRequestSheet from "../pages/CAM/PurchaseRequest";
+import PurchaseReqDetails from "../pages/CAM/PurchaseRequestDetail";
 
 function index() {
   return (
@@ -332,6 +335,22 @@ function index() {
           </PrivateRoute>
         }
       />
+      <Route
+        path="/project_detail"
+        element={
+          <PrivateRoute>
+            <ProjectDetail />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/purchase_detail"
+        element={
+          <PrivateRoute>
+            <PurchaseReqDetails />
+          </PrivateRoute>
+        }
+      />
 
       {/*-------------Eng----------*/}
       <Route
@@ -359,20 +378,20 @@ function index() {
         }
       />
       <Route
-      path="/add_material_category"
-      element={
-        <PrivateRoute>
-          <Add_Material_Category />
-        </PrivateRoute>
-      }
+        path="/add_material_category"
+        element={
+          <PrivateRoute>
+            <Add_Material_Category />
+          </PrivateRoute>
+        }
       />
       <Route
-      path="/add_material"
-      element={
-        <PrivateRoute>
-          <Add_Material />
-        </PrivateRoute>
-      }
+        path="/add_material"
+        element={
+          <PrivateRoute>
+            <Add_Material />
+          </PrivateRoute>
+        }
       />
       <Route
         path="/add_folder"
@@ -401,7 +420,7 @@ function index() {
         }
       />
 
-<Route
+      <Route
         path="/overview"
         element={
           <PrivateRoute>
@@ -775,6 +794,14 @@ function index() {
         element={
           <PrivateRoute>
             <Won_History />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/purchase_request"
+        element={
+          <PrivateRoute>
+            <PurchaseRequestSheet />
           </PrivateRoute>
         }
       />

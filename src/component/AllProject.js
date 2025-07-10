@@ -42,13 +42,9 @@ import View_Project from "./Forms/View_Project";
 
 const AllProjects = forwardRef((props, ref) => {
   const navigate = useNavigate();
-  // const [projects, setProjects] = useState([]);
-  // const [loading, setLoading] = useState(true);
-  // const [error, setError] = useState(null);
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
-  const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedProjects, setSelectedProjects] = useState([]);
@@ -85,6 +81,8 @@ const AllProjects = forwardRef((props, ref) => {
     borderRadius: 2,
     overflowY: "auto",
   };
+
+  
 
   const handleOpen = (p_id, mode) => {
     setSelectedProjectId(p_id);
@@ -148,7 +146,7 @@ const AllProjects = forwardRef((props, ref) => {
           >
             <MoreHorizRoundedIcon />
           </MenuButton>
-          <Menu size="sm" sx={{ minWidth: 140 }}>
+          <Menu size="sm" sx={{ minWidth: 140, fontSize:"14px" }}>
             <MenuItem
               color="primary"
               onClick={() => {
@@ -448,6 +446,7 @@ const AllProjects = forwardRef((props, ref) => {
           flexShrink: 1,
           overflow: "auto",
           minHeight: 0,
+          fontSize:"14px",
           marginLeft: { xl: "15%", lg: "18%" },
           maxWidth: { lg: "85%", sm: "100%" },
         }}
@@ -493,8 +492,9 @@ const AllProjects = forwardRef((props, ref) => {
                   sx={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
-                    textAlign: "center",
+                    textAlign: "left",
                     fontWeight: "bold",
+                    fontSize:"14px",
                   }}
                 >
                   {header}
@@ -517,7 +517,8 @@ const AllProjects = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
+                      fontSize:"14px",
                     }}
                   >
                     <Checkbox
@@ -533,7 +534,7 @@ const AllProjects = forwardRef((props, ref) => {
                       sx={{
                         borderBottom: "1px dotted #888",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                         cursor: "pointer",
                         "&:hover": { textDecoration: "underline" },
                       }}
@@ -551,7 +552,7 @@ const AllProjects = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.customer}
@@ -561,7 +562,7 @@ const AllProjects = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.name}
@@ -571,7 +572,7 @@ const AllProjects = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.email}
@@ -581,7 +582,7 @@ const AllProjects = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.number}
@@ -591,7 +592,7 @@ const AllProjects = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.state}
@@ -601,7 +602,7 @@ const AllProjects = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.service}
@@ -611,7 +612,7 @@ const AllProjects = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {project.handover ? (
@@ -660,7 +661,7 @@ const AllProjects = forwardRef((props, ref) => {
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     <RowMenu currentPage={currentPage} p_id={project.p_id} />
@@ -674,7 +675,7 @@ const AllProjects = forwardRef((props, ref) => {
                   colSpan={9}
                   sx={{
                     padding: "8px",
-                    textAlign: "center",
+                    textAlign: "left",
                     fontStyle: "italic",
                   }}
                 >

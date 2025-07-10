@@ -360,10 +360,17 @@ function Sidebar() {
                   </ListItemButton>
                 )}
               >
-                <List>
+                <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
                     <ListItemButton onClick={() => navigate("/cam_dash")}>
                       Dashboard
+                    </ListItemButton>
+                  </ListItem>
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/purchase_request")}
+                    >
+                      Purchase Request
                     </ListItemButton>
                   </ListItem>
                 </List>
@@ -929,6 +936,44 @@ function Sidebar() {
               "--ListItem-radius": (theme) => theme.vars.radius.sm,
             }}
           >
+
+             {/*BD*/}
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <AssignmentRoundedIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">BD</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/leads")}>
+                      Leads
+                    </ListItemButton>
+                  </ListItem>
+                  {/* <ListItem>
+                    <ListItemButton onClick={() => navigate("/comm_offer")}>
+                      Commercial Offer
+                    </ListItemButton>
+                  </ListItem> */}
+                </List>
+              </Toggler>
+            </ListItem>
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -978,6 +1023,45 @@ function Sidebar() {
                       onClick={() => navigate("/payment-approved")}
                     >
                       Approved Payment
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+             {/* CAM */}
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <MiscellaneousServicesIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">CAM</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/cam_dash")}>
+                      Dashboard
+                    </ListItemButton>
+                  </ListItem>
+                   <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/purchase_request")}
+                    >
+                      Purchase Request
                     </ListItemButton>
                   </ListItem>
                 </List>
@@ -1102,76 +1186,7 @@ function Sidebar() {
               </ListItem>
             )}
 
-            {/* CAM */}
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <MiscellaneousServicesIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">CAM</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/cam_dash")}>
-                      Dashboard
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
-            </ListItem>
 
-            {/*BD*/}
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <AssignmentRoundedIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">BD</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/leads")}>
-                      Leads
-                    </ListItemButton>
-                  </ListItem>
-                  {/* <ListItem>
-                    <ListItemButton onClick={() => navigate("/comm_offer")}>
-                      Commercial Offer
-                    </ListItemButton>
-                  </ListItem> */}
-                </List>
-              </Toggler>
-            </ListItem>
 
             <ListItem nested>
               <Toggler
@@ -1268,6 +1283,40 @@ function Sidebar() {
                       onClick={() => navigate("/daily-payment-request")}
                     >
                       Daily Payment Request
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+
+             <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <MiscellaneousServicesIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">CAM</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/purchase_request")}
+                    >
+                      Purchase Request
                     </ListItemButton>
                   </ListItem>
                 </List>
@@ -1401,6 +1450,40 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
+             <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <MiscellaneousServicesIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">CAM</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/purchase_request")}
+                    >
+                      Purchase Request
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -1442,6 +1525,7 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
+
 
             <ListItem nested>
               <Toggler
@@ -1640,6 +1724,13 @@ function Sidebar() {
                       Dashboard
                     </ListItemButton>
                   </ListItem>
+                   <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/purchase_request")}
+                    >
+                      Purchase Request
+                    </ListItemButton>
+                  </ListItem>
                 </List>
               </Toggler>
             </ListItem>
@@ -1803,6 +1894,13 @@ function Sidebar() {
                   <ListItem sx={{ mt: 0.5 }}>
                     <ListItemButton onClick={() => navigate("/cam_dash")}>
                       Dashboard
+                    </ListItemButton>
+                  </ListItem>
+                   <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/purchase_request")}
+                    >
+                      Purchase Request
                     </ListItemButton>
                   </ListItem>
                 </List>

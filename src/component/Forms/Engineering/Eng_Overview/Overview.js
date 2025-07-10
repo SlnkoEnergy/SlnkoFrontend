@@ -12,7 +12,7 @@ import {
   IconButton,
 } from "@mui/joy";
 import axios from "axios";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import {
   useGetModuleCategoryByIdQuery,
@@ -66,7 +66,7 @@ const Overview = () => {
 
   const isEngineering = user?.department === "Engineering";
   const isCAM = user?.department === "CAM" || user?.department === "Projects";
- 
+
   console.log("isCAM →", isCAM);
   const projectId = searchParams.get("project_id");
   const page = searchParams.get("page");
@@ -142,64 +142,70 @@ const Overview = () => {
   );
 
   const handleSubmit = async (index) => {
-  const userId = user?.userID;
+    const userId = user?.userID;
 
-  if (!userId) {
-    toast.error("User ID not found. Please log in again.");
-    return;
-  }
+    if (!userId) {
+      toast.error("User ID not found. Please log in again.");
+      return;
+    }
 
-  const selectedFiles = fileUploads[index];
+    const selectedFiles = fileUploads[index];
 
-  if (!selectedFiles || selectedFiles.length === 0) {
-    toast.error("No files selected for this folder.");
-    return;
-  }
+    if (!selectedFiles || selectedFiles.length === 0) {
+      toast.error("No files selected for this folder.");
+      return;
+    }
 
-  const formData = new FormData();
+    const formData = new FormData();
 
-  const item = categoryData[selected][index];
-  const templateId = item.templateId;
+    const item = categoryData[selected][index];
+    const templateId = item.templateId;
 
-  const statusHistory = [
-    {
-      status: "submitted",
-      user_id: userId,
-      timestamp: new Date().toISOString(),
-      remarks: "",
-    },
-  ];
-
-  formData.append(`items[0][template_id]`, templateId);
-  formData.append(`items[0][attachment_urls][0][attachment_number]`, "R0");
-
-  statusHistory.forEach((status, k) => {
-    formData.append(`items[0][status_history][${k}][status]`, status.status);
-    formData.append(`items[0][status_history][${k}][user_id]`, status.user_id);
-    formData.append(`items[0][status_history][${k}][timestamp]`, status.timestamp);
-  });
-
-  selectedFiles.forEach((fileObj) => {
-    formData.append("files", fileObj.file);
-  });
-
-  try {
-    await axios.put(
-      `${process.env.REACT_APP_API_URL}/engineering/update-module-category?projectId=${projectId}`,
-      formData,
+    const statusHistory = [
       {
-        headers: {
-          "x-auth-token": localStorage.getItem("authToken"),
-        },
-      }
-    );
-    toast.success(`Files submitted for "${item.name}" successfully!`);
-    window.location.reload();
-  } catch (error) {
-    console.error("❌ Update error:", error.response?.data || error.message);
-    toast.error("Failed to submit files for this folder.");
-  }
-};
+        status: "submitted",
+        user_id: userId,
+        timestamp: new Date().toISOString(),
+        remarks: "",
+      },
+    ];
+
+    formData.append(`items[0][template_id]`, templateId);
+    formData.append(`items[0][attachment_urls][0][attachment_number]`, "R0");
+
+    statusHistory.forEach((status, k) => {
+      formData.append(`items[0][status_history][${k}][status]`, status.status);
+      formData.append(
+        `items[0][status_history][${k}][user_id]`,
+        status.user_id
+      );
+      formData.append(
+        `items[0][status_history][${k}][timestamp]`,
+        status.timestamp
+      );
+    });
+
+    selectedFiles.forEach((fileObj) => {
+      formData.append("files", fileObj.file);
+    });
+
+    try {
+      await axios.put(
+        `${process.env.REACT_APP_API_URL}/engineering/update-module-category?projectId=${projectId}`,
+        formData,
+        {
+          headers: {
+            "x-auth-token": localStorage.getItem("authToken"),
+          },
+        }
+      );
+      toast.success(`Files submitted for "${item.name}" successfully!`);
+      window.location.reload();
+    } catch (error) {
+      console.error("❌ Update error:", error.response?.data || error.message);
+      toast.error("Failed to submit files for this folder.");
+    }
+  };
 
   const handleHold = async () => {
     try {
@@ -443,6 +449,8 @@ const Overview = () => {
       setPreviewFileUrl(url);
     }
   };
+  const location = useLocation();
+  const isFromCamDash = location.pathname === "/project_detail";
 
   return (
     <Box
@@ -450,21 +458,24 @@ const Overview = () => {
         display: "flex",
         flexDirection: "column",
         height: "100vh",
+        maxHeight: "70vh",
         width: "85vw",
         bgcolor: "background.body",
-        p: 4,
-        marginLeft: "13%",
+        marginLeft: isFromCamDash ? "0%" : "13%",
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-        <IconButton
-          onClick={() => navigate(`/eng_dash?page=${page}`)}
-          variant="soft"
-          color="neutral"
-        >
-          <ChevronLeftIcon />
-        </IconButton>
+        {isEngineering && (
+          <IconButton
+            onClick={() => navigate(`/eng_dash?page=${page}`)}
+            variant="soft"
+            color="neutral"
+          >
+            <ChevronLeftIcon />
+          </IconButton>
+        )}
       </Box>
+
       <Box sx={{ display: "flex", flexGrow: 1, gap: 3 }}>
         <Sheet
           variant="outlined"
@@ -497,152 +508,168 @@ const Overview = () => {
           </List>
         </Sheet>
 
-  <Sheet
-    variant="outlined"
-    sx={{
-      flexGrow: 1,
-      p: 4,
-      borderRadius: "lg",
-      boxShadow: "sm",
-      overflowY: "auto",
-      bgcolor: "#f9fafb",
-    }}
-  >
-    {!isEngineering && (
-      <Typography
-        level="body-sm"
-        sx={{ mb: 2, color: "warning.700", fontWeight: 500 }}
-      >
-        🔒 Upload access is restricted. You can only view/download files.
-      </Typography>
-    )}
-    <Divider sx={{ mb: 3 }} />
-
-   <Box sx={{ display: "grid", gap: 3 }}>
-  {selected === "summary" ? (
-    boqSummaryData && boqSummaryData.length > 0 ? (
-      boqSummaryData.map((summary, i) => (
         <Sheet
-          key={i}
           variant="outlined"
           sx={{
-            p: 3,
+            flexGrow: 1,
+            p: 4,
             borderRadius: "lg",
             boxShadow: "sm",
-            bgcolor: "background.surface",
+            overflowY: "auto",
+            bgcolor: "#f9fafb",
+            maxHeight: isFromCamDash ? "70vh" : "100%",
           }}
         >
-          <Typography level="title-md" sx={{ mb: 1 }}>
-            📘 {summary.boq_category_name}
-          </Typography>
-
-          {summary.item?.current_data?.length > 0 ? (
-            summary.item.current_data.map((row, j) => (
-              <Box
-                key={j}
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  borderBottom: "1px solid #ccc",
-                  py: 1,
-                }}
-              >
-                <Typography level="body-sm" fontWeight="lg">
-                  {row.name}
-                </Typography>
-                <Typography level="body-sm">
-                  {row.values.map((v) => v.input_values).join(", ")}
-                </Typography>
-              </Box>
-            ))
-          ) : (
-            <Typography level="body-sm" sx={{ ml: 1 }}>
-              No data available.
+          {!isEngineering && (
+            <Typography
+              level="body-sm"
+              sx={{ mb: 2, color: "warning.700", fontWeight: 500 }}
+            >
+              🔒 Upload access is restricted. You can only view/download files.
             </Typography>
           )}
-        </Sheet>
-      ))
-    ) : (
-      <Typography>No summary data found.</Typography>
-    )
-  ) : categoryData[selected]?.length > 0 ? (
-    categoryData[selected].map((item, index) => {
-      const isUploadDisabled = item.latestStatus === "approved";
-      const isAnyFileSelectedForThis = fileUploads[index]?.length > 0;
+          <Divider sx={{ mb: 3 }} />
 
-      return (
-        <Sheet
-          key={index}
-          variant="outlined"
-          sx={{
-            p: 3,
-            borderRadius: "lg",
-            boxShadow: "sm",
-            bgcolor: "background.surface",
-            position: "relative",
-          }}
-        >
-          <Typography level="title-md" sx={{ mb: 1 }}>
-            📁 {item.name}
-          </Typography>
-          <Typography level="body-sm" sx={{ color: "text.secondary", mb: 2 }}>
-            {item.description}
-          </Typography>
-          <Typography level="body-xs" sx={{ fontWeight: 600 }}>
-            Max Uploads Allowed: {item.maxFiles}
-          </Typography>
-
-          {item.fileUploadEnabled &&
-            isEngineering &&
-            !isUploadDisabled &&
-            item.latestStatus !== "hold" && (
-              <input
-                type="file"
-                multiple
-                onChange={(e) => {
-                  const selectedFiles = Array.from(e.target.files);
-                  if (selectedFiles.length > item.maxFiles) {
-                    toast.error(`You can only upload up to ${item.maxFiles} files.`);
-                    return;
-                  }
-                  handleMultiFileChange(index, selectedFiles);
-                }}
-                style={{
-                  padding: "8px",
-                  border: "1px solid #ccc",
-                  borderRadius: "6px",
-                  backgroundColor: "#fff",
-                  width: "100%",
-                  marginTop: "8px",
-                }}
-              />
-            )}
-
-          {fileUploads[index]?.length > 0 && (
-            <Box sx={{ mt: 1 }}>
-              {fileUploads[index].map((f, i) => (
-                <Box key={i} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Typography level="body-xs">
-                    📎 {f.fileName} ({(f.file.size / 1024).toFixed(1)} KB)
-                  </Typography>
-                  <Button
-                    size="sm"
-                    variant="plain"
-                    color="danger"
-                    onClick={() =>
-                      setFileUploads((prev) => ({
-                        ...prev,
-                        [index]: prev[index].filter((_, idx) => idx !== i),
-                      }))
-                    }
+          <Box sx={{ display: "grid", gap: 3 }}>
+            {selected === "summary" ? (
+              boqSummaryData && boqSummaryData.length > 0 ? (
+                boqSummaryData.map((summary, i) => (
+                  <Sheet
+                    key={i}
+                    variant="outlined"
+                    sx={{
+                      p: 3,
+                      borderRadius: "lg",
+                      boxShadow: "sm",
+                      bgcolor: "background.surface",
+                    }}
                   >
-                    ❌
-                  </Button>
-                </Box>
-              ))}
-            </Box>
-          )}
+                    <Typography level="title-md" sx={{ mb: 1 }}>
+                      📘 {summary.boq_category_name}
+                    </Typography>
+
+                    {summary.item?.current_data?.length > 0 ? (
+                      summary.item.current_data.map((row, j) => (
+                        <Box
+                          key={j}
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            borderBottom: "1px solid #ccc",
+                            py: 1,
+                          }}
+                        >
+                          <Typography level="body-sm" fontWeight="lg">
+                            {row.name}
+                          </Typography>
+                          <Typography level="body-sm">
+                            {row.values.map((v) => v.input_values).join(", ")}
+                          </Typography>
+                        </Box>
+                      ))
+                    ) : (
+                      <Typography level="body-sm" sx={{ ml: 1 }}>
+                        No data available.
+                      </Typography>
+                    )}
+                  </Sheet>
+                ))
+              ) : (
+                <Typography>No summary data found.</Typography>
+              )
+            ) : categoryData[selected]?.length > 0 ? (
+              categoryData[selected].map((item, index) => {
+                const isUploadDisabled = item.latestStatus === "approved";
+                const isAnyFileSelectedForThis = fileUploads[index]?.length > 0;
+
+                return (
+                  <Sheet
+                    key={index}
+                    variant="outlined"
+                    sx={{
+                      p: 3,
+                      borderRadius: "lg",
+                      boxShadow: "sm",
+                      bgcolor: "background.surface",
+                      position: "relative",
+                    }}
+                  >
+                    <Typography level="title-md" sx={{ mb: 1 }}>
+                      📁 {item.name}
+                    </Typography>
+                    <Typography
+                      level="body-sm"
+                      sx={{ color: "text.secondary", mb: 2 }}
+                    >
+                      {item.description}
+                    </Typography>
+                    <Typography level="body-xs" sx={{ fontWeight: 600 }}>
+                      Max Uploads Allowed: {item.maxFiles}
+                    </Typography>
+
+                    {item.fileUploadEnabled &&
+                      isEngineering &&
+                      !isUploadDisabled &&
+                      item.latestStatus !== "hold" && (
+                        <input
+                          type="file"
+                          multiple
+                          onChange={(e) => {
+                            const selectedFiles = Array.from(e.target.files);
+                            if (selectedFiles.length > item.maxFiles) {
+                              toast.error(
+                                `You can only upload up to ${item.maxFiles} files.`
+                              );
+                              return;
+                            }
+                            handleMultiFileChange(index, selectedFiles);
+                          }}
+                          style={{
+                            padding: "8px",
+                            border: "1px solid #ccc",
+                            borderRadius: "6px",
+                            backgroundColor: "#fff",
+                            width: "100%",
+                            marginTop: "8px",
+                          }}
+                        />
+                      )}
+
+                    {fileUploads[index]?.length > 0 && (
+                      <Box sx={{ mt: 1 }}>
+                        {fileUploads[index].map((f, i) => (
+                          <Box
+                            key={i}
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            <Typography level="body-xs">
+                              📎 {f.fileName} ({(f.file.size / 1024).toFixed(1)}{" "}
+                              KB)
+                            </Typography>
+                            <Button
+                              size="sm"
+                              variant="plain"
+                              color="danger"
+                              onClick={() =>
+                                setFileUploads((prev) => ({
+                                  ...prev,
+                                  [index]: prev[index].filter(
+                                    (_, idx) => idx !== i
+                                  ),
+                                }))
+                              }
+                            >
+                              ❌
+                            </Button>
+                          </Box>
+                        ))}
+                      </Box>
+                    )}
 
                     {item.currentAttachments.map((url, i) => (
                       <ListItem
@@ -670,87 +697,94 @@ const Overview = () => {
                       </ListItem>
                     ))}
 
-          <Box sx={{ mt: 2 }}>
-            <Typography level="body-xs" sx={{ fontWeight: 500 }}>
-              Current Status:{" "}
-              <Typography component="span" level="body-xs" fontWeight="bold">
-                {item.latestStatus || "N/A"}
-              </Typography>
-              {item.latestStatus === "revised" &&
-                Array.isArray(item.latestRemarks) &&
-                item.latestRemarks.length > 0 && (
-                  <>
-                    {" — Remarks: "}
-                    {item.latestRemarks.map((remark, i) => (
-                      <Typography
-                        key={remark._id || i}
-                        component="span"
-                        level="body-xs"
-                        sx={{ display: "block" }}
-                      >
-                        {remark.department}: {remark.text}
+                    <Box sx={{ mt: 2 }}>
+                      <Typography level="body-xs" sx={{ fontWeight: 500 }}>
+                        Current Status:{" "}
+                        <Typography
+                          component="span"
+                          level="body-xs"
+                          fontWeight="bold"
+                        >
+                          {item.latestStatus || "N/A"}
+                        </Typography>
+                        {item.latestStatus === "revised" &&
+                          Array.isArray(item.latestRemarks) &&
+                          item.latestRemarks.length > 0 && (
+                            <>
+                              {" — Remarks: "}
+                              {item.latestRemarks.map((remark, i) => (
+                                <Typography
+                                  key={remark._id || i}
+                                  component="span"
+                                  level="body-xs"
+                                  sx={{ display: "block" }}
+                                >
+                                  {remark.department}: {remark.text}
+                                </Typography>
+                              ))}
+                            </>
+                          )}
+                        {item.latestStatus === "hold" &&
+                          Array.isArray(item.latestRemarks) &&
+                          item.latestRemarks.length > 0 && (
+                            <>
+                              <Typography sx={{ mt: 1, fontWeight: 500 }}>
+                                Hold Remarks:
+                              </Typography>
+                              {item.latestRemarks.map((remark, i) => (
+                                <Typography
+                                  key={remark._id || i}
+                                  component="span"
+                                  level="body-xs"
+                                  sx={{ display: "block" }}
+                                >
+                                  {remark.department}: {remark.text}
+                                </Typography>
+                              ))}
+                            </>
+                          )}
                       </Typography>
-                    ))}
-                  </>
-                )}
-              {item.latestStatus === "hold" &&
-                Array.isArray(item.latestRemarks) &&
-                item.latestRemarks.length > 0 && (
-                  <>
-                    <Typography sx={{ mt: 1, fontWeight: 500 }}>
-                      Hold Remarks:
-                    </Typography>
-                    {item.latestRemarks.map((remark, i) => (
-                      <Typography
-                        key={remark._id || i}
-                        component="span"
-                        level="body-xs"
-                        sx={{ display: "block" }}
-                      >
-                        {remark.department}: {remark.text}
-                      </Typography>
-                    ))}
-                  </>
-                )}
-            </Typography>
-          </Box>
+                    </Box>
 
-          <Box
-            sx={{
-              position: "absolute",
-              top: 12,
-              right: 12,
-              display: "flex",
-              gap: 1,
-              flexWrap: "wrap",
-            }}
-          >
-            {item.attachmentUrls?.length > 0 && (
-              <>
-                <Button
-                  variant="outlined"
-                  size="sm"
-                  onClick={() => handleLogsOpen(item.attachmentUrls)}
-                  disabled={isCAM && item.latestStatus === "hold"}
-                  sx={{
-                    opacity: isCAM && item.latestStatus === "hold" ? 0.5 : 1,
-                    pointerEvents:
-                      isCAM && item.latestStatus === "hold" ? "none" : "auto",
-                  }}
-                >
-                  📂 Attachment Logs
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outlined"
-                  color="neutral"
-                  onClick={() => {
-                    setRemarksTemplateId(item.templateId);
-                    setShowAddRemarksModal(true);
-                  }}
-                >
-                  📝 Add Remarks
-                </Button>
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: 12,
+                        right: 12,
+                        display: "flex",
+                        gap: 1,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      {item.attachmentUrls?.length > 0 && (
+                        <>
+                          <Button
+                            variant="outlined"
+                            size="sm"
+                            onClick={() => handleLogsOpen(item.attachmentUrls)}
+                            disabled={isCAM && item.latestStatus === "hold"}
+                            sx={{
+                              opacity:
+                                isCAM && item.latestStatus === "hold" ? 0.5 : 1,
+                              pointerEvents:
+                                isCAM && item.latestStatus === "hold"
+                                  ? "none"
+                                  : "auto",
+                            }}
+                          >
+                            📂 Attachment Logs
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outlined"
+                            color="neutral"
+                            onClick={() => {
+                              setRemarksTemplateId(item.templateId);
+                              setShowAddRemarksModal(true);
+                            }}
+                          >
+                            📝 Add Remarks
+                          </Button>
 
                           {!isCAM && item?.boqEnabled && (
                             <Button
@@ -768,85 +802,89 @@ const Overview = () => {
                         </>
                       )}
 
-            {isCAM && item.latestStatus === "submitted" && (
-              <>
-                <Button
-                  size="sm"
-                  variant="soft"
-                  color="success"
-                  onClick={() => handleApprove(item.templateId)}
-                  disabled={isUpdating}
-                >
-                  ✅ Approve
-                </Button>
-                <Button
-                  size="sm"
-                  variant="soft"
-                  color="warning"
-                  onClick={() => {
-                    setActiveTemplateId(item.templateId);
-                    setShowRemarksModal(true);
-                  }}
-                  disabled={isUpdating}
-                >
-                  🔁 Revise
-                </Button>
-              </>
-            )}
+                      {isCAM && item.latestStatus === "submitted" && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="soft"
+                            color="success"
+                            onClick={() => handleApprove(item.templateId)}
+                            disabled={isUpdating}
+                          >
+                            ✅ Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="soft"
+                            color="warning"
+                            onClick={() => {
+                              setActiveTemplateId(item.templateId);
+                              setShowRemarksModal(true);
+                            }}
+                            disabled={isUpdating}
+                          >
+                            🔁 Revise
+                          </Button>
+                        </>
+                      )}
 
-            {isEngineering &&
-              (user?.name === "Rishav Mahato" || user?.name === "Ranvijay Singh") &&
-              item.latestStatus !== "hold" && (
-                <Button
-                  size="sm"
-                  variant="soft"
-                  color="warning"
-                  onClick={() => {
-                    setHoldTemplateId(item.templateId);
-                    setShowHoldModal(true);
-                  }}
-                  disabled={isUpdating}
-                >
-                  🚧 Hold
-                </Button>
-              )}
+                      {isEngineering &&
+                        (user?.name === "Rishav Mahato" ||
+                          user?.name === "Ranvijay Singh") &&
+                        item.latestStatus !== "hold" && (
+                          <Button
+                            size="sm"
+                            variant="soft"
+                            color="warning"
+                            onClick={() => {
+                              setHoldTemplateId(item.templateId);
+                              setShowHoldModal(true);
+                            }}
+                            disabled={isUpdating}
+                          >
+                            🚧 Hold
+                          </Button>
+                        )}
 
-            {isEngineering && item.latestStatus === "hold" && (
-              <Button
-                size="sm"
-                variant="soft"
-                color="success"
-                onClick={() => handleUnhold(item.templateId)}
-                disabled={isUpdating}
-              >
-                🟢 Unhold
-              </Button>
+                      {isEngineering && item.latestStatus === "hold" && (
+                        <Button
+                          size="sm"
+                          variant="soft"
+                          color="success"
+                          onClick={() => handleUnhold(item.templateId)}
+                          disabled={isUpdating}
+                        >
+                          🟢 Unhold
+                        </Button>
+                      )}
+                    </Box>
+
+                    {isEngineering && isAnyFileSelectedForThis && (
+                      <Box sx={{ textAlign: "right", mt: 3 }}>
+                        <Button
+                          variant="solid"
+                          color="primary"
+                          onClick={() => handleSubmit(index)}
+                          sx={{
+                            px: 3,
+                            py: 1,
+                            fontWeight: "lg",
+                            borderRadius: "md",
+                          }}
+                        >
+                          📤 Submit Files
+                        </Button>
+                      </Box>
+                    )}
+                  </Sheet>
+                );
+              })
+            ) : (
+              <Typography>No documentation found for {selected}.</Typography>
             )}
           </Box>
-
-          {isEngineering && isAnyFileSelectedForThis && (
-            <Box sx={{ textAlign: "right", mt: 3 }}>
-              <Button
-                variant="solid"
-                color="primary"
-                onClick={() => handleSubmit(index)}
-                sx={{ px: 3, py: 1, fontWeight: "lg", borderRadius: "md" }}
-              >
-                📤 Submit Files
-              </Button>
-            </Box>
-          )}
         </Sheet>
-      );
-    })
-  ) : (
-    <Typography>No documentation found for {selected}.</Typography>
-  )}
-</Box>
-
-  </Sheet>
-</Box>
-
+      </Box>
 
       <Modal open={showLogsModal} onClose={() => setShowLogsModal(false)}>
         <ModalDialog>
@@ -1135,85 +1173,85 @@ const Overview = () => {
               </Typography>
             )}
           </Box>
-      <Modal
-        open={!!previewFileUrl}
-        onClose={() => {
-          setPreviewFileUrl(null);
-          setIframeLoaded(false);
-        }}
-      >
-        <ModalDialog
-          sx={{
-            width: "70vw",
-            height: "90vh",
-            maxWidth: "none",
-            maxHeight: "none",
-            p: 2,
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <Box sx={{ flexGrow: 1, position: "relative", overflow: "auto" }}>
-            {/\.(jpg|jpeg|png|webp|gif)$/i.test(previewFileUrl) ? (
-              <img
-                src={previewFileUrl}
-                alt="Preview"
-                style={{
-                  maxWidth: "100%",
-                  maxHeight: "100%",
-                  objectFit: "contain",
-                  borderRadius: 8,
-                  display: "block",
-                  margin: "0 auto",
-                }}
-              />
-            ) : previewFileUrl?.endsWith(".pdf") ? (
-              <>
-                {!iframeLoaded && (
-                  <Typography
-                    level="body-sm"
-                    sx={{
-                      position: "absolute",
-                      top: "50%",
-                      left: "50%",
-                      transform: "translate(-50%, -50%)",
-                      color: "gray",
-                    }}
-                  >
-                    ⏳ Loading Preview...
-                  </Typography>
-                )}
-                <iframe
-                  src={`https://docs.google.com/gview?url=${encodeURIComponent(previewFileUrl)}&embedded=true`}
-                  title="PDF Preview"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    border: "none",
-                    display: iframeLoaded ? "block" : "none",
-                    borderRadius: 8,
-                  }}
-                  onLoad={() => setIframeLoaded(true)}
-                />
-              </>
-            ) : (
-              <Typography level="body-sm" sx={{ color: "gray" }}>
-                ⚠️ Preview not available for this file type.
-              </Typography>
-            )}
-          </Box>
-
-          <Button
-            onClick={() => {
+          <Modal
+            open={!!previewFileUrl}
+            onClose={() => {
               setPreviewFileUrl(null);
               setIframeLoaded(false);
             }}
-            sx={{ mt: 2, alignSelf: "flex-end" }}
           >
-            Close
-          </Button>
-        </ModalDialog>
-      </Modal>
+            <ModalDialog
+              sx={{
+                width: "70vw",
+                height: "90vh",
+                maxWidth: "none",
+                maxHeight: "none",
+                p: 2,
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <Box sx={{ flexGrow: 1, position: "relative", overflow: "auto" }}>
+                {/\.(jpg|jpeg|png|webp|gif)$/i.test(previewFileUrl) ? (
+                  <img
+                    src={previewFileUrl}
+                    alt="Preview"
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: "100%",
+                      objectFit: "contain",
+                      borderRadius: 8,
+                      display: "block",
+                      margin: "0 auto",
+                    }}
+                  />
+                ) : previewFileUrl?.endsWith(".pdf") ? (
+                  <>
+                    {!iframeLoaded && (
+                      <Typography
+                        level="body-sm"
+                        sx={{
+                          position: "absolute",
+                          top: "50%",
+                          left: "50%",
+                          transform: "translate(-50%, -50%)",
+                          color: "gray",
+                        }}
+                      >
+                        ⏳ Loading Preview...
+                      </Typography>
+                    )}
+                    <iframe
+                      src={`https://docs.google.com/gview?url=${encodeURIComponent(previewFileUrl)}&embedded=true`}
+                      title="PDF Preview"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        border: "none",
+                        display: iframeLoaded ? "block" : "none",
+                        borderRadius: 8,
+                      }}
+                      onLoad={() => setIframeLoaded(true)}
+                    />
+                  </>
+                ) : (
+                  <Typography level="body-sm" sx={{ color: "gray" }}>
+                    ⚠️ Preview not available for this file type.
+                  </Typography>
+                )}
+              </Box>
+
+              <Button
+                onClick={() => {
+                  setPreviewFileUrl(null);
+                  setIframeLoaded(false);
+                }}
+                sx={{ mt: 2, alignSelf: "flex-end" }}
+              >
+                Close
+              </Button>
+            </ModalDialog>
+          </Modal>
           <Button
             onClick={() => {
               setPreviewFileUrl(null);

@@ -46,6 +46,7 @@ export const store = configureStore({
     [templatesApi.reducerPath]: templatesApi.reducer,
     [billsApi.reducerPath]: billsApi.reducer,
     [masterSheetApi.reducerPath]: masterSheetApi.reducer,
+    
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -70,6 +71,7 @@ export const store = configureStore({
       expensesApi.middleware,
       templatesApi.middleware,
       billsApi.middleware,
-      masterSheetApi.middleware
+      masterSheetApi.middleware,
+      
     ),
 });

@@ -16,7 +16,7 @@ import {
   Typography,
 } from "@mui/joy";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import * as Yup from "yup";
 import Img1 from "../../../assets/HandOverSheet_Icon.jpeg";
@@ -101,16 +101,16 @@ const CamHandoverSheetForm = ({ onBack }) => {
       project_type: "",
       module_make_capacity: "",
       module_make: "",
-      module_make_other:"",
+      module_make_other: "",
       module_capacity: "",
       module_type: "",
       module_category: "",
       evacuation_voltage: "",
       inverter_make_capacity: "",
       inverter_make: "",
-      inverter_make_other:"",
+      inverter_make_other: "",
       inverter_type: "",
-      inverter_type_other:"",
+      inverter_type_other: "",
       work_by_slnko: "",
       topography_survey: "",
 
@@ -142,7 +142,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
       slnko_basic: "",
       total_gst: "",
       billing_type: "",
-      billing_by:"",
+      billing_by: "",
       project_status: "incomplete",
       loa_number: "",
       ppa_number: "",
@@ -170,14 +170,15 @@ const CamHandoverSheetForm = ({ onBack }) => {
   const [inverterSizeOptions, setInverterSizeOptions] = useState([]);
   const [inverterModelOptions, setInverterModelOptions] = useState([]);
   const [inverterTypeOptions, setInverterTypeOptions] = useState([]);
-  // const [handoverId, setHandoverId] = useState(null);
+  const location = useLocation();
+  const isCAMDash = location.pathname === "/project_detail";
   const handlePrint = () => {
     window.print();
   };
   const inverterTypeToSave =
-  formData.project_detail.inverter_type === "Other"
-    ? formData.project_detail.custom_inverter_type
-    : formData.project_detail.inverter_type;
+    formData.project_detail.inverter_type === "Other"
+      ? formData.project_detail.custom_inverter_type
+      : formData.project_detail.inverter_type;
 
   const [user, setUser] = useState(null);
 
@@ -1119,7 +1120,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
                           ""
                         );
                       }
-
                     }}
                   >
                     {/* {moduleMakeOptions.length > 0 &&
@@ -1178,7 +1178,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
                       placeholder="Enter inverter type"
                       fullWidth
                       value={
-                        formData?.project_detail?.inverter_type_other|| ""
+                        formData?.project_detail?.inverter_type_other || ""
                       }
                       onChange={(e) =>
                         handleChange(
@@ -1457,7 +1457,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
               />
             </Grid>
 
-             <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={6}>
               <Typography
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
@@ -1477,7 +1477,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 <Option value="Infra-UP">Slnko Infra UP</Option>
               </Select>
             </Grid>
-
 
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
@@ -2155,31 +2154,32 @@ const CamHandoverSheetForm = ({ onBack }) => {
         </AccordionDetails>
       </Accordion>
 
-      {/* Buttons */}
-      <Grid container spacing={2} sx={{ marginTop: 2 }}>
-        <Grid item xs={6}>
-          <Button
-            onClick={() => navigate("/cam_dash")}
-            variant="solid"
-            color="neutral"
-            fullWidth
-            sx={{ padding: 1.5, fontSize: "1rem", fontWeight: "bold" }}
-          >
-            Back
-          </Button>
+      {!isCAMDash && (
+        <Grid container spacing={2} sx={{ marginTop: 2 }}>
+          <Grid item xs={6}>
+            <Button
+              onClick={() => navigate("/cam_dash")}
+              variant="solid"
+              color="neutral"
+              fullWidth
+              sx={{ padding: 1.5, fontSize: "1rem", fontWeight: "bold" }}
+            >
+              Back
+            </Button>
+          </Grid>
+          <Grid item xs={6}>
+            <Button
+              onClick={handleSubmit}
+              variant="solid"
+              color="primary"
+              fullWidth
+              sx={{ padding: 1.5, fontSize: "1rem", fontWeight: "bold" }}
+            >
+              Submit
+            </Button>
+          </Grid>
         </Grid>
-        <Grid item xs={6}>
-          <Button
-            onClick={handleSubmit}
-            variant="solid"
-            color="primary"
-            fullWidth
-            sx={{ padding: 1.5, fontSize: "1rem", fontWeight: "bold" }}
-          >
-            Submit
-          </Button>
-        </Grid>
-      </Grid>
+      )}
     </Sheet>
   );
 };

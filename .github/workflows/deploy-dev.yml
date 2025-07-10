@@ -1,0 +1,30 @@
+name: Deploy to Hostinger VPS (Development)
+
+on:
+  push:
+    branches:
+      - development
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.HOSTINGER_SSH_KEY }}
+
+      - name: Deploy via SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} << 'EOF'
+            cd ~/Protrac/SlnkoFrontend && git checkout development
+            git pull origin development
+            docker build --build-arg ENV=dev --build-arg SERVER_NAME=dev.slnkoprotrac.com -t prod_frontend_dev .
+            docker stop prod_frontend_dev || true
+            docker rm prod_frontend_dev || true
+            docker run --name prod_frontend_dev -p 5006:80 -d prod_frontend_dev
+          EOF

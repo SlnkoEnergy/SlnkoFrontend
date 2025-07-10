@@ -60,6 +60,10 @@ export const projectsApi = createApi({
       query: (p_id) => `project?p_id=${p_id}`,
       providesTags: ["Project"],
     }),
+    getProjectById: builder.query({
+      query: (id) => `get-project-iD-IT/${id}`,
+      providesTags: ["Project"],
+    })
   }),
 });
 
@@ -69,4 +73,5 @@ export const {
   useAddProjectMutation,
   useUpdateProjectMutation,
   useGetProjectByPIdQuery,
+  useGetProjectByIdQuery
 } = projectsApi;

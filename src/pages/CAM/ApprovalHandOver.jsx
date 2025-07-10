@@ -1,17 +1,12 @@
 import Box from "@mui/joy/Box";
 import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider } from "@mui/joy/styles";
-import React, { useEffect, useState } from "react";
-// import Button from '@mui/joy/Button';
+import { useEffect, useState } from "react";
 import Breadcrumbs from "@mui/joy/Breadcrumbs";
 import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
-// import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-// import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
-// import BuildRoundedIcon from "@mui/icons-material/BuildRounded";
 import Sidebar from "../../component/Partials/Sidebar";
-
 import { useNavigate } from "react-router-dom";
 import HandoverApproval from "../../component/HandOver_Approval";
 import Header from "../../component/Partials/Header";
@@ -71,14 +66,6 @@ function Approval_Dashboard() {
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
               sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
-              {/* <Link
-                underline="none"
-                color="neutral"
-                href="#some-link"
-                aria-label="Home"
-              >
-                <HomeRoundedIcon />
-              </Link> */}
               <Link
                 underline="none"
                 color="neutral"
@@ -120,21 +107,9 @@ function Approval_Dashboard() {
                 justifyContent: "center",
               }}
             >
-              {/* <Button
-                color="primary"
-                startDecorator={
-                  <BriefcaseIcon style={{ width: 18, height: 18 }} />
-                }
-                size="sm"
-                onClick={() => navigate("/all-project")}
-              >
-                All Project
-              </Button> */}
             </Box>
           </Box>
           <HandoverApproval />
-          {/* <OrderTable />
-          <OrderList /> */}
         </Box>
       </Box>
     </CssVarsProvider>
