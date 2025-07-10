@@ -13,6 +13,7 @@ import {
   MenuItem,
   Option,
   Select,
+  Switch,
   TextField,
 } from "@mui/joy";
 import Box from "@mui/joy/Box";
@@ -58,6 +59,8 @@ function Dash_cam() {
   const [isPRModalOpen, setIsPRModalOpen] = useState(false);
   const [selectedPRProject, setSelectedPRProject] = useState(null);
   const [items, setItems] = useState([]);
+  const [toggleStates, setToggleStates] = useState({});
+
 
   const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
   const checkedIcon = <CheckBoxIcon fontSize="small" />;
@@ -78,41 +81,41 @@ function Dash_cam() {
   const [createPurchaseRequest, { isLoading: isPRCreating }] =
     useCreatePurchaseRequestMutation();
 
-  const handlePRSubmit = async () => {
-    if (!selectedPRProject?.project_id) {
-      toast.error("Project ID is missing.");
-      return;
-    }
+ const handlePRSubmit = async () => {
+  if (!selectedPRProject?.project_id) {
+    toast.error("Project ID is missing.");
+    return;
+  }
 
-    if (items.length === 0) {
-      toast.error("Please select at least one item.");
-      return;
-    }
+  if (items.length === 0) {
+    toast.error("Please select at least one item.");
+    return;
+  }
 
-    console.log("Items state at submit:", items); // Debug line
+  const formattedItems = items.map((item) => ({
+    item_id: item._id,
+    scope: toggleStates[item._id] ? "slnko" : "client", // ✅ based on toggle state
+  }));
 
-    const formattedItems = items.map((item) => ({
-      item_id: item._id,
-    }));
-
-    const payload = {
-      project_id: selectedPRProject?.project_id,
-      etd: null,
-      delivery_date: null,
-      items: formattedItems, // Use plural to match expected backend field
-    };
-
-    console.log("Payload being sent:", payload);
-
-    try {
-      const response = await createPurchaseRequest(payload).unwrap();
-      toast.success("Purchase Request created successfully!");
-      setIsPRModalOpen(false);
-      setItems([]);
-    } catch (error) {
-      toast.error(error?.data?.message || "Failed to create Purchase Request.");
-    }
+  const payload = {
+    project_id: selectedPRProject?.project_id,
+    etd: null,
+    delivery_date: null,
+    items: formattedItems,
   };
+
+  console.log("Payload being sent:", payload);
+
+  try {
+    const response = await createPurchaseRequest(payload).unwrap();
+    toast.success("Purchase Request created successfully!");
+    setIsPRModalOpen(false);
+    setItems([]);
+  } catch (error) {
+    toast.error(error?.data?.message || "Failed to create Purchase Request.");
+  }
+};
+
 
   const ProjectOverView = ({ currentPage, project_id, code, id }) => {
     return (
@@ -775,23 +778,41 @@ function Dash_cam() {
                 value={items}
                 onChange={(e, newValue) => setItems(newValue)}
                 renderOption={(props, option, { selected }) => (
-                  <li
-                    {...props}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      padding: "6px 12px",
-                    }}
-                  >
-                    <Checkbox
-                      icon={icon}
-                      checkedIcon={checkedIcon}
-                      style={{ marginRight: 8 }}
-                      checked={selected}
-                    />
-                    {option.name}
-                  </li>
-                )}
+  <li
+    {...props}
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: "6px 12px",
+    }}
+  >
+    <div style={{ display: "flex", alignItems: "center" }}>
+      <Checkbox
+        icon={icon}
+        checkedIcon={checkedIcon}
+        style={{ marginRight: 8 }}
+        checked={selected}
+      />
+      {option.name}
+    </div>
+
+    <Switch
+      size="sm"
+      checked={toggleStates[option._id] || false}
+      onClick={(e) => e.stopPropagation()} // 🛑 prevent checkbox selection
+      onChange={(e) =>
+        setToggleStates((prev) => ({
+          ...prev,
+          [option._id]: e.target.checked,
+        }))
+      }
+    />
+  </li>
+)}
+
+
+
                 renderInput={(params) => (
                   <TextField
                     {...params}
