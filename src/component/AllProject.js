@@ -628,7 +628,7 @@ const AllProjects = forwardRef((props, ref) => {
                       >
                         <VisibilityIcon sx={{ color: "white" }} />
                       </Box>
-                    ) : ["IT Team","Guddu Rani Dubey", "Prachi Singh"].includes(
+                    ) : ["IT Team","Guddu Rani Dubey", "Prachi Singh", "Sandeep Yadav", "Saresh", "Som Narayan Jha"].includes(
                         user?.name
                       ) ? (
                       <Box
