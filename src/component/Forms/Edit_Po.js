@@ -59,6 +59,8 @@ const UpdatePurchaseOrder = ({ po_number }) => {
     submitted_By: "",
   });
 
+  console.log("formData", formData.item);
+
   const [projectIDs, setProjectIDs] = useState([]);
   const [showOtherItem, setShowOtherItem] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -88,13 +90,14 @@ const UpdatePurchaseOrder = ({ po_number }) => {
         const [projectsRes, vendorsRes, itemsRes, poRes] = await Promise.all([
           Axios.get("/get-all-projecT-IT", config),
           Axios.get("/get-all-vendoR-IT", config),
-          Axios.get("/get-iteM-IT", config),
+          Axios.get("/engineering/material-category-drop", config),
           Axios.get("/get-all-pO-IT", config),
         ]);
 
-        const itemsList = [...(itemsRes.data.Data || []), "other"];
-        const allPoData = poRes.data.data || [];
+        const itemsList = itemsRes?.data?.data || [];
 
+        const allPoData = poRes.data.data || [];
+        console.log("itemList", itemsList);
         setGetFormData({
           projectIDs: projectsRes.data.data || [],
           vendors: vendorsRes.data.data || [],
@@ -105,7 +108,8 @@ const UpdatePurchaseOrder = ({ po_number }) => {
         const poData = allPoData.find(
           (po) => po.po_number === poNumberFromStorage
         );
-
+        const matchedItem = itemsList.find((i) => i.name === poData.item);
+         
         if (poData) {
           setFormData({
             _id: poData._id,
@@ -113,7 +117,7 @@ const UpdatePurchaseOrder = ({ po_number }) => {
             code: poData.code || "",
             po_number: poData.po_number || "",
             vendor: poData.vendor || "",
-            item: poData.item || "",
+            item: matchedItem?._id || "",
             amount_paid: poData.amount_paid || "0",
             date: poData.date
               ? new Date(poData.date).toISOString().slice(0, 10)
@@ -126,7 +130,7 @@ const UpdatePurchaseOrder = ({ po_number }) => {
             comment: poData.comment || "",
             submitted_By: user?.name || "Anonymous",
           });
-
+      
           setShowOtherItem(poData.item?.toLowerCase() === "other");
         } else {
           console.warn("PO not found for the stored PO number");
@@ -202,12 +206,11 @@ const UpdatePurchaseOrder = ({ po_number }) => {
       toast.error("Document ID is required.");
       return;
     }
-    console.log("Submitting with _id:", formData._id);
     try {
       setLoading(true);
       setError("");
       const token = localStorage.getItem("authToken");
-      const endpoint = `${process.env.REACT_APP_API_URL}edit-pO-IT/${formData._id}`;
+      const endpoint = `${process.env.REACT_APP_API_URL}/edit-pO-IT/${formData._id}`;
 
       const response = await axios.put(endpoint, formData, {
         headers: {
@@ -396,26 +399,26 @@ const UpdatePurchaseOrder = ({ po_number }) => {
             <FormControl>
               <Select
                 options={getFormData.items.map((item, index) => ({
-                  label: typeof item === "object" ? item.item : item,
-                  value: typeof item === "object" ? item._id : item, // send ID
-                  key: `${typeof item === "object" ? item._id : item}-${index}`,
+                  label: item.name,
+                  value: item._id,
+                  key: `${item._id}-${index}`,
                 }))}
                 value={
-                  formData.item
-                    ? {
-                        label:
-                          typeof formData.item === "object"
-                            ? formData.item.item
-                            : getFormData.items.find(
-                                (i) => i._id === formData.item
-                              )?.item || "",
-                        value: formData.item,
-                      }
-                    : null
-                }
-                onChange={(selectedOption) =>
-                  handleSelectChange("item", selectedOption?.value || "")
-                }
+  formData.item
+    ? {
+        label:
+          getFormData.items.find((i) => i._id === formData.item)?.name || "",
+        value: formData.item,
+      }
+    : null
+}
+
+              onChange={(selectedOption) => {
+  handleSelectChange("item", selectedOption?.value || "");
+}}
+
+
+
                 placeholder="Select Item"
                 required
               />
