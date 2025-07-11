@@ -7,10 +7,11 @@ import Breadcrumbs from '@mui/joy/Breadcrumbs';
 import Link from '@mui/joy/Link';
 import Typography from '@mui/joy/Typography';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
-
+import Leads from "sales-protrac-1"
 import Sidebar from '../component/Partials/Sidebar';
 import Header from '../component/Partials/Header';
 import Dashboard from '../component/Dashboard';
+import {LoginPage} from 'sales-protrac-1'
 
 function Dashboardz() {
   return (
@@ -66,6 +67,8 @@ function Dashboardz() {
               </Typography>
             </Breadcrumbs>
           </Box>
+          <Leads />
+          <LoginPage/>
           <Box
             sx={{
               display: 'flex',
