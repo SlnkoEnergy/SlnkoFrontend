@@ -56,6 +56,7 @@ import {
   PackageCheck,
   Store,
   Truck,
+  TruckIcon,
 } from "lucide-react";
 import {
   Modal,
@@ -65,6 +66,7 @@ import {
   DialogActions,
 } from "@mui/joy";
 import { toast } from "react-toastify";
+import { Money } from "@mui/icons-material";
 
 const PurchaseOrderSummary = forwardRef((props, ref) => {
   const { project_code, pr_id, item_id } = props;
@@ -815,7 +817,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     );
   };
 
-  const RenderItem_Vendor = ({ vendor, item }) => {
+  const RenderItem_Vendor = ({ vendor, item, other_item, amount }) => {
     return (
       <>
         <Box>
@@ -823,6 +825,28 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             {item}
           </span>
         </Box>
+        {!!other_item && (
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <TruckIcon size={12} color="green" />
+          &nbsp;
+          <span style={{ fontSize: 12, fontWeight: 600 }}>Other Item Name : </span>{" "}
+          &nbsp;
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+            {other_item}
+          </Typography>
+        </Box>
+        )}
+        {!!amount && (
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <Money size={12} color="green" />
+          &nbsp;
+          <span style={{ fontSize: 12, fontWeight: 600 }}>Amount : </span>{" "}
+          &nbsp;
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+           ₹ {amount}
+          </Typography>
+        </Box>
+        )}
         <Box display="flex" alignItems="center" mt={0.5}>
           <Store size={12} color="green" />
           &nbsp;
@@ -1189,6 +1213,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                     >
                       <RenderItem_Vendor
                         item={po.item === "Other" ? "other" : po.item}
+                        other_item = {po?.pr?.other_item_name}
+                        amount = {po?.pr?.amount}
                         vendor={po.vendor}
                       />
                     </Box>
