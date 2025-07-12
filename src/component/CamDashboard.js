@@ -61,6 +61,9 @@ function Dash_cam() {
   const [items, setItems] = useState([]);
   const [toggleStates, setToggleStates] = useState({});
 
+  const [otherItemName, setOtherItemName] = useState("");
+  const [otherItemDescription, setOtherItemDescription] = useState("");
+const [otherItemAmount, setOtherItemAmount] = useState("");
 
   const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
   const checkedIcon = <CheckBoxIcon fontSize="small" />;
@@ -81,7 +84,8 @@ function Dash_cam() {
   const [createPurchaseRequest, { isLoading: isPRCreating }] =
     useCreatePurchaseRequestMutation();
 
- const handlePRSubmit = async () => {
+
+const handlePRSubmit = async () => {
   if (!selectedPRProject?.project_id) {
     toast.error("Project ID is missing.");
     return;
@@ -92,10 +96,23 @@ function Dash_cam() {
     return;
   }
 
-  const formattedItems = items.map((item) => ({
+
+
+ const formattedItems = items.map((item) => {
+  const formattedItem = {
     item_id: item._id,
-    scope: toggleStates[item._id] ? "slnko" : "client", // ✅ based on toggle state
-  }));
+    scope: toggleStates[item._id] ? "slnko" : "client", 
+  };
+
+  const originalItem = materialCategories.find((cat) => cat._id === item._id);
+  if (originalItem?.name === "Others") {
+    formattedItem.other_item_name = otherItemName;
+    formattedItem.amount = otherItemAmount;
+  }
+
+  return formattedItem;
+});
+
 
   const payload = {
     project_id: selectedPRProject?.project_id,
@@ -111,6 +128,8 @@ function Dash_cam() {
     toast.success("Purchase Request created successfully!");
     setIsPRModalOpen(false);
     setItems([]);
+    setOtherItemName("");       // Reset extra fields
+    setOtherItemAmount("");
   } catch (error) {
     toast.error(error?.data?.message || "Failed to create Purchase Request.");
   }
@@ -739,7 +758,7 @@ function Dash_cam() {
         <Modal open={isPRModalOpen} onClose={() => setIsPRModalOpen(false)}>
           <ModalDialog
             sx={{
-              width: 500, // Increased Modal Width
+              width: 500,
               borderRadius: "md",
               boxShadow: "lg",
               p: 3,
@@ -766,7 +785,6 @@ function Dash_cam() {
                 </Typography>
               </Typography>
 
-              {/* Clean Autocomplete with Well-Spaced Checkboxes */}
               <Autocomplete
                 multiple
                 options={materialCategories || []}
@@ -821,6 +839,29 @@ function Dash_cam() {
                   />
                 )}
               />
+
+              {/* Show additional fields if 'Others' is selected */}
+              {items.some((item) => item.name === "Others") && (
+                <>
+                  <FormControl size="sm">
+                    <FormLabel>Other Item Name</FormLabel>
+                    <Input
+                      placeholder="Enter item name"
+                      value={otherItemName}
+                      onChange={(e) => setOtherItemName(e.target.value)}
+                    />
+                  </FormControl>
+
+                  <FormControl size="sm">
+                    <FormLabel>Other Item Amount</FormLabel>
+                    <Input
+                      placeholder="Enter description"
+                      value={otherItemAmount}
+                      onChange={(e) => setOtherItemAmount(e.target.value)}
+                    />
+                  </FormControl>
+                </>
+              )}
 
               <Button
                 onClick={handlePRSubmit}

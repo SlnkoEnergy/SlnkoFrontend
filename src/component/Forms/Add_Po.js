@@ -22,6 +22,7 @@ const AddPurchaseOrder = ({
   item_id,
   project_id,
   item_name,
+  other_item_name,
   project_code,
 }) => {
   const navigate = useNavigate();
@@ -162,20 +163,22 @@ const AddPurchaseOrder = ({
     if (isSubmitting) return;
     setIsSubmitting(true);
 
-    const dataToPost = {
-      p_id: project_code,
-      po_number: formData.po_number,
-      vendor: formData.name,
-      date: formData.date,
-      item: item_id,
-      other: formData.item === "Other" ? formData.other : "",
-      po_value: formData.po_value,
-      po_basic: formData.po_basic,
-      gst: formData.gst,
-      partial_billing: formData.partial_billing || "",
-      submitted_By: userData.name,
-      pr_id: pr_id,
-    };
+const dataToPost = {
+  p_id: project_code,
+  po_number: formData.po_number,
+  vendor: formData.name,
+  date: formData.date,
+  item: item_name === "Others" ? other_item_name || "Others" : item_id,
+  other: "",
+  po_value: formData.po_value,
+  po_basic: formData.po_basic,
+  gst: formData.gst,
+  partial_billing: formData.partial_billing || "",
+  submitted_By: userData.name,
+  pr_id: pr_id,
+};
+
+
 
     try {
       const token = localStorage.getItem("authToken");
@@ -220,6 +223,9 @@ const AddPurchaseOrder = ({
       setIsSubmitting(false);
     }
   };
+
+  console.log("other", other_item_name);
+  
 
   return (
     <Box
@@ -312,12 +318,19 @@ const AddPurchaseOrder = ({
             </Grid>
 
             <Grid xs={12} md={4}>
-              <Typography level="body1" fontWeight="bold" mb={1}>
-                Item Category
-              </Typography>
+  <Typography level="body1" fontWeight="bold" mb={1}>
+    Item Category
+  </Typography>
+  <Input
+    disabled
+    value={
+      formData.item === "Others"
+        ? other_item_name || "-"
+        : formData.item || "-"
+    }
+  />
+</Grid>
 
-              <Input disabled value={formData.item || "-"} />
-            </Grid>
 
             <Grid xs={12} md={4}>
               <Typography level="body1" fontWeight="bold" mb={1}>
