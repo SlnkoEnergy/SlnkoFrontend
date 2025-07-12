@@ -1237,7 +1237,10 @@ function Sidebar() {
             user?.name === "Sarthak Sharma" ||
             user?.name === "Ajay Singh" ||
             user?.name === "Shubham Gupta" ||
-            user?.name === "Saurabh Suman") ? (
+            user?.name === "Saurabh Suman" ||
+            user?.name === "Vaishali Pandey" ||
+            user?.name === "Sujoy Mahata"
+          ) ? (
           <List
             size="sm"
             sx={{
@@ -1779,7 +1782,9 @@ function Sidebar() {
         ) : user?.department === "CAM" &&
           (user?.name === "Sandeep Yadav" ||
             user?.name === "Som Narayan Jha" ||
-            user?.name === "Saresh") ? (
+            user?.name === "Saresh" ||
+            user?.name === "Izhan Mustafa"
+          ) ? (
           <List
             size="sm"
             sx={{

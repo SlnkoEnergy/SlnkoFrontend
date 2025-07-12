@@ -173,17 +173,20 @@ const PurchaseReqDetail = () => {
           </Stack>
 
           <Stack direction="row" spacing={1} alignItems="center">
-            <Typography
-              fontWeight={700}
-              level="body-sm"
-              textColor="text.secondary"
-            >
-              Item:
-            </Typography>
-            <Typography level="body-md">
-              {getPurchaseRequest?.item?.item_id?.name}
-            </Typography>
-          </Stack>
+  <Typography
+    fontWeight={700}
+    level="body-sm"
+    textColor="text.secondary"
+  >
+    Item:
+  </Typography>
+  <Typography level="body-md">
+    {getPurchaseRequest?.item?.item_id?.name === "Others"
+      ? `Other: ${getPurchaseRequest?.item?.other_item_name || "-"} - ₹${getPurchaseRequest?.item?.amount || "0"}`
+      : getPurchaseRequest?.item?.item_id?.name || "-"}
+  </Typography>
+</Stack>
+
 
           <Stack direction="row" spacing={1} alignItems="center">
             <Typography
@@ -289,6 +292,7 @@ const PurchaseReqDetail = () => {
             pr_id={getPurchaseRequest?.purchase_request?._id}
             project_id={project_id}
             item_id={item_id}
+            other_item_name={getPurchaseRequest?.item?.other_item_name}
             item_name={getPurchaseRequest?.item?.item_id?.name}
             project_code={getPurchaseRequest?.purchase_request?.project?.code}
           />
