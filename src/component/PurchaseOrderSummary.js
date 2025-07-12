@@ -350,7 +350,11 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           >
             <CalendarSearch />
           </MenuButton>
-          <Menu placement="bottom-start">
+
+          <Menu
+            placement="bottom-start"
+            onClose={() => setOpenFilter(false)} // ✅ closes on click outside
+          >
             <MenuItem onClick={() => handleDateFilterSelect("etd")}>
               ETD Date
             </MenuItem>
@@ -359,7 +363,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             </MenuItem>
           </Menu>
         </Dropdown>
-
         {activeDateFilter && (
           <Sheet
             variant="outlined"
@@ -425,6 +428,17 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                   }}
                 />
               </FormControl>
+            </Box>
+
+            {/* ✅ Add Close Button */}
+            <Box mt={2} display="flex" justifyContent="flex-end">
+              <Button
+                variant="outlined"
+                size="sm"
+                onClick={() => setActiveDateFilter("")}
+              >
+                Close
+              </Button>
             </Box>
           </Sheet>
         )}
@@ -826,26 +840,30 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           </span>
         </Box>
         {!!other_item && (
-        <Box display="flex" alignItems="center" mt={0.5}>
-          <TruckIcon size={12} color="green" />
-          &nbsp;
-          <span style={{ fontSize: 12, fontWeight: 600 }}>Other Item Name : </span>{" "}
-          &nbsp;
-          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-            {other_item}
-          </Typography>
-        </Box>
+          <Box display="flex" alignItems="center" mt={0.5}>
+            <TruckIcon size={12} color="green" />
+            &nbsp;
+            <span style={{ fontSize: 12, fontWeight: 600 }}>
+              Other Item Name :{" "}
+            </span>{" "}
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {other_item}
+            </Typography>
+          </Box>
         )}
         {!!amount && (
-        <Box display="flex" alignItems="center" mt={0.5}>
-          <Money size={12} color="green" />
-          &nbsp;
-          <span style={{ fontSize: 12, fontWeight: 600 }}>Amount : </span>{" "}
-          &nbsp;
-          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-           ₹ {amount}
-          </Typography>
-        </Box>
+          <Box display="flex" alignItems="center" mt={0.5}>
+            <Money size={12} color="green" />
+            &nbsp;
+            <span style={{ fontSize: 12, fontWeight: 600 }}>
+              Amount :{" "}
+            </span>{" "}
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              ₹ {amount}
+            </Typography>
+          </Box>
         )}
         <Box display="flex" alignItems="center" mt={0.5}>
           <Store size={12} color="green" />
@@ -1213,8 +1231,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                     >
                       <RenderItem_Vendor
                         item={po.item === "Other" ? "other" : po.item}
-                        other_item = {po?.pr?.other_item_name}
-                        amount = {po?.pr?.amount}
+                        other_item={po?.pr?.other_item_name}
+                        amount={po?.pr?.amount}
                         vendor={po.vendor}
                       />
                     </Box>

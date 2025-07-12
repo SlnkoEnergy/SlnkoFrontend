@@ -10,6 +10,7 @@ import {
   Tooltip,
 } from "@mui/joy";
 import Box from "@mui/joy/Box";
+import DeleteIcon from "@mui/icons-material/Delete";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
 import FormControl from "@mui/joy/FormControl";
@@ -18,7 +19,15 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { Calendar, Handshake, PackageCheck, Truck, TruckIcon, User } from "lucide-react";
+import { toast } from "react-toastify";
+import {
+  Calendar,
+  Handshake,
+  PackageCheck,
+  Truck,
+  TruckIcon,
+  User,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
@@ -27,6 +36,7 @@ import "react-toastify/dist/ReactToastify.css";
 import {
   useGetAllPurchaseRequestQuery,
   useGetMaterialCategoryQuery,
+  useDeletePurchaseRequestMutation,
 } from "../redux/camsSlice";
 import { Money } from "@mui/icons-material";
 
@@ -63,6 +73,8 @@ function PurchaseReqSummary() {
     createdTo: createdDateRange[1] || "",
   });
 
+  const [deletePurchaseRequest] = useDeletePurchaseRequestMutation();
+
   useEffect(() => {
     setCurrentPage(page);
     setSearchQuery(search);
@@ -85,22 +97,40 @@ function PurchaseReqSummary() {
     setSearchParams({ page: 1, search: query });
   };
 
-  const allItemIds = purchaseRequests?.data?.item;
+  const allPRIds = purchaseRequests.map((row) => row._id).filter(Boolean);
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelected(allItemIds);
+      setSelected(allPRIds);
     } else {
       setSelected([]);
     }
   };
 
-  const handleRowSelect = (itemId) => {
+  const handleRowSelect = (prId) => {
     setSelected((prev) =>
-      prev.includes(itemId)
-        ? prev.filter((id) => id !== itemId)
-        : [...prev, itemId]
+      prev.includes(prId) ? prev.filter((id) => id !== prId) : [...prev, prId]
     );
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selected.length === 0) return;
+
+    if (!window.confirm("Are you sure you want to delete the selected PR(s)?"))
+      return;
+
+    try {
+      await Promise.all(
+        selected.map(async (id) => {
+          await deletePurchaseRequest(id).unwrap();
+        })
+      );
+      toast.success("Selected PR(s) deleted successfully!");
+      setSelected([]);
+    } catch (error) {
+      console.error("Error deleting PRs:", error);
+      toast.error("Failed to delete one or more PR(s).");
+    }
   };
 
   const handlePageChange = (newPage) => {
@@ -344,7 +374,7 @@ function PurchaseReqSummary() {
     );
   };
 
-const RenderItemCell = (item) => {
+  const RenderItemCell = (item) => {
     const name = item?.item_id?.name;
     const isOthers = name === "Others";
     return (
@@ -353,10 +383,17 @@ const RenderItemCell = (item) => {
         {isOthers && (
           <Box sx={{ fontSize: 12, color: "gray" }}>
             <div>
-              <b> <TruckIcon size={13} /> Other Item Name:</b> {item?.other_item_name || "-"}
+              <b>
+                {" "}
+                <TruckIcon size={13} /> Other Item Name:
+              </b>{" "}
+              {item?.other_item_name || "-"}
             </div>
             <div>
-              <b><Money /> Amount:</b> ₹{item?.amount || "0"}
+              <b>
+                <Money /> Amount:
+              </b>{" "}
+              ₹{item?.amount || "0"}
             </div>
           </Box>
         )}
@@ -418,6 +455,27 @@ const RenderItemCell = (item) => {
         </FormControl>
         {renderFilters()}
       </Box>
+      {selected.length > 0 && (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "flex-end",
+            marginLeft: { xl: "15%", lg: "18%" },
+            marginRight: { lg: "5%", xl: "5%" },
+            marginBottom: 1,
+          }}
+        >
+          <Button
+            color="danger"
+            variant="soft"
+            startDecorator={<DeleteIcon />}
+            onClick={handleDeleteSelected}
+            size="sm"
+          >
+            Delete Selected ({selected.length})
+          </Button>
+        </Box>
+      )}
 
       {/* Table */}
       <Sheet
@@ -449,11 +507,11 @@ const RenderItemCell = (item) => {
                 <Checkbox
                   size="sm"
                   checked={
-                    selected.length > 0 && selected.length === allItemIds.length
+                    selected.length > 0 && selected.length === allPRIds.length
                   }
                   onChange={handleSelectAll}
                   indeterminate={
-                    selected.length > 0 && selected.length < allItemIds.length
+                    selected.length > 0 && selected.length < allPRIds.length
                   }
                 />
               </th>
@@ -503,8 +561,8 @@ const RenderItemCell = (item) => {
                     >
                       <Checkbox
                         size="sm"
-                        checked={selected.includes(item?._id)}
-                        onChange={() => handleRowSelect(item?._id)}
+                        checked={selected.includes(row._id)}
+                        onChange={() => handleRowSelect(row._id)}
                       />
                     </td>
 
@@ -545,16 +603,15 @@ const RenderItemCell = (item) => {
                       </Box>
                     </td>
 
-                   <td
-  style={{
-    borderBottom: "1px solid #ddd",
-    textAlign: "left",
-    padding: "8px",
-  }}
->
-  {RenderItemCell(item)}
-</td>
-
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "left",
+                        padding: "8px",
+                      }}
+                    >
+                      {RenderItemCell(item)}
+                    </td>
 
                     <td
                       style={{

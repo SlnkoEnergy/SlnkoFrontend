@@ -129,6 +129,14 @@ export const camsApi = createApi({
         body: payload,
       }),
     }),
+    deletePurchaseRequest: builder.mutation({
+  query: (pr_id) => ({
+    url: `purchaseRequest/purchase-request/${pr_id}`,
+    method: "DELETE",
+  }),
+  invalidatesTags: ["CAM"],
+}),
+
     
   }),
 });
@@ -148,5 +156,6 @@ export const {
   useGetPurchaseRequestByProjectIdQuery,
   useGetPurchaseRequestQuery,
   useEditPurchaseRequestMutation,
+    useDeletePurchaseRequestMutation,
 
 } = camsApi;

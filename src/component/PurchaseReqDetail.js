@@ -99,26 +99,26 @@ const PurchaseReqDetail = () => {
   };
 
   return (
-    <Container
+    <Box
       sx={{
-        display: "flex",
-        flexDirection: "column",
-        ml: "20%",
-        gap: 2,
-        mt: 8,
-        width: "100%",
+        ml: "16%",
+        width: "80%",
+        px: { xs: 2, sm: 3 },
+        pt: 6,
         minHeight: "100vh",
+        boxSizing: "border-box",
       }}
     >
       {/* PR Details Sheet */}
       <Sheet
         variant="outlined"
         sx={{
+          width: "100%",
+          padding: 3,
+          boxSizing: "border-box",
           borderRadius: "md",
           boxShadow: "sm",
-          padding: 3,
           bgcolor: "background.surface",
-          maxWidth: 1200,
         }}
       >
         <Typography level="h4" textAlign="center" mb={2}>
@@ -128,9 +128,13 @@ const PurchaseReqDetail = () => {
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: 2,
-            alignItems: "center",
+            gridTemplateColumns: {
+              xs: "1fr",
+              sm: "repeat(auto-fit, minmax(280px, 1fr))", // ⬅️ wider for breathing space
+            },
+            columnGap:20, // ⬅️ space between columns
+            rowGap: 2, // ⬅️ space between rows
+            alignItems: "start",
           }}
         >
           <Stack direction="row" spacing={1} alignItems="center">
@@ -173,20 +177,19 @@ const PurchaseReqDetail = () => {
           </Stack>
 
           <Stack direction="row" spacing={1} alignItems="center">
-  <Typography
-    fontWeight={700}
-    level="body-sm"
-    textColor="text.secondary"
-  >
-    Item:
-  </Typography>
-  <Typography level="body-md">
-    {getPurchaseRequest?.item?.item_id?.name === "Others"
-      ? `Other: ${getPurchaseRequest?.item?.other_item_name || "-"} - ₹${getPurchaseRequest?.item?.amount || "0"}`
-      : getPurchaseRequest?.item?.item_id?.name || "-"}
-  </Typography>
-</Stack>
-
+            <Typography
+              fontWeight={700}
+              level="body-sm"
+              textColor="text.secondary"
+            >
+              Item:
+            </Typography>
+            <Typography level="body-md">
+              {getPurchaseRequest?.item?.item_id?.name === "Others"
+                ? `Other: ${getPurchaseRequest?.item?.other_item_name || "-"} - ₹${getPurchaseRequest?.item?.amount || "0"}`
+                : getPurchaseRequest?.item?.item_id?.name || "-"}
+            </Typography>
+          </Stack>
 
           <Stack direction="row" spacing={1} alignItems="center">
             <Typography
@@ -298,7 +301,7 @@ const PurchaseReqDetail = () => {
           />
         </ModalDialog>
       </Modal>
-    </Container>
+    </Box>
   );
 };
 
