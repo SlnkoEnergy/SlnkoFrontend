@@ -14,6 +14,7 @@ export default function App() {
           horizontal: "right",
         }}
       >
+      
         <ToastContainer position="top-right" autoClose={3000} />
         <Index />
       </SnackbarProvider>

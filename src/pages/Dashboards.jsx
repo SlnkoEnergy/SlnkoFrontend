@@ -11,8 +11,10 @@ import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import Sidebar from '../component/Partials/Sidebar';
 import Header from '../component/Partials/Header';
 import Dashboard from '../component/Dashboard';
+import { useNavigate } from 'react-router-dom';
 
 function Dashboardz() {
+  const navigate = useNavigate();
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -80,7 +82,17 @@ function Dashboardz() {
           >
            <Dashboard />
            
+
           </Box>
+        
+          <Button
+  className="bg-black mt-4"
+  onClick={() => navigate('/addLeads')}
+>
+  Click
+</Button>
+
+           
           
           
           {/* <OrderTable /> */}

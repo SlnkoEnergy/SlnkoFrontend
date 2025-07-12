@@ -111,6 +111,7 @@ import View_Project from "../component/Forms/View_Project";
 import ProjectDetail from "../pages/CAM/ProjectDetail";
 import PurchaseRequestSheet from "../pages/CAM/PurchaseRequest";
 import PurchaseReqDetails from "../pages/CAM/PurchaseRequestDetail";
+import { AddLead, Input, Label, Textarea, Button } from "sales-protrac-1";
 
 function index() {
   return (
@@ -124,6 +125,14 @@ function index() {
         element={
           <PrivateRoute>
             <Dashboardz />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/addLeads"
+        element={
+          <PrivateRoute>
+            <AddLead />
           </PrivateRoute>
         }
       />
