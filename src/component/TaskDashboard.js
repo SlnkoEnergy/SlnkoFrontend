@@ -14,6 +14,7 @@ import { useEffect, useMemo, useState } from "react";
 import NoData from "../assets/alert-bell.svg";
 import Tooltip from "@mui/joy/Tooltip";
 import { useGetAllTasksQuery } from "../redux/globalTaskSlice";
+import { useNavigate } from "react-router-dom";
 
 function Dash_task() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -21,6 +22,7 @@ function Dash_task() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+  const navigate = useNavigate();
 
   const { data, isLoading } = useGetAllTasksQuery({
     page: currentPage,
@@ -188,7 +190,14 @@ function Dash_task() {
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
-                    <Typography fontWeight="lg">{task.taskCode}</Typography>
+                    <Typography
+                      fontWeight="lg"
+                      onClick={() => navigate(`/view_task?task=${task._id}`)}
+                      sx={{ cursor: "pointer", color: "primary.500" }}
+                    >
+                      {task.taskCode}
+                    </Typography>
+
                     <Typography level="body-sm" startDecorator="⭐">
                       Priority: {task.priority || "-"}
                     </Typography>

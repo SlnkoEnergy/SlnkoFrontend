@@ -63,7 +63,7 @@ const AddTask = () => {
 
       priority: priority.toString(),
       current_status: {
-        status: "draft",
+        status: "pending",
         remarks: "",
         user_id: null,
       },

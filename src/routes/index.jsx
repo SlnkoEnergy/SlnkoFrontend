@@ -113,6 +113,7 @@ import PurchaseRequestSheet from "../pages/CAM/PurchaseRequest";
 import PurchaseReqDetails from "../pages/CAM/PurchaseRequestDetail";
 import Add_Task from "../pages/AllTask/ADD_Task";
 import AllTask from "../pages/AllTask/AllTask";
+import View_Task from "../pages/AllTask/View_Task";
 
 
 function index() {
@@ -918,7 +919,6 @@ function index() {
         element={
           <PrivateRoute>
             <Add_Task />
-           
           </PrivateRoute>
         }
       />
@@ -928,6 +928,15 @@ function index() {
         element={
           <PrivateRoute>
             <AllTask />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/view_task"
+        element={
+          <PrivateRoute>
+            <View_Task />
           </PrivateRoute>
         }
       />
