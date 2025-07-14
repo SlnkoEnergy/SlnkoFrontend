@@ -10,6 +10,7 @@ import Sidebar from "../../component/Partials/Sidebar";
 import Header from "../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
 import AddTask from "../../component/Forms/Add_Task";
+import { ChevronLeftIcon } from "lucide-react";
 
 const Add_Task = () => {
   const navigate = useNavigate();
@@ -62,31 +63,38 @@ const Add_Task = () => {
                 color="neutral"
                 href=""
                 sx={{ fontSize: 12, fontWeight: 500 }}
-                onClick={() => navigate("/all-task")}
+                onClick={() => navigate("/all_task")}
               >
                 Tasks
               </Link>
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
+                onClick={() => navigate("/add_task")}
               >
                 Create Task
               </Typography>
             </Breadcrumbs>
           </Box>
-          <Box
-            sx={{
-              display: "flex",
-              mb: 1,
-              gap: 1,
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "start", sm: "center" },
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-            }}
-          >
-            <AddTask />
-          </Box>
+          
+
+
+<Box
+  sx={{
+    display: "flex",
+    mb: 1,
+    gap: 1,
+    flexDirection: { xs: "column", sm: "row" },
+    alignItems: { xs: "start", sm: "center" },
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  }}
+>
+  
+
+  <AddTask />
+</Box>
+
         </Box>
       </Box>
     </CssVarsProvider>
