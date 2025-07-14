@@ -49,4 +49,6 @@ getAllDept: builder.query({
   })
 });
 
+// Export hooks
+
 export const { useCreateTaskMutation, useGetAllUserQuery, useGetAllDeptQuery, useGetAllTasksQuery } = GlobalTaskApi;
