@@ -909,6 +909,16 @@ function index() {
           </PrivateRoute>
         }
       />
+      <Route
+        path="/add_task"
+        element={
+          <PrivateRoute>
+            <AddProject />
+          </PrivateRoute>
+        }
+      />
+
+     
     </Routes>
   );
 }
