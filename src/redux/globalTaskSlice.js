@@ -28,27 +28,34 @@ export const GlobalTaskApi = createApi({
 
     // GET: Fetch all tasks with filters
     getAllTasks: builder.query({
-      query: ({ page = 1, search = "", status = "", createdAt = "" }) =>
-        `tasks/get-task?page=${page}&search=${search}&status=${status}&createdAt=${createdAt}`,
+      query: ({ page = 1, search = "", status = "", createdAt = "", limit = "" }) =>
+        `tasks/get-task?page=${page}&search=${search}&status=${status}&createdAt=${createdAt}&limit=${limit}`,
       providesTags: ["Task"],
     }),
-  getAllUser: builder.query({
-  query: () => ({
-    url: 'all-user',
-    method: 'GET'
+
+    getAllUser: builder.query({
+      query: () => ({
+        url: "all-user",
+        method: "GET",
+      }),
+      providesTags: ["User"],
+    }),
+
+    getAllDept: builder.query({
+      query: () => ({
+        url: "all-dept",
+        method: "GET",
+      }),
+      providesTags: ["User"],
+    }),
   }),
-  providesTags: ['User']
-}),
-getAllDept: builder.query({
-  query: () => ({
-    url: 'all-dept',
-    method: 'GET'
-  }),
-  providesTags: ['User']
-})
-  })
 });
 
 // Export hooks
 
-export const { useCreateTaskMutation, useGetAllUserQuery, useGetAllDeptQuery, useGetAllTasksQuery } = GlobalTaskApi;
+export const {
+  useCreateTaskMutation,
+  useGetAllUserQuery,
+  useGetAllDeptQuery,
+  useGetAllTasksQuery,
+} = GlobalTaskApi;

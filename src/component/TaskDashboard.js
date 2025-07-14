@@ -11,56 +11,88 @@ import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Tooltip from "@mui/joy/Tooltip";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState,useCallback } from "react";
 import NoData from "../assets/alert-bell.svg";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import { debounce } from "lodash";
+import { useSearchParams } from "react-router-dom";
+
 
 import { useGetAllTasksQuery } from "../redux/globalTaskSlice";
 
 function Dash_task() {
-  const [currentPage, setCurrentPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [currentPage, setCurrentPage] = useState(Number(searchParams.get("page")) || 1);
   const [selected, setSelected] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
+ const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
+const [rawSearch, setRawSearch] = useState(searchParams.get("search") || "");    
+
+ const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "");
+const [dateFilter, setDateFilter] = useState(searchParams.get("createdAt") || "");
   const [prioritySortOrder, setPrioritySortOrder] = useState(null);
+const [itemsPerPage, setItemsPerPage] = useState(Number(searchParams.get("limit")) || 10);
+
 
   const { data, isLoading } = useGetAllTasksQuery({
     page: currentPage,
     search: searchQuery,
     status: statusFilter,
     createdAt: dateFilter,
+    limit : itemsPerPage,
   });
 
-  const draftPayments = data?.tasks || [];
 
-  const filteredData = useMemo(() => {
-    let tasks = draftPayments.filter((task) => {
-      const matchesSearch = ["title", "description"].some((key) =>
-        task[key]?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      const matchesStatus =
-        !statusFilter || task.current_status?.status === statusFilter;
-      const matchesDate =
-        !dateFilter || task.createdAt?.split("T")[0] === dateFilter;
-      return matchesSearch && matchesStatus && matchesDate;
+useEffect(() => {
+  const params = {};
+
+  if (searchQuery) params.search = searchQuery;
+  if (statusFilter) params.status = statusFilter;
+  if (dateFilter) params.createdAt = dateFilter;
+  if (currentPage) params.page = currentPage;
+  if (itemsPerPage) params.limit = itemsPerPage;
+
+  setSearchParams(params);
+}, [searchQuery, statusFilter, dateFilter, currentPage, itemsPerPage, setSearchParams]);
+
+
+const debouncedSearch = useCallback(
+  debounce((value) => {
+    setSearchQuery(value);
+    setCurrentPage(1); // reset page when searching
+  }, 300),
+  []
+);
+
+
+const draftPayments = data?.tasks || [];
+const totalCount = data?.totalTasks || 0;
+const totalPages = data?.totalPages || 1;
+
+
+
+const filteredData = useMemo(() => {
+  let sorted = [...(draftPayments || [])];
+
+  if (prioritySortOrder) {
+    sorted.sort((a, b) => {
+      const aPriority = Number(a.priority) || 0;
+      const bPriority = Number(b.priority) || 0;
+      return prioritySortOrder === "asc"
+        ? aPriority - bPriority
+        : bPriority - aPriority;
     });
+  }
 
-    if (prioritySortOrder) {
-      tasks.sort((a, b) => {
-        const aPriority = Number(a.priority) || 0;
-        const bPriority = Number(b.priority) || 0;
-        return prioritySortOrder === "asc"
-          ? aPriority - bPriority
-          : bPriority - aPriority;
-      });
-    }
+  return sorted;
+}, [draftPayments, prioritySortOrder]);
 
-    return tasks;
-  }, [searchQuery, statusFilter, dateFilter, draftPayments, prioritySortOrder]);
 
-  const handleSearch = (query) => setSearchQuery(query.toLowerCase());
+const handleSearch = (value) => {
+  setRawSearch(value);
+  debouncedSearch(value);
+};
+
 
   const handleSelectAll = (event) => {
     setSelected(event.target.checked ? filteredData.map((d) => d._id) : []);
@@ -72,9 +104,12 @@ function Dash_task() {
     );
   };
 
-  const handlePageChange = (page) => {
-    if (page >= 1) setCurrentPage(page);
-  };
+const handlePageChange = (page) => {
+  if (page >= 1 && page <= totalPages) {
+    setCurrentPage(page);
+  }
+};
+
 
   return (
     <>
@@ -94,12 +129,13 @@ function Dash_task() {
         <FormControl sx={{ flex: 1 }} size="sm">
           <FormLabel>Search</FormLabel>
           <Input
-            size="sm"
-            placeholder="Search by Title or Description"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
+  size="sm"
+  placeholder="Search by Title or Description"
+  startDecorator={<SearchIcon />}
+  value={rawSearch}
+  onChange={(e) => handleSearch(e.target.value)}
+/>
+
         </FormControl>
 
         <FormControl size="sm">
@@ -130,7 +166,32 @@ function Dash_task() {
             onChange={(e) => setDateFilter(e.target.value)}
           />
         </FormControl>
+        <FormControl size="sm">
+  <FormLabel>Items per page</FormLabel>
+  <select
+    value={itemsPerPage}
+    onChange={(e) => {
+      setItemsPerPage(Number(e.target.value));
+      setCurrentPage(1); // Reset to first page on limit change
+    }}
+    style={{
+      height: "32px",
+      borderRadius: "6px",
+      padding: "0 8px",
+      borderColor: "#ccc",
+    }}
+  >
+    {[5, 10, 20, 50, 100].map((n) => (
+      <option key={n} value={n}>
+        {n}
+      </option>
+    ))}
+  </select>
+</FormControl>
+
       </Box>
+      
+
 
       {/* Table */}
       <Sheet
@@ -388,56 +449,64 @@ function Dash_task() {
       </Sheet>
 
       {/* Pagination */}
-      <Box
-        sx={{
-          pt: 2,
-          gap: 1,
-          [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
-          display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
-          alignItems: "center",
-          marginLeft: { lg: "18%", xl: "15%" },
-        }}
+    {/* Pagination */}
+<Box
+  sx={{
+    pt: 2,
+    gap: 1,
+    [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
+    display: "flex",
+    flexDirection: { xs: "column", sm: "row" },
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: { lg: "18%", xl: "15%" },
+    flexWrap: "wrap",
+  }}
+>
+  <Button
+    size="sm"
+    variant="outlined"
+    color="neutral"
+    startDecorator={<KeyboardArrowLeftIcon />}
+    onClick={() => handlePageChange(currentPage - 1)}
+    disabled={currentPage === 1}
+  >
+    Previous
+  </Button>
+
+  <Box>
+    Page {currentPage} of {totalPages} | Showing{" "}
+    {data?.tasks?.length || 0} of {totalCount} results
+  </Box>
+
+  <Box sx={{ display: "flex", gap: 1 }}>
+    <IconButton size="sm" variant="contained" color="neutral">
+      {currentPage}
+    </IconButton>
+    {currentPage < totalPages && (
+      <IconButton
+        size="sm"
+        variant="outlined"
+        color="neutral"
+        onClick={() => handlePageChange(currentPage + 1)}
       >
-        <Button
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          startDecorator={<KeyboardArrowLeftIcon />}
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-        >
-          Previous
-        </Button>
+        {currentPage + 1}
+      </IconButton>
+    )}
+  </Box>
 
-        <Box>Showing {filteredData.length} results</Box>
+  <Button
+    size="sm"
+    variant="outlined"
+    color="neutral"
+    endDecorator={<KeyboardArrowRightIcon />}
+    onClick={() => handlePageChange(currentPage + 1)}
+    disabled={currentPage >= totalPages}
+  >
+    Next
+  </Button>
+</Box>
 
-        <Box
-          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
-        >
-          <IconButton size="sm" variant="contained" color="neutral">
-            {currentPage}
-          </IconButton>
-          <IconButton
-            size="sm"
-            variant="outlined"
-            color="neutral"
-            onClick={() => handlePageChange(currentPage + 1)}
-          >
-            {currentPage + 1}
-          </IconButton>
-        </Box>
-
-        <Button
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          endDecorator={<KeyboardArrowRightIcon />}
-          onClick={() => handlePageChange(currentPage + 1)}
-        >
-          Next
-        </Button>
-      </Box>
     </>
   );
 }
