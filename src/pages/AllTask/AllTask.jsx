@@ -126,7 +126,7 @@ function AllTask() {
                   color="primary"
                   startDecorator={<ViewModuleRoundedIcon />}
                   size="md"
-                  onClick={() => navigate("/all_task")}
+                  onClick={() => navigate("/add_task")}
                 >
                   Add Task
                 </Button>

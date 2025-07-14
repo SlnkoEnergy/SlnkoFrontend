@@ -16,6 +16,7 @@ export const taskApi = createApi({
   baseQuery,
   tagTypes: ["Task"],
   endpoints: (builder) => ({
+    // POST: Create a new task
     createTask: builder.mutation({
       query: ({ payload, team }) => ({
         url: `create-task${team ? `?team=${team}` : ""}`,
@@ -24,7 +25,15 @@ export const taskApi = createApi({
       }),
       invalidatesTags: ["Task"],
     }),
+
+    // GET: Fetch all tasks with filters
+    getAllTasks: builder.query({
+      query: ({ page = 1, search = "", status = "", createdAt = "" }) =>
+        `get-task?page=${page}&search=${search}&status=${status}&createdAt=${createdAt}`,
+      providesTags: ["Task"],
+    }),
   }),
 });
 
-export const { useCreateTaskMutation } = taskApi;
+// Export hooks
+export const { useCreateTaskMutation, useGetAllTasksQuery } = taskApi;

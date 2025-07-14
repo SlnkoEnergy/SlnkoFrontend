@@ -10,104 +10,39 @@ import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import NoData from "../assets/alert-bell.svg";
+import Tooltip from "@mui/joy/Tooltip";
+import { useGetAllTasksQuery } from "../redux/globalTaskSlice";
 
 function Dash_task() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
 
-  const mockData = [
-    {
-      _id: "1",
-      code: "PRJ001",
-      customer: "K Venkatesh",
-      name: "K Venkatesh",
-      number: "9491010011",
-      state: "Telangana",
-    },
-    {
-      _id: "2",
-      code: "PRJ002",
-      customer: "Brave Force Multiservices Private Limited",
-      name: "Ashish Sengar",
-      number: "9536947017",
-      state: "Uttar Pradesh",
-    },
-    {
-      _id: "3",
-      code: "PRJ003",
-      customer: "Krishn Chandra",
-      name: "Mihir Mandal",
-      number: "8093098376",
-      state: "Odisha",
-    },
-    {
-      _id: "4",
-      code: "PRJ004",
-      customer: "BHAJANA RAM GREEN ENERGY",
-      name: "Umesh",
-      number: "8290805560",
-      state: "Rajasthan",
-    },
-    {
-      _id: "5",
-      code: "PRJ005",
-      customer: "Simran Barawarda",
-      name: "Simran Sharma",
-      number: "9660572204",
-      state: "Rajasthan",
-    },
-    {
-      _id: "6",
-      code: "PRJ006",
-      customer: "Anjaly Chaudhry",
-      name: "Sachin",
-      number: "8755759438",
-      state: "Uttar Pradesh",
-    },
-    {
-      _id: "7",
-      code: "PRJ007",
-      customer: "Patratu Vidyut Utpadan Nigam LTD",
-      name: "PVUNL-Patratu",
-      number: "1234567890",
-      state: "Jharkhand",
-    },
-    {
-      _id: "8",
-      code: "PRJ008",
-      customer: "Phalwaan Solar Private Limited",
-      name: "Chandra Prakash",
-      number: "123456780",
-      state: "Madhya Pradesh",
-    },
-    {
-      _id: "9",
-      code: "PRJ009",
-      customer: "Nalla Ajay",
-      name: "Ajay Nalla",
-      number: "9177481351",
-      state: "Rajasthan",
-    },
-    {
-      _id: "10",
-      code: "PRJ010",
-      customer: "Priyanka Yadav",
-      name: "Ravindra Yadav",
-      number: "9887487939",
-      state: "Rajasthan",
-    },
-  ];
+  const { data, isLoading } = useGetAllTasksQuery({
+    page: currentPage,
+    search: searchQuery,
+    status: statusFilter,
+    createdAt: dateFilter,
+  });
+
+  const draftPayments = data?.tasks || [];
 
   const filteredData = useMemo(() => {
-    return mockData.filter((project) =>
-      ["code", "customer", "state"].some((key) =>
-        project[key]?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    );
-  }, [searchQuery]);
+    return draftPayments.filter((task) => {
+      const matchesSearch = ["title", "description"].some((key) =>
+        task[key]?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      const matchesStatus =
+        !statusFilter || task.current_status?.status === statusFilter;
+      const matchesDate =
+        !dateFilter || task.createdAt?.split("T")[0] === dateFilter;
+      return matchesSearch && matchesStatus && matchesDate;
+    });
+  }, [searchQuery, statusFilter, dateFilter, draftPayments]);
 
   const handleSearch = (query) => setSearchQuery(query.toLowerCase());
 
@@ -125,13 +60,10 @@ function Dash_task() {
     if (page >= 1) setCurrentPage(page);
   };
 
-  const draftPayments = filteredData;
-
   return (
     <>
-      {/* Search */}
+      {/* Search and Filters */}
       <Box
-        className="SearchAndFilters-tabletUp"
         sx={{
           marginLeft: { xl: "15%", lg: "18%" },
           py: 2,
@@ -144,13 +76,42 @@ function Dash_task() {
         }}
       >
         <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search here</FormLabel>
+          <FormLabel>Search</FormLabel>
           <Input
             size="sm"
-            placeholder="Search by ProjectId , Customer , Type , or , State"
+            placeholder="Search by Title or Description"
             startDecorator={<SearchIcon />}
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
+          />
+        </FormControl>
+
+        <FormControl size="sm">
+          <FormLabel>Status</FormLabel>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            style={{
+              height: "32px",
+              borderRadius: "6px",
+              padding: "0 8px",
+              borderColor: "#ccc",
+            }}
+          >
+            <option value="">All</option>
+            <option value="pending">Pending</option>
+            <option value="in progress">In Progress</option>
+            <option value="completed">Completed</option>
+          </select>
+        </FormControl>
+
+        <FormControl size="sm">
+          <FormLabel>Filter by Date</FormLabel>
+          <Input
+            size="sm"
+            type="date"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
           />
         </FormControl>
       </Box>
@@ -168,27 +129,34 @@ function Dash_task() {
           maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
-        <Box component="table" sx={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ backgroundColor: "neutral.softBg" }}>
-              <th style={{ padding: "8px", textAlign: "left" }}>
+        <Box
+          component="table"
+          sx={{ width: "100%", borderCollapse: "collapse" }}
+        >
+          <thead
+            style={{
+              position: "sticky",
+              top: 0,
+              background: "#fff",
+              zIndex: 1,
+            }}
+          >
+            <tr>
+              <th style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
                 <Checkbox
                   size="sm"
-                  checked={selected.length === draftPayments.length}
+                  checked={selected.length === filteredData.length}
                   onChange={handleSelectAll}
                   indeterminate={
-                    selected.length > 0 &&
-                    selected.length < draftPayments.length
+                    selected.length > 0 && selected.length < filteredData.length
                   }
                 />
               </th>
               {[
-                "Project Id",
-                "Customer",
-                "Project Name",
-                "Mobile",
-                "State",
-                "Capacity(AC/DC)",
+                "Task Info",
+                "Project Info",
+                "Assigned To",
+                "Details",
                 "Status",
               ].map((header, i) => (
                 <th
@@ -196,7 +164,6 @@ function Dash_task() {
                   style={{
                     padding: "8px",
                     textAlign: "left",
-                    fontWeight: "bold",
                     borderBottom: "1px solid #ddd",
                   }}
                 >
@@ -206,31 +173,86 @@ function Dash_task() {
             </tr>
           </thead>
           <tbody>
-            {draftPayments.length > 0 ? (
-              draftPayments.map((project, index) => (
-                <tr key={index}>
-                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
+            {filteredData.length > 0 ? (
+              filteredData.map((task) => (
+                <tr key={task._id}>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
+                  >
                     <Checkbox
                       size="sm"
-                      checked={selected.includes(project._id)}
-                      onChange={() => handleRowSelect(project._id)}
+                      checked={selected.includes(task._id)}
+                      onChange={() => handleRowSelect(task._id)}
                     />
                   </td>
-                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>{project.code}</td>
-                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>{project.customer}</td>
-                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>{project.name}</td>
-                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>{project.number}</td>
-                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>{project.state}</td>
-                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>-</td>
-                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>Not defined</td>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
+                  >
+                    <Typography fontWeight="lg">{task.taskCode}</Typography>
+                    <Typography level="body-sm" startDecorator="⭐">
+                      Priority: {task.priority || "-"}
+                    </Typography>
+                    <Typography level="body-sm" startDecorator="📅">
+                      Deadline: {task.deadline?.split("T")[0] || "-"}
+                    </Typography>
+                    <Typography level="body-sm" startDecorator="📌">
+                      Title: {task.title || "-"}
+                    </Typography>
+                    <Typography level="body-sm" startDecorator="👤">
+                      Created By: {task.createdBy?.name || "-"}
+                    </Typography>
+                    <Typography level="body-sm" startDecorator="📆">
+                      Created At: {task.createdAt?.split("T")[0] || "-"}
+                    </Typography>
+                  </td>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
+                  >
+                    <Typography fontWeight="lg">
+                      {task.project_id?.code || "-"}
+                    </Typography>
+                    <Typography level="body-sm">
+                      {task.project_id?.name || "-"}
+                    </Typography>
+                  </td>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
+                  >
+                    {task.assigned_to?.map((a) => a.name).join(", ") || "-"}
+                  </td>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
+                  >
+                    {task.description}
+                  </td>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
+                  >
+                    <Tooltip title={task.current_status?.remarks || ""}>
+                      <span>{task.current_status?.status}</span>
+                    </Tooltip>
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={9} style={{ textAlign: "center", padding: "16px" }}>
-                  <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    <img src={NoData} alt="No data" style={{ width: 50, marginBottom: 8 }} />
-                    <Typography fontStyle="italic">No Handover Sheet Found</Typography>
+                <td
+                  colSpan={6}
+                  style={{ textAlign: "center", padding: "16px" }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                    }}
+                  >
+                    <img
+                      src={NoData}
+                      alt="No data"
+                      style={{ width: 50, marginBottom: 8 }}
+                    />
+                    <Typography fontStyle="italic">No Tasks Found</Typography>
                   </Box>
                 </td>
               </tr>
@@ -241,7 +263,6 @@ function Dash_task() {
 
       {/* Pagination */}
       <Box
-        className="Pagination-laptopUp"
         sx={{
           pt: 2,
           gap: 1,
@@ -263,9 +284,11 @@ function Dash_task() {
           Previous
         </Button>
 
-        <Box>Showing {draftPayments.length} results</Box>
+        <Box>Showing {filteredData.length} results</Box>
 
-        <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
+        <Box
+          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
+        >
           <IconButton size="sm" variant="contained" color="neutral">
             {currentPage}
           </IconButton>

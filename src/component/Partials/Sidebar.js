@@ -541,7 +541,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-             {/* <ListItem nested>
+             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
@@ -566,14 +566,14 @@ function Sidebar() {
                 <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
                     <ListItemButton
-                      onClick={() => navigate("/add_task")}
+                      onClick={() => navigate("/all_task")}
                     >
                       Task View
                     </ListItemButton>
                   </ListItem>
                 </List>
               </Toggler>
-            </ListItem> */}
+            </ListItem>
           </List>
         ) : user?.department === "Accounts" &&
           (user?.name === "Deepak Kumar Maurya" ||
