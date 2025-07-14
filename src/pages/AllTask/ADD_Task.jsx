@@ -1,4 +1,3 @@
-
 import { CssVarsProvider } from "@mui/joy/styles";
 import CssBaseline from "@mui/joy/CssBaseline";
 import Box from "@mui/joy/Box";
@@ -76,28 +75,23 @@ const Add_Task = () => {
               </Typography>
             </Breadcrumbs>
           </Box>
-          
 
-
-<Box
-  sx={{
-    display: "flex",
-    mb: 1,
-    gap: 1,
-    flexDirection: { xs: "column", sm: "row" },
-    alignItems: { xs: "start", sm: "center" },
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  }}
->
-  
-
-  <AddTask />
-</Box>
-
+          <Box
+            sx={{
+              display: "flex",
+              mb: 1,
+              gap: 1,
+              flexDirection: { xs: "column", sm: "row" },
+              alignItems: { xs: "start", sm: "center" },
+              flexWrap: "wrap",
+              justifyContent: "space-between",
+            }}
+          >
+            <AddTask />
+          </Box>
         </Box>
       </Box>
     </CssVarsProvider>
   );
-}
+};
 export default Add_Task;
