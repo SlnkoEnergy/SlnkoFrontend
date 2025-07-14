@@ -111,7 +111,7 @@ import View_Project from "../component/Forms/View_Project";
 import ProjectDetail from "../pages/CAM/ProjectDetail";
 import PurchaseRequestSheet from "../pages/CAM/PurchaseRequest";
 import PurchaseReqDetails from "../pages/CAM/PurchaseRequestDetail";
-import AddTask from "../pages/AddTask/AddTask";
+import Add_Task from "../pages/AllTask/ADD_Task";
 
 function index() {
   return (
@@ -910,15 +910,15 @@ function index() {
           </PrivateRoute>
         }
       />
+  
       <Route
         path="/add_task"
         element={
           <PrivateRoute>
-            <AddTask />
+            <Add_Task />
           </PrivateRoute>
         }
       />
-
      
     </Routes>
   );
