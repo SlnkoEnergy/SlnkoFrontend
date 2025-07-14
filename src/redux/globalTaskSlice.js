@@ -29,7 +29,7 @@ export const GlobalTaskApi = createApi({
     // GET: Fetch all tasks with filters
     getAllTasks: builder.query({
       query: ({ page = 1, search = "", status = "", createdAt = "" }) =>
-        `get-task?page=${page}&search=${search}&status=${status}&createdAt=${createdAt}`,
+        `tasks/get-task?page=${page}&search=${search}&status=${status}&createdAt=${createdAt}`,
       providesTags: ["Task"],
     }),
   getAllUser: builder.query({

@@ -10,9 +10,12 @@ import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
+import Tooltip from "@mui/joy/Tooltip";
 import { useEffect, useMemo, useState } from "react";
 import NoData from "../assets/alert-bell.svg";
-import Tooltip from "@mui/joy/Tooltip";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+
 import { useGetAllTasksQuery } from "../redux/globalTaskSlice";
 
 function Dash_task() {
@@ -21,6 +24,7 @@ function Dash_task() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+  const [prioritySortOrder, setPrioritySortOrder] = useState(null);
 
   const { data, isLoading } = useGetAllTasksQuery({
     page: currentPage,
@@ -32,7 +36,7 @@ function Dash_task() {
   const draftPayments = data?.tasks || [];
 
   const filteredData = useMemo(() => {
-    return draftPayments.filter((task) => {
+    let tasks = draftPayments.filter((task) => {
       const matchesSearch = ["title", "description"].some((key) =>
         task[key]?.toLowerCase().includes(searchQuery.toLowerCase())
       );
@@ -42,7 +46,19 @@ function Dash_task() {
         !dateFilter || task.createdAt?.split("T")[0] === dateFilter;
       return matchesSearch && matchesStatus && matchesDate;
     });
-  }, [searchQuery, statusFilter, dateFilter, draftPayments]);
+
+    if (prioritySortOrder) {
+      tasks.sort((a, b) => {
+        const aPriority = Number(a.priority) || 0;
+        const bPriority = Number(b.priority) || 0;
+        return prioritySortOrder === "asc"
+          ? aPriority - bPriority
+          : bPriority - aPriority;
+      });
+    }
+
+    return tasks;
+  }, [searchQuery, statusFilter, dateFilter, draftPayments, prioritySortOrder]);
 
   const handleSearch = (query) => setSearchQuery(query.toLowerCase());
 
@@ -152,13 +168,43 @@ function Dash_task() {
                   }
                 />
               </th>
-              {[
-                "Task Info",
-                "Project Info",
-                "Assigned To",
-                "Details",
-                "Status",
-              ].map((header, i) => (
+
+              {/* Task Info with Sort by Priority */}
+              <th style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
+                <Box display="flex" alignItems="center" gap={0.5}>
+                  <Typography level="body-sm">Task Info</Typography>
+                  <Tooltip title="Sort by Priority">
+                    <IconButton
+                      size="sm"
+                      variant="plain"
+                      color="neutral"
+                      onClick={() =>
+                        setPrioritySortOrder((prev) =>
+                          prev === "asc"
+                            ? "desc"
+                            : prev === "desc"
+                              ? null
+                              : "asc"
+                        )
+                      }
+                    >
+                      {prioritySortOrder === "asc" ? (
+                        <ArrowUpwardIcon fontSize="small" />
+                      ) : prioritySortOrder === "desc" ? (
+                        <ArrowDownwardIcon fontSize="small" />
+                      ) : (
+                        <ArrowUpwardIcon
+                          fontSize="small"
+                          sx={{ opacity: 0.3 }}
+                        />
+                      )}
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </th>
+
+              {/* The rest of the column headers */}
+              {["Title", "Project Info", "Description", "Status"].map((header, i) => (
                 <th
                   key={i}
                   style={{
@@ -172,6 +218,7 @@ function Dash_task() {
               ))}
             </tr>
           </thead>
+
           <tbody>
             {filteredData.length > 0 ? (
               filteredData.map((task) => (
@@ -185,19 +232,26 @@ function Dash_task() {
                       onChange={() => handleRowSelect(task._id)}
                     />
                   </td>
+
+                  {/* Task Info */}
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
                     <Typography fontWeight="lg">{task.taskCode}</Typography>
-                    <Typography level="body-sm" startDecorator="⭐">
-                      Priority: {task.priority || "-"}
-                    </Typography>
-                    <Typography level="body-sm" startDecorator="📅">
-                      Deadline: {task.deadline?.split("T")[0] || "-"}
-                    </Typography>
-                    <Typography level="body-sm" startDecorator="📌">
-                      Title: {task.title || "-"}
-                    </Typography>
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      <Tooltip title="Priority">
+                        <Box display="flex">
+                          {[...Array(Number(task.priority || 0))].map(
+                            (_, i) => (
+                              <Typography key={i} level="body-sm">
+                                ⭐
+                              </Typography>
+                            )
+                          )}
+                        </Box>
+                      </Tooltip>
+                    </Box>
+
                     <Typography level="body-sm" startDecorator="👤">
                       Created By: {task.createdBy?.name || "-"}
                     </Typography>
@@ -205,6 +259,79 @@ function Dash_task() {
                       Created At: {task.createdAt?.split("T")[0] || "-"}
                     </Typography>
                   </td>
+
+                  {/* Title + Assigned To + Deadline */}
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
+                  >
+                    <Typography fontWeight="lg">{task.title || "-"}</Typography>
+
+                    {task.assigned_to?.length > 0 ? (
+                      <Tooltip
+                        title={
+                          <Box sx={{ px: 1, py: 0.5 }}>
+                            <Typography
+                              level="body-sm"
+                              fontWeight="md"
+                              mb={0.5}
+                            >
+                              Assigned To:
+                            </Typography>
+                            {task.assigned_to.map((a, i) => (
+                              <Typography key={i} level="body-sm">
+                                • {a.name}
+                              </Typography>
+                            ))}
+                          </Box>
+                        }
+                        variant="soft"
+                        placement="top"
+                      >
+                        <Box
+                          sx={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                            cursor: "pointer",
+                            backgroundColor: "#f1f3f5",
+                            padding: "2px 6px",
+                            borderRadius: "12px",
+                            maxWidth: "100%",
+                          }}
+                        >
+                          <Typography level="body-sm" noWrap>
+                            {task.assigned_to[0].name}
+                          </Typography>
+
+                          {task.assigned_to.length > 1 && (
+                            <Box
+                              sx={{
+                                backgroundColor: "#007bff",
+                                color: "#fff",
+                                borderRadius: "8px",
+                                fontSize: "10px",
+                                fontWeight: 500,
+                                px: 0.8,
+                                lineHeight: 1.2,
+                              }}
+                            >
+                              +{task.assigned_to.length - 1}
+                            </Box>
+                          )}
+                        </Box>
+                      </Tooltip>
+                    ) : (
+                      <Typography level="body-sm" startDecorator="👥">
+                        -
+                      </Typography>
+                    )}
+
+                    <Typography level="body-sm" startDecorator="📅">
+                      Deadline: {task.deadline?.split("T")[0] || "-"}
+                    </Typography>
+                  </td>
+
+                  {/* Project Info */}
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
@@ -215,16 +342,15 @@ function Dash_task() {
                       {task.project_id?.name || "-"}
                     </Typography>
                   </td>
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
-                  >
-                    {task.assigned_to?.map((a) => a.name).join(", ") || "-"}
-                  </td>
+
+                  {/* Description */}
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
                     {task.description}
                   </td>
+
+                  {/* Status */}
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
