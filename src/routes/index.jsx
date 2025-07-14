@@ -111,7 +111,7 @@ import View_Project from "../component/Forms/View_Project";
 import ProjectDetail from "../pages/CAM/ProjectDetail";
 import PurchaseRequestSheet from "../pages/CAM/PurchaseRequest";
 import PurchaseReqDetails from "../pages/CAM/PurchaseRequestDetail";
-import AllTask from "../pages/AddTask/AllTask";
+import AllTask from "../pages/AllTask/AllTask";
 import Dash_task from "../component/TaskDashboard";
 
 function index() {
