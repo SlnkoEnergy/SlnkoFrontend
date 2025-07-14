@@ -12,12 +12,12 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import ViewModuleRoundedIcon from "@mui/icons-material/ViewModuleRounded";
 // import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import Sidebar from "../../component/Partials/Sidebar";
-
+import Dash_task from '../../component/TaskDashboard';
 import Header from "../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
 
 
-function AddTask() {
+function AllTask() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
@@ -101,9 +101,9 @@ function AddTask() {
             }}
           >
             <Typography level="h2" component="h1">
-              {user?.department === "Accounts"
-                ? "Handover Dashboard"
-                : "Engineering Dashboard"}
+              
+              
+               All Task
             </Typography>
             
               <Box
@@ -126,18 +126,18 @@ function AddTask() {
                   color="primary"
                   startDecorator={<ViewModuleRoundedIcon />}
                   size="md"
-                  onClick={() => navigate("/module_sheet")}
+                  onClick={() => navigate("/add_task")}
                 >
                   Add Task
                 </Button>
               </Box>
             
           </Box>
-          <AddTask />
+          <Dash_task />
           
         </Box>
       </Box>
     </CssVarsProvider>
   );
 }
-export default AddTask;
+export default AllTask;
