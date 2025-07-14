@@ -19,7 +19,7 @@ export const GlobalTaskApi = createApi({
     // POST: Create a new task
     createTask: builder.mutation({
       query: ({ payload, team }) => ({
-        url: `tasks/create-task${team ? `?team=${team}` : ""}`,
+        url: `tasks/task${team ? `?team=${team}` : ""}`,
         method: "POST",
         body: payload,
       }),
@@ -29,7 +29,7 @@ export const GlobalTaskApi = createApi({
     // GET: Fetch all tasks with filters
     getAllTasks: builder.query({
       query: ({ page = 1, search = "", status = "", createdAt = "", limit = "" }) =>
-        `tasks/get-task?page=${page}&search=${search}&status=${status}&createdAt=${createdAt}&limit=${limit}`,
+        `tasks/task?page=${page}&search=${search}&status=${status}&createdAt=${createdAt}&limit=${limit}`,
       providesTags: ["Task"],
     }),
 
