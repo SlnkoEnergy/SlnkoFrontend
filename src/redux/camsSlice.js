@@ -99,24 +99,23 @@ export const camsApi = createApi({
       query: (id) =>
         `purchaseRequest/purchase-request-project_id?project_id=${id}`,
     }),
- getAllPurchaseRequest: builder.query({
-  query: ({
-    page = 1,
-    search = "",
-    itemSearch = "",
-    poValueSearch = "",
-    statusSearch = "",
-    createdFrom = "",
-    createdTo = "",
-    etdFrom = "",
-    etdTo = "",
-  }) =>
-    `purchaseRequest/purchase-request?page=${page}&search=${search}&itemSearch=${itemSearch}&poValueSearch=${poValueSearch}&statusSearch=${statusSearch}&createdFrom=${createdFrom}&createdTo=${createdTo}&etdFrom=${etdFrom}&etdTo=${etdTo}`,
-  transformResponse: (response) =>
-    response || { data: [], totalCount: 0, totalPages: 1 },
-  providesTags: ["CAM"],
-}),
-
+    getAllPurchaseRequest: builder.query({
+      query: ({
+        page = 1,
+        search = "",
+        itemSearch = "",
+        poValueSearch = "",
+        statusSearch = "",
+        createdFrom = "",
+        createdTo = "",
+        etdFrom = "",
+        etdTo = "",
+      }) =>
+        `purchaseRequest/purchase-request?page=${page}&search=${search}&itemSearch=${itemSearch}&poValueSearch=${poValueSearch}&statusSearch=${statusSearch}&createdFrom=${createdFrom}&createdTo=${createdTo}&etdFrom=${etdFrom}&etdTo=${etdTo}`,
+      transformResponse: (response) =>
+        response || { data: [], totalCount: 0, totalPages: 1 },
+      providesTags: ["CAM"],
+    }),
 
     getPurchaseRequest: builder.query({
       query: ({ project_id, item_id, pr_id }) =>
@@ -129,7 +128,6 @@ export const camsApi = createApi({
         body: payload,
       }),
     }),
-    
   }),
 });
 
@@ -148,5 +146,4 @@ export const {
   useGetPurchaseRequestByProjectIdQuery,
   useGetPurchaseRequestQuery,
   useEditPurchaseRequestMutation,
-
 } = camsApi;
