@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: `${process.env.REACT_APP_API_URL}/tasks`,
+  baseUrl: `${process.env.REACT_APP_API_URL}`,
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("authToken");
     if (token) {
@@ -11,20 +11,34 @@ const baseQuery = fetchBaseQuery({
   },
 });
 
-export const taskApi = createApi({
-  reducerPath: "taskApi",
+export const GlobalTaskApi = createApi({
+  reducerPath: "GlobalTaskApi",
   baseQuery,
-  tagTypes: ["Task"],
+  tagTypes: ["GlobalTask"],
   endpoints: (builder) => ({
     createTask: builder.mutation({
       query: ({ payload, team }) => ({
-        url: `create-task${team ? `?team=${team}` : ""}`,
+        url: `tasks/create-task${team ? `?team=${team}` : ""}`,
         method: "POST",
         body: payload,
       }),
-      invalidatesTags: ["Task"],
+      invalidatesTags: ["GlobalTask"],
     }),
+  getAllUser: builder.query({
+  query: () => ({
+    url: 'all-user',
+    method: 'GET'
   }),
+  providesTags: ['User']
+}),
+getAllDept: builder.query({
+  query: () => ({
+    url: 'all-dept',
+    method: 'GET'
+  }),
+  providesTags: ['User']
+})
+  })
 });
 
-export const { useCreateTaskMutation } = taskApi;
+export const { useCreateTaskMutation, useGetAllUserQuery, useGetAllDeptQuery } = GlobalTaskApi;

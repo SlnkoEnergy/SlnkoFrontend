@@ -16,10 +16,74 @@ import {
 import StarIcon from "@mui/icons-material/Star";
 import StarBorderIcon from "@mui/icons-material/StarBorder";
 import { useState } from "react";
+import { useGetProjectDropdownQuery } from "../../redux/camsSlice";
+import {
+  useCreateTaskMutation,
+  useGetAllDeptQuery,
+  useGetAllUserQuery,
+} from "../../redux/globalTaskSlice";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 const AddTask = () => {
   const [priority, setPriority] = useState(0);
   const [assignToTeam, setAssignToTeam] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [title, setTitle] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [note, setNote] = useState("");
+  const [assignedTo, setAssignedTo] = useState([]);
+  const navigate = useNavigate();
+
+  const { data: getProjectDropdown, isLoading } = useGetProjectDropdownQuery();
+  const [createTask, { isLoading: isSubmitting }] = useCreateTaskMutation();
+  const { data: getAllUser } = useGetAllUserQuery();
+  const { data: getAllDept } = useGetAllDeptQuery();
+  console.log(getAllDept?.data);
+
+  const filteredProjects = (getProjectDropdown?.data || []).filter((project) =>
+    project.code.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  const handleSubmit = async () => {
+    if (!selectedProject || !title || !priority)
+      return alert("Required fields missing");
+
+    const payload = {
+      title,
+      description: note,
+      deadline: dueDate || null,
+      project_id: selectedProject._id,
+      assigned_to: assignToTeam
+        ? []
+        : Array.isArray(assignedTo)
+          ? assignedTo
+          : [],
+
+      priority: priority.toString(),
+      current_status: {
+        status: "draft",
+        remarks: "",
+        user_id: null,
+      },
+    };
+
+    try {
+      await createTask({
+        payload,
+        team: assignToTeam ? assignedTo : undefined,
+      }).unwrap();
+
+      toast.success("Task created successfully");
+
+      setTimeout(() => {
+        navigate("/all_task");
+      }, 1000);
+    } catch (error) {
+      toast.error("Error creating task");
+    }
+  };
 
   return (
     <Card
@@ -37,32 +101,60 @@ const AddTask = () => {
       </Typography>
 
       <Grid container spacing={2}>
-        {/* Title */}
         <Grid xs={12}>
           <FormControl fullWidth>
             <FormLabel>Title</FormLabel>
-            <Input placeholder="Enter Title of task..." />
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Enter Title of task..."
+            />
           </FormControl>
         </Grid>
 
-        {/* Project Id & Project Name */}
         <Grid xs={6}>
           <FormControl fullWidth>
             <FormLabel>Project Id</FormLabel>
-            <Select placeholder="Choose one">
-              <Option value="Project1">Project 1</Option>
-              <Option value="Project2">Project 2</Option>
+            <Select
+              placeholder={isLoading ? "Loading..." : "Choose one"}
+              value={selectedProject?.code || searchText}
+              onChange={(_, value) => {
+                const project = getProjectDropdown?.data?.find(
+                  (proj) => proj.code === value
+                );
+                setSelectedProject(project || null);
+                setSearchText("");
+              }}
+              onInputChange={(e) => {
+                setSearchText(e.target.value);
+                setSelectedProject(null);
+              }}
+              autoComplete
+              slotProps={{
+                listbox: { sx: { maxHeight: 250, overflowY: "auto" } },
+                input: { placeholder: "Search project..." },
+              }}
+            >
+              {filteredProjects.map((project) => (
+                <Option key={project._id} value={project.code}>
+                  {project.code}
+                </Option>
+              ))}
             </Select>
           </FormControl>
         </Grid>
+
         <Grid xs={6}>
           <FormControl fullWidth>
             <FormLabel>Project Name</FormLabel>
-            <Input placeholder="Enter Project Name" />
+            <Input
+              placeholder="Project Name"
+              value={selectedProject?.name || ""}
+              disabled
+            />
           </FormControl>
         </Grid>
 
-        {/* Priority */}
         <Grid xs={6}>
           <FormControl fullWidth>
             <FormLabel>Priority</FormLabel>
@@ -83,22 +175,28 @@ const AddTask = () => {
           </FormControl>
         </Grid>
 
-        {/* Due Date */}
         <Grid xs={6}>
           <FormControl fullWidth>
             <FormLabel>Due Date</FormLabel>
-            <Input type="date" />
+            <Input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+            />
           </FormControl>
         </Grid>
 
-        {/* Toggle + Assigned To */}
         <Grid xs={12}>
           <FormControl fullWidth>
             <FormLabel>
-              Assigned To (
-              {assignToTeam ? "Team" : "Individual"})
+              Assigned To ({assignToTeam ? "Team" : "Individual"})
             </FormLabel>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+              mb={1}
+            >
               <Typography level="body-sm">Assign to Individual</Typography>
               <Switch
                 checked={assignToTeam}
@@ -107,39 +205,70 @@ const AddTask = () => {
               <Typography level="body-sm">Assign to Team</Typography>
             </Box>
 
-            <Select placeholder={assignToTeam ? "Select a team" : "Select a user"}>
-              {assignToTeam ? (
-                <>
-                  <Option value="team1">Team Alpha</Option>
-                  <Option value="team2">Team Beta</Option>
-                </>
-              ) : (
-                <>
-                  <Option value="user1">User 1</Option>
-                  <Option value="user2">User 2</Option>
-                </>
-              )}
+            <Select
+              multiple={!assignToTeam}
+              value={assignedTo}
+              onChange={(_, val) => setAssignedTo(val)}
+              placeholder={assignToTeam ? "Select a team" : "Select users"}
+            >
+              {assignToTeam
+                ? (getAllDept?.data || [])
+                    .filter((dept) => dept.trim() !== "")
+                    .map((dept) => (
+                      <Option key={dept} value={dept}>
+                        {dept}
+                      </Option>
+                    ))
+                : (getAllUser?.data || []).map((user) => (
+                    <Option key={user._id} value={user._id}>
+                      {user.name}
+                    </Option>
+                  ))}
             </Select>
           </FormControl>
         </Grid>
 
-        {/* Note */}
         <Grid xs={12}>
           <FormControl fullWidth>
             <FormLabel>Note</FormLabel>
-            <Textarea placeholder="Log a note..." minRows={3} />
+            <Textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Log a note..."
+              minRows={3}
+            />
           </FormControl>
         </Grid>
 
-        {/* Buttons */}
         <Grid xs={12} display="flex" justifyContent="flex-end" gap={1}>
-          <Button variant="solid" color="danger">
+          <Button
+            variant="solid"
+            color="danger"
+            onClick={() => {
+              const confirmDiscard = window.confirm(
+                "Are you sure you want to discard the changes?"
+              );
+              if (confirmDiscard) {
+                setPriority(0);
+                setAssignToTeam(false);
+                setSearchText("");
+                setSelectedProject(null);
+                setTitle("");
+                setDueDate("");
+                setNote("");
+                setAssignedTo([]);
+              }
+            }}
+          >
             Discard
           </Button>
-          <Button variant="soft" color="neutral">
-            Mark Done
-          </Button>
-          <Button variant="solid" color="primary">
+
+          <Button
+            variant="solid"
+            color="primary"
+            onClick={handleSubmit}
+            loading={isSubmitting}
+          >
             Submit
           </Button>
         </Grid>
