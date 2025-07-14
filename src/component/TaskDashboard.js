@@ -36,7 +36,7 @@ const [dateFilter, setDateFilter] = useState(searchParams.get("createdAt") || ""
   const [itemsPerPage, setItemsPerPage] = useState(
     Number(searchParams.get("limit")) || 10
   );
-
+  const navigate = useNavigate();
   const { data, isLoading } = useGetAllTasksQuery({
     page: currentPage,
     search: searchQuery,
@@ -298,7 +298,13 @@ const [dateFilter, setDateFilter] = useState(searchParams.get("createdAt") || ""
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
-                    <Typography fontWeight="lg">{task.taskCode}</Typography>
+                   <Typography
+  fontWeight="lg"
+  sx={{ cursor: "pointer", color: "primary.700" }}
+  onClick={() => navigate(`/view_task?task=${task._id}`)}
+>
+  {task.taskCode}
+</Typography>
                     <Box display="flex" alignItems="center" gap={0.5}>
                       <Tooltip title="Priority">
                         <Box display="flex">
