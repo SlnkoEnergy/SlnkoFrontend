@@ -541,7 +541,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-             <ListItem nested>
+             {/* <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
@@ -573,7 +573,7 @@ function Sidebar() {
                   </ListItem>
                 </List>
               </Toggler>
-            </ListItem>
+            </ListItem> */}
           </List>
         ) : user?.department === "Accounts" &&
           (user?.name === "Deepak Kumar Maurya" ||

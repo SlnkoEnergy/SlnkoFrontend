@@ -126,7 +126,7 @@ function AllTask() {
                   color="primary"
                   startDecorator={<ViewModuleRoundedIcon />}
                   size="md"
-                  onClick={() => navigate("/add_task")}
+                  onClick={() => navigate("/all_task")}
                 >
                   Add Task
                 </Button>
@@ -134,7 +134,7 @@ function AllTask() {
             
           </Box>
           <Dash_task />
-          
+  
         </Box>
       </Box>
     </CssVarsProvider>
