@@ -1,47 +1,38 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { CssVarsProvider } from '@mui/joy/styles';
-import CssBaseline from '@mui/joy/CssBaseline';
-import Box from '@mui/joy/Box';
-import Button from '@mui/joy/Button';
-import Breadcrumbs from '@mui/joy/Breadcrumbs';
-import Link from '@mui/joy/Link';
-import Typography from '@mui/joy/Typography';
+import Box from "@mui/joy/Box";
+import CssBaseline from "@mui/joy/CssBaseline";
+import { CssVarsProvider } from "@mui/joy/styles";
+import React, { useEffect, useState } from "react";
+import Button from "@mui/joy/Button";
+// import Button from '@mui/joy/Button';
+import Breadcrumbs from "@mui/joy/Breadcrumbs";
+import Link from "@mui/joy/Link";
+import Typography from "@mui/joy/Typography";
+// import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
+import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import ViewModuleRoundedIcon from "@mui/icons-material/ViewModuleRounded";
+// import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
+import Sidebar from "../../component/Partials/Sidebar";
 
-import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
-import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
-import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
+import Header from "../../component/Partials/Header";
+import { useNavigate } from "react-router-dom";
 
-import Sidebar from '../../component/Partials/Sidebar';
-// import OrderTable from '../../component/OrderTable';
-// import OrderList from '../../component/OrderList';
-import Header from '../../component/Partials/Header';
-import AllProject from '../../component/AllProject';
 
 function AddTask() {
-      const allProjectRef = useRef();
-    
-  
-      const handleExportToCSV = () => {
-        if (allProjectRef.current) {
-          allProjectRef.current.exportToCSV();
-        }
-      };
-      const [user, setUser] = useState(null);
-            
-              
-              useEffect(() => {
-               const userData = getUserData();
-               setUser(userData);
-             }, []);
-             
-             const getUserData = () => {
-               const userData = localStorage.getItem("userDetails");
-               if (userData) {
-                 return JSON.parse(userData);
-               }
-               return null;
-             };
-      
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -78,32 +69,25 @@ function AddTask() {
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: {md:"4%", lg:"0%"} }}
+              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
-              {/* <Link
-                underline="none"
-                color="neutral"
-                href="#some-link"
-                aria-label="Home"
-              >
-                <HomeRoundedIcon />
-              </Link> */}
-              <Link
-                underline="hover"
-                color="neutral"
-                href=""
-                sx={{ fontSize: 12, fontWeight: 500 }}
-              >
-                Project
-              </Link>
+                <Link
+                  underline="none"
+                  color="neutral"
+                  sx={{ fontSize: 12, fontWeight: 500 }}
+                >
+                Tasks
+                </Link>
+              
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                All Projects
+                All Task
               </Typography>
             </Breadcrumbs>
           </Box>
+
           <Box
             sx={{
               display: "flex",
@@ -117,33 +101,39 @@ function AddTask() {
             }}
           >
             <Typography level="h2" component="h1">
-              All Project
+              {user?.department === "Accounts"
+                ? "Handover Dashboard"
+                : "Engineering Dashboard"}
             </Typography>
-           
-            <Box
-              sx={{
-                display: "flex",
-                mb: 1,
-                gap: 1,
-                flexDirection: { xs: "column", sm: "row" },
-                alignItems: { xs: "start", sm: "center" },
-                flexWrap: "wrap",
-                justifyContent: "center",
-              }}
-            >
-             
-              <Button
-                color="primary"
-                startDecorator={<DownloadRoundedIcon />}
-                size="sm"
-                onClick={handleExportToCSV} 
+            
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: { xs: "column", sm: "row" },
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 1.5,
+                  p: 2,
+                  flexWrap: "wrap",
+                  bgcolor: "background.level1",
+                  borderRadius: "lg",
+                  boxShadow: "sm",
+                  mb: 2,
+                }}
               >
-                Export to CSV
-              </Button>
-            </Box>
-              
+                <Button
+                  variant="solid"
+                  color="primary"
+                  startDecorator={<ViewModuleRoundedIcon />}
+                  size="md"
+                  onClick={() => navigate("/module_sheet")}
+                >
+                  Add Task
+                </Button>
+              </Box>
+            
           </Box>
-          <AllProject ref={allProjectRef} />
+          <AddTask />
           
         </Box>
       </Box>
