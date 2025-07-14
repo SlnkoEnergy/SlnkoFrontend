@@ -16,6 +16,7 @@ export const GlobalTaskApi = createApi({
   baseQuery,
   tagTypes: ["GlobalTask"],
   endpoints: (builder) => ({
+    // POST: Create a new task
     createTask: builder.mutation({
       query: ({ payload, team }) => ({
         url: `tasks/create-task${team ? `?team=${team}` : ""}`,
@@ -23,6 +24,13 @@ export const GlobalTaskApi = createApi({
         body: payload,
       }),
       invalidatesTags: ["GlobalTask"],
+    }),
+
+    // GET: Fetch all tasks with filters
+    getAllTasks: builder.query({
+      query: ({ page = 1, search = "", status = "", createdAt = "" }) =>
+        `get-task?page=${page}&search=${search}&status=${status}&createdAt=${createdAt}`,
+      providesTags: ["Task"],
     }),
   getAllUser: builder.query({
   query: () => ({
@@ -40,5 +48,7 @@ getAllDept: builder.query({
 })
   })
 });
+
+// Export hooks
 
 export const { useCreateTaskMutation, useGetAllUserQuery, useGetAllDeptQuery } = GlobalTaskApi;
