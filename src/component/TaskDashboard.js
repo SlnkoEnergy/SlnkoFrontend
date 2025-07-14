@@ -20,6 +20,7 @@ import { useSearchParams } from "react-router-dom";
 import Chip from "@mui/joy/Chip";
 
 import { useGetAllTasksQuery } from "../redux/globalTaskSlice";
+import { useNavigate } from "react-router-dom";
 
 function Dash_task() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -27,17 +28,10 @@ function Dash_task() {
     Number(searchParams.get("page")) || 1
   );
   const [selected, setSelected] = useState([]);
-  const [searchQuery, setSearchQuery] = useState(
-    searchParams.get("search") || ""
-  );
-  const [rawSearch, setRawSearch] = useState(searchParams.get("search") || "");
-
-  const [statusFilter, setStatusFilter] = useState(
-    searchParams.get("status") || ""
-  );
-  const [dateFilter, setDateFilter] = useState(
-    searchParams.get("createdAt") || ""
-  );
+ const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
+const [rawSearch, setRawSearch] = useState(searchParams.get("search") || "");    
+ const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "");
+const [dateFilter, setDateFilter] = useState(searchParams.get("createdAt") || "");
   const [prioritySortOrder, setPrioritySortOrder] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(
     Number(searchParams.get("limit")) || 10

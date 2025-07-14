@@ -48,14 +48,37 @@ export const GlobalTaskApi = createApi({
       }),
       providesTags: ["User"],
     }),
+    getTaskById: builder.query({
+      query: (id) => ({
+        url: `tasks/task/${id}`,
+        method: "GET",
+      }),
+      providesTags: ["User"],
+    }),
+    updateTaskStatus: builder.mutation({
+      query: ({ id, status, remarks }) => ({
+        url: `tasks/${id}/updateTaskStatus`,
+        method: "PUT",
+        body: { status, remarks },
+      }),
+      providesTags: ["User"],
+    }),
+    deleteTask: builder.mutation({
+      query: (id) => ({
+        url: `/tasks/task/${id}`,
+        method: "DELETE",
+      }),
+    }),
   }),
 });
 
-// Export hooks
 
 export const {
   useCreateTaskMutation,
   useGetAllUserQuery,
   useGetAllDeptQuery,
   useGetAllTasksQuery,
+  useGetTaskByIdQuery,
+  useUpdateTaskStatusMutation,
+  useDeleteTaskMutation
 } = GlobalTaskApi;
