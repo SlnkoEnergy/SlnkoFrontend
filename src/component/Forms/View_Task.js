@@ -262,12 +262,22 @@ const ViewTaskPage = () => {
               value={status}
               onChange={(e, val) => setStatus(val)}
               sx={{ width: 150 }}
+              disabled={
+                taskData?.current_status?.status?.toLowerCase() === "completed"
+              }
             >
               <Option value="completed">Completed</Option>
               <Option value="pending">Pending</Option>
               <Option value="in progress">In Progress</Option>
             </Select>
-            <Button onClick={handleSubmit}>Submit</Button>
+            <Button
+              disabled={
+                taskData?.current_status?.status?.toLowerCase() === "completed"
+              }
+              onClick={handleSubmit}
+            >
+              Submit
+            </Button>
           </Stack>
 
           <Stack spacing={2} maxHeight={140} overflow={"auto"}>

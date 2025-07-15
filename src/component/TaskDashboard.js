@@ -19,7 +19,7 @@ import { debounce } from "lodash";
 import { useSearchParams } from "react-router-dom";
 import Chip from "@mui/joy/Chip";
 
-import { useGetAllTasksQuery } from "../redux/globalTaskSlice";
+import { useGetAllTasksQuery,useGetAllDeptQuery  } from "../redux/globalTaskSlice";
 import { useNavigate } from "react-router-dom";
 
 function Dash_task() {
@@ -28,22 +28,35 @@ function Dash_task() {
     Number(searchParams.get("page")) || 1
   );
   const [selected, setSelected] = useState([]);
- const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
-const [rawSearch, setRawSearch] = useState(searchParams.get("search") || "");    
- const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "");
-const [dateFilter, setDateFilter] = useState(searchParams.get("createdAt") || "");
+  const [searchQuery, setSearchQuery] = useState(
+    searchParams.get("search") || ""
+  );
+  const [rawSearch, setRawSearch] = useState(searchParams.get("search") || "");
+  const [statusFilter, setStatusFilter] = useState(
+    searchParams.get("status") || ""
+  );
+  const [dateFilter, setDateFilter] = useState(
+    searchParams.get("createdAt") || ""
+  );
+const [departmentFilter, setDepartmentFilter] = useState(searchParams.get("department") || "");
+
+
   const [prioritySortOrder, setPrioritySortOrder] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(
     Number(searchParams.get("limit")) || 10
   );
+
   const navigate = useNavigate();
   const { data, isLoading } = useGetAllTasksQuery({
     page: currentPage,
     search: searchQuery,
     status: statusFilter,
     createdAt: dateFilter,
+    department: departmentFilter,
     limit: itemsPerPage,
   });
+const { data: deptApiData, isLoading: isDeptLoading } = useGetAllDeptQuery();
+const deptList = deptApiData?.data?.filter((d) => d) || []; // filters out empty string
 
   useEffect(() => {
     const params = {};
@@ -51,6 +64,7 @@ const [dateFilter, setDateFilter] = useState(searchParams.get("createdAt") || ""
     if (searchQuery) params.search = searchQuery;
     if (statusFilter) params.status = statusFilter;
     if (dateFilter) params.createdAt = dateFilter;
+     if (departmentFilter) params.department = departmentFilter;
     if (currentPage) params.page = currentPage;
     if (itemsPerPage) params.limit = itemsPerPage;
 
@@ -59,6 +73,7 @@ const [dateFilter, setDateFilter] = useState(searchParams.get("createdAt") || ""
     searchQuery,
     statusFilter,
     dateFilter,
+      departmentFilter,
     currentPage,
     itemsPerPage,
     setSearchParams,
@@ -189,6 +204,32 @@ const [dateFilter, setDateFilter] = useState(searchParams.get("createdAt") || ""
             ))}
           </select>
         </FormControl>
+       <FormControl size="sm">
+  <FormLabel>Department</FormLabel>
+  <select
+    value={departmentFilter}
+    onChange={(e) => {
+      setDepartmentFilter(e.target.value);
+      setCurrentPage(1);
+    }}
+    disabled={isDeptLoading}
+    style={{
+      height: "32px",
+      borderRadius: "6px",
+      padding: "0 8px",
+      borderColor: "#ccc",
+    }}
+  >
+    <option value="">All</option>
+    {deptList.map((dept) => (
+      <option key={dept} value={dept}>
+        {dept}
+      </option>
+    ))}
+  </select>
+</FormControl>
+
+
       </Box>
 
       {/* Table */}
@@ -298,13 +339,13 @@ const [dateFilter, setDateFilter] = useState(searchParams.get("createdAt") || ""
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
-                   <Typography
-  fontWeight="lg"
-  sx={{ cursor: "pointer", color: "primary.700" }}
-  onClick={() => navigate(`/view_task?task=${task._id}`)}
->
-  {task.taskCode}
-</Typography>
+                    <Typography
+                      fontWeight="lg"
+                      sx={{ cursor: "pointer", color: "primary.700" }}
+                      onClick={() => navigate(`/view_task?task=${task._id}`)}
+                    >
+                      {task.taskCode}
+                    </Typography>
                     <Box display="flex" alignItems="center" gap={0.5}>
                       <Tooltip title="Priority">
                         <Box display="flex">
@@ -440,31 +481,32 @@ const [dateFilter, setDateFilter] = useState(searchParams.get("createdAt") || ""
                   </td>
 
                   {/* Status */}
-                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
-  <Tooltip title={task.current_status?.remarks || ""}>
-    <Chip
-      variant="soft"
-      color={
-        task.current_status?.status === "draft"
-          ? "primary"
-          : task.current_status?.status === "pending"
-          ? "danger"
-          : task.current_status?.status === "in progress"
-          ? "warning"
-          : task.current_status?.status === "completed"
-          ? "success"
-          : "neutral"
-      }
-      size="sm"
-    >
-      {task.current_status?.status
-        ? task.current_status.status.charAt(0).toUpperCase() +
-          task.current_status.status.slice(1)
-        : "-"}
-    </Chip>
-  </Tooltip>
-</td>
-
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
+                  >
+                    <Tooltip title={task.current_status?.remarks || ""}>
+                      <Chip
+                        variant="soft"
+                        color={
+                          task.current_status?.status === "draft"
+                            ? "primary"
+                            : task.current_status?.status === "pending"
+                              ? "danger"
+                              : task.current_status?.status === "in progress"
+                                ? "warning"
+                                : task.current_status?.status === "completed"
+                                  ? "success"
+                                  : "neutral"
+                        }
+                        size="sm"
+                      >
+                        {task.current_status?.status
+                          ? task.current_status.status.charAt(0).toUpperCase() +
+                            task.current_status.status.slice(1)
+                          : "-"}
+                      </Chip>
+                    </Tooltip>
+                  </td>
                 </tr>
               ))
             ) : (
@@ -494,7 +536,6 @@ const [dateFilter, setDateFilter] = useState(searchParams.get("createdAt") || ""
         </Box>
       </Sheet>
 
-     
       {/* Pagination */}
       <Box
         sx={{
