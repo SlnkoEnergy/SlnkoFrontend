@@ -61,7 +61,7 @@ function Dash_cam() {
   const [items, setItems] = useState([]);
   const [otherItemName, setOtherItemName] = useState("");
   const [otherItemDescription, setOtherItemDescription] = useState("");
-const [otherItemAmount, setOtherItemAmount] = useState("");
+  const [otherItemAmount, setOtherItemAmount] = useState("");
 
   const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
   const checkedIcon = <CheckBoxIcon fontSize="small" />;
@@ -82,53 +82,53 @@ const [otherItemAmount, setOtherItemAmount] = useState("");
   const [createPurchaseRequest, { isLoading: isPRCreating }] =
     useCreatePurchaseRequestMutation();
 
-const handlePRSubmit = async () => {
-  if (!selectedPRProject?.project_id) {
-    toast.error("Project ID is missing.");
-    return;
-  }
+  const handlePRSubmit = async () => {
+    if (!selectedPRProject?.project_id) {
+      toast.error("Project ID is missing.");
+      return;
+    }
 
-  if (items.length === 0) {
-    toast.error("Please select at least one item.");
-    return;
-  }
+    if (items.length === 0) {
+      toast.error("Please select at least one item.");
+      return;
+    }
 
- const formattedItems = items.map((item) => {
-  const formattedItem = {
-    item_id: item._id,
+    const formattedItems = items.map((item) => {
+      const formattedItem = {
+        item_id: item._id,
+      };
+
+      const originalItem = materialCategories.find(
+        (cat) => cat._id === item._id
+      );
+      if (originalItem?.name === "Others") {
+        formattedItem.other_item_name = otherItemName;
+        formattedItem.amount = otherItemAmount;
+      }
+
+      return formattedItem;
+    });
+
+    const payload = {
+      project_id: selectedPRProject?.project_id,
+      etd: null,
+      delivery_date: null,
+      items: formattedItems,
+    };
+
+    console.log("Payload being sent:", payload);
+
+    try {
+      const response = await createPurchaseRequest(payload).unwrap();
+      toast.success("Purchase Request created successfully!");
+      setIsPRModalOpen(false);
+      setItems([]);
+      setOtherItemName(""); // Reset extra fields
+      setOtherItemAmount("");
+    } catch (error) {
+      toast.error(error?.data?.message || "Failed to create Purchase Request.");
+    }
   };
-
-  const originalItem = materialCategories.find((cat) => cat._id === item._id);
-  if (originalItem?.name === "Others") {
-    formattedItem.other_item_name = otherItemName;
-    formattedItem.amount = otherItemAmount;
-  }
-
-  return formattedItem;
-});
-
-
-  const payload = {
-    project_id: selectedPRProject?.project_id,
-    etd: null,
-    delivery_date: null,
-    items: formattedItems,
-  };
-
-  console.log("Payload being sent:", payload);
-
-  try {
-    const response = await createPurchaseRequest(payload).unwrap();
-    toast.success("Purchase Request created successfully!");
-    setIsPRModalOpen(false);
-    setItems([]);
-    setOtherItemName("");       // Reset extra fields
-    setOtherItemAmount("");
-  } catch (error) {
-    toast.error(error?.data?.message || "Failed to create Purchase Request.");
-  }
-};
-
 
   const ProjectOverView = ({ currentPage, project_id, code, id }) => {
     return (
@@ -790,41 +790,26 @@ const handlePRSubmit = async () => {
                 value={items}
                 onChange={(e, newValue) => setItems(newValue)}
                 renderOption={(props, option, { selected }) => (
-  <li
-    {...props}
-    style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      padding: "6px 12px",
-    }}
-  >
-    <div style={{ display: "flex", alignItems: "center" }}>
-      <Checkbox
-        icon={icon}
-        checkedIcon={checkedIcon}
-        style={{ marginRight: 8 }}
-        checked={selected}
-      />
-      {option.name}
-    </div>
-
-    <Switch
-      size="sm"
-      checked={toggleStates[option._id] || false}
-      onClick={(e) => e.stopPropagation()} // 🛑 prevent checkbox selection
-      onChange={(e) =>
-        setToggleStates((prev) => ({
-          ...prev,
-          [option._id]: e.target.checked,
-        }))
-      }
-    />
-  </li>
-)}
-
-
-
+                  <li
+                    {...props}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "6px 12px",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <Checkbox
+                        icon={icon}
+                        checkedIcon={checkedIcon}
+                        style={{ marginRight: 8 }}
+                        checked={selected}
+                      />
+                      {option.name}
+                    </div>
+                  </li>
+                )}
                 renderInput={(params) => (
                   <TextField
                     {...params}
