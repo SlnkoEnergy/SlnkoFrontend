@@ -27,11 +27,12 @@ export const GlobalTaskApi = createApi({
     }),
 
     // GET: Fetch all tasks with filters
-    getAllTasks: builder.query({
-      query: ({ page = 1, search = "", status = "", createdAt = "", limit = "" }) =>
-        `tasks/task?page=${page}&search=${search}&status=${status}&createdAt=${createdAt}&limit=${limit}`,
-      providesTags: ["Task"],
-    }),
+   getAllTasks: builder.query({
+  query: ({ page = 1, search = "", status = "", createdAt = "", department = "", limit = "" }) =>
+    `tasks/task?page=${page}&search=${search}&status=${status}&createdAt=${createdAt}&department=${department}&limit=${limit}`,
+  providesTags: ["Task"],
+}),
+
 
     getAllUser: builder.query({
       query: () => ({
