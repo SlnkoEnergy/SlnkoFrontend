@@ -437,28 +437,37 @@ const deptList = deptApiData?.data?.filter((d) => d) || []; // filters out empty
                     <Typography level="body-sm" startDecorator="📅">
                       Deadline: {task.deadline?.split("T")[0] || "-"}
                     </Typography>
-                    {task.deadline && new Date(task.deadline) < new Date() ? (
-                      <Typography
-                        level="body-sm"
-                        color="danger"
-                        startDecorator="⏰"
-                      >
-                        Delay:{" "}
-                        {Math.ceil(
-                          (new Date() - new Date(task.deadline)) /
-                            (1000 * 60 * 60 * 24)
-                        )}{" "}
-                        days
-                      </Typography>
-                    ) : (
-                      <Typography
-                        level="body-sm"
-                        color="success"
-                        startDecorator="✅"
-                      >
-                        On Time
-                      </Typography>
-                    )}
+                    {task.deadline && (() => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const deadlineDate = new Date(task.deadline);
+  deadlineDate.setHours(0, 0, 0, 0);
+
+  if (deadlineDate < today) {
+    const diffInDays = Math.floor((today - deadlineDate) / (1000 * 60 * 60 * 24));
+    return (
+      <Typography
+        level="body-sm"
+        color="danger"
+        startDecorator="⏰"
+      >
+        Delay: {diffInDays} {diffInDays === 1 ? "day" : "days"}
+      </Typography>
+    );
+  } else {
+    return (
+      <Typography
+        level="body-sm"
+        color="success"
+        startDecorator="✅"
+      >
+        On Time
+      </Typography>
+    );
+  }
+})()}
+
                   </td>
 
                   {/* Project Info */}
@@ -474,11 +483,34 @@ const deptList = deptApiData?.data?.filter((d) => d) || []; // filters out empty
                   </td>
 
                   {/* Description */}
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
-                  >
-                    {task.description}
-                  </td>
+                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd", maxWidth: "200px" }}>
+    <Tooltip
+  title={
+    <Typography sx={{ whiteSpace: "pre-line", maxWidth: "300px" }}>
+      {task.description || ""}
+    </Typography>
+  }
+  arrow
+  placement="top-start"
+  variant="soft"
+  color="neutral"
+>
+  <Typography
+    noWrap
+    sx={{
+      maxWidth: "180px",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
+      cursor: "default",
+    }}
+  >
+    {task.description || "-"}
+  </Typography>
+</Tooltip>
+
+</td>
+
 
                   {/* Status */}
                   <td
