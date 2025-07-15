@@ -2,8 +2,6 @@ import {
   Card,
   Typography,
   Input,
-  Select,
-  Option,
   Textarea,
   Button,
   Grid,
@@ -24,6 +22,7 @@ import {
 } from "../../redux/globalTaskSlice";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import Select from "react-select";
 
 const AddTask = () => {
   const [priority, setPriority] = useState(0);
@@ -40,11 +39,6 @@ const AddTask = () => {
   const [createTask, { isLoading: isSubmitting }] = useCreateTaskMutation();
   const { data: getAllUser } = useGetAllUserQuery();
   const { data: getAllDept } = useGetAllDeptQuery();
-  console.log(getAllDept?.data);
-
-  const filteredProjects = (getProjectDropdown?.data || []).filter((project) =>
-    project.code.toLowerCase().includes(searchText.toLowerCase())
-  );
 
   const handleSubmit = async () => {
     if (!selectedProject || !title || !priority)
@@ -85,6 +79,45 @@ const AddTask = () => {
     }
   };
 
+  const customStyles = {
+    menu: (provided) => ({
+      ...provided,
+      maxWidth: 250,
+      overflowX: "auto",
+    }),
+  };
+
+  const optionsProject = (getProjectDropdown?.data || []).map((project) => ({
+    value: project.code,
+    label: project.code,
+  }));
+
+  const options = assignToTeam
+    ? Array.isArray(getAllDept?.data)
+      ? getAllDept.data.filter((dept) => dept.trim() !== "")
+      : []
+    : Array.isArray(getAllUser?.data)
+      ? getAllUser.data
+      : [];
+
+  const selectOptions = options.map((item) =>
+    assignToTeam
+      ? { value: item, label: item }
+      : { value: item._id, label: item.name }
+  );
+
+  const value = assignToTeam
+    ? assignedTo
+      ? { value: assignedTo, label: assignedTo }
+      : null
+    : Array.isArray(assignedTo)
+      ? assignedTo
+          .map((userId) => {
+            const user = options.find((item) => item._id === userId);
+            return user ? { value: user._id, label: user.name } : null;
+          })
+          .filter(Boolean)
+      : [];
   return (
     <Card
       sx={{
@@ -112,35 +145,37 @@ const AddTask = () => {
           </FormControl>
         </Grid>
 
-        <Grid xs={6}>
+        <Grid item xs={6}>
           <FormControl fullWidth>
             <FormLabel>Project Id</FormLabel>
             <Select
-              placeholder={isLoading ? "Loading..." : "Choose one"}
-              value={selectedProject?.code || searchText}
-              onChange={(_, value) => {
+              isLoading={isLoading}
+              isClearable
+              isSearchable
+              placeholder="Search project..."
+              value={
+                selectedProject
+                  ? { value: selectedProject.code, label: selectedProject.code }
+                  : null
+              }
+              onChange={(selectedOption) => {
                 const project = getProjectDropdown?.data?.find(
-                  (proj) => proj.code === value
+                  (proj) => proj.code === selectedOption?.value
                 );
                 setSelectedProject(project || null);
                 setSearchText("");
               }}
-              onInputChange={(e) => {
-                setSearchText(e.target.value);
-                setSelectedProject(null);
+              onInputChange={(inputValue, { action }) => {
+                if (action === "input-change") {
+                  setSearchText(inputValue);
+                  setSelectedProject(null);
+                }
               }}
-              autoComplete
-              slotProps={{
-                listbox: { sx: { maxHeight: 250, overflowY: "auto" } },
-                input: { placeholder: "Search project..." },
-              }}
-            >
-              {filteredProjects.map((project) => (
-                <Option key={project._id} value={project.code}>
-                  {project.code}
-                </Option>
-              ))}
-            </Select>
+              options={optionsProject.filter((project) =>
+                project.label.toLowerCase().includes(searchText.toLowerCase())
+              )}
+              styles={customStyles}
+            />
           </FormControl>
         </Grid>
 
@@ -200,31 +235,28 @@ const AddTask = () => {
               <Typography level="body-sm">Assign to Individual</Typography>
               <Switch
                 checked={assignToTeam}
-                onChange={(e) => setAssignToTeam(e.target.checked)}
+                onChange={(e) => {
+                  setAssignToTeam(e.target.checked);
+                  setAssignedTo(null);
+                }}
               />
               <Typography level="body-sm">Assign to Team</Typography>
             </Box>
 
             <Select
-              multiple={!assignToTeam}
-              value={assignedTo}
-              onChange={(_, val) => setAssignedTo(val)}
-              placeholder={assignToTeam ? "Select a team" : "Select users"}
-            >
-              {assignToTeam
-                ? (getAllDept?.data || [])
-                    .filter((dept) => dept.trim() !== "")
-                    .map((dept) => (
-                      <Option key={dept} value={dept}>
-                        {dept}
-                      </Option>
-                    ))
-                : (getAllUser?.data || []).map((user) => (
-                    <Option key={user._id} value={user._id}>
-                      {user.name}
-                    </Option>
-                  ))}
-            </Select>
+              isMulti={!assignToTeam}
+              placeholder={assignToTeam ? "Select a team" : "Select Users"}
+              options={selectOptions}
+              value={value}
+              onChange={(selected) => {
+                if (assignToTeam) {
+                  setAssignedTo(selected?.value || null);
+                } else {
+                  const ids = selected ? selected.map((opt) => opt.value) : [];
+                  setAssignedTo(ids);
+                }
+              }}
+            />
           </FormControl>
         </Grid>
 

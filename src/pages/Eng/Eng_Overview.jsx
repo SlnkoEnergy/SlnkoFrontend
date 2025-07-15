@@ -89,8 +89,8 @@ function Eng_Overview() {
               marginLeft: { xl: "15%", lg: "18%" },
             }}
           >
-            <Typography level="h2" component="h1">
-            Engineering Overview
+            <Typography ml={{xs: 0, lg:3, xl:4}} level="h2" component="h1">
+             Engineering Overview
             </Typography>
 
             <Box
