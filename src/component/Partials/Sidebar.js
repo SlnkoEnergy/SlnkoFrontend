@@ -1,5 +1,6 @@
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import TaskIcon from "@mui/icons-material/Task";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import AssignmentRoundedIcon from "@mui/icons-material/AssessmentRounded";
 import BuildIcon from "@mui/icons-material/Build";
@@ -545,7 +546,7 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <AccountBalanceWalletIcon />
+                    <TaskIcon  />
                     <ListItemContent>
                       <Typography level="title-sm">Task</Typography>
                     </ListItemContent>
@@ -732,7 +733,7 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <AccountBalanceWalletIcon />
+                    <TaskIcon />
                     <ListItemContent>
                       <Typography level="title-sm">Task</Typography>
                     </ListItemContent>
@@ -848,7 +849,7 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <AccountBalanceWalletIcon />
+                    <TaskIcon />
                     <ListItemContent>
                       <Typography level="title-sm">Task</Typography>
                     </ListItemContent>
@@ -984,7 +985,7 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <AccountBalanceWalletIcon />
+                    <TaskIcon />
                     <ListItemContent>
                       <Typography level="title-sm">Task</Typography>
                     </ListItemContent>
@@ -1288,7 +1289,7 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <AccountBalanceWalletIcon />
+                    <TaskIcon />
                     <ListItemContent>
                       <Typography level="title-sm">Task</Typography>
                     </ListItemContent>
@@ -1573,7 +1574,7 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <AccountBalanceWalletIcon />
+                    <TaskIcon />
                     <ListItemContent>
                       <Typography level="title-sm">Task</Typography>
                     </ListItemContent>
@@ -1812,7 +1813,7 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <AccountBalanceWalletIcon />
+                    <TaskIcon />
                     <ListItemContent>
                       <Typography level="title-sm">Task</Typography>
                     </ListItemContent>
@@ -2017,7 +2018,7 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <AccountBalanceWalletIcon />
+                    <TaskIcon />
                     <ListItemContent>
                       <Typography level="title-sm">Task</Typography>
                     </ListItemContent>
@@ -2214,7 +2215,7 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <AccountBalanceWalletIcon />
+                    <TaskIcon />
                     <ListItemContent>
                       <Typography level="title-sm">Task</Typography>
                     </ListItemContent>
@@ -2330,7 +2331,7 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <AccountBalanceWalletIcon />
+                    <TaskIcon />
                     <ListItemContent>
                       <Typography level="title-sm">Task</Typography>
                     </ListItemContent>
@@ -2417,7 +2418,7 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <AccountBalanceWalletIcon />
+                    <TaskIcon />
                     <ListItemContent>
                       <Typography level="title-sm">Task</Typography>
                     </ListItemContent>
@@ -2564,7 +2565,7 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <AccountBalanceWalletIcon />
+                    <TaskIcon />
                     <ListItemContent>
                       <Typography level="title-sm">Task</Typography>
                     </ListItemContent>
@@ -2676,7 +2677,7 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <AccountBalanceWalletIcon />
+                    <TaskIcon />
                     <ListItemContent>
                       <Typography level="title-sm">Task</Typography>
                     </ListItemContent>
