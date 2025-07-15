@@ -495,9 +495,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             user?.name === "admin" ||
             user?.name === "Guddu Rani Dubey" ||
             user?.name === "Prachi Singh" ||
-            user?.name === "Ajay Singh" ||
-            user?.name === "Naresh Kumar" ||
-            user?.name === "Shubham Gupta") &&
+            user?.department === "SCM") &&
             (current_status?.status === "delivered" ? (
               <Tooltip title="Already Delivered">
                 <span>
