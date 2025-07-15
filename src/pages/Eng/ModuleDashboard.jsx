@@ -22,9 +22,15 @@ const [selectedModule, setSelectedModule] = useState(() => searchParams.get("mod
   const { data, isLoading } = useGetAllMaterialCategoryQuery();
   const categoryData = data?.data || [];
 
-  const moduleOptions = categoryData.map((category) => category.name);
-  const selectedModuleData =
-    categoryData.find((category) => category.name === selectedModule) || {};
+ const filteredCategories = categoryData.filter(
+  (category) => category.name === "Module" || category.name === "Inverter"
+);
+
+const moduleOptions = filteredCategories.map((category) => category.name);
+
+const selectedModuleData =
+  filteredCategories.find((category) => category.name === selectedModule) || {};
+
 
   return (
     <CssVarsProvider disableTransitionOnChange>
