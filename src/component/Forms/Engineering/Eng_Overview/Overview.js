@@ -459,9 +459,9 @@ const Overview = () => {
         flexDirection: "column",
         height: "100vh",
         maxHeight: "70vh",
-        width: "85vw",
+        width: { xs: "96vw", lg: "75vw", xl: "80vw" },
         bgcolor: "background.body",
-        marginLeft: isFromCamDash ? "0%" : "13%",
+        marginLeft: isFromCamDash ? "0%" : { xs: "2%", lg: "21%", xl: "18%" },
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
@@ -501,7 +501,9 @@ const Overview = () => {
                   sx={{ fontWeight: 600 }}
                   disabled={isLoading}
                 >
-                  {category}
+                  {category
+                    .replace(/_/g, " ")
+                    .replace(/\b\w/g, (char) => char.toUpperCase())}
                 </Button>
               </ListItem>
             ))}
@@ -545,7 +547,7 @@ const Overview = () => {
                     }}
                   >
                     <Typography level="title-md" sx={{ mb: 1 }}>
-                      📘 {summary.boq_category_name}
+                      📘 {summary?.boq_category_name}
                     </Typography>
 
                     {summary.item?.current_data?.length > 0 ? (
@@ -880,7 +882,13 @@ const Overview = () => {
                 );
               })
             ) : (
-              <Typography>No documentation found for {selected}.</Typography>
+              <Typography>
+                No documentation found for{" "}
+                {selected
+                  ?.replace(/_/g, " ")
+                  .replace(/\b\w/g, (char) => char.toUpperCase())}
+                .
+              </Typography>
             )}
           </Box>
         </Sheet>
