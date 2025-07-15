@@ -180,15 +180,40 @@ const ViewTaskPage = () => {
                   : "N/A"}
               </Typography>
               <Typography level="body-sm">
-                <b>Description:</b>{" "}
-                <Tooltip title={taskData?.description || "N/A"}>
-                  <Typography component="span" sx={{ cursor: "pointer" }}>
-                    {taskData?.description?.length > 20
-                      ? `${taskData.description.slice(0, 20)}...`
-                      : taskData?.description || "N/A"}
-                  </Typography>
-                </Tooltip>
-              </Typography>
+  <b>Deadline:</b>{" "}
+  <Tooltip
+    title={
+      <Box sx={{ whiteSpace: "pre-line", maxWidth: 300, fontSize: 12 }}>
+        {taskData?.description || "N/A"}
+      </Box>
+    }
+    placement="top-start"
+    arrow
+    variant="soft"
+    color="neutral"
+  >
+    <Typography
+      component="span"
+      sx={{
+        cursor: "pointer",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        display: "inline-block",
+        maxWidth: "200px",
+        verticalAlign: "bottom",
+      }}
+    >
+      {taskData?.description?.length > 20
+        ? `${taskData.description.slice(0, 20)}...`
+        : taskData?.description || "N/A"}
+    </Typography>
+  </Tooltip>
+</Typography>
+
+
+
+
 
               <Typography level="body-sm">
                 <b>Assignees:</b>{" "}
