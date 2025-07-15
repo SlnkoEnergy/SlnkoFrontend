@@ -1,18 +1,12 @@
-import BlockIcon from "@mui/icons-material/Block";
-import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import HandshakeIcon from "@mui/icons-material/Handshake";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import SearchIcon from "@mui/icons-material/Search";
 import {
-  Alert,
   Avatar,
   Chip,
   CircularProgress,
   Option,
   Select,
-  Snackbar,
   Tooltip,
 } from "@mui/joy";
 import Box from "@mui/joy/Box";
@@ -24,16 +18,17 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { Calendar, Handshake, PackageCheck, Truck, User } from "lucide-react";
+import { Calendar, Handshake, PackageCheck, Truck, TruckIcon, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "react-toastify";
+
 import "react-toastify/dist/ReactToastify.css";
 
 import {
   useGetAllPurchaseRequestQuery,
   useGetMaterialCategoryQuery,
 } from "../redux/camsSlice";
+import { Money } from "@mui/icons-material";
 
 function PurchaseReqSummary() {
   const [selected, setSelected] = useState([]);
@@ -43,7 +38,6 @@ function PurchaseReqSummary() {
   const [selectedstatus, setSelectedstatus] = useState("");
   const [selectedpovalue, setSelectedpovalue] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [remarks, setRemarks] = useState();
   const page = parseInt(searchParams.get("page")) || 1;
   const search = searchParams.get("search") || "";
   const itemSearch = searchParams.get("itemSearch") || "";
@@ -350,6 +344,26 @@ function PurchaseReqSummary() {
     );
   };
 
+const RenderItemCell = (item) => {
+    const name = item?.item_id?.name;
+    const isOthers = name === "Others";
+    return (
+      <Box>
+        <Typography>{name || "-"}</Typography>
+        {isOthers && (
+          <Box sx={{ fontSize: 12, color: "gray" }}>
+            <div>
+              <b> <TruckIcon size={13} /> Other Item Name:</b> {item?.other_item_name || "-"}
+            </div>
+            <div>
+              <b><Money /> Amount:</b> ₹{item?.amount || "0"}
+            </div>
+          </Box>
+        )}
+      </Box>
+    );
+  };
+
   const getStatusIcon = (status) => {
     switch (status) {
       case "ready_to_dispatch":
@@ -531,14 +545,16 @@ function PurchaseReqSummary() {
                       </Box>
                     </td>
 
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      {item?.item_id?.name || "-"}
-                    </td>
+                   <td
+  style={{
+    borderBottom: "1px solid #ddd",
+    textAlign: "left",
+    padding: "8px",
+  }}
+>
+  {RenderItemCell(item)}
+</td>
+
 
                     <td
                       style={{

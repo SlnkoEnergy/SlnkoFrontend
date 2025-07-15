@@ -59,8 +59,9 @@ function Dash_cam() {
   const [isPRModalOpen, setIsPRModalOpen] = useState(false);
   const [selectedPRProject, setSelectedPRProject] = useState(null);
   const [items, setItems] = useState([]);
-  const [toggleStates, setToggleStates] = useState({});
-
+  const [otherItemName, setOtherItemName] = useState("");
+  const [otherItemDescription, setOtherItemDescription] = useState("");
+  const [otherItemAmount, setOtherItemAmount] = useState("");
 
   const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
   const checkedIcon = <CheckBoxIcon fontSize="small" />;
@@ -81,41 +82,53 @@ function Dash_cam() {
   const [createPurchaseRequest, { isLoading: isPRCreating }] =
     useCreatePurchaseRequestMutation();
 
- const handlePRSubmit = async () => {
-  if (!selectedPRProject?.project_id) {
-    toast.error("Project ID is missing.");
-    return;
-  }
+  const handlePRSubmit = async () => {
+    if (!selectedPRProject?.project_id) {
+      toast.error("Project ID is missing.");
+      return;
+    }
 
-  if (items.length === 0) {
-    toast.error("Please select at least one item.");
-    return;
-  }
+    if (items.length === 0) {
+      toast.error("Please select at least one item.");
+      return;
+    }
 
-  const formattedItems = items.map((item) => ({
-    item_id: item._id,
-    scope: toggleStates[item._id] ? "slnko" : "client", // ✅ based on toggle state
-  }));
+    const formattedItems = items.map((item) => {
+      const formattedItem = {
+        item_id: item._id,
+      };
 
-  const payload = {
-    project_id: selectedPRProject?.project_id,
-    etd: null,
-    delivery_date: null,
-    items: formattedItems,
+      const originalItem = materialCategories.find(
+        (cat) => cat._id === item._id
+      );
+      if (originalItem?.name === "Others") {
+        formattedItem.other_item_name = otherItemName;
+        formattedItem.amount = otherItemAmount;
+      }
+
+      return formattedItem;
+    });
+
+    const payload = {
+      project_id: selectedPRProject?.project_id,
+      etd: null,
+      delivery_date: null,
+      items: formattedItems,
+    };
+
+    console.log("Payload being sent:", payload);
+
+    try {
+      const response = await createPurchaseRequest(payload).unwrap();
+      toast.success("Purchase Request created successfully!");
+      setIsPRModalOpen(false);
+      setItems([]);
+      setOtherItemName(""); // Reset extra fields
+      setOtherItemAmount("");
+    } catch (error) {
+      toast.error(error?.data?.message || "Failed to create Purchase Request.");
+    }
   };
-
-  console.log("Payload being sent:", payload);
-
-  try {
-    const response = await createPurchaseRequest(payload).unwrap();
-    toast.success("Purchase Request created successfully!");
-    setIsPRModalOpen(false);
-    setItems([]);
-  } catch (error) {
-    toast.error(error?.data?.message || "Failed to create Purchase Request.");
-  }
-};
-
 
   const ProjectOverView = ({ currentPage, project_id, code, id }) => {
     return (
@@ -739,7 +752,7 @@ function Dash_cam() {
         <Modal open={isPRModalOpen} onClose={() => setIsPRModalOpen(false)}>
           <ModalDialog
             sx={{
-              width: 500, // Increased Modal Width
+              width: 500,
               borderRadius: "md",
               boxShadow: "lg",
               p: 3,
@@ -766,7 +779,6 @@ function Dash_cam() {
                 </Typography>
               </Typography>
 
-              {/* Clean Autocomplete with Well-Spaced Checkboxes */}
               <Autocomplete
                 multiple
                 options={materialCategories || []}
@@ -778,41 +790,26 @@ function Dash_cam() {
                 value={items}
                 onChange={(e, newValue) => setItems(newValue)}
                 renderOption={(props, option, { selected }) => (
-  <li
-    {...props}
-    style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      padding: "6px 12px",
-    }}
-  >
-    <div style={{ display: "flex", alignItems: "center" }}>
-      <Checkbox
-        icon={icon}
-        checkedIcon={checkedIcon}
-        style={{ marginRight: 8 }}
-        checked={selected}
-      />
-      {option.name}
-    </div>
-
-    <Switch
-      size="sm"
-      checked={toggleStates[option._id] || false}
-      onClick={(e) => e.stopPropagation()} // 🛑 prevent checkbox selection
-      onChange={(e) =>
-        setToggleStates((prev) => ({
-          ...prev,
-          [option._id]: e.target.checked,
-        }))
-      }
-    />
-  </li>
-)}
-
-
-
+                  <li
+                    {...props}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "6px 12px",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <Checkbox
+                        icon={icon}
+                        checkedIcon={checkedIcon}
+                        style={{ marginRight: 8 }}
+                        checked={selected}
+                      />
+                      {option.name}
+                    </div>
+                  </li>
+                )}
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -821,6 +818,29 @@ function Dash_cam() {
                   />
                 )}
               />
+
+              {/* Show additional fields if 'Others' is selected */}
+              {items.some((item) => item.name === "Others") && (
+                <>
+                  <FormControl size="sm">
+                    <FormLabel>Other Item Name</FormLabel>
+                    <Input
+                      placeholder="Enter item name"
+                      value={otherItemName}
+                      onChange={(e) => setOtherItemName(e.target.value)}
+                    />
+                  </FormControl>
+
+                  <FormControl size="sm">
+                    <FormLabel>Other Item Amount</FormLabel>
+                    <Input
+                      placeholder="Enter description"
+                      value={otherItemAmount}
+                      onChange={(e) => setOtherItemAmount(e.target.value)}
+                    />
+                  </FormControl>
+                </>
+              )}
 
               <Button
                 onClick={handlePRSubmit}
