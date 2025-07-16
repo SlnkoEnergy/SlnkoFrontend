@@ -24,7 +24,6 @@ import ApartmentIcon from "@mui/icons-material/Apartment";
 import BuildIcon from "@mui/icons-material/Build";
 
 const ViewTaskPage = () => {
-  
   const [note, setNote] = useState("");
   const [searchParams] = useSearchParams();
   const id = searchParams.get("task");
@@ -32,22 +31,20 @@ const ViewTaskPage = () => {
   const [taskData, setTaskData] = useState(null);
   const [updateTaskStatus] = useUpdateTaskStatusMutation();
   const navigate = useNavigate();
- const [status, setStatus] = useState("Select Status");
+  const [status, setStatus] = useState("Select Status");
 
-useEffect(() => {
-  if (taskData?.current_status?.status) {
-    const statusFromData = taskData.current_status.status.toLowerCase();
-    setStatus(statusFromData === "draft" ? "Select Status" : statusFromData);
-  }
-}, [taskData]);
-  
+  useEffect(() => {
+    if (taskData?.current_status?.status) {
+      const statusFromData = taskData.current_status.status.toLowerCase();
+      setStatus(statusFromData === "draft" ? "Select Status" : statusFromData);
+    }
+  }, [taskData]);
 
   useEffect(() => {
     if (getTaskData) {
       setTaskData(getTaskData);
     }
   }, [getTaskData]);
-
 
   const [deleteTask, { isLoading }] = useDeleteTaskMutation();
 
@@ -400,16 +397,20 @@ useEffect(() => {
 
           <Stack direction="row" spacing={1} mb={2}>
             <Select
-  value={status}
-  onChange={(e, val) => setStatus(val)}
-  sx={{ width: 150 }}
-  disabled={taskData?.current_status?.status?.toLowerCase() === "completed"}
->
-  <Option disabled value="Select Status">Select Status</Option>
-  <Option value="completed">Completed</Option>
-  <Option value="pending">Pending</Option>
-  <Option value="in progress">In Progress</Option>
-</Select>
+              value={status}
+              onChange={(e, val) => setStatus(val)}
+              sx={{ width: 150 }}
+              disabled={
+                taskData?.current_status?.status?.toLowerCase() === "completed"
+              }
+            >
+              <Option disabled value="Select Status">
+                Select Status
+              </Option>
+              <Option value="completed">Completed</Option>
+              <Option value="pending">Pending</Option>
+              <Option value="in progress">In Progress</Option>
+            </Select>
             <Button
               disabled={
                 taskData?.current_status?.status?.toLowerCase() === "completed"

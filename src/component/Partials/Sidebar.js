@@ -2053,6 +2053,7 @@ function Sidebar() {
           </List>
         ) : user?.department === "CAM" &&
           (user?.name === "Som Narayan Jha" ||
+            user?.name === "Ashish Kumar" ||
             user?.name === "Saresh" ||
             user?.name === "Izhan Mustafa"
           ) ? (

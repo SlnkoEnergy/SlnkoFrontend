@@ -32,34 +32,33 @@ function AllTask() {
     }
     return null;
   };
-  
- const [exportTasksToCsv] = useExportTasksToCsvMutation();
 
-const handleExport = async (selectedIds) => {
-  try {
-    if (!selectedIds || selectedIds.length === 0) {
-      alert("No tasks selected for export.");
-      return;
+  const [exportTasksToCsv] = useExportTasksToCsvMutation();
+
+  const handleExport = async (selectedIds) => {
+    try {
+      if (!selectedIds || selectedIds.length === 0) {
+        alert("No tasks selected for export.");
+        return;
+      }
+      const response = await exportTasksToCsv(selectedIds).unwrap();
+
+      const blob = new Blob([response], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "tasks_export.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("Failed to export tasks to CSV.");
     }
-    const response = await exportTasksToCsv(selectedIds ).unwrap();
-
-    const blob = new Blob([response], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'tasks_export.csv';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-
-    window.URL.revokeObjectURL(url); 
-  } catch (error) {
-    console.error("Export failed:", error);
-    alert("Failed to export tasks to CSV.");
-  }
-};
-
+  };
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -148,14 +147,14 @@ const handleExport = async (selectedIds) => {
               }}
             >
               <Button
-  variant="solid"
-  color="primary"
-  startDecorator={<DownloadRoundedIcon />}
-  size="md"
-  onClick={() => handleExport(selectedIds)} 
->
-  Export to CSV
-</Button>
+                variant="solid"
+                color="primary"
+                startDecorator={<DownloadRoundedIcon />}
+                size="md"
+                onClick={() => handleExport(selectedIds)}
+              >
+                Export to CSV
+              </Button>
 
               <Button
                 variant="solid"
