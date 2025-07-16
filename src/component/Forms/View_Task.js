@@ -19,9 +19,11 @@ import {
   useUpdateTaskStatusMutation,
 } from "../../redux/globalTaskSlice";
 import { toast } from "react-toastify";
+import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
+import ApartmentIcon from "@mui/icons-material/Apartment";
+import BuildIcon from "@mui/icons-material/Build";
 
 const ViewTaskPage = () => {
-  const [status, setStatus] = useState("completed");
   const [note, setNote] = useState("");
   const [searchParams] = useSearchParams();
   const id = searchParams.get("task");
@@ -29,6 +31,14 @@ const ViewTaskPage = () => {
   const [taskData, setTaskData] = useState(null);
   const [updateTaskStatus] = useUpdateTaskStatusMutation();
   const navigate = useNavigate();
+  const [status, setStatus] = useState("Select Status");
+
+  useEffect(() => {
+    if (taskData?.current_status?.status) {
+      const statusFromData = taskData.current_status.status.toLowerCase();
+      setStatus(statusFromData === "draft" ? "Select Status" : statusFromData);
+    }
+  }, [taskData]);
 
   useEffect(() => {
     if (getTaskData) {
@@ -94,6 +104,19 @@ const ViewTaskPage = () => {
     }
   };
 
+  const getTypeData = (type) => {
+    switch (type) {
+      case "project":
+        return { icon: <WorkOutlineIcon fontSize="small" />, label: "Project" };
+      case "internal":
+        return { icon: <ApartmentIcon fontSize="small" />, label: "Internal" };
+      case "helpdesk":
+        return { icon: <BuildIcon fontSize="small" />, label: "Helpdesk" };
+      default:
+        return { icon: null, label: "-" };
+    }
+  };
+
   return (
     <Box
       p={3}
@@ -117,29 +140,115 @@ const ViewTaskPage = () => {
       <Divider sx={{ my: 2 }} />
 
       <Stack direction="row" spacing={4} flexWrap="wrap">
+        {/* Left Panel: Project & Task Details */}
         <Box borderRadius="md" p={2} border="1px solid #eee" minWidth="300px">
           <Stack spacing={2} alignItems="center">
-            <Avatar src={taskData?.project_id?.avatar || ""} size="lg">
-              {taskData?.project_id?.name?.charAt(0).toUpperCase() || "P"}
-            </Avatar>
-            <Box
-              display={"flex"}
-              flexDirection={"column"}
-              justifyContent={"center"}
-              alignItems={"center"}
-            >
-              <Typography level="title-md">
-                {taskData?.project_id?.name}
-              </Typography>
-              <Typography level="title-sm" color="neutral">
-                {taskData?.project_id?.code}
-              </Typography>
-            </Box>
+            {!["internal", "helpdesk"].includes(
+              taskData?.type?.toLowerCase()
+            ) &&
+            Array.isArray(taskData?.project_id) &&
+            taskData.project_id.length > 0 ? (
+              <>
+                <Avatar src={taskData.project_id[0]?.avatar || ""} size="lg">
+                  {taskData.project_id[0]?.name?.charAt(0).toUpperCase() || "P"}
+                </Avatar>
 
+                <Box
+                  display="flex"
+                  flexDirection="column"
+                  justifyContent="center"
+                  alignItems="center"
+                >
+                  <Typography level="title-md">
+                    {taskData.project_id[0]?.name}
+                  </Typography>
+                  <Typography level="title-sm" sx={{ color: "#222" }}>
+                    {taskData.project_id[0]?.code}
+                  </Typography>
+                </Box>
+
+                {taskData.project_id.length > 1 && (
+                  <Tooltip
+                    arrow
+                    placement="top"
+                    variant="soft"
+                    title={
+                      <Box sx={{ maxHeight: 200, overflowY: "auto", px: 1 }}>
+                        {taskData.project_id.slice(0).map((proj) => (
+                          <Box key={proj._id} mb={1}>
+                            <Typography
+                              fontWeight="md"
+                              fontSize="sm"
+                              color="inherit"
+                            >
+                              {proj.name}
+                            </Typography>
+                            <Typography
+                              level="body-sm"
+                              fontSize="xs"
+                              color="inherit"
+                            >
+                              {proj.code}
+                            </Typography>
+                          </Box>
+                        ))}
+                      </Box>
+                    }
+                  >
+                    <Box
+                      sx={{
+                        mt: 1,
+                        backgroundColor: "#007bff",
+                        color: "#fff",
+                        borderRadius: "8px",
+                        fontSize: "12px",
+                        fontWeight: 500,
+                        px: 1,
+                        py: 0.3,
+                        cursor: "pointer",
+                      }}
+                    >
+                      +{taskData.project_id.length - 1} more
+                    </Box>
+                  </Tooltip>
+                )}
+              </>
+            ) : (
+              <>
+                <Avatar size="lg">
+                  {taskData?.type?.toLowerCase() === "internal"
+                    ? "I"
+                    : taskData?.type?.toLowerCase() === "helpdesk"
+                      ? "H"
+                      : "P"}
+                </Avatar>
+              </>
+            )}
+
+            {/* Task Metadata */}
             <Stack spacing={2} width="100%">
               <Typography level="body-sm" color="neutral" fontWeight={400}>
                 <b>Task Code:</b> {taskData?.taskCode}
               </Typography>
+
+              <Typography level="body-sm" color="neutral" fontWeight={400}>
+                <b>Type:</b>{" "}
+                <Chip
+                  size="sm"
+                  color="primary"
+                  startDecorator={getTypeData(taskData?.type)?.icon}
+                >
+                  {getTypeData(taskData?.type)?.label}
+                </Chip>
+              </Typography>
+
+              <Typography level="body-sm" color="neutral" fontWeight={400}>
+                <b>Sub Type:</b>{" "}
+                {taskData?.sub_type
+                  ?.replace(/_/g, " ")
+                  .replace(/\b\w/g, (c) => c.toUpperCase()) || "N/A"}
+              </Typography>
+
               <Typography level="body-sm">
                 <b>Status:</b>{" "}
                 <Chip
@@ -179,41 +288,44 @@ const ViewTaskPage = () => {
                   ? new Date(taskData.deadline).toLocaleDateString("en-GB")
                   : "N/A"}
               </Typography>
+
               <Typography level="body-sm">
-  <b>Deadline:</b>{" "}
-  <Tooltip
-    title={
-      <Box sx={{ whiteSpace: "pre-line", maxWidth: 300, fontSize: 12 }}>
-        {taskData?.description || "N/A"}
-      </Box>
-    }
-    placement="top-start"
-    arrow
-    variant="soft"
-    color="neutral"
-  >
-    <Typography
-      component="span"
-      sx={{
-        cursor: "pointer",
-        textOverflow: "ellipsis",
-        whiteSpace: "nowrap",
-        overflow: "hidden",
-        display: "inline-block",
-        maxWidth: "200px",
-        verticalAlign: "bottom",
-      }}
-    >
-      {taskData?.description?.length > 20
-        ? `${taskData.description.slice(0, 20)}...`
-        : taskData?.description || "N/A"}
-    </Typography>
-  </Tooltip>
-</Typography>
-
-
-
-
+                <b>Description:</b>{" "}
+                <Tooltip
+                  title={
+                    <Box
+                      sx={{
+                        whiteSpace: "pre-line",
+                        maxWidth: 300,
+                        fontSize: 12,
+                      }}
+                    >
+                      {taskData?.description || "N/A"}
+                    </Box>
+                  }
+                  placement="top-start"
+                  arrow
+                  variant="soft"
+                  color="neutral"
+                >
+                  <Typography
+                    component="span"
+                    sx={{
+                      cursor: "pointer",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      display: "inline-block",
+                      maxWidth: "200px",
+                      verticalAlign: "bottom",
+                    }}
+                  >
+                    {taskData?.description?.length > 20
+                      ? `${taskData.description.slice(0, 20)}...`
+                      : taskData?.description || "N/A"}
+                  </Typography>
+                </Tooltip>
+              </Typography>
 
               <Typography level="body-sm">
                 <b>Assignees:</b>{" "}
@@ -256,6 +368,7 @@ const ViewTaskPage = () => {
                   {taskData?.createdBy?.name}
                 </Chip>
               </Typography>
+
               <Typography level="body-sm">
                 <b>Created At:</b>{" "}
                 {taskData?.createdAt
@@ -266,7 +379,7 @@ const ViewTaskPage = () => {
           </Stack>
         </Box>
 
-        {/* Right: Task Notes */}
+        {/* Right Panel: Task Notes */}
         <Box flex={1} borderRadius="md" p={2} border="1px solid #eee">
           <Typography level="title-md" mb={1}>
             Task Activities
@@ -291,6 +404,9 @@ const ViewTaskPage = () => {
                 taskData?.current_status?.status?.toLowerCase() === "completed"
               }
             >
+              <Option disabled value="Select Status">
+                Select Status
+              </Option>
               <Option value="completed">Completed</Option>
               <Option value="pending">Pending</Option>
               <Option value="in progress">In Progress</Option>
