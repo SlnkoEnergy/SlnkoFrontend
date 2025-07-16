@@ -84,7 +84,7 @@ const AddTask = () => {
         user_id: null,
       },
       type: tab,
-      sub_type: isHelpdeskTab? subtype: null
+      sub_type: isHelpdeskTab ? subtype : null,
     };
 
     try {
