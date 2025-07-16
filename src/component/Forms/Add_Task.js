@@ -10,6 +10,10 @@ import {
   IconButton,
   Switch,
   Box,
+  Tabs,
+  TabList,
+  Tab,
+  TabPanel,
 } from "@mui/joy";
 import StarIcon from "@mui/icons-material/Star";
 import StarBorderIcon from "@mui/icons-material/StarBorder";
@@ -25,10 +29,11 @@ import { useNavigate } from "react-router-dom";
 import Select from "react-select";
 
 const AddTask = () => {
+  const [tab, setTab] = useState("project");
   const [priority, setPriority] = useState(0);
   const [assignToTeam, setAssignToTeam] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [selectedProject, setSelectedProject] = useState(null);
+  const [selectedProject, setSelectedProject] = useState([]);
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [note, setNote] = useState("");
@@ -41,39 +46,54 @@ const AddTask = () => {
   const { data: getAllDept } = useGetAllDeptQuery();
 
   const handleSubmit = async () => {
-    if (!selectedProject || !title || !priority)
+    const isProjectTab = tab === "project";
+    const isHelpdeskTab = tab === "helpdesk";
+
+    // Validate required fields
+    if (
+      !title ||
+      !priority ||
+      (isProjectTab && (!selectedProject || selectedProject.length === 0))
+    ) {
       return alert("Required fields missing");
+    }
+
+    // Extract project IDs if multiple selected
+    const projectIds = isProjectTab
+      ? Array.isArray(selectedProject)
+        ? selectedProject.map((p) => p._id)
+        : [selectedProject._id]
+      : undefined;
 
     const payload = {
       title,
       description: note,
       deadline: dueDate || null,
-      project_id: selectedProject._id,
-      assigned_to: assignToTeam
+      project_id: projectIds,
+      assigned_to: isHelpdeskTab
         ? []
-        : Array.isArray(assignedTo)
-          ? assignedTo
-          : [],
-
+        : assignToTeam
+          ? []
+          : Array.isArray(assignedTo)
+            ? assignedTo
+            : [],
       priority: priority.toString(),
       current_status: {
         status: "pending",
         remarks: "",
         user_id: null,
       },
+      type: tab,
     };
 
     try {
       await createTask({
         payload,
-        team: assignToTeam ? assignedTo : undefined,
+        team: isHelpdeskTab ? "IT Team" : assignToTeam ? assignedTo : undefined,
       }).unwrap();
 
       toast.success("Task created successfully");
-
-      setTimeout(() => {
-        navigate("/all_task");
-      }, 1000);
+      setTimeout(() => navigate("/all_task"), 1000);
     } catch (error) {
       toast.error("Error creating task");
     }
@@ -118,12 +138,13 @@ const AddTask = () => {
           })
           .filter(Boolean)
       : [];
+
   return (
     <Card
       sx={{
-        maxWidth: 600,
-        mt: { xs: "0%", lg: "5%" },
-        ml: { xs: "auto", lg: "35%" },
+        maxWidth: 700,
+        mt: { xs: "0%", lg: "3%" },
+        ml: { xs: "auto", lg: "30%" },
         mx: "auto",
         p: 3,
         borderRadius: "lg",
@@ -132,6 +153,14 @@ const AddTask = () => {
       <Typography level="h4" mb={2}>
         Add Task
       </Typography>
+
+      <Tabs value={tab} onChange={(_, newVal) => setTab(newVal)} sx={{ mb: 3 }}>
+        <TabList>
+          <Tab value="project">Project</Tab>
+          <Tab value="internal">Internal</Tab>
+          <Tab value="helpdesk">Helpdesk</Tab>
+        </TabList>
+      </Tabs>
 
       <Grid container spacing={2}>
         <Grid xs={12}>
@@ -145,50 +174,56 @@ const AddTask = () => {
           </FormControl>
         </Grid>
 
-        <Grid item xs={6}>
-          <FormControl fullWidth>
-            <FormLabel>Project Id</FormLabel>
-            <Select
-              isLoading={isLoading}
-              isClearable
-              isSearchable
-              placeholder="Search project..."
-              value={
-                selectedProject
-                  ? { value: selectedProject.code, label: selectedProject.code }
-                  : null
-              }
-              onChange={(selectedOption) => {
-                const project = getProjectDropdown?.data?.find(
-                  (proj) => proj.code === selectedOption?.value
-                );
-                setSelectedProject(project || null);
-                setSearchText("");
-              }}
-              onInputChange={(inputValue, { action }) => {
-                if (action === "input-change") {
-                  setSearchText(inputValue);
-                  setSelectedProject(null);
-                }
-              }}
-              options={optionsProject.filter((project) =>
-                project.label.toLowerCase().includes(searchText.toLowerCase())
-              )}
-              styles={customStyles}
-            />
-          </FormControl>
-        </Grid>
-
-        <Grid xs={6}>
-          <FormControl fullWidth>
-            <FormLabel>Project Name</FormLabel>
-            <Input
-              placeholder="Project Name"
-              value={selectedProject?.name || ""}
-              disabled
-            />
-          </FormControl>
-        </Grid>
+        {tab === "project" && (
+          <>
+            <Grid xs={12}>
+              <FormControl fullWidth>
+                <FormLabel>Project Id</FormLabel>
+                <Select
+                  isMulti
+                  isLoading={isLoading}
+                  isClearable
+                  isSearchable
+                  placeholder="Search project..."
+                  value={
+                    selectedProject?.length
+                      ? selectedProject.map((proj) => ({
+                          value: proj.code,
+                          label: proj.code,
+                        }))
+                      : []
+                  }
+                  onChange={(selectedOptions) => {
+                    if (Array.isArray(selectedOptions)) {
+                      const selectedProjects = selectedOptions
+                        .map((opt) =>
+                          getProjectDropdown?.data?.find(
+                            (proj) => proj.code === opt.value
+                          )
+                        )
+                        .filter(Boolean); // remove nulls
+                      setSelectedProject(selectedProjects);
+                    } else {
+                      setSelectedProject([]);
+                    }
+                    setSearchText("");
+                  }}
+                  onInputChange={(inputValue, { action }) => {
+                    if (action === "input-change") {
+                      setSearchText(inputValue);
+                    }
+                  }}
+                  options={optionsProject.filter((project) =>
+                    project.label
+                      .toLowerCase()
+                      .includes(searchText.toLowerCase())
+                  )}
+                  styles={customStyles}
+                />
+              </FormControl>
+            </Grid>
+          </>
+        )}
 
         <Grid xs={6}>
           <FormControl fullWidth>
@@ -223,40 +258,47 @@ const AddTask = () => {
 
         <Grid xs={12}>
           <FormControl fullWidth>
-            <FormLabel>
-              Assigned To ({assignToTeam ? "Team" : "Individual"})
-            </FormLabel>
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              mb={1}
-            >
-              <Typography level="body-sm">Assign to Individual</Typography>
-              <Switch
-                checked={assignToTeam}
-                onChange={(e) => {
-                  setAssignToTeam(e.target.checked);
-                  setAssignedTo(null);
-                }}
-              />
-              <Typography level="body-sm">Assign to Team</Typography>
-            </Box>
+            <FormLabel>Assigned To</FormLabel>
 
-            <Select
-              isMulti={!assignToTeam}
-              placeholder={assignToTeam ? "Select a team" : "Select Users"}
-              options={selectOptions}
-              value={value}
-              onChange={(selected) => {
-                if (assignToTeam) {
-                  setAssignedTo(selected?.value || null);
-                } else {
-                  const ids = selected ? selected.map((opt) => opt.value) : [];
-                  setAssignedTo(ids);
-                }
-              }}
-            />
+            {tab !== "helpdesk" && (
+              <>
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  mb={1}
+                >
+                  <Typography level="body-sm">Assign to Individual</Typography>
+                  <Switch
+                    checked={assignToTeam}
+                    onChange={(e) => {
+                      setAssignToTeam(e.target.checked);
+                      setAssignedTo(null);
+                    }}
+                  />
+                  <Typography level="body-sm">Assign to Team</Typography>
+                </Box>
+
+                <Select
+                  isMulti={!assignToTeam}
+                  placeholder={assignToTeam ? "Select a team" : "Select Users"}
+                  options={selectOptions}
+                  value={value}
+                  onChange={(selected) => {
+                    if (assignToTeam) {
+                      setAssignedTo(selected?.value || null);
+                    } else {
+                      const ids = selected
+                        ? selected.map((opt) => opt.value)
+                        : [];
+                      setAssignedTo(ids);
+                    }
+                  }}
+                />
+              </>
+            )}
+
+            {tab === "helpdesk" && <Input value="IT Team" disabled />}
           </FormControl>
         </Grid>
 

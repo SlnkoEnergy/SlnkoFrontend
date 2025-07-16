@@ -18,8 +18,14 @@ import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import { debounce } from "lodash";
 import { useSearchParams } from "react-router-dom";
 import Chip from "@mui/joy/Chip";
+import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
+import ApartmentIcon from "@mui/icons-material/Apartment";
+import BuildIcon from "@mui/icons-material/Build";
 
-import { useGetAllTasksQuery,useGetAllDeptQuery  } from "../redux/globalTaskSlice";
+import {
+  useGetAllTasksQuery,
+  useGetAllDeptQuery,
+} from "../redux/globalTaskSlice";
 import { useNavigate } from "react-router-dom";
 
 function Dash_task() {
@@ -38,8 +44,9 @@ function Dash_task() {
   const [dateFilter, setDateFilter] = useState(
     searchParams.get("createdAt") || ""
   );
-const [departmentFilter, setDepartmentFilter] = useState(searchParams.get("department") || "");
-
+  const [departmentFilter, setDepartmentFilter] = useState(
+    searchParams.get("department") || ""
+  );
 
   const [prioritySortOrder, setPrioritySortOrder] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(
@@ -55,8 +62,8 @@ const [departmentFilter, setDepartmentFilter] = useState(searchParams.get("depar
     department: departmentFilter,
     limit: itemsPerPage,
   });
-const { data: deptApiData, isLoading: isDeptLoading } = useGetAllDeptQuery();
-const deptList = deptApiData?.data?.filter((d) => d) || []; // filters out empty string
+  const { data: deptApiData, isLoading: isDeptLoading } = useGetAllDeptQuery();
+  const deptList = deptApiData?.data?.filter((d) => d) || [];
 
   useEffect(() => {
     const params = {};
@@ -64,7 +71,7 @@ const deptList = deptApiData?.data?.filter((d) => d) || []; // filters out empty
     if (searchQuery) params.search = searchQuery;
     if (statusFilter) params.status = statusFilter;
     if (dateFilter) params.createdAt = dateFilter;
-     if (departmentFilter) params.department = departmentFilter;
+    if (departmentFilter) params.department = departmentFilter;
     if (currentPage) params.page = currentPage;
     if (itemsPerPage) params.limit = itemsPerPage;
 
@@ -73,7 +80,7 @@ const deptList = deptApiData?.data?.filter((d) => d) || []; // filters out empty
     searchQuery,
     statusFilter,
     dateFilter,
-      departmentFilter,
+    departmentFilter,
     currentPage,
     itemsPerPage,
     setSearchParams,
@@ -82,7 +89,7 @@ const deptList = deptApiData?.data?.filter((d) => d) || []; // filters out empty
   const debouncedSearch = useCallback(
     debounce((value) => {
       setSearchQuery(value);
-      setCurrentPage(1); // reset page when searching
+      setCurrentPage(1);
     }, 300),
     []
   );
@@ -128,6 +135,19 @@ const deptList = deptApiData?.data?.filter((d) => d) || []; // filters out empty
     }
   };
 
+  const getTypeData = (type) => {
+    switch (type) {
+      case "project":
+        return { icon: <WorkOutlineIcon fontSize="small" />, label: "Project" };
+      case "internal":
+        return { icon: <ApartmentIcon fontSize="small" />, label: "Internal" };
+      case "helpdesk":
+        return { icon: <BuildIcon fontSize="small" />, label: "Helpdesk" };
+      default:
+        return { icon: null, label: "-" };
+    }
+  };
+
   return (
     <>
       {/* Search and Filters */}
@@ -147,7 +167,7 @@ const deptList = deptApiData?.data?.filter((d) => d) || []; // filters out empty
           <FormLabel>Search</FormLabel>
           <Input
             size="sm"
-            placeholder="Search by Title or Description"
+            placeholder="Search by Title, Description or Type"
             startDecorator={<SearchIcon />}
             value={rawSearch}
             onChange={(e) => handleSearch(e.target.value)}
@@ -162,7 +182,7 @@ const deptList = deptApiData?.data?.filter((d) => d) || []; // filters out empty
             style={{
               height: "32px",
               borderRadius: "6px",
-              padding: "0 8px",
+              padding: "2px 6px",
               borderColor: "#ccc",
             }}
           >
@@ -188,7 +208,7 @@ const deptList = deptApiData?.data?.filter((d) => d) || []; // filters out empty
             value={itemsPerPage}
             onChange={(e) => {
               setItemsPerPage(Number(e.target.value));
-              setCurrentPage(1); // Reset to first page on limit change
+              setCurrentPage(1);
             }}
             style={{
               height: "32px",
@@ -204,32 +224,30 @@ const deptList = deptApiData?.data?.filter((d) => d) || []; // filters out empty
             ))}
           </select>
         </FormControl>
-       <FormControl size="sm">
-  <FormLabel>Department</FormLabel>
-  <select
-    value={departmentFilter}
-    onChange={(e) => {
-      setDepartmentFilter(e.target.value);
-      setCurrentPage(1);
-    }}
-    disabled={isDeptLoading}
-    style={{
-      height: "32px",
-      borderRadius: "6px",
-      padding: "0 8px",
-      borderColor: "#ccc",
-    }}
-  >
-    <option value="">All</option>
-    {deptList.map((dept) => (
-      <option key={dept} value={dept}>
-        {dept}
-      </option>
-    ))}
-  </select>
-</FormControl>
-
-
+        <FormControl size="sm">
+          <FormLabel>Department</FormLabel>
+          <select
+            value={departmentFilter}
+            onChange={(e) => {
+              setDepartmentFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            disabled={isDeptLoading}
+            style={{
+              height: "32px",
+              borderRadius: "6px",
+              padding: "0 8px",
+              borderColor: "#ccc",
+            }}
+          >
+            <option value="">All</option>
+            {deptList.map((dept) => (
+              <option key={dept} value={dept}>
+                {dept}
+              </option>
+            ))}
+          </select>
+        </FormControl>
       </Box>
 
       {/* Table */}
@@ -304,7 +322,7 @@ const deptList = deptApiData?.data?.filter((d) => d) || []; // filters out empty
               </th>
 
               {/* The rest of the column headers */}
-              {["Title", "Project Info", "Description", "Status"].map(
+              {["Title", "Type", "Project Info", "Description", "Status"].map(
                 (header, i) => (
                   <th
                     key={i}
@@ -437,80 +455,207 @@ const deptList = deptApiData?.data?.filter((d) => d) || []; // filters out empty
                     <Typography level="body-sm" startDecorator="📅">
                       Deadline: {task.deadline?.split("T")[0] || "-"}
                     </Typography>
-                    {task.deadline && (() => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+                    {task.deadline &&
+                      (() => {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
 
-  const deadlineDate = new Date(task.deadline);
-  deadlineDate.setHours(0, 0, 0, 0);
+                        const deadlineDate = new Date(task.deadline);
+                        deadlineDate.setHours(0, 0, 0, 0);
 
-  if (deadlineDate < today) {
-    const diffInDays = Math.floor((today - deadlineDate) / (1000 * 60 * 60 * 24));
-    return (
-      <Typography
-        level="body-sm"
-        color="danger"
-        startDecorator="⏰"
-      >
-        Delay: {diffInDays} {diffInDays === 1 ? "day" : "days"}
-      </Typography>
-    );
-  } else {
-    return (
-      <Typography
-        level="body-sm"
-        color="success"
-        startDecorator="✅"
-      >
-        On Time
-      </Typography>
-    );
-  }
-})()}
-
+                        if (deadlineDate < today) {
+                          const diffInDays = Math.floor(
+                            (today - deadlineDate) / (1000 * 60 * 60 * 24)
+                          );
+                          return (
+                            <Typography
+                              level="body-sm"
+                              color="danger"
+                              startDecorator="⏰"
+                            >
+                              Delay: {diffInDays}{" "}
+                              {diffInDays === 1 ? "day" : "days"}
+                            </Typography>
+                          );
+                        } else {
+                          return (
+                            <Typography
+                              level="body-sm"
+                              color="success"
+                              startDecorator="✅"
+                            >
+                              On Time
+                            </Typography>
+                          );
+                        }
+                      })()}
                   </td>
 
-                  {/* Project Info */}
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
-                    <Typography fontWeight="lg">
-                      {task.project_id?.code || "-"}
-                    </Typography>
-                    <Typography level="body-sm">
-                      {task.project_id?.name || "-"}
-                    </Typography>
+                    {task.type ? (
+                      <Box
+                        display="inline-flex"
+                        alignItems="center"
+                        gap={0.5}
+                        px={1}
+                        py={0.3}
+                        borderRadius="16px"
+                        border="1px solid #ccc"
+                        bgcolor="#f5f5f5"
+                      >
+                        {getTypeData(task.type).icon}
+                        <Typography variant="body2" fontWeight="medium">
+                          {getTypeData(task.type).label}
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <Typography fontWeight="lg">-</Typography>
+                    )}
+                  </td>
+
+                  {/* Project Info */}
+
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
+                  >
+                    {Array.isArray(task.project_details) &&
+                    task.project_details.length > 0 ? (
+                      task.project_details.length === 1 ? (
+                        <div>
+                          <Typography fontWeight="lg">
+                            {task.project_details[0].code || "-"}
+                          </Typography>
+                          <Typography level="body-sm" sx={{ color: "#666" }}>
+                            {task.project_details[0].name || "-"}
+                          </Typography>
+                        </div>
+                      ) : (
+                        <Tooltip
+                          title={
+                            <Box
+                              sx={{ maxHeight: 200, overflowY: "auto", pr: 1 }}
+                            >
+                              {task.project_details
+                                .slice(1)
+                                .map((project, index) => (
+                                  <Box key={project._id} sx={{ mb: 1 }}>
+                                    <Typography level="body-md" fontWeight="lg">
+                                      {project.code}
+                                    </Typography>
+                                    <Typography
+                                      level="body-sm"
+                                      sx={{ color: "#ccc" }}
+                                    >
+                                      {project.name}
+                                    </Typography>
+                                    {index !==
+                                      task.project_details.length - 2 && (
+                                      <Box
+                                        sx={{
+                                          height: "1px",
+                                          backgroundColor: "#eee",
+                                          my: 1,
+                                        }}
+                                      />
+                                    )}
+                                  </Box>
+                                ))}
+                            </Box>
+                          }
+                          arrow
+                          placement="top-start"
+                          variant="soft"
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1.2,
+                              cursor: "pointer",
+                              "&:hover .project-count-badge": {
+                                backgroundColor: "#0056d2",
+                              },
+                            }}
+                          >
+                            <Box>
+                              <Typography fontWeight="lg">
+                                {task.project_details[0].code || "-"}
+                              </Typography>
+                              <Typography
+                                level="body-sm"
+                                sx={{ color: "#111" }}
+                              >
+                                {task.project_details[0].name || "-"}
+                              </Typography>
+                            </Box>
+                            <Box
+                              className="project-count-badge"
+                              sx={{
+                                backgroundColor: "#007bff",
+                                color: "#fff",
+                                borderRadius: "12px",
+                                fontSize: "11px",
+                                fontWeight: 600,
+                                px: 1,
+                                py: 0.2,
+                                minWidth: 26,
+                                textAlign: "center",
+                                transition: "all 0.2s ease-in-out",
+                                boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
+                              }}
+                            >
+                              +{task.project_details.length - 1}
+                            </Box>
+                          </Box>
+                        </Tooltip>
+                      )
+                    ) : (
+                      <>
+                        <Typography fontWeight="lg">-</Typography>
+                        <Typography level="body-sm" sx={{ color: "#666" }}>
+                          -
+                        </Typography>
+                      </>
+                    )}
                   </td>
 
                   {/* Description */}
-                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd", maxWidth: "200px" }}>
-    <Tooltip
-  title={
-    <Typography sx={{ whiteSpace: "pre-line", maxWidth: "300px" }}>
-      {task.description || ""}
-    </Typography>
-  }
-  arrow
-  placement="top-start"
-  variant="soft"
-  color="neutral"
->
-  <Typography
-    noWrap
-    sx={{
-      maxWidth: "180px",
-      overflow: "hidden",
-      textOverflow: "ellipsis",
-      whiteSpace: "nowrap",
-      cursor: "default",
-    }}
-  >
-    {task.description || "-"}
-  </Typography>
-</Tooltip>
-
-</td>
-
+                  <td
+                    style={{
+                      padding: "8px",
+                      borderBottom: "1px solid #ddd",
+                      maxWidth: "200px",
+                    }}
+                  >
+                    <Tooltip
+                      title={
+                        <Typography
+                          sx={{ whiteSpace: "pre-line", maxWidth: "300px" }}
+                        >
+                          {task.description || ""}
+                        </Typography>
+                      }
+                      arrow
+                      placement="top-start"
+                      variant="soft"
+                      color="neutral"
+                    >
+                      <Typography
+                        noWrap
+                        sx={{
+                          maxWidth: "180px",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          cursor: "default",
+                        }}
+                      >
+                        {task.description || "-"}
+                      </Typography>
+                    </Tooltip>
+                  </td>
 
                   {/* Status */}
                   <td
