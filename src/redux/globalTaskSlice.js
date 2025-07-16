@@ -70,6 +70,14 @@ export const GlobalTaskApi = createApi({
         method: "DELETE",
       }),
     }),
+     exportTasksToCsv: builder.mutation({
+      query: (ids) => ({
+        url: 'tasks/exportTocsv',
+        method: 'POST',
+        body: { ids },
+        responseHandler: (response) => response.blob(), 
+      }),
+    }),
   }),
 });
 
@@ -81,5 +89,6 @@ export const {
   useGetAllTasksQuery,
   useGetTaskByIdQuery,
   useUpdateTaskStatusMutation,
-  useDeleteTaskMutation
+  useDeleteTaskMutation,
+  useExportTasksToCsvMutation
 } = GlobalTaskApi;
