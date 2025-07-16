@@ -28,12 +28,12 @@ import {
 } from "../redux/globalTaskSlice";
 import { useNavigate } from "react-router-dom";
 
-function Dash_task() {
+function Dash_task({selected, setSelected }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [currentPage, setCurrentPage] = useState(
     Number(searchParams.get("page")) || 1
   );
-  const [selected, setSelected] = useState([]);
+  
   const [searchQuery, setSearchQuery] = useState(
     searchParams.get("search") || ""
   );
@@ -546,7 +546,7 @@ function Dash_task() {
                                     </Typography>
                                     <Typography
                                       level="body-sm"
-                                      sx={{ color: "#ccc" }}
+                                    
                                     >
                                       {project.name}
                                     </Typography>
@@ -585,7 +585,7 @@ function Dash_task() {
                               </Typography>
                               <Typography
                                 level="body-sm"
-                                sx={{ color: "#111" }}
+                                
                               >
                                 {task.project_details[0].name || "-"}
                               </Typography>
@@ -613,10 +613,8 @@ function Dash_task() {
                       )
                     ) : (
                       <>
-                        <Typography fontWeight="lg">-</Typography>
-                        <Typography level="body-sm" sx={{ color: "#666" }}>
-                          -
-                        </Typography>
+                        <Typography fontWeight="lg">N/A</Typography>
+                      
                       </>
                     )}
                   </td>

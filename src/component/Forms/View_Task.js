@@ -24,7 +24,7 @@ import ApartmentIcon from "@mui/icons-material/Apartment";
 import BuildIcon from "@mui/icons-material/Build";
 
 const ViewTaskPage = () => {
-  const [status, setStatus] = useState("completed");
+  
   const [note, setNote] = useState("");
   const [searchParams] = useSearchParams();
   const id = searchParams.get("task");
@@ -32,12 +32,22 @@ const ViewTaskPage = () => {
   const [taskData, setTaskData] = useState(null);
   const [updateTaskStatus] = useUpdateTaskStatusMutation();
   const navigate = useNavigate();
+ const [status, setStatus] = useState("Select Status");
+
+useEffect(() => {
+  if (taskData?.current_status?.status) {
+    const statusFromData = taskData.current_status.status.toLowerCase();
+    setStatus(statusFromData === "draft" ? "Select Status" : statusFromData);
+  }
+}, [taskData]);
+  
 
   useEffect(() => {
     if (getTaskData) {
       setTaskData(getTaskData);
     }
   }, [getTaskData]);
+
 
   const [deleteTask, { isLoading }] = useDeleteTaskMutation();
 
@@ -136,7 +146,10 @@ const ViewTaskPage = () => {
         {/* Left Panel: Project & Task Details */}
         <Box borderRadius="md" p={2} border="1px solid #eee" minWidth="300px">
           <Stack spacing={2} alignItems="center">
-            {Array.isArray(taskData?.project_id) &&
+            {!["internal", "helpdesk"].includes(
+              taskData?.type?.toLowerCase()
+            ) &&
+            Array.isArray(taskData?.project_id) &&
             taskData.project_id.length > 0 ? (
               <>
                 <Avatar src={taskData.project_id[0]?.avatar || ""} size="lg">
@@ -205,11 +218,13 @@ const ViewTaskPage = () => {
               </>
             ) : (
               <>
-                <Avatar size="lg">P</Avatar>
-                <Typography level="title-md">-</Typography>
-                <Typography level="title-sm" sx={{ color: "#222" }}>
-                  -
-                </Typography>
+                <Avatar size="lg">
+                  {taskData?.type?.toLowerCase() === "internal"
+                    ? "I"
+                    : taskData?.type?.toLowerCase() === "helpdesk"
+                      ? "H"
+                      : "P"}
+                </Avatar>
               </>
             )}
 
@@ -228,6 +243,13 @@ const ViewTaskPage = () => {
                 >
                   {getTypeData(taskData?.type)?.label}
                 </Chip>
+              </Typography>
+
+              <Typography level="body-sm" color="neutral" fontWeight={400}>
+                <b>Sub Type:</b>{" "}
+                {taskData?.sub_type
+                  ?.replace(/_/g, " ")
+                  .replace(/\b\w/g, (c) => c.toUpperCase()) || "N/A"}
               </Typography>
 
               <Typography level="body-sm">
@@ -349,6 +371,7 @@ const ViewTaskPage = () => {
                   {taskData?.createdBy?.name}
                 </Chip>
               </Typography>
+
               <Typography level="body-sm">
                 <b>Created At:</b>{" "}
                 {taskData?.createdAt
@@ -377,17 +400,16 @@ const ViewTaskPage = () => {
 
           <Stack direction="row" spacing={1} mb={2}>
             <Select
-              value={status}
-              onChange={(e, val) => setStatus(val)}
-              sx={{ width: 150 }}
-              disabled={
-                taskData?.current_status?.status?.toLowerCase() === "completed"
-              }
-            >
-              <Option value="completed">Completed</Option>
-              <Option value="pending">Pending</Option>
-              <Option value="in progress">In Progress</Option>
-            </Select>
+  value={status}
+  onChange={(e, val) => setStatus(val)}
+  sx={{ width: 150 }}
+  disabled={taskData?.current_status?.status?.toLowerCase() === "completed"}
+>
+  <Option disabled value="Select Status">Select Status</Option>
+  <Option value="completed">Completed</Option>
+  <Option value="pending">Pending</Option>
+  <Option value="in progress">In Progress</Option>
+</Select>
             <Button
               disabled={
                 taskData?.current_status?.status?.toLowerCase() === "completed"

@@ -8,7 +8,6 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import Sidebar from "../../component/Partials/Sidebar";
 import Header from "../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
-import AddTask from "../../component/Forms/Add_Task";
 import ViewTaskPage from "../../component/Forms/View_Task";
 
 const View_Task = () => {

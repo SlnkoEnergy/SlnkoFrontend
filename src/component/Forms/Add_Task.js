@@ -13,7 +13,6 @@ import {
   Tabs,
   TabList,
   Tab,
-  TabPanel,
 } from "@mui/joy";
 import StarIcon from "@mui/icons-material/Star";
 import StarBorderIcon from "@mui/icons-material/StarBorder";
@@ -38,6 +37,7 @@ const AddTask = () => {
   const [dueDate, setDueDate] = useState("");
   const [note, setNote] = useState("");
   const [assignedTo, setAssignedTo] = useState([]);
+  const [subtype, setSubType] = useState("");
   const navigate = useNavigate();
 
   const { data: getProjectDropdown, isLoading } = useGetProjectDropdownQuery();
@@ -84,12 +84,17 @@ const AddTask = () => {
         user_id: null,
       },
       type: tab,
+      sub_type: isHelpdeskTab? subtype: null
     };
 
     try {
       await createTask({
         payload,
-        team: isHelpdeskTab ? "IT Team" : assignToTeam ? assignedTo : undefined,
+        team: isHelpdeskTab
+          ? "superadmin"
+          : assignToTeam
+            ? assignedTo
+            : undefined,
       }).unwrap();
 
       toast.success("Task created successfully");
@@ -255,7 +260,39 @@ const AddTask = () => {
             />
           </FormControl>
         </Grid>
-
+        {tab === "helpdesk" && (
+          <>
+            <Grid xs={6}>
+              <FormControl fullWidth>
+                <FormLabel>Type</FormLabel>
+                <Select
+                  isLoading={isLoading}
+                  isClearable
+                  isSearchable
+                  placeholder="Search Type..."
+                  options={[
+                    { label: "Changes", value: "changes" },
+                    { label: "New Feature", value: "new feature" },
+                    { label: "Issue", value: "issue" },
+                  ]}
+                  value={
+                    subtype
+                      ? {
+                          label: subtype.replace(/\b\w/g, (c) =>
+                            c.toUpperCase()
+                          ),
+                          value: subtype,
+                        }
+                      : null
+                  }
+                  onChange={(selectedOption) => {
+                    setSubType(selectedOption ? selectedOption.value : "");
+                  }}
+                />
+              </FormControl>
+            </Grid>
+          </>
+        )}
         <Grid xs={12}>
           <FormControl fullWidth>
             <FormLabel>Assigned To</FormLabel>
