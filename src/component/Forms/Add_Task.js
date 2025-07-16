@@ -78,11 +78,6 @@ const AddTask = () => {
             ? assignedTo
             : [],
       priority: priority.toString(),
-      current_status: {
-        status: "pending",
-        remarks: "",
-        user_id: null,
-      },
       type: tab,
       sub_type: isHelpdeskTab ? subtype : null,
     };

@@ -35,8 +35,11 @@ export const GlobalTaskApi = createApi({
         createdAt = "",
         department = "",
         limit = "",
+        hide_completed = false,
+        hide_inprogress = false,
+        hide_pending = false,
       }) =>
-        `tasks/task?page=${page}&search=${search}&status=${status}&createdAt=${createdAt}&department=${department}&limit=${limit}`,
+        `tasks/task?page=${page}&search=${search}&status=${status}&createdAt=${createdAt}&department=${department}&limit=${limit}&hide_completed=${hide_completed}&hide_inprogress=${hide_inprogress}&hide_pending=${hide_pending}`,
       providesTags: ["Task"],
     }),
 
