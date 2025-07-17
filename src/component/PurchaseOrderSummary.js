@@ -32,7 +32,7 @@ import PoHistoryTable from "../component/PO_History";
 import AddBillForm from "../component/Forms/Add_Bill";
 import BillHistoryTable from "../component/Bill_History";
 import NoData from "../assets/alert-bell.svg";
-import { ClickAwayListener } from '@mui/base';
+import { ClickAwayListener } from "@mui/base";
 import {
   useExportPosMutation,
   useGetPaginatedPOsQuery,
@@ -98,8 +98,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const [nextStatus, setNextStatus] = useState("");
   const [remarks, setRemarks] = useState("");
   const [perPage, setPerPage] = useState(initialPageSize);
-const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
-
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
 
   const location = useLocation();
   const isFromCAM = location.pathname === "/project_detail";
@@ -123,7 +122,6 @@ const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
     project_id: isFromCAM || isFromPR ? project_code : "",
     pr_id: isFromPR && pr_id ? pr_id.toString() : "",
     item_id: isFromPR && item_id ? item_id.toString() : "",
-    
   });
 
   const handleOpen = (po_number, action) => {
@@ -195,28 +193,33 @@ const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
     }
   };
 
-  
-const handleDateFilterSelect = (type) => {
-  setActiveDateFilter((prev) => (prev === type ? null : type));
-  setOpenFilter(false);
-};
-const formatStatus = (status, etd) => {
-  if (status?.toLowerCase() === "draft") {
-    if (!etd) return "ETD Pending";
-    return "ETD Done";
-  }
-  return status;
-};
+  const handleDateFilterSelect = (type) => {
+    setActiveDateFilter((prev) => (prev === type ? null : type));
+    setOpenFilter(false);
+  };
+  const formatStatus = (status, etd) => {
+    if (status?.toLowerCase() === "draft") {
+      if (!etd) return "ETD Pending";
+      return "ETD Done";
+    }
+    return status;
+  };
 
+  const statusOptions = [
+    "ETD Pending",
+    "ETD Done",
+    "Ready to Dispatch",
+    "Out for Delivery",
+    "Delivered",
+  ];
 
-const statusOptions = [
-  
-  "ETD Pending",
-  "ETD Done",
-  "Ready to Dispatch",
-  "Out for Delivery",
-  "Delivered",
-];
+  useEffect(() => {
+    const status = searchParams.get("status") || "";
+    const po = searchParams.get("poStatus") || "";
+
+    setSelectedStatusFilter(status);
+    setSelectedpo(po);
+  }, [searchParams]);
 
   const renderFilters = () => {
     const po_status = ["Fully Billed", "Bill Pending"];
@@ -231,12 +234,20 @@ const statusOptions = [
         }}
       >
         <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>PO Status</FormLabel>
+          <FormLabel>Bill Status</FormLabel>
           <Select
-            value={selectedpo}
-            onChange={(e, newValue) => {
-              setSelectedpo(newValue);
-              setCurrentPage(1);
+            value={searchParams.get("poStatus") || ""}
+            onChange={(_, newValue) => {
+              setSearchParams((prev) => {
+                const updated = new URLSearchParams(prev);
+                if (newValue) {
+                  updated.set("poStatus", newValue);
+                } else {
+                  updated.delete("poStatus");
+                }
+                updated.set("page", "1"); // Reset to first page when filter changes
+                return updated;
+              });
             }}
             size="sm"
             placeholder="Select Status"
@@ -249,27 +260,34 @@ const statusOptions = [
             ))}
           </Select>
         </FormControl>
+
         <FormControl sx={{ flex: 1 }} size="sm">
-  <FormLabel>Status Filter</FormLabel>
-  <Select
-    value={selectedStatusFilter}
-    onChange={(_, newValue) => {
-      setSelectedStatusFilter(newValue);
-      setCurrentPage(1);
-    }}
-    size="sm"
-    placeholder="Select Status"
-  >
-    <Option value="">All Statuses</Option>
-    {statusOptions.map((status) => (
-      <Option key={status} value={status}>
-        {status}
-      </Option>
-    ))}
-  </Select>
-</FormControl>
-
-
+          <FormLabel>Status Filter</FormLabel>
+          <Select
+            value={searchParams.get("status") || ""}
+            onChange={(_, newValue) => {
+              setSearchParams((prev) => {
+                const updated = new URLSearchParams(prev);
+                if (newValue) {
+                  updated.set("status", newValue);
+                } else {
+                  updated.delete("status");
+                }
+                updated.set("page", "1"); // reset to first page on filter change
+                return updated;
+              });
+            }}
+            size="sm"
+            placeholder="Select Status"
+          >
+            <Option value="">All Status</Option>
+            {statusOptions.map((status) => (
+              <Option key={status} value={status}>
+                {status}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
 
         <Box mt={3} sx={{ display: "flex", gap: 1 }}>
           <Button
@@ -285,96 +303,96 @@ const statusOptions = [
         </Box>
 
         <Dropdown>
-  <MenuButton
-    slots={{ root: IconButton }}
-    slotProps={{
-      root: { variant: "soft", size: "sm", color: "neutral" },
-    }}
-    sx={{ mt: 3 }}
-  >
-    <CalendarSearch />
-  </MenuButton>
-  <Menu placement="bottom-start">
-    <MenuItem onClick={() => handleDateFilterSelect("etd")}>
-      ETD Date
-    </MenuItem>
-    <MenuItem onClick={() => handleDateFilterSelect("delivery")}>
-      Delivery Date
-    </MenuItem>
-  </Menu>
-</Dropdown>
-
-
-{activeDateFilter && (
-  <ClickAwayListener onClickAway={() => setActiveDateFilter(null)}>
-    <Sheet
-      variant="outlined"
-      sx={{
-        position: "absolute",
-        top: "120%",
-        zIndex: 10,
-        mt: 1,
-        backgroundColor: "background.body",
-        boxShadow: "md",
-        borderRadius: "sm",
-        p: 2,
-        width: 320,
-      }}
-    >
-      <Typography level="body-sm" fontWeight="bold" gutterBottom>
-        {activeDateFilter === "etd"
-          ? "ETD Date Range"
-          : activeDateFilter === "po"
-            ? "PO Date Range"
-            : "Delivery Date Range"}
-      </Typography>
-
-      <Box display="flex" gap={1}>
-        <FormControl size="sm" sx={{ flex: 1 }}>
-          <FormLabel>From</FormLabel>
-          <Input
-            type="date"
-            value={
-              activeDateFilter === "etd"
-                ? etdFrom
-                : activeDateFilter === "po"
-                  ? poFrom
-                  : deliveryFrom
-            }
-            onChange={(e) => {
-              if (activeDateFilter === "etd") setEtdFrom(e.target.value);
-              if (activeDateFilter === "po") setPoFrom(e.target.value);
-              if (activeDateFilter === "delivery")
-                setDeliveryFrom(e.target.value);
-              setCurrentPage(1);
+          <MenuButton
+            slots={{ root: IconButton }}
+            slotProps={{
+              root: { variant: "soft", size: "sm", color: "neutral" },
             }}
-          />
-        </FormControl>
+            sx={{ mt: 3 }}
+          >
+            <CalendarSearch />
+          </MenuButton>
+          <Menu placement="bottom-start">
+            <MenuItem onClick={() => handleDateFilterSelect("etd")}>
+              ETD Date
+            </MenuItem>
+            <MenuItem onClick={() => handleDateFilterSelect("delivery")}>
+              Delivery Date
+            </MenuItem>
+          </Menu>
+        </Dropdown>
 
-        <FormControl size="sm" sx={{ flex: 1 }}>
-          <FormLabel>To</FormLabel>
-          <Input
-            type="date"
-            value={
-              activeDateFilter === "etd"
-                ? etdTo
-                : activeDateFilter === "po"
-                  ? poTo
-                  : deliveryTo
-            }
-            onChange={(e) => {
-              if (activeDateFilter === "etd") setEtdTo(e.target.value);
-              if (activeDateFilter === "po") setPoTo(e.target.value);
-              if (activeDateFilter === "delivery")
-                setDeliveryTo(e.target.value);
-              setCurrentPage(1);
-            }}
-          />
-        </FormControl>
-      </Box>
-    </Sheet>
-  </ClickAwayListener>
-)}
+        {activeDateFilter && (
+          <ClickAwayListener onClickAway={() => setActiveDateFilter(null)}>
+            <Sheet
+              variant="outlined"
+              sx={{
+                position: "absolute",
+                top: "120%",
+                zIndex: 10,
+                mt: 1,
+                backgroundColor: "background.body",
+                boxShadow: "md",
+                borderRadius: "sm",
+                p: 2,
+                width: 320,
+              }}
+            >
+              <Typography level="body-sm" fontWeight="bold" gutterBottom>
+                {activeDateFilter === "etd"
+                  ? "ETD Date Range"
+                  : activeDateFilter === "po"
+                    ? "PO Date Range"
+                    : "Delivery Date Range"}
+              </Typography>
+
+              <Box display="flex" gap={1}>
+                <FormControl size="sm" sx={{ flex: 1 }}>
+                  <FormLabel>From</FormLabel>
+                  <Input
+                    type="date"
+                    value={
+                      activeDateFilter === "etd"
+                        ? etdFrom
+                        : activeDateFilter === "po"
+                          ? poFrom
+                          : deliveryFrom
+                    }
+                    onChange={(e) => {
+                      if (activeDateFilter === "etd")
+                        setEtdFrom(e.target.value);
+                      if (activeDateFilter === "po") setPoFrom(e.target.value);
+                      if (activeDateFilter === "delivery")
+                        setDeliveryFrom(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                  />
+                </FormControl>
+
+                <FormControl size="sm" sx={{ flex: 1 }}>
+                  <FormLabel>To</FormLabel>
+                  <Input
+                    type="date"
+                    value={
+                      activeDateFilter === "etd"
+                        ? etdTo
+                        : activeDateFilter === "po"
+                          ? poTo
+                          : deliveryTo
+                    }
+                    onChange={(e) => {
+                      if (activeDateFilter === "etd") setEtdTo(e.target.value);
+                      if (activeDateFilter === "po") setPoTo(e.target.value);
+                      if (activeDateFilter === "delivery")
+                        setDeliveryTo(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                  />
+                </FormControl>
+              </Box>
+            </Sheet>
+          </ClickAwayListener>
+        )}
       </Box>
     );
   };
@@ -771,26 +789,30 @@ const statusOptions = [
           </span>
         </Box>
         {!!other_item && (
-        <Box display="flex" alignItems="center" mt={0.5}>
-          <TruckIcon size={12} color="green" />
-          &nbsp;
-          <span style={{ fontSize: 12, fontWeight: 600 }}>Other Item Name : </span>{" "}
-          &nbsp;
-          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-            {other_item}
-          </Typography>
-        </Box>
+          <Box display="flex" alignItems="center" mt={0.5}>
+            <TruckIcon size={12} color="green" />
+            &nbsp;
+            <span style={{ fontSize: 12, fontWeight: 600 }}>
+              Other Item Name :{" "}
+            </span>{" "}
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {other_item}
+            </Typography>
+          </Box>
         )}
         {!!amount && (
-        <Box display="flex" alignItems="center" mt={0.5}>
-          <Money size={12} color="green" />
-          &nbsp;
-          <span style={{ fontSize: 12, fontWeight: 600 }}>Amount : </span>{" "}
-          &nbsp;
-          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-           ₹ {amount}
-          </Typography>
-        </Box>
+          <Box display="flex" alignItems="center" mt={0.5}>
+            <Money size={12} color="green" />
+            &nbsp;
+            <span style={{ fontSize: 12, fontWeight: 600 }}>
+              Amount :{" "}
+            </span>{" "}
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              ₹ {amount}
+            </Typography>
+          </Box>
         )}
         <Box display="flex" alignItems="center" mt={0.5}>
           <Store size={12} color="green" />
@@ -875,40 +897,39 @@ const statusOptions = [
     );
   };
 
-const getStatusIcon = (status) => {
-  switch (status?.toLowerCase()) {
-    case "ready_to_dispatch":
-      return <PackageCheck size={18} style={{ marginRight: 6 }} />;
-    case "out_for_delivery":
-      return <Truck size={18} style={{ marginRight: 6 }} />;
-    case "delivered":
-      return <Handshake size={18} style={{ marginRight: 6 }} />;
-    case "etd pending":
-      return <Clock size={18} style={{ marginRight: 6 }} />;
-    case "etd done":
-      return <CheckCircle2 size={18} style={{ marginRight: 6 }} />;
-    default:
-      return null;
-  }
-};
+  const getStatusIcon = (status) => {
+    switch (status?.toLowerCase()) {
+      case "ready_to_dispatch":
+        return <PackageCheck size={18} style={{ marginRight: 6 }} />;
+      case "out_for_delivery":
+        return <Truck size={18} style={{ marginRight: 6 }} />;
+      case "delivered":
+        return <Handshake size={18} style={{ marginRight: 6 }} />;
+      case "etd pending":
+        return <Clock size={18} style={{ marginRight: 6 }} />;
+      case "etd done":
+        return <CheckCircle2 size={18} style={{ marginRight: 6 }} />;
+      default:
+        return null;
+    }
+  };
 
-const getStatusColor = (status) => {
-  switch (status?.toLowerCase()) {
-    case "ready_to_dispatch":
-      return "red";
-    case "out_for_delivery":
-      return "orange";
-    case "delivered":
-      return "green";
-    case "etd pending":
-      return "#999"; // grey
-    case "etd done":
-      return "#1976d2"; // blue
-    default:
-      return "error";
-  }
-};
-
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case "ready_to_dispatch":
+        return "red";
+      case "out_for_delivery":
+        return "orange";
+      case "delivered":
+        return "green";
+      case "etd pending":
+        return "#999"; // grey
+      case "etd done":
+        return "#1976d2"; // blue
+      default:
+        return "error";
+    }
+  };
 
   return (
     <>
@@ -1062,7 +1083,10 @@ const getStatusColor = (status) => {
                     delay = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
                   }
                 }
-const formattedStatus = formatStatus(po?.current_status?.status, po?.etd);
+                const formattedStatus = formatStatus(
+                  po?.current_status?.status,
+                  po?.etd
+                );
 
                 return (
                   <Box
@@ -1168,8 +1192,8 @@ const formattedStatus = formatStatus(po?.current_status?.status, po?.etd);
                     >
                       <RenderItem_Vendor
                         item={po.item === "Other" ? "other" : po.item}
-                        other_item = {po?.pr?.other_item_name}
-                        amount = {po?.pr?.amount}
+                        other_item={po?.pr?.other_item_name}
+                        amount={po?.pr?.amount}
                         vendor={po.vendor}
                       />
                     </Box>
@@ -1247,24 +1271,27 @@ const formattedStatus = formatStatus(po?.current_status?.status, po?.etd);
                         width: 300,
                       }}
                     >
-                      <Tooltip title={po?.current_status?.remarks || "No remarks"} arrow>
-  <Box
-    sx={{
-      display: "inline-flex",
-      alignItems: "center",
-      py: 0.5,
-      borderRadius: "16px",
-      color: getStatusColor(formattedStatus),
-      fontWeight: 600,
-      cursor: "pointer",
-      fontSize: "1rem",
-      textTransform: "capitalize",
-    }}
-  >
-    {getStatusIcon(formattedStatus)}
-    {formattedStatus.replace(/_/g, " ")}
-  </Box>
-</Tooltip>
+                      <Tooltip
+                        title={po?.current_status?.remarks || "No remarks"}
+                        arrow
+                      >
+                        <Box
+                          sx={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            py: 0.5,
+                            borderRadius: "16px",
+                            color: getStatusColor(formattedStatus),
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            fontSize: "1rem",
+                            textTransform: "capitalize",
+                          }}
+                        >
+                          {getStatusIcon(formattedStatus)}
+                          {formattedStatus.replace(/_/g, " ")}
+                        </Box>
+                      </Tooltip>
 
                       {/* Render PO Number Info Below the Status */}
                       <RenderStatusDates
