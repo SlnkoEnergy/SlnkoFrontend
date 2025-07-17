@@ -231,6 +231,44 @@ const ViewTaskPage = () => {
                 <b>Task Code:</b> {taskData?.taskCode}
               </Typography>
 
+               <Typography level="body-sm">
+                <b>Title:</b>{" "}
+                <Tooltip
+                  title={
+                    <Box
+                      sx={{
+                        whiteSpace: "pre-line",
+                        maxWidth: 300,
+                        fontSize: 12,
+                      }}
+                    >
+                      {taskData?.description || "N/A"}
+                    </Box>
+                  }
+                  placement="top-start"
+                  arrow
+                  variant="soft"
+                  color="neutral"
+                >
+                  <Typography
+                    component="span"
+                    sx={{
+                      cursor: "pointer",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      display: "inline-block",
+                      maxWidth: "200px",
+                      verticalAlign: "bottom",
+                    }}
+                  >
+                    {taskData?.title?.length > 20
+                      ? `${taskData.title.slice(0, 20)}...`
+                      : taskData?.title || "N/A"}
+                  </Typography>
+                </Tooltip>
+              </Typography>
+
               <Typography level="body-sm" color="neutral" fontWeight={400}>
                 <b>Type:</b>{" "}
                 <Chip
