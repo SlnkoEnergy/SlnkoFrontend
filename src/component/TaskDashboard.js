@@ -27,9 +27,22 @@ import {
   useGetAllDeptQuery,
 } from "../redux/globalTaskSlice";
 import { useNavigate } from "react-router-dom";
+import {
+  Badge,
+  Dropdown,
+  Menu,
+  MenuButton,
+  MenuItem,
+  Option,
+  Select,
+} from "@mui/joy";
+import FilterAltIcon from "@mui/icons-material/FilterAlt";
 
 function Dash_task({ selected, setSelected }) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [hideCompleted, setHideCompleted] = useState(false);
+  const [hidePending, setHidePending] = useState(false);
+  const [hideProgress, setHideProgress] = useState(false);
   const [currentPage, setCurrentPage] = useState(
     Number(searchParams.get("page")) || 1
   );
@@ -50,7 +63,7 @@ function Dash_task({ selected, setSelected }) {
 
   const [prioritySortOrder, setPrioritySortOrder] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(
-    Number(searchParams.get("limit")) || 10
+    Number(searchParams.get("limit")) || 100
   );
 
   const navigate = useNavigate();
@@ -61,6 +74,9 @@ function Dash_task({ selected, setSelected }) {
     createdAt: dateFilter,
     department: departmentFilter,
     limit: itemsPerPage,
+    hide_completed: hideCompleted,
+    hide_pending: hidePending,
+    hide_inprogress: hideProgress,
   });
   const { data: deptApiData, isLoading: isDeptLoading } = useGetAllDeptQuery();
   const deptList = deptApiData?.data?.filter((d) => d) || [];
@@ -148,6 +164,46 @@ function Dash_task({ selected, setSelected }) {
     }
   };
 
+  const statusOptions = ["completed", "pending", "in progress"];
+
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem("hiddenStatuses")) || {};
+    setHideCompleted(saved.completed || false);
+    setHidePending(saved.pending || false);
+    setHideProgress(saved["in progress"] || false);
+  }, []);
+
+  const selectedValues = [
+    ...(hideCompleted ? ["completed"] : []),
+    ...(hidePending ? ["pending"] : []),
+    ...(hideProgress ? ["in progress"] : []),
+  ];
+  const handleToggle = (status) => {
+    let updated = {
+      completed: hideCompleted,
+      pending: hidePending,
+      "in progress": hideProgress,
+    };
+
+    if (status === "completed") {
+      const newVal = !hideCompleted;
+      setHideCompleted(newVal);
+      updated.completed = newVal;
+    } else if (status === "pending") {
+      const newVal = !hidePending;
+      setHidePending(newVal);
+      updated.pending = newVal;
+    } else if (status === "in progress") {
+      const newVal = !hideProgress;
+      setHideProgress(newVal);
+      updated["in progress"] = newVal;
+    }
+
+    localStorage.setItem("hiddenStatuses", JSON.stringify(updated));
+  };
+
+  const hiddenCount = selectedValues.length;
+
   return (
     <>
       {/* Search and Filters */}
@@ -176,21 +232,22 @@ function Dash_task({ selected, setSelected }) {
 
         <FormControl size="sm">
           <FormLabel>Status</FormLabel>
-          <select
+          <Select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={{
+            placeholder="Select Status"
+            onChange={(e, newValue) => setStatusFilter(newValue || "")}
+            sx={{
               height: "32px",
               borderRadius: "6px",
               padding: "2px 6px",
               borderColor: "#ccc",
             }}
           >
-            <option value="">All</option>
-            <option value="pending">Pending</option>
-            <option value="in progress">In Progress</option>
-            <option value="completed">Completed</option>
-          </select>
+            <Option value="">Select Status</Option>
+            <Option value="pending">Pending</Option>
+            <Option value="in progress">In Progress</Option>
+            <Option value="completed">Completed</Option>
+          </Select>
         </FormControl>
 
         <FormControl size="sm">
@@ -204,50 +261,107 @@ function Dash_task({ selected, setSelected }) {
         </FormControl>
         <FormControl size="sm">
           <FormLabel>Items per page</FormLabel>
-          <select
+          <Select
             value={itemsPerPage}
-            onChange={(e) => {
-              setItemsPerPage(Number(e.target.value));
+            onChange={(e, newValue) => {
+              setItemsPerPage(Number(newValue));
               setCurrentPage(1);
             }}
-            style={{
+            sx={{
               height: "32px",
               borderRadius: "6px",
               padding: "0 8px",
               borderColor: "#ccc",
+              backgroundColor: "#fff",
             }}
           >
             {[5, 10, 20, 50, 100].map((n) => (
-              <option key={n} value={n}>
+              <Option key={n} value={n}>
                 {n}
-              </option>
+              </Option>
             ))}
-          </select>
+          </Select>
         </FormControl>
+
         <FormControl size="sm">
           <FormLabel>Department</FormLabel>
-          <select
+          <Select
             value={departmentFilter}
-            onChange={(e) => {
-              setDepartmentFilter(e.target.value);
+            onChange={(e, newValue) => {
+              setDepartmentFilter(newValue || "");
               setCurrentPage(1);
             }}
             disabled={isDeptLoading}
-            style={{
+            placeholder="All"
+            sx={{
               height: "32px",
               borderRadius: "6px",
               padding: "0 8px",
               borderColor: "#ccc",
             }}
           >
-            <option value="">All</option>
+            <Option value="">All</Option>
             {deptList.map((dept) => (
-              <option key={dept} value={dept}>
+              <Option key={dept} value={dept}>
                 {dept}
-              </option>
+              </Option>
             ))}
-          </select>
+          </Select>
         </FormControl>
+
+        <Dropdown>
+          <MenuButton
+            slots={{ root: IconButton }}
+            slotProps={{
+              root: {
+                variant: "outlined",
+                color: "neutral",
+                size: "sm",
+                sx: {
+                  height: "32px",
+                  justifyContent: "center",
+                  borderRadius: "6px",
+                  mt: "23px",
+                },
+              },
+            }}
+          >
+            <Badge
+              badgeContent={hiddenCount > 0 ? `+${hiddenCount}` : null}
+              color="danger"
+              size="sm"
+              variant="solid"
+              sx={{ "--Badge-minHeight": "16px", "--Badge-fontSize": "10px" }}
+            >
+              <FilterAltIcon fontSize="small" />
+            </Badge>
+          </MenuButton>
+
+          <Menu>
+            <Typography
+              level="title-sm"
+              sx={{ px: 1.5, py: 1, fontWeight: 600 }}
+            >
+              Hide Status
+            </Typography>
+
+            {statusOptions.map((status) => (
+              <MenuItem
+                key={status}
+                onClick={() => handleToggle(status)}
+                sx={{ display: "flex", alignItems: "center", gap: 1 }}
+              >
+                <Checkbox
+                  checked={selectedValues.includes(status)}
+                  variant="outlined"
+                  size="sm"
+                  sx={{ pointerEvents: "none" }}
+                />
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </MenuItem>
+            ))}
+          </Menu>
+        </Dropdown>
       </Box>
 
       {/* Table */}
