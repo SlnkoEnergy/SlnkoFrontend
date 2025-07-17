@@ -23,6 +23,7 @@ import DownloadIcon from "@mui/icons-material/Download";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
+import { Clock, CheckCircle2 } from "lucide-react";
 import CloseIcon from "@mui/icons-material/Close";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -31,6 +32,7 @@ import PoHistoryTable from "../component/PO_History";
 import AddBillForm from "../component/Forms/Add_Bill";
 import BillHistoryTable from "../component/Bill_History";
 import NoData from "../assets/alert-bell.svg";
+import { ClickAwayListener } from '@mui/base';
 import {
   useExportPosMutation,
   useGetPaginatedPOsQuery,
@@ -96,6 +98,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const [nextStatus, setNextStatus] = useState("");
   const [remarks, setRemarks] = useState("");
   const [perPage, setPerPage] = useState(initialPageSize);
+const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
+
 
   const location = useLocation();
   const isFromCAM = location.pathname === "/project_detail";
@@ -115,9 +119,11 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     etdTo: etdTo,
     deliveryFrom: deliveryFrom,
     deliveryTo: deliveryTo,
+    filter: selectedStatusFilter,
     project_id: isFromCAM || isFromPR ? project_code : "",
     pr_id: isFromPR && pr_id ? pr_id.toString() : "",
     item_id: isFromPR && item_id ? item_id.toString() : "",
+    
   });
 
   const handleOpen = (po_number, action) => {
@@ -189,112 +195,29 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     }
   };
 
-  // const renderFilters = () => {
-  //   const po_status = ["Fully Billed ", "Bill Pending"];
-  //   const po_type = ["Final", "Partial"];
+  
+const handleDateFilterSelect = (type) => {
+  setActiveDateFilter((prev) => (prev === type ? null : type));
+  setOpenFilter(false);
+};
+const formatStatus = (status, etd) => {
+  if (status?.toLowerCase() === "draft") {
+    if (!etd) return "ETD Pending";
+    return "ETD Done";
+  }
+  return status;
+};
 
-  //   return (
-  //     <Box
-  //       sx={{
-  //         display: "flex",
-  //         flexWrap: "wrap",
-  //         gap: 2,
-  //         alignItems: "center",
-  //         mb: 2,
-  //       }}
-  //     >
-  //       <FormControl sx={{ flex: 1 }} size="sm">
-  //         <FormLabel>PO Status</FormLabel>
-  //         <Select
-  //           value={selectedpo}
-  //           onChange={(e, newValue) => {
-  //             setSelectedpo(newValue);
-  //             setCurrentPage(1);
-  //           }}
-  //           size="sm"
-  //           placeholder="Select Status"
-  //         >
-  //           <Option value="">All status</Option>
-  //           {po_status.map((status) => (
-  //             <Option key={status} value={status}>
-  //               {status}
-  //             </Option>
-  //           ))}
-  //         </Select>
-  //       </FormControl>
-  //       {/* <FormControl sx={{ flex: 1 }} size="sm">
-  //         <FormLabel>Select Type</FormLabel>
-  //         <Select
-  //           value={selectedpo}
-  //           onChange={(e, newValue) => {
-  //             setSelectedtype(newValue);
-  //             setCurrentPage(1);
-  //           }}
-  //           size="sm"
-  //           placeholder="Select Type"
-  //         >
-  //           <Option value="">All status</Option>
-  //           {po_type.map((status) => (
-  //             <Option key={status} value={status}>
-  //               {status}
-  //             </Option>
-  //           ))}
-  //         </Select>
-  //       </FormControl> */}
-  //       {/* <FormControl size="sm" sx={{ minWidth: 140 }}>
-  //         <FormLabel>From Date</FormLabel>
-  //         <Input
-  //           type="date"
-  //           value={from}
-  //           onChange={(e) => {
-  //             setFrom(e.target.value);
-  //             setCurrentPage(1);
-  //           }}
-  //         />
-  //       </FormControl>
-  //       <FormControl size="sm" sx={{ minWidth: 140 }}>
-  //         <FormLabel>To Date</FormLabel>
-  //         <Input
-  //           type="date"
-  //           value={to}
-  //           onChange={(e) => {
-  //             setTo(e.target.value);
-  //             setCurrentPage(1);
-  //           }}
-  //         />
-  //       </FormControl> */}
-  //       <Box mt={3} sx={{ display: "flex", gap: 1 }}>
-  //         {/* <Button
-  //           variant="outlined"
-  //           size="sm"
-  //           color="primary"
-  //           onClick={() => handleExport(false)}
-  //           loading={isExporting}
-  //           disabled={!from || !to}
-  //           startDecorator={<CalendarMonthIcon />}
-  //         >
-  //           Export by Date
-  //         </Button> */}
 
-  //         <Button
-  //           variant="soft"
-  //           size="sm"
-  //           color="neutral"
-  //           onClick={() => handleExport(true)}
-  //           loading={isExporting}
-  //           startDecorator={<DownloadIcon />}
-  //         >
-  //           Export All
-  //         </Button>
-  //       </Box>
-  //     </Box>
-  //   );
-  // };
+const statusOptions = [
+  
+  "ETD Pending",
+  "ETD Done",
+  "Ready to Dispatch",
+  "Out for Delivery",
+  "Delivered",
+];
 
-  const handleDateFilterSelect = (type) => {
-    setActiveDateFilter(type);
-    setOpenFilter(false);
-  };
   const renderFilters = () => {
     const po_status = ["Fully Billed", "Bill Pending"];
 
@@ -326,6 +249,27 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             ))}
           </Select>
         </FormControl>
+        <FormControl sx={{ flex: 1 }} size="sm">
+  <FormLabel>Status Filter</FormLabel>
+  <Select
+    value={selectedStatusFilter}
+    onChange={(_, newValue) => {
+      setSelectedStatusFilter(newValue);
+      setCurrentPage(1);
+    }}
+    size="sm"
+    placeholder="Select Status"
+  >
+    <Option value="">All Statuses</Option>
+    {statusOptions.map((status) => (
+      <Option key={status} value={status}>
+        {status}
+      </Option>
+    ))}
+  </Select>
+</FormControl>
+
+
 
         <Box mt={3} sx={{ display: "flex", gap: 1 }}>
           <Button
@@ -340,94 +284,97 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           </Button>
         </Box>
 
-        <Dropdown open={openFilter} onOpenChange={setOpenFilter}>
-          <MenuButton
-            slots={{ root: IconButton }}
-            slotProps={{
-              root: { variant: "soft", size: "sm", color: "neutral" },
-            }}
-            sx={{ mt: 3 }}
-          >
-            <CalendarSearch />
-          </MenuButton>
-          <Menu placement="bottom-start">
-            <MenuItem onClick={() => handleDateFilterSelect("etd")}>
-              ETD Date
-            </MenuItem>
-            <MenuItem onClick={() => handleDateFilterSelect("delivery")}>
-              Delivery Date
-            </MenuItem>
-          </Menu>
-        </Dropdown>
+        <Dropdown>
+  <MenuButton
+    slots={{ root: IconButton }}
+    slotProps={{
+      root: { variant: "soft", size: "sm", color: "neutral" },
+    }}
+    sx={{ mt: 3 }}
+  >
+    <CalendarSearch />
+  </MenuButton>
+  <Menu placement="bottom-start">
+    <MenuItem onClick={() => handleDateFilterSelect("etd")}>
+      ETD Date
+    </MenuItem>
+    <MenuItem onClick={() => handleDateFilterSelect("delivery")}>
+      Delivery Date
+    </MenuItem>
+  </Menu>
+</Dropdown>
 
-        {activeDateFilter && (
-          <Sheet
-            variant="outlined"
-            sx={{
-              position: "absolute",
-              top: "120%",
-              zIndex: 10,
-              mt: 1,
-              backgroundColor: "background.body",
-              boxShadow: "md",
-              borderRadius: "sm",
-              p: 2,
-              width: 320,
-            }}
-          >
-            <Typography level="body-sm" fontWeight="bold" gutterBottom>
-              {activeDateFilter === "etd"
-                ? "ETD Date Range"
+
+{activeDateFilter && (
+  <ClickAwayListener onClickAway={() => setActiveDateFilter(null)}>
+    <Sheet
+      variant="outlined"
+      sx={{
+        position: "absolute",
+        top: "120%",
+        zIndex: 10,
+        mt: 1,
+        backgroundColor: "background.body",
+        boxShadow: "md",
+        borderRadius: "sm",
+        p: 2,
+        width: 320,
+      }}
+    >
+      <Typography level="body-sm" fontWeight="bold" gutterBottom>
+        {activeDateFilter === "etd"
+          ? "ETD Date Range"
+          : activeDateFilter === "po"
+            ? "PO Date Range"
+            : "Delivery Date Range"}
+      </Typography>
+
+      <Box display="flex" gap={1}>
+        <FormControl size="sm" sx={{ flex: 1 }}>
+          <FormLabel>From</FormLabel>
+          <Input
+            type="date"
+            value={
+              activeDateFilter === "etd"
+                ? etdFrom
                 : activeDateFilter === "po"
-                  ? "PO Date Range"
-                  : "Delivery Date Range"}
-            </Typography>
+                  ? poFrom
+                  : deliveryFrom
+            }
+            onChange={(e) => {
+              if (activeDateFilter === "etd") setEtdFrom(e.target.value);
+              if (activeDateFilter === "po") setPoFrom(e.target.value);
+              if (activeDateFilter === "delivery")
+                setDeliveryFrom(e.target.value);
+              setCurrentPage(1);
+            }}
+          />
+        </FormControl>
 
-            <Box display="flex" gap={1}>
-              <FormControl size="sm" sx={{ flex: 1 }}>
-                <FormLabel>From</FormLabel>
-                <Input
-                  type="date"
-                  value={
-                    activeDateFilter === "etd"
-                      ? etdFrom
-                      : activeDateFilter === "po"
-                        ? poFrom
-                        : deliveryFrom
-                  }
-                  onChange={(e) => {
-                    if (activeDateFilter === "etd") setEtdFrom(e.target.value);
-                    if (activeDateFilter === "po") setPoFrom(e.target.value);
-                    if (activeDateFilter === "delivery")
-                      setDeliveryFrom(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                />
-              </FormControl>
-
-              <FormControl size="sm" sx={{ flex: 1 }}>
-                <FormLabel>To</FormLabel>
-                <Input
-                  type="date"
-                  value={
-                    activeDateFilter === "etd"
-                      ? etdTo
-                      : activeDateFilter === "po"
-                        ? poTo
-                        : deliveryTo
-                  }
-                  onChange={(e) => {
-                    if (activeDateFilter === "etd") setEtdTo(e.target.value);
-                    if (activeDateFilter === "po") setPoTo(e.target.value);
-                    if (activeDateFilter === "delivery")
-                      setDeliveryTo(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                />
-              </FormControl>
-            </Box>
-          </Sheet>
-        )}
+        <FormControl size="sm" sx={{ flex: 1 }}>
+          <FormLabel>To</FormLabel>
+          <Input
+            type="date"
+            value={
+              activeDateFilter === "etd"
+                ? etdTo
+                : activeDateFilter === "po"
+                  ? poTo
+                  : deliveryTo
+            }
+            onChange={(e) => {
+              if (activeDateFilter === "etd") setEtdTo(e.target.value);
+              if (activeDateFilter === "po") setPoTo(e.target.value);
+              if (activeDateFilter === "delivery")
+                setDeliveryTo(e.target.value);
+              setCurrentPage(1);
+            }}
+          />
+        </FormControl>
+      </Box>
+    </Sheet>
+  </ClickAwayListener>
+)}
       </Box>
     );
   };
@@ -928,31 +875,40 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     );
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "ready_to_dispatch":
-        return <PackageCheck size={18} style={{ marginRight: 6 }} />;
-      case "out_for_delivery":
-        return <Truck size={18} style={{ marginRight: 6 }} />;
-      case "delivered":
-        return <Handshake size={18} style={{ marginRight: 6 }} />;
-      default:
-        return null;
-    }
-  };
+const getStatusIcon = (status) => {
+  switch (status?.toLowerCase()) {
+    case "ready_to_dispatch":
+      return <PackageCheck size={18} style={{ marginRight: 6 }} />;
+    case "out_for_delivery":
+      return <Truck size={18} style={{ marginRight: 6 }} />;
+    case "delivered":
+      return <Handshake size={18} style={{ marginRight: 6 }} />;
+    case "etd pending":
+      return <Clock size={18} style={{ marginRight: 6 }} />;
+    case "etd done":
+      return <CheckCircle2 size={18} style={{ marginRight: 6 }} />;
+    default:
+      return null;
+  }
+};
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "ready_to_dispatch":
-        return "red";
-      case "out_for_delivery":
-        return "orange";
-      case "delivered":
-        return "green";
-      default:
-        return "error";
-    }
-  };
+const getStatusColor = (status) => {
+  switch (status?.toLowerCase()) {
+    case "ready_to_dispatch":
+      return "red";
+    case "out_for_delivery":
+      return "orange";
+    case "delivered":
+      return "green";
+    case "etd pending":
+      return "#999"; // grey
+    case "etd done":
+      return "#1976d2"; // blue
+    default:
+      return "error";
+  }
+};
+
 
   return (
     <>
@@ -1106,6 +1062,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                     delay = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
                   }
                 }
+const formattedStatus = formatStatus(po?.current_status?.status, po?.etd);
 
                 return (
                   <Box
@@ -1290,27 +1247,24 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         width: 300,
                       }}
                     >
-                      <Tooltip
-                        title={po?.current_status?.remarks || "No remarks"}
-                        arrow
-                      >
-                        <Box
-                          sx={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            py: 0.5,
-                            borderRadius: "16px",
-                            color: getStatusColor(po?.current_status?.status),
-                            fontWeight: 600,
-                            cursor: "pointer",
-                            fontSize: "1rem",
-                            textTransform: "capitalize",
-                          }}
-                        >
-                          {getStatusIcon(po?.current_status?.status)}
-                          {po?.current_status?.status.replace(/_/g, " ")}
-                        </Box>
-                      </Tooltip>
+                      <Tooltip title={po?.current_status?.remarks || "No remarks"} arrow>
+  <Box
+    sx={{
+      display: "inline-flex",
+      alignItems: "center",
+      py: 0.5,
+      borderRadius: "16px",
+      color: getStatusColor(formattedStatus),
+      fontWeight: 600,
+      cursor: "pointer",
+      fontSize: "1rem",
+      textTransform: "capitalize",
+    }}
+  >
+    {getStatusIcon(formattedStatus)}
+    {formattedStatus.replace(/_/g, " ")}
+  </Box>
+</Tooltip>
 
                       {/* Render PO Number Info Below the Status */}
                       <RenderStatusDates

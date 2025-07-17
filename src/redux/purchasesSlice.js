@@ -34,8 +34,9 @@ export const purchasesApi = createApi({
         etdTo,
         deliveryFrom,
         deliveryTo,
+        filter
       }) =>
-        `get-paginated-po?page=${page}&search=${search}&status=${status}&pageSize=${pageSize}&type=${type}&project_id=${project_id}&pr_id=${pr_id}&item_id=${item_id}&etdFrom=${etdFrom}&etdTo=${etdTo}&deliveryFrom=${deliveryFrom}&deliveryTo=${deliveryTo}`,
+        `get-paginated-po?page=${page}&search=${search}&status=${status}&pageSize=${pageSize}&type=${type}&project_id=${project_id}&pr_id=${pr_id}&item_id=${item_id}&etdFrom=${etdFrom}&etdTo=${etdTo}&deliveryFrom=${deliveryFrom}&deliveryTo=${deliveryTo}&filter=${filter}`,
       transformResponse: (response) => ({
         data: response.data || [],
         total: response.meta?.total || 0,
