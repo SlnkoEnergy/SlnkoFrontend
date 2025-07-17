@@ -2055,6 +2055,7 @@ function Sidebar() {
           (user?.name === "Som Narayan Jha" ||
             user?.name === "Ashish Kumar" ||
             user?.name === "Saresh" ||
+            user?.name === "Deepika Singh" || 
             user?.name === "Izhan Mustafa"
           ) ? (
           <List
