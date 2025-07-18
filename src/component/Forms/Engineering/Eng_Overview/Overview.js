@@ -832,7 +832,7 @@ const Overview = () => {
 
                       {isEngineering &&
                         (user?.name === "Rishav Mahato" ||
-                          user?.name === "Ranvijay Singh") &&
+                          user?.name === "Ranvijay Singh" || user?.name === "Naresh Kumar") &&
                         item.latestStatus !== "hold" && (
                           <Button
                             size="sm"
