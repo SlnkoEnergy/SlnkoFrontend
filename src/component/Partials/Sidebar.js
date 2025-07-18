@@ -2508,6 +2508,7 @@ function Sidebar() {
           (user?.department === "Engineering" &&
             user?.name !== "Rishav Mahato" && 
             user?.name !=="Piyush Rathour Raj" &&
+            user?.name !=="Md Asif" &&
             user?.name !=="Rahul Bhati" &&
             user?.name !=="Sachin Jangid" &&
             user?.name !=="Vishal Kushwaha" &&
@@ -2605,6 +2606,7 @@ function Sidebar() {
         ) : user?.department === "Engineering" &&
           (user?.name === "Rishav Mahato" || 
           user?.name !=="Piyush Rathour Raj" ||
+          user?.name !=="Md Asif"||
             user?.name !=="Rahul Bhati" ||
             user?.name !=="Sachin Jangid" ||
             user?.name !=="Vishal Kushwaha" ||
