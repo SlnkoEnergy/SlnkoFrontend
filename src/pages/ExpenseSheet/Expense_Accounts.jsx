@@ -1,48 +1,78 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { CssVarsProvider } from '@mui/joy/styles';
-import CssBaseline from '@mui/joy/CssBaseline';
-import Box from '@mui/joy/Box';
-import Button from '@mui/joy/Button';
-import Breadcrumbs from '@mui/joy/Breadcrumbs';
-import Link from '@mui/joy/Link';
-import Typography from '@mui/joy/Typography';
-
-import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
-import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
-import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
-
-import Sidebar from '../../component/Partials/Sidebar';
-
-import Header from '../../component/Partials/Header';
-import AllProject from '../../component/AllProject';
-import { useNavigate } from 'react-router-dom';
-import HrExpense from '../../component/Expense Sheet/HR_Expense_Approval';
-import AccountsExpense from '../../component/Expense Sheet/Accounts_Expense_Approval';
-import { useLazyExportExpensesToCSVQuery } from '../../redux/Expense/expenseSlice';
-
+import React, { useRef, useState, useEffect } from "react";
+import { CssVarsProvider } from "@mui/joy/styles";
+import CssBaseline from "@mui/joy/CssBaseline";
+import Box from "@mui/joy/Box";
+import Button from "@mui/joy/Button";
+import Breadcrumbs from "@mui/joy/Breadcrumbs";
+import Link from "@mui/joy/Link";
+import Typography from "@mui/joy/Typography";
+import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
+import Sidebar from "../../component/Partials/Sidebar";
+import Header from "../../component/Partials/Header";
+import { useNavigate } from "react-router-dom";
+import AccountsExpense from "../../component/Expense Sheet/Accounts_Expense_Approval";
+import {
+  useExportExpenseToCSVMutation,
+  useExportExpenseToPDFMutation,
+} from "../../redux/Expense/expenseSlice";
+import { toast } from "react-toastify";
+import { CircularProgress } from "@mui/joy";
 
 function Accounts_Expense() {
-    const navigate = useNavigate();
-    const [triggerExport] = useLazyExportExpensesToCSVQuery();
+  const navigate = useNavigate();
+  const [triggerExport] = useExportExpenseToCSVMutation();
+  const [sheetIds, setSheetIds] = useState([]);
+  const [downloadStatus, setDownloadStatus] = useState("");
+  const handleExportCSV = async (sheetIds) => {
+    try {
+      const blob = await triggerExport({ sheetIds }).unwrap();
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "text/csv" })
+      );
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `expenses_${Date.now()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error("Error exporting CSV");
+    }
+  };
 
-    const handleExportToCSV = async () => {
-      try {
-        const result = await triggerExport().unwrap();
-        const blob = new Blob([result], { type: "text/csv" });
-    
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "expenses.csv"; // set desired filename
-        document.body.appendChild(a); // Firefox compatibility
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url); // cleanup
-      } catch (error) {
-        console.error("Export to CSV failed:", error);
-      }
-    };
-    
+  const [triggerExportPdf, { isLoading }] = useExportExpenseToPDFMutation();
+
+  const handleExportPDFById = async (expenseIds, withAttachment = true) => {
+    try {
+      setDownloadStatus("Preparing download...");
+
+      const blob = await triggerExportPdf({
+        expenseIds,
+        withAttachment,
+      }).unwrap();
+
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "application/pdf" })
+      );
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `expenses_${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      setTimeout(() => {
+        setDownloadStatus("");
+      }, 1000);
+    } catch (err) {
+      console.error("Error downloading PDF:", err);
+      setDownloadStatus("Download failed.");
+    }
+  };
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -79,9 +109,8 @@ function Accounts_Expense() {
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: {md:"4%", lg:"0%"} }}
+              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
-              
               <Link
                 underline="hover"
                 color="neutral"
@@ -113,20 +142,40 @@ function Accounts_Expense() {
             <Typography level="h2" component="h1">
               Accounts Expense Approval Dashboard
             </Typography>
-           
-            <Button
-  color="primary"
-  startDecorator={<DownloadRoundedIcon />}
-  size="sm"
-  onClick={handleExportToCSV}
->
-  Export to CSV
-</Button>
 
+            <Box gap={2} display={"flex"} justifyContent={"center"}>
+              <Button
+                color="primary"
+                startDecorator={<DownloadRoundedIcon />}
+                size="sm"
+                onClick={() => {
+                  handleExportCSV(sheetIds);
+                }}
+              >
+                Export to CSV
+              </Button>
+              <Button
+                variant="outlined"
+                size="sm"
+                color="danger"
+                onClick={() => handleExportPDFById(sheetIds, false)}
+              >
+                PDF
+              </Button>
 
+              {downloadStatus && (
+                <Box mt={2} display="flex" alignItems="center" gap={1}>
+                  {(downloadStatus.startsWith("Preparing") ||
+                    downloadStatus.startsWith("Downloading")) && (
+                    <CircularProgress size="sm" />
+                  )}
+                  <Typography level="body-sm">{downloadStatus}</Typography>
+                </Box>
+              )}
+            </Box>
           </Box>
-          <AccountsExpense/>
-          
+
+          <AccountsExpense setSheetIds={setSheetIds} sheetIds={sheetIds} />
         </Box>
       </Box>
     </CssVarsProvider>
