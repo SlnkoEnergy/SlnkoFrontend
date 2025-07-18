@@ -11,6 +11,7 @@ import {
 } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
+import DownloadIcon from '@mui/icons-material/Download';
 import Checkbox from "@mui/joy/Checkbox";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
@@ -20,7 +21,7 @@ import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import { Calendar, Handshake, PackageCheck, Truck, TruckIcon, User } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Form, useNavigate, useSearchParams } from "react-router-dom";
 
 import "react-toastify/dist/ReactToastify.css";
 
@@ -28,7 +29,7 @@ import {
   useGetAllPurchaseRequestQuery,
   useGetMaterialCategoryQuery,
 } from "../redux/camsSlice";
-import { Money } from "@mui/icons-material";
+import { Label, Money, Sledding } from "@mui/icons-material";
 
 function PurchaseReqSummary() {
   const [selected, setSelected] = useState([]);
@@ -36,6 +37,7 @@ function PurchaseReqSummary() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selecteditem, setSelecteditem] = useState("");
   const [selectedstatus, setSelectedstatus] = useState("");
+  const [limit, setLimit] = useState(10);
   const [selectedpovalue, setSelectedpovalue] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const page = parseInt(searchParams.get("page")) || 1;
@@ -45,6 +47,7 @@ function PurchaseReqSummary() {
   const statusSearch = searchParams.get("statusSearch") || "";
   const [createdDateRange, setCreatedDateRange] = useState([null, null]); // [from, to]
   const [etdDateRange, setEtdDateRange] = useState([null, null]); // [from, to]
+  // const [allItemIds, setAllItemIds] = useState([]);
   const formatDate = (date) => {
     return date ? new Date(date).toISOString().split("T")[0] : "";
   };
@@ -54,6 +57,7 @@ function PurchaseReqSummary() {
   const { data, isLoading } = useGetAllPurchaseRequestQuery({
     page,
     search,
+    limit,
     itemSearch,
     poValueSearch,
     statusSearch,
@@ -71,6 +75,8 @@ function PurchaseReqSummary() {
     setSelectedstatus(statusSearch);
   }, [page, search, itemSearch, poValueSearch, statusSearch]);
 
+
+
   const purchaseRequests = data?.data || [];
   const totalCount = data?.totalCount || 0;
   const totalPages = data?.totalPages || 1;
@@ -85,14 +91,20 @@ function PurchaseReqSummary() {
     setSearchParams({ page: 1, search: query });
   };
 
-  const allItemIds = purchaseRequests?.data?.item;
+  // useEffect(() => {
+  //   const ids = purchaseRequests?.map((item) => item._id) || [];
+  //   setAllItemIds(ids);
+  // }, [purchaseRequests]);
+
+
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelected(allItemIds);
+      setSelected(purchaseRequests?.map((item) => item._id));
     } else {
       setSelected([]);
     }
+    console.log(selected);
   };
 
   const handleRowSelect = (itemId) => {
@@ -101,6 +113,7 @@ function PurchaseReqSummary() {
         ? prev.filter((id) => id !== itemId)
         : [...prev, itemId]
     );
+    console.log(selected)
   };
 
   const handlePageChange = (newPage) => {
@@ -136,6 +149,7 @@ function PurchaseReqSummary() {
 
   const renderFilters = () => {
     const pr_status = ["submitted", "approved", "po_created", "delivered"];
+    const RowOptions = [10, 20, 50, 100];
     return (
       <Box
         sx={{
@@ -146,6 +160,35 @@ function PurchaseReqSummary() {
           mb: 2,
         }}
       >
+        <FormControl sx={{ flex: 1 }} size="sm">
+          <FormLabel> limit </FormLabel>
+          <Select
+            value={limit}
+            onChange={(e, value) => {
+              setLimit(value);
+              setCurrentPage(1);
+              setSearchParams({
+                page: 1,
+                search: searchQuery,
+                limit: value | null,
+                statusSearch: selectedstatus,
+                itemSearch: selecteditem,
+                poValueSearch: selectedpovalue,
+              });
+            }}
+            size="sm"
+            placeholder=" 10 Rows  "
+          >
+
+            {
+              RowOptions.map((index) => (
+                <Option key={index} value={index}>
+                  {index} Rows
+                </Option>
+              ))
+            }
+          </Select>
+        </FormControl>
         <FormControl sx={{ flex: 1 }} size="sm">
           <FormLabel>PR Status</FormLabel>
           <Select
@@ -285,6 +328,18 @@ function PurchaseReqSummary() {
             />
           </Box>
         </FormControl>
+
+        <FormControl sx={{ flex: 1 }} size="sm">
+          <FormLabel>Export</FormLabel>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button
+              size="small"
+              sx={{ height: "33px", width: "150px" }}
+            >
+              {<DownloadIcon sx={{ height: "20px", width: "20px" }} />} Export to CSV
+            </Button>
+          </Box>
+        </FormControl>
       </Box>
     );
   };
@@ -299,10 +354,10 @@ function PurchaseReqSummary() {
   }) => {
     const formattedDate = createdAt
       ? new Date(createdAt).toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        })
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
       : "N/A";
     return (
       <>
@@ -344,7 +399,7 @@ function PurchaseReqSummary() {
     );
   };
 
-const RenderItemCell = (item) => {
+  const RenderItemCell = (item) => {
     const name = item?.item_id?.name;
     const isOthers = name === "Others";
     return (
@@ -448,13 +503,11 @@ const RenderItemCell = (item) => {
               >
                 <Checkbox
                   size="sm"
-                  checked={
-                    selected.length > 0 && selected.length === allItemIds.length
+                  checked={selected.length > 0 && selected.length === purchaseRequests.length}
+                  indeterminate={
+                    selected.length > 0 && selected.length < purchaseRequests.length
                   }
                   onChange={handleSelectAll}
-                  indeterminate={
-                    selected.length > 0 && selected.length < allItemIds.length
-                  }
                 />
               </th>
               {[
@@ -503,8 +556,9 @@ const RenderItemCell = (item) => {
                     >
                       <Checkbox
                         size="sm"
-                        checked={selected.includes(item?._id)}
-                        onChange={() => handleRowSelect(item?._id)}
+                        checked={selected.includes(item._id)}
+                        onChange={() => handleRowSelect(item._id)}
+                        
                       />
                     </td>
 
@@ -545,15 +599,15 @@ const RenderItemCell = (item) => {
                       </Box>
                     </td>
 
-                   <td
-  style={{
-    borderBottom: "1px solid #ddd",
-    textAlign: "left",
-    padding: "8px",
-  }}
->
-  {RenderItemCell(item)}
-</td>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "left",
+                        padding: "8px",
+                      }}
+                    >
+                      {RenderItemCell(item)}
+                    </td>
 
 
                     <td

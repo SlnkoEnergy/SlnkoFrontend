@@ -103,6 +103,7 @@ export const camsApi = createApi({
       query: ({
         page = 1,
         search = "",
+        limit = "",
         itemSearch = "",
         poValueSearch = "",
         statusSearch = "",
@@ -111,7 +112,7 @@ export const camsApi = createApi({
         etdFrom = "",
         etdTo = "",
       }) =>
-        `purchaseRequest/purchase-request?page=${page}&search=${search}&itemSearch=${itemSearch}&poValueSearch=${poValueSearch}&statusSearch=${statusSearch}&createdFrom=${createdFrom}&createdTo=${createdTo}&etdFrom=${etdFrom}&etdTo=${etdTo}`,
+        `purchaseRequest/purchase-request?page=${page}&limit=${limit}&search=${search}&itemSearch=${itemSearch}&poValueSearch=${poValueSearch}&statusSearch=${statusSearch}&createdFrom=${createdFrom}&createdTo=${createdTo}&etdFrom=${etdFrom}&etdTo=${etdTo}`,
       transformResponse: (response) =>
         response || { data: [], totalCount: 0, totalPages: 1 },
       providesTags: ["CAM"],
