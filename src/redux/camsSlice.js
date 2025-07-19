@@ -128,6 +128,23 @@ export const camsApi = createApi({
         method: "PUT",
         body: payload,
       }),
+    }),   
+    exportToCsv: builder.mutation({
+      
+      // query: (Ids) => ({
+      //   url : `purchaseRequest/export`,
+      //   method : "POST",
+      //   body: {Ids},
+      //   responseHandler: async (response) => await response.blob(),
+      // }),
+      query: (Ids) =>{
+        return {
+          url : `purchaseRequest/purchaserequest/export`,
+          method : "POST",
+          body: {Ids},
+          responseHandler: async (response) => await response.blob(),
+        }
+      }
     }),
   }),
 });
@@ -147,4 +164,5 @@ export const {
   useGetPurchaseRequestByProjectIdQuery,
   useGetPurchaseRequestQuery,
   useEditPurchaseRequestMutation,
+  useExportToCsvMutation,
 } = camsApi;

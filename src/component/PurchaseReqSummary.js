@@ -28,10 +28,14 @@ import "react-toastify/dist/ReactToastify.css";
 import {
   useGetAllPurchaseRequestQuery,
   useGetMaterialCategoryQuery,
+  useExportToCsvMutation,
 } from "../redux/camsSlice";
 import { Label, Money, Sledding } from "@mui/icons-material";
 
+
+
 function PurchaseReqSummary() {
+  const [_id, set_id] = useState("");
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -55,6 +59,7 @@ function PurchaseReqSummary() {
   const navigate = useNavigate();
 
   const { data, isLoading } = useGetAllPurchaseRequestQuery({
+    _id,
     page,
     search,
     limit,
@@ -66,6 +71,32 @@ function PurchaseReqSummary() {
     createdFrom: createdDateRange[0] || "",
     createdTo: createdDateRange[1] || "",
   });
+
+  const [exportToCsv, { isLoading: isExporting }] = useExportToCsvMutation();
+
+const handleExport = async () => {
+  if (!selected || selected.length === 0) {
+    alert("Please select at least one item to export.");
+    return;
+  }
+
+  try {
+    const blob = await exportToCsv(selected).unwrap();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "purchase_requests.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("Export failed", error);
+    alert("Failed to export data.");
+  }
+};
+
+ 
 
   useEffect(() => {
     setCurrentPage(page);
@@ -81,6 +112,7 @@ function PurchaseReqSummary() {
   const totalCount = data?.totalCount || 0;
   const totalPages = data?.totalPages || 1;
 
+
   useEffect(() => {
     setCurrentPage(page);
     setSearchQuery(search);
@@ -91,10 +123,6 @@ function PurchaseReqSummary() {
     setSearchParams({ page: 1, search: query });
   };
 
-  // useEffect(() => {
-  //   const ids = purchaseRequests?.map((item) => item._id) || [];
-  //   setAllItemIds(ids);
-  // }, [purchaseRequests]);
 
 
 
@@ -104,7 +132,6 @@ function PurchaseReqSummary() {
     } else {
       setSelected([]);
     }
-    console.log(selected);
   };
 
   const handleRowSelect = (itemId) => {
@@ -113,7 +140,6 @@ function PurchaseReqSummary() {
         ? prev.filter((id) => id !== itemId)
         : [...prev, itemId]
     );
-    console.log(selected)
   };
 
   const handlePageChange = (newPage) => {
@@ -335,6 +361,8 @@ function PurchaseReqSummary() {
             <Button
               size="small"
               sx={{ height: "33px", width: "150px" }}
+              onClick={handleExport}
+              disabled={isExporting}
             >
               {<DownloadIcon sx={{ height: "20px", width: "20px" }} />} Export to CSV
             </Button>
@@ -503,11 +531,11 @@ function PurchaseReqSummary() {
               >
                 <Checkbox
                   size="sm"
-                  checked={selected.length > 0 && selected.length === purchaseRequests.length}
+                  checked={selected.length === purchaseRequests.length}
+                  onChange={handleSelectAll}
                   indeterminate={
                     selected.length > 0 && selected.length < purchaseRequests.length
                   }
-                  onChange={handleSelectAll}
                 />
               </th>
               {[
@@ -556,8 +584,8 @@ function PurchaseReqSummary() {
                     >
                       <Checkbox
                         size="sm"
-                        checked={selected.includes(item._id)}
-                        onChange={() => handleRowSelect(item._id)}
+                        checked={selected.includes(row._id)}
+                        onChange={(event) => handleRowSelect(row._id, event.target.checked)}
                         
                       />
                     </td>

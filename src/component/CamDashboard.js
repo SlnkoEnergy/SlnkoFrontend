@@ -344,6 +344,7 @@ function Dash_cam() {
     setSelected((prev) =>
       prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
     );
+
   };
 
   useEffect(() => {
