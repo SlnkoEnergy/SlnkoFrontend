@@ -86,28 +86,25 @@ export const expensesApi = createApi({
       }),
       invalidatesTags: ["Expense"],
     }),
-    exportExpensesToCSV: builder.query({
-      query: () => ({
-        url: "expense-all-csv",
-        method: "GET",
-        responseHandler: (response) => response.blob(),
+  
+    exportExpenseToCSV: builder.mutation({
+      query: ({sheetIds}) => ({
+        url: `expense-to-csv`,
+        method: "POST",
+        body: { sheetIds },
+    responseHandler: async (response) => await response.blob(),
       }),
     }),
-    exportExpenseByIdToCSV: builder.query({
-      query: (expenseId) => ({
-        url: `expense-by-id-csv/${expenseId}`,
-        method: "GET",
+
+  exportExpenseToPDF: builder.mutation({
+      query: ({ expenseIds, withAttachment }) => ({
+        url: `expense-pdf?printAttachments=${withAttachment}`,
+        method: "POST",
+        body: { expenseIds },
         responseHandler: (response) => response.blob(),
       }),
     }),
 
-    exportExpenseByIdToPDF: builder.query({
-      query: ({ expenseId, withAttachment }) => ({
-        url: `expense-pdf/${expenseId}?printAttachments=${withAttachment}`,
-        method: "GET",
-        responseHandler: (response) => response.blob(),
-      }),
-    }),
   }),
 });
 
@@ -120,7 +117,6 @@ export const {
   useDeleteExpenseMutation,
   useUpdateExpenseSheetMutation,
   useUpdateDisbursementDateMutation,
-  useLazyExportExpensesToCSVQuery,
-  useLazyExportExpenseByIdToCSVQuery,
-  useLazyExportExpenseByIdToPDFQuery,
+  useExportExpenseToCSVMutation,
+  useExportExpenseToPDFMutation,
 } = expensesApi;

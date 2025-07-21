@@ -5,12 +5,9 @@ import CssBaseline from "@mui/joy/CssBaseline";
 import Link from "@mui/joy/Link";
 import { CssVarsProvider } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
-
 import Header from "../../component/Partials/Header";
 import Sidebar from "../../component/Partials/Sidebar";
-
 import { useNavigate } from "react-router-dom";
-import UpdateExpense from "../../component/Expense Sheet/Expense Form/Update_Expense";
 import UpdateExpenseAccounts from "../../component/Expense Sheet/Expense Form/Acc_Hr_Update_Expense";
 
 function Update_Expense() {
@@ -25,13 +22,6 @@ function Update_Expense() {
           component="main"
           className="MainContent"
           sx={{
-            // px: { xs: 2, md: 6 },
-            // pt: {
-            //   xs: 'calc(12px + var(--Header-height))',
-            //   sm: 'calc(12px + var(--Header-height))',
-            //   md: 3,
-            // },
-            // pb: { xs: 2, sm: 2, md: 3 },
             flex: 1,
             display: "flex",
             flexDirection: "column",
@@ -66,14 +56,6 @@ function Update_Expense() {
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
               sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
-              {/* <Link
-                underline="none"
-                color="neutral"
-                href="#some-link"
-                aria-label="Home"
-              >
-                <HomeRoundedIcon />
-              </Link> */}
               <Link
                 underline="hover"
                 color="neutral"
@@ -105,9 +87,6 @@ function Update_Expense() {
           >
             <UpdateExpenseAccounts />
           </Box>
-
-          {/* <OrderTable /> */}
-          {/* <OrderList /> */}
         </Box>
       </Box>
     </CssVarsProvider>

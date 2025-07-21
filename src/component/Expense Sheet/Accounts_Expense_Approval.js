@@ -26,7 +26,7 @@ import {
 import { Calendar } from "lucide-react";
 import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
 
-const AccountsExpense = forwardRef(() => {
+const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
   const navigate = useNavigate();
   const theme = useTheme();
   const [currentPage, setCurrentPage] = useState(1);
@@ -181,25 +181,37 @@ const AccountsExpense = forwardRef(() => {
     [getExpense]
   );
 
-  const handleSelectAll = (event) => {
-    if (event.target.checked) {
-      const ids = paginatedExpenses.map((row) => row._id);
-      setSelectedExpenses((prevSelected) => [
-        ...new Set([...prevSelected, ...ids]),
-      ]);
-    } else {
-      const ids = paginatedExpenses.map((row) => row._id);
-      setSelectedExpenses((prevSelected) =>
-        prevSelected.filter((id) => !ids.includes(id))
-      );
-    }
-  };
+const handleSelectAll = (event) => {
+  const ids = paginatedExpenses.map((row) => row._id);
+
+  if (event.target.checked) {
+    setSelectedExpenses((prevSelected) => [
+      ...new Set([...prevSelected, ...ids]),
+    ]);
+    setSheetIds((prevSheetIds) => [
+      ...new Set([...prevSheetIds, ...ids]),
+    ]);
+  } else {
+    setSelectedExpenses((prevSelected) =>
+      prevSelected.filter((id) => !ids.includes(id))
+    );
+    setSheetIds((prevSheetIds) =>
+      prevSheetIds.filter((id) => !ids.includes(id))
+    );
+  }
+};
+
 
   const handleRowSelect = (_id) => {
-    setSelectedExpenses((prev) =>
-      prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
-    );
-  };
+  setSelectedExpenses((prev) =>
+    prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
+  );
+
+  setSheetIds((prev) =>
+    prev.includes(_id) ? prev.filter((id) => id !== _id) : [...prev, _id]
+  );
+};
+
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
