@@ -1289,7 +1289,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                           }}
                         >
                           {getStatusIcon(formattedStatus)}
-                          {formattedStatus.replace(/_/g, " ")}
+                          {formattedStatus?.replace(/_/g, " ")}
                         </Box>
                       </Tooltip>
 
