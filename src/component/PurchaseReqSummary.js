@@ -19,7 +19,7 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { Calendar, Handshake, PackageCheck, Truck, TruckIcon, User } from "lucide-react";
+import { Calendar, Handshake, PackageCheck, Truck, TruckIcon, User, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Form, useNavigate, useSearchParams } from "react-router-dom";
 
@@ -29,6 +29,7 @@ import {
   useGetAllPurchaseRequestQuery,
   useGetMaterialCategoryQuery,
   useExportToCsvMutation,
+  useDeleteItemMutation,
 } from "../redux/camsSlice";
 import { Label, Money, Sledding } from "@mui/icons-material";
 
@@ -74,29 +75,41 @@ function PurchaseReqSummary() {
 
   const [exportToCsv, { isLoading: isExporting }] = useExportToCsvMutation();
 
-const handleExport = async () => {
-  if (!selected || selected.length === 0) {
-    alert("Please select at least one item to export.");
-    return;
+  const handleExport = async () => {
+    if (!selected || selected.length === 0) {
+      alert("Please select at least one item to export.");
+      return;
+    }
+
+    try {
+      const blob = await exportToCsv(selected).unwrap();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "purchase_requests.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Export failed", error);
+      alert("Failed to export data.");
+    }
+  };
+
+  const [deleteItem, { isLoading: isDeleting }] = useDeleteItemMutation();
+
+  const handleDeletePo = async (itemId) => {
+    if (!window.confirm("Are you sure you want to delete this ")) return;
+
+    try {
+      await deleteItem(itemId).unwrap();
+      console.log('Deleted successfully');
+    } catch (error) {
+      console.log('Delete Failed', error)
+    }
   }
 
-  try {
-    const blob = await exportToCsv(selected).unwrap();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "purchase_requests.csv";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error("Export failed", error);
-    alert("Failed to export data.");
-  }
-};
-
- 
 
   useEffect(() => {
     setCurrentPage(page);
@@ -141,6 +154,8 @@ const handleExport = async () => {
         : [...prev, itemId]
     );
   };
+
+
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -545,6 +560,7 @@ const handleExport = async () => {
                 "Status",
                 "PO Number",
                 "PO Value",
+                " ",
               ].map((header, index) => (
                 <th
                   key={index}
@@ -579,14 +595,16 @@ const handleExport = async () => {
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
+                        padding: "8px",
                         textAlign: "left",
                       }}
                     >
                       <Checkbox
                         size="sm"
+                        // paddingleft: .5
                         checked={selected.includes(row._id)}
                         onChange={(event) => handleRowSelect(row._id, event.target.checked)}
-                        
+
                       />
                     </td>
 
@@ -740,6 +758,37 @@ const handleExport = async () => {
                       }}
                     >
                       {row.po_value || "-"}
+                    </td>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "left",
+                      }}
+                    >
+                      <Tooltip
+                        title={row.po_numbers.length >= 1 ? 'PO available' : ''}  >
+                        <Box
+                          sx={{
+                            display: 'inline-block',
+                            opacity: row.po_numbers.length >= 1 ? 0.5 : 1,
+                            cursor: isDeleting ? 'wait' : 'pointer',
+                          }}
+                        >
+                          <Trash
+                            onClick={() => {
+                              if (row.po_numbers.length === 0) {
+                                handleDeletePo(row._id)
+                              }
+                            }}
+                            style={{
+                              fontSize: 20,
+                              cursor: row.po_numbers.length >= 1 ? 'not-allowed' : 'pointer',
+                              
+                            }}
+                          />
+                        </Box>
+                      </Tooltip>
+
                     </td>
                   </tr>
                 );

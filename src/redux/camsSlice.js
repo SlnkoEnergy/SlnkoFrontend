@@ -129,14 +129,7 @@ export const camsApi = createApi({
         body: payload,
       }),
     }),   
-    exportToCsv: builder.mutation({
-      
-      // query: (Ids) => ({
-      //   url : `purchaseRequest/export`,
-      //   method : "POST",
-      //   body: {Ids},
-      //   responseHandler: async (response) => await response.blob(),
-      // }),
+    exportToCsv: builder.mutation({  
       query: (Ids) =>{
         return {
           url : `purchaseRequest/purchaserequest/export`,
@@ -146,6 +139,15 @@ export const camsApi = createApi({
         }
       }
     }),
+    deleteItem: builder.mutation({
+      query : (id) =>{
+        return{
+          url: `purchaseRequest/delete-purchaserequest/${id}`,
+          method: "DELETE", 
+        }
+      },
+      invalidatesTags: ['CAM']
+    })
   }),
 });
 
@@ -165,4 +167,5 @@ export const {
   useGetPurchaseRequestQuery,
   useEditPurchaseRequestMutation,
   useExportToCsvMutation,
+  useDeleteItemMutation,
 } = camsApi;
