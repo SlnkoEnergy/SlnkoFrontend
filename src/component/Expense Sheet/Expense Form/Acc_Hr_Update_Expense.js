@@ -26,14 +26,12 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
-  useGetAllExpenseQuery,
   useUpdateDisbursementDateMutation,
   useUpdateExpenseSheetMutation,
   useUpdateExpenseStatusOverallMutation,
-  useLazyExportExpenseByIdToCSVQuery,
   useGetExpenseByIdQuery,
-  useExportExpenseByIdToPDFQuery,
-  useLazyExportExpenseByIdToPDFQuery,
+  useExportExpenseToPDFMutation,
+  useExportExpenseToCSVMutation,
 } from "../../../redux/Expense/expenseSlice";
 import PieChartByCategory from "./Expense_Chart";
 import CircularProgress from "@mui/joy/CircularProgress";
@@ -109,60 +107,63 @@ const UpdateExpenseAccounts = () => {
   const [disbursementData, setDisbursementData] = useState("");
   const [previewImage, setPreviewImage] = useState(null);
   const [isPdfLoading, setIsPdfLoading] = useState(false);
-  // const showDisbursement =
-  //   rows[0]?.current_status === "final approval" &&
-  //   user?.department === "Accounts";
+  
 
   const [commentDialog, setCommentDialog] = useState({
     open: false,
     rowIndex: null,
   });
 
-  const [triggerExportPDFById] = useLazyExportExpenseByIdToPDFQuery();
+  const [downloadStatus, setDownloadStatus] = useState("");
 
-  const handleExportPDFById = async (expenseId, withAttachment = true) => {
+  const [triggerExportPdf, { isLoading }] = useExportExpenseToPDFMutation();
+
+  const handleExportPDFById = async (expenseIds, withAttachment = true) => {
     try {
-      const blob = await triggerExportPDFById({
-        expenseId,
-        withAttachment,
-      }).unwrap();
+      setDownloadStatus("Preparing download...");
+
+      const blob = await triggerExportPdf({ expenseIds, withAttachment }).unwrap();
 
       const url = window.URL.createObjectURL(
         new Blob([blob], { type: "application/pdf" })
       );
-
       const a = document.createElement("a");
       a.href = url;
-      a.download = `expense_${expenseId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Error exporting PDF:", err);
-    }
-  };
-
-  const [triggerExportById] = useLazyExportExpenseByIdToCSVQuery();
-  const handleExportCSVById = async (expenseId) => {
-    try {
-      const blob = await triggerExportById(expenseId).unwrap();
-      const url = window.URL.createObjectURL(
-        new Blob([blob], { type: "text/csv" })
-      );
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `expense_${expenseId}.csv`;
+      a.download = `expenses_${Date.now()}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+
+        setTimeout(() => {
+        setDownloadStatus("");
+      }, 1000);
     } catch (err) {
-      console.error("Error exporting CSV:", err);
+      console.error("Error downloading PDF:", err);
+      setDownloadStatus("Download failed.");
     }
   };
-  // const inputRefs = useRef([]);
+
+const [triggerExport] = useExportExpenseToCSVMutation();
+
+const handleExportCSV = async (sheetIds) => {
+  try {
+    const blob = await triggerExport({ sheetIds }).unwrap();
+    const url = window.URL.createObjectURL(
+      new Blob([blob], { type: "text/csv" })
+    );
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `expenses_${Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    toast.error("Error exporting CSV");
+  }
+};
+
 
   const [user, setUser] = useState(null);
 
@@ -1169,7 +1170,7 @@ const UpdateExpenseAccounts = () => {
 
                     <Stack direction="row" spacing={1}>
                       <Button
-                        onClick={() => handleExportCSVById(rows[0]?._id)}
+                       onClick={() => handleExportCSV([rows[0]?._id])}
                         size="sm"
                         variant="outlined"
                       >
@@ -1180,17 +1181,34 @@ const UpdateExpenseAccounts = () => {
                         <MenuButton variant="outlined" size="sm" color="danger">
                           PDF
                         </MenuButton>
+                        {downloadStatus && (
+                          <Box
+                            mt={2}
+                            display="flex"
+                            alignItems="center"
+                            gap={1}
+                          >
+                            {(downloadStatus.startsWith("Preparing") ||
+                              downloadStatus.startsWith("Downloading")) && (
+                              <CircularProgress size="sm" />
+                            )}
+                            <Typography level="body-sm">
+                              {downloadStatus}
+                            </Typography>
+                          </Box>
+                        )}
+
                         <Menu>
                           <MenuItem
                             onClick={() =>
-                              handleExportPDFById(rows[0]?._id, true)
+                              handleExportPDFById([rows[0]?._id], true)
                             }
                           >
                             Download with Attachment
                           </MenuItem>
                           <MenuItem
                             onClick={() =>
-                              handleExportPDFById(rows[0]?._id, false)
+                              handleExportPDFById([rows[0]?._id], false)
                             }
                           >
                             Download without Attachment
@@ -2013,8 +2031,8 @@ const UpdateExpenseAccounts = () => {
                   )}
 
                 {user?.department === "Accounts" &&
-                  (rows[0]?.current_status?.status || rows[0]?.current_status) ===
-                    "final approval" && (
+                  (rows[0]?.current_status?.status ||
+                    rows[0]?.current_status) === "final approval" && (
                     <Box
                       display="flex"
                       alignItems="center"
