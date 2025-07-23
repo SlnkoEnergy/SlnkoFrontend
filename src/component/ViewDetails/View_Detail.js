@@ -106,9 +106,9 @@ const Customer_Payment_Summary = () => {
     const totalDebited =
       debitHistory.reduce((acc, row) => acc + row.amount_paid, 0) || "0";
 
-    const netBalance = totalCredited - totalReturn;
-    const tcs =
-      netBalance > 5000000 ? Math.round(netBalance - 5000000) * 0.001 : 0;
+    // const netBalance = totalCredited - totalReturn;
+    // const tcs =
+    //   netBalance > 5000000 ? Math.round(netBalance - 5000000) * 0.001 : 0;
 
     const adjustHeader = [
       "S.No.",
@@ -194,37 +194,37 @@ const Customer_Payment_Summary = () => {
 
     const adjTotal = debitTotal - creditTotal;
 
-    const balanceSlnko = netBalance - totalAmountPaid - adjTotal;
-    const netAdvance = totalAmountPaid - totalBilledValue;
-    const balancePayable = totalPOValue - totalBilledValue - netAdvance;
-    const balanceRequired = balanceSlnko - balancePayable - tcs;
+    // const balanceSlnko = netBalance - totalAmountPaid - adjTotal;
+    // const netAdvance = totalAmountPaid - totalBilledValue;
+    // const balancePayable = totalPOValue - totalBilledValue - netAdvance;
+    // const balanceRequired = balanceSlnko - balancePayable - tcs;
     const totalAvailable = totalCredited - totalDebited;
-    const totalPOBasic = totalPoValue - POBasic;
+    // const totalPOBasic = totalPoValue - POBasic;
 
-    const summaryData = [
-      ["S.No.", "Balance Summary", "Value"],
-      ["1", "Total Received", totalCredited],
-      ["2", "Total Return", totalReturn],
-      ["3", "Net Balance [(1)-(2)]", netBalance],
-      ["4", "Total Advance Paid to Vendors", totalAmountPaid],
-      ["4A", "Total Adjustment (Debit-Credit)", adjTotal],
-      ["5", "Balance with Slnko [(3)-(4)-(4A)]", balanceSlnko],
-      ["6", "Total PO Value", totalPOValue],
-      ["7", "Total Billed Value", totalBilledValue],
-      ["8", "Net Advance Paid [(4)-(7)]", netAdvance],
-      ["9", "Balance Payable to Vendors [(6)-(7)-(8)]", balancePayable],
-      ["10", "TCS as Applicable", tcs],
-      // ["11", "Extra GST Recoverable from Client", totalPOBasic],
-      // ["12", "Balance Required [(5)-(9)-(10)]", balanceRequired],
-      ...(POBasic > 0
-        ? [["11", "Extra GST Recoverable from Client", totalPOBasic]]
-        : []),
-      [
-        POBasic > 0 ? "12" : "11",
-        `Balance Required [(5)-(9)-(10)]`,
-        balanceRequired,
-      ],
-    ];
+    // const summaryData = [
+    //   ["S.No.", "Balance Summary", "Value"],
+    //   ["1", "Total Received", totalCredited],
+    //   ["2", "Total Return", totalReturn],
+    //   ["3", "Net Balance [(1)-(2)]", netBalance],
+    //   ["4", "Total Advance Paid to Vendors", totalAmountPaid],
+    //   ["4A", "Total Adjustment (Debit-Credit)", adjTotal],
+    //   ["5", "Balance with Slnko [(3)-(4)-(4A)]", balanceSlnko],
+    //   ["6", "Total PO Value", totalPOValue],
+    //   ["7", "Total Billed Value", totalBilledValue],
+    //   ["8", "Net Advance Paid [(4)-(7)]", netAdvance],
+    //   ["9", "Balance Payable to Vendors [(6)-(7)-(8)]", balancePayable],
+    //   ["10", "TCS as Applicable", tcs],
+    //   // ["11", "Extra GST Recoverable from Client", totalPOBasic],
+    //   // ["12", "Balance Required [(5)-(9)-(10)]", balanceRequired],
+    //   ...(POBasic > 0
+    //     ? [["11", "Extra GST Recoverable from Client", totalPOBasic]]
+    //     : []),
+    //   [
+    //     POBasic > 0 ? "12" : "11",
+    //     `Balance Required [(5)-(9)-(10)]`,
+    //     balanceRequired,
+    //   ],
+    // ];
 
     const summaryData2 = [
       ["S.No.", "Available Amount (Old)", "Value"],
@@ -249,8 +249,8 @@ const Customer_Payment_Summary = () => {
       adjustHeader.join(","),
       ...adjustRows.map((row) => row.join(",")),
       "",
-      ...summaryData.map((row) => row.join(",")),
-      "",
+      // ...summaryData.map((row) => row.join(",")),
+      // "",
       ...summaryData2.map((row) => row.join(",")),
       "",
     ].join("\n");
@@ -283,6 +283,7 @@ const Customer_Payment_Summary = () => {
   const [endDate, setEndDate] = useState("");
   const [startCreditDate, setStartCreditDate] = useState("");
   const [endCreditDate, setEndCreditDate] = useState("");
+  const [BalanceSummary, setBalanceSummary] = useState("");
 
   const totalCredited = creditHistory.reduce(
     (sum, item) => sum + item.cr_amount,
@@ -438,7 +439,6 @@ const Customer_Payment_Summary = () => {
     if (projectData.p_id) {
       const fetchDebitHistory = async () => {
         try {
-          // console.log("Fetching debit history for p_id:", projectData.p_id);
           const token = localStorage.getItem("authToken");
           // Fetch debit history data from the API
           const response = await Axios.get(
@@ -617,10 +617,8 @@ const Customer_Payment_Summary = () => {
     setFilteredDebits(filteredData);
   };
 
-   const applyCreditFilters = (start, end) => {
+  const applyCreditFilters = (start, end) => {
     const filteredData = creditHistory.filter((item) => {
-      
-
       let itemDate = null;
       if (item.cr_date) {
         const parsedDate = new Date(item.cr_date);
@@ -638,8 +636,6 @@ const Customer_Payment_Summary = () => {
 
     setCreditHistory(filteredData);
   };
-
-
 
   useEffect(() => {
     if (projectData.code) {
@@ -988,60 +984,86 @@ const Customer_Payment_Summary = () => {
 
   // ***Balance Summary***
 
-  const balanceSummary = [
-    {
-      crAmt: totalCredited,
-      totalReturn: debitHistorySummary.totalCustomerAdjustment,
-      totalAdvanceValue: clientSummary.totalAmountPaid,
-      totalPoValue: clientSummary.totalPOValue,
-      totalBilled: clientSummary.totalBilledValue,
-      totalPOBasic: clientSummary.totalPOBasicValue,
-      dbAmt: totalDebited,
-      adjTotal: debitTotal - creditTotal,
-    },
-  ];
+  useEffect(() => {
+    if (projectData.p_id) {
+      const fetchBalanceSummary = async () => {
+        try {
+          const token = localStorage.getItem("authToken");
+          // Fetch debit history data from the API
+          const response = await Axios.get(
+            `/accounting/balance-summary?p_id=${projectData.p_id}`,
+            {
+              headers: {
+                "x-auth-token": token,
+              },
+            }
+          );
+
+          const data = response.data?.result ?? [];
+
+          console.log("Balance Summary:", data);
+
+          setBalanceSummary(data);
+        } catch (err) {
+          console.error("Error fetching debit history data:", err);
+          setError("Failed to fetch debit history. Please try again later.");
+        }
+      };
+
+      fetchBalanceSummary();
+    }
+  }, [projectData.p_id]);
+
+  // const balanceSummary = [
+  //   {
+  //     crAmt: totalCredited,
+  //     totalReturn: debitHistorySummary.totalCustomerAdjustment,
+  //     totalAdvanceValue: clientSummary.totalAmountPaid,
+  //     totalPoValue: clientSummary.totalPOValue,
+  //     totalBilled: clientSummary.totalBilledValue,
+  //     totalPOBasic: clientSummary.totalPOBasicValue,
+  //     dbAmt: totalDebited,
+  //     adjTotal: debitTotal - creditTotal,
+  //   },
+  // ];
 
   const {
-    crAmt,
-    totalReturn,
-    totalAdvanceValue,
-    totalPoValue,
-    totalBilled,
-    totalPOBasic,
-    dbAmt,
-    adjTotal,
-  } = balanceSummary[0];
+    total_received,
+    total_return,
+    netBalance,
+    balance_payable_to_vendors,
+    total_adjustment,
+    balance_with_slnko,
+    total_po_basic,
+    gst_as_po_basic,
+    total_po_with_gst,
+    gst_with_type_percentage,
+    gst_difference,
+    total_po_value,
+    total_billed_value,
+    net_advanced_paid,
+    billing_type,
+    tcs_as_applicable,
+    balance_required,
+  } = BalanceSummary?.[0] || {};
 
   // console.log("Total PO Basic (from balanceSummary):", totalPOBasic);
 
   const Balance_Summary = ({
-    crAmt,
-    dbAmt,
-    adjTotal,
-    totalReturn,
-    totalAdvanceValue,
-    totalPoValue,
-    totalBilled,
+    // crAmt,
+    // dbAmt,
+    // adjTotal,
+    // totalReturn,
+    // totalAdvanceValue,
+    // totalPoValue,
+    // totalBilled,
     // totalPOBasic,
   }) => {
-    const crAmtNum = Number(crAmt);
-    const dbAmtNum = Number(dbAmt);
-    const adjTotalNum = Number(adjTotal);
+    // const crAmtNum = Number(crAmt);
+    // const dbAmtNum = Number(dbAmt);
+    // const adjTotalNum = Number(adjTotal);
 
-    const totalAmount = Math.round(crAmtNum - dbAmtNum);
-
-    const netBalance = Math.round(crAmt - totalReturn);
-    const balanceSlnko = Math.round(
-      netBalance - totalAdvanceValue - adjTotalNum
-    );
-    const netAdvance = Math.round(totalAdvanceValue - totalBilled);
-    const balancePayable = Math.round(totalPoValue - totalBilled - netAdvance);
-
-    const tcs =
-      netBalance > 5000000 ? Math.round(netBalance - 5000000) * 0.001 : 0;
-    const balanceRequired = Math.round(balanceSlnko - balancePayable - tcs);
-
-    const totalPOBasicvalue = Math.round(totalPoValue - totalPOBasic);
+    // const totalAmount = Math.round(crAmtNum - dbAmtNum);
 
     const headerStyle = {
       fontWeight: "bold",
@@ -1056,226 +1078,6 @@ const Customer_Payment_Summary = () => {
     };
 
     return (
-      // <Grid container spacing={2}>
-      //   {/* Balance Summary Section */}
-      //   <Grid item xs={12} sm={6}>
-      //     <Box
-      //       sx={{
-      //         border: "1px solid #ddd",
-      //         borderRadius: "8px",
-      //         padding: "16px",
-      //       }}
-      //     >
-      //       <Typography
-      //         level="h5"
-      //         sx={{ fontWeight: "bold", marginBottom: "12px" }}
-      //       >
-      //         Balance Summary
-      //       </Typography>
-      //       <table style={{ width: "100%", borderCollapse: "collapse" }}>
-      //         <thead>
-      //           <tr>
-      //             <th
-      //               style={{
-      //                 fontWeight: "bold",
-      //                 padding: "8px",
-      //                 borderBottom: "1px solid #ddd",
-      //               }}
-      //             >
-      //               S.No.
-      //             </th>
-      //             <th
-      //               style={{
-      //                 fontWeight: "bold",
-      //                 padding: "8px",
-      //                 borderBottom: "1px solid #ddd",
-      //               }}
-      //             >
-      //               Description
-      //             </th>
-      //             <th
-      //               style={{
-      //                 fontWeight: "bold",
-      //                 padding: "8px",
-      //                 borderBottom: "1px solid #ddd",
-      //               }}
-      //             >
-      //               Value
-      //             </th>
-      //           </tr>
-      //         </thead>
-      //         <tbody>
-      //           <tr>
-      //             <td style={{ padding: "8px" }}>1</td>
-      //             <td style={{ padding: "8px" }}>
-      //               <strong>Total Received:</strong>
-      //             </td>
-      //             <td style={{ padding: "8px" }}>{crAmtNum}</td>
-      //           </tr>
-      //           <tr>
-      //             <td style={{ padding: "8px" }}>2</td>
-      //             <td style={{ padding: "8px" }}>
-      //               <strong>Total Return:</strong>
-      //             </td>
-      //             <td style={{ padding: "8px" }}>{totalReturn}</td>
-      //           </tr>
-      //           <tr style={{ backgroundColor: "#C8C8C6" }}>
-      //             <td style={{ padding: "8px" }}>3</td>
-      //             <td style={{ padding: "8px" }}>
-      //               <strong>Net Balance[(1)-(2)]:</strong>
-      //             </td>
-      //             <td style={{ padding: "8px" }}>{netBalance}</td>
-      //           </tr>
-      //           <tr>
-      //             <td style={{ padding: "8px" }}>4</td>
-      //             <td style={{ padding: "8px" }}>
-      //               <strong>Total Advance Paid to vendors:</strong>
-      //             </td>
-      //             <td style={{ padding: "8px" }}>{totalAdvanceValue}</td>
-      //           </tr>
-      //           <tr style={{ backgroundColor: "#B6F4C6", fontWeight: "bold" }}>
-      //             <td style={{ padding: "8px" }}>5</td>
-      //             <td style={{ padding: "8px" }}>
-      //               <strong>Balance With Slnko [(3)-(4)]:</strong>
-      //             </td>
-      //             <td style={{ padding: "8px" }}>{balanceSlnko}</td>
-      //           </tr>
-      //           <tr>
-      //             <td style={{ padding: "8px" }}>6</td>
-      //             <td style={{ padding: "8px" }}>
-      //               <strong>Total PO Value:</strong>
-      //             </td>
-      //             <td style={{ padding: "8px" }}>{totalPoValue}</td>
-      //           </tr>
-      //           <tr>
-      //             <td style={{ padding: "8px" }}>7</td>
-      //             <td style={{ padding: "8px" }}>
-      //               <strong>Total Billed Value:</strong>
-      //             </td>
-      //             <td style={{ padding: "8px" }}>{totalBilled}</td>
-      //           </tr>
-      //           <tr>
-      //             <td style={{ padding: "8px" }}>8</td>
-      //             <td style={{ padding: "8px" }}>
-      //               <strong>Net Advance Paid [(4)-(7)]:</strong>
-      //             </td>
-      //             <td style={{ padding: "8px" }}>{netAdvance}</td>
-      //           </tr>
-      //           <tr style={{ backgroundColor: "#B6F4C6", fontWeight: "bold" }}>
-      //             <td style={{ padding: "8px" }}>9</td>
-      //             <td style={{ padding: "8px" }}>
-      //               <strong>Balance Payable to vendors [(6)-(7)-(8)]:</strong>
-      //             </td>
-      //             <td style={{ padding: "8px" }}>{balancePayable}</td>
-      //           </tr>
-      //           <tr>
-      //             <td style={{ padding: "8px" }}>10</td>
-      //             <td style={{ padding: "8px" }}>
-      //               <strong>TCS as applicable:</strong>
-      //             </td>
-      //             <td style={{ padding: "8px" }}>{Math.round(tcs)}</td>
-      //           </tr>
-      //           {totalPOBasic > 0 && (
-      //             <tr>
-      //               <td style={{ padding: "8px" }}>11</td>
-      //               <td style={{ padding: "8px" }}>
-      //                 <strong>Extra GST Recoverable from Client:</strong>
-      //               </td>
-      //               <td style={{ padding: "8px" }}>{totalPOBasicvalue}</td>
-      //             </tr>
-      //           )}
-
-      //           <tr
-      //             style={{
-      //               backgroundColor: "#B6F4C6",
-      //               fontWeight: "bold",
-      //               color: balanceRequired >= 0 ? "green" : "red",
-      //             }}
-      //           >
-      //             <td style={{ padding: "8px" }}>
-      //               {totalPOBasic > 0 ? 12 : 11}
-      //             </td>
-      //             <td style={{ padding: "8px" }}>
-      //               <strong>
-      //                 Balance Required [
-      //                 {totalPOBasic > 0 ? "(5)-(9)-(10)" : "(5)-(9)-(10)"}]:
-      //               </strong>
-      //             </td>
-      //             <td style={{ padding: "8px" }}>{balanceRequired}</td>
-      //           </tr>
-      //         </tbody>
-      //       </table>
-      //     </Box>
-      //   </Grid>
-
-      //   {/* Amount Available (Old) Section */}
-      //   <Grid item xs={12} sm={6}>
-      //     <Box
-      //       sx={{
-      //         border: "1px solid #ddd",
-      //         borderRadius: "8px",
-      //         padding: "16px",
-      //       }}
-      //     >
-      //       <Typography
-      //         level="h5"
-      //         sx={{ fontWeight: "bold", marginBottom: "12px" }}
-      //       >
-      //         Amount Available (Old)
-      //       </Typography>
-      //       <table style={{ width: "100%", borderCollapse: "collapse" }}>
-      //         <thead>
-      //           <tr>
-      //             <th
-      //               style={{
-      //                 fontWeight: "bold",
-      //                 padding: "8px",
-      //                 borderBottom: "1px solid #ddd",
-      //               }}
-      //             >
-      //               Description
-      //             </th>
-      //             <th
-      //               style={{
-      //                 fontWeight: "bold",
-      //                 padding: "8px",
-      //                 borderBottom: "1px solid #ddd",
-      //               }}
-      //             >
-      //               Amount
-      //             </th>
-      //           </tr>
-      //         </thead>
-      //         <tbody>
-      //           <tr>
-      //             <td style={{ padding: "8px" }}>
-      //               <strong>Credit - Debit + Adjust</strong>
-      //             </td>
-      //             <td style={{ padding: "8px" }}>
-      //               <strong className="text-success">{crAmt}</strong> -
-      //               <strong className="text-danger">{dbAmtNum}</strong> +
-      //               <strong className="text-primary">{adjTotalNum}</strong>
-      //             </td>
-      //           </tr>
-      //           <tr style={{ backgroundColor: "#fff" }}>
-      //             <td style={{ padding: "8px" }}>
-      //               <strong>Total</strong>
-      //             </td>
-      //             <td style={{ padding: "8px" }}>
-      //               <strong
-      //                 className={
-      //                   totalAmount >= 0 ? "text-success" : "text-danger"
-      //                 }
-      //               >
-      //                 {totalAmount}
-      //               </strong>
-      //             </td>
-      //           </tr>
-      //         </tbody>
-      //       </table>
-      //     </Box>
-      //   </Grid>
-      // </Grid>
       <Grid container spacing={2}>
         {/* Balance Summary Section */}
         <Grid item xs={12} sm={6}>
@@ -1289,7 +1091,6 @@ const Customer_Payment_Summary = () => {
               "@media print": {
                 boxShadow: "none",
                 border: "none",
-                // pageBreakInside: "avoid",
               },
             }}
           >
@@ -1322,45 +1123,62 @@ const Customer_Payment_Summary = () => {
               </thead>
               <tbody>
                 {[
-                  ["1", "Total Received", crAmtNum],
-                  ["2", "Total Return", totalReturn],
-                  ["3", "Net Balance[(1)-(2)]", netBalance, "#C8C8C6"],
-                  ["4", "Total Advance Paid to vendors", totalAdvanceValue],
-                  ["4A", "Total Adjustment (Debit-Credit)", adjTotalNum],
+                  ["1", "Total Received", total_received],
+                  ["2", "Total Return", total_return],
+                  ["3", "Net Balance [(1)-(2)]", netBalance, "#C8C8C6"],
+                  [
+                    "4",
+                    "Total Advance Paid to Vendors",
+                    balance_payable_to_vendors,
+                  ],
+                  ["4A", "Total Adjustment (Debit-Credit)", total_adjustment],
                   [
                     "5",
                     "Balance With Slnko [(3)-(4)-(4A)]",
-                    balanceSlnko,
+                    balance_with_slnko,
                     "#B6F4C6",
                     true,
                   ],
-                  ["6", "Total PO Value", totalPoValue],
-                  ["7", "Total Billed Value", totalBilled],
-                  ["8", "Net Advance Paid [(4)-(7)]", netAdvance],
+                  ["6", "Total PO Basic Value", total_po_basic],
+                  ["7", "GST Value as per PO", gst_as_po_basic],
+                  ["8", "Total PO with GST", total_po_with_gst],
                   [
                     "9",
-                    "Balance Payable to vendors [(6)-(7)-(8)]",
-                    balancePayable,
+                    billing_type === "Composite"
+                      ? "GST (13.8%)"
+                      : billing_type === "Individual"
+                        ? "GST (18%)"
+                        : "GST as per Billing Type",
+                    gst_with_type_percentage,
+                  ],
+                  ["10", "GST (Diff)", gst_difference],
+                  ["11", "Total PO Value", total_po_value],
+                  ["12", "Total Billed Value", total_billed_value],
+                  ["13", "Net Advance Paid [(4)-(7)]", net_advanced_paid],
+                  [
+                    "14",
+                    "Balance Payable to Vendors [(11)-(12)-(13)]",
+                    balance_payable_to_vendors,
                     "#B6F4C6",
                     true,
                   ],
-                  ["10", "TCS as applicable", Math.round(tcs)],
-                  ...(totalPOBasic > 0
+                  ["15", "TCS as Applicable", Math.round(tcs_as_applicable)],
+                  ...(total_po_basic > 0
                     ? [
                         [
-                          "11",
+                          "16",
                           "Extra GST Recoverable from Client",
-                          totalPOBasicvalue,
+                          total_po_basic,
                         ],
                       ]
                     : []),
                   [
-                    totalPOBasic > 0 ? "12" : "11",
-                    `Balance Required [(5)-(9)-(10)]`,
-                    balanceRequired,
+                    "17",
+                    "Balance Required [(5)-(14)-(15)]",
+                    Math.round(balance_required),
                     "#B6F4C6",
                     true,
-                    balanceRequired >= 0 ? "green" : "red",
+                    Math.round(balance_required) >= 0 ? "green" : "red",
                   ],
                 ].map(([sno, desc, value, bgColor, bold, color], index) => (
                   <tr
@@ -1383,134 +1201,76 @@ const Customer_Payment_Summary = () => {
 
         {/* Amount Available (Old) Section */}
         <Grid item xs={12} sm={6}>
-          <Box
-            sx={{
-              border: "1px solid #ddd",
-              borderRadius: "8px",
-              padding: "16px",
-              backgroundColor: "#fff",
-              fontSize: "14px",
-              "@media print": {
-                boxShadow: "none",
-                border: "none",
-                pageBreakInside: "avoid",
-              },
-            }}
-          >
-            <Typography
-              level="h5"
+          {/* <Box
               sx={{
-                fontWeight: "bold",
-                marginBottom: "12px",
-                fontSize: "16px",
+                border: "1px solid #ddd",
+                borderRadius: "8px",
+                padding: "16px",
+                backgroundColor: "#fff",
+                fontSize: "14px",
                 "@media print": {
-                  fontSize: "14px",
+                  boxShadow: "none",
+                  border: "none",
+                  pageBreakInside: "avoid",
                 },
               }}
             >
-              Amount Available (Old)
-            </Typography>
-            <table
-              style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                fontFamily: "Arial, sans-serif",
-                "@media print": {
-                  fontSize: "12px",
-                },
-              }}
-            >
-              <thead>
-                <tr style={{ backgroundColor: "#f0f0f0" }}>
-                  <th
-                    style={{
-                      fontWeight: "bold",
-                      padding: "8px",
-                      borderBottom: "1px solid #ddd",
-                      textAlign: "left",
-                      "@media print": {
-                        padding: "6px",
-                        fontSize: "12px",
-                      },
-                    }}
-                  >
-                    Description
-                  </th>
-                  <th
-                    style={{
-                      fontWeight: "bold",
-                      padding: "8px",
-                      borderBottom: "1px solid #ddd",
-                      "@media print": {
-                        padding: "6px",
-                        fontSize: "12px",
-                      },
-                    }}
-                  >
-                    Amount
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td
-                    style={{
-                      padding: "8px",
-                      "@media print": {
-                        padding: "6px",
-                        fontSize: "12px",
-                      },
-                    }}
-                  >
-                    <strong>Credit - Debit</strong>
-                  </td>
-                  <td
-                    style={{
-                      padding: "8px",
-                      "@media print": {
-                        padding: "6px",
-                        fontSize: "12px",
-                      },
-                    }}
-                  >
-                    <strong className="text-success">{crAmt}</strong> -{" "}
-                    <strong className="text-danger">{dbAmtNum}</strong>{" "}
-                    {/* <strong className="text-primary">{adjTotalNum}</strong> */}
-                  </td>
-                </tr>
-                <tr style={{ backgroundColor: "#fff" }}>
-                  <td
-                    style={{
-                      padding: "8px",
-                      "@media print": {
-                        padding: "6px",
-                        fontSize: "12px",
-                      },
-                    }}
-                  >
-                    <strong>Total</strong>
-                  </td>
-                  <td
-                    style={{
-                      padding: "8px",
-                      "@media print": {
-                        padding: "6px",
-                        fontSize: "12px",
-                      },
-                    }}
-                  >
-                    <strong
-                      className={
-                        totalAmount >= 0 ? "text-success" : "text-danger"
-                      }
-                    >
-                      {totalAmount}
-                    </strong>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </Box>
+              <Typography
+                level="h5"
+                sx={{
+                  fontWeight: "bold",
+                  marginBottom: "12px",
+                  fontSize: "16px",
+                  "@media print": {
+                    fontSize: "14px",
+                  },
+                }}
+              >
+                Amount Available (Old)
+              </Typography>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  fontFamily: "Arial, sans-serif",
+                  "@media print": {
+                    fontSize: "12px",
+                  },
+                }}
+              >
+                <thead>
+                  <tr style={{ backgroundColor: "#f0f0f0" }}>
+                    <th style={headerStyle}>Description</th>
+                    <th style={headerStyle}>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={cellStyle}>
+                      <strong>Credit - Debit</strong>
+                    </td>
+                    <td style={cellStyle}>
+                      <strong className="text-success">{total_received}</strong> -{" "}
+                      <strong className="text-danger">{dbAmtNum}</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={cellStyle}>
+                      <strong>Total</strong>
+                    </td>
+                    <td style={cellStyle}>
+                      <strong
+                        className={
+                          totalAmount >= 0 ? "text-success" : "text-danger"
+                        }
+                      >
+                        {totalAmount}
+                      </strong>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </Box> */}
         </Grid>
       </Grid>
     );
@@ -2527,13 +2287,13 @@ const Customer_Payment_Summary = () => {
       {/* Balance Summary and Amount Available Section */}
       <Box sx={{ marginBottom: "30px" }}>
         <Balance_Summary
-          crAmt={crAmt}
-          dbAmt={dbAmt}
-          adjTotal={adjTotal}
-          totalReturn={totalReturn}
-          totalAdvanceValue={totalAdvanceValue}
-          totalPoValue={totalPoValue}
-          totalBilled={totalBilled}
+          // crAmt={crAmt}
+          // dbAmt={dbAmt}
+          // adjTotal={adjTotal}
+          // totalReturn={totalReturn}
+          // totalAdvanceValue={totalAdvanceValue}
+          // totalPoValue={totalPoValue}
+          // totalBilled={totalBilled}
         />
       </Box>
 

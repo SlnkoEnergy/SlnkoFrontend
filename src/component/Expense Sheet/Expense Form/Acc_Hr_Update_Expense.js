@@ -1007,7 +1007,7 @@ const UpdateExpenseAccounts = () => {
               <Input
                 type="date"
                 size="sm"
-                value={rows[0].expense_term.from?.slice(0, 10) || ""}
+                value={rows[0].expense_term?.from?.slice(0, 10) || ""}
                 onChange={(e) =>
                   handleRowChange(0, "expense_term", {
                     ...rows[0].expense_term,
@@ -1019,7 +1019,7 @@ const UpdateExpenseAccounts = () => {
               <Input
                 type="date"
                 size="sm"
-                value={rows[0].expense_term.to?.slice(0, 10) || ""}
+                value={rows[0].expense_term?.to?.slice(0, 10) || ""}
                 onChange={(e) =>
                   handleRowChange(0, "expense_term", {
                     ...rows[0].expense_term,
