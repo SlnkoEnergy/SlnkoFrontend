@@ -62,6 +62,7 @@ const AllExpense = forwardRef((props, ref) => {
       "Internal",
       "SCM",
       "IT Team",
+      "Loan",
     ];
 
     return (
