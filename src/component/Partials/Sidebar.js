@@ -2505,6 +2505,7 @@ function Sidebar() {
           user?.department === "Infra" ||
           user?.department === "Marketing" ||
           user?.department === "Internal" ||
+          user?.department === "Loan" ||
           (user?.department === "Engineering" &&
             user?.name !== "Rishav Mahato" && 
             user?.name !=="Piyush Rathour Raj" &&
@@ -2516,6 +2517,7 @@ function Sidebar() {
             user?.name !=="Hitesh Jangid" &&
            user?.emp_id !=="SE-184"&&
            user?.emp_id !=="SE-193") ||
+
           user?.name === "Manish Shah" ||
           user?.department === "CAM" ? (
           <List
@@ -2557,7 +2559,8 @@ function Sidebar() {
                   </ListItemButton>
                 </ListItem>
                 {user?.department === "Projects" &&
-                  user?.name === "Mayank Kumar" && (
+                  user?.name === "Mayank Kumar" || ( 
+                  user?.name === "Vivek Pandey") && (
                     <ListItem>
                       <ListItemButton
                         onClick={() => navigate("/expense_approval")}
