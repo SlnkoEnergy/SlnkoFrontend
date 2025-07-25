@@ -216,7 +216,7 @@ const Expense_Form = () => {
     } else if (
       department === "BD" ||
       department === "Marketing" ||
-      department === "Internal"
+      department === "Loan"
     ) {
       return [...common, ...bdAndSalesCategoryOptions];
     }
