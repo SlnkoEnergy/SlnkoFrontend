@@ -492,7 +492,8 @@ const UpdateExpense = () => {
         return updateStatus({
           _id: row._id,
           approved_items,
-          remarks: "", // or shared approval comment if applicable
+          remarks: "approved",
+          status:"manager approval" 
         }).unwrap();
       });
 
