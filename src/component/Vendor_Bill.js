@@ -23,6 +23,8 @@ import {
   useGetPaginatedBillsQuery,
 } from "../redux/billsSlice";
 import Axios from "../utils/Axios";
+import dayjs from "dayjs";
+import { CalendarSearch } from "lucide-react";
 
 function VendorBillSummary() {
   // const [currentPage, setCurrentPage] = useState(1);
@@ -33,11 +35,10 @@ function VendorBillSummary() {
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
   const [from, setFrom] = useState("");
+  const [date, setDate] = useState("");
   const [to, setTo] = useState("");
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [perPage, setPerPage] = useState(initialPageSize);
-
-
 
   useEffect(() => {
     const userData = getUserData();
@@ -57,6 +58,7 @@ function VendorBillSummary() {
     pageSize: perPage,
     status: selectedbill,
     search: searchQuery,
+    date: date,
   });
 
   const [exportBills, { isLoading: isExporting }] = useExportBillsMutation();
@@ -351,12 +353,24 @@ function VendorBillSummary() {
             size="sm"
             color="neutral"
             onClick={() => handleExport(true)}
-            loading={isExporting}
             startDecorator={<DownloadIcon />}
           >
             Export All
           </Button>
         </Box>
+        <FormControl size="sm" sx={{ minWidth: 140 }}>
+          <FormLabel>Date Filter</FormLabel>
+          <Input
+            type="date"
+            value={date}
+            onChange={(e) => {
+              const rawDate = e.target.value;
+              const formatted = dayjs(rawDate).format("DD/MM/YYYY");
+              setDate(formatted);
+              setCurrentPage(1);
+            }}
+          />
+        </FormControl>
       </Box>
     );
   };
@@ -557,7 +571,7 @@ function VendorBillSummary() {
                       component="td"
                       sx={{ padding: 2, minWidth: 120, fontSize: 14 }}
                     >
-                      {new Date(bill.created_on).toLocaleDateString()}
+                      {dayjs(bill.created_on).format("DD/MM/YYYY")}
                     </Box>
                   </Box>
                 ))

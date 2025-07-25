@@ -23,8 +23,8 @@ export const billsApi = createApi({
     }),
 
     getPaginatedBills: builder.query({
-      query: ({ page = 1, search = "", status, pageSize = 10 }) =>
-        `get-paginated-bill?page=${page}&search=${search}&status=${status}&pageSize=${pageSize}`,
+      query: ({ page = 1, search = "", status, pageSize = 10, date }) =>
+        `get-paginated-bill?page=${page}&search=${search}&status=${status}&pageSize=${pageSize}&date=${date}`,
       transformResponse: (response) => ({
         data: response.data || [],
         total: response.meta?.total || 0,
