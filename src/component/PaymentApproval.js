@@ -123,6 +123,14 @@ function PaymentRequest() {
 
         setCredits(creditData);
         setDebits(debitData);
+        // console.log(pendingPayments);
+        console.log("Debit data",debitData);
+        // console.log(creditData);
+        // console.log(projectData);
+        
+        
+        
+        
 
         // Calculate total credits and debits
         const totalCredit = creditData.reduce(
@@ -252,120 +260,48 @@ function PaymentRequest() {
     }
   }, [payments, projects, credits, debits]);
 
-  // const handleApprovalUpdate = async (paymentId, newStatus) => {
-  //   try {
-  //     const response = await Axios.put("/account-approve", {
-  //       pay_id: paymentId,
-  //       status: newStatus,
-  //     });
 
-  //     if (response.status === 200) {
-  //       setPayments((prevPayments) =>
-  //         prevPayments.filter((payment) => payment.pay_id !== paymentId)
-  //       );
+const handleApprovalUpdate = async (paymentId, newStatus) => {
+  try {
+    const token = localStorage.getItem("authToken");
 
-  //       if (newStatus === "Approved") {
-  //         toast.success("Payment Approved !!", {
-  //           autoClose: 3000,
-  //         });
-  //       } else if (newStatus === "Rejected") {
-  //         toast.error("Oops!! Rejected...", {
-  //           autoClose: 2000,
-  //         });
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error("Error updating approval status:", error);
-  //   }
-  // };
-
-  // const RowMenu = ({ paymentId }) => {
-  //   const [status, setStatus] = useState(null); // Tracks the current status
-
-  //   const handleApprovalUpdate = (paymentId, newStatus) => {
-  //     setStatus(newStatus); // Update the chip label based on the new status
-  //     console.log(`Payment ID: ${paymentId}, Status: ${newStatus}`);
-  //   };
-
-  //   return (
-  //     <Box
-  //       sx={{
-  //         display: "flex",
-  //         justifyContent: "center",
-  //         gap: 1,
-  //       }}
-  //     >
-  //       {/* Approve Chip */}
-  //       <Chip
-  //         variant="solid"
-  //         color={status === "Approved" ? "success" : "neutral"}
-  //         onClick={() => handleApprovalUpdate(paymentId, "Approved")}
-  //         sx={{
-  //           textTransform: "none",
-  //           fontSize: "0.875rem",
-  //           fontWeight: 500,
-  //           borderRadius: "sm", // Small border radius for a rectangular look
-  //           cursor: "pointer",
-  //         }}
-  //         startDecorator={<CheckRoundedIcon />}
-  //       >
-  //         {status === "Approved" ? "Approved" : "Approve"}
-  //       </Chip>
-
-  //       {/* Reject Chip */}
-  //       <Chip
-  //         variant="outlined"
-  //         color={status === "Rejected" ? "danger" : "neutral"}
-  //         onClick={() => handleApprovalUpdate(paymentId, "Rejected")}
-  //         sx={{
-  //           textTransform: "none",
-  //           fontSize: "0.875rem",
-  //           fontWeight: 500,
-  //           borderRadius: "sm", // Small border radius for a rectangular look
-  //           cursor: "pointer",
-  //         }}
-  //         startDecorator={<BlockIcon />}
-  //       >
-  //         {status === "Rejected" ? "Rejected" : "Reject"}
-  //       </Chip>
-  //     </Box>
-  //   );
-  // };
-
-  const handleApprovalUpdate = async (paymentId, newStatus) => {
-    try {
-      const token = localStorage.getItem("authToken");
-      const response = await Axios.put(
-        "/account-approve",
-        {
-          pay_id: paymentId,
-          status: newStatus,
+    const response = await Axios.put(
+      "/account-approve",
+      {
+        pay_id: paymentId,
+        status: newStatus,
+      },
+      {
+        headers: {
+          "x-auth-token": token,
         },
-        {
-          headers: {
-            "x-auth-token": token,
-          },
-        }
+      }
+    );
+
+    if (response.status === 200) {
+      setPayments((prevPayments) =>
+        prevPayments.filter((payment) => payment.pay_id !== paymentId)
       );
 
-      if (response.status === 200) {
-        // Update the payments state to remove the row
-        setPayments((prevPayments) =>
-          prevPayments.filter((payment) => payment.pay_id !== paymentId)
-        );
-
-        // Show a toast message
-        if (newStatus === "Approved") {
-          toast.success("Payment Approved !!", { autoClose: 3000 });
-        } else if (newStatus === "Rejected") {
-          toast.error("Payment Rejected...", { autoClose: 2000 });
-        }
+      if (newStatus === "Approved") {
+        toast.success("Payment Approved!", { autoClose: 3000 });
+      } else if (newStatus === "Rejected") {
+        toast.error("Payment Rejected", { autoClose: 2000 });
       }
-    } catch (error) {
-      console.error("Error updating approval status:", error);
-      toast.error(`Already Done.. Please refresh it.`);
     }
-  };
+  } catch (error) {
+    console.error("Error updating approval status:", error);
+
+    if (error.response && error.response.data?.message) {
+      const { message } = error.response.data;
+
+      toast.warn(message, { autoClose: 4000 });
+    } else {
+      toast.error("Network error. Please try again later.", { autoClose: 3000 });
+    }
+  }
+};
+
 
   const RowMenu = ({ paymentId, onStatusChange }) => {
     const [status, setStatus] = useState(null);
@@ -443,6 +379,9 @@ function PaymentRequest() {
     setSearchQuery(query.toLowerCase());
   };
 
+  // console.log("Merged Data" , mergedData);
+  
+
   const filteredData = mergedData.filter((merged) => {
     const matchesSearchQuery = [
       "pay_id",
@@ -516,6 +455,8 @@ function PaymentRequest() {
     currentPage * itemsPerPage
   );
 
+  // console.log(paginatedData);
+  
   const paymentsWithFormattedDate = paginatedData.map((payment) => ({
     ...payment,
     formattedDate: formatDate(payment.dbt_date),

@@ -201,8 +201,8 @@ const [
     const poValue = parseFloat(selectedPo.po_value ?? "0");
   
     const totalAdvancePaid = getFormData.pays
-    .filter((pay) => pay.po_number === selectedPo.po_number && pay.approved === "Approved" && pay.acc_match === "matched" && pay.utr )
-    .reduce((sum, pay) => sum + parseFloat(pay.amount_paid ?? "0"), 0); 
+    .filter((pay) => pay.po_number === selectedPo.po_number && pay.approved === "Approved")
+    .reduce((sum, pay) => sum + parseFloat(pay.amount_paid ?? "0"), 0);
     
     const po_balance = poValue - totalAdvancePaid;
   
@@ -265,7 +265,7 @@ const [
     if (userData) {
       setFormData((prev) => ({
         ...prev,
-        submitted_by: userData.name || "", // Ensure the correct key from localStorage
+        submitted_by: userData.name || "",
       }));
     }
   }, []);
