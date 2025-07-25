@@ -233,7 +233,7 @@ const AddBillForm = ({po_number}) => {
                 fullWidth
                 type="date"
                 name="date"
-                value={formValues.date} // Ensure this is yyyy-MM-dd
+                value={formValues.date}
                 onChange={handleChange}
                 required
                 variant="outlined"
