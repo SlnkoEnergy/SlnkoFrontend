@@ -391,7 +391,7 @@ function Dash_eng() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={7} style={{ padding: "8px", textAlign: "left" }}>
+                <td colSpan={9} style={{ padding: "8px" }}>
                   <Box
                     sx={{
                       fontStyle: "italic",

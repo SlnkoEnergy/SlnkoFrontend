@@ -16,353 +16,150 @@ import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import NoData from "../assets/alert-bell.svg";
 import Axios from "../utils/Axios";
+import { useGetPaymentApprovalQuery } from "../redux/Accounts";
+import { CircularProgress } from "@mui/joy";
+import { Calendar, CircleUser, UsersRound } from "lucide-react";
 
 function PaymentRequest() {
   const [payments, setPayments] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [groups, setGroups] = useState([]);
-  const [customers, setCustomers] = useState([]);
-  const [groupFilter, setGroupFilter] = useState("");
-  const [customerFilter, setCustomerFilter] = useState("");
-  const [open, setOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [credits, setCredits] = useState([]);
-  const [debits, setDebits] = useState([]);
-  const [selected, setSelected] = useState([]);
-  const [total_Credit, setTotal_Credit] = useState(0);
-  const [total_Debit, setTotal_Debit] = useState(0);
-  const [available_Amount, setAvailable_Amount] = useState(0);
-  const [projects, setProjects] = useState([]);
-  const [mergedData, setMergedData] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
-  const [CreditSumup, setCreditSumUp] = useState([]);
-  const [DebitSumup, setDebitSumUp] = useState([]);
+  const [selected, setSelected] = useState([]);
+  const initialPage = parseInt(searchParams.get("page")) || 1;
+  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
+  const [perPage, setPerPage] = useState(initialPageSize);
+  const [currentPage, setCurrentPage] = useState(initialPage);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const renderFilters = () => (
-    <>
-      <FormControl size="sm">
-        <FormLabel>Group Name</FormLabel>
-        <Select
-          size="sm"
-          placeholder="Filter by group"
-          value={groupFilter}
-          onChange={(e) => setGroupFilter(e.target.value)}
-        >
-          <Option value="">All</Option>
-          {groups.map((group, index) => (
-            <Option key={index} value={group}>
-              {group}
-            </Option>
-          ))}
-        </Select>
-      </FormControl>
-      <FormControl size="sm">
-        <FormLabel>Customer</FormLabel>
-        <Select
-          size="sm"
-          placeholder="Filter by customer"
-          value={customerFilter}
-          onChange={(e) => setCustomerFilter(e.target.value)}
-        >
-          <Option value="">All</Option>
-          {customers.map((customer, index) => (
-            <Option key={index} value={customer}>
-              {customer}
-            </Option>
-          ))}
-        </Select>
-      </FormControl>
-    </>
-  );
+  const {
+    data: responseData,
+    isLoading,
+    refetch,
+  } = useGetPaymentApprovalQuery({
+    page: currentPage,
+    pageSize: perPage,
+    search: searchQuery,
+  });
 
-  useEffect(() => {
-    const fetchPaymentsAndProjects = async () => {
-      setLoading(true);
-      try {
-        // Fetch all required data in parallel
-        const token = localStorage.getItem("authToken");
-        const configWithToken = { headers: { "x-auth-token": token } };
+  const paginatedData = responseData?.data || [];
+  const total = responseData?.total || 0;
+  const count = responseData?.count || paginatedData.length;
 
-        const [
-          paymentResponse,
-          projectResponse,
-          creditResponse,
-          debitResponse,
-        ] = await Promise.all([
-          Axios.get("/get-pay-summarY-IT", {
-            params: { approved: "Pending" },
-            ...configWithToken,
-          }),
-          Axios.get("/get-all-projecT-IT", configWithToken),
-          Axios.get("/all-bilL-IT", configWithToken),
-          Axios.get("/get-subtract-amounT-IT", configWithToken),
-        ]);
+  const totalPages = Math.ceil(total / perPage);
 
-        // Handle payments data
-        const pendingPayments =
-          paymentResponse.data?.data?.filter(
-            (payment) => payment.approved === "Pending"
-          ) || [];
-        setPayments(pendingPayments);
+  const startIndex = (currentPage - 1) * perPage + 1;
+  const endIndex = Math.min(startIndex + count - 1, total);
 
-        // Handle projects data
-        const projectData = projectResponse.data?.data || [];
-        setProjects(projectData);
+  const getPaginationRange = () => {
+    const siblings = 1;
+    const pages = [];
 
-        // Handle credits and debits data
-        const creditData = creditResponse.data?.bill || [];
-        const debitData = debitResponse.data?.data || [];
-
-        setCredits(creditData);
-        setDebits(debitData);
-        // console.log(pendingPayments);
-        console.log("Debit data",debitData);
-        // console.log(creditData);
-        // console.log(projectData);
-        
-        
-        
-        
-
-        // Calculate total credits and debits
-        const totalCredit = creditData.reduce(
-          (sum, row) => sum + (parseFloat(row.cr_amount) || 0),
-          0
-        );
-        const totalDebit = debitData.reduce(
-          (sum, row) => sum + (parseFloat(row.amount_paid) || 0),
-          0
-        );
-
-        setTotal_Credit(totalCredit.toLocaleString("en-IN"));
-        setTotal_Debit(totalDebit.toLocaleString("en-IN"));
-
-        // Calculate total credit, total debit, and available amount for each projec
-
-        // Calculate overall available amount
-        // const availableAmount = totalCredit - totalDebit;
-        // setAvailable_Amount(
-        //   Math.round(availableAmount).toLocaleString("en-IN")
-        // );
-
-        // Logging for debugging
-        // console.log("Total Credit:", totalCredit);
-        // console.log("Total Debit:", totalDebit);
-        // console.log("Available Amount (Overall):", availableAmount);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setError(
-          <span
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "5px",
-              color: "red",
-              justifyContent: "center",
-              flexDirection: "column",
-              padding: "20px",
-            }}
-          >
-            <PermScanWifiIcon />
-            <Typography
-              fontStyle={"italic"}
-              fontWeight={"600"}
-              sx={{ color: "#0a6bcc" }}
-            >
-              Hang tight! Internet Connection will be back soon..
-            </Typography>
-          </span>
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPaymentsAndProjects();
-  }, []);
-
-  useEffect(() => {
-    if (
-      payments.length > 0 &&
-      projects.length > 0 &&
-      credits.length > 0 &&
-      debits.length > 0
-    ) {
-      const creditSumMap = credits.reduce((acc, credit) => {
-        const projectId = credit.p_id;
-        acc[projectId] = (acc[projectId] || 0) + Number(credit.cr_amount);
-        return acc;
-      }, {});
-
-      const debitSumMap = debits.reduce((acc, debit) => {
-        const projectId = debit.p_id;
-        const amountPaid = Number(debit.amount_paid);
-        acc[projectId] =
-          (acc[projectId] || 0) + (isNaN(amountPaid) ? 0 : amountPaid);
-        return acc;
-      }, {});
-
-      const groupCreditMap = {};
-      const groupDebitMap = {};
-      const groupBalanceMap = {};
-
-      projects.forEach((project) => {
-        const group = project.p_group;
-
-        if (!groupCreditMap[group]) groupCreditMap[group] = 0;
-        if (!groupDebitMap[group]) groupDebitMap[group] = 0;
-
-        groupCreditMap[group] += creditSumMap[project.p_id] || 0;
-        groupDebitMap[group] += debitSumMap[project.p_id] || 0;
-
-        groupBalanceMap[group] = groupCreditMap[group] - groupDebitMap[group];
-      });
-
-      // console.log("Group Balance Map:", groupBalanceMap);
-
-      const merged = payments.map((payment) => {
-        const matchingProject = projects.find(
-          (project) => Number(project.p_id) === Number(payment.p_id)
-        );
-        const aggregateCredit = creditSumMap[payment.p_id] || 0;
-        const aggregateDebit = debitSumMap[payment.p_id] || 0;
-
-        const projectGroup = matchingProject?.p_group || "-";
-        const groupBalance =
-          projectGroup !== "-" ? groupBalanceMap[projectGroup] || "-" : 0;
-
-        return {
-          ...payment,
-          projectCode: matchingProject?.code || "-",
-          projectName: matchingProject?.name || "-",
-          projectCustomer: matchingProject?.customer || "-",
-          projectGroup,
-          aggregateCredit,
-          aggregateDebit,
-          Available_Amount: (aggregateCredit - aggregateDebit).toLocaleString(
-            "en-IN"
-          ),
-          groupBalance: Math.round(groupBalance).toLocaleString("en-IN"),
-        };
-      });
-
-      console.log("Merged Data:", merged);
-
-      setMergedData(merged);
-    }
-  }, [payments, projects, credits, debits]);
-
-
-const handleApprovalUpdate = async (paymentId, newStatus) => {
-  try {
-    const token = localStorage.getItem("authToken");
-
-    const response = await Axios.put(
-      "/account-approve",
-      {
-        pay_id: paymentId,
-        status: newStatus,
-      },
-      {
-        headers: {
-          "x-auth-token": token,
-        },
-      }
-    );
-
-    if (response.status === 200) {
-      setPayments((prevPayments) =>
-        prevPayments.filter((payment) => payment.pay_id !== paymentId)
-      );
-
-      if (newStatus === "Approved") {
-        toast.success("Payment Approved!", { autoClose: 3000 });
-      } else if (newStatus === "Rejected") {
-        toast.error("Payment Rejected", { autoClose: 2000 });
-      }
-    }
-  } catch (error) {
-    console.error("Error updating approval status:", error);
-
-    if (error.response && error.response.data?.message) {
-      const { message } = error.response.data;
-
-      toast.warn(message, { autoClose: 4000 });
+    if (totalPages <= 5 + siblings * 2) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else {
-      toast.error("Network error. Please try again later.", { autoClose: 3000 });
+      const left = Math.max(currentPage - siblings, 2);
+      const right = Math.min(currentPage + siblings, totalPages - 1);
+
+      pages.push(1);
+      if (left > 2) pages.push("...");
+
+      for (let i = left; i <= right; i++) pages.push(i);
+
+      if (right < totalPages - 1) pages.push("...");
+      pages.push(totalPages);
     }
-  }
-};
 
-
-  const RowMenu = ({ paymentId, onStatusChange }) => {
-    const [status, setStatus] = useState(null);
-
-    const handleChipClick = (newStatus) => {
-      setStatus(newStatus);
-      onStatusChange(paymentId, newStatus);
-    };
-
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          gap: 1,
-        }}
-      >
-        {/* Approve Chip */}
-        <Chip
-          variant="solid"
-          color="success"
-          label="Approved"
-          onClick={() => handleChipClick("Approved")} // Pass a function reference, not invoke it directly
-          sx={{
-            textTransform: "none",
-            fontSize: "0.875rem",
-            fontWeight: 500,
-            borderRadius: "sm",
-          }}
-          startDecorator={<CheckRoundedIcon />}
-        />
-
-        {/* Reject Chip */}
-        <Chip
-          variant="outlined"
-          color="danger"
-          label="Rejected"
-          onClick={() => handleChipClick("Rejected")} // Pass a function reference to onClick
-          sx={{
-            textTransform: "none",
-            fontSize: "0.875rem",
-            fontWeight: 500,
-            borderRadius: "sm",
-          }}
-          startDecorator={<BlockIcon />}
-        />
-      </Box>
-    );
+    return pages;
   };
 
-  const handleStatusChange = async (paymentId, newStatus) => {
-    await handleApprovalUpdate(paymentId, newStatus);
+  const handleApprovalUpdate = async (payment_id, newStatus) => {
+    try {
+      const token = localStorage.getItem("authToken");
 
-    setPayments((prevPayments) =>
-      prevPayments.filter((payment) => payment.pay_id !== paymentId)
-    );
+      const response = await Axios.put(
+        "/account-approve",
+        {
+          pay_id: payment_id,
+          status: newStatus,
+        },
+        {
+          headers: {
+            "x-auth-token": token,
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        if (newStatus === "Approved") {
+          toast.success("Payment Approved!", { autoClose: 3000 });
+        } else if (newStatus === "Rejected") {
+          toast.error("Payment Rejected", { autoClose: 2000 });
+        }
+
+        return true;
+      }
+    } catch (error) {
+      console.error("Error updating approval status:", error);
+
+      if (error.response?.data?.message) {
+        toast.warn(error.response.data.message, { autoClose: 4000 });
+      } else {
+        toast.error("Network error. Please try again later.", {
+          autoClose: 3000,
+        });
+      }
+    }
+
+    return false;
+  };
+
+  const RowMenu = ({ payment_id, onStatusChange }) => (
+    <Box sx={{ display: "flex", justifyContent: "left", gap: 1 }}>
+      <Chip
+        variant="solid"
+        color="success"
+        label="Approved"
+        onClick={() => onStatusChange(payment_id, "Approved")}
+        sx={{
+          textTransform: "none",
+          fontSize: "0.875rem",
+          fontWeight: 500,
+          borderRadius: "sm",
+        }}
+        startDecorator={<CheckRoundedIcon />}
+      />
+      <Chip
+        variant="outlined"
+        color="danger"
+        label="Rejected"
+        onClick={() => onStatusChange(payment_id, "Rejected")}
+        sx={{
+          textTransform: "none",
+          fontSize: "0.875rem",
+          fontWeight: 500,
+          borderRadius: "sm",
+        }}
+        startDecorator={<BlockIcon />}
+      />
+    </Box>
+  );
+
+  const handleStatusChange = async (payment_id, newStatus) => {
+    const success = await handleApprovalUpdate(payment_id, newStatus);
+
+    if (success) {
+      refetch();
+    }
   };
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelected(mergedData.map((row) => row.id));
+      setSelected(paginatedData.map((row) => row.id));
     } else {
       setSelected([]);
     }
@@ -379,53 +176,17 @@ const handleApprovalUpdate = async (paymentId, newStatus) => {
     setSearchQuery(query.toLowerCase());
   };
 
-  // console.log("Merged Data" , mergedData);
-  
+  // console.log(paginatedData);
 
-  const filteredData = mergedData.filter((merged) => {
-    const matchesSearchQuery = [
-      "pay_id",
-      "projectCode",
-      "projectCustomer",
-      "projectName",
-      "paid_for",
-    ].some((key) => merged[key]?.toLowerCase().includes(searchQuery));
-    const matchesGroupFilter =
-      !groupFilter || merged.projectGroup === groupFilter;
-    const matchesCustomerFilter =
-      !customerFilter || merged.projectCustomer === customerFilter;
-
-    return matchesSearchQuery && matchesGroupFilter && matchesCustomerFilter;
-  });
-
-  const generatePageNumbers = (currentPage, totalPages) => {
-    const pages = [];
-
-    if (currentPage > 2) {
-      pages.push(1);
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setSearchParams((prev) => {
+        return {
+          ...Object.fromEntries(prev.entries()),
+          page: String(page),
+        };
+      });
     }
-
-    if (currentPage > 3) {
-      pages.push("...");
-    }
-
-    for (
-      let i = Math.max(1, currentPage - 1);
-      i <= Math.min(totalPages, currentPage + 1);
-      i++
-    ) {
-      pages.push(i);
-    }
-
-    if (currentPage < totalPages - 2) {
-      pages.push("...");
-    }
-
-    if (currentPage < totalPages - 1) {
-      pages.push(totalPages);
-    }
-
-    return pages;
   };
 
   useEffect(() => {
@@ -433,79 +194,171 @@ const handleApprovalUpdate = async (paymentId, newStatus) => {
     setCurrentPage(page);
   }, [searchParams]);
 
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-
-  const formatDate = (dateString) => {
-    if (!dateString) {
-      return "-";
-    }
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-      console.warn(`Invalid date value: "${dateString}"`);
-      return "-";
-    }
-    const options = { day: "2-digit", month: "short", year: "numeric" };
-    return new Intl.DateTimeFormat("en-GB", options)
-      .format(date)
-      .replace(/ /g, "/");
+  const renderFilters = () => {
+    return (
+      <Box
+        sx={{
+          position: "relative",
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+        }}
+      >
+        <FormControl size="sm" sx={{ minWidth: 150 }}>
+          <FormLabel>Rows Per Page</FormLabel>
+          <Select
+            value={perPage}
+            onChange={(e, newValue) => {
+              setPerPage(newValue);
+              setCurrentPage(1);
+            }}
+          >
+            {[10, 30, 60, 100].map((num) => (
+              <Option key={num} value={num}>
+                {num}/Page
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+    );
   };
 
-  const paginatedData = filteredData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const PaymentID = ({ payment_id, request_date }) => {
+    return (
+      <>
+        {payment_id && (
+          <Box>
+            <span style={{ cursor: "pointer", fontWeight: 400 }}>
+              {payment_id}
+            </span>
+          </Box>
+        )}
 
-  // console.log(paginatedData);
-  
-  const paymentsWithFormattedDate = paginatedData.map((payment) => ({
-    ...payment,
-    formattedDate: formatDate(payment.dbt_date),
-  }));
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setSearchParams({ page });
-      setCurrentPage(page);
-    }
+        {request_date && (
+          <Box display="flex" alignItems="center" mt={0.5}>
+            <Calendar size={12} />
+            <span style={{ fontSize: 12, fontWeight: 600 }}>
+              Request Date :{" "}
+            </span>
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {request_date}
+            </Typography>
+          </Box>
+        )}
+      </>
+    );
+  };
+
+  const ProjectDetail = ({ project_id, client_name, group_name }) => {
+    return (
+      <>
+        {project_id && (
+          <Box>
+            <span style={{ cursor: "pointer", fontWeight: 400 }}>
+              {project_id}
+            </span>
+          </Box>
+        )}
+
+        {client_name && (
+          <Box display="flex" alignItems="center" mt={0.5}>
+            <CircleUser size={12} />
+            &nbsp;
+            <span style={{ fontSize: 12, fontWeight: 600 }}>Client Name: </span>
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {client_name}
+            </Typography>
+          </Box>
+        )}
+
+        {group_name && (
+          <Box display="flex" alignItems="center" mt={0.5}>
+            <UsersRound size={12} />
+            &nbsp;
+            <span style={{ fontSize: 12, fontWeight: 600 }}>Group Name: </span>
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {group_name || "-"}
+            </Typography>
+          </Box>
+        )}
+      </>
+    );
+  };
+
+  const RequestedData = ({ request_for, payment_description }) => {
+    return (
+      <>
+        {request_for && (
+          <Box>
+            <span style={{ cursor: "pointer", fontWeight: 400 }}>
+              {request_for}
+            </span>
+          </Box>
+        )}
+
+        {payment_description && (
+          <Box display="flex" alignItems="center" mt={0.5}>
+            <span style={{ fontSize: 12, fontWeight: 600 }}>
+              Payment Description:{" "}
+            </span>
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {payment_description}
+            </Typography>
+          </Box>
+        )}
+      </>
+    );
+  };
+
+  const BalanceData = ({ amount_requested, ClientBalance, groupBalance }) => {
+    return (
+      <>
+        {amount_requested && (
+          <Box>
+            <span style={{ cursor: "pointer", fontWeight: 400 }}>
+              {amount_requested}
+            </span>
+          </Box>
+        )}
+
+        {ClientBalance && (
+          <Box display="flex" alignItems="center" mt={0.5}>
+            <CircleUser size={12} />
+            &nbsp;
+            <span style={{ fontSize: 12, fontWeight: 600 }}>
+              Client Balance:{" "}
+            </span>
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {ClientBalance}
+            </Typography>
+          </Box>
+        )}
+
+        {groupBalance && (
+          <Box display="flex" alignItems="center" mt={0.5}>
+            <UsersRound size={12} />
+            &nbsp;
+            <span style={{ fontSize: 12, fontWeight: 600 }}>
+              Group Balance:{" "}
+            </span>
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {groupBalance || "-"}
+            </Typography>
+          </Box>
+        )}
+      </>
+    );
   };
 
   return (
     <>
-      {/* Mobile Filters */}
-      {/* <Sheet
-        className="SearchAndFilters-mobile"
-        sx={{ display: { xs: "flex", sm: "none" }, my: 1, gap: 1 }}
-      >
-        <Input
-          size="sm"
-          placeholder="Search"
-          startDecorator={<SearchIcon />}
-          sx={{ flexGrow: 1 }}
-        />
-        <IconButton
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          onClick={() => setOpen(true)}
-        >
-          <FilterAltIcon />
-        </IconButton>
-        <Modal open={open} onClose={() => setOpen(false)}>
-          <ModalDialog aria-labelledby="filter-modal" layout="fullscreen">
-            <ModalClose />
-            <Typography id="filter-modal" level="h2">
-              Filters
-            </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Sheet sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {renderFilters()}
-              <Button color="primary" onClick={() => setOpen(false)}>
-                Submit
-              </Button>
-            </Sheet>
-          </ModalDialog>
-        </Modal>
-      </Sheet> */}
-
       {/* Tablet and Up Filters */}
       <Box
         className="SearchAndFilters-tabletUp"
@@ -531,7 +384,7 @@ const handleApprovalUpdate = async (paymentId, newStatus) => {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {/* {renderFilters()} */}
+        {renderFilters()}
       </Box>
 
       {/* Table */}
@@ -549,73 +402,88 @@ const handleApprovalUpdate = async (paymentId, newStatus) => {
           maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
-        {error ? (
-          <Typography color="danger" textAlign="center">
-            {error}
-          </Typography>
-        ) : loading ? (
-          <Typography textAlign="center">Loading...</Typography>
-        ) : (
-          <Box
-            component="table"
-            sx={{ width: "100%", borderCollapse: "collapse" }}
-          >
-            <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
-              <Box component="tr">
+        <Box
+          component="table"
+          sx={{ width: "100%", borderCollapse: "collapse" }}
+        >
+          <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
+            <Box component="tr">
+              <Box
+                component="th"
+                sx={{
+                  borderBottom: "1px solid #ddd",
+                  padding: "8px",
+                  textAlign: "left",
+                }}
+              >
+                <Checkbox
+                  size="sm"
+                  checked={selected.length === paginatedData.length}
+                  onChange={(event) =>
+                    handleRowSelect("all", event.target.checked)
+                  }
+                  indeterminate={
+                    selected.length > 0 &&
+                    selected.length < paginatedData.length
+                  }
+                />
+              </Box>
+              {[
+                "Payment Id",
+                "Project Id",
+                "Request For",
+                "Amount Requested",
+                "Action",
+              ].map((header, index) => (
                 <Box
                   component="th"
+                  key={index}
                   sx={{
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
+                    textAlign: "left",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {header}
+                </Box>
+              ))}
+            </Box>
+          </Box>
+          <Box component="tbody">
+            {error ? (
+              <Typography color="danger" textAlign="center">
+                {error}
+              </Typography>
+            ) : isLoading ? (
+              <Box component="tr">
+                <Box
+                  component="td"
+                  colSpan={5}
+                  sx={{
+                    py: 2,
                     textAlign: "center",
                   }}
                 >
-                  <Checkbox
-                    size="sm"
-                    checked={
-                      selected.length === paymentsWithFormattedDate.length
-                    }
-                    onChange={(event) =>
-                      handleRowSelect("all", event.target.checked)
-                    }
-                    indeterminate={
-                      selected.length > 0 &&
-                      selected.length < paymentsWithFormattedDate.length
-                    }
-                  />
-                </Box>
-                {[
-                  "Payment Id",
-                  "Request Date",
-                  "Project Id",
-                  "Project Name",
-                  "Client Name",
-                  "Group Name",
-                  "Request For",
-                  "Payment Description",
-                  "Amount Requested",
-                  "Client Balance",
-                  "Group Balance",
-                  "Action",
-                ].map((header, index) => (
                   <Box
-                    component="th"
-                    key={index}
                     sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                      fontWeight: "bold",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 1,
                     }}
                   >
-                    {header}
+                    <CircularProgress size="sm" sx={{ color: "primary.500" }} />
+                    <Typography fontStyle="italic">
+                      Loading… please hang tight ⏳
+                    </Typography>
                   </Box>
-                ))}
+                </Box>
               </Box>
-            </Box>
-            <Box component="tbody">
-              {paymentsWithFormattedDate.length > 0 ? (
-                paymentsWithFormattedDate.map((payment, index) => (
+            ) : paginatedData.length > 0 ? (
+              paginatedData.map((payment, index) => {
+                return (
                   <Box
                     component="tr"
                     key={index}
@@ -628,178 +496,134 @@ const handleApprovalUpdate = async (paymentId, newStatus) => {
                       sx={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
-                        textAlign: "center",
+                        textAlign: "left",
                       }}
                     >
                       <Checkbox
                         size="sm"
-                        checked={selected.includes(payment.pay_id)}
+                        checked={selected.includes(payment.payment_id)}
                         onChange={(event) =>
-                          handleRowSelect(payment.pay_id, event.target.checked)
+                          handleRowSelect(
+                            payment.payment_id,
+                            event.target.checked
+                          )
                         }
                       />
                     </Box>
                     <Box
                       component="td"
                       sx={{
+                        padding: 1,
+                        textAlign: "left",
                         borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
+                        fontSize: 14,
+                        minWidth: 250,
                       }}
                     >
-                      {payment.pay_id}
+                      <PaymentID
+                        payment_id={payment?.payment_id}
+                        request_date={payment?.request_date}
+                      />
                     </Box>
                     <Box
                       component="td"
                       sx={{
+                        padding: 1,
+                        textAlign: "left",
                         borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
+                        fontSize: 14,
+                        minWidth: 350,
                       }}
                     >
-                      {payment.formattedDate}
+                      <ProjectDetail
+                        project_id={payment?.project_id}
+                        client_name={payment?.client_name}
+                        group_name={payment?.group_name}
+                      />
                     </Box>
                     <Box
                       component="td"
                       sx={{
+                        padding: 1,
+                        textAlign: "left",
                         borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
+                        fontSize: 14,
+                        minWidth: 300,
                       }}
                     >
-                      {payment.projectCode}
+                      <RequestedData
+                        request_for={payment?.request_for}
+                        payment_description={payment?.payment_description}
+                      />
                     </Box>
                     <Box
                       component="td"
                       sx={{
+                        padding: 1,
+                        textAlign: "left",
                         borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
+                        fontSize: 14,
+                        minWidth: 250,
                       }}
                     >
-                      {payment.projectName || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.projectCustomer || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.projectGroup || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.paid_for}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.comment || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {Number(payment.amt_for_customer).toLocaleString("en-IN")}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.Available_Amount}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.groupBalance || "-"}
+                      <BalanceData
+                        amount_requested={payment?.amount_requested}
+                        ClientBalance={payment?.ClientBalance}
+                        groupBalance={payment?.groupBalance}
+                      />
                     </Box>
 
                     <Box
                       component="td"
                       sx={{
+                        padding: 1,
+                        textAlign: "left",
                         borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
+                        // minWidth: 50,
                       }}
                     >
                       <RowMenu
-                        paymentId={payment.pay_id}
+                        payment_id={payment.payment_id}
                         onStatusChange={handleStatusChange}
                       />
                     </Box>
                   </Box>
-                ))
-              ) : (
-                <Box component="tr">
+                );
+              })
+            ) : (
+              <Box component="tr">
+                <Box
+                  component="td"
+                  colSpan={5}
+                  sx={{
+                    padding: "8px",
+                    textAlign: "center",
+                    fontStyle: "italic",
+                  }}
+                >
                   <Box
-                    component="td"
-                    colSpan={14}
                     sx={{
-                      padding: "8px",
-                      textAlign: "center",
                       fontStyle: "italic",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
                   >
-                    <Box
-                      sx={{
-                        fontStyle: "italic",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <img
-                        src={NoData}
-                        alt="No data Image"
-                        style={{ width: "50px", height: "50px" }}
-                      />
-                      <Typography fontStyle={"italic"}>
-                        No approval available
-                      </Typography>
-                    </Box>
+                    <img
+                      src={NoData}
+                      alt="No data Image"
+                      style={{ width: "50px", height: "50px" }}
+                    />
+                    <Typography fontStyle={"italic"}>
+                      No approval available
+                    </Typography>
                   </Box>
                 </Box>
-              )}
-            </Box>
+              </Box>
+            )}
           </Box>
-        )}
+        </Box>
       </Sheet>
 
       {/* Pagination */}
@@ -809,10 +633,9 @@ const handleApprovalUpdate = async (paymentId, newStatus) => {
           pt: 2,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
-          // display: { xs: "none", md: "flex" },
           display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
+          flexDirection: { xs: "column", md: "row" },
           marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
@@ -826,16 +649,25 @@ const handleApprovalUpdate = async (paymentId, newStatus) => {
         >
           Previous
         </Button>
+
         <Box>
-          Showing {paginatedData.length} of {filteredData.length} results
+          {/* Showing page {currentPage} of {totalPages} ({total} results) */}
+          <Typography level="body-sm">
+            Showing {startIndex}–{endIndex} of {total} results
+          </Typography>
         </Box>
+
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
-          {generatePageNumbers(currentPage, totalPages).map((page, index) =>
-            typeof page === "number" ? (
+          {getPaginationRange().map((page, idx) =>
+            page === "..." ? (
+              <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
+                ...
+              </Box>
+            ) : (
               <IconButton
-                key={index}
+                key={page}
                 size="sm"
                 variant={page === currentPage ? "contained" : "outlined"}
                 color="neutral"
@@ -843,10 +675,6 @@ const handleApprovalUpdate = async (paymentId, newStatus) => {
               >
                 {page}
               </IconButton>
-            ) : (
-              <Typography key={index} sx={{ px: 1, alignSelf: "center" }}>
-                {page}
-              </Typography>
             )
           )}
         </Box>
