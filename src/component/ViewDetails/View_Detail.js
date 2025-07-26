@@ -1843,7 +1843,7 @@ const Customer_Payment_Summary = () => {
           mt={4}
           mb={2}
         >
-          Client History
+          Purchase History
         </Typography>
         <Divider style={{ borderWidth: "2px", marginBottom: "20px" }} />
         <Box

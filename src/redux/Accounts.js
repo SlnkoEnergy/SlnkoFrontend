@@ -19,7 +19,7 @@ export const AccountsApi = createApi({
    
     getProjectBalance: builder.query({
       query: ({ page = 1, search = "", group, pageSize = 10 }) =>
-        `get-paginated-bill?page=${page}&search=${search}&group=${group}&pageSize=${pageSize}`,
+        `accounting/project-balance?page=${page}&search=${search}&group=${group}&pageSize=${pageSize}`,
       transformResponse: (response) => ({
         data: response.data || [],
         total: response.meta?.total || 0,
@@ -28,28 +28,22 @@ export const AccountsApi = createApi({
       providesTags: ["Accounts"],
     }),
 
-    // exportBills: builder.mutation({
-    //   query: ({ from, to, exportAll }) => {
-    //     const params = new URLSearchParams();
+     getPaymentApproval: builder.query({
+      query: ({ page = 1, search = "", pageSize = 10 }) =>
+        `accounting/payment-approval?page=${page}&search=${search}&pageSize=${pageSize}`,
+      transformResponse: (response) => ({
+        data: response.data || [],
+        total: response.meta?.total || 0,
+        count: response.meta?.count || 0,
+      }),
+      providesTags: ["Accounts"],
+    }),
 
-    //     if (exportAll) {
-    //       params.set("export", "all");
-    //     } else {
-    //       params.set("from", from);
-    //       params.set("to", to);
-    //     }
-
-    //     return {
-    //       url: `get-export-bill?${params}`,
-    //       method: "GET",
-    //       responseHandler: (response) => response.blob(),
-    //     };
-    //   },
-    // }),
 
   }),
 });
 
 export const {
   useGetProjectBalanceQuery,
+  useGetPaymentApprovalQuery,
 } = AccountsApi;
