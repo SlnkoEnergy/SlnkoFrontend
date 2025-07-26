@@ -16,10 +16,9 @@ export const AccountsApi = createApi({
   baseQuery,
   tagTypes: ["Accounts"],
   endpoints: (builder) => ({
-   
     getProjectBalance: builder.query({
       query: ({ page = 1, search = "", group, pageSize = 10 }) =>
-        `get-paginated-bill?page=${page}&search=${search}&group=${group}&pageSize=${pageSize}`,
+        `accounting/project-balance?page=${page}&search=${search}&group=${group}&pageSize=${pageSize}`,
       transformResponse: (response) => ({
         data: response.data || [],
         total: response.meta?.total || 0,
@@ -28,28 +27,50 @@ export const AccountsApi = createApi({
       providesTags: ["Accounts"],
     }),
 
-    // exportBills: builder.mutation({
-    //   query: ({ from, to, exportAll }) => {
-    //     const params = new URLSearchParams();
+    getPaymentApproval: builder.query({
+      query: ({ page = 1, search = "", pageSize = 10 }) =>
+        `accounting/payment-approval?page=${page}&search=${search}&pageSize=${pageSize}`,
+      transformResponse: (response) => ({
+        data: response.data || [],
+        total: response.meta?.total || 0,
+        count: response.meta?.count || 0,
+      }),
+      providesTags: ["Accounts"],
+    }),
 
-    //     if (exportAll) {
-    //       params.set("export", "all");
-    //     } else {
-    //       params.set("from", from);
-    //       params.set("to", to);
-    //     }
+    getPaymentHistory: builder.query({
+      query: ({ po_number }) => `accounting/payment-history?po_number=${po_number}`,
+      transformResponse: (response) => ({
+        history: response.history || [],
+        total: response.total || 0,
+      }),
+      providesTags: ["Accounts"],
+    }),
 
-    //     return {
-    //       url: `get-export-bill?${params}`,
-    //       method: "GET",
-    //       responseHandler: (response) => response.blob(),
-    //     };
-    //   },
-    // }),
+ getExportPaymentHistory: builder.query({
+  query: ({ po_number }) => ({
+    url: `accounting/debithistorycsv?po_number=${po_number}`,
+    responseHandler: async (response) => {
+      const blob = await response.blob();
+      return {
+        blob,
+        filename:
+          response.headers.get("Content-Disposition")?.split("filename=")[1] ||
+          "payment-history.csv",
+      };
+    },
+    method: "GET",
+  }),
+}),
+
 
   }),
 });
 
+
 export const {
   useGetProjectBalanceQuery,
+  useGetPaymentApprovalQuery,
+  useGetPaymentHistoryQuery,
+  useGetExportPaymentHistoryQuery
 } = AccountsApi;

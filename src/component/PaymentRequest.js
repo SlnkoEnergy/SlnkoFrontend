@@ -27,7 +27,10 @@ import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
 import Axios from "../utils/Axios";
-import { Tooltip, useTheme } from "@mui/joy";
+import { Modal, Tooltip, useTheme } from "@mui/joy";
+import { FileText } from "lucide-react";
+import { PaymentProvider } from "../store/Context/Payment_History";
+import PaymentHistory from "./PaymentHistory";
 // import { useGetPaymentsQuery } from "../redux/paymentsSlice";
 // import { useGetProjectsQuery } from "../redux/projectsSlice";
 
@@ -108,101 +111,8 @@ const PaymentRequest = forwardRef((props, ref) => {
           style={{ width: "200px" }}
         />
       </FormControl>
-      {/* <FormControl size="sm">
-        <FormLabel>Status</FormLabel>
-        <Select
-          size="sm"
-          placeholder="Status"
-          value={statusFilter}
-          onChange={(e) => {
-            const selectedValue = e.target.value;
-            console.log("Selected State:", selectedValue);
-            setStatusFilter(selectedValue);
-          }}
-        >
-          <Option value="">All</Option>
-          {statuses.map((status, index) => (
-            <Option key={index} value={status}>
-              {status}
-            </Option>
-          ))}
-        </Select>
-      </FormControl> */}
-      {/* <FormControl size="sm">
-        <FormLabel>Vendor</FormLabel>
-        <Select
-          size="sm"
-          placeholder="Filter by Vendors"
-          value={vendorFilter}
-          onChange={(e) => {
-            const selectedValue = e.target.value;
-            console.log("Selected State:", selectedValue);
-            setVendorFilter(selectedValue);
-          }}
-        >
-          <Option value="">All</Option>
-          {vendors.map((vendor, index) => (
-            <Option key={index} value={vendor}>
-              {vendor}
-            </Option>
-          ))}
-        </Select>
-      </FormControl> */}
     </>
   );
-  // const handleSelectAll = (event) => {
-  //   if (event.target.checked) {
-  //     setSelected(paginatedPayments.map((row) => row.id));
-  //   } else {
-  //     setSelected([]);
-  //   }
-  // };
-
-  // const RowMenu = ({ currentPage, pay_id, p_id }) => {
-  //   return (
-  //     <>
-  //       <Dropdown>
-  //         <MenuButton
-  //           slots={{ root: IconButton }}
-  //           slotProps={{
-  //             root: { variant: "plain", color: "neutral", size: "sm" },
-  //           }}
-  //         >
-  //           <MoreHorizRoundedIcon />
-  //         </MenuButton>
-  //         <Menu size="sm" sx={{ minWidth: 100 }}>
-  //           <MenuItem
-  //             color="primary"
-  //             onClick={() => {
-  //               const page = currentPage;
-  //               const payId = String(pay_id);
-  //               const projectID = Number(p_id);
-  //               localStorage.setItem("pay_summary", payId);
-  //               localStorage.setItem("p_id", projectID);
-  //               navigate(`/pay_summary?page=${page}&pay_id=${payId}`);
-  //             }}
-  //           >
-  //             <ContentPasteGoIcon />
-  //             <Typography>Pay summary</Typography>
-  //           </MenuItem>
-
-  //           {/* <MenuItem
-  //             color="primary"
-  //             onClick={() => navigate("/standby_records")}
-  //           >
-  //             <ContentPasteGoIcon />
-  //             <Typography>Pending payments</Typography>
-  //           </MenuItem> */}
-  //           <Divider sx={{ backgroundColor: "lightblue" }} />
-  //           <MenuItem color="danger">
-  //             <DeleteIcon />
-  //             <Typography>Delete</Typography>
-  //           </MenuItem>
-  //         </Menu>
-  //       </Dropdown>
-  //     </>
-  //   );
-  // };
 
   const PaymentID = ({ currentPage, pay_id, p_id }) => {
     return (
@@ -224,6 +134,66 @@ const PaymentRequest = forwardRef((props, ref) => {
         >
           {pay_id}
         </span>
+      </>
+    );
+  };
+
+  const ItemFetch = ({ paid_for, po_number }) => {
+    const [open, setOpen] = useState(false);
+
+    const handleOpen = () => setOpen(true);
+    const handleClose = () => setOpen(false);
+
+    // console.log(po_number);
+
+    return (
+      <>
+        {paid_for && (
+          <Box>
+            <span style={{ cursor: "pointer", fontWeight: 400 }}>
+              {paid_for}
+            </span>
+          </Box>
+        )}
+
+        {po_number && (
+          <Box
+            display="flex"
+            alignItems="center"
+            mt={0.5}
+            sx={{ cursor: "pointer" }}
+            onClick={handleOpen}
+          >
+            <FileText size={12} />
+            <span style={{ fontSize: 12, fontWeight: 600 }}>PO Number: </span>
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {po_number}
+            </Typography>
+          </Box>
+        )}
+
+        <Modal open={open} onClose={handleClose}>
+          <Sheet
+            variant="outlined"
+            sx={{
+              mx: "auto",
+              mt: "8vh",
+              width: { xs: "95%", sm: 600 },
+              borderRadius: "12px",
+              p: 3,
+              boxShadow: "lg",
+              maxHeight: "80vh",
+              overflow: "auto",
+              backgroundColor: "#fff",
+              minWidth:950
+            }}
+          >
+            <PaymentProvider po_number={po_number}>
+              <PaymentHistory />
+            </PaymentProvider>
+          </Sheet>
+        </Modal>
       </>
     );
   };
@@ -551,9 +521,14 @@ const PaymentRequest = forwardRef((props, ref) => {
                           borderBottom: "1px solid #ddd",
                           padding: "8px",
                           textAlign: "left",
+                          minWidth: 200,
                         }}
                       >
-                        {payment.paid_for}
+                        <ItemFetch
+                          paid_for={payment.paid_for}
+                          po_number={payment.po_number}
+                          p_id={payment.p_id}
+                        />
                       </Box>
                       <Box
                         component="td"
