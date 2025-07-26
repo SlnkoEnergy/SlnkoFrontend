@@ -16,7 +16,6 @@ export const AccountsApi = createApi({
   baseQuery,
   tagTypes: ["Accounts"],
   endpoints: (builder) => ({
-   
     getProjectBalance: builder.query({
       query: ({ page = 1, search = "", group, pageSize = 10 }) =>
         `accounting/project-balance?page=${page}&search=${search}&group=${group}&pageSize=${pageSize}`,
@@ -28,7 +27,7 @@ export const AccountsApi = createApi({
       providesTags: ["Accounts"],
     }),
 
-     getPaymentApproval: builder.query({
+    getPaymentApproval: builder.query({
       query: ({ page = 1, search = "", pageSize = 10 }) =>
         `accounting/payment-approval?page=${page}&search=${search}&pageSize=${pageSize}`,
       transformResponse: (response) => ({
@@ -39,11 +38,39 @@ export const AccountsApi = createApi({
       providesTags: ["Accounts"],
     }),
 
+    getPaymentHistory: builder.query({
+      query: ({ po_number }) => `accounting/payment-history?po_number=${po_number}`,
+      transformResponse: (response) => ({
+        history: response.history || [],
+        total: response.total || 0,
+      }),
+      providesTags: ["Accounts"],
+    }),
+
+ getExportPaymentHistory: builder.query({
+  query: ({ po_number }) => ({
+    url: `accounting/debithistorycsv?po_number=${po_number}`,
+    responseHandler: async (response) => {
+      const blob = await response.blob();
+      return {
+        blob,
+        filename:
+          response.headers.get("Content-Disposition")?.split("filename=")[1] ||
+          "payment-history.csv",
+      };
+    },
+    method: "GET",
+  }),
+}),
+
 
   }),
 });
 
+
 export const {
   useGetProjectBalanceQuery,
   useGetPaymentApprovalQuery,
+  useGetPaymentHistoryQuery,
+  useGetExportPaymentHistoryQuery
 } = AccountsApi;
