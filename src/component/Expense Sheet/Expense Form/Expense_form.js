@@ -193,6 +193,7 @@ const Expense_Form = () => {
     "Meals Expense - Office",
     "Office Travelling and Conveyance Expenses",
     "Repair and Maintenance",
+    "Office Expense"
   ];
 
   const officeAdminCategoryDescriptions = {
