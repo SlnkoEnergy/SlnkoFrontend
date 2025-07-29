@@ -577,6 +577,7 @@ function Sidebar() {
         ) : user?.department === "Accounts" &&
           (user?.name === "Deepak Kumar Maurya" ||
             user?.name === "Gagan Tayal" ||
+            user?.name==="Ajay Singh"||
             user?.name === "Sachin Raghav" ||
             user?.name === "Anamika Poonia" ||
             user?.name === "Meena Verma" ||
