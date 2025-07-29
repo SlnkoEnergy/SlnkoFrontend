@@ -18,12 +18,13 @@ export const AccountsApi = createApi({
   tagTypes: ["Accounts"],
   endpoints: (builder) => ({
     getProjectBalance: builder.query({
-      query: ({ page = 1, search = "", group, pageSize = 10 }) =>
+      query: ({ page = 1, search = "", group = "", pageSize = 10 }) =>
         `accounting/project-balance?page=${page}&search=${search}&group=${group}&pageSize=${pageSize}`,
       transformResponse: (response) => ({
         data: response.data || [],
         total: response.meta?.total || 0,
         count: response.meta?.count || 0,
+        totals: response.totals || {},
       }),
       providesTags: ["Accounts"],
     }),
