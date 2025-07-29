@@ -27,7 +27,7 @@ import Stack from "@mui/joy/Stack";
 import { useColorScheme } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Main_Logo from "../../assets/protrac_logo.png";
 import Main_Logo2 from "../../assets/white_logo.png";
 import { closeSidebar } from "../../utils/utils";
@@ -58,9 +58,9 @@ function Toggler({ defaultExpanded = false, renderToggle, children }) {
 
 function Sidebar() {
   const navigate = useNavigate();
-  const { mode } = useColorScheme();
+  // const { mode } = useColorScheme();
   const [user, setUser] = useState(null);
-
+   const location = useLocation();
   useEffect(() => {
     const userData = getUserData();
     setUser(userData);
@@ -79,30 +79,34 @@ function Sidebar() {
     localStorage.clear();
     navigate("/login");
   };
+  
+ 
+const isSalesPage = location.pathname === "/sales";
 
   return (
     <Sheet
       className="Sidebar"
-      sx={{
-        position: "fixed",
-        transform: {
-          xs: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1)))",
-          lg: "none",
-        },
-        transition: "transform 0.4s, width 0.4s",
-        zIndex: 10000,
-        height: "100dvh",
-        width: "var(--Sidebar-width)",
-        top: 0,
-        p: 2,
-        flexShrink: 0,
-        display: "flex",
-        flexDirection: "column",
-        gap: 2,
-        borderRight: "1px solid",
-        borderColor: "divider",
-        "@media print": { display: "none" },
-      }}
+  sx={{
+    position: "fixed",
+    transition: "transform 0.4s, width 0.4s",
+    zIndex: 10000,
+    height: "100dvh",
+    width: "var(--Sidebar-width)",
+    top: 0,
+    p: 2,
+    flexShrink: 0,
+    display: "flex",
+    flexDirection: "column",
+    gap: 2,
+    borderRight: "1px solid",
+    borderColor: "divider",
+    "@media print": { display: "none" },
+  }}
+  style={{
+    transform: isSalesPage
+      ? "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1)))"
+      : "none",
+  }}
     >
       <GlobalStyles
         styles={(theme) => ({
@@ -118,7 +122,7 @@ function Sidebar() {
         className="Sidebar-overlay"
         sx={{
           position: "fixed",
-          zIndex: 9998,
+          zIndex: 9999,
           top: 0,
           left: 0,
           width: "100vw",
@@ -130,20 +134,20 @@ function Sidebar() {
             xs: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1) + var(--SideNavigation-slideIn, 0) * var(--Sidebar-width, 0px)))",
             sm: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1) + var(--SideNavigation-slideIn, 0) * var(--Sidebar-width, 0px)))",
             md: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1) + var(--SideNavigation-slideIn, 0) * var(--Sidebar-width, 0px)))",
-            lg: "translateX(-100%)",
+            lg: isSalesPage ? "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1) + var(--SideNavigation-slideIn, 0) * var(--Sidebar-width, 0px)))":"translateX(-100%)"
           },
         }}
         onClick={() => closeSidebar()}
       />
       <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
         <IconButton variant="soft" color="primary" size="sm">
-          <img
+          {/* <img
             src={mode === "light" ? Main_Logo : Main_Logo2}
             alt="Protrac"
             style={{ width: "70px", height: "60px" }}
-          />
+          /> */}
         </IconButton>
-        <ColorSchemeToggle sx={{ ml: "auto" }} />
+        {/* <ColorSchemeToggle sx={{ ml: "auto" }} /> */}
       </Box>
       <Input
         size="sm"
@@ -238,11 +242,32 @@ function Sidebar() {
                 )}
               >
                 <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/leads")}>
-                      Leads
-                    </ListItemButton>
-                  </ListItem>
+                 <ListItem>
+  <ListItemButton onClick={() => navigate("/sales", { state: { internalPath: "/" } })}>
+    Dashboard
+  </ListItemButton>
+</ListItem>
+<ListItem>
+  <ListItemButton onClick={() => navigate("/sales", { state: { internalPath: "/leads" } })}>
+    Leads
+  </ListItemButton>
+</ListItem>
+<ListItem>
+  <ListItemButton onClick={() => navigate("/sales", { state: { internalPath: "/group" } })}>
+    Group
+  </ListItemButton>
+</ListItem>
+<ListItem>
+  <ListItemButton onClick={() => navigate("/sales", { state: { internalPath: "/leads?stage=lead_without_task" } })}>
+    Lead w/o Task
+  </ListItemButton>
+</ListItem>
+<ListItem>
+  <ListItemButton onClick={() => navigate("/sales", { state: { internalPath: "/handover?statusFilter=Rejected" } })}>
+    Handover
+  </ListItemButton>
+</ListItem>
+
                   <ListItem>
                     <ListItemButton onClick={() => navigate("/comm_offer")}>
                       Commercial Offer
@@ -542,11 +567,11 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
+             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <TaskIcon />
+                    <TaskIcon  />
                     <ListItemContent>
                       <Typography level="title-sm">Task</Typography>
                     </ListItemContent>
@@ -566,7 +591,9 @@ function Sidebar() {
               >
                 <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
+                    <ListItemButton
+                      onClick={() => navigate("/all_task")}
+                    >
                       Task View
                     </ListItemButton>
                   </ListItem>
@@ -577,7 +604,6 @@ function Sidebar() {
         ) : user?.department === "Accounts" &&
           (user?.name === "Deepak Kumar Maurya" ||
             user?.name === "Gagan Tayal" ||
-            user?.name==="Ajay Singh"||
             user?.name === "Sachin Raghav" ||
             user?.name === "Anamika Poonia" ||
             user?.name === "Meena Verma" ||
@@ -728,7 +754,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
+              <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
@@ -752,7 +778,9 @@ function Sidebar() {
               >
                 <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
+                    <ListItemButton
+                      onClick={() => navigate("/all_task")}
+                    >
                       Task View
                     </ListItemButton>
                   </ListItem>
@@ -842,7 +870,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
+              <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
@@ -866,7 +894,9 @@ function Sidebar() {
               >
                 <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
+                    <ListItemButton
+                      onClick={() => navigate("/all_task")}
+                    >
                       Task View
                     </ListItemButton>
                   </ListItem>
@@ -975,8 +1005,8 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
-
-            <ListItem nested>
+           
+             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
@@ -1000,7 +1030,9 @@ function Sidebar() {
               >
                 <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
+                    <ListItemButton
+                      onClick={() => navigate("/all_task")}
+                    >
                       Task View
                     </ListItemButton>
                   </ListItem>
@@ -1065,7 +1097,8 @@ function Sidebar() {
               "--ListItem-radius": (theme) => theme.vars.radius.sm,
             }}
           >
-            {/*BD*/}
+
+             {/*BD*/}
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -1156,7 +1189,7 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
-            {/* CAM */}
+             {/* CAM */}
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -1185,7 +1218,7 @@ function Sidebar() {
                       Dashboard
                     </ListItemButton>
                   </ListItem>
-                  <ListItem>
+                   <ListItem>
                     <ListItemButton
                       onClick={() => navigate("/purchase_request")}
                     >
@@ -1277,7 +1310,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
+             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
@@ -1301,7 +1334,9 @@ function Sidebar() {
               >
                 <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
+                    <ListItemButton
+                      onClick={() => navigate("/all_task")}
+                    >
                       Task View
                     </ListItemButton>
                   </ListItem>
@@ -1345,6 +1380,8 @@ function Sidebar() {
                 </Toggler>
               </ListItem>
             )}
+
+
 
             <ListItem nested>
               <Toggler
@@ -1397,7 +1434,8 @@ function Sidebar() {
             user?.name === "Shubham Gupta" ||
             user?.name === "Saurabh Suman" ||
             user?.name === "Vaishali Pandey" ||
-            user?.name === "Sujoy Mahata") ? (
+            user?.name === "Sujoy Mahata"
+          ) ? (
           <List
             size="sm"
             sx={{
@@ -1449,7 +1487,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
+             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
@@ -1560,7 +1598,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
+              <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
@@ -1584,7 +1622,9 @@ function Sidebar() {
               >
                 <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
+                    <ListItemButton
+                      onClick={() => navigate("/all_task")}
+                    >
                       Task View
                     </ListItemButton>
                   </ListItem>
@@ -1642,7 +1682,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
+             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
@@ -1717,6 +1757,7 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
+
 
             <ListItem nested>
               <Toggler
@@ -1796,7 +1837,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
+              <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
@@ -1820,7 +1861,9 @@ function Sidebar() {
               >
                 <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
+                    <ListItemButton
+                      onClick={() => navigate("/all_task")}
+                    >
                       Task View
                     </ListItemButton>
                   </ListItem>
@@ -1947,7 +1990,7 @@ function Sidebar() {
                       Dashboard
                     </ListItemButton>
                   </ListItem>
-                  <ListItem>
+                   <ListItem>
                     <ListItemButton
                       onClick={() => navigate("/purchase_request")}
                     >
@@ -1999,7 +2042,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
+              <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
@@ -2023,7 +2066,9 @@ function Sidebar() {
               >
                 <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
+                    <ListItemButton
+                      onClick={() => navigate("/all_task")}
+                    >
                       Task View
                     </ListItemButton>
                   </ListItem>
@@ -2035,8 +2080,9 @@ function Sidebar() {
           (user?.name === "Som Narayan Jha" ||
             user?.name === "Ashish Kumar" ||
             user?.name === "Saresh" ||
-            user?.name === "Deepika Singh" ||
-            user?.name === "Izhan Mustafa") ? (
+            user?.name === "Deepika Singh" || 
+            user?.name === "Izhan Mustafa"
+          ) ? (
           <List
             size="sm"
             sx={{
@@ -2152,7 +2198,7 @@ function Sidebar() {
                       Dashboard
                     </ListItemButton>
                   </ListItem>
-                  <ListItem>
+                   <ListItem>
                     <ListItemButton
                       onClick={() => navigate("/purchase_request")}
                     >
@@ -2197,7 +2243,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
+              <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
@@ -2221,7 +2267,9 @@ function Sidebar() {
               >
                 <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
+                    <ListItemButton
+                      onClick={() => navigate("/all_task")}
+                    >
                       Task View
                     </ListItemButton>
                   </ListItem>
@@ -2311,7 +2359,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
+              <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
@@ -2335,7 +2383,9 @@ function Sidebar() {
               >
                 <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
+                    <ListItemButton
+                      onClick={() => navigate("/all_task")}
+                    >
                       Task View
                     </ListItemButton>
                   </ListItem>
@@ -2345,7 +2395,7 @@ function Sidebar() {
           </List>
         ) : user?.role === "manager" && user?.name === "Shruti Tripathi" ? (
           <List
-            size="sm"
+           size="sm"
             sx={{
               gap: 1,
               "--List-nestedInsetStart": "30px",
@@ -2353,52 +2403,50 @@ function Sidebar() {
             }}
           >
             <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <AccountBalanceWalletIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Expense Sheet</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
+            <Toggler
+              renderToggle={({ open, setOpen }) => (
+                <ListItemButton onClick={() => setOpen(!open)}>
+                  <AccountBalanceWalletIcon />
+                  <ListItemContent>
+                    <Typography level="title-sm">Expense Sheet</Typography>
+                  </ListItemContent>
+                  <KeyboardArrowDownIcon
+                    sx={[
+                      open
+                        ? {
+                            transform: "rotate(180deg)",
+                          }
+                        : {
+                            transform: "none",
+                          },
+                    ]}
+                  />
+                </ListItemButton>
+              )}
+            >
+              <List sx={{ gap: 0.5 }}>
+                <ListItem sx={{ mt: 0.5 }}>
+                  <ListItemButton
+                    onClick={() => navigate("/expense_dashboard")}
+                  >
+                    User Dashboard
                   </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton
-                      onClick={() => navigate("/expense_dashboard")}
-                    >
-                      User Dashboard
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem>
-                    <ListItemButton
-                      onClick={() => navigate("/expense_approval")}
-                    >
-                      Expense Manager Approval
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem>
-                    <ListItemButton onClick={() => navigate("/expense_hr")}>
-                      HR Expense Approval
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
-            </ListItem>
+                </ListItem>
+                <ListItem>
+                  <ListItemButton onClick={() => navigate("/expense_approval")}>
+                    Expense Manager Approval
+                  </ListItemButton>
+                </ListItem>
+                <ListItem>
+                  <ListItemButton onClick={() => navigate("/expense_hr")}>
+                    HR Expense Approval
+                  </ListItemButton>
+                </ListItem>
+              </List>
+            </Toggler>
+          </ListItem>
 
-            <ListItem nested>
+           <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
@@ -2422,7 +2470,9 @@ function Sidebar() {
               >
                 <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
+                    <ListItemButton
+                      onClick={() => navigate("/all_task")}
+                    >
                       Task View
                     </ListItemButton>
                   </ListItem>
@@ -2430,69 +2480,71 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
+          
         ) : user?.department === "HR" ? (
-          <List
-            size="sm"
+         <List
+          size="sm"
             sx={{
               gap: 1,
               "--List-nestedInsetStart": "30px",
               "--ListItem-radius": (theme) => theme.vars.radius.sm,
             }}
-          >
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <AccountBalanceWalletIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Expense Sheet</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
+         >
+           <ListItem nested>
+            <Toggler
+              renderToggle={({ open, setOpen }) => (
+                <ListItemButton onClick={() => setOpen(!open)}>
+                  <AccountBalanceWalletIcon />
+                  <ListItemContent>
+                    <Typography level="title-sm">Expense Sheet</Typography>
+                  </ListItemContent>
+                  <KeyboardArrowDownIcon
+                    sx={[
+                      open
+                        ? {
+                            transform: "rotate(180deg)",
+                          }
+                        : {
+                            transform: "none",
+                          },
+                    ]}
+                  />
+                </ListItemButton>
+              )}
+            >
+              <List sx={{ gap: 0.5 }}>
+                <ListItem>
+                  <ListItemButton
+                    onClick={() => navigate("/expense_dashboard")}
+                  >
+                    User Dashboard
                   </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem>
-                    <ListItemButton
-                      onClick={() => navigate("/expense_dashboard")}
-                    >
-                      User Dashboard
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
-            </ListItem>
-          </List>
+                </ListItem>
+
+                
+              </List>
+            </Toggler>
+          </ListItem>
+         </List>
         ) : user?.department === "Projects" ||
           user?.department === "Infra" ||
           user?.department === "Marketing" ||
           user?.department === "Internal" ||
-          user?.department === "Loan" ||
           (user?.department === "Engineering" &&
-            user?.name !== "Rishav Mahato" &&
-            user?.name !== "Piyush Rathour Raj" &&
-            user?.name !== "Naresh Kumar" &&
-            user?.name !== "Md Asif" &&
-            user?.name !== "Rahul Bhati" &&
-            user?.name !== "Sachin Jangid" &&
-            user?.name !== "Vishal Kushwaha" &&
-            user?.name !== "Hitesh Jangid" &&
-            user?.emp_id !== "SE-184" &&
-            user?.emp_id !== "SE-193") ||
+            user?.name !== "Rishav Mahato" && 
+            user?.name !=="Piyush Rathour Raj" &&
+            user?.name  !=="Naresh Kumar"&&
+            user?.name !=="Md Asif" &&
+            user?.name !=="Rahul Bhati" &&
+            user?.name !=="Sachin Jangid" &&
+            user?.name !=="Vishal Kushwaha" &&
+            user?.name !=="Hitesh Jangid" &&
+           user?.emp_id !=="SE-184"&&
+           user?.emp_id !=="SE-193") ||
           user?.name === "Manish Shah" ||
           user?.department === "CAM" ? (
           <List
-            size="sm"
+          size="sm"
             sx={{
               gap: 1,
               "--List-nestedInsetStart": "30px",
@@ -2500,38 +2552,37 @@ function Sidebar() {
             }}
           >
             <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <AccountBalanceWalletIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Expense Sheet</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
+            <Toggler
+              renderToggle={({ open, setOpen }) => (
+                <ListItemButton onClick={() => setOpen(!open)}>
+                  <AccountBalanceWalletIcon />
+                  <ListItemContent>
+                    <Typography level="title-sm">Expense Sheet</Typography>
+                  </ListItemContent>
+                  <KeyboardArrowDownIcon
+                    sx={[
+                      open
+                        ? {
+                            transform: "rotate(180deg)",
+                          }
+                        : {
+                            transform: "none",
+                          },
+                    ]}
+                  />
+                </ListItemButton>
+              )}
+            >
+              <List sx={{ gap: 0.5 }}>
+                <ListItem sx={{ mt: 0.5 }}>
+                  <ListItemButton
+                    onClick={() => navigate("/expense_dashboard")}
+                  >
+                    User Dashboard
                   </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton
-                      onClick={() => navigate("/expense_dashboard")}
-                    >
-                      User Dashboard
-                    </ListItemButton>
-                  </ListItem>
-                  {((user?.department === "Projects" &&
-                    user?.name === "Mayank Kumar") ||
-                    user?.name === "Vivek Pandey") && (
+                </ListItem>
+                {user?.department === "Projects" &&
+                  user?.name === "Mayank Kumar" && (
                     <ListItem>
                       <ListItemButton
                         onClick={() => navigate("/expense_approval")}
@@ -2540,11 +2591,11 @@ function Sidebar() {
                       </ListItemButton>
                     </ListItem>
                   )}
-                </List>
-              </Toggler>
-            </ListItem>
+              </List>
+            </Toggler>
+          </ListItem>
 
-            <ListItem nested>
+           <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
@@ -2568,7 +2619,9 @@ function Sidebar() {
               >
                 <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
+                    <ListItemButton
+                      onClick={() => navigate("/all_task")}
+                    >
                       Task View
                     </ListItemButton>
                   </ListItem>
@@ -2577,17 +2630,19 @@ function Sidebar() {
             </ListItem>
           </List>
         ) : user?.department === "Engineering" &&
-          (user?.name === "Rishav Mahato" ||
-            user?.name !== "Piyush Rathour Raj" ||
-            user?.name !== "Naresh Kumar" ||
-            user?.name !== "Md Asif" ||
-            user?.name !== "Rahul Bhati" ||
-            user?.name !== "Sachin Jangid" ||
-            user?.name !== "Vishal Kushwaha" ||
-            user?.name !== "Hitesh Jangid" ||
-            user?.emp_id !== "SE-184" ||
-            user?.emp_id !== "SE-193") ? (
-          <List>
+          (user?.name === "Rishav Mahato" || 
+          user?.name !=="Piyush Rathour Raj" ||
+          user?.name !=="Naresh Kumar"||
+          user?.name !=="Md Asif"||
+            user?.name !=="Rahul Bhati" ||
+            user?.name !=="Sachin Jangid" ||
+            user?.name !=="Vishal Kushwaha" ||
+            user?.name !=="Hitesh Jangid" ||
+           user?.emp_id !=="SE-184"||
+           user?.emp_id !=="SE-193") ? (
+          <List
+            
+          >
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -2654,7 +2709,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
+              <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
@@ -2678,7 +2733,9 @@ function Sidebar() {
               >
                 <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
+                    <ListItemButton
+                      onClick={() => navigate("/all_task")}
+                    >
                       Task View
                     </ListItemButton>
                   </ListItem>

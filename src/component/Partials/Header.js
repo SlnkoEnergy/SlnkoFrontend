@@ -1,4 +1,3 @@
-import React from 'react';
 import GlobalStyles from '@mui/joy/GlobalStyles';
 import Sheet from '@mui/joy/Sheet';
 import IconButton from '@mui/joy/IconButton';
@@ -6,18 +5,22 @@ import MenuIcon from '@mui/icons-material/Menu';
 import Box from "@mui/joy/Box";
 import ColorSchemeToggle from "./ColorSchemeToggle";
 import { toggleSidebar } from '../../utils/utils';
+import { useLocation } from 'react-router-dom';
 
 function Header() {
+  const location = useLocation()
+  const isSalesPage = location.pathname === "/sales";
+
   return (
     <Sheet
       sx={{
-        display: { xs: 'flex', lg: 'none' },
+        display: { xs: 'flex', lg: isSalesPage?"flex":"none" },
         alignItems: 'center',
         justifyContent: 'space-between',
         position: 'fixed',
         top: 0,
         width: '100vw',
-        height: 'var(--Header-height)',
+        height: isSalesPage ? '3vh' : 'var(--Header-height)',
         zIndex: 9995,
         p: 2,
         gap: 1,
@@ -42,17 +45,18 @@ function Header() {
         variant="outlined"
         color="neutral"
         size="sm"
-        
         sx={{
            "@media print": { display: "none!important" },
-           display: { sm: "flex", lg: "none" },
+           display: { sm: "flex", lg:isSalesPage ? "flex":"none" },
         }}
       >
         <MenuIcon />
       </IconButton>
-      <Box sx={{ display: {md:"flex", lg:"none"},  gap: 1, alignItems: "center" }}>
+     {!isSalesPage && (
+       <Box sx={{ display: {md:"flex", lg:"none"},  gap: 1, alignItems: "center" }}>
         <ColorSchemeToggle sx={{ ml: "auto" }} />
       </Box>
+     )}
     </Sheet>
   );
 }

@@ -114,6 +114,7 @@ import PurchaseReqDetails from "../pages/CAM/PurchaseRequestDetail";
 import Add_Task from "../pages/AllTask/ADD_Task";
 import AllTask from "../pages/AllTask/AllTask";
 import View_Task from "../pages/AllTask/View_Task";
+import SalesIframe from "../component/Sales_Iframe";
 
 
 function index() {
@@ -153,6 +154,15 @@ function index() {
         }
       />
       {/*-------BD------- */}
+      <Route 
+      path="/sales"
+      element = {
+        <PrivateRoute>
+          <SalesIframe />
+        </PrivateRoute>
+      }
+      />
+      
       <Route
         path="/comm_offer"
         element={
