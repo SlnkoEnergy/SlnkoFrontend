@@ -49,6 +49,13 @@ export const AccountsApi = createApi({
       providesTags: ["Accounts"],
     }),
 
+    getCustomerSummary: builder.query({
+  query: ({ p_id }) =>
+    `accounting/customer-payment-summary?p_id=${p_id}`,
+  transformResponse: (response) => response.data || null,
+  providesTags: ["Accounts"],
+}),
+
  getExportPaymentHistory: builder.query({
   query: ({ po_number }) => ({
     url: `accounting/debithistorycsv?po_number=${po_number}`,
@@ -74,5 +81,6 @@ export const {
   useGetProjectBalanceQuery,
   useGetPaymentApprovalQuery,
   useGetPaymentHistoryQuery,
-  useGetExportPaymentHistoryQuery
+  useGetExportPaymentHistoryQuery,
+  useGetCustomerSummaryQuery
 } = AccountsApi;

@@ -16,10 +16,11 @@ import Sheet from "@mui/joy/Sheet";
 import Table from "@mui/joy/Table";
 import { saveAs } from "file-saver";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import Img12 from "../../assets/slnko_blue_logo.png";
 import Axios from "../../utils/Axios";
+import { useGetCustomerSummaryQuery } from "../../redux/Accounts";
 
 const Customer_Payment_Summary = () => {
   const [error, setError] = useState("");
@@ -34,20 +35,26 @@ const Customer_Payment_Summary = () => {
     project_kwp: "",
   });
 
+  
+const [searchParams] = useSearchParams();
+const p_id = searchParams.get("p_id");
+
   const handlePrint = () => {
     window.print();
   };
 
-  // const handleDownloadPDF = () => {
-  //   const doc = new jsPDF();
-  //   doc.html(document.body, {
-  //     callback: function (doc) {
-  //       doc.save("CustomerPaymentSummary.pdf");
-  //     },
-  //     x: 10,
-  //     y: 10,
-  //   });
-  // };
+const {
+  data: responseData,
+  isLoading,
+  refetch,
+  error: fetchError,
+} = useGetCustomerSummaryQuery({ p_id }, { skip: !p_id });
+
+
+  const SummaryData = responseData?.projectDetails || [];
+
+  // console.log("SummaryData: ",SummaryData);
+  
 
   const today = new Date();
 
@@ -1075,7 +1082,7 @@ const Customer_Payment_Summary = () => {
                   ["10", "GST (Diff)", gst_difference],
                   // ["11", "Total PO Value", total_po_value],
                   ["11", "Total Billed Value", total_billed_value],
-                  ["12", "Net Advance Paid [(4)-(7)]", net_advanced_paid],
+                  ["12", "Net Advance Paid [(4)-(11)]", net_advanced_paid],
                   [
                     "13",
                     "Balance Payable to Vendors [(8)-(11)-(12)]",
