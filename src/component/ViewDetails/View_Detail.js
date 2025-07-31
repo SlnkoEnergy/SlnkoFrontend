@@ -2,7 +2,10 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import {
   Box,
   Button,
+  Card,
+  CardContent,
   Checkbox,
+  Chip,
   Container,
   Divider,
   FormControl,
@@ -13,6 +16,12 @@ import {
   Typography,
 } from "@mui/joy";
 import Sheet from "@mui/joy/Sheet";
+import BoltIcon from "@mui/icons-material/Bolt";
+import BusinessIcon from "@mui/icons-material/Business";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import GroupsIcon from "@mui/icons-material/Groups";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import FolderIcon from "@mui/icons-material/Folder";
 import Table from "@mui/joy/Table";
 import { saveAs } from "file-saver";
 import { useEffect, useState } from "react";
@@ -35,27 +44,37 @@ const Customer_Payment_Summary = () => {
     project_kwp: "",
   });
 
-  
-const [searchParams] = useSearchParams();
-const p_id = searchParams.get("p_id");
+  const [searchParams] = useSearchParams();
+  const p_id = searchParams.get("p_id");
+
+  const {
+    data: responseData,
+    isLoading,
+    refetch,
+    error: fetchError,
+  } = useGetCustomerSummaryQuery({ p_id }, { skip: !p_id });
+
+  const {
+    projectDetails = {},
+    balanceSummary = [],
+    credit = { history: [], total: 0 },
+    debit = { history: [], total: 0 },
+    clientHistory = { data: [], meta: {} },
+    adjustment = { history: [] },
+  } = responseData || {};
+
+  const CreditSummary = credit.history || [];
+  // const TotalCredited = credits.total || [];
+  const DebitSummary = debit.history || [];
+  const ClientSummary = clientHistory.data || [];
+  const ClientTotal = clientHistory.meta || [];
+  const AdjustmentSummary = adjustment.history || [];
+
+  // console.log(TotalCredited);
 
   const handlePrint = () => {
     window.print();
   };
-
-const {
-  data: responseData,
-  isLoading,
-  refetch,
-  error: fetchError,
-} = useGetCustomerSummaryQuery({ p_id }, { skip: !p_id });
-
-
-  const SummaryData = responseData?.projectDetails || [];
-
-  // console.log("SummaryData: ",SummaryData);
-  
-
   const today = new Date();
 
   const dayOptions = { weekday: "long" };
@@ -162,7 +181,11 @@ const {
         ["3", "Net Balance [(1)-(2)]", netBalance],
         ["4", "Total Advance Paid to Vendors", total_advance_paid],
         ["4A", "Total Adjustment (Debit-Credit)", total_adjustment],
-        ["5", "Balance with Slnko [(3)-(4)-(4A)]", Math.round(balance_with_slnko)],
+        [
+          "5",
+          "Balance with Slnko [(3)-(4)-(4A)]",
+          Math.round(balance_with_slnko),
+        ],
         ["6", "Total PO Basic Value", total_po_basic],
         ["7", "GST Value as per PO", gst_as_po_basic],
         ["8", "Total PO with GST", total_po_with_gst],
@@ -221,7 +244,7 @@ const {
   const [debitHistory, setDebitHistory] = useState([]);
   const [adjustHistory, setAdjustHistory] = useState([]);
 
-  const [clientHistory, setClientHistory] = useState([]);
+  const [clientHistorys, setClientHistory] = useState([]);
   const [filteredClients, setFilteredClients] = useState([]);
   const [clientSearch, setClientSearch] = useState("");
   const [adjustSearch, setAdjustSearch] = useState("");
@@ -255,7 +278,7 @@ const {
     const searchValue = event.target.value.toLowerCase();
     setClientSearch(searchValue);
 
-    const filtered = clientHistory.filter(
+    const filtered = clientHistorys.filter(
       (client) =>
         client.po_number.toLowerCase().includes(searchValue) ||
         client.vendor.toLowerCase().includes(searchValue) ||
@@ -1203,12 +1226,18 @@ const {
   };
 
   return (
-    <Container
+    <Sheet
       sx={{
-        border: "1px solid black",
-        padding: "20px",
+        border: "1px solid #ccc",
+        borderRadius: "12px",
+        padding: { xs: "16px", sm: "24px", md: "32px" },
+        backgroundColor: "#fff",
+        boxShadow: {
+          xs: "none",
+          sm: "0px 2px 8px rgba(0, 0, 0, 0.05)",
+        },
         marginLeft: { xl: "15%", lg: "20%", sm: "0%" },
-        maxWidth: { lg: "80%", sm: "100%", xl: "85%" },
+        minWidth: { lg: "80%", sm: "100%", xl: "85%" },
         "@media print": {
           maxWidth: "100%",
         },
@@ -1230,7 +1259,7 @@ const {
         <Box
           sx={{
             "@media print": {
-              width: "100px", // shrink logo if needed
+              width: "100px",
             },
           }}
         >
@@ -1280,132 +1309,116 @@ const {
       </Box>
 
       {/* Project Details Section */}
-      <Typography
-        // variant="h1"
-        fontWeight={500}
-        fontFamily="Playfair Display"
-        mt={2}
-        mb={1}
-        fontSize={"1.5rem"}
+      <Card
+        variant="outlined"
+        sx={{
+          p: 3,
+          borderRadius: "lg",
+          boxShadow: "sm",
+          mt: 2,
+          mb: 4,
+        }}
       >
-        Project Details
-      </Typography>
-      <Divider style={{ borderWidth: "2px", marginBottom: "20px" }} />
-
-      <form>
-        <Grid
-          container
-          spacing={2}
-          sm={12}
-          md={12}
-          sx={{
-            display: "flex",
-            // justifyContent: "space-between",
-            alignItems: "center",
-            flexDirection: "column",
-          }}
-        >
-          <Grid item sm={6} md={6} sx={{ width: "100%!important" }}>
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "row",
-                gap: 2,
-                "& > .expandable": {
-                  transition: "width 0.3s ease",
-                  width: "100%",
-                  maxWidth: "200px",
-                },
-                "& > .expandable:focus-within": {
-                  maxWidth: "100%",
-                },
-              }}
-            >
+        <Box display="flex" alignItems="center" mb={2}>
+          <Chip
+            color="primary"
+            variant="soft"
+            size="md"
+            sx={{ fontSize: "1.1rem", fontWeight: 600, px: 2, py: 1 }}
+          >
+            Project Details
+          </Chip>
+          {/* <Divider sx={{ flexGrow: 1, ml: 2 }} /> */}
+        </Box>
+        <CardContent>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
               <Input
-                fullWidth
-                value={projectData.code}
+                value={isLoading ? "" : projectDetails.code}
                 readOnly
                 label="Project ID"
-                sx={{ mr: 2 }}
-              />
-
-              <Input
+                variant="outlined"
                 fullWidth
-                value={projectData.name}
+                startDecorator={<FolderIcon />}
+                placeholder={isLoading ? "Loading..." : ""}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <Input
+                value={isLoading ? "" : projectDetails.name}
                 readOnly
                 label="Project Name"
-                sx={{ mr: 2 }}
-              />
-
-              <Input
+                variant="outlined"
                 fullWidth
-                value={projectData.customer || "-"}
+                startDecorator={<BusinessIcon />}
+                placeholder={isLoading ? "Loading..." : ""}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <Input
+                value={isLoading ? "" : projectDetails.customer_name || "-"}
                 readOnly
                 label="Client Name"
-              />
-            </Box>
-          </Grid>
-
-          <Grid item sm={6} md={6} sx={{ width: "100%!important" }}>
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "row",
-                gap: 2,
-                "& > .expandable": {
-                  transition: "width 0.3s ease",
-                  width: "100%",
-                  maxWidth: "200px",
-                },
-                "& > .expandable:focus-within": {
-                  maxWidth: "100%",
-                },
-              }}
-            >
-              <Input
+                variant="outlined"
                 fullWidth
-                value={projectData.p_group || "-"}
+                startDecorator={<AccountCircleIcon />}
+                placeholder={isLoading ? "Loading..." : ""}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <Input
+                value={isLoading ? "" : projectDetails.p_group}
                 readOnly
                 label="Group Name"
-                sx={{ mr: 2 }}
-              />
-
-              <Input
+                variant="outlined"
                 fullWidth
-                value={
-                  typeof projectData.billing_address === "object"
-                    ? `${projectData.billing_address.village_name || "-"}, ${projectData.billing_address.district_name || "-"}`
-                    : projectData.billing_address || "-"
-                }
+                startDecorator={<GroupsIcon />}
+                placeholder={isLoading ? "Loading..." : ""}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <Input
+                value={isLoading ? "" : projectDetails.site_address}
                 readOnly
                 label="Plant Location"
-                sx={{ mr: 2 }}
-              />
-
-              <Input
+                variant="outlined"
                 fullWidth
-                value={projectData.project_kwp}
+                startDecorator={<LocationOnIcon />}
+                placeholder={isLoading ? "Loading..." : ""}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <Input
+                value={isLoading ? "" : projectDetails.project_kwp}
                 readOnly
                 label="Plant Capacity"
+                variant="outlined"
+                fullWidth
+                startDecorator={<BoltIcon />}
+                placeholder={isLoading ? "Loading..." : ""}
               />
-            </Box>
+            </Grid>
           </Grid>
-        </Grid>
-      </form>
+        </CardContent>
+      </Card>
 
       {/* Credit History Section */}
 
       <Box>
-        <Typography
-          variant="h5"
-          fontFamily="Playfair Display"
-          fontWeight={600}
-          mt={4}
-          mb={2}
+        <Chip
+          color="success"
+          variant="soft"
+          size="md"
+          sx={{ fontSize: "1.1rem", fontWeight: 600, px: 2, py: 1 }}
         >
           Credit History
-        </Typography>
-        <Divider style={{ borderWidth: "2px", marginBottom: "20px" }} />
+        </Chip>
+        <Divider sx={{ borderWidth: "2px", marginBottom: "20px", mt: 2 }} />
 
         <Box
           sx={{
@@ -1513,7 +1526,6 @@ const {
             <thead>
               <tr>
                 <th>Credit Date</th>
-                {/* <th>Credit Updated TimeStamp</th> */}
                 <th>Credit Mode</th>
                 <th>Credited Amount (₹)</th>
                 <th style={{ textAlign: "center" }}>
@@ -1527,15 +1539,32 @@ const {
             </thead>
 
             {/* Table Body */}
+
             <tbody>
-              {creditHistory
-                .slice()
-                .sort((a, b) => {
-                  const dateA = new Date(a.cr_date || a.createdAt);
-                  const dateB = new Date(b.cr_date || b.createdAt);
-                  return dateA - dateB;
-                })
-                .map((row) => (
+              {isLoading ? (
+                <tr>
+                  <td
+                    colSpan={4}
+                    style={{ textAlign: "center", padding: "20px" }}
+                  >
+                    <Typography level="body-md">
+                      Loading credit history...
+                    </Typography>
+                  </td>
+                </tr>
+              ) : CreditSummary.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={4}
+                    style={{ textAlign: "center", padding: "20px" }}
+                  >
+                    <Typography level="body-md">
+                      No credit history available
+                    </Typography>
+                  </td>
+                </tr>
+              ) : (
+                CreditSummary.map((row) => (
                   <tr key={row.id}>
                     <td>
                       {new Date(
@@ -1546,31 +1575,6 @@ const {
                         year: "numeric",
                       })}
                     </td>
-                    {/* <td>
-                        {row.updatedAt && !isNaN(new Date(row.updatedAt)) ? (
-                          <>
-                            {new Date(row.updatedAt).toLocaleDateString(
-                              "en-IN",
-                              {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
-                              }
-                            )}
-                            ,{" "}
-                            {new Date(row.updatedAt).toLocaleTimeString(
-                              "en-IN",
-                              {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                hour12: true,
-                              }
-                            )}
-                          </>
-                        ) : (
-                          "NA"
-                        )}
-                      </td> */}
                     <td>{row.cr_mode}</td>
                     <td>₹ {row.cr_amount.toLocaleString("en-IN")}</td>
                     <td style={{ textAlign: "center" }}>
@@ -1581,13 +1585,14 @@ const {
                       />
                     </td>
                   </tr>
-                ))}
+                ))
+              )}
             </tbody>
 
             {/* Total Row */}
 
             <tfoot>
-              {creditHistory.length === 0 ? (
+              {CreditSummary.length === 0 ? (
                 <tr>
                   <td
                     colSpan={4}
@@ -1605,7 +1610,8 @@ const {
                     Total Credited:
                   </td>
                   <td style={{ color: "dodgerblue" }}>
-                    ₹ {totalCredited.toLocaleString("en-IN")}
+                    ₹{" "}
+                    {credit?.total ? credit.total.toLocaleString("en-IN") : "0"}
                   </td>
                   <td />
                 </tr>
@@ -1618,16 +1624,15 @@ const {
       {/* Debit History Section */}
 
       <Box>
-        <Typography
-          variant="h5"
-          fontFamily="Playfair Display"
-          fontWeight={600}
-          mt={4}
-          mb={2}
+        <Chip
+          color="danger"
+          variant="soft"
+          size="md"
+          sx={{ fontSize: "1.1rem", fontWeight: 600, px: 2, py: 1, mt:3}}
         >
           Debit History
-        </Typography>
-        <Divider style={{ borderWidth: "2px", marginBottom: "20px" }} />
+        </Chip>
+        <Divider sx={{ borderWidth: "2px", marginBottom: "20px", mt: 2 }} />
 
         <Box
           sx={{
@@ -2260,7 +2265,7 @@ const {
           {loading ? "Exporting..." : "Export to CSV"}
         </Button>
       </Box>
-    </Container>
+    </Sheet>
   );
 };
 

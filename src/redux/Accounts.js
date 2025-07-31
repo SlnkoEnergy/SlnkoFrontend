@@ -41,7 +41,8 @@ export const AccountsApi = createApi({
     }),
 
     getPaymentHistory: builder.query({
-      query: ({ po_number }) => `accounting/payment-history?po_number=${po_number}`,
+      query: ({ po_number }) =>
+        `accounting/payment-history?po_number=${po_number}`,
       transformResponse: (response) => ({
         history: response.history || [],
         total: response.total || 0,
@@ -50,37 +51,57 @@ export const AccountsApi = createApi({
     }),
 
     getCustomerSummary: builder.query({
-  query: ({ p_id }) =>
-    `accounting/customer-payment-summary?p_id=${p_id}`,
-  transformResponse: (response) => response.data || null,
-  providesTags: ["Accounts"],
-}),
+      query: ({ p_id }) => `accounting/customer-payment-summary?p_id=${p_id}`,
+      transformResponse: (response) => response || null,
+      providesTags: ["Accounts"],
+    }),
 
- getExportPaymentHistory: builder.query({
-  query: ({ po_number }) => ({
-    url: `accounting/debithistorycsv?po_number=${po_number}`,
-    responseHandler: async (response) => {
-      const blob = await response.blob();
-      return {
-        blob,
-        filename:
-          response.headers.get("Content-Disposition")?.split("filename=")[1] ||
-          "payment-history.csv",
-      };
-    },
-    method: "GET",
-  }),
-}),
+    getExportPaymentHistory: builder.query({
+      query: ({ po_number }) => ({
+        url: `accounting/debithistorycsv?po_number=${po_number}`,
+        responseHandler: async (response) => {
+          const blob = await response.blob();
+          return {
+            blob,
+            filename:
+              response.headers
+                .get("Content-Disposition")
+                ?.split("filename=")[1] || "payment-history.csv",
+          };
+        },
+        method: "GET",
+      }),
+    }),
 
-
+    getPaymentApproved: builder.query({
+      query: ({ page = 1, search = "", pageSize = 10 }) =>
+        `accounting/approved-payment?page=${page}&search=${search}&pageSize=${pageSize}`,
+      transformResponse: (response) => ({
+        data: response.data || [],
+        total: response.meta?.total || 0,
+        count: response.meta?.count || 0,
+      }),
+      providesTags: ["Accounts"],
+    }),
+    getUtrSubmission: builder.query({
+      query: ({ page = 1, search = "", pageSize = 10 }) =>
+        `accounting/utr-submission?page=${page}&search=${search}&pageSize=${pageSize}`,
+      transformResponse: (response) => ({
+        data: response.data || [],
+        total: response.meta?.total || 0,
+        count: response.meta?.count || 0,
+      }),
+      providesTags: ["Accounts"],
+    }),
   }),
 });
-
 
 export const {
   useGetProjectBalanceQuery,
   useGetPaymentApprovalQuery,
   useGetPaymentHistoryQuery,
   useGetExportPaymentHistoryQuery,
-  useGetCustomerSummaryQuery
+  useGetCustomerSummaryQuery,
+  useGetPaymentApprovedQuery,
+  useGetUtrSubmissionQuery,
 } = AccountsApi;

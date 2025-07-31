@@ -48,18 +48,31 @@ const AddVendor = () => {
           "x-auth-token": token,
         },
       });
+
       setResponseMessage("Vendor added successfully!");
-      console.log("Response from Server:", response.data);
-      setFormData(initialFormData);
       toast.success("Vendor Added Successfully !!");
+      setFormData(initialFormData);
       navigate("/purchase-order");
     } catch (error) {
-      console.error(
-        "Error adding vendor:",
-        error.response?.data || error.message
-      );
-      setResponseMessage("Failed to add vendor. Please try again.");
-      toast.error("Failed to add vendor..");
+      let errorMsg = "Failed to add vendor. Please try again.";
+
+      if (error.response) {
+        if (error.response.status === 400) {
+          errorMsg = error.response.data.msg || "Bad Request!";
+        } else if (error.response.status === 500) {
+          errorMsg = "Internal Server Error. Please try again later.";
+        } else {
+          errorMsg = error.response.data.msg || error.message;
+        }
+      } else if (error.request) {
+        errorMsg = "Network error. Please check your internet connection.";
+      } else {
+        errorMsg = error.message;
+      }
+
+      console.error("Error adding vendor:", errorMsg);
+      setResponseMessage(errorMsg);
+      toast.error(errorMsg);
     }
   };
 
