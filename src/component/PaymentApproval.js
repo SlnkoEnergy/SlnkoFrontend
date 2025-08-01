@@ -229,10 +229,24 @@ function PaymentRequest() {
       <>
         {payment_id && (
           <Box>
-            <span style={{ cursor: "pointer", fontWeight: 400 }}>
-              {payment_id}
-            </span>
-          </Box>
+          <Chip
+            variant="solid"
+            color="primary"
+            size="sm"
+            sx={{
+              fontWeight: 500,
+              fontFamily: "Inter, Roboto, sans-serif",
+              fontSize: 14,
+              color: "#fff",
+              "&:hover": {
+                boxShadow: "md",
+                opacity: 0.9,
+              },
+            }}
+          >
+            {payment_id || "N/A"}
+          </Chip>
+        </Box>
         )}
 
         {request_date && (
@@ -326,33 +340,27 @@ function PaymentRequest() {
           </Box>
         )}
 
-        
-          <Box display="flex" alignItems="center" mt={0.5}>
-            <CircleUser size={12} />
-            &nbsp;
-            <span style={{ fontSize: 12, fontWeight: 600 }}>
-              Client Balance:{" "}
-            </span>
-            &nbsp;
-            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              {ClientBalance ||"0"}
-            </Typography>
-          </Box>
-      
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <CircleUser size={12} />
+          &nbsp;
+          <span style={{ fontSize: 12, fontWeight: 600 }}>
+            Client Balance:{" "}
+          </span>
+          &nbsp;
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+            {ClientBalance || "0"}
+          </Typography>
+        </Box>
 
-     
-          <Box display="flex" alignItems="center" mt={0.5}>
-            <UsersRound size={12} />
-            &nbsp;
-            <span style={{ fontSize: 12, fontWeight: 600 }}>
-              Group Balance:{" "}
-            </span>
-            &nbsp;
-            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              {groupBalance || "0"}
-            </Typography>
-          </Box>
-        
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <UsersRound size={12} />
+          &nbsp;
+          <span style={{ fontSize: 12, fontWeight: 600 }}>Group Balance: </span>
+          &nbsp;
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+            {groupBalance || "0"}
+          </Typography>
+        </Box>
       </>
     );
   };

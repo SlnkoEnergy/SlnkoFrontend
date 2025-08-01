@@ -358,17 +358,23 @@ function PaymentRequest() {
     <>
       {pay_id && (
         <Box>
-          <Typography
+          <Chip
+            variant="solid"
+            color="primary"
+            size="sm"
             sx={{
-              fontSize: 14,
               fontWeight: 500,
               fontFamily: "Inter, Roboto, sans-serif",
-              cursor: "pointer",
-              color: "#1a1a1a",
+              fontSize: 14,
+              color: "#fff",
+              "&:hover": {
+                boxShadow: "md",
+                opacity: 0.9,
+              },
             }}
           >
-            🆔 {pay_id}
-          </Typography>
+            {pay_id || "N/A"}
+          </Chip>
         </Box>
       )}
 
@@ -412,8 +418,12 @@ function PaymentRequest() {
     <Box>
       {requestedFor && (
         <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
-          <Typography sx={{ ...labelStyle, minWidth:100 }}>📦 Requested For:</Typography>
-          <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>{requestedFor}</Typography>
+          <Typography sx={{ ...labelStyle, minWidth: 100 }}>
+            📦 Requested For:
+          </Typography>
+          <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>
+            {requestedFor}
+          </Typography>
         </Box>
       )}
 
@@ -425,8 +435,12 @@ function PaymentRequest() {
       </Box>
 
       <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
-        <Typography sx={{ ...labelStyle, minWidth:100 }}>🧾 Payment Desc:</Typography>
-        <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>{paymentDesc}</Typography>
+        <Typography sx={{ ...labelStyle, minWidth: 100 }}>
+          🧾 Payment Desc:
+        </Typography>
+        <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>
+          {paymentDesc}
+        </Typography>
       </Box>
     </Box>
   );
@@ -587,7 +601,7 @@ function PaymentRequest() {
                     />
                   </Box>
 
-                  <Box component="td" sx={{ ...cellStyle, minWidth:300 }}>
+                  <Box component="td" sx={{ ...cellStyle, minWidth: 300 }}>
                     <PaymentDetail
                       requestedFor={payment.requestedFor}
                       vendor={payment.vendor}

@@ -214,7 +214,7 @@ function ProjectBalance() {
                   HandOver Dashboard
                 </Button>
               )}
-              {(user?.name === "IT Team" ||
+              {/* {(user?.name === "IT Team" ||
                 user?.name === "Guddu Rani Dubey" ||
                 user?.name === "Prachi Singh" ||
                 user?.department === "admin" ||
@@ -228,7 +228,7 @@ function ProjectBalance() {
                 >
                   Export to CSV
                 </Button>
-              )}
+              )} */}
             </Box>
           </Box>
           <ProjectBalances ref={projectBalancesRef} />

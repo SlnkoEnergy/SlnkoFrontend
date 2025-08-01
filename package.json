@@ -29,6 +29,7 @@
     "html-docx-js": "^0.3.1",
     "html-to-docx": "^1.8.0",
     "jspdf": "^2.5.2",
+    "lodash": "^4.17.21",
     "lottie-react": "^2.4.1",
     "lucide-react": "^0.469.0",
     "notistack": "^3.0.1",

@@ -4,7 +4,7 @@ import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import SearchIcon from "@mui/icons-material/Search";
-import { Card, Checkbox, Tooltip } from "@mui/joy";
+import { Card, Checkbox, Chip, Tooltip } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Divider from "@mui/joy/Divider";
@@ -21,13 +21,7 @@ import Select from "@mui/joy/Select";
 import Sheet from "@mui/joy/Sheet";
 import { useColorScheme, useTheme } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useState,
-} from "react";
+import { forwardRef, useEffect, useState } from "react";
 import Skeleton from "react-loading-skeleton";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -40,6 +34,7 @@ import {
   Banknote,
   Building2,
   CircleUser,
+  DownloadIcon,
   IndianRupee,
   Lightbulb,
   Scale,
@@ -50,6 +45,7 @@ import {
   Wallet,
 } from "lucide-react";
 import AnimatedNumber from "./AnimatedBalance";
+import axios from "axios";
 
 const ProjectBalances = forwardRef((props, ref) => {
   const theme = useTheme();
@@ -57,7 +53,6 @@ const ProjectBalances = forwardRef((props, ref) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState([]);
   const [searchParams, setSearchParams] = useSearchParams();
   const initialPage = parseInt(searchParams.get("page")) || 1;
@@ -65,8 +60,7 @@ const ProjectBalances = forwardRef((props, ref) => {
   const [perPage, setPerPage] = useState(initialPageSize);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [searchQuery, setSearchQuery] = useState("");
-  const [group, setGroup] = useState("");
-
+  const [user, setUser] = useState(null);
   const {
     data: responseData,
     isLoading,
@@ -75,8 +69,9 @@ const ProjectBalances = forwardRef((props, ref) => {
     page: currentPage,
     pageSize: perPage,
     search: searchQuery,
-    group: group,
   });
+
+  // const [exportProjectBalance] = useGetExportProjectBalanceMutation();
 
   const paginatedData = responseData?.data || [];
   const paginatedDataTotals = responseData?.totals || {};
@@ -110,6 +105,74 @@ const ProjectBalances = forwardRef((props, ref) => {
     return pages;
   };
 
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+
+  const exportProjectBalance = async ({ selectedIds, selectAll }) => {
+    try {
+      const token = localStorage.getItem("authToken");
+
+      const response = await axios.post(
+        "http://localhost:8080/v1/accounting/export-project-balance",
+        { selectedIds, selectAll },
+        {
+          responseType: "blob",
+          headers: {
+            "x-auth-token": token,
+          },
+        }
+      );
+
+      const contentDisposition = response.headers["content-disposition"];
+      const filename = contentDisposition
+        ? contentDisposition.split("filename=")[1].replace(/"/g, "")
+        : "project-balance.csv";
+
+      const blob = new Blob([response.data], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("CSV Export Error:", err);
+      throw err; // to let handleExport catch it
+    }
+  };
+
+  const handleExport = async () => {
+    if (selected.length === 0) {
+      alert("Please select at least one project to export.");
+      return;
+    }
+
+    try {
+      const selectedCodes = paginatedData
+        .filter((row) => selected.includes(row._id))
+        .map((row) => row.code);
+
+      await exportProjectBalance({
+        selectedIds: selectedCodes,
+        selectAll: false,
+      });
+    } catch (error) {
+      console.error("Export failed:", error);
+    }
+  };
+
   const renderFilters = () => {
     return (
       <Box
@@ -136,31 +199,25 @@ const ProjectBalances = forwardRef((props, ref) => {
             ))}
           </Select>
         </FormControl>
-
-        {/* <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Select Group</FormLabel>
-          <Select
-            value={group}
-            onChange={(e, newValue) => {
-              setGroup(newValue);
-              setCurrentPage(1);
-              refetch();
-            }}
-            size="sm"
-            placeholder="Select Group"
-          >
-            <Option value="">All Groups</Option>
-            {[
-              ...new Set(
-                (responseData?.allProjects || []).map((item) => item.p_group)
-              ),
-            ].map((groupName) => (
-              <Option key={groupName} value={groupName}>
-                {groupName}
-              </Option>
-            ))}
-          </Select>
-        </FormControl> */}
+        <Box mt={3} sx={{ display: "flex", gap: 1 }}>
+          {(user?.name === "IT Team" ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Prachi Singh" ||
+            user?.department === "admin" ||
+            user?.name === "Naresh Kumar" ||
+            user?.department === "Accounts") && (
+            <Button
+              variant="soft"
+              size="sm"
+              color="neutral"
+              onClick={handleExport}
+              disabled={selected.length === 0}
+              startDecorator={<DownloadIcon />}
+            >
+              Export to CSV
+            </Button>
+          )}
+        </Box>
       </Box>
     );
   };
@@ -219,7 +276,6 @@ const ProjectBalances = forwardRef((props, ref) => {
               onClick={() => {
                 const page = currentPage;
                 const p_id = p_id;
-                // localStorage.setItem("view_detail", projectId);
                 navigate(`/view_detail?page=${page}&p_id=${p_id}`);
               }}
             >
@@ -245,7 +301,6 @@ const ProjectBalances = forwardRef((props, ref) => {
             textDecoration: "none",
           }}
           onClick={() => {
-            localStorage.setItem("view_detail", p_id);
             navigate(`/view_detail?page=${currentPage}&p_id=${p_id}`);
           }}
         >
@@ -277,9 +332,6 @@ const ProjectBalances = forwardRef((props, ref) => {
     setSearchQuery(query.toLowerCase());
   };
 
-  console.log(paginatedData);
-  console.log("PAGINTED TOTAL DATA ARE :", paginatedDataTotals);
-
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setSearchParams((prev) => {
@@ -297,95 +349,21 @@ const ProjectBalances = forwardRef((props, ref) => {
   }, [searchParams]);
 
   const handleSelectAll = (event) => {
-    const allVisibleIds = paginatedData.map((row) => row._id);
+    const allVisibleCodes = paginatedData.map((row) => row.code);
     if (event.target.checked) {
-      setSelected(allVisibleIds);
+      setSelected(allVisibleCodes);
     } else {
       setSelected([]);
     }
   };
 
-  const handleRowSelect = (_id) => {
+  const handleRowSelect = (code) => {
     setSelected((prev) =>
-      prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
+      prev.includes(code)
+        ? prev.filter((item) => item !== code)
+        : [...prev, code]
     );
   };
-
-  useImperativeHandle(ref, () => ({
-    exportToCSV() {
-      console.log("Exporting data to CSV...");
-      const headers = [
-        "Project Id",
-        "Project Name",
-        "Client Name",
-        "Group Name",
-        "Plant Capacity (MW AC)",
-        "Total Credit",
-        "Total Debit",
-        "Total Adjustment",
-        "Amount Amount(Old)",
-        "Balance with SLnko",
-        "Balance Payable to Vendors",
-        "Balance Required",
-        // "View More",
-        // "Aggregate Plant Capacity",
-        // "Aggregate Credit",
-        // "Aggregate Debit",
-        // "Aggregate Available(Old)",
-        // "Aggregate Balance Slnko",
-        // "Aggregate Balance Payable to Vendors",
-        // "Balance Required",
-      ];
-
-      const exportLeads =
-        selected.length > 0
-          ? paginatedData.filter((lead) => selected.includes(lead._id))
-          : paginatedData;
-
-      if (exportLeads.length === 0) {
-        toast.warning("No balance available to export.");
-        return;
-      }
-
-      const rows = exportLeads.map((project) => [
-        project.code || "-",
-        project.name || "-",
-        project.customer || "-",
-        project.p_group || "-",
-        project.project_kwp || "-",
-        project.creditAmount || "-",
-        project.debitAmount || "-",
-        project.adjustmentAmount || "-",
-        project.oldAmount || "-",
-        project.balanceSlnko || "-",
-        project.balancePayable || "-",
-        project.balanceRequired || "-",
-        // project.view_more,
-        // project.totalmWSum || "-",
-        // project.totalCreditSum || "-",
-        // project.totalDebitSum || "-",
-        // project.totalAmountAvailable || "-",
-        // project.totalBalanceSlnko || "-",
-        // project.totalBalancePayable || "-",
-        // project.totalBalanceRequired || "-",
-      ]);
-
-      const csvContent = [
-        headers.join(","),
-        ...rows.map((row) => row.join(",")),
-      ].join("\n");
-
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      // link.download = "project_balance.csv";
-      link.download =
-        selected.length > 0
-          ? "Selected_ProjectBalance.csv"
-          : "All_ProjectBalance.csv";
-      link.click();
-    },
-  }));
 
   const tdLabelStyle = {
     padding: "10px",
@@ -452,20 +430,26 @@ const ProjectBalances = forwardRef((props, ref) => {
       <>
         {code && (
           <Box>
-            <Typography
-              onClick={() => {
-                localStorage.setItem("view_detail", p_id);
-                navigate(`/view_detail?page=${currentPage}&p_id=${p_id}`);
-              }}
+            <Chip
+              variant="solid"
+              color="success"
+              size="md"
+              onClick={() =>
+                navigate(`/view_detail?page=${currentPage}&p_id=${p_id}`)
+              }
               sx={{
-                ...fontStyleNormal,
                 cursor: "pointer",
-                color: "#1976d2",
-                textDecoration: "underline",
+                fontWeight: 500,
+                textDecoration: "none",
+                "&:hover": {
+                  opacity: 0.9,
+                  boxShadow: "md",
+                  textDecoration: "underline",
+                },
               }}
             >
               {code || "N/A"}
-            </Typography>
+            </Chip>
           </Box>
         )}
 
@@ -1023,8 +1007,14 @@ const ProjectBalances = forwardRef((props, ref) => {
                   >
                     <Box component="th" sx={headerStyle}>
                       <Checkbox
-                        size="sm"
-                        checked={selected.length === paginatedData.length}
+                        checked={
+                          paginatedData.length > 0 &&
+                          selected.length === paginatedData.length
+                        }
+                        indeterminate={
+                          selected.length > 0 &&
+                          selected.length < paginatedData.length
+                        }
                         onChange={handleSelectAll}
                       />
                     </Box>
@@ -1093,9 +1083,8 @@ const ProjectBalances = forwardRef((props, ref) => {
                         >
                           <Box component="td" sx={cellStyle}>
                             <Checkbox
-                              size="sm"
-                              checked={selected.includes(project._id)}
-                              onChange={() => handleRowSelect(project._id)}
+                              checked={selected.includes(project.code)}
+                              onChange={() => handleRowSelect(project.code)}
                             />
                           </Box>
 

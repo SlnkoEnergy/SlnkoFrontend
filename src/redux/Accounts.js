@@ -51,8 +51,34 @@ export const AccountsApi = createApi({
     }),
 
     getCustomerSummary: builder.query({
-      query: ({ p_id }) => `accounting/customer-payment-summary?p_id=${p_id}`,
-      transformResponse: (response) => response || null,
+      query: ({
+        p_id,
+        start,
+        end,
+        searchClient,
+        searchDebit,
+        searchAdjustment,
+      }) => {
+        const params = new URLSearchParams({ p_id });
+
+        if (start) params.append("start", start);
+        if (end) params.append("end", end);
+        if (searchClient) params.append("searchClient", searchClient);
+        if (searchDebit) params.append("searchDebit", searchDebit);
+        if (searchAdjustment)
+          params.append("searchAdjustment", searchAdjustment);
+
+        return `accounting/customer-payment-summary?${params.toString()}`;
+      },
+      transformResponse: (response) => ({
+        adjustment: {
+          history: [],
+          totalCredit: 0,
+          totalDebit: 0,
+          ...(response?.adjustment || {}),
+        },
+        ...response,
+      }),
       providesTags: ["Accounts"],
     }),
 
@@ -93,6 +119,23 @@ export const AccountsApi = createApi({
       }),
       providesTags: ["Accounts"],
     }),
+    getExportProjectBalance: builder.mutation({
+      query: (body) => ({
+        url: "accounting/export-project-balance",
+        method: "POST",
+        body,
+        responseHandler: async (response) => {
+          const blob = await response.blob();
+          return {
+            blob,
+            filename:
+              response.headers
+                .get("Content-Disposition")
+                ?.split("filename=")[1] || "project-balance.csv",
+          };
+        },
+      }),
+    }),
   }),
 });
 
@@ -104,4 +147,5 @@ export const {
   useGetCustomerSummaryQuery,
   useGetPaymentApprovedQuery,
   useGetUtrSubmissionQuery,
+  useGetExportProjectBalanceMutation,
 } = AccountsApi;

@@ -284,17 +284,23 @@ function UTRPayment() {
     <>
       {pay_id && (
         <Box>
-          <Typography
+          <Chip
+            variant="solid"
+            color="primary"
+            size="sm"
             sx={{
-              fontSize: 14,
               fontWeight: 500,
               fontFamily: "Inter, Roboto, sans-serif",
-              cursor: "pointer",
-              color: "#1a1a1a",
+              fontSize: 14,
+              color: "#fff",
+              "&:hover": {
+                boxShadow: "md",
+                opacity: 0.9,
+              },
             }}
           >
-            🆔 {pay_id}
-          </Typography>
+            {pay_id || "N/A"}
+          </Chip>
         </Box>
       )}
 
