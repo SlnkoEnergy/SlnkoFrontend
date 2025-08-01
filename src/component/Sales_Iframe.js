@@ -8,7 +8,7 @@ const SalesIframe = () => {
   const iframeRef = useRef(null);
   const [searchParams] = useSearchParams();
 
-  const baseUrl = "http://localhost:5173";
+  const baseUrl = "https://sales.slnkoprotrac.com";
 
   const savedPath = localStorage.getItem("lastIframePath") || "/";
   const currentSearch = searchParams.toString() ? `?${searchParams.toString()}` : "";
