@@ -1108,17 +1108,19 @@ function Sidebar() {
                   </ListItemButton>
                 )}
               >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/leads")}>
-                      Leads
-                    </ListItemButton>
-                  </ListItem>
-                  {/* <ListItem>
-                    <ListItemButton onClick={() => navigate("/comm_offer")}>
-                      Commercial Offer
-                    </ListItemButton>
-                  </ListItem> */}
+                 <List sx={{ gap: 0.5 }}>
+                  <ListItem>
+  <ListItemButton
+    onClick={() =>
+      navigate("/sales", {
+        state: { internalPath: "/dashboard", search: "" },
+      })
+    }
+  >
+    Dashboard
+  </ListItemButton>
+</ListItem>
+
                 </List>
               </Toggler>
             </ListItem>
@@ -1760,17 +1762,20 @@ function Sidebar() {
                   </ListItemButton>
                 )}
               >
-                <List sx={{ gap: 0.5 }}>
-                  {/* <ListItem sx={{ mt: 0.5 }}>
-                <ListItemButton onClick={() => navigate("#")}>
-                  Leads
-                </ListItemButton>
-              </ListItem> */}
+                 <List sx={{ gap: 0.5 }}>
                   <ListItem>
-                    <ListItemButton onClick={() => navigate("/comm_offer")}>
-                      Commercial Offer
-                    </ListItemButton>
-                  </ListItem>
+  <ListItemButton
+    onClick={() =>
+      navigate("/sales", {
+        state: { internalPath: "/dashboard", search: "" },
+      })
+    }
+  >
+    Dashboard
+  </ListItemButton>
+</ListItem>
+
+
                 </List>
               </Toggler>
             </ListItem>
