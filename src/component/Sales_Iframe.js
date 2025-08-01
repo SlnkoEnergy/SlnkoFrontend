@@ -8,7 +8,7 @@ const SalesIframe = () => {
   const iframeRef = useRef(null);
   const [searchParams] = useSearchParams();
 
-  const baseUrl = "http://localhost:5173";
+  const baseUrl = "/sales-app";
 
   // Get last path + current query on initial load
   const savedPath = localStorage.getItem("lastIframePath") || "/";
