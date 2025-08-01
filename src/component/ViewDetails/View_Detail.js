@@ -342,7 +342,7 @@ const Customer_Payment_Summary = () => {
     refetch();
   };
 
-  const handleDeleteClient = async () => {
+  const handleDeleteClient = async ({ _id }) => {
     if (selectedClients.length === 0) {
       toast.error("No POs selected for deletion.");
       return;
@@ -350,7 +350,6 @@ const Customer_Payment_Summary = () => {
 
     try {
       const token = localStorage.getItem("authToken");
-
       await Promise.all(
         selectedClients.map((_id) =>
           Axios.delete(`/delete-pO-IT/${_id}`, {
@@ -1308,7 +1307,7 @@ const Customer_Payment_Summary = () => {
           />
 
           {/* Delete Button (Admin only) */}
-          {/* {["IT Team", "Guddu Rani Dubey", "Prachi Singh", "admin"].includes(
+          {["IT Team", "Guddu Rani Dubey", "Prachi Singh", "admin"].includes(
             user?.name
           ) && (
             <IconButton
@@ -1318,7 +1317,7 @@ const Customer_Payment_Summary = () => {
             >
               <DeleteIcon />
             </IconButton>
-          )} */}
+          )}
         </Box>
 
         <Sheet

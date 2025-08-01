@@ -4,7 +4,7 @@ import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import SearchIcon from "@mui/icons-material/Search";
-import { Card, Checkbox, Chip, Tooltip } from "@mui/joy";
+import { Card, Checkbox, Chip, CircularProgress, Tooltip } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Divider from "@mui/joy/Divider";
@@ -61,6 +61,7 @@ const ProjectBalances = forwardRef((props, ref) => {
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [searchQuery, setSearchQuery] = useState("");
   const [user, setUser] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
   const {
     data: responseData,
     isLoading,
@@ -160,6 +161,7 @@ const ProjectBalances = forwardRef((props, ref) => {
     }
 
     try {
+      setIsExporting(true);
       const selectedCodes = paginatedData
         .filter((row) => selected.includes(row._id))
         .map((row) => row.code);
@@ -170,6 +172,8 @@ const ProjectBalances = forwardRef((props, ref) => {
       });
     } catch (error) {
       console.error("Export failed:", error);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -211,10 +215,12 @@ const ProjectBalances = forwardRef((props, ref) => {
               size="sm"
               color="neutral"
               onClick={handleExport}
-              disabled={selected.length === 0}
-              startDecorator={<DownloadIcon />}
+              disabled={selected.length === 0 || isExporting}
+              startDecorator={
+                isExporting ? <CircularProgress size="sm" /> : <DownloadIcon />
+              }
             >
-              Export to CSV
+              {isExporting ? "Exporting..." : "Export to CSV"}
             </Button>
           )}
         </Box>
