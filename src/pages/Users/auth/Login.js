@@ -3,7 +3,7 @@ import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { Box, Button, Grid, Paper, TextField, Typography } from "@mui/material";
 import { useFormik } from "formik";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Slider from "react-slick";
 import { toast } from "react-toastify";
@@ -14,152 +14,90 @@ import * as Yup from "yup";
 import Img1 from "../../../assets/New_Solar3.png";
 import Img5 from "../../../assets/Protrac_blue.png";
 import ImgX from "../../../assets/slnko_white_logo.png";
-// import Img4 from "../../../assets/solar3.jpg";
 import axios from "axios";
 import { useAddLoginsMutation } from "../../../redux/loginSlice";
 import Colors from "../../../utils/colors";
+import { OtpVerification } from "./OtpVerification";
+import { Modal, ModalDialog } from "@mui/joy";
 
 const Login = () => {
   const navigate = useNavigate();
-  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [addLogin] = useAddLoginsMutation();
-  const [token, setToken] = useState(null);
-  const [userID, setUserID] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [geoInfo, setGeoInfo] = useState({
+    latitude: null,
+    longitude: null,
+    fullAddress: "",
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [otpDialogOpen, setOtpDialogOpen] = useState(false);
+  const [emailForOtp, setEmailForOtp] = useState("");
 
   const handleTogglePassword = () => setShowPassword((prev) => !prev);
 
-  // const paperStyle = {
-  //   background: Colors.palette.primary.main,
-  //   // marginTop: "20%",
-  //   height: "auto",
-  //   padding: "20px",
-  //   display: "flex",
-  //   flexDirection: "column",
-  //   borderRadius: 25,
-  // };
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
 
-  const submitButtonStyle = {
-    padding: "12px",
-    margin: "20px 0",
-    borderRadius: 15,
-    fontWeight: "600",
-    backgroundColor: Colors.palette.secondary.main,
-    display: "block",
-    textAlign: "center",
-    marginTop: "5%",
-    marginLeft: { xs: "20%", sm: "30%" },
-  };
+        let fullAddress = "";
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
+          );
+          const data = await res.json();
+          fullAddress = data.display_name || "";
+        } catch (err) {
+          toast.error("Reverse geocoding failed");
+        }
 
-  const sliderSettings = {
-    infinite: true,
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 3000,
-    arrows: false,
-  };
-
-  //  const handleLogin = async (values) => {
-  //   setIsSubmitting(true);
-
-  //   try {
-
-  //     const user = await addLogin(values).unwrap();
-
-  //     if (!user.token) {
-  //       toast.error("Login failed: Token not received.");
-  //       return;
-  //     }
-
-  //     console.log("✅ Token received:", user.token);
-
-  //     const expiration = new Date().getTime() + 3 * 24 * 60 * 60 * 1000;
-  //     sessionStorage.setItem("authToken", user.token);
-  //     sessionStorage.setItem("authTokenExpiration", expiration.toString());
-
-  //     const response = await axios.get("${process.env.REACT_APP_API_URL}/get-all-useR-IT", {
-  //       headers: {
-  //         "x-auth-token": user.token,
-  //       },
-  //     });
-
-  //     const matchedUser = response?.data?.data.find(
-  //       (item) => String(item._id) === String(user.userId)
-  //     );
-
-  //     if (!matchedUser) {
-  //       toast.error("Login failed: User details not found.");
-  //       return;
-  //     }
-
-  //     const userDetails = {
-  //       name: matchedUser.name,
-  //       email: matchedUser.email,
-  //       phone: matchedUser.phone,
-  //       emp_id: matchedUser.emp_id,
-  //       role: matchedUser.role,
-  //       department: matchedUser.department || "",
-  //       userID: matchedUser._id || "",
-  //     };
-
-  //     localStorage.setItem("userDetails", JSON.stringify(userDetails));
-  //     toast.success("Login successful!");
-
-  //     navigate("/dashboard");
-  //   } catch (error) {
-  //     console.error("Login error:", error);
-  //     const message =
-  //       error?.response?.data?.message ||
-  //       error?.data?.message ||
-  //       error?.message ||
-  //       "Login failed.";
-  //     toast.error(message);
-  //   } finally {
-  //     setIsSubmitting(false);
-  //   }
-  // };
+        setGeoInfo({ latitude, longitude, fullAddress });
+      },
+      () => {
+        toast.error("Location access denied. Enable location to login.");
+      }
+    );
+  }, []);
 
   const handleLogin = async (values) => {
+    if (!geoInfo.latitude || !geoInfo.longitude || !geoInfo.fullAddress) {
+      toast.error("Location is required to login. Please enable location access.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      const user = await addLogin(values).unwrap();
+      const loginPayload = {
+        ...values,
+        latitude: geoInfo.latitude,
+        longitude: geoInfo.longitude,
+        fullAddress: geoInfo.fullAddress,
+      };
+
+      const user = await addLogin(loginPayload).unwrap();
 
       if (!user.token) {
         toast.error("Login failed: Token not received.");
         return;
       }
 
-      // console.log("✅ Token received:", user.token);
-
       const expiration = new Date().getTime() + 3 * 24 * 60 * 60 * 1000;
       localStorage.setItem("authToken", user.token);
-      // sessionStorage.setItem("userDetails", JSON.stringify({
-      //   ...user,
-      //   userID: user._id
-      // }));
-
       localStorage.setItem("authTokenExpiration", expiration.toString());
 
-      if (!user.token) {
-        toast.error("Missing token. Cannot fetch user data.");
-        return;
-      }
       const response = await axios.get(
         `${process.env.REACT_APP_API_URL}/get-all-useR-IT`,
         {
-          headers: {
-            "x-auth-token": user.token,
-          },
+          headers: { "x-auth-token": user.token },
+          withCredentials: true
         }
       );
 
       const matchedUser = response?.data?.data.find(
         (item) => String(item._id) === String(user.userId)
       );
-      // console.log(matchedUser);
 
       if (!matchedUser) {
         toast.error("Login failed: User details not found.");
@@ -177,17 +115,23 @@ const Login = () => {
       };
 
       localStorage.setItem("userDetails", JSON.stringify(userDetails));
-      // console.log("✅ User details stored:", userDetails);
-
       toast.success("Login successful!");
       navigate("/dashboard");
     } catch (error) {
-      console.error("❌ Login error:", error);
       const message =
         error?.response?.data?.message ||
         error?.data?.message ||
         error?.message ||
         "Login failed.";
+      const email = error?.response?.data?.email || error?.data?.email || error?.email;
+      if (
+        message === "Unrecognized device. OTP has been sent for verification."
+      ) {
+        setEmailForOtp(email);
+        setOtpDialogOpen(true);
+        toast.info(message);
+        return;
+      }
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -210,6 +154,29 @@ const Login = () => {
     validationSchema: validationSchema,
     onSubmit: handleLogin,
   });
+
+  const sliderSettings = {
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    autoplay: true,
+    autoplaySpeed: 3000,
+    arrows: false,
+  };
+  
+
+   const submitButtonStyle = {
+    padding: "12px",
+    margin: "20px 0",
+    borderRadius: 15,
+    fontWeight: "600",
+    backgroundColor: Colors.palette.secondary.main,
+    display: "block",
+    textAlign: "center",
+    marginTop: "5%",
+    marginLeft: { xs: "20%", sm: "30%" },
+  };
   return (
     <Box
       sx={{
@@ -231,7 +198,6 @@ const Login = () => {
           md={7}
           sx={{
             display: { xs: "none", sm: "none", md: "flex" },
-
             justifyContent: "center",
             alignItems: "center",
             height: "100%",
@@ -248,12 +214,6 @@ const Login = () => {
               alt="Solar 1"
               style={{ width: "100%", height: "auto" }}
             />
-
-            {/* <img
-              src={Img4}
-              alt="Solar 4"
-              style={{ width: "100%", height: "auto" }}
-            /> */}
           </Slider>
         </Grid>
 
@@ -399,6 +359,20 @@ const Login = () => {
             </form>
           </Paper>
         </Grid>
+     
+<Modal open={otpDialogOpen} onClose={() => setOtpDialogOpen(false)}>
+  <ModalDialog>
+    <Typography level="h4" component="h2">
+      OTP Verification
+    </Typography>
+
+    <OtpVerification
+      email={emailForOtp}
+      onSuccess={() => setOtpDialogOpen(false)}
+    />
+  </ModalDialog>
+</Modal>
+
       </Grid>
     </Box>
   );
