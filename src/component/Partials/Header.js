@@ -70,7 +70,7 @@ function Header() {
           size="md"
           sx={{
             position: "fixed",
-            top: 850,
+            top: 650,
             left: 70,
             zIndex: 9999,
             borderRadius: "50%",
