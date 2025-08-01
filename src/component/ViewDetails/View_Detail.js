@@ -1060,9 +1060,9 @@ const Customer_Payment_Summary = () => {
                     "#B6F4C6",
                     true,
                   ],
-                  ["6", "Total PO Basic Value", total_po_basic],
-                  ["7", "GST Value as per PO", gst_as_po_basic],
-                  ["8", "Total PO with GST", total_po_with_gst],
+                  ["6", "Total PO Basic Value", Math.round(total_po_basic)],
+                  ["7", "GST Value as per PO", Math.round(gst_as_po_basic)],
+                  ["8", "Total PO with GST", Math.round(total_po_with_gst)],
                   [
                     "9",
                     billing_type === "Composite"

@@ -326,7 +326,7 @@ function PaymentRequest() {
           </Box>
         )}
 
-        {ClientBalance && (
+        
           <Box display="flex" alignItems="center" mt={0.5}>
             <CircleUser size={12} />
             &nbsp;
@@ -335,12 +335,12 @@ function PaymentRequest() {
             </span>
             &nbsp;
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              {ClientBalance}
+              {ClientBalance ||"0"}
             </Typography>
           </Box>
-        )}
+      
 
-        {groupBalance && (
+     
           <Box display="flex" alignItems="center" mt={0.5}>
             <UsersRound size={12} />
             &nbsp;
@@ -349,10 +349,10 @@ function PaymentRequest() {
             </span>
             &nbsp;
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              {groupBalance || "-"}
+              {groupBalance || "0"}
             </Typography>
           </Box>
-        )}
+        
       </>
     );
   };
