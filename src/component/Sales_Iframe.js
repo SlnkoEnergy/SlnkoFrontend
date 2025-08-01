@@ -8,25 +8,21 @@ const SalesIframe = () => {
   const iframeRef = useRef(null);
   const [searchParams] = useSearchParams();
 
-  const baseUrl = "/sales-app";
+  const baseUrl = "http://localhost:5173";
 
-  // Get last path + current query on initial load
   const savedPath = localStorage.getItem("lastIframePath") || "/";
   const currentSearch = searchParams.toString() ? `?${searchParams.toString()}` : "";
 
-  // Set iframeSrc immediately
   const [iframeSrc] = useState(`${baseUrl}${savedPath}${currentSearch}`);
 
   const [iframePath, setIframePath] = useState(savedPath);
   const [currentIframeSearch, setCurrentIframeSearch] = useState(currentSearch);
 
-  // Update search state if parent URL changes
   useEffect(() => {
     const iframeSearch = searchParams.toString() ? `?${searchParams.toString()}` : "";
     setCurrentIframeSearch(iframeSearch);
   }, [searchParams]);
 
-  // Send message to iframe to sync route changes
   useEffect(() => {
     if (!iframePath) return;
 
@@ -40,7 +36,6 @@ const SalesIframe = () => {
     );
   }, [iframePath, currentIframeSearch]);
 
-  // Listen to iframe messages and update path in localStorage
   useEffect(() => {
     const handleMessage = (event) => {
       if (event.data?.type === "UPDATE_SEARCH_PARAMS") {

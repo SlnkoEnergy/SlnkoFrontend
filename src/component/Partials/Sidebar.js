@@ -796,12 +796,20 @@ function Sidebar() {
                   </ListItemButton>
                 )}
               >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/leads")}>
-                      Leads
-                    </ListItemButton>
-                  </ListItem>
+                 <List sx={{ gap: 0.5 }}>
+                  <ListItem>
+  <ListItemButton
+    onClick={() =>
+      navigate("/sales", {
+        state: { internalPath: "/dashboard", search: "" },
+      })
+    }
+  >
+    Dashboard
+  </ListItemButton>
+</ListItem>
+
+
                   <ListItem>
                     <ListItemButton onClick={() => navigate("/comm_offer")}>
                       Commercial Offer
