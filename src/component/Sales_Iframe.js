@@ -54,26 +54,29 @@ const SalesIframe = () => {
     return () => window.removeEventListener("message", handleMessage);
   }, []);
 
- useEffect(() => {
-  const authData = {
-    type: "AUTH_SYNC",
-    token: localStorage.getItem("authToken"),
-    tokenExpiration: localStorage.getItem("authTokenExpiration"),
-    userDetails: localStorage.getItem("userDetails"),
+useEffect(() => {
+  let authSent = false;
+
+  const handleMessage = (event) => {
+    if (event.data?.type === "IFRAME_READY" && !authSent) {
+      authSent = true; // ✅ prevent future sends
+
+      const authData = {
+        type: "AUTH_SYNC",
+        token: localStorage.getItem("authToken"),
+        userDetails: localStorage.getItem("userDetails"),
+      };
+
+      setTimeout(() => {
+        iframeRef.current?.contentWindow?.postMessage(authData, "https://sales.slnkoprotrac.com");
+        console.log("[Parent] Sent auth data to iframe:", authData);
+      }, 100);
+    }
   };
 
-  const sendAuthData = () => {
-    iframeRef.current?.contentWindow?.postMessage(authData, "*");
-    console.log("[Parent] Sent auth data to iframe:", authData);
-  };
-
-  const iframe = iframeRef.current;
-  if (iframe) {
-    iframe.addEventListener("load", sendAuthData);
-    return () => iframe.removeEventListener("load", sendAuthData);
-  }
+  window.addEventListener("message", handleMessage);
+  return () => window.removeEventListener("message", handleMessage);
 }, []);
-
 
 
   return (

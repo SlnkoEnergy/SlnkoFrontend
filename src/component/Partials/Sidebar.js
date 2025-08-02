@@ -84,29 +84,32 @@ function Sidebar() {
 
   return (
     <Sheet
-      className="Sidebar"
-      sx={{
-        position: "fixed",
-        transition: "transform 0.4s, width 0.4s",
-        zIndex: 10000,
-        height: "100dvh",
-        width: "var(--Sidebar-width)",
-        top: 0,
-        p: 2,
-        flexShrink: 0,
-        display: "flex",
-        flexDirection: "column",
-        gap: 2,
-        borderRight: "1px solid",
-        borderColor: "divider",
-        "@media print": { display: "none" },
-      }}
-      style={{
-        transform: isSalesPage
-          ? "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1)))"
-          : "none",
-      }}
-    >
+  className="Sidebar"
+  sx={{
+    position: "fixed",
+    transition: "transform 0.4s, width 0.4s",
+    zIndex: 10000,
+    height: "100dvh",
+    width: "var(--Sidebar-width)",
+    top: 0,
+    p: 2,
+    flexShrink: 0,
+    display: "flex",
+    flexDirection: "column",
+    gap: 2,
+    borderRight: "1px solid",
+    borderColor: "divider",
+    "@media print": { display: "none" },
+
+    transform: {
+      xs: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1)))",
+      lg: isSalesPage
+        ? "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1)))"
+        : "none",
+    },
+  }}
+>
+
       <GlobalStyles
         styles={(theme) => ({
           ":root": {

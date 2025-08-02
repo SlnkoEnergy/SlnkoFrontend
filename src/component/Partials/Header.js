@@ -70,8 +70,8 @@ function Header() {
           size="md"
           sx={{
             position: "fixed",
-            top: 650,
-            left: 70,
+            top: 15,
+            left: 250,
             zIndex: 9999,
             borderRadius: "50%",
             boxShadow: "md",
