@@ -27,7 +27,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import NoData from "../assets/alert-bell.svg";
 import { useGetProjectBalanceQuery } from "../redux/Accounts";
-import socket from "../socket/socket";
+// import socket from "../socket/socket";
 import {
   AlertTriangle,
   ArrowDownUp,
@@ -385,14 +385,14 @@ const ProjectBalances = forwardRef((props, ref) => {
     fontWeight: 500,
   };
 
-  useEffect(() => {
-    socket.on("projectBalanceUpdated", () => {
-      refetch();
-    });
-    return () => {
-      socket.off("projectBalanceUpdated");
-    };
-  }, []);
+  // useEffect(() => {
+  //   socket.on("projectBalanceUpdated", () => {
+  //     refetch();
+  //   });
+  //   return () => {
+  //     socket.off("projectBalanceUpdated");
+  //   };
+  // }, []);
 
   const fontStyleBold = {
     fontFamily: "Inter, sans-serif",
