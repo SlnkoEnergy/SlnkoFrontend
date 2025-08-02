@@ -13,7 +13,7 @@ Sentry.init({
   dsn: "https://f174e0dee7b57070ee4f9b2d6e0baaca@o4509774671511552.ingest.us.sentry.io/4509774686584832",
   integrations: [Sentry.browserTracingIntegration()],
   tracesSampleRate: 1.0,
-  debug: true, // optional: logs info to browser console
+  debug: true, 
 });
 
 
