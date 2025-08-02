@@ -75,19 +75,6 @@ import ViewHandSheet from "../pages/CAM/HandOver_View";
 import Dashboardz from "../pages/Dashboards";
 import DashboardENG from "../pages/Eng/DashboardEng";
 import Process_Tracker from "../pages/Eng/Er_Process";
-import Add_AC_Cable from "../pages/Eng/Forms/Add_AC";
-import {
-  default as Add_BOS,
-  default as Add_BOS_Station,
-} from "../pages/Eng/Forms/Add_BOS";
-import Add_DC_Cable from "../pages/Eng/Forms/Add_DC";
-import Add_HT_Panel from "../pages/Eng/Forms/Add_HT";
-import Add_Inverter from "../pages/Eng/Forms/Add_Inverter";
-import Add_LT_Panel from "../pages/Eng/Forms/Add_LT";
-import Add_Module from "../pages/Eng/Forms/Add_Module";
-import Add_Pooling from "../pages/Eng/Forms/Add_Pooling";
-import Add_Transformer from "../pages/Eng/Forms/Add_Transformer";
-import Add_BOM from "../pages/Eng/Forms/BOM_Addn";
 import ModuleSheet from "../pages/Eng/ModuleDashboard";
 import Accounts_Expense from "../pages/ExpenseSheet/Expense_Accounts";
 import ApprovalExpense from "../pages/ExpenseSheet/Expense_Approval";
@@ -114,6 +101,7 @@ import PurchaseReqDetails from "../pages/CAM/PurchaseRequestDetail";
 import Add_Task from "../pages/AllTask/ADD_Task";
 import AllTask from "../pages/AllTask/AllTask";
 import View_Task from "../pages/AllTask/View_Task";
+import SalesIframe from "../component/Sales_Iframe";
 
 
 function index() {
@@ -153,6 +141,15 @@ function index() {
         }
       />
       {/*-------BD------- */}
+      <Route 
+      path="/sales"
+      element = {
+        <PrivateRoute>
+          <SalesIframe />
+        </PrivateRoute>
+      }
+      />
+      
       <Route
         path="/comm_offer"
         element={
