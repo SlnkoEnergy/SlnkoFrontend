@@ -5,8 +5,6 @@ import { StyledEngineProvider } from "@mui/joy/styles";
 import { BrowserRouter } from "react-router-dom";
 import { Provider } from "react-redux";
 import { store } from "./store/store";
-
-// 👉 Sentry Imports
 import * as Sentry from "@sentry/react";
 
 Sentry.init({
