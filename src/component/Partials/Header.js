@@ -63,23 +63,27 @@ function Header() {
       )}
 
       {isSalesPage && (
-        <IconButton
-          onClick={() => toggleSidebar()}
-          variant="solid"
-          color="primary"
-          size="md"
-          sx={{
-            position: "fixed",
-            top: 15,
-            left: 250,
-            zIndex: 9999,
-            borderRadius: "50%",
-            boxShadow: "md",
-            "@media print": { display: "none!important" }
-          }}
-        >
-          <MenuIcon />
-        </IconButton>
+       <IconButton
+  onClick={()=>toggleSidebar()}
+  size="md"
+  sx={{
+    position: "fixed",
+    top: 15,
+    left: 250,
+    zIndex: 9999,
+    borderRadius: "50%",
+    boxShadow: 3,
+    backgroundColor: "#214b7b",
+    color: "#fff", 
+    "&:hover": {
+      backgroundColor: "#183659" 
+    },
+    "@media print": { display: "none!important" }
+  }}
+>
+  <MenuIcon />
+</IconButton>
+
       )}
     </>
   );

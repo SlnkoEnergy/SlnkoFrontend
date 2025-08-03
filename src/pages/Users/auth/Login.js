@@ -54,9 +54,6 @@ const Login = () => {
         }
 
         setGeoInfo({ latitude, longitude, fullAddress });
-      },
-      () => {
-        toast.error("Location access denied. Enable location to login.");
       }
     );
   }, []);
