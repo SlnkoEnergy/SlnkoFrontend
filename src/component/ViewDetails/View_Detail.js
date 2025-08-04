@@ -1398,22 +1398,29 @@ const Customer_Payment_Summary = () => {
                 </tr>
               ) : ClientSummary.length > 0 ? (
                 ClientSummary.map((client) => (
-                  <tr key={client.po_number}>
+                  <tr key={client._id}>
                     <td>{client.po_number || "N/A"}</td>
                     <td>{client.vendor || "N/A"}</td>
                     <td>{client.item_name || "N/A"}</td>
-                    <td>₹ {client?.po_value.toLocaleString("en-IN")}</td>
-                    <td>₹ {client?.advance_paid.toLocaleString("en-IN")}</td>
+                    <td>₹ {(client?.po_value || 0).toLocaleString("en-IN")}</td>
                     <td>
-                      ₹ {client?.remaining_amount.toLocaleString("en-IN")}
+                      ₹ {(client?.advance_paid || 0).toLocaleString("en-IN")}
                     </td>
                     <td>
-                      ₹ {client?.total_billed_value.toLocaleString("en-IN")}
+                      ₹{" "}
+                      {(client?.remaining_amount || 0).toLocaleString("en-IN")}
+                    </td>
+                    <td>
+                      ₹{" "}
+                      {(client?.total_billed_value || 0).toLocaleString(
+                        "en-IN"
+                      )}
                     </td>
                     <td style={{ textAlign: "center" }}>
                       <Checkbox
                         checked={selectedClients.includes(client._id)}
                         onChange={() => handleClientCheckboxChange(client._id)}
+                        aria-label={`Select client ${client.po_number || client._id}`}
                       />
                     </td>
                   </tr>

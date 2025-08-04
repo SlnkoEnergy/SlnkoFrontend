@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  CircularProgress,
   Container,
   FormControl,
   Grid,
@@ -19,8 +20,6 @@ import { useMemo } from "react";
 
 const UpdatePurchaseOrder = ({ po_number }) => {
   const navigate = useNavigate();
-
-  console.log("PO Number from props:", po_number);
 
   const [user, setUser] = useState(null);
   useEffect(() => {
@@ -63,7 +62,7 @@ const UpdatePurchaseOrder = ({ po_number }) => {
 
   const [projectIDs, setProjectIDs] = useState([]);
   const [showOtherItem, setShowOtherItem] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [response, setResponse] = useState([]);
 
@@ -78,26 +77,27 @@ const UpdatePurchaseOrder = ({ po_number }) => {
     ],
     []
   );
-
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        if (!user) return;
+      if (!user) return;
 
+      try {
         const token = localStorage.getItem("authToken");
         const config = { headers: { "x-auth-token": token } };
 
         const [projectsRes, vendorsRes, itemsRes, poRes] = await Promise.all([
-          Axios.get("/get-all-projecT-IT", config),
-          Axios.get("/get-all-vendoR-IT", config),
+          Axios.get("/project-dropdown", config),
+          Axios.get("/vendor-dropdown", config),
           Axios.get("/engineering/material-category-drop", config),
-          Axios.get("/get-all-pO-IT", config),
+          Axios.get(
+            `/get-po-by-po_number?po_number=${poNumberFromStorage}`,
+            config
+          ),
         ]);
 
         const itemsList = itemsRes?.data?.data || [];
+        const allPoData = poRes.data?.data || [];
 
-        const allPoData = poRes.data.data || [];
-        console.log("itemList", itemsList);
         setGetFormData({
           projectIDs: projectsRes.data.data || [],
           vendors: vendorsRes.data.data || [],
@@ -108,8 +108,8 @@ const UpdatePurchaseOrder = ({ po_number }) => {
         const poData = allPoData.find(
           (po) => po.po_number === poNumberFromStorage
         );
-        const matchedItem = itemsList.find((i) => i.name === poData.item);
-         
+        const matchedItem = itemsList.find((i) => i.name === poData?.item);
+
         if (poData) {
           setFormData({
             _id: poData._id,
@@ -130,13 +130,12 @@ const UpdatePurchaseOrder = ({ po_number }) => {
             comment: poData.comment || "",
             submitted_By: user?.name || "Anonymous",
           });
-      
+
           setShowOtherItem(poData.item?.toLowerCase() === "other");
         } else {
           console.warn("PO not found for the stored PO number");
         }
       } catch (err) {
-        console.error("Error fetching data:", err);
         const message =
           err?.response?.data?.message ||
           "Failed to fetch data. Please try again.";
@@ -191,15 +190,6 @@ const UpdatePurchaseOrder = ({ po_number }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // const userData = getUserData();
-    // if (userData && userData.name) {
-    //   setFormData((prev) => ({
-    //     ...prev,
-    //     submitted_By: userData.name,
-    //   }));
-    // }
-    // setUser(userData);
 
     if (!formData._id) {
       setError("Document ID (_id) is missing. Cannot update PO.");
@@ -404,21 +394,18 @@ const UpdatePurchaseOrder = ({ po_number }) => {
                   key: `${item._id}-${index}`,
                 }))}
                 value={
-  formData.item
-    ? {
-        label:
-          getFormData.items.find((i) => i._id === formData.item)?.name || "",
-        value: formData.item,
-      }
-    : null
-}
-
-              onChange={(selectedOption) => {
-  handleSelectChange("item", selectedOption?.value || "");
-}}
-
-
-
+                  formData.item
+                    ? {
+                        label:
+                          getFormData.items.find((i) => i._id === formData.item)
+                            ?.name || "",
+                        value: formData.item,
+                      }
+                    : null
+                }
+                onChange={(selectedOption) => {
+                  handleSelectChange("item", selectedOption?.value || "");
+                }}
                 placeholder="Select Item"
                 required
               />
