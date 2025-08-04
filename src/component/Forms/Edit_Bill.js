@@ -13,11 +13,11 @@ import { toast } from "react-toastify";
 import Img7 from "../../assets/update-po.png";
 import Axios from "../../utils/Axios";
 
-const UpdateBillForm = ({ _id }) => {
+const UpdateBillForm = ({ po_number }) => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
-  console.log("PO Number from props:", _id);
+  console.log("PO Number from props:", po_number);
 
   useEffect(() => {
     const userData = getUserData();
@@ -82,16 +82,16 @@ const UpdateBillForm = ({ _id }) => {
             "x-auth-token": token,
           },
           params: {
-            _id,
+            po_number,
           },
         };
 
-        const billRes = await Axios.get("/get-bill-by-id", config);
+        const billRes = await Axios.get(`/get-bill-by-id?`, config);
         const allBills = Array.isArray(billRes.data?.data) ? billRes.data.data : [];
 
         setGetFormValues({ AllBill: allBills });
 
-        const matchingBill = allBills.find((bill) => bill._id === _id);
+        const matchingBill = allBills.find((bill) => bill.po_number === po_number);
 
         if (matchingBill) {
           setFormValues({
@@ -117,10 +117,10 @@ const UpdateBillForm = ({ _id }) => {
       }
     };
 
-    if (_id) {
+    if (po_number) {
       fetchData();
     }
-  }, [_id, user?.name]);
+  }, [po_number, user?.name]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
