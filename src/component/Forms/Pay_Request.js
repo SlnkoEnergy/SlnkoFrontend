@@ -7,7 +7,7 @@ import {
   Grid,
   Input,
   Sheet,
-  Typography
+  Typography,
 } from "@mui/joy";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -22,17 +22,16 @@ function PaymentRequestForm() {
     projectIDs: [],
     poNumbers: [],
     vendors: [],
-    pays: []
+    pays: [],
   });
 
   const [user, setUser] = useState(null);
-    
-      
+
   //    useEffect(() => {
   //     const userData = getUserData();
   //     setUser(userData);
   //   }, []);
-    
+
   //   const getUserData = () => {
   //     const userData = localStorage.getItem("userDetails");
   //     if (userData) {
@@ -40,7 +39,6 @@ function PaymentRequestForm() {
   //     }
   //     return null;
   //   };
-
 
   const [formData, setFormData] = useState({
     p_id: "",
@@ -61,29 +59,29 @@ function PaymentRequestForm() {
     acc_number: "",
     ifsc: "",
     branch: "",
-    acc_match:"",
-    utr:"",
-    total_advance_paid:"",
-    submitted_by:""
+    acc_match: "",
+    utr: "",
+    total_advance_paid: "",
+    submitted_by: "",
   });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("authToken");
-const config = { headers: { "x-auth-token": token } };
+        const config = { headers: { "x-auth-token": token } };
 
-const [
-  projectsResponse,
-  poNumbersResponse,
-  vendorsResponse,
-  payResponse
-] = await Promise.all([
-  Axios.get("/get-all-projecT-IT", config),
-  Axios.get("/get-all-pO-IT", config),
-  Axios.get("/get-all-vendoR-IT", config),
-  Axios.get("/get-pay-summarY-IT", config),
-]);
+        const [
+          projectsResponse,
+          poNumbersResponse,
+          vendorsResponse,
+          payResponse,
+        ] = await Promise.all([
+          Axios.get("/get-all-projecT-IT", config),
+          Axios.get("/get-all-pO-IT", config),
+          Axios.get("/get-all-vendoR-IT", config),
+          Axios.get("/get-pay-summarY-IT", config),
+        ]);
 
         setGetFormData({
           projectIDs: projectsResponse.data.data || [],
@@ -105,7 +103,7 @@ const [
     fetchData();
   }, []);
 
-  const handleChange = (e)  => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
@@ -119,7 +117,7 @@ const [
           total_advance_paid: "N/A",
           po_balance: "N/A",
           amt_for_customer: "",
-          amount_paid:"",
+          amount_paid: "",
           benificiary: "",
           acc_number: "",
           ifsc: "",
@@ -163,10 +161,10 @@ const [
       const selectedProject = getFormData.projectIDs.find(
         (project) => project.p_id === value
       );
-    
+
       if (selectedProject) {
         console.log("Selected project:", selectedProject);
-        setFormData((prev) => ( {
+        setFormData((prev) => ({
           ...prev,
           name: selectedProject.name || "",
           customer: selectedProject.customer || "",
@@ -178,34 +176,27 @@ const [
     }
   };
 
-  const handleSelectChange = (selectedOption: { value: string; label: string }) => {
-    if (selectedOption) {
-      setFormData((prev) => ({
-        ...prev,
-        p_id: selectedOption.value,
-        name: selectedOption.label,
-      }));
-    }
-  };
-
-  const handlePoChange = (selectedOption: { value: string; label: string }) => {
+  const handlePoChange = (selectedOption) => {
     const selectedPo = getFormData.poNumbers.find(
       (po) => po.po_number === selectedOption?.value
     );
-  
+
     if (!selectedPo) {
       // console.warn("PO number not found in the list:", selectedOption?.value);
       return;
     }
-  
+
     const poValue = parseFloat(selectedPo.po_value ?? "0");
-  
+
     const totalAdvancePaid = getFormData.pays
-    .filter((pay) => pay.po_number === selectedPo.po_number && pay.approved === "Approved")
-    .reduce((sum, pay) => sum + parseFloat(pay.amount_paid ?? "0"), 0);
-    
+      .filter(
+        (pay) =>
+          pay.po_number === selectedPo.po_number && pay.approved === "Approved"
+      )
+      .reduce((sum, pay) => sum + parseFloat(pay.amount_paid ?? "0"), 0);
+
     const po_balance = poValue - totalAdvancePaid;
-  
+
     setFormData((prev) => ({
       ...prev,
       po_number: selectedPo.po_number,
@@ -215,11 +206,11 @@ const [
       total_advance_paid: totalAdvancePaid.toString(),
       po_balance: po_balance.toString(),
     }));
-  
+
     const matchingProject = getFormData.projectIDs.find(
       (project) => project.code === selectedPo.p_id
     );
-  
+
     if (matchingProject) {
       // console.log("Matched Project details from PO p_id:", matchingProject);
       setFormData((prev) => ({
@@ -233,12 +224,12 @@ const [
     } else {
       console.warn("No matching project found for p_id:", selectedPo.p_id);
     }
-  
+
     if (selectedPo.vendor) {
       const matchedVendor = getFormData.vendors.find(
         (vendor) => vendor.name === selectedPo.vendor
       );
-  
+
       if (matchedVendor) {
         console.log("Matched Vendor:", matchedVendor);
         setFormData((prev) => ({
@@ -253,15 +244,14 @@ const [
       }
     }
   };
-  
-  
+
   const [responseMessage, setResponseMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const userData = getUserData();
     setUser(userData);
-  
+
     if (userData) {
       setFormData((prev) => ({
         ...prev,
@@ -269,7 +259,7 @@ const [
       }));
     }
   }, []);
-  
+
   const getUserData = () => {
     const userData = localStorage.getItem("userDetails");
     if (userData) {
@@ -277,81 +267,81 @@ const [
     }
     return null;
   };
-  
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     setIsLoading(true);
     // console.log("Form data submitted:", formData);
 
     try {
       const token = localStorage.getItem("authToken");
 
-const response = await Axios.post(
-  "/add-pay-requesT-IT",
-  {
-    ...formData,
-    p_id: formData?.p_id,
-    submitted_by: user?.name || getUserData()?.name || "",
-  },
-  {
-    headers: {
-      "x-auth-token": token,
-    },
-  }
-);
+      const response = await Axios.post(
+        "/add-pay-requesT-IT",
+        {
+          ...formData,
+          p_id: formData?.p_id,
+          submitted_by: user?.name || getUserData()?.name || "",
+        },
+        {
+          headers: {
+            "x-auth-token": token,
+          },
+        }
+      );
       const { message } = response.data;
 
-    setResponseMessage(message);
-    toast.success("Payment Requested Successfully ", response.data);
+      setResponseMessage(message);
+      toast.success("Payment Requested Successfully ", response.data);
 
       console.log("Payment request are", response.data);
       navigate("/daily-payment-request");
     } catch (error) {
-          console.error(
-            "Error submitting payment request:",
-            error.response?.data || error.message
-          );
-          setResponseMessage("Failed to add payment. Please try again!!");
-    
-          toast.error("Something Went Wrong?");
-        } finally {
-          setIsLoading(false);
-        }
+      console.error(
+        "Error submitting payment request:",
+        error.response?.data || error.message
+      );
+      setResponseMessage("Failed to add payment. Please try again!!");
+
+      toast.error("Something Went Wrong?");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleHoldPayment = async () => {
     try {
       const token = localStorage.getItem("authToken");
 
-const response = await Axios.post(
-  "/hold-PaymenT-IT",
-  {
-    ...formData,
-    p_id: formData?.p_id,
-    submitted_by: user?.name || getUserData()?.name || "",
-  },
-  {
-    headers: {
-      "x-auth-token": token,
-    },
-  }
-);
+      const response = await Axios.post(
+        "/hold-PaymenT-IT",
+        {
+          ...formData,
+          p_id: formData?.p_id,
+          submitted_by: user?.name || getUserData()?.name || "",
+        },
+        {
+          headers: {
+            "x-auth-token": token,
+          },
+        }
+      );
 
       const { message } = response.data;
 
       setResponseMessage(message);
       toast.success("Payment has been put on hold successfully.");
-      navigate("/standby_records")
+      navigate("/standby_records");
     } catch (error) {
-      console.error("Error holding payment:", error.response?.data || error.message);
+      console.error(
+        "Error holding payment:",
+        error.response?.data || error.message
+      );
       setResponseMessage("Failed to hold payment. Please try again!!");
       toast.error("Unable to hold payment.");
     }
   };
-  
-
 
   return (
     <CssBaseline>
@@ -384,10 +374,10 @@ const response = await Axios.post(
           <Box component="form" onSubmit={handleSubmit}>
             <Grid container spacing={2}>
               <Grid xs={12} sm={6}>
-              <Typography level="body2" fontWeight="bold">
-    Projects: 
-    </Typography>
-    {/* <Select
+                <Typography level="body2" fontWeight="bold">
+                  Projects:
+                </Typography>
+                {/* <Select
   name="p_id"
   value={formData.p_id
     ? {
@@ -412,44 +402,49 @@ const response = await Axios.post(
   isDisabled={formData.pay_type === "Payment Against PO" && formData.po_number} // Disable when both conditions are met
 /> */}
 
-       {formData.pay_type === "Payment Against PO" && formData.po_number ? (
-    // Readonly Input when Payment Against PO is selected
-    <Input
-      name="p_id"
-      value={
-        getFormData.projectIDs.find((project) => project.p_id === formData.p_id)?.code || ""
-      }
-      placeholder="Project Code"
-      readOnly
-    />
-  ) : (
-    // Select dropdown for other payment types
-    <Select
-      name="p_id"
-      value={
-        formData.p_id
-          ? {
-              label: getFormData.projectIDs.find((project) => project.p_id === formData.p_id)?.code,
-              value: formData.p_id,
-            }
-          : null
-      }
-      onChange={(e) =>
-        handleChange({
-          target: {
-            name: "p_id",
-            value: e?.value,
-          },
-        })
-      }
-      options={getFormData.projectIDs.map((project) => ({
-        label: project.code,
-        value: project.p_id,
-      }))}
-      placeholder="Select Project"
-    />
-  )}   
-{/* <Input
+                {formData.pay_type === "Payment Against PO" &&
+                formData.po_number ? (
+                  // Readonly Input when Payment Against PO is selected
+                  <Input
+                    name="p_id"
+                    value={
+                      getFormData.projectIDs.find(
+                        (project) => project.p_id === formData.p_id
+                      )?.code || ""
+                    }
+                    placeholder="Project Code"
+                    readOnly
+                  />
+                ) : (
+                  // Select dropdown for other payment types
+                  <Select
+                    name="p_id"
+                    value={
+                      formData.p_id
+                        ? {
+                            label: getFormData.projectIDs.find(
+                              (project) => project.p_id === formData.p_id
+                            )?.code,
+                            value: formData.p_id,
+                          }
+                        : null
+                    }
+                    onChange={(e) =>
+                      handleChange({
+                        target: {
+                          name: "p_id",
+                          value: e?.value,
+                        },
+                      })
+                    }
+                    options={getFormData.projectIDs.map((project) => ({
+                      label: project.code,
+                      value: project.p_id,
+                    }))}
+                    placeholder="Select Project"
+                  />
+                )}
+                {/* <Input
                   name="projectID"
                   value={formData.projectID || ""}
                   onChange={handleChange}
@@ -457,13 +452,12 @@ const response = await Axios.post(
                   required
                   readOnly
                 /> */}
-
               </Grid>
 
               <Grid xs={12} sm={6}>
-              <Typography level="body2" fontWeight="bold">
-      Project Name
-    </Typography>
+                <Typography level="body2" fontWeight="bold">
+                  Project Name
+                </Typography>
                 <Input
                   name="name"
                   value={formData.name || ""}
@@ -475,9 +469,9 @@ const response = await Axios.post(
               </Grid>
 
               <Grid xs={12} sm={6}>
-              <Typography level="body2" fontWeight="bold">
-      Client Name 
-    </Typography>
+                <Typography level="body2" fontWeight="bold">
+                  Client Name
+                </Typography>
                 <Input
                   name="customer"
                   value={formData.customer || ""}
@@ -489,16 +483,15 @@ const response = await Axios.post(
               </Grid>
 
               <Grid xs={12} sm={6}>
-              <Typography level="body2" fontWeight="bold">
-      Group Name
-    </Typography>
+                <Typography level="body2" fontWeight="bold">
+                  Group Name
+                </Typography>
                 <Input
                   name="p_group"
                   value={formData.p_group || ""}
                   onChange={handleChange}
                   placeholder="Group Name"
                   readOnly
-                  
                 />
               </Grid>
 
@@ -513,33 +506,49 @@ const response = await Axios.post(
               </Grid> */}
 
               <Grid xs={12} sm={4}>
-              <Typography level="body2" fontWeight="bold">
-      Payment Type
-    </Typography>
-             <Select
-  name="pay_type"
-  value={formData.pay_type ? { label: formData.pay_type, value: formData.pay_type } : null}
-  onChange={(selectedOption) =>
-    handleChange({ target: { name: "pay_type", value: selectedOption.value } })
-  }
-  options={[
-    { label: "Payment Against PO", value: "Payment Against PO" },
-    { label: "Adjustment", value: "Adjustment" },
-    { label: "Slnko Service Charge", value: "Slnko Service Charge" },
-    { label: "Other", value: "Other" },
-  ]}
-  placeholder="Payment Type"
-  required
-/>
+                <Typography level="body2" fontWeight="bold">
+                  Payment Type
+                </Typography>
+                <Select
+                  name="pay_type"
+                  value={
+                    formData.pay_type
+                      ? { label: formData.pay_type, value: formData.pay_type }
+                      : null
+                  }
+                  onChange={(selectedOption) =>
+                    handleChange({
+                      target: { name: "pay_type", value: selectedOption.value },
+                    })
+                  }
+                  options={[
+                    {
+                      label: "Payment Against PO",
+                      value: "Payment Against PO",
+                    },
+                    { label: "Adjustment", value: "Adjustment" },
+                    {
+                      label: "Slnko Service Charge",
+                      value: "Slnko Service Charge",
+                    },
+                    { label: "Other", value: "Other" },
+                  ]}
+                  placeholder="Payment Type"
+                  required
+                />
               </Grid>
 
               <Grid xs={12} sm={4}>
-              <Typography level="body2" fontWeight="bold">
-      PO Number
-    </Typography>
-              <Select
+                <Typography level="body2" fontWeight="bold">
+                  PO Number
+                </Typography>
+                <Select
                   name="po_number"
-                  value={formData.po_number ? { label: formData.po_number, value: formData.po_number } : null}
+                  value={
+                    formData.po_number
+                      ? { label: formData.po_number, value: formData.po_number }
+                      : null
+                  }
                   onChange={handlePoChange}
                   options={getFormData.poNumbers.map((po) => ({
                     value: po.po_number,
@@ -550,73 +559,77 @@ const response = await Axios.post(
                 />
               </Grid>
 
-
               <Grid xs={12} sm={4}>
-              <Typography level="body2" fontWeight="bold">
-      Amount Requested (INR)
-    </Typography>
-              <Input
-  type="text"
-  value={formData.amount_paid}
-  onChange={(e) => {
-    const value = parseFloat(e.target.value) || "";
-    const po_balance = formData.po_balance === "N/A" ? Infinity : parseFloat(formData.po_balance) || 0;
+                <Typography level="body2" fontWeight="bold">
+                  Amount Requested (INR)
+                </Typography>
+                <Input
+                  type="text"
+                  value={formData.amount_paid}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || "";
+                    const po_balance =
+                      formData.po_balance === "N/A"
+                        ? Infinity
+                        : parseFloat(formData.po_balance) || 0;
 
-
-    if (po_balance !== Infinity && value > po_balance) {
-      toast.warning("Amount Requested can't be greater than PO Balance!");
-      setFormData((prev) => ({
-        ...prev,
-        amount_paid: po_balance,
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        amount_paid: value,
-      }));
-    }
-  }}
-  placeholder="Amount Requested (INR)"
-  required
-/>
-
+                    if (po_balance !== Infinity && value > po_balance) {
+                      toast.warning(
+                        "Amount Requested can't be greater than PO Balance!"
+                      );
+                      setFormData((prev) => ({
+                        ...prev,
+                        amount_paid: po_balance,
+                      }));
+                    } else {
+                      setFormData((prev) => ({
+                        ...prev,
+                        amount_paid: value,
+                      }));
+                    }
+                  }}
+                  placeholder="Amount Requested (INR)"
+                  required
+                />
               </Grid>
 
-             <Grid xs={12} sm={4}>
-  <Typography level="body2" fontWeight="bold">
-    Amount for Customers
-  </Typography>
-  <Input
-    type="text"
-    name="amt_for_customer"
-    value={formData.amt_for_customer || ""}
-    onChange={(e) => {
-      const value = parseFloat(e.target.value) || 0;
-      const amountRequested = parseFloat(formData.amount_paid) || 0;
+              <Grid xs={12} sm={4}>
+                <Typography level="body2" fontWeight="bold">
+                  Amount for Customers
+                </Typography>
+                <Input
+                  type="text"
+                  name="amt_for_customer"
+                  value={formData.amt_for_customer || ""}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || 0;
+                    const amountRequested =
+                      parseFloat(formData.amount_paid) || 0;
 
-      if (value > amountRequested) {
-        toast.warning("Amount for Customers can't be greater than Amount Requested!");
-        setFormData((prev) => ({
-          ...prev,
-          amt_for_customer: amountRequested,
-        }));
-      } else {
-        setFormData((prev) => ({
-          ...prev,
-          amt_for_customer: value,
-        }));
-      }
-    }}
-    placeholder="Amount for Customers (INR)"
-    required
-  />
-</Grid>
-
+                    if (value > amountRequested) {
+                      toast.warning(
+                        "Amount for Customers can't be greater than Amount Requested!"
+                      );
+                      setFormData((prev) => ({
+                        ...prev,
+                        amt_for_customer: amountRequested,
+                      }));
+                    } else {
+                      setFormData((prev) => ({
+                        ...prev,
+                        amt_for_customer: value,
+                      }));
+                    }
+                  }}
+                  placeholder="Amount for Customers (INR)"
+                  required
+                />
+              </Grid>
 
               <Grid xs={12} sm={4}>
-              <Typography level="body2" fontWeight="bold">
-              Requested Date
-    </Typography>
+                <Typography level="body2" fontWeight="bold">
+                  Requested Date
+                </Typography>
                 <Input
                   type="date"
                   name="dbt_date"
@@ -628,27 +641,27 @@ const response = await Axios.post(
               </Grid>
 
               <Grid xs={12} sm={4}>
-              <Typography level="body2" fontWeight="bold">
-              Requested For
-    </Typography>
-              <Input
-    name="paid_for"
-    value={formData.item ||formData.paid_for }
-    onChange={(e) =>
-      setFormData((prev) => ({
-        ...prev,
-        paid_for: e.target.value, 
-      }))
-    }
-    placeholder="Requested For"
-    required
-  />
+                <Typography level="body2" fontWeight="bold">
+                  Requested For
+                </Typography>
+                <Input
+                  name="paid_for"
+                  value={formData.item || formData.paid_for}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      paid_for: e.target.value,
+                    }))
+                  }
+                  placeholder="Requested For"
+                  required
+                />
               </Grid>
 
               <Grid xs={12} sm={4}>
-              <Typography level="body2" fontWeight="bold">
-              Vendor
-    </Typography>
+                <Typography level="body2" fontWeight="bold">
+                  Vendor
+                </Typography>
                 <Input
                   name="vendor"
                   value={formData.vendor || ""}
@@ -659,9 +672,9 @@ const response = await Axios.post(
               </Grid>
 
               <Grid xs={12} sm={4}>
-              <Typography level="body2" fontWeight="bold">
-              Payment Description
-    </Typography>
+                <Typography level="body2" fontWeight="bold">
+                  Payment Description
+                </Typography>
                 <Input
                   name="comment"
                   value={formData.comment}
@@ -672,9 +685,9 @@ const response = await Axios.post(
               </Grid>
 
               <Grid xs={12} sm={4}>
-              <Typography level="body2" fontWeight="bold">
-              PO Value (with GST)
-    </Typography>
+                <Typography level="body2" fontWeight="bold">
+                  PO Value (with GST)
+                </Typography>
                 <Input
                   name="po_value"
                   value={formData.po_value || ""}
@@ -685,27 +698,27 @@ const response = await Axios.post(
               </Grid>
 
               <Grid xs={12} sm={4}>
-              <Typography level="body2" fontWeight="bold">
-              Total Advance Paid
-    </Typography>
+                <Typography level="body2" fontWeight="bold">
+                  Total Advance Paid
+                </Typography>
                 <Input
                   name="total_advance_paid"
                   value={formData.total_advance_paid}
-  onChange={(e) =>
-    setFormData((prev) => ({
-      ...prev,
-      total_advance_paid: e.target.value, 
-    }))
-  }
-  placeholder="Total Advance Paid"
-  readOnly
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      total_advance_paid: e.target.value,
+                    }))
+                  }
+                  placeholder="Total Advance Paid"
+                  readOnly
                 />
               </Grid>
 
               <Grid xs={12} sm={4}>
-              <Typography level="body2" fontWeight="bold">
-              Current PO Balance
-    </Typography>
+                <Typography level="body2" fontWeight="bold">
+                  Current PO Balance
+                </Typography>
                 <Input
                   name="po_balance"
                   value={formData.po_balance || ""}
@@ -723,16 +736,16 @@ const response = await Axios.post(
 
               <Grid xs={12} sm={12}>
                 <Input
-                defaultValue={"Account Transfer"}
+                  defaultValue={"Account Transfer"}
                   onChange={handleChange}
                   disabled
                 />
               </Grid>
 
               <Grid xs={12} sm={6}>
-              <Typography level="body2" fontWeight="bold">
-              Beneficiary Name
-    </Typography>
+                <Typography level="body2" fontWeight="bold">
+                  Beneficiary Name
+                </Typography>
                 <Input
                   name="benificiary"
                   value={formData.benificiary || ""}
@@ -743,9 +756,9 @@ const response = await Axios.post(
               </Grid>
 
               <Grid xs={12} sm={6}>
-              <Typography level="body2" fontWeight="bold">
-              Beneficiary Account Number
-    </Typography>
+                <Typography level="body2" fontWeight="bold">
+                  Beneficiary Account Number
+                </Typography>
                 <Input
                   name="acc_number"
                   value={formData.acc_number || ""}
@@ -756,9 +769,9 @@ const response = await Axios.post(
               </Grid>
 
               <Grid xs={12} sm={6}>
-              <Typography level="body2" fontWeight="bold">
-              Beneficiary IFSC Code
-    </Typography>
+                <Typography level="body2" fontWeight="bold">
+                  Beneficiary IFSC Code
+                </Typography>
                 <Input
                   name="ifsc"
                   value={formData.ifsc || ""}
@@ -768,9 +781,9 @@ const response = await Axios.post(
               </Grid>
 
               <Grid xs={12} sm={6}>
-              <Typography level="body2" fontWeight="bold">
-              Bank Name
-    </Typography>
+                <Typography level="body2" fontWeight="bold">
+                  Bank Name
+                </Typography>
                 <Input
                   name="branch"
                   value={formData.branch || ""}
@@ -790,24 +803,27 @@ const response = await Axios.post(
 
               <Grid>
                 <Button
-  variant="outlined"
-  color="neutral"
-  onClick={handleHoldPayment}
-  sx={{
-    '&:hover': {
-      backgroundColor: 'red',
-      borderColor: 'red',      
-      color: 'white'           
-    }
-  }}
->
-  StandBy
-</Button>
-
+                  variant="outlined"
+                  color="neutral"
+                  onClick={handleHoldPayment}
+                  sx={{
+                    "&:hover": {
+                      backgroundColor: "red",
+                      borderColor: "red",
+                      color: "white",
+                    },
+                  }}
+                >
+                  StandBy
+                </Button>
               </Grid>
 
               <Grid>
-                <Button variant="outlined" color="neutral" onClick={() => navigate("/daily-payment-request")}>
+                <Button
+                  variant="outlined"
+                  color="neutral"
+                  onClick={() => navigate("/daily-payment-request")}
+                >
                   Back
                 </Button>
               </Grid>
