@@ -267,7 +267,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
   return (
     <Box
       sx={{
-        maxWidth: 900,
+        maxWidth: 'full',
         maxHeight: "60vh",
         overflowY: "auto",
         overflowX: "auto",
