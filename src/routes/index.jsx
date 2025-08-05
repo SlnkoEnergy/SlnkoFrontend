@@ -103,7 +103,6 @@ import AllTask from "../pages/AllTask/AllTask";
 import View_Task from "../pages/AllTask/View_Task";
 import SalesIframe from "../component/Sales_Iframe";
 
-
 function index() {
   return (
     <Routes>
@@ -141,15 +140,15 @@ function index() {
         }
       />
       {/*-------BD------- */}
-      <Route 
-      path="/sales"
-      element = {
-        <PrivateRoute>
-          <SalesIframe />
-        </PrivateRoute>
-      }
+      <Route
+        path="/sales"
+        element={
+          <PrivateRoute>
+            <SalesIframe />
+          </PrivateRoute>
+        }
       />
-      
+
       <Route
         path="/comm_offer"
         element={
@@ -352,7 +351,6 @@ function index() {
           </PrivateRoute>
         }
       />
-
       {/*-------------Eng----------*/}
       <Route
         path="/eng_dash"
@@ -910,7 +908,7 @@ function index() {
           </PrivateRoute>
         }
       />
-  
+
       <Route
         path="/add_task"
         element={
@@ -920,7 +918,7 @@ function index() {
         }
       />
 
-       <Route
+      <Route
         path="/all_task"
         element={
           <PrivateRoute>
@@ -937,7 +935,6 @@ function index() {
           </PrivateRoute>
         }
       />
-     
     </Routes>
   );
 }

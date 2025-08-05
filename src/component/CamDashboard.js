@@ -7,13 +7,6 @@ import SearchIcon from "@mui/icons-material/Search";
 import {
   Chip,
   CircularProgress,
-  Dropdown,
-  Menu,
-  MenuButton,
-  MenuItem,
-  Option,
-  Select,
-  Switch,
   TextField,
 } from "@mui/joy";
 import Box from "@mui/joy/Box";
@@ -34,7 +27,6 @@ import Modal from "@mui/joy/Modal";
 import ModalDialog from "@mui/joy/ModalDialog";
 import ModalClose from "@mui/joy/ModalClose";
 import Autocomplete from "@mui/joy/Autocomplete";
-import Textarea from "@mui/joy/Textarea";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
@@ -75,7 +67,7 @@ function Dash_cam() {
     status: "submitted,Approved",
   });
   const { data: materialCategoryData = {}, isLoading: isCategoryLoading } =
-    useGetMaterialCategoryQuery();
+    useGetMaterialCategoryQuery({ project_id: selectedPRProject?.project_id });
 
   const materialCategories = materialCategoryData?.data || [];
 
@@ -437,7 +429,7 @@ function Dash_cam() {
                 "Slnko Service Charges (with GST)",
                 "Status",
                 "Action",
-                "Purchsase Request",
+                "Purchsase Request"
               ].map((header, index) => (
                 <th
                   key={index}
@@ -624,22 +616,23 @@ function Dash_cam() {
                     {project.is_locked === "locked" &&
                     project.status_of_handoversheet === "Approved" ? (
                       <Button
-                        size="xm"
+                        size="xs"
                         variant="soft"
                         color="primary"
                         startDecorator={
-                          <AddCircleIcon sx={{ marginRight: 0.8 }} />
+                          <AddCircleIcon sx={{ marginRight: 0.8, fontSize:'lg' }}  />
                         }
                         sx={{
-                          fontSize: "14px",
                           height: "35px",
-                          padding: "0 16px",
+                          display:'flex',
+                          justifyContent:'center',
+                          alignItems:'center',
                           minHeight: "20px",
                           lineHeight: "1.5",
                         }}
                         onClick={() => handleCreatePR(project)}
                       >
-                        Create PR
+                        
                       </Button>
                     ) : (
                       "-"
@@ -818,30 +811,6 @@ function Dash_cam() {
                   />
                 )}
               />
-
-              {/* Show additional fields if 'Others' is selected */}
-              {items.some((item) => item.name === "Others") && (
-                <>
-                  <FormControl size="sm">
-                    <FormLabel>Other Item Name</FormLabel>
-                    <Input
-                      placeholder="Enter item name"
-                      value={otherItemName}
-                      onChange={(e) => setOtherItemName(e.target.value)}
-                    />
-                  </FormControl>
-
-                  <FormControl size="sm">
-                    <FormLabel>Other Item Amount</FormLabel>
-                    <Input
-                      placeholder="Enter description"
-                      value={otherItemAmount}
-                      onChange={(e) => setOtherItemAmount(e.target.value)}
-                    />
-                  </FormControl>
-                </>
-              )}
-
               <Button
                 onClick={handlePRSubmit}
                 loading={isPRCreating}

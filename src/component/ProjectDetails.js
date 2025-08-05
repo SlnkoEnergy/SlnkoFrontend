@@ -23,6 +23,7 @@ import Overview from "./Forms/Engineering/Eng_Overview/Overview";
 import CamHandoverSheetForm from "./Lead Stage/Handover/CAMHandover";
 import PurchaseRequestCard from "./PurchaseRequestCard";
 import { useEffect, useState } from "react";
+import ScopeDetail from "./Scope";
 
 export default function Project_Detail() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -164,8 +165,9 @@ export default function Project_Detail() {
             <Tabs value={tabValue} onChange={handleTabChange}>
               <TabList>
                 <Tab>Handover Sheet</Tab>
-                <Tab>Engineering</Tab>
+                <Tab>Scope</Tab>
                 <Tab>Purchase Summary</Tab>
+                <Tab>Engineering</Tab>
               </TabList>
 
               <TabPanel value={0}>
@@ -184,18 +186,26 @@ export default function Project_Detail() {
 
               <TabPanel value={1}>
                 <Box
+                  maxHeight="70vh"
+                  overflowY="auto"
+                >
+                  <ScopeDetail project_id={project_id} project_code={projectDetails?.code}/>
+                </Box>
+              </TabPanel>
+              <TabPanel value={2}>
+                <Box overflowY="auto">
+                  <PurchaseRequestCard project_code={projectDetails?.code} />
+                </Box>
+              </TabPanel>
+
+              <TabPanel value={3}>
+                <Box
                   display="flex"
                   alignItems="flex-start"
                   height="70vh"
                   overflowY="auto"
                 >
                   <Overview />
-                </Box>
-              </TabPanel>
-
-              <TabPanel value={2}>
-                <Box overflowY="auto">
-                  <PurchaseRequestCard project_code={projectDetails?.code} />
                 </Box>
               </TabPanel>
             </Tabs>

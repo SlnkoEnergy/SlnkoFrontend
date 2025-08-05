@@ -83,7 +83,7 @@ export const camsApi = createApi({
       query: () => "project-dropdown",
     }),
     getMaterialCategory: builder.query({
-      query: () => "engineering/material-category-drop",
+      query: ({project_id}) => `engineering/material-category-drop?project_id=${project_id}`,
     }),
     createPurchaseRequest: builder.mutation({
       query: (payload) => ({
@@ -129,6 +129,33 @@ export const camsApi = createApi({
         body: payload,
       }),
     }),
+
+    // Scope
+    getScopeByProjectId: builder.query({
+      query:({project_id})=>
+        `scope/scope?project_id=${project_id}`
+    }),
+    updateScopeByProjectId: builder.mutation({
+       query: ({ project_id, payload }) => ({
+        url: `scope/scope?project_id=${project_id}`,
+        method: "PUT",
+        body: payload,
+      }),
+    }),
+    updateScopeStatus: builder.mutation({
+      query: ({project_id, status, remarks}) => ({
+        url: `scope/${project_id}/updateStatus`,
+        method: "PUT",
+        body: {status, remarks},
+      })
+    }),
+    generateScopePdf: builder.mutation({
+      query: ({ project_id }) => ({
+        url: `scope/scope-pdf?project_id=${project_id}`,
+        method: "GET",
+        responseHandler: (response) => response.blob(),
+      }),
+    })
   }),
 });
 
@@ -147,4 +174,8 @@ export const {
   useGetPurchaseRequestByProjectIdQuery,
   useGetPurchaseRequestQuery,
   useEditPurchaseRequestMutation,
+  useGetScopeByProjectIdQuery,
+  useUpdateScopeByProjectIdMutation,
+  useUpdateScopeStatusMutation,
+  useGenerateScopePdfMutation
 } = camsApi;
