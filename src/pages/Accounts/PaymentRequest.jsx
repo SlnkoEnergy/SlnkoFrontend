@@ -144,11 +144,11 @@ function ProjectBalance() {
                 user?.name === "Gagan Tayal" ||
                 user?.name === "Saresh") && (
                 <Button
-                  color="primary"
+                  color="danger"
                   size="sm"
                   onClick={() => navigate("/standby_records")}
                 >
-                  Pending Payment
+                  Trash
                 </Button>
               )}
               {(user?.name === "IT Team" ||

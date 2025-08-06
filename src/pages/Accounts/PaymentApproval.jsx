@@ -13,8 +13,25 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import Header from "../../component/Partials/Header";
 import Sidebar from "../../component/Partials/Sidebar";
 import PaymentApproval from "../../component/PaymentApproval";
+import { useState } from "react";
+import { useEffect } from "react";
 
 function ProjectBalance() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -44,14 +61,14 @@ function ProjectBalance() {
             sx={{
               display: "flex",
               alignItems: "center",
-              marginLeft: { xl: "15%", lg: "18%",},
+              marginLeft: { xl: "15%", lg: "18%" },
             }}
           >
             <Breadcrumbs
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0 , marginTop: {md:"4%", lg:"0%"}}}
+              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
               {/* <Link
                 underline="none"
@@ -76,6 +93,7 @@ function ProjectBalance() {
               </Typography>
             </Breadcrumbs>
           </Box>
+
           <Box
             sx={{
               display: "flex",
@@ -88,9 +106,28 @@ function ProjectBalance() {
               marginLeft: { xl: "15%", lg: "18%" },
             }}
           >
-            <Typography level="h2" component="h1">
+            {/* <Typography level="h2" component="h1">
               Payment Approval
-            </Typography>
+            </Typography> */}
+
+            {user?.department === "SCM" && user?.role === "manager" && (
+              <Typography level="h2" component="h1">
+                SCM Payment Approval
+              </Typography>
+            )}
+
+            {user?.department === "Internal" && user?.role === "manager" && (
+              <Typography level="h2" component="h1">
+                CAM Payment Approval
+              </Typography>
+            )}
+
+            {((user?.department === "Accounts" && user?.role === "manager") ||
+              user?.department === "admin") && (
+              <Typography level="h2" component="h1">
+                Accounts Payment Approval
+              </Typography>
+            )}
             <Box
               sx={{
                 display: "flex",
@@ -101,22 +138,7 @@ function ProjectBalance() {
                 flexWrap: "wrap",
                 justifyContent: "center",
               }}
-            >
-              {/* <Button
-              color="primary"
-              
-              size="sm"
-            >
-              Add New Project +
-            </Button>
-            <Button
-              color="primary"
-              startDecorator={<DownloadRoundedIcon />}
-              size="sm"
-            >
-              Export to CSV
-            </Button> */}
-            </Box>
+            ></Box>
           </Box>
           <PaymentApproval />
           {/* <OrderTable />
