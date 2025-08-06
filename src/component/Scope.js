@@ -23,7 +23,7 @@ import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 
 const ScopeDetail = ({ project_id, project_code }) => {
-  const uomOptions = ["Nos", "Kg", "Meter", "Litre"];
+  const uomOptions = ["Nos", "Kg", "Meter", "Litre", "MW", "Lot"];
 
   const {
     data: getScope,
@@ -35,22 +35,18 @@ const ScopeDetail = ({ project_id, project_code }) => {
   const [updateScope] = useUpdateScopeByProjectIdMutation();
   const [updateScopeStatus] = useUpdateScopeStatusMutation();
   const [generateScopePdf] = useGenerateScopePdfMutation();
-
   const [itemsState, setItemsState] = useState([]);
   const [anchorEl, setAnchorEl] = useState(null);
   const [downloading, setDownloading] = useState(false);
-
   const status = getScope?.data?.current_status?.status?.toLowerCase();
   const isOpen = status === "open";
 
-  // Load API data into local state
   useEffect(() => {
     if (getScope?.data?.items) {
       setItemsState(getScope.data.items);
     }
   }, [getScope]);
 
-  // Toggle scope for a whole category
   const handleCheckboxChange = (index, checked) => {
     const updatedScope = checked ? "slnko" : "client";
     const category = itemsState[index]?.category;
@@ -61,7 +57,6 @@ const ScopeDetail = ({ project_id, project_code }) => {
     );
   };
 
-  // Quantity change
   const handleQuantityChange = (index, value) => {
     const category = itemsState[index]?.category;
     setItemsState((prev) =>
@@ -71,7 +66,6 @@ const ScopeDetail = ({ project_id, project_code }) => {
     );
   };
 
-  // UoM change
   const handleUomChange = (index, value) => {
     const category = itemsState[index]?.category;
     setItemsState((prev) =>
@@ -81,7 +75,6 @@ const ScopeDetail = ({ project_id, project_code }) => {
     );
   };
 
-  // Submit update for items
   const handleSubmit = async () => {
     try {
       const payload = {
@@ -103,7 +96,6 @@ const ScopeDetail = ({ project_id, project_code }) => {
     }
   };
 
-  // Chip click for menu
   const handleChipClick = (event) => {
     if (!isOpen) {
       setAnchorEl(event.currentTarget);
@@ -114,7 +106,6 @@ const ScopeDetail = ({ project_id, project_code }) => {
     setAnchorEl(null);
   };
 
-  // Status change
   const handleChangeStatus = async (newStatus) => {
     try {
       await updateScopeStatus({
@@ -130,7 +121,6 @@ const ScopeDetail = ({ project_id, project_code }) => {
     }
   };
 
-  // Download PDF
   const handleDownloadPdf = async () => {
     try {
       setDownloading(true);
@@ -156,6 +146,21 @@ const ScopeDetail = ({ project_id, project_code }) => {
 
   const supplyItems = itemsState.filter((item) => item.type === "supply");
   const executionItems = itemsState.filter((item) => item.type === "execution");
+
+  const groupedItems = itemsState
+    .slice()
+    .sort((a, b) => {
+      if (a.order !== b.order) return a.order - b.order;
+      return a.category.localeCompare(b.category);
+    })
+    .reduce(
+      (acc, item) => {
+        if (item.type === "supply") acc.supply.push(item);
+        else if (item.type === "execution") acc.execution.push(item);
+        return acc;
+      },
+      { supply: [], execution: [] }
+    );
 
   const renderTable = (title, items) => (
     <Box sx={{ mb: 4 }}>
@@ -267,7 +272,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
   return (
     <Box
       sx={{
-        maxWidth: 'full',
+        maxWidth: "full",
         maxHeight: "60vh",
         overflowY: "auto",
         overflowX: "auto",
@@ -282,6 +287,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
         justifyContent={"space-between"}
         alignItems={"center"}
         gap={4}
+        mb={2}
       >
         <Box width={"full"} display={"flex"} gap={1}>
           <Typography sx={{ fontSize: "1.2rem" }}>Status</Typography>{" "}
@@ -324,8 +330,8 @@ const ScopeDetail = ({ project_id, project_code }) => {
 
       {/* Tables */}
       <Box>
-        {renderTable("Supply Scope", supplyItems)}
-        {renderTable("Execution Scope", executionItems)}
+        {renderTable("Supply Scope", groupedItems.supply)}
+        {renderTable("Execution Scope", groupedItems.execution)}
         <Box>{isOpen && <Button onClick={handleSubmit}>Submit</Button>}</Box>
       </Box>
     </Box>
