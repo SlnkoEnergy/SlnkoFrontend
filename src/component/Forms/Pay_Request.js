@@ -7,6 +7,7 @@ import {
   Grid,
   Input,
   Sheet,
+  Switch,
   Typography,
 } from "@mui/joy";
 import React, { useEffect, useState } from "react";
@@ -63,6 +64,11 @@ function PaymentRequestForm() {
     utr: "",
     total_advance_paid: "",
     submitted_by: "",
+    credit: {
+      credit_deadline: "",
+      credit_status: false,
+      credit_remarks: "",
+    },
   });
 
   useEffect(() => {
@@ -377,30 +383,6 @@ function PaymentRequestForm() {
                 <Typography level="body2" fontWeight="bold">
                   Projects:
                 </Typography>
-                {/* <Select
-  name="p_id"
-  value={formData.p_id
-    ? {
-        label: getFormData.projectIDs.find((project) => project.p_id === formData.p_id)?.code,
-        value: formData.p_id,
-      }
-    : null
-  }
-  onChange={(e) =>
-    handleChange({
-      target: {
-        name: "p_id",
-        value: e?.value,
-      },
-    })
-  }
-  options={getFormData.projectIDs.map((project) => ({
-    label: project.code,
-    value: project.p_id,
-  }))}
-  placeholder="Select Project"
-  isDisabled={formData.pay_type === "Payment Against PO" && formData.po_number} // Disable when both conditions are met
-/> */}
 
                 {formData.pay_type === "Payment Against PO" &&
                 formData.po_number ? (
@@ -727,6 +709,69 @@ function PaymentRequestForm() {
                   required
                 />
               </Grid>
+              <Grid xs={2} sm={4}>
+                <Typography level="body2" fontWeight="bold">
+                  Is Credit?
+                </Typography>
+                <Switch
+                  checked={formData.credit.credit_status === true}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      credit: {
+                        ...prev.credit,
+                        credit_status: e.target.checked,
+                      },
+                    }))
+                  }
+                />
+              </Grid>
+
+              {formData.credit.credit_status === true && (
+                <>
+                  <Grid xs={12} sm={6}>
+                    <Typography level="body2" fontWeight="bold">
+                      Credit Deadline
+                    </Typography>
+                    <Input
+                      type="date"
+                      name="credit_deadline"
+                      value={formData.credit.credit_deadline || ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          credit: {
+                            ...prev.credit,
+                            credit_deadline: e.target.value,
+                          },
+                        }))
+                      }
+                      required
+                    />
+                  </Grid>
+
+                  <Grid xs={12}>
+                    <Typography level="body2" fontWeight="bold">
+                      Credit Remarks
+                    </Typography>
+                    <Input
+                      name="credit_remarks"
+                      value={formData.credit.credit_remarks || ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          credit: {
+                            ...prev.credit,
+                            credit_remarks: e.target.value,
+                          },
+                        }))
+                      }
+                      placeholder="Add remarks for this credit"
+                      required
+                    />
+                  </Grid>
+                </>
+              )}
 
               <Grid xs={12}>
                 <Typography level="h6" fontWeight="bold" sx={{ mt: 1 }}>
