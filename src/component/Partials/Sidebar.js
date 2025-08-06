@@ -84,32 +84,31 @@ function Sidebar() {
 
   return (
     <Sheet
-  className="Sidebar"
-  sx={{
-    position: "fixed",
-    transition: "transform 0.4s, width 0.4s",
-    zIndex: 10000,
-    height: "100dvh",
-    width: "var(--Sidebar-width)",
-    top: 0,
-    p: 2,
-    flexShrink: 0,
-    display: "flex",
-    flexDirection: "column",
-    gap: 2,
-    borderRight: "1px solid",
-    borderColor: "divider",
-    "@media print": { display: "none" },
+      className="Sidebar"
+      sx={{
+        position: "fixed",
+        transition: "transform 0.4s, width 0.4s",
+        zIndex: 10000,
+        height: "100dvh",
+        width: "var(--Sidebar-width)",
+        top: 0,
+        p: 2,
+        flexShrink: 0,
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+        borderRight: "1px solid",
+        borderColor: "divider",
+        "@media print": { display: "none" },
 
-    transform: {
-      xs: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1)))",
-      lg: isSalesPage
-        ? "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1)))"
-        : "none",
-    },
-  }}
->
-
+        transform: {
+          xs: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1)))",
+          lg: isSalesPage
+            ? "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1)))"
+            : "none",
+        },
+      }}
+    >
       <GlobalStyles
         styles={(theme) => ({
           ":root": {
@@ -247,17 +246,16 @@ function Sidebar() {
               >
                 <List sx={{ gap: 0.5 }}>
                   <ListItem>
-  <ListItemButton
-    onClick={() =>
-      navigate("/sales", {
-        state: { internalPath: "/dashboard", search: "" },
-      })
-    }
-  >
-    Dashboard
-  </ListItemButton>
-</ListItem>
-
+                    <ListItemButton
+                      onClick={() =>
+                        navigate("/sales", {
+                          state: { internalPath: "/dashboard", search: "" },
+                        })
+                      }
+                    >
+                      Dashboard
+                    </ListItemButton>
+                  </ListItem>
 
                   <ListItem>
                     <ListItemButton onClick={() => navigate("/comm_offer")}>
@@ -628,6 +626,30 @@ function Sidebar() {
                   </ListItemButton>
                 )}
               >
+                {user?.name === "Sachin Raghav" && (
+                  <List
+                    size="sm"
+                    sx={{
+                      gap: 1,
+                      "--List-nestedInsetStart": "30px",
+                      "--ListItem-radius": (theme) => theme.vars.radius.sm,
+                    }}
+                  >
+                    <ListItem>
+                      <ListItemButton
+                        onClick={() => navigate("/project-balance")}
+                      >
+                        <AccountBalanceIcon />
+                        <ListItemContent>
+                          <Typography level="title-sm">
+                            Project Balances
+                          </Typography>
+                        </ListItemContent>
+                      </ListItemButton>
+                    </ListItem>
+                  </List>
+                )}
+
                 <List sx={{ gap: 0.5 }}>
                   <ListItem>
                     <ListItemButton
@@ -799,19 +821,18 @@ function Sidebar() {
                   </ListItemButton>
                 )}
               >
-                 <List sx={{ gap: 0.5 }}>
+                <List sx={{ gap: 0.5 }}>
                   <ListItem>
-  <ListItemButton
-    onClick={() =>
-      navigate("/sales", {
-        state: { internalPath: "/dashboard", search: "" },
-      })
-    }
-  >
-    Dashboard
-  </ListItemButton>
-</ListItem>
-
+                    <ListItemButton
+                      onClick={() =>
+                        navigate("/sales", {
+                          state: { internalPath: "/dashboard", search: "" },
+                        })
+                      }
+                    >
+                      Dashboard
+                    </ListItemButton>
+                  </ListItem>
 
                   <ListItem>
                     <ListItemButton onClick={() => navigate("/comm_offer")}>
@@ -1111,19 +1132,18 @@ function Sidebar() {
                   </ListItemButton>
                 )}
               >
-                 <List sx={{ gap: 0.5 }}>
+                <List sx={{ gap: 0.5 }}>
                   <ListItem>
-  <ListItemButton
-    onClick={() =>
-      navigate("/sales", {
-        state: { internalPath: "/dashboard", search: "" },
-      })
-    }
-  >
-    Dashboard
-  </ListItemButton>
-</ListItem>
-
+                    <ListItemButton
+                      onClick={() =>
+                        navigate("/sales", {
+                          state: { internalPath: "/dashboard", search: "" },
+                        })
+                      }
+                    >
+                      Dashboard
+                    </ListItemButton>
+                  </ListItem>
                 </List>
               </Toggler>
             </ListItem>
@@ -1421,7 +1441,7 @@ function Sidebar() {
             user?.name === "Ajay Singh" ||
             user?.name === "Shubham Gupta" ||
             user?.name === "Saurabh Suman" ||
-            user?.name === "Vaishali Pandey" ||
+            user?.name === "Rahul Pareek" ||
             user?.name === "Sujoy Mahata") ? (
           <List
             size="sm"
@@ -1765,20 +1785,18 @@ function Sidebar() {
                   </ListItemButton>
                 )}
               >
-                 <List sx={{ gap: 0.5 }}>
+                <List sx={{ gap: 0.5 }}>
                   <ListItem>
-  <ListItemButton
-    onClick={() =>
-      navigate("/sales", {
-        state: { internalPath: "/dashboard", search: "" },
-      })
-    }
-  >
-    Dashboard
-  </ListItemButton>
-</ListItem>
-
-
+                    <ListItemButton
+                      onClick={() =>
+                        navigate("/sales", {
+                          state: { internalPath: "/dashboard", search: "" },
+                        })
+                      }
+                    >
+                      Dashboard
+                    </ListItemButton>
+                  </ListItem>
                 </List>
               </Toggler>
             </ListItem>
