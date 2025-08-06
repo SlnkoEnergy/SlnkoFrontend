@@ -1421,7 +1421,7 @@ function Sidebar() {
             user?.name === "Ajay Singh" ||
             user?.name === "Shubham Gupta" ||
             user?.name === "Saurabh Suman" ||
-            user?.name === "Vaishali Pandey" ||
+            user?.name === "Rahul Pareek" ||
             user?.name === "Sujoy Mahata") ? (
           <List
             size="sm"
