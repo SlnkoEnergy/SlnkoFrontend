@@ -81,7 +81,7 @@ function Sidebar() {
   };
 
   const isSalesPage = location.pathname === "/sales";
-
+  const isEngineering = location.pathname === "/overview"
   return (
     <Sheet
       className="Sidebar"
