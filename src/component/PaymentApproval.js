@@ -3,6 +3,10 @@ import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
+import KeyboardDoubleArrowLeft from "@mui/icons-material/KeyboardDoubleArrowLeft";
+import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
+import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
+import KeyboardDoubleArrowRight from "@mui/icons-material/KeyboardDoubleArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
@@ -22,7 +26,7 @@ import { toast } from "react-toastify";
 import NoData from "../assets/alert-bell.svg";
 import Axios from "../utils/Axios";
 import { useGetPaymentApprovalQuery } from "../redux/Accounts";
-import { CircularProgress } from "@mui/joy";
+import { CircularProgress, Modal, ModalDialog } from "@mui/joy";
 import { Calendar, CircleUser, UsersRound } from "lucide-react";
 
 function PaymentRequest() {
@@ -35,6 +39,12 @@ function PaymentRequest() {
   const [perPage, setPerPage] = useState(initialPageSize);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [searchQuery, setSearchQuery] = useState("");
+const [pdfBlob, setPdfBlob] = useState(null);
+const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+const [hiddenIds, setHiddenIds] = useState([]);
+
+
+
 
   const {
     data: responseData,
@@ -54,6 +64,11 @@ function PaymentRequest() {
 
   const startIndex = (currentPage - 1) * perPage + 1;
   const endIndex = Math.min(startIndex + count - 1, total);
+
+  const visibleData = paginatedData.filter(
+  (item) => !hiddenIds.includes(item.payment_id)
+);
+
 
   const getPaginationRange = () => {
     const siblings = 1;
@@ -117,6 +132,52 @@ function PaymentRequest() {
 
     return false;
   };
+  const handleStatusChange = async (payment_id, newStatus) => {
+  const selectedPayments = paginatedData.filter(payment =>
+    selected.includes(payment.payment_id)
+  );
+
+  // Check if multi select and in SCM stage
+  const isSCMMultiSelect =
+    selectedPayments.length > 1 &&
+    selectedPayments.every(p => p.approval_status?.stage === "SCM");
+
+  if (isSCMMultiSelect) {
+    const confirm = window.confirm(
+      "Are you sure you want to generate the approval PDF for selected payments?"
+    );
+
+    if (!confirm) return;
+
+    try {
+      const token = localStorage.getItem("authToken");
+
+      const response = await Axios.post(
+        "/po-approval-pdf",
+        { selected_ids: selectedPayments.map(p => p.payment_id) },
+        {
+          headers: {
+            "x-auth-token": token,
+          },
+          responseType: "blob",
+        }
+      );
+
+      setPdfBlob(new Blob([response.data], { type: "application/pdf" }));
+      setIsPdfModalOpen(true);
+    } catch (error) {
+      console.error("PDF generation failed", error);
+      toast.error("Failed to generate PDF");
+    }
+
+    return;
+  }
+
+  // Single approval fallback
+  const success = await handleApprovalUpdate(payment_id, newStatus);
+  if (success) refetch();
+};
+
 
   const RowMenu = ({ payment_id, onStatusChange }) => (
     <Box sx={{ display: "flex", justifyContent: "left", gap: 1 }}>
@@ -149,17 +210,11 @@ function PaymentRequest() {
     </Box>
   );
 
-  const handleStatusChange = async (payment_id, newStatus) => {
-    const success = await handleApprovalUpdate(payment_id, newStatus);
-
-    if (success) {
-      refetch();
-    }
-  };
+ 
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelected(paginatedData.map((row) => row.id));
+      setSelected(visibleData.map((row) => row.id));
     } else {
       setSelected([]);
     }
@@ -174,6 +229,29 @@ function PaymentRequest() {
   };
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
+  };
+
+    const headerStyle = {
+    position: "sticky",
+    top: 0,
+    zIndex: 2,
+    backgroundColor: "primary.softBg",
+    fontSize: 14,
+    fontWeight: 600,
+    padding: "12px 16px",
+    textAlign: "left",
+    color: "#000",
+    borderBottom: "1px soft",
+    borderColor: "primary.softBorder",
+  };
+
+  const cellStyle = {
+    padding: "12px 16px",
+    verticalAlign: "top",
+    fontSize: 13,
+    fontWeight: 400,
+    borderBottom: "1px solid",
+    borderColor: "divider",
   };
 
   // console.log(paginatedData);
@@ -195,34 +273,49 @@ function PaymentRequest() {
   }, [searchParams]);
 
   const renderFilters = () => {
-    return (
-      <Box
-        sx={{
-          position: "relative",
-          display: "flex",
-          alignItems: "center",
-          gap: 1.5,
-        }}
-      >
-        <FormControl size="sm" sx={{ minWidth: 150 }}>
-          <FormLabel>Rows Per Page</FormLabel>
-          <Select
-            value={perPage}
-            onChange={(e, newValue) => {
-              setPerPage(newValue);
-              setCurrentPage(1);
-            }}
-          >
-            {[10, 30, 60, 100].map((num) => (
-              <Option key={num} value={num}>
-                {num}/Page
-              </Option>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
-    );
-  };
+  const hasSelection = selected.length > 0;
+
+  return (
+    <Box
+      sx={{
+        position: "relative",
+        display: "flex",
+        alignItems: "center",
+        gap: 1.5,
+      }}
+    >
+      <FormControl size="sm" sx={{ minWidth: 150 }}>
+        <FormLabel>Rows Per Page</FormLabel>
+        <Select
+          value={perPage}
+          onChange={(e, newValue) => {
+            setPerPage(newValue);
+            setCurrentPage(1);
+          }}
+        >
+          {[10, 30, 60, 100].map((num) => (
+            <Option key={num} value={num}>
+              {num}/Page
+            </Option>
+          ))}
+        </Select>
+      </FormControl>
+
+      {hasSelection && (
+        <Button
+          size="sm"
+          variant="solid"
+          color="primary"
+          // onClick={handleMultiPDFDownload}
+          sx={{ ml: "auto" }}
+        >
+          📄 Preview & Download PDF
+        </Button>
+      )}
+    </Box>
+  );
+};
+
 
   const PaymentID = ({ payment_id, request_date }) => {
     return (
@@ -414,25 +507,21 @@ function PaymentRequest() {
           component="table"
           sx={{ width: "100%", borderCollapse: "collapse" }}
         >
-          <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
+          <Box component="thead">
             <Box component="tr">
               <Box
                 component="th"
-                sx={{
-                  borderBottom: "1px solid #ddd",
-                  padding: "8px",
-                  textAlign: "left",
-                }}
+                sx={headerStyle}
               >
                 <Checkbox
                   size="sm"
-                  checked={selected.length === paginatedData.length}
+                  checked={selected.length === visibleData.length}
                   onChange={(event) =>
                     handleRowSelect("all", event.target.checked)
                   }
                   indeterminate={
                     selected.length > 0 &&
-                    selected.length < paginatedData.length
+                    selected.length < visibleData.length
                   }
                 />
               </Box>
@@ -446,12 +535,7 @@ function PaymentRequest() {
                 <Box
                   component="th"
                   key={index}
-                  sx={{
-                    borderBottom: "1px solid #ddd",
-                    padding: "8px",
-                    textAlign: "left",
-                    fontWeight: "bold",
-                  }}
+                  sx={headerStyle}
                 >
                   {header}
                 </Box>
@@ -489,23 +573,25 @@ function PaymentRequest() {
                   </Box>
                 </Box>
               </Box>
-            ) : paginatedData.length > 0 ? (
-              paginatedData.map((payment, index) => {
+            ) : visibleData.length > 0 ? (
+              visibleData.map((payment, index) => {
                 return (
                   <Box
                     component="tr"
                     key={index}
                     sx={{
-                      "&:hover": { backgroundColor: "neutral.plainHoverBg" },
-                    }}
+                  backgroundColor: "background.surface",
+                  borderRadius: "8px",
+                  boxShadow: "xs",
+                  transition: "all 0.2s",
+                  "&:hover": {
+                    backgroundColor: "neutral.softHoverBg",
+                  },
+                }}
                   >
                     <Box
                       component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
+                      sx={cellStyle}
                     >
                       <Checkbox
                         size="sm"
@@ -521,11 +607,10 @@ function PaymentRequest() {
                     <Box
                       component="td"
                       sx={{
-                        padding: 1,
-                        textAlign: "left",
-                        borderBottom: "1px solid #ddd",
+                         ...cellStyle,
                         fontSize: 14,
                         minWidth: 250,
+                        padding: "12px 16px",
                       }}
                     >
                       <PaymentID
@@ -536,9 +621,7 @@ function PaymentRequest() {
                     <Box
                       component="td"
                       sx={{
-                        padding: 1,
-                        textAlign: "left",
-                        borderBottom: "1px solid #ddd",
+                        ...cellStyle,
                         fontSize: 14,
                         minWidth: 350,
                       }}
@@ -552,9 +635,7 @@ function PaymentRequest() {
                     <Box
                       component="td"
                       sx={{
-                        padding: 1,
-                        textAlign: "left",
-                        borderBottom: "1px solid #ddd",
+                       ...cellStyle,
                         fontSize: 14,
                         minWidth: 300,
                       }}
@@ -567,9 +648,7 @@ function PaymentRequest() {
                     <Box
                       component="td"
                       sx={{
-                        padding: 1,
-                        textAlign: "left",
-                        borderBottom: "1px solid #ddd",
+                        ...cellStyle,
                         fontSize: 14,
                         minWidth: 250,
                       }}
@@ -584,16 +663,20 @@ function PaymentRequest() {
                     <Box
                       component="td"
                       sx={{
-                        padding: 1,
-                        textAlign: "left",
-                        borderBottom: "1px solid #ddd",
+                        ...cellStyle,
                         // minWidth: 50,
                       }}
                     >
                       <RowMenu
-                        payment_id={payment.payment_id}
-                        onStatusChange={handleStatusChange}
-                      />
+  payment_id={payment.payment_id}
+  onStatusChange={handleStatusChange}
+  disabled={
+    selected.length > 1 &&
+    selected.includes(payment.payment_id) &&
+    payment.approval_status?.stage === "SCM"
+  }
+/>
+
                     </Box>
                   </Box>
                 );
@@ -631,73 +714,172 @@ function PaymentRequest() {
               </Box>
             )}
           </Box>
-        </Box>
-      </Sheet>
+          <Box
+          component="tfoot"
+          sx={{
+            position: "sticky",
+            bottom: 0,
+            backgroundColor: "background.surface",
+            zIndex: 10,
+            boxShadow: "0 -2px 6px rgba(0,0,0,0.05)",
+          }}
+        >
+          <Box
+            component="tr"
+            sx={{
+              borderTop: "1px solid #ddd",
+            }}
+          >
+            <Box
+              component="td"
+              colSpan={5}
+              sx={{
+                padding: "8px",
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  alignItems: "center",
+                  gap: 2,
+                  flexWrap: "wrap",
+                }}
+              >
+                {/* Rows per page */}
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Typography level="body-sm">Rows per page:</Typography>
+                  <Select
+                    size="sm"
+                    value={perPage}
+                    onChange={(_, value) => {
+                      if (value) {
+                        setPerPage(Number(value));
+                        setCurrentPage(1);
+                      }
+                    }}
+                  >
+                    {[10, 25, 50, 100].map((value) => (
+                      <Option key={value} value={value}>
+                        {value}
+                      </Option>
+                    ))}
+                  </Select>
+                </Box>
 
-      {/* Pagination */}
+                {/* Pagination info */}
+                <Typography level="body-sm">
+                  {`${startIndex}-${endIndex} of ${total}`}
+                </Typography>
+
+                {/* Navigation controls */}
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <IconButton
+                    size="sm"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(1)}
+                  >
+                    <KeyboardDoubleArrowLeft />
+                  </IconButton>
+                  <IconButton
+                    size="sm"
+                    disabled={currentPage === 1}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
+                  >
+                    <KeyboardArrowLeft />
+                  </IconButton>
+                  <IconButton
+                    size="sm"
+                    disabled={currentPage === totalPages}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    }
+                  >
+                    <KeyboardArrowRight />
+                  </IconButton>
+                  <IconButton
+                    size="sm"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(totalPages)}
+                  >
+                    <KeyboardDoubleArrowRight />
+                  </IconButton>
+                </Box>
+              </Box>
+            </Box>
+          </Box>
+        </Box>
+        </Box>
+
+         <Modal open={isPdfModalOpen} onClose={() => setIsPdfModalOpen(false)}>
+  <ModalDialog layout="fullscreen">
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <Box
-        className="Pagination-laptopUp"
         sx={{
-          pt: 2,
-          gap: 1,
-          [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
+          padding: 2,
           display: "flex",
+          justifyContent: "space-between",
           alignItems: "center",
-          flexDirection: { xs: "column", md: "row" },
-          marginLeft: { xl: "15%", lg: "18%" },
+          borderBottom: "1px solid lightgray",
         }}
       >
-        <Button
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          startDecorator={<KeyboardArrowLeftIcon />}
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-        >
-          Previous
-        </Button>
+        <Typography level="title-lg">PDF Preview</Typography>
+        <Box display="flex" gap={1}>
+<Button
+  color="primary"
+  onClick={() => {
+    const blobUrl = URL.createObjectURL(pdfBlob);
 
-        <Box>
-          {/* Showing page {currentPage} of {totalPages} ({total} results) */}
-          <Typography level="body-sm">
-            Showing {startIndex}–{endIndex} of {total} results
-          </Typography>
+    // Trigger download
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = "po-approval.pdf";
+    link.click();
+
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+
+    // Find matching SCM entries from selection
+    const removedIds = selected.filter((id) => {
+      const match = paginatedData.find(
+        (p) => p.payment_id === id && p.approval_status?.stage === "SCM"
+      );
+      return !!match;
+    });
+
+    // Add to hiddenIds state
+    setHiddenIds((prev) => [...prev, ...removedIds]);
+
+    // Deselect them too
+    setSelected((prev) => prev.filter((id) => !removedIds.includes(id)));
+
+    // Close modal
+    setIsPdfModalOpen(false);
+
+    toast.success("Selected approvals removed from view after download.");
+  }}
+>
+  Download
+</Button>
+
+
+          <Button color="danger" onClick={() => setIsPdfModalOpen(false)}>
+            Close
+          </Button>
         </Box>
-
-        <Box
-          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
-        >
-          {getPaginationRange().map((page, idx) =>
-            page === "..." ? (
-              <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
-                ...
-              </Box>
-            ) : (
-              <IconButton
-                key={page}
-                size="sm"
-                variant={page === currentPage ? "contained" : "outlined"}
-                color="neutral"
-                onClick={() => handlePageChange(page)}
-              >
-                {page}
-              </IconButton>
-            )
-          )}
-        </Box>
-
-        <Button
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          endDecorator={<KeyboardArrowRightIcon />}
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-        >
-          Next
-        </Button>
       </Box>
+
+      <iframe
+        src={pdfBlob ? URL.createObjectURL(pdfBlob) : ""}
+        style={{ flex: 1, width: "100%", border: "none" }}
+        title="PDF Preview"
+      />
+    </Box>
+  </ModalDialog>
+</Modal>
+      </Sheet>
+
     </>
   );
 }
