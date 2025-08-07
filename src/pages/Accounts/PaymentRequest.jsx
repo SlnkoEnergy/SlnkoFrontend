@@ -5,11 +5,10 @@ import CssBaseline from "@mui/joy/CssBaseline";
 import Link from "@mui/joy/Link";
 import { CssVarsProvider } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
-import React, { useRef } from "react";
+
 import { useEffect, useState } from "react";
 
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 
 import { useNavigate } from "react-router-dom";
 import Header from "../../component/Partials/Header";
@@ -34,13 +33,6 @@ function ProjectBalance() {
     return null;
   };
 
-  const paymentRequestRef = useRef();
-
-  const handleExportToCSV = () => {
-    if (paymentRequestRef.current) {
-      paymentRequestRef.current.exportToCSV();
-    }
-  };
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -166,24 +158,9 @@ function ProjectBalance() {
                   Add New Payment +
                 </Button>
               )}
-              {(user?.name === "IT Team" ||
-                user?.name === "Guddu Rani Dubey" ||
-                user?.name === "Prachi Singh" ||
-                user?.department === "admin") && (
-                <Button
-                  color="primary"
-                  startDecorator={<DownloadRoundedIcon />}
-                  size="sm"
-                  onClick={handleExportToCSV}
-                >
-                  Export to CSV
-                </Button>
-              )}
             </Box>
           </Box>
-          <PaymentRequest ref={paymentRequestRef} />
-          {/* <OrderTable />
-          <OrderList /> */}
+          <PaymentRequest />
         </Box>
       </Box>
     </CssVarsProvider>
