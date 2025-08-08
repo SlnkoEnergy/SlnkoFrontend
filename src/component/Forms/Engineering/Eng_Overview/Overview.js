@@ -545,8 +545,40 @@ const Overview = () => {
               <ChevronLeftIcon />
             </IconButton>
           )}
+        </Box>
 
+        <Sheet
+          variant="outlined"
+          sx={{
+            flexGrow: 1,
+            p: 4,
+            borderRadius: "lg",
+            boxShadow: "sm",
+            overflowY: "auto",
+            bgcolor: "#f9fafb",
+            maxHeight: isFromCamDash ? "67vh" : "100%",
+          }}
+        >
           <Box
+            display={"flex"}
+            justifyContent={"space-between"}
+            alignItems={"center"}
+          >
+            {!isEngineering && (
+              <Typography
+                level="body-sm"
+                sx={{ mb: 2, color: "warning.700", fontWeight: 500 }}
+              >
+                🔒 Upload access is restricted. You can only view/download
+                files.
+              </Typography>
+            )}
+           {submitIndex.length > 0 && (
+             <Button onClick={() => handleMultipleSubmitFiles(submitIndex)}>
+              Submit Files
+            </Button>
+           )}
+            <Box
       sx={{
         minWidth: 200,
         maxWidth: 300,
@@ -576,39 +608,6 @@ const Overview = () => {
         ))}
       </Select>
     </Box>
-        </Box>
-
-        <Sheet
-          variant="outlined"
-          sx={{
-            flexGrow: 1,
-            p: 4,
-            borderRadius: "lg",
-            boxShadow: "sm",
-            overflowY: "auto",
-            bgcolor: "#f9fafb",
-            maxHeight: isFromCamDash ? "62vh" : "100%",
-          }}
-        >
-          <Box
-            display={"flex"}
-            justifyContent={"space-between"}
-            alignItems={"center"}
-          >
-            {!isEngineering && (
-              <Typography
-                level="body-sm"
-                sx={{ mb: 2, color: "warning.700", fontWeight: 500 }}
-              >
-                🔒 Upload access is restricted. You can only view/download
-                files.
-              </Typography>
-            )}
-           {submitIndex.length > 0 && (
-             <Button onClick={() => handleMultipleSubmitFiles(submitIndex)}>
-              Submit Files
-            </Button>
-           )}
           </Box>
           <Divider sx={{ mb: 3, mt: 3 }} />
 
