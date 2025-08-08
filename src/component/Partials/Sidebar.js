@@ -2081,6 +2081,7 @@ function Sidebar() {
         ) : user?.department === "CAM" &&
           (user?.name === "Som Narayan Jha" ||
             user?.name === "Ashish Kumar" ||
+            user?.name === "Tanvi Jha" ||
             user?.name === "Saresh" ||
             user?.name === "Deepika Singh" ||
             user?.name === "Izhan Mustafa") ? (
