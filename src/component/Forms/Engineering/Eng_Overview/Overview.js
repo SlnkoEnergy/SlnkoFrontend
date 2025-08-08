@@ -545,37 +545,6 @@ const Overview = () => {
               <ChevronLeftIcon />
             </IconButton>
           )}
-
-          <Box
-      sx={{
-        minWidth: 200,
-        maxWidth: 300,
-        bgcolor: "background.level1",
-        borderRadius: "md",
-        boxShadow: "sm",
-      }}
-    >
-      <Select
-        value={selected}
-        onChange={(event, newValue) => handleCategorySelect(newValue)}
-        disabled={isLoading}
-        variant="soft"
-        sx={{
-          borderRadius: "xl",
-          fontWeight: 600,
-          minHeight: 40,
-          px: 1,
-        }}
-      >
-        {Object.keys(categoryData).map((category) => (
-          <Option key={category} value={category}>
-            {category
-              .replace(/_/g, " ")
-              .replace(/\b\w/g, (char) => char.toUpperCase())}
-          </Option>
-        ))}
-      </Select>
-    </Box>
         </Box>
 
         <Sheet
@@ -609,6 +578,36 @@ const Overview = () => {
               Submit Files
             </Button>
            )}
+            <Box
+      sx={{
+        minWidth: 200,
+        maxWidth: 300,
+        bgcolor: "background.level1",
+        borderRadius: "md",
+        boxShadow: "sm",
+      }}
+    >
+      <Select
+        value={selected}
+        onChange={(event, newValue) => handleCategorySelect(newValue)}
+        disabled={isLoading}
+        variant="soft"
+        sx={{
+          borderRadius: "xl",
+          fontWeight: 600,
+          minHeight: 40,
+          px: 1,
+        }}
+      >
+        {Object.keys(categoryData).map((category) => (
+          <Option key={category} value={category}>
+            {category
+              .replace(/_/g, " ")
+              .replace(/\b\w/g, (char) => char.toUpperCase())}
+          </Option>
+        ))}
+      </Select>
+    </Box>
           </Box>
           <Divider sx={{ mb: 3, mt: 3 }} />
 
