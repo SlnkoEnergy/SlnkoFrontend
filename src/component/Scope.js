@@ -48,11 +48,17 @@ const ScopeDetail = ({ project_id, project_code }) => {
   }, [getScope]);
 
   const handleCheckboxChange = (index, checked) => {
+    const item = itemsState[index];
+
+    if (item.pr_status && !checked) {
+      toast.error("Purchase request has been made for this Category");
+      return;
+    }
     const updatedScope = checked ? "slnko" : "client";
-    const category = itemsState[index]?.category;
+    const category = item?.category;
     setItemsState((prev) =>
-      prev.map((item) =>
-        item.category === category ? { ...item, scope: updatedScope } : item
+      prev.map((it) =>
+        it.category === category ? { ...it, scope: updatedScope } : it
       )
     );
   };
