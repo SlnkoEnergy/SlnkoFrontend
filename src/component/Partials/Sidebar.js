@@ -798,7 +798,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
-        ) : user?.department === "BD" ? (
+        ) : (user?.department === "BD")? (
           <List>
             <ListItem nested>
               <Toggler
@@ -2081,6 +2081,7 @@ function Sidebar() {
         ) : user?.department === "CAM" &&
           (user?.name === "Som Narayan Jha" ||
             user?.name === "Ashish Kumar" ||
+            user?.name === "Tanvi Jha" ||
             user?.name === "Saresh" ||
             user?.name === "Deepika Singh" ||
             user?.name === "Izhan Mustafa") ? (
@@ -2537,7 +2538,7 @@ function Sidebar() {
             user?.emp_id !== "SE-184" &&
             user?.emp_id !== "SE-193") ||
           user?.name === "Manish Shah" ||
-          user?.department === "CAM" ? (
+          user?.department === "CAM" && user?.name !== "Shantanu Sameer" ? (
           <List
             size="sm"
             sx={{
@@ -2733,8 +2734,245 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
-        ) : null}
+        ) : user?.department === "CAM" && (
+          user?.name === "Shantanu Sameer" ) ? (
+          <List
+            size="sm"
+            sx={{
+              gap: 1,
+              "--List-nestedInsetStart": "30px",
+              "--ListItem-radius": (theme) => theme.vars.radius.sm,
+            }}
+          >
+              <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <AssignmentRoundedIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">BD</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() =>
+                        navigate("/sales", {
+                          state: { internalPath: "/dashboard", search: "" },
+                        })
+                      }
+                    >
+                      Dashboard
+                    </ListItemButton>
+                  </ListItem>
 
+                  <ListItem>
+                    <ListItemButton onClick={() => navigate("/comm_offer")}>
+                      Commercial Offer
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <AccountBalanceIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">Accounting</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton
+                      onClick={() => navigate("/project-balance")}
+                    >
+                      Project Balances
+                    </ListItemButton>
+                  </ListItem>
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/daily-payment-request")}
+                    >
+                      Daily Payment Request
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+
+            {/* SCM Section */}
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <EngineeringIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">SCM</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/purchase-order")}>
+                      Purchase Order
+                    </ListItemButton>
+                  </ListItem>
+                  {/* <ListItem>
+                <ListItemButton onClick={() => navigate("#")}>
+                  Material Status
+                </ListItemButton>
+              </ListItem>
+              <ListItem>
+                <ListItemButton onClick={() => navigate("#")}>
+                  Vendor Bill
+                </ListItemButton>
+              </ListItem> */}
+                </List>
+              </Toggler>
+            </ListItem>
+
+            {/* CAM Section */}
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <MiscellaneousServicesIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">CAM</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={{
+                        transform: open ? "rotate(180deg)" : "none",
+                      }}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/cam_dash")}>
+                      Dashboard
+                    </ListItemButton>
+                  </ListItem>
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/purchase_request")}
+                    >
+                      Purchase Request
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <AccountBalanceWalletIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">Expense Sheet</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton
+                      onClick={() => navigate("/expense_dashboard")}
+                    >
+                      User Dashboard
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <TaskIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">Task</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/all_task")}>
+                      Task View
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+          </List>
+          ): null}
+          
         <List
           size="sm"
           sx={{
