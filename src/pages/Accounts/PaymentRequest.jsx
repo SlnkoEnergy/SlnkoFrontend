@@ -94,7 +94,7 @@ function ProjectBalance() {
               </Typography>
             </Breadcrumbs>
           </Box>
-          <Box
+          {/* <Box
             sx={{
               display: "flex",
               mb: 1,
@@ -159,7 +159,7 @@ function ProjectBalance() {
                 </Button>
               )}
             </Box>
-          </Box>
+          </Box> */}
           <PaymentRequest />
         </Box>
       </Box>

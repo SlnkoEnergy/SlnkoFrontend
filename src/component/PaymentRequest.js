@@ -93,12 +93,25 @@ const PaymentRequest = forwardRef((props, ref) => {
   //       : prevSelected.filter((item) => item !== id)
   //   );
   // };
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+
   const handleSearch = (query) => {
     setSearchQuery(query);
     setCurrentPage(1);
   };
-
-
 
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
@@ -115,7 +128,7 @@ const PaymentRequest = forwardRef((props, ref) => {
           gap: 1.5,
         }}
       >
-        <FormControl size="sm" sx={{ minWidth: 150 }}>
+        <FormControl size="sm" sx={{ minWidth: 80 }}>
           <FormLabel>Select Status</FormLabel>
           <Select
             value={status || ""}
@@ -138,70 +151,294 @@ const PaymentRequest = forwardRef((props, ref) => {
   return (
     <>
       <Box
-        className="SearchAndFilters-tabletUp"
         sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 2,
-          // display: { xs: "none", sm: "flex" },
           display: "flex",
-          flexDirection: { xs: "column", md: "row" },
+          mb: 1,
+          gap: 1,
+          flexDirection: { xs: "column", sm: "row" },
+          alignItems: { xs: "start", sm: "center" },
           flexWrap: "wrap",
-          gap: 1.5,
-          "& > *": {
-            minWidth: { xs: "120px", md: "160px" },
-          },
+          justifyContent: "space-between",
+          marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search here</FormLabel>
-          <Input
-            size="sm"
-            placeholder="Search by Pay ID, Items, Clients Name or Vendor"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </FormControl>
-        {renderFilters()}
+        <Box>
+          <Typography level="h2" component="h1">
+            Payment Records
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            display: "flex",
+            mb: 1,
+            gap: 1,
+            flexDirection: { xs: "column", sm: "row" },
+            alignItems: { xs: "none", sm: "center" },
+            flexWrap: "wrap",
+            justifyContent: "center",
+          }}
+        >
+          <Box
+            className="SearchAndFilters-tabletUp"
+            sx={{
+              borderRadius: "sm",
+              py: 2,
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
+              flexWrap: "wrap",
+              gap: 1.5,
+            }}
+          >
+            <FormControl sx={{ flex: 1 }} size="sm">
+              <FormLabel>Search here</FormLabel>
+              <Input
+                size="sm"
+                placeholder="Search by Pay ID, Items, Clients Name or Vendor"
+                startDecorator={<SearchIcon />}
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                sx={{
+                  width: 350,
+                  
+                  borderColor: "neutral.outlinedBorder",
+                  borderBottom: searchQuery
+                    ? "2px solid #1976d2"
+                    : "1px solid #ddd",
+                  borderRadius: 5, 
+                  boxShadow: "none",
+                  "&:hover": {
+                    borderBottom: "2px solid #1976d2",
+                  },
+                  "&:focus-within": {
+                    borderBottom: "2px solid #1976d2",
+                  },
+                }}
+              />
+            </FormControl>
+            {renderFilters()}
+          </Box>
+
+          <Box sx={{ mt: 3, display: "flex", gap: 1 }}>
+            {" "}
+            {(user?.name === "IT Team" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Prachi Singh" ||
+              user?.department === "admin" ||
+              user?.name === "Shubham Gupta" ||
+              user?.name === "Gagan Tayal" ||
+              user?.name === "Ajay Singh") && (
+              <Button
+                color="primary"
+                size="sm"
+                onClick={() => navigate("/pay_Request")}
+              >
+                Add New Payment +
+              </Button>
+            )}
+            {(user?.name === "IT Team" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Prachi Singh" ||
+              user?.department === "admin" ||
+              user?.name === "Ajay Singh" ||
+              user?.name === "Aryan Maheshwari" ||
+              user?.name === "Sarthak Sharma" ||
+              user?.name === "Naresh Kumar" ||
+              user?.name === "Shubham Gupta" ||
+              user?.name === "Saurabh Suman" ||
+              user?.name === "Sandeep Yadav" ||
+              user?.name === "Som Narayan Jha" ||
+              user?.name === "Gagan Tayal" ||
+              user?.name === "Saresh") && (
+              <Button
+                color="danger"
+                size="sm"
+                onClick={() => navigate("/standby_records")}
+              >
+                Trash
+              </Button>
+            )}
+          </Box>
+        </Box>
       </Box>
 
       {/* Table */}
-      <Sheet
+      <Box
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "flex", sm: "initial" },
           width: "100%",
           borderRadius: "sm",
-          flexShrink: 1,
           overflow: "auto",
           minHeight: 0,
-          marginLeft: { xl: "15%", lg: "18%" },
+          ml: { xl: "15%", lg: "18%", sm: 0 },
           maxWidth: { lg: "85%", sm: "100%" },
+          p: 2,
+          boxSizing: "border-box",
         }}
       >
-        <Tabs
-          value={activeTab}
-          onChange={(e, value) => {
-            setActiveTab(value);
-            setCurrentPage(1);
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 2,
+            px: 1,
+            py: 1,
+            // bgcolor: "background.level1",
+            borderRadius: "md",
+            mb: 2,
           }}
         >
-          <TabList>
-            <Tab>Instant</Tab>
-            <Tab>Credit</Tab>
-          </TabList>
+          {/* Horizontal Tabs like screenshot */}
+          <Tabs
+            value={activeTab}
+            onChange={(_, value) => {
+              setActiveTab(value);
+              setCurrentPage(1);
+            }}
+            variant="plain"
+            sx={{
+              bgcolor: "background.level2",
+              borderRadius: "xl",
+              p: 0.5,
+              minHeight: "50px",
+              boxShadow: "sm",
+              "--Tabs-gap": "0px",
+              "--Tab-radius": "10px",
+              "--Tab-paddingInline": "1.2rem",
+              "--TabList-gap": "2px",
+            }}
+          >
+            <TabList
+              disableUnderline
+              sx={{
+                borderRadius: "xl",
+                overflow: "hidden",
+                minHeight: "36px",
+                backgroundColor: "background.level1",
+                border: "1px solid",
+                borderColor: "neutral.outlinedBorder",
+              }}
+            >
+              <Tab
+                variant={activeTab === 0 ? "soft" : "plain"}
+                color="neutral"
+                disableIndicator
+                sx={{
+                  fontWeight: 500,
+                  transition: "all 0.2s",
+                  minHeight: "36px",
+                  "&:hover": {
+                    backgroundColor: "neutral.softHoverBg",
+                  },
+                  ...(activeTab === 0),
+                }}
+              >
+                Instant
+              </Tab>
+              <Tab
+                variant={activeTab === 1 ? "soft" : "plain"}
+                color="neutral"
+                disableIndicator
+                sx={{
+                  fontWeight: 500,
+                  transition: "all 0.2s",
+                  minHeight: "36px",
+                  "&:hover": {
+                    backgroundColor: "neutral.softHoverBg",
+                  },
+                  ...(activeTab === 1),
+                }}
+              >
+                Credit
+              </Tab>
+            </TabList>
+          </Tabs>
 
-          <TabPanel value={0}>
-            <InstantRequest data={paginatedData} isLoading={isLoading}  />
-          </TabPanel>
+          {/* Pagination Controls */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 1.5,
+            }}
+          >
+            {/* Rows per page */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Typography level="body-sm">Rows per page:</Typography>
+              <Select
+                size="sm"
+                value={perPage}
+                onChange={(_, value) => {
+                  if (value) {
+                    setPerPage(Number(value));
+                    setCurrentPage(1);
+                  }
+                }}
+                sx={{ minWidth: 64 }}
+              >
+                {[10, 25, 50, 100].map((value) => (
+                  <Option key={value} value={value}>
+                    {value}
+                  </Option>
+                ))}
+              </Select>
+            </Box>
 
-          <TabPanel value={1}>
+            {/* Pagination info */}
+            <Typography level="body-sm">
+              {`${startIndex}-${endIndex} of ${total}`}
+            </Typography>
+
+            {/* Navigation buttons */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <IconButton
+                size="sm"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(1)}
+              >
+                <KeyboardDoubleArrowLeft />
+              </IconButton>
+              <IconButton
+                size="sm"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              >
+                <KeyboardArrowLeft />
+              </IconButton>
+              <IconButton
+                size="sm"
+                disabled={currentPage === totalPages}
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+              >
+                <KeyboardArrowRight />
+              </IconButton>
+              <IconButton
+                size="sm"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(totalPages)}
+              >
+                <KeyboardDoubleArrowRight />
+              </IconButton>
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Main Content */}
+        <Box>
+          {activeTab === 0 && (
+            <InstantRequest data={paginatedData} isLoading={isLoading} />
+          )}
+          {activeTab === 1 && (
             <CreditRequest data={paginatedData} isLoading={isLoading} />
-          </TabPanel>
-        </Tabs>
-      </Sheet>
+          )}
+        </Box>
+      </Box>
     </>
   );
 });

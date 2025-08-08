@@ -350,77 +350,101 @@ const InstantRequest = forwardRef(() => {
   return (
     <>
       {/* Table */}
-
-      <Box component="table" sx={{ width: "100%", borderCollapse: "collapse" }}>
-        <Box component="thead">
-          <Box component="tr">
-            {/* <Box component="th" sx={headerStyle}>
+      <Box
+        sx={{
+          maxWidth: "100%",
+          overflowY: "auto",
+          maxHeight: "600px",
+          borderRadius: "12px",
+          border: "1px solid",
+          borderColor: "divider",
+          bgcolor: "background.body",
+          "&::-webkit-scrollbar": {
+            width: "8px",
+          },
+          "&::-webkit-scrollbar-track": {
+            background: "#f0f0f0",
+            borderRadius: "8px",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "#1976d2",
+            borderRadius: "8px",
+          },
+        }}
+      >
+        <Box
+          component="table"
+          sx={{ width: "100%", borderCollapse: "collapse" }}
+        >
+          <Box component="thead">
+            <Box component="tr">
+              {/* <Box component="th" sx={headerStyle}>
                 <Checkbox
                   size="sm"
                   checked={selected.length === paginatedData.length}
                   onChange={handleSelectAll}
                 />
               </Box> */}
-            {[
-              "Payment Id",
-              "Paid_for",
-              "Payment Status",
-              "UTR",
-              // "",
-            ].map((header, index) => (
-              <Box key={index} component="th" sx={headerStyle}>
-                {header}
-              </Box>
-            ))}
+              {[
+                "Payment Id",
+                "Paid_for",
+                "Payment Status",
+                "UTR",
+                // "",
+              ].map((header, index) => (
+                <Box key={index} component="th" sx={headerStyle}>
+                  {header}
+                </Box>
+              ))}
+            </Box>
           </Box>
-        </Box>
-        <Box component="tbody">
-          {error ? (
-            <Typography color="danger" textAlign="center">
-              {error}
-            </Typography>
-          ) : isLoading ? (
-            <Box component="tr">
-              <Box
-                component="td"
-                colSpan={5}
-                sx={{
-                  py: 2,
-                  textAlign: "center",
-                }}
-              >
+          <Box component="tbody">
+            {error ? (
+              <Typography color="danger" textAlign="center">
+                {error}
+              </Typography>
+            ) : isLoading ? (
+              <Box component="tr">
                 <Box
+                  component="td"
+                  colSpan={5}
                   sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 1,
+                    py: 2,
+                    textAlign: "center",
                   }}
                 >
-                  <CircularProgress size="sm" sx={{ color: "primary.500" }} />
-                  <Typography fontStyle="italic">
-                    Loading payments… please hang tight ⏳
-                  </Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 1,
+                    }}
+                  >
+                    <CircularProgress size="sm" sx={{ color: "primary.500" }} />
+                    <Typography fontStyle="italic">
+                      Loading payments… please hang tight ⏳
+                    </Typography>
+                  </Box>
                 </Box>
               </Box>
-            </Box>
-          ) : paginatedData.length > 0 ? (
-            paginatedData.map((payment, index) => (
-              <Box
-                component="tr"
-                key={index}
-                sx={{
-                  backgroundColor: "background.surface",
-                  borderRadius: "8px",
-                  boxShadow: "xs",
-                  transition: "all 0.2s",
-                  "&:hover": {
-                    backgroundColor: "neutral.softHoverBg",
-                  },
-                }}
-              >
-                {/* <Box component="td" sx={cellStyle}>
+            ) : paginatedData.length > 0 ? (
+              paginatedData.map((payment, index) => (
+                <Box
+                  component="tr"
+                  key={index}
+                  sx={{
+                    backgroundColor: "background.surface",
+                    borderRadius: "8px",
+                    boxShadow: "xs",
+                    transition: "all 0.2s",
+                    "&:hover": {
+                      backgroundColor: "neutral.softHoverBg",
+                    },
+                  }}
+                >
+                  {/* <Box component="td" sx={cellStyle}>
                     <Checkbox
                       size="sm"
                       checked={selected.includes(payment.pay_id)}
@@ -429,177 +453,81 @@ const InstantRequest = forwardRef(() => {
                       }
                     />
                   </Box> */}
-                <Box
-                  component="td"
-                  sx={{
-                    ...cellStyle,
-                    minWidth: 280,
-                    padding: "12px 16px",
-                  }}
-                >
-                  {/* {payment.pay_id} */}
-                  <Tooltip title="View Summary" arrow>
-                    <span>
-                      <PaymentID
-                        currentPage={currentPage}
-                        p_id={payment.p_id}
-                        pay_id={payment.pay_id}
-                        dbt_date={payment.dbt_date}
-                      />
-                    </span>
-                  </Tooltip>
-                </Box>
-
-                <Box component="td" sx={{ ...cellStyle, minWidth: 300 }}>
-                  <ItemFetch
-                    paid_for={payment.paid_for}
-                    po_number={payment.po_number}
-                    p_id={payment.p_id}
-                    vendor={payment.vendor}
-                    customer_name={payment.customer_name}
-                  />
-                </Box>
-                <Box component="td" sx={{ ...cellStyle, minWidth: 300 }}>
-                  <MatchRow
-                    approved={payment.approved}
-                    timers={payment.timers}
-                    amount_paid={payment.amount_paid}
-                  />
-                </Box>
-
-                <Box component="td" sx={{ ...cellStyle, fontSize: 15 }}>
-                  {payment.utr || "-"}
-                </Box>
-              </Box>
-            ))
-          ) : (
-            <Box component="tr">
-              <Box
-                component="td"
-                colSpan={6}
-                sx={{
-                  padding: "8px",
-                  textAlign: "center",
-                  fontStyle: "italic",
-                }}
-              >
-                <Box
-                  sx={{
-                    fontStyle: "italic",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <img
-                    src={NoData}
-                    alt="No data Image"
-                    style={{ width: "50px", height: "50px" }}
-                  />
-                  <Typography fontStyle={"italic"}>
-                    No records available
-                  </Typography>
-                </Box>
-              </Box>
-            </Box>
-          )}
-        </Box>
-        <Box
-          component="tfoot"
-          sx={{
-            position: "sticky",
-            bottom: 0,
-            backgroundColor: "background.surface",
-            zIndex: 10,
-            boxShadow: "0 -2px 6px rgba(0,0,0,0.05)",
-          }}
-        >
-          <Box
-            component="tr"
-            sx={{
-              borderTop: "1px solid #ddd",
-            }}
-          >
-            <Box
-              component="td"
-              colSpan={5}
-              sx={{
-                padding: "8px",
-              }}
-            >
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  alignItems: "center",
-                  gap: 2,
-                  flexWrap: "wrap",
-                }}
-              >
-                {/* Rows per page */}
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Typography level="body-sm">Rows per page:</Typography>
-                  <Select
-                    size="sm"
-                    value={perPage}
-                    onChange={(_, value) => {
-                      if (value) {
-                        setPerPage(Number(value));
-                        setCurrentPage(1);
-                      }
+                  <Box
+                    component="td"
+                    sx={{
+                      ...cellStyle,
+                      minWidth: 280,
+                      padding: "12px 16px",
                     }}
                   >
-                    {[10, 25, 50, 100].map((value) => (
-                      <Option key={value} value={value}>
-                        {value}
-                      </Option>
-                    ))}
-                  </Select>
+                    {/* {payment.pay_id} */}
+                    <Tooltip title="View Summary" arrow>
+                      <span>
+                        <PaymentID
+                          currentPage={currentPage}
+                          p_id={payment.p_id}
+                          pay_id={payment.pay_id}
+                          dbt_date={payment.dbt_date}
+                        />
+                      </span>
+                    </Tooltip>
+                  </Box>
+
+                  <Box component="td" sx={{ ...cellStyle, minWidth: 300 }}>
+                    <ItemFetch
+                      paid_for={payment.paid_for}
+                      po_number={payment.po_number}
+                      p_id={payment.p_id}
+                      vendor={payment.vendor}
+                      customer_name={payment.customer_name}
+                    />
+                  </Box>
+                  <Box component="td" sx={{ ...cellStyle, minWidth: 300 }}>
+                    <MatchRow
+                      approved={payment.approved}
+                      timers={payment.timers}
+                      amount_paid={payment.amount_paid}
+                    />
+                  </Box>
+
+                  <Box component="td" sx={{ ...cellStyle, fontSize: 15 }}>
+                    {payment.utr || "-"}
+                  </Box>
                 </Box>
-
-                {/* Pagination info */}
-                <Typography level="body-sm">
-                  {`${startIndex}-${endIndex} of ${total}`}
-                </Typography>
-
-                {/* Navigation controls */}
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <IconButton
-                    size="sm"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(1)}
+              ))
+            ) : (
+              <Box component="tr">
+                <Box
+                  component="td"
+                  colSpan={6}
+                  sx={{
+                    padding: "8px",
+                    textAlign: "center",
+                    fontStyle: "italic",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      fontStyle: "italic",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
                   >
-                    <KeyboardDoubleArrowLeft />
-                  </IconButton>
-                  <IconButton
-                    size="sm"
-                    disabled={currentPage === 1}
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(prev - 1, 1))
-                    }
-                  >
-                    <KeyboardArrowLeft />
-                  </IconButton>
-                  <IconButton
-                    size="sm"
-                    disabled={currentPage === totalPages}
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                    }
-                  >
-                    <KeyboardArrowRight />
-                  </IconButton>
-                  <IconButton
-                    size="sm"
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage(totalPages)}
-                  >
-                    <KeyboardDoubleArrowRight />
-                  </IconButton>
+                    <img
+                      src={NoData}
+                      alt="No data Image"
+                      style={{ width: "50px", height: "50px" }}
+                    />
+                    <Typography fontStyle={"italic"}>
+                      No records available
+                    </Typography>
+                  </Box>
                 </Box>
               </Box>
-            </Box>
+            )}
           </Box>
         </Box>
       </Box>

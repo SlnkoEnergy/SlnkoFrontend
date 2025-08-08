@@ -26,7 +26,7 @@ import { toast } from "react-toastify";
 import NoData from "../assets/alert-bell.svg";
 import Axios from "../utils/Axios";
 import { useGetPaymentApprovalQuery } from "../redux/Accounts";
-import { CircularProgress, Modal, ModalDialog } from "@mui/joy";
+import { CircularProgress, Modal, ModalDialog, Stack } from "@mui/joy";
 import { Calendar, CircleUser, UsersRound } from "lucide-react";
 
 function PaymentRequest() {
@@ -39,12 +39,12 @@ function PaymentRequest() {
   const [perPage, setPerPage] = useState(initialPageSize);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [searchQuery, setSearchQuery] = useState("");
-const [pdfBlob, setPdfBlob] = useState(null);
-const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
-const [hiddenIds, setHiddenIds] = useState([]);
-
-
-
+  const [pdfBlob, setPdfBlob] = useState(null);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const [hiddenIds, setHiddenIds] = useState([]);
+  const [isPdfLoading, setIsPdfLoading] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [pdfPayments, setPdfPayments] = useState([]);
 
   const {
     data: responseData,
@@ -60,101 +60,121 @@ const [hiddenIds, setHiddenIds] = useState([]);
   const total = responseData?.total || 0;
   const count = responseData?.count || paginatedData.length;
 
+  console.log("Payment Approval Data:", paginatedData);
+
   const totalPages = Math.ceil(total / perPage);
 
   const startIndex = (currentPage - 1) * perPage + 1;
   const endIndex = Math.min(startIndex + count - 1, total);
 
-  const visibleData = paginatedData.filter(
-  (item) => !hiddenIds.includes(item.payment_id)
-);
+  const [user, setUser] = useState(null);
 
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
 
-  const getPaginationRange = () => {
-    const siblings = 1;
-    const pages = [];
-
-    if (totalPages <= 5 + siblings * 2) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-      const left = Math.max(currentPage - siblings, 2);
-      const right = Math.min(currentPage + siblings, totalPages - 1);
-
-      pages.push(1);
-      if (left > 2) pages.push("...");
-
-      for (let i = left; i <= right; i++) pages.push(i);
-
-      if (right < totalPages - 1) pages.push("...");
-      pages.push(totalPages);
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
     }
-
-    return pages;
+    return null;
   };
 
-  const handleApprovalUpdate = async (payment_id, newStatus) => {
-    try {
-      const token = localStorage.getItem("authToken");
+  const handleStatusChange = async (_id, newStatus) => {
+    // console.log("handleStatusChange got:", _id, newStatus);s
+    debugger; // Entry point
+    if (!user) {
+      toast.error("User not found");
+      return;
+    }
 
-      const response = await Axios.put(
-        "/account-approve",
-        {
-          pay_id: payment_id,
-          status: newStatus,
-        },
-        {
-          headers: {
-            "x-auth-token": token,
-          },
-        }
+    if (!_id) {
+      toast.error("Mongo Id is required for approval.");
+      return;
+    }
+
+    const { department, role } = user;
+    debugger; // Inspect department & role
+
+    const isCAMManager = department === "CAM" && role === "manager";
+    const isSCMOrAccountsManager =
+      ["SCM", "Accounts"].includes(department) && role === "manager";
+
+    if (isSCMOrAccountsManager) {
+      debugger; // SCM/Accounts Manager path
+      const success = await handleApprovalUpdate(_id, newStatus);
+      if (success) {
+        setSelected((prev) => prev.filter((id) => id !== _id));
+      }
+    } else if (isCAMManager) {
+      debugger; // CAM Manager path
+
+      if (!Array.isArray(paginatedData)) {
+        toast.error("Payment data is not available yet.");
+        return;
+      }
+      if (!Array.isArray(selected) || selected.length === 0) {
+        toast.warn("Please select at least one payment to approve.");
+        return;
+      }
+
+      const selectedPayments = paginatedData.filter((p) =>
+        selected.includes(String(p._id))
       );
 
-      if (response.status === 200) {
-        if (newStatus === "Approved") {
-          toast.success("Payment Approved!", { autoClose: 3000 });
-        } else if (newStatus === "Rejected") {
-          toast.error("Payment Rejected", { autoClose: 2000 });
-        }
+      const poIds = selectedPayments
+        .map((p) => p?._id)
+        .filter((id) => typeof id === "string" && id.trim().length > 0);
 
-        return true;
+      if (poIds.length === 0) {
+        toast.error("No valid PO IDs found for PDF generation.");
+        return;
       }
-    } catch (error) {
-      console.error("Error updating approval status:", error);
 
-      if (error.response?.data?.message) {
-        toast.warn(error.response.data.message, { autoClose: 4000 });
-      } else {
-        toast.error("Network error. Please try again later.", {
-          autoClose: 3000,
-        });
+      debugger; // Before checking selectedPayments
+      if (!selectedPayments || selectedPayments.length === 0) {
+        toast.warn("No matching selected payments found in current page.");
+        return;
       }
+
+      debugger; // Just before PDF preview
+      setPdfPayments(selectedPayments);
+      await handleMultiPDFDownload(selectedPayments);
+    }
+  };
+
+  // === Generate & Preview PDF ===
+  const handleMultiPDFDownload = async (payments) => {
+    debugger;
+    setIsPdfLoading(true);
+
+    if (!Array.isArray(payments) || payments.length === 0) {
+      console.error(
+        "Expected payments to be a non-empty array, but got:",
+        payments
+      );
+      toast.error("Unable to generate PDF. No valid payments selected.");
+      setIsPdfLoading(false);
+      return;
     }
 
-    return false;
-  };
-  const handleStatusChange = async (payment_id, newStatus) => {
-  const selectedPayments = paginatedData.filter(payment =>
-    selected.includes(payment.payment_id)
-  );
+    // 💡 Filter out invalid payments (without _id)
+    const validPayments = payments.filter((p) => p && p._id);
 
-  // Check if multi select and in SCM stage
-  const isSCMMultiSelect =
-    selectedPayments.length > 1 &&
-    selectedPayments.every(p => p.approval_status?.stage === "SCM");
-
-  if (isSCMMultiSelect) {
-    const confirm = window.confirm(
-      "Are you sure you want to generate the approval PDF for selected payments?"
-    );
-
-    if (!confirm) return;
+    if (validPayments.length === 0) {
+      toast.error("No valid payment IDs found to generate PDF.");
+      setIsPdfLoading(false);
+      return;
+    }
 
     try {
       const token = localStorage.getItem("authToken");
 
       const response = await Axios.post(
-        "/po-approval-pdf",
-        { selected_ids: selectedPayments.map(p => p.payment_id) },
+        "/accounting/po-approve-pdf",
+        { poIds: validPayments.map((p) => p._id) },
         {
           headers: {
             "x-auth-token": token,
@@ -163,75 +183,185 @@ const [hiddenIds, setHiddenIds] = useState([]);
         }
       );
 
-      setPdfBlob(new Blob([response.data], { type: "application/pdf" }));
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      setPdfBlob(blob);
       setIsPdfModalOpen(true);
     } catch (error) {
       console.error("PDF generation failed", error);
       toast.error("Failed to generate PDF");
+    } finally {
+      setIsPdfLoading(false);
+    }
+  };
+
+  // === Single Approval Logic ===
+  const handleApprovalUpdate = async (_id, newStatus) => {
+    debugger; // Entry point
+    console.log("Updating approval for ID:", _id, "to status:", newStatus);
+
+    try {
+      const token = localStorage.getItem("authToken");
+      debugger; // Check token
+
+      const response = await Axios.put(
+        "/account-approve",
+        { _id, status: newStatus },
+        { headers: { "x-auth-token": token } }
+      );
+
+      debugger; // After response
+      if (response.status === 200) {
+        newStatus === "Approved"
+          ? toast.success("Payment Approved!", { autoClose: 3000 })
+          : toast.error("Payment Rejected", { autoClose: 2000 });
+
+        setHiddenIds((prev) => [...prev, _id]);
+        return true;
+      }
+    } catch (error) {
+      debugger; // On error
+      console.error("Approval update error:", error);
+      toast.error(
+        error.response?.data?.message || "Network error. Please try again."
+      );
     }
 
-    return;
-  }
+    return false;
+  };
 
-  // Single approval fallback
-  const success = await handleApprovalUpdate(payment_id, newStatus);
-  if (success) refetch();
-};
+  // === Final CAM Batch Approval ===
+  const handleCAMBatchApproval = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      const idsToApprove = pdfPayments.map((p) => p._id);
+      debugger; // Check selected IDs and token
 
+      if (pdfBlob) {
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = "CAM_Approval.pdf";
+        link.click();
+      }
 
-  const RowMenu = ({ payment_id, onStatusChange }) => (
+      const approvalRes = await Axios.put(
+        "/account-approve",
+        {
+          _id: idsToApprove,
+          status: "Approved",
+        },
+        {
+          headers: { "x-auth-token": token },
+        }
+      );
+
+      debugger; // After approval
+      if (approvalRes.status === 200) {
+        toast.success("All payments approved successfully");
+        setHiddenIds((prev) => [...prev, ...idsToApprove]);
+        setSelected((prev) => prev.filter((id) => !idsToApprove.includes(id)));
+        setIsPdfModalOpen(false);
+        setIsConfirmModalOpen(false);
+      }
+    } catch (error) {
+      debugger; // On error
+      console.error("CAM approval failed", error);
+      toast.error("Failed to approve payments");
+    }
+  };
+
+  const RowMenu = ({ _id, onStatusChange }) => (
     <Box sx={{ display: "flex", justifyContent: "left", gap: 1 }}>
       <Chip
         variant="solid"
         color="success"
         label="Approved"
-        onClick={() => onStatusChange(payment_id, "Approved")}
-        sx={{
-          textTransform: "none",
-          fontSize: "0.875rem",
-          fontWeight: 500,
-          borderRadius: "sm",
-        }}
+        onClick={() => onStatusChange(_id, "Approved")}
+        sx={{ textTransform: "none", fontSize: "0.875rem", fontWeight: 500 }}
         startDecorator={<CheckRoundedIcon />}
       />
       <Chip
         variant="outlined"
         color="danger"
         label="Rejected"
-        onClick={() => onStatusChange(payment_id, "Rejected")}
-        sx={{
-          textTransform: "none",
-          fontSize: "0.875rem",
-          fontWeight: 500,
-          borderRadius: "sm",
-        }}
+        onClick={() => onStatusChange(_id, "Rejected")}
+        sx={{ textTransform: "none", fontSize: "0.875rem", fontWeight: 500 }}
         startDecorator={<BlockIcon />}
       />
     </Box>
   );
-
- 
-
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelected(visibleData.map((row) => row.id));
+      setSelected(paginatedData.map((row) => String(row._id)));
     } else {
       setSelected([]);
     }
   };
 
-  const handleRowSelect = (id, isSelected) => {
-    setSelected((prevSelected) =>
-      isSelected
-        ? [...prevSelected, id]
-        : prevSelected.filter((item) => item !== id)
+  const handleRowSelect = (_id, checked) => {
+    const idStr = String(_id);
+    setSelected((prev) =>
+      checked ? [...prev, idStr] : prev.filter((item) => item !== idStr)
     );
   };
+
+  const blobUrl = useMemo(() => {
+    return pdfBlob ? URL.createObjectURL(pdfBlob) : null;
+  }, [pdfBlob]);
+
+  const handleClosePdfModal = () => {
+    if (blobUrl) URL.revokeObjectURL(blobUrl);
+    setPdfBlob(null);
+    setIsPdfModalOpen(false);
+    setIsConfirmModalOpen(false);
+  };
+
+  const renderFilters = () => {
+    const hasSelection = selected.length > 0;
+
+    const handlePreviewClick = () => {
+      const selectedPayments = paginatedData.filter((p) =>
+        selected.includes(String(p._id))
+      );
+      handleMultiPDFDownload(selectedPayments);
+    };
+
+    return (
+      <Box
+        sx={{
+          position: "relative",
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+        }}
+      >
+        {hasSelection && (
+          <Button
+            size="sm"
+            variant="solid"
+            color="primary"
+            onClick={handlePreviewClick}
+            disabled={isPdfLoading}
+            sx={{ ml: "auto", minWidth: 200 }}
+          >
+            {isPdfLoading ? (
+              <>
+                <CircularProgress size="sm" sx={{ mr: 1 }} />
+                Generating PDF...
+              </>
+            ) : (
+              "📄 Preview & Download PDF"
+            )}
+          </Button>
+        )}
+      </Box>
+    );
+  };
+
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
 
-    const headerStyle = {
+  const headerStyle = {
     position: "sticky",
     top: 0,
     zIndex: 2,
@@ -272,74 +402,29 @@ const [hiddenIds, setHiddenIds] = useState([]);
     setCurrentPage(page);
   }, [searchParams]);
 
-  const renderFilters = () => {
-  const hasSelection = selected.length > 0;
-
-  return (
-    <Box
-      sx={{
-        position: "relative",
-        display: "flex",
-        alignItems: "center",
-        gap: 1.5,
-      }}
-    >
-      <FormControl size="sm" sx={{ minWidth: 150 }}>
-        <FormLabel>Rows Per Page</FormLabel>
-        <Select
-          value={perPage}
-          onChange={(e, newValue) => {
-            setPerPage(newValue);
-            setCurrentPage(1);
-          }}
-        >
-          {[10, 30, 60, 100].map((num) => (
-            <Option key={num} value={num}>
-              {num}/Page
-            </Option>
-          ))}
-        </Select>
-      </FormControl>
-
-      {hasSelection && (
-        <Button
-          size="sm"
-          variant="solid"
-          color="primary"
-          // onClick={handleMultiPDFDownload}
-          sx={{ ml: "auto" }}
-        >
-          📄 Preview & Download PDF
-        </Button>
-      )}
-    </Box>
-  );
-};
-
-
   const PaymentID = ({ payment_id, request_date }) => {
     return (
       <>
         {payment_id && (
           <Box>
-          <Chip
-            variant="solid"
-            color="primary"
-            size="sm"
-            sx={{
-              fontWeight: 500,
-              fontFamily: "Inter, Roboto, sans-serif",
-              fontSize: 14,
-              color: "#fff",
-              "&:hover": {
-                boxShadow: "md",
-                opacity: 0.9,
-              },
-            }}
-          >
-            {payment_id || "N/A"}
-          </Chip>
-        </Box>
+            <Chip
+              variant="solid"
+              color="primary"
+              size="sm"
+              sx={{
+                fontWeight: 500,
+                fontFamily: "Inter, Roboto, sans-serif",
+                fontSize: 14,
+                color: "#fff",
+                "&:hover": {
+                  boxShadow: "md",
+                  opacity: 0.9,
+                },
+              }}
+            >
+              {payment_id || "N/A"}
+            </Chip>
+          </Box>
         )}
 
         {request_date && (
@@ -462,45 +547,213 @@ const [hiddenIds, setHiddenIds] = useState([]);
     <>
       {/* Tablet and Up Filters */}
       <Box
-        className="SearchAndFilters-tabletUp"
         sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 2,
           display: "flex",
+          mb: 1,
+          gap: 1,
+          flexDirection: { xs: "column", sm: "row" },
+          alignItems: { xs: "start", sm: "center" },
           flexWrap: "wrap",
-          gap: 1.5,
-          "& > *": {
-            minWidth: { xs: "120px", md: "160px" },
-          },
+          justifyContent: "space-between",
+          marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search here</FormLabel>
-          <Input
-            size="sm"
-            placeholder="Search by Project ID, Customer, or Name"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </FormControl>
+        <Box>
+          {user?.department === "SCM" && user?.role === "manager" && (
+            <Typography level="h2" component="h1">
+              SCM Payment Approval
+            </Typography>
+          )}
+
+          {user?.department === "Internal" && user?.role === "manager" && (
+            <Typography level="h2" component="h1">
+              CAM Payment Approval
+            </Typography>
+          )}
+
+          {((user?.department === "Accounts" && user?.role === "manager") ||
+            user?.department === "admin") && (
+            <Typography level="h2" component="h1">
+              Accounts Payment Approval
+            </Typography>
+          )}
+        </Box>
+
+        <Box
+          sx={{
+            display: "flex",
+            mb: 1,
+            gap: 1,
+            flexDirection: { xs: "column", sm: "row" },
+            alignItems: { xs: "none", sm: "center" },
+            flexWrap: "wrap",
+            justifyContent: "center",
+          }}
+        >
+          <Box
+            className="SearchAndFilters-tabletUp"
+            sx={{
+              borderRadius: "sm",
+              py: 2,
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
+              flexWrap: "wrap",
+              gap: 1.5,
+            }}
+          >
+            <FormControl sx={{ flex: 1 }} size="sm">
+              <FormLabel>Search here</FormLabel>
+              <Input
+                size="sm"
+                placeholder="Search by Pay ID, Items, Clients Name or Vendor"
+                startDecorator={<SearchIcon />}
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                sx={{
+                  width: 350,
+
+                  borderColor: "neutral.outlinedBorder",
+                  borderBottom: searchQuery
+                    ? "2px solid #1976d2"
+                    : "1px solid #ddd",
+                  borderRadius: 5,
+                  boxShadow: "none",
+                  "&:hover": {
+                    borderBottom: "2px solid #1976d2",
+                  },
+                  "&:focus-within": {
+                    borderBottom: "2px solid #1976d2",
+                  },
+                }}
+              />
+            </FormControl>
+            {/* {renderFilters()} */}
+          </Box>
+
+          <Box sx={{ mt: 3, display: "flex", gap: 1 }}></Box>
+        </Box>
+      </Box>
+
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 2,
+          px: 1,
+          py: 1,
+          ml: { xl: "15%", lg: "18%", sm: 0 },
+          maxWidth: { lg: "85%", sm: "100%" },
+          // bgcolor: "background.level1",
+          borderRadius: "md",
+          mb: 2,
+        }}
+      >
         {renderFilters()}
+        {/* Pagination Controls */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 1.5,
+          }}
+        >
+          {/* Rows per page */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography level="body-sm">Rows per page:</Typography>
+            <Select
+              size="sm"
+              value={perPage}
+              onChange={(_, value) => {
+                if (value) {
+                  setPerPage(Number(value));
+                  setCurrentPage(1);
+                }
+              }}
+              sx={{ minWidth: 64 }}
+            >
+              {[10, 25, 50, 100].map((value) => (
+                <Option key={value} value={value}>
+                  {value}
+                </Option>
+              ))}
+            </Select>
+          </Box>
+
+          {/* Pagination info */}
+          <Typography level="body-sm">
+            {`${startIndex}-${endIndex} of ${total}`}
+          </Typography>
+
+          {/* Navigation buttons */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <IconButton
+              size="sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(1)}
+            >
+              <KeyboardDoubleArrowLeft />
+            </IconButton>
+            <IconButton
+              size="sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            >
+              <KeyboardArrowLeft />
+            </IconButton>
+            <IconButton
+              size="sm"
+              disabled={currentPage === totalPages}
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+            >
+              <KeyboardArrowRight />
+            </IconButton>
+            <IconButton
+              size="sm"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(totalPages)}
+            >
+              <KeyboardDoubleArrowRight />
+            </IconButton>
+          </Box>
+        </Box>
       </Box>
 
       {/* Table */}
-      <Sheet
+      <Box
         className="OrderTableContainer"
         variant="outlined"
         sx={{
           display: { xs: "none", sm: "initial" },
           width: "100%",
-          borderRadius: "sm",
+          // borderRadius: "sm",
           flexShrink: 1,
           overflow: "auto",
-          minHeight: 0,
+          // minHeight: 0,
           marginLeft: { xl: "15%", lg: "18%" },
           maxWidth: { lg: "85%", sm: "100%" },
+          // maxWidth: "100%",
+          // overflowY: "auto",
+          maxHeight: "600px",
+          borderRadius: "12px",
+          border: "1px solid",
+          borderColor: "divider",
+          bgcolor: "background.body",
+          "&::-webkit-scrollbar": {
+            width: "8px",
+          },
+          "&::-webkit-scrollbar-track": {
+            background: "#f0f0f0",
+            borderRadius: "8px",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "#1976d2",
+            borderRadius: "8px",
+          },
         }}
       >
         <Box
@@ -509,20 +762,15 @@ const [hiddenIds, setHiddenIds] = useState([]);
         >
           <Box component="thead">
             <Box component="tr">
-              <Box
-                component="th"
-                sx={headerStyle}
-              >
+              <Box component="th" sx={headerStyle}>
                 <Checkbox
-                  size="sm"
-                  checked={selected.length === visibleData.length}
-                  onChange={(event) =>
-                    handleRowSelect("all", event.target.checked)
-                  }
                   indeterminate={
                     selected.length > 0 &&
-                    selected.length < visibleData.length
+                    selected.length < paginatedData.length
                   }
+                  checked={selected.length === paginatedData.length}
+                  onChange={handleSelectAll}
+                  color={selected.length > 0 ? "primary" : "neutral"}
                 />
               </Box>
               {[
@@ -530,16 +778,14 @@ const [hiddenIds, setHiddenIds] = useState([]);
                 "Project Id",
                 "Request For",
                 "Amount Requested",
-                "Action",
-              ].map((header, index) => (
-                <Box
-                  component="th"
-                  key={index}
-                  sx={headerStyle}
-                >
-                  {header}
-                </Box>
-              ))}
+                ["SCM", "Accounts"].includes(user?.department) && "Action",
+              ]
+                .filter(Boolean)
+                .map((header, index) => (
+                  <Box component="th" key={index} sx={headerStyle}>
+                    {header}
+                  </Box>
+                ))}
             </Box>
           </Box>
           <Box component="tbody">
@@ -573,41 +819,35 @@ const [hiddenIds, setHiddenIds] = useState([]);
                   </Box>
                 </Box>
               </Box>
-            ) : visibleData.length > 0 ? (
-              visibleData.map((payment, index) => {
+            ) : paginatedData.length > 0 ? (
+              paginatedData.map((payment, index) => {
                 return (
                   <Box
                     component="tr"
                     key={index}
                     sx={{
-                  backgroundColor: "background.surface",
-                  borderRadius: "8px",
-                  boxShadow: "xs",
-                  transition: "all 0.2s",
-                  "&:hover": {
-                    backgroundColor: "neutral.softHoverBg",
-                  },
-                }}
+                      backgroundColor: "background.surface",
+                      borderRadius: "8px",
+                      boxShadow: "xs",
+                      transition: "all 0.2s",
+                      "&:hover": {
+                        backgroundColor: "neutral.softHoverBg",
+                      },
+                    }}
                   >
-                    <Box
-                      component="td"
-                      sx={cellStyle}
-                    >
+                    <Box component="td" sx={cellStyle}>
                       <Checkbox
                         size="sm"
-                        checked={selected.includes(payment.payment_id)}
+                        checked={selected.includes(String(payment._id))}
                         onChange={(event) =>
-                          handleRowSelect(
-                            payment.payment_id,
-                            event.target.checked
-                          )
+                          handleRowSelect(payment._id, event.target.checked)
                         }
                       />
                     </Box>
                     <Box
                       component="td"
                       sx={{
-                         ...cellStyle,
+                        ...cellStyle,
                         fontSize: 14,
                         minWidth: 250,
                         padding: "12px 16px",
@@ -635,7 +875,7 @@ const [hiddenIds, setHiddenIds] = useState([]);
                     <Box
                       component="td"
                       sx={{
-                       ...cellStyle,
+                        ...cellStyle,
                         fontSize: 14,
                         minWidth: 300,
                       }}
@@ -667,16 +907,33 @@ const [hiddenIds, setHiddenIds] = useState([]);
                         // minWidth: 50,
                       }}
                     >
-                      <RowMenu
-  payment_id={payment.payment_id}
-  onStatusChange={handleStatusChange}
-  disabled={
-    selected.length > 1 &&
-    selected.includes(payment.payment_id) &&
-    payment.approval_status?.stage === "SCM"
-  }
-/>
-
+                      {user?.department === "SCM" ||
+                      user?.department === "Accounts" ? (
+                        <RowMenu
+                          _id={payment._id}
+                          onStatusChange={(_id, status) =>
+                            handleStatusChange(_id, status, payment)
+                          }
+                        />
+                      ) : user?.department === "CAM" && index === 0 ? (
+                        <Chip
+                          variant="solid"
+                          color="success"
+                          label="Approve Selected"
+                          onClick={() => {
+                            if (selected.length === 0) {
+                              toast.warn("Select payments to approve.");
+                              return;
+                            }
+                            const selectedPayments = paginatedData.filter((p) =>
+                              selected.includes(p._id)
+                            );
+                            setPdfPayments(selectedPayments);
+                            handleMultiPDFDownload(selectedPayments);
+                          }}
+                          disabled={selected.length === 0}
+                        />
+                      ) : null}
                     </Box>
                   </Box>
                 );
@@ -714,172 +971,70 @@ const [hiddenIds, setHiddenIds] = useState([]);
               </Box>
             )}
           </Box>
-          <Box
-          component="tfoot"
-          sx={{
-            position: "sticky",
-            bottom: 0,
-            backgroundColor: "background.surface",
-            zIndex: 10,
-            boxShadow: "0 -2px 6px rgba(0,0,0,0.05)",
-          }}
-        >
-          <Box
-            component="tr"
-            sx={{
-              borderTop: "1px solid #ddd",
-            }}
-          >
-            <Box
-              component="td"
-              colSpan={5}
-              sx={{
-                padding: "8px",
-              }}
-            >
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  alignItems: "center",
-                  gap: 2,
-                  flexWrap: "wrap",
-                }}
-              >
-                {/* Rows per page */}
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Typography level="body-sm">Rows per page:</Typography>
-                  <Select
-                    size="sm"
-                    value={perPage}
-                    onChange={(_, value) => {
-                      if (value) {
-                        setPerPage(Number(value));
-                        setCurrentPage(1);
-                      }
-                    }}
-                  >
-                    {[10, 25, 50, 100].map((value) => (
-                      <Option key={value} value={value}>
-                        {value}
-                      </Option>
-                    ))}
-                  </Select>
-                </Box>
-
-                {/* Pagination info */}
-                <Typography level="body-sm">
-                  {`${startIndex}-${endIndex} of ${total}`}
-                </Typography>
-
-                {/* Navigation controls */}
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <IconButton
-                    size="sm"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(1)}
-                  >
-                    <KeyboardDoubleArrowLeft />
-                  </IconButton>
-                  <IconButton
-                    size="sm"
-                    disabled={currentPage === 1}
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(prev - 1, 1))
-                    }
-                  >
-                    <KeyboardArrowLeft />
-                  </IconButton>
-                  <IconButton
-                    size="sm"
-                    disabled={currentPage === totalPages}
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                    }
-                  >
-                    <KeyboardArrowRight />
-                  </IconButton>
-                  <IconButton
-                    size="sm"
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage(totalPages)}
-                  >
-                    <KeyboardDoubleArrowRight />
-                  </IconButton>
-                </Box>
-              </Box>
-            </Box>
-          </Box>
-        </Box>
-        </Box>
-
-         <Modal open={isPdfModalOpen} onClose={() => setIsPdfModalOpen(false)}>
-  <ModalDialog layout="fullscreen">
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <Box
-        sx={{
-          padding: 2,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          borderBottom: "1px solid lightgray",
-        }}
-      >
-        <Typography level="title-lg">PDF Preview</Typography>
-        <Box display="flex" gap={1}>
-<Button
-  color="primary"
-  onClick={() => {
-    const blobUrl = URL.createObjectURL(pdfBlob);
-
-    // Trigger download
-    const link = document.createElement("a");
-    link.href = blobUrl;
-    link.download = "po-approval.pdf";
-    link.click();
-
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-
-    // Find matching SCM entries from selection
-    const removedIds = selected.filter((id) => {
-      const match = paginatedData.find(
-        (p) => p.payment_id === id && p.approval_status?.stage === "SCM"
-      );
-      return !!match;
-    });
-
-    // Add to hiddenIds state
-    setHiddenIds((prev) => [...prev, ...removedIds]);
-
-    // Deselect them too
-    setSelected((prev) => prev.filter((id) => !removedIds.includes(id)));
-
-    // Close modal
-    setIsPdfModalOpen(false);
-
-    toast.success("Selected approvals removed from view after download.");
-  }}
->
-  Download
-</Button>
-
-
-          <Button color="danger" onClick={() => setIsPdfModalOpen(false)}>
-            Close
-          </Button>
         </Box>
       </Box>
 
-      <iframe
-        src={pdfBlob ? URL.createObjectURL(pdfBlob) : ""}
-        style={{ flex: 1, width: "100%", border: "none" }}
-        title="PDF Preview"
-      />
-    </Box>
-  </ModalDialog>
-</Modal>
-      </Sheet>
+      <Modal open={isPdfModalOpen} onClose={handleClosePdfModal}>
+        <Box
+          sx={{
+            p: 2,
+            background: "white",
+            borderRadius: "md",
+            width: "90%",
+            maxWidth: 800,
+            mx: "auto",
+          }}
+        >
+          {blobUrl ? (
+            <iframe
+              src={blobUrl}
+              width="100%"
+              height="500px"
+              title="PDF Preview"
+              style={{ border: "none" }}
+            />
+          ) : (
+            <Typography>Loading PDF preview...</Typography>
+          )}
+          <Stack direction="row" justifyContent="flex-end" spacing={2} mt={2}>
+            <Button
+              variant="solid"
+              color="primary"
+              onClick={() => setIsConfirmModalOpen(true)}
+            >
+              Confirm
+            </Button>
+            <Button variant="outlined" onClick={handleClosePdfModal}>
+              Close
+            </Button>
+          </Stack>
+        </Box>
+      </Modal>
 
+      <Modal
+        open={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+      >
+        <ModalDialog>
+          <Typography level="title-lg">Are you sure?</Typography>
+          <Typography>Confirm approval of selected payments?</Typography>
+          <Stack direction="row" justifyContent="flex-end" spacing={2} mt={2}>
+            <Button
+              variant="solid"
+              color="success"
+              onClick={handleCAMBatchApproval}
+            >
+              Yes, Approve
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => setIsConfirmModalOpen(false)}
+            >
+              Cancel
+            </Button>
+          </Stack>
+        </ModalDialog>
+      </Modal>
     </>
   );
 }

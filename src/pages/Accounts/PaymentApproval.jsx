@@ -94,7 +94,7 @@ function ProjectBalance() {
             </Breadcrumbs>
           </Box>
 
-          <Box
+          {/* <Box
             sx={{
               display: "flex",
               mb: 1,
@@ -106,9 +106,7 @@ function ProjectBalance() {
               marginLeft: { xl: "15%", lg: "18%" },
             }}
           >
-            {/* <Typography level="h2" component="h1">
-              Payment Approval
-            </Typography> */}
+           
 
             {user?.department === "SCM" && user?.role === "manager" && (
               <Typography level="h2" component="h1">
@@ -139,7 +137,7 @@ function ProjectBalance() {
                 justifyContent: "center",
               }}
             ></Box>
-          </Box>
+          </Box> */}
           <PaymentApproval />
           {/* <OrderTable />
           <OrderList /> */}
