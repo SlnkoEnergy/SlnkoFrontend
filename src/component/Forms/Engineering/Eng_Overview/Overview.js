@@ -556,7 +556,7 @@ const Overview = () => {
             boxShadow: "sm",
             overflowY: "auto",
             bgcolor: "#f9fafb",
-            maxHeight: isFromCamDash ? "62vh" : "100%",
+            maxHeight: isFromCamDash ? "67vh" : "100%",
           }}
         >
           <Box
