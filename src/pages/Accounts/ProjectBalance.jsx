@@ -129,18 +129,16 @@ function ProjectBalance() {
                 justifyContent: "center",
               }}
             >
-             <Box
-            sx={{
-              display: "flex",
-              flexDirection: { md: "row", xs: "column" },
-              alignItems: { md: "flex-end", xs: "stretch" },
-              gap: 2,
-              flexWrap: "wrap",
-            }}
-          >
-          
-              
-              {/* <Input
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: { md: "row", xs: "column" },
+                  alignItems: { md: "flex-end", xs: "stretch" },
+                  gap: 2,
+                  flexWrap: "wrap",
+                }}
+              >
+                {/* <Input
                 type="date"
                 // value={startDate}
                 // onChange={handleCreditStartDateChange}
@@ -154,8 +152,7 @@ function ProjectBalance() {
                 // value={endDate}
                 // onChange={handleCreditEndDateChange}
               /> */}
-         
-          </Box>
+              </Box>
               {/* {(user?.name === "IT Team" ||
                 user?.name === "Guddu Rani Dubey" ||
                 user?.name === "Prachi Singh" ||
@@ -171,7 +168,8 @@ function ProjectBalance() {
               {(user?.name === "IT Team" ||
                 user?.name === "Guddu Rani Dubey" ||
                 user?.name === "Prachi Singh" ||
-                user?.department === "admin") && (
+                user?.department === "admin" ||
+                user?.name === "Sachin Raghav") && (
                 <Button
                   color="primary"
                   onClick={() => navigate("/adjust_request")}

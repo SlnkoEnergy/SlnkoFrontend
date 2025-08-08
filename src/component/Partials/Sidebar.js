@@ -627,6 +627,30 @@ function Sidebar() {
                   </ListItemButton>
                 )}
               >
+                {user?.name === "Sachin Raghav" && (
+                  <List
+                    size="sm"
+                    sx={{
+                      gap: 1,
+                      "--List-nestedInsetStart": "30px",
+                      "--ListItem-radius": (theme) => theme.vars.radius.sm,
+                    }}
+                  >
+                    <ListItem>
+                      <ListItemButton
+                        onClick={() => navigate("/project-balance")}
+                      >
+                        <AccountBalanceIcon />
+                        <ListItemContent>
+                          <Typography level="title-sm">
+                            Project Balances
+                          </Typography>
+                        </ListItemContent>
+                      </ListItemButton>
+                    </ListItem>
+                  </List>
+                )}
+
                 <List sx={{ gap: 0.5 }}>
                   <ListItem>
                     <ListItemButton
@@ -1418,7 +1442,7 @@ function Sidebar() {
             user?.name === "Ajay Singh" ||
             user?.name === "Shubham Gupta" ||
             user?.name === "Saurabh Suman" ||
-            user?.name === "Vaishali Pandey" ||
+            user?.name === "Rahul Pareek" ||
             user?.name === "Sujoy Mahata") ? (
           <List
             size="sm"
@@ -2500,6 +2524,7 @@ function Sidebar() {
           user?.department === "Infra" ||
           user?.department === "Marketing" ||
           user?.department === "Internal" ||
+          user?.department === "Loan" ||
           (user?.department === "Engineering" &&
             user?.name !== "Rishav Mahato" &&
             user?.name !== "Piyush Rathour Raj" &&
@@ -2551,11 +2576,12 @@ function Sidebar() {
                       User Dashboard
                     </ListItemButton>
                   </ListItem>
-                  {user?.department === "Projects" &&
-                    user?.name === "Mayank Kumar" && (
-                      <ListItem>
-                        <ListItemButton
-                          onClick={() => navigate("/expense_approval")}
+                  {((user?.department === "Projects" &&
+                    user?.name === "Mayank Kumar") ||
+                    user?.name === "Vivek Pandey") && (
+                    <ListItem>
+                      <ListItemButton
+                        onClick={() => navigate("/expense_approval")}
                         >
                           Expense Approval
                         </ListItemButton>
