@@ -83,10 +83,12 @@ function EditCamHandSheet() {
               alignItems: { xs: "start", sm: "center" },
               flexWrap: "wrap",
               justifyContent: "space-between",
+              overflowY: "auto",
             }}
           >
             <CamHandoverSheetForm />
           </Box>
+
 
           {/* <OrderTable /> */}
           {/* <OrderList /> */}

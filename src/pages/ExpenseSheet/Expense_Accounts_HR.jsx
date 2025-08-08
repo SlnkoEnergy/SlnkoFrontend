@@ -83,6 +83,7 @@ function Update_Expense() {
               alignItems: { xs: "start", sm: "center" },
               flexWrap: "wrap",
               justifyContent: "space-between",
+              overflow: 'auto',
             }}
           >
             <UpdateExpenseAccounts />

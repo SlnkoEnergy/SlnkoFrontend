@@ -20,7 +20,7 @@ function ViewDetail() {
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
-      <Box sx={{ display: "flex", minHeight: "100dvh" }}>
+      <Box sx={{ display: "flex", minHeight: "100dvh", overflow: 'auto'}}>
         <Header sx={{ "@media print": { display: "none" } }} />
         <Sidebar />
         <Box
@@ -49,7 +49,8 @@ function ViewDetail() {
               display: "flex",
               alignItems: "center",
               marginLeft: { xl: "15%", lg: "20%" },
-              "@media print": { display: "none" }
+              "@media print": { display: "none" },
+              overflow: 'auto',
             }}
           >
             <Breadcrumbs
@@ -90,7 +91,8 @@ function ViewDetail() {
               alignItems: { xs: "start", sm: "center" },
               flexWrap: "wrap",
               justifyContent: "space-between",
-              "@media print": { marginBottom: 0}
+              "@media print": { marginBottom: 0},
+              overflow: 'auto',
               
             }}
           >
@@ -106,7 +108,8 @@ function ViewDetail() {
                 alignItems: { xs: "start", sm: "center" },
                 flexWrap: "wrap",
                 justifyContent: "center",
-                "@media print": { marginBottom: 0}
+                "@media print": { marginBottom: 0},
+                overflow: 'auto',
               }}
             >
               {/* <Button
