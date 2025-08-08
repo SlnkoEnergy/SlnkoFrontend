@@ -69,6 +69,8 @@ function Dash_cam() {
         return "handoverpending";
       case "Scope Pending":
         return "scopepending";
+      case "Scope Open":
+        return "scopeopen";
       default:
         return "submitted,Approved";
     }
@@ -409,7 +411,7 @@ function Dash_cam() {
             }}
           >
             <TabList sx={{ gap: 1 }}>
-              {["All", "Handover Pending", "Scope Pending"].map(
+              {["All", "Handover Pending", "Scope Pending", "Scope Open"].map(
                 (label, index) => (
                   <Tab
                     key={index}
@@ -519,7 +521,7 @@ function Dash_cam() {
                 "Type",
                 "Capacity(AC/DC)",
                 "Slnko Service Charges (with GST)",
-                "Status",
+                "Handover",
                 "Action",
                 "Purchsase Request",
               ].map((header, index) => (
@@ -710,6 +712,7 @@ function Dash_cam() {
                     }}
                   >
                     {project.is_locked === "locked" &&
+                    project.scope_status !== "open" &&
                     project.status_of_handoversheet === "Approved" ? (
                       <Button
                         size="xs"
@@ -731,7 +734,9 @@ function Dash_cam() {
                         onClick={() => handleCreatePR(project)}
                       ></Button>
                     ) : (
-                      "-"
+                      <span style={{ color: "dimgray" }}>
+                        See Project Detail
+                      </span>
                     )}
                   </td>
                 </tr>
