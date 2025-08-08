@@ -13,6 +13,8 @@ import {
   Tabs,
   TabList,
   Tab,
+  Select,
+  Option,
 } from "@mui/joy";
 import axios from "axios";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -515,7 +517,7 @@ const Overview = () => {
   const location = useLocation();
   const isFromCamDash = location.pathname === "/project_detail";
   const [submitIndex, setSubmitIndex] = useState([]);
-  console.log({ submitIndex });
+  
   return (
     <Box
       sx={{
@@ -527,7 +529,7 @@ const Overview = () => {
         bgcolor: "background.body",
         overflowY: isFromCamDash ? "auto" : "auto",
         overflowX: "auto",
-        marginLeft: isFromCamDash ? "0%" : { xs: "2%", lg: "21%", xl: "18%" },
+        marginLeft: isFromCamDash ? "0%" : { xs: "2%", lg: "19.6%", xl: "16.7%" },
       }}
     >
       <Box
@@ -544,37 +546,36 @@ const Overview = () => {
             </IconButton>
           )}
 
-          <Tabs
-            value={selected}
-            onChange={(event, newValue) => handleCategorySelect(newValue)}
-          >
-            <TabList
-              sx={{
-                display: "flex",
-                flexDirection: "row",
-                gap: isFromCamDash ? 0 : { xs: 1, xl: 4 },
-                minHeight: 40,
-              }}
-            >
-              {Object.keys(categoryData).map((category) => (
-                <Tab
-                  key={category}
-                  value={category}
-                  disabled={isLoading}
-                  sx={{
-                    fontWeight: 600,
-                    minWidth: 100,
-                    maxWidth: 170,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {category
-                    .replace(/_/g, " ")
-                    .replace(/\b\w/g, (char) => char.toUpperCase())}
-                </Tab>
-              ))}
-            </TabList>
-          </Tabs>
+          <Box
+      sx={{
+        minWidth: 200,
+        maxWidth: 300,
+        bgcolor: "background.level1",
+        borderRadius: "md",
+        boxShadow: "sm",
+      }}
+    >
+      <Select
+        value={selected}
+        onChange={(event, newValue) => handleCategorySelect(newValue)}
+        disabled={isLoading}
+        variant="soft"
+        sx={{
+          borderRadius: "xl",
+          fontWeight: 600,
+          minHeight: 40,
+          px: 1,
+        }}
+      >
+        {Object.keys(categoryData).map((category) => (
+          <Option key={category} value={category}>
+            {category
+              .replace(/_/g, " ")
+              .replace(/\b\w/g, (char) => char.toUpperCase())}
+          </Option>
+        ))}
+      </Select>
+    </Box>
         </Box>
 
         <Sheet
