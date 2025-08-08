@@ -10,6 +10,11 @@ import {
   Modal,
   ModalDialog,
   IconButton,
+  Tabs,
+  TabList,
+  Tab,
+  Select,
+  Option,
 } from "@mui/joy";
 import axios from "axios";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -52,12 +57,12 @@ const Overview = () => {
   const [previewType, setPreviewType] = useState("");
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
-
+  console.log({ logModalData });
   useEffect(() => {
     const storedUser = localStorage.getItem("userDetails");
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
-      console.log("✅ Loaded user details:", parsedUser); // 🔍 Debug log
+      console.log("✅ Loaded user details:", parsedUser);
       setUser(parsedUser);
     } else {
       console.log("⚠️ No userDetails found in localStorage.");
@@ -67,7 +72,6 @@ const Overview = () => {
   const isEngineering = user?.department === "Engineering";
   const isCAM = user?.department === "CAM" || user?.department === "Projects";
 
-  console.log("isCAM →", isCAM);
   const projectId = searchParams.get("project_id");
   const page = searchParams.get("page");
 
@@ -204,6 +208,67 @@ const Overview = () => {
     } catch (error) {
       console.error("❌ Update error:", error.response?.data || error.message);
       toast.error("Failed to submit files for this folder.");
+    }
+  };
+
+  const handleMultipleSubmitFiles = async (submitIndexArray) => {
+    const userId = user?.userID;
+
+    if (!userId) {
+      toast.error("User ID not found. Please log in again.");
+      return;
+    }
+
+    if (!Array.isArray(submitIndexArray) || submitIndexArray.length === 0) {
+      toast.error("No submissions to upload.");
+      return;
+    }
+
+    const formData = new FormData();
+
+    const items = [];
+
+    submitIndexArray.forEach((entry) => {
+      const { template_id, files } = entry;
+
+      if (!files || files.length === 0) return;
+
+      files.forEach((file) => {
+        formData.append("files", file);
+      });
+
+      items.push({
+        template_id,
+        status_history: [
+          {
+            status: "submitted",
+            user_id: userId,
+            timestamp: new Date().toISOString(),
+            remarks: {},
+          },
+        ],
+      });
+    });
+
+    // Attach metadata JSON to formData
+    formData.append("data", JSON.stringify({ items }));
+
+    try {
+      await axios.put(
+        `${process.env.REACT_APP_API_URL}/engineering/update-module-category?projectId=${projectId}`,
+        formData,
+        {
+          headers: {
+            "x-auth-token": localStorage.getItem("authToken"),
+          },
+        }
+      );
+
+      toast.success("All selected files submitted successfully!");
+      window.location.reload();;
+    } catch (error) {
+      console.error("❌ Upload Error:", error.response?.data || error.message);
+      toast.error("Failed to submit files.");
     }
   };
 
@@ -348,8 +413,8 @@ const Overview = () => {
 
   const handleStatusChange = (statusType, templateId) => {
     if (statusType === "revised") {
-      setActiveTemplateId(templateId); // save templateId in state
-      setShowRemarksModal(true); // open remarks modal
+      setActiveTemplateId(templateId);
+      setShowRemarksModal(true);
     }
   };
 
@@ -387,7 +452,6 @@ const Overview = () => {
       const department = storedUser?.department || "";
       const userId = storedUser?.userId || "";
 
-      // Send all required fields to updateStatus
       await updateStatus({
         projectId,
         moduleTemplateId: activeTemplateId,
@@ -413,6 +477,7 @@ const Overview = () => {
 
   const handleLogsOpen = (rawUrls) => {
     const grouped = {};
+    console.log({ rawUrls });
     rawUrls.forEach((url) => {
       const match = url.match(/\/(R\d+)\//);
       if (match) {
@@ -451,64 +516,67 @@ const Overview = () => {
   };
   const location = useLocation();
   const isFromCamDash = location.pathname === "/project_detail";
-
+  const [submitIndex, setSubmitIndex] = useState([]);
+  
   return (
     <Box
       sx={{
         display: "flex",
         flexDirection: "column",
         height: "100vh",
-        maxHeight: "70vh",
+        maxHeight: isFromCamDash ? "70vh" : "90vh",
         width: { xs: "96vw", lg: "75vw", xl: "80vw" },
         bgcolor: "background.body",
-        marginLeft: isFromCamDash ? "0%" : { xs: "2%", lg: "21%", xl: "18%" },
+        overflowY: isFromCamDash ? "auto" : "auto",
+        overflowX: "auto",
+        marginLeft: isFromCamDash ? "0%" : { xs: "2%", lg: "19.6%", xl: "16.7%" },
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-        {isEngineering && (
-          <IconButton
-            onClick={() => navigate(`/eng_dash?page=${page}`)}
-            variant="soft"
-            color="neutral"
-          >
-            <ChevronLeftIcon />
-          </IconButton>
-        )}
-      </Box>
+      <Box
+        sx={{ display: "flex", flexDirection: "column", flexGrow: 1, gap: 3 }}
+      >
+        <Box sx={{ display: "flex", gap: 2 }}>
+          {isEngineering && (
+            <IconButton
+              onClick={() => navigate(`/eng_dash?page=${page}`)}
+              variant="soft"
+              color="neutral"
+            >
+              <ChevronLeftIcon />
+            </IconButton>
+          )}
 
-      <Box sx={{ display: "flex", flexGrow: 1, gap: 3 }}>
-        <Sheet
-          variant="outlined"
-          sx={{
-            width: 240,
-            p: 2,
-            borderRadius: "lg",
-            boxShadow: "sm",
-            bgcolor: "background.surface",
-          }}
-        >
-          <Typography level="h6" fontWeight="lg" sx={{ mb: 2 }}>
-            Categories
-          </Typography>
-          <List>
-            {Object.keys(categoryData).map((category) => (
-              <ListItem key={category} sx={{ mb: 1 }}>
-                <Button
-                  fullWidth
-                  variant={selected === category ? "solid" : "soft"}
-                  color={selected === category ? "primary" : "neutral"}
-                  onClick={() => handleCategorySelect(category)}
-                  sx={{ fontWeight: 600 }}
-                  disabled={isLoading}
-                >
-                  {category
-                    .replace(/_/g, " ")
-                    .replace(/\b\w/g, (char) => char.toUpperCase())}
-                </Button>
-              </ListItem>
-            ))}
-          </List>
-        </Sheet>
+          <Box
+      sx={{
+        minWidth: 200,
+        maxWidth: 300,
+        bgcolor: "background.level1",
+        borderRadius: "md",
+        boxShadow: "sm",
+      }}
+    >
+      <Select
+        value={selected}
+        onChange={(event, newValue) => handleCategorySelect(newValue)}
+        disabled={isLoading}
+        variant="soft"
+        sx={{
+          borderRadius: "xl",
+          fontWeight: 600,
+          minHeight: 40,
+          px: 1,
+        }}
+      >
+        {Object.keys(categoryData).map((category) => (
+          <Option key={category} value={category}>
+            {category
+              .replace(/_/g, " ")
+              .replace(/\b\w/g, (char) => char.toUpperCase())}
+          </Option>
+        ))}
+      </Select>
+    </Box>
+        </Box>
 
         <Sheet
           variant="outlined"
@@ -519,18 +587,30 @@ const Overview = () => {
             boxShadow: "sm",
             overflowY: "auto",
             bgcolor: "#f9fafb",
-            maxHeight: isFromCamDash ? "70vh" : "100%",
+            maxHeight: isFromCamDash ? "62vh" : "100%",
           }}
         >
-          {!isEngineering && (
-            <Typography
-              level="body-sm"
-              sx={{ mb: 2, color: "warning.700", fontWeight: 500 }}
-            >
-              🔒 Upload access is restricted. You can only view/download files.
-            </Typography>
-          )}
-          <Divider sx={{ mb: 3 }} />
+          <Box
+            display={"flex"}
+            justifyContent={"space-between"}
+            alignItems={"center"}
+          >
+            {!isEngineering && (
+              <Typography
+                level="body-sm"
+                sx={{ mb: 2, color: "warning.700", fontWeight: 500 }}
+              >
+                🔒 Upload access is restricted. You can only view/download
+                files.
+              </Typography>
+            )}
+           {submitIndex.length > 0 && (
+             <Button onClick={() => handleMultipleSubmitFiles(submitIndex)}>
+              Submit Files
+            </Button>
+           )}
+          </Box>
+          <Divider sx={{ mb: 3, mt: 3 }} />
 
           <Box sx={{ display: "grid", gap: 3 }}>
             {selected === "summary" ? (
@@ -595,6 +675,7 @@ const Overview = () => {
                       boxShadow: "sm",
                       bgcolor: "background.surface",
                       position: "relative",
+                      maxHeight: "70vh",
                     }}
                   >
                     <Typography level="title-md" sx={{ mb: 1 }}>
@@ -625,6 +706,14 @@ const Overview = () => {
                               );
                               return;
                             }
+                            const newEntry = {
+                              index,
+                              template_id: item.templateId,
+                              name: item.name,
+                              files: selectedFiles,
+                            };
+
+                            setSubmitIndex((prev) => [...prev, newEntry]);
                             handleMultiFileChange(index, selectedFiles);
                           }}
                           style={{
@@ -699,15 +788,26 @@ const Overview = () => {
                       </ListItem>
                     ))}
 
-                    <Box sx={{ mt: 2 }}>
+                    <Box
+                      sx={{ mt: 2, display: "flex", flexDirection: "column" }}
+                    >
                       <Typography level="body-xs" sx={{ fontWeight: 500 }}>
-                        Current Status:{" "}
+                        🟢 Current Status:{" "}
                         <Typography
                           component="span"
                           level="body-xs"
                           fontWeight="bold"
+                          sx={{
+                            color:
+                              item.latestStatus?.toLowerCase() === "hold"
+                                ? "red"
+                                : "inherit",
+                          }}
                         >
-                          {item.latestStatus || "N/A"}
+                          {(item.latestStatus || "N/A").replace(
+                            /\b\w/g,
+                            (char) => char.toUpperCase()
+                          )}
                         </Typography>
                         {item.latestStatus === "revised" &&
                           Array.isArray(item.latestRemarks) &&
@@ -730,9 +830,6 @@ const Overview = () => {
                           Array.isArray(item.latestRemarks) &&
                           item.latestRemarks.length > 0 && (
                             <>
-                              <Typography sx={{ mt: 1, fontWeight: 500 }}>
-                                Hold Remarks:
-                              </Typography>
                               {item.latestRemarks.map((remark, i) => (
                                 <Typography
                                   key={remark._id || i}
@@ -740,7 +837,7 @@ const Overview = () => {
                                   level="body-xs"
                                   sx={{ display: "block" }}
                                 >
-                                  {remark.department}: {remark.text}
+                                  🚧 {remark.department}: {remark.text}
                                 </Typography>
                               ))}
                             </>
@@ -832,7 +929,8 @@ const Overview = () => {
 
                       {isEngineering &&
                         (user?.name === "Rishav Mahato" ||
-                          user?.name === "Ranvijay Singh" || user?.name === "Naresh Kumar") &&
+                          user?.name === "Ranvijay Singh" ||
+                          user?.name === "Naresh Kumar") &&
                         item.latestStatus !== "hold" && (
                           <Button
                             size="sm"
@@ -866,7 +964,10 @@ const Overview = () => {
                         <Button
                           variant="solid"
                           color="primary"
-                          onClick={() => handleSubmit(index)}
+                          onClick={() => {
+                            handleSubmit(index);
+                            setSubmitIndex(index);
+                          }}
                           sx={{
                             px: 3,
                             py: 1,

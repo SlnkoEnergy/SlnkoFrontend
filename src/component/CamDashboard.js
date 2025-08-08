@@ -349,7 +349,6 @@ function Dash_cam() {
   const pageSize = Number(rowsPerPage || 1);
   const totalPages = Math.ceil(total / pageSize);
 
-  console.log({ totalPages });
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setSearchParams({ page });
@@ -494,10 +493,14 @@ function Dash_cam() {
             <tr style={{ backgroundColor: "neutral.softBg" }}>
               <th
                 style={{
+                  position: "sticky",
+                  top: 0,
+                  background: "#e0e0e0",
+                  zIndex: 2,
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
-                  textAlign: "center",
-                  background: "#e0e0e0",
+                  textAlign: "left",
+                  fontWeight: "bold",
                 }}
               >
                 <Checkbox
@@ -525,11 +528,14 @@ function Dash_cam() {
                 <th
                   key={index}
                   style={{
+                    position: "sticky",
+                    top: 0,
+                    background: "#e0e0e0",
+                    zIndex: 2,
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
                     textAlign: "left",
                     fontWeight: "bold",
-                    background: "#e0e0e0",
                   }}
                 >
                   {header}
