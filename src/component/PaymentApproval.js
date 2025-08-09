@@ -60,7 +60,7 @@ function PaymentRequest() {
   const total = responseData?.total || 0;
   const count = responseData?.count || paginatedData.length;
 
-  console.log("Payment Approval Data:", paginatedData);
+  // console.log("Payment Approval Data:", paginatedData);
 
   const totalPages = Math.ceil(total / perPage);
 
@@ -195,39 +195,46 @@ function PaymentRequest() {
   };
 
   // === Single Approval Logic ===
-  const handleApprovalUpdate = async (_id, newStatus) => {
-    debugger; // Entry point
-    console.log("Updating approval for ID:", _id, "to status:", newStatus);
+  const handleApprovalUpdate = async (_id, newStatus, remarks = "") => {
+  try {
+    const token = localStorage.getItem("authToken");
 
-    try {
-      const token = localStorage.getItem("authToken");
-      debugger; // Check token
-
-      const response = await Axios.put(
-        "/account-approve",
-        { _id, status: newStatus },
-        { headers: { "x-auth-token": token } }
-      );
-
-      debugger; // After response
-      if (response.status === 200) {
-        newStatus === "Approved"
-          ? toast.success("Payment Approved!", { autoClose: 3000 })
-          : toast.error("Payment Rejected", { autoClose: 2000 });
-
-        setHiddenIds((prev) => [...prev, _id]);
-        return true;
-      }
-    } catch (error) {
-      debugger; // On error
-      console.error("Approval update error:", error);
-      toast.error(
-        error.response?.data?.message || "Network error. Please try again."
-      );
+    const payload = { _id, status: newStatus };
+    if (newStatus === "Rejected") {
+      payload.remarks = remarks || "Rejected by manager";
     }
 
-    return false;
-  };
+    const response = await Axios.put("/account-approve", payload, {
+      headers: { "x-auth-token": token },
+    });
+
+    if (response.status === 200) {
+      // Backend returns results for each processed ID
+      const result = response.data.results?.find(r => r._id === _id);
+
+      if (result?.status === "success") {
+        if (newStatus === "Approved") {
+          toast.success("Payment Approved!", { autoClose: 3000 });
+        } else if (newStatus === "Rejected") {
+          toast.error("Payment Rejected", { autoClose: 2000 });
+        } else if (newStatus === "Pending") {
+          toast.info("Payment marked as Pending", { autoClose: 2000 });
+        }
+
+        setHiddenIds(prev => [...prev, _id]);
+        return true;
+      } else {
+        toast.error(result?.message || "Approval failed");
+      }
+    }
+  } catch (error) {
+    console.error("Approval update error:", error);
+    toast.error(error.response?.data?.message || "Network error. Please try again.");
+  }
+
+  return false;
+};
+
 
   // === Final CAM Batch Approval ===
   const handleCAMBatchApproval = async () => {
@@ -244,15 +251,16 @@ function PaymentRequest() {
       }
 
       const approvalRes = await Axios.put(
-        "/account-approve",
-        {
-          _id: idsToApprove,
-          status: "Approved",
-        },
-        {
-          headers: { "x-auth-token": token },
-        }
-      );
+  "/account-approve",
+  {
+    _id: idsToApprove,
+    status: "Pending",
+  },
+  {
+    headers: { "x-auth-token": token },
+  }
+);
+
 
       debugger; // After approval
       if (approvalRes.status === 200) {
