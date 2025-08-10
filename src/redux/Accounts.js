@@ -50,6 +50,28 @@ export const AccountsApi = createApi({
       },
     }),
 
+    getTrashRecord: builder.query({
+      query: ({
+        page = 1,
+        search = "",
+        status = "",
+        pageSize = 10,
+        tab = "",
+      }) =>
+        `hold-pay-summary-IT?page=${page}&search=${search}&status=${status}&pageSize=${pageSize}&tab=${tab}`,
+
+      transformResponse: (response, meta, arg) => {
+        return {
+          data: Array.isArray(response.data) ? response.data : [],
+          total: response.meta?.total ?? 0,
+          count: response.meta?.count ?? 0,
+          page: response.meta?.page ?? 1,
+          instantTotal: response.meta?.instantTotal ?? 0,
+          creditTotal: response.meta?.creditTotal ?? 0,
+        };
+      },
+    }),
+
     getPaymentApproval: builder.query({
       query: ({ page = 1, search = "", pageSize = 10 }) =>
         `accounting/payment-approval?page=${page}&search=${search}&pageSize=${pageSize}`,
@@ -170,4 +192,5 @@ export const {
   useGetUtrSubmissionQuery,
   useGetExportProjectBalanceMutation,
   useGetPaymentRecordQuery,
+  useGetTrashRecordQuery,
 } = AccountsApi;

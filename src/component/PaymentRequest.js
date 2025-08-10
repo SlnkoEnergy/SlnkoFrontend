@@ -78,21 +78,6 @@ const PaymentRequest = forwardRef((props, ref) => {
   const startIndex = (currentPage - 1) * perPage + 1;
   const endIndex = Math.min(startIndex + count - 1, total);
 
-  // const handleSelectAll = (event) => {
-  //   if (event.target.checked) {
-  //     setSelected(paginatedData.map((row) => row.id));
-  //   } else {
-  //     setSelected([]);
-  //   }
-  // };
-
-  // const handleRowSelect = (id, isSelected) => {
-  //   setSelected((prevSelected) =>
-  //     isSelected
-  //       ? [...prevSelected, id]
-  //       : prevSelected.filter((item) => item !== id)
-  //   );
-  // };
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -107,6 +92,19 @@ const PaymentRequest = forwardRef((props, ref) => {
     }
     return null;
   };
+
+useEffect(() => {
+  const params = {};
+
+  if (currentPage > 1) params.page = currentPage;
+  if (perPage !== 10) params.pageSize = perPage;
+  if (searchQuery) params.search = searchQuery;
+  if (status) params.status = status;
+  params.tab = activeTab === 0 ? "instant" : "credit";
+
+  setSearchParams(params, { replace: true });
+}, [currentPage, perPage, searchQuery, status, activeTab, setSearchParams]);
+
 
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -179,47 +177,9 @@ const PaymentRequest = forwardRef((props, ref) => {
             justifyContent: "center",
           }}
         >
-          <Box
-            className="SearchAndFilters-tabletUp"
-            sx={{
-              borderRadius: "sm",
-              py: 2,
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              flexWrap: "wrap",
-              gap: 1.5,
-            }}
-          >
-            <FormControl sx={{ flex: 1 }} size="sm">
-              <FormLabel>Search here</FormLabel>
-              <Input
-                size="sm"
-                placeholder="Search by Pay ID, Items, Clients Name or Vendor"
-                startDecorator={<SearchIcon />}
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                sx={{
-                  width: 350,
-                  
-                  borderColor: "neutral.outlinedBorder",
-                  borderBottom: searchQuery
-                    ? "2px solid #1976d2"
-                    : "1px solid #ddd",
-                  borderRadius: 5, 
-                  boxShadow: "none",
-                  "&:hover": {
-                    borderBottom: "2px solid #1976d2",
-                  },
-                  "&:focus-within": {
-                    borderBottom: "2px solid #1976d2",
-                  },
-                }}
-              />
-            </FormControl>
-            {renderFilters()}
-          </Box>
+          
 
-          <Box sx={{ mt: 3, display: "flex", gap: 1 }}>
+          <Box sx={{ display: "flex", gap: 1 }}>
             {" "}
             {(user?.name === "IT Team" ||
               user?.name === "Guddu Rani Dubey" ||
@@ -275,6 +235,7 @@ const PaymentRequest = forwardRef((props, ref) => {
           maxWidth: { lg: "85%", sm: "100%" },
           p: 2,
           boxSizing: "border-box",
+          
         }}
       >
         <Box
@@ -288,7 +249,7 @@ const PaymentRequest = forwardRef((props, ref) => {
             py: 1,
             // bgcolor: "background.level1",
             borderRadius: "md",
-            mb: 2,
+            // mb: 2,
           }}
         >
           {/* Horizontal Tabs like screenshot */}
@@ -356,6 +317,46 @@ const PaymentRequest = forwardRef((props, ref) => {
               </Tab>
             </TabList>
           </Tabs>
+          <Box
+            className="SearchAndFilters-tabletUp"
+            sx={{
+              borderRadius: "sm",
+              // py: 2,
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
+              flexWrap: "wrap",
+              gap: 1.5,
+              mb: 2,
+            }}
+          >
+            <FormControl sx={{ flex: 1 }} size="sm">
+              <FormLabel>Search here</FormLabel>
+              <Input
+                size="sm"
+                placeholder="Search by Pay ID, Items, Clients Name or Vendor"
+                startDecorator={<SearchIcon />}
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                sx={{
+                  width: 350,
+                  
+                  borderColor: "neutral.outlinedBorder",
+                  borderBottom: searchQuery
+                    ? "2px solid #1976d2"
+                    : "1px solid #ddd",
+                  borderRadius: 5, 
+                  boxShadow: "none",
+                  "&:hover": {
+                    borderBottom: "2px solid #1976d2",
+                  },
+                  "&:focus-within": {
+                    borderBottom: "2px solid #1976d2",
+                  },
+                }}
+              />
+            </FormControl>
+            {renderFilters()}
+          </Box>
 
           {/* Pagination Controls */}
           <Box

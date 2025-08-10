@@ -26,7 +26,7 @@ import { toast } from "react-toastify";
 import NoData from "../assets/alert-bell.svg";
 import Axios from "../utils/Axios";
 import { useGetPaymentApprovalQuery } from "../redux/Accounts";
-import { CircularProgress, Modal, ModalDialog, Stack } from "@mui/joy";
+import { CircularProgress, Modal, ModalDialog, Stack, Textarea } from "@mui/joy";
 import { Calendar, CircleUser, UsersRound } from "lucide-react";
 
 function PaymentRequest() {
@@ -82,150 +82,232 @@ function PaymentRequest() {
     return null;
   };
 
-  const handleStatusChange = async (_id, newStatus) => {
-    // console.log("handleStatusChange got:", _id, newStatus);s
-    debugger; // Entry point
-    if (!user) {
-      toast.error("User not found");
+const handleStatusChange = async (_id, newStatus, remarks = "") => {
+  // console.log("📌 handleStatusChange got:", { _id, newStatus, remarks, remarksType: typeof remarks });
+
+  if (!user) {
+    toast.error("User not found");
+    return;
+  }
+
+  const { department, role } = user;
+  const isInternalManager = department === "Internal" && role === "manager";
+  const isSCMOrAccountsManager = ["SCM", "Accounts"].includes(department) && role === "manager";
+
+  if (newStatus === "Rejected") {
+    if (!_id) {
+      toast.error("Mongo Id is required for rejection.");
       return;
     }
+    const remarksStr = remarks;
+    // console.log("📌 handleStatusChange → cleaned remarks:", remarksStr);
+    const success = await handleApprovalUpdate(_id, newStatus, remarksStr);
+    if (success) setSelected((prev) => prev.filter((id) => id !== _id));
+    return;
+  }
 
+  if (isSCMOrAccountsManager && newStatus === "Approved") {
     if (!_id) {
       toast.error("Mongo Id is required for approval.");
       return;
     }
+    const success = await handleApprovalUpdate(_id, newStatus);
+    if (success) setSelected((prev) => prev.filter((id) => id !== _id));
+    return;
+  }
 
-    const { department, role } = user;
-    debugger; // Inspect department & role
-
-    const isCAMManager = department === "CAM" && role === "manager";
-    const isSCMOrAccountsManager =
-      ["SCM", "Accounts"].includes(department) && role === "manager";
-
-    if (isSCMOrAccountsManager) {
-      debugger; // SCM/Accounts Manager path
-      const success = await handleApprovalUpdate(_id, newStatus);
-      if (success) {
-        setSelected((prev) => prev.filter((id) => id !== _id));
-      }
-    } else if (isCAMManager) {
-      debugger; // CAM Manager path
-
-      if (!Array.isArray(paginatedData)) {
-        toast.error("Payment data is not available yet.");
-        return;
-      }
-      if (!Array.isArray(selected) || selected.length === 0) {
-        toast.warn("Please select at least one payment to approve.");
-        return;
-      }
-
-      const selectedPayments = paginatedData.filter((p) =>
-        selected.includes(String(p._id))
-      );
-
-      const poIds = selectedPayments
-        .map((p) => p?._id)
-        .filter((id) => typeof id === "string" && id.trim().length > 0);
-
-      if (poIds.length === 0) {
-        toast.error("No valid PO IDs found for PDF generation.");
-        return;
-      }
-
-      debugger; // Before checking selectedPayments
-      if (!selectedPayments || selectedPayments.length === 0) {
-        toast.warn("No matching selected payments found in current page.");
-        return;
-      }
-
-      debugger; // Just before PDF preview
-      setPdfPayments(selectedPayments);
-      await handleMultiPDFDownload(selectedPayments);
+  if (isInternalManager && newStatus === "Approved") {
+    if (!Array.isArray(paginatedData)) {
+      toast.error("Payment data is not available yet.");
+      return;
     }
-  };
+
+    if (!Array.isArray(selected) || selected.length === 0) {
+      toast.warn("Please select at least one payment to approve.");
+      return;
+    }
+
+    const selectedPayments = paginatedData.filter((p) => selected.includes(String(p._id)));
+
+    if (!selectedPayments.length) {
+      toast.warn("No matching selected payments found in current page.");
+      return;
+    }
+
+    const poIds = selectedPayments
+      .map((p) => p?._id)
+      .filter((id) => typeof id === "string" && id.trim().length > 0);
+
+    if (!poIds.length) {
+      toast.error("No valid PO IDs found for PDF generation.");
+      return;
+    }
+
+    // console.log("📌 Selected PO IDs for PDF:", poIds);
+    // console.log("📌 Selected Payments for PDF:", selectedPayments);
+
+    setPdfPayments(selectedPayments);
+    await handleMultiPDFDownload(selectedPayments);
+  }
+};
 
   // === Generate & Preview PDF ===
-  const handleMultiPDFDownload = async (payments) => {
-    debugger;
-    setIsPdfLoading(true);
+ const handleMultiPDFDownload = async (payments) => {
+  // console.log("handleMultiPDFDownload called with:", payments);
+  setIsPdfLoading(true);
 
-    if (!Array.isArray(payments) || payments.length === 0) {
-      console.error(
-        "Expected payments to be a non-empty array, but got:",
-        payments
-      );
-      toast.error("Unable to generate PDF. No valid payments selected.");
+  if (!Array.isArray(payments) || payments.length === 0) {
+    console.error("Invalid payments array:", payments);
+    toast.error("Unable to generate PDF. No valid payments selected.");
+    setIsPdfLoading(false);
+    return;
+  }
+
+ 
+  const validPayments = payments.filter((p) => p && p._id);
+  if (!validPayments.length) {
+    toast.error("No valid payment IDs found to generate PDF.");
+    setIsPdfLoading(false);
+    return;
+  }
+
+  // console.log("Valid payments for PDF generation:", validPayments);
+  
+
+  try {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      toast.error("Authentication token not found.");
       setIsPdfLoading(false);
       return;
     }
 
-    // 💡 Filter out invalid payments (without _id)
-    const validPayments = payments.filter((p) => p && p._id);
+    const poIds = validPayments.map((p) => p._id);
+    console.log("Generating PDF for PO IDs:", poIds);
 
-    if (validPayments.length === 0) {
-      toast.error("No valid payment IDs found to generate PDF.");
-      setIsPdfLoading(false);
-      return;
-    }
+    const response = await Axios.post(
+      "/accounting/po-approve-pdf",
+      { poIds },
+      {
+        headers: { "x-auth-token": token },
+        responseType: "blob",
+      }
+    );
 
-    try {
-      const token = localStorage.getItem("authToken");
+    const blob = new Blob([response.data], { type: "application/pdf" });
+    setPdfBlob(blob);
+    setIsPdfModalOpen(true);
 
-      const response = await Axios.post(
-        "/accounting/po-approve-pdf",
-        { poIds: validPayments.map((p) => p._id) },
-        {
-          headers: {
-            "x-auth-token": token,
-          },
-          responseType: "blob",
-        }
-      );
-
-      const blob = new Blob([response.data], { type: "application/pdf" });
-      setPdfBlob(blob);
-      setIsPdfModalOpen(true);
-    } catch (error) {
-      console.error("PDF generation failed", error);
-      toast.error("Failed to generate PDF");
-    } finally {
-      setIsPdfLoading(false);
-    }
-  };
-
-  // === Single Approval Logic ===
-  const handleApprovalUpdate = async (_id, newStatus, remarks = "") => {
+  } catch (error) {
+    console.error("PDF generation failed:", error);
+    toast.error("Failed to generate PDF");
+  } finally {
+    setIsPdfLoading(false);
+  }
+};
+ // === Final CAM Batch Approval ===
+const handleCAMBatchApproval = async () => {
   try {
     const token = localStorage.getItem("authToken");
 
-    const payload = { _id, status: newStatus };
+    const idsToApprove = selected
+      .map((id) => (id && id._id ? id._id : id))
+      .filter(Boolean);
+
+    if (idsToApprove.length === 0) {
+      toast.error("No valid payment IDs selected for approval.");
+      return;
+    }
+
+    if (pdfBlob) {
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = "CAM_Approval.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    }
+
+    const approvalRes = await Axios.put(
+      "/account-approve",
+      { _id: idsToApprove, status: "Approved" },
+      { headers: { "x-auth-token": token } }
+    );
+
+    if (approvalRes.status === 200) {
+      const { results } = approvalRes.data;
+      const successCount = results.filter((r) => r.status === "success").length;
+      const errorCount = results.filter((r) => r.status === "error").length;
+
+      if (successCount > 0) {
+        toast.success(`${successCount} payment(s) approved successfully`);
+        setHiddenIds((prev) => [...prev, ...idsToApprove]);
+        setSelected((prev) => prev.filter((id) => !idsToApprove.includes(id)));
+
+       
+        setTimeout(() => window.location.reload(), 500);
+      }
+      if (errorCount > 0) {
+        results
+          .filter((r) => r.status === "error")
+          .forEach((err) => toast.error(`${err._id}: ${err.message}`));
+      }
+
+      setIsPdfModalOpen(false);
+      setIsConfirmModalOpen(false);
+    }
+  } catch (error) {
+    console.error("CAM approval failed", error);
+    toast.error("Failed to approve payments");
+  }
+};
+
+
+  // === Single Approval Logic ===
+const handleApprovalUpdate = async (ids, newStatus, remarks = "") => {
+  // console.log("📌 handleApprovalUpdate got:", { ids, newStatus, remarks, remarksType: typeof remarks });
+
+  try {
+    const token = localStorage.getItem("authToken");
+    const payload = {
+      _id: Array.isArray(ids) ? ids : [ids],
+      status: newStatus,
+    };
+
     if (newStatus === "Rejected") {
       payload.remarks = remarks || "Rejected by manager";
+    } else if (remarks) {
+      payload.remarks = remarks;
     }
+
+    // console.log("📌 handleApprovalUpdate payload:", payload);
 
     const response = await Axios.put("/account-approve", payload, {
       headers: { "x-auth-token": token },
     });
 
-    if (response.status === 200) {
-      // Backend returns results for each processed ID
-      const result = response.data.results?.find(r => r._id === _id);
+    if (response.status === 200 && Array.isArray(response.data.results)) {
+      let allSuccess = true;
 
-      if (result?.status === "success") {
-        if (newStatus === "Approved") {
-          toast.success("Payment Approved!", { autoClose: 3000 });
-        } else if (newStatus === "Rejected") {
-          toast.error("Payment Rejected", { autoClose: 2000 });
-        } else if (newStatus === "Pending") {
-          toast.info("Payment marked as Pending", { autoClose: 2000 });
+      response.data.results.forEach((result) => {
+        if (result.status === "success") {
+          if (newStatus === "Approved") toast.success(`Payment Approved!`, { autoClose: 2000 });
+          else if (newStatus === "Rejected") toast.error(`Payment Rejected`, { autoClose: 2000 });
+          else if (newStatus === "Pending") toast.info(`Payment marked as Pending`, { autoClose: 2000 });
+          setHiddenIds((prev) => [...prev, result._id]);
+        } else {
+          allSuccess = false;
+          toast.error(result.message || `Approval failed for ${result._id}`);
         }
+      });
 
-        setHiddenIds(prev => [...prev, _id]);
-        return true;
-      } else {
-        toast.error(result?.message || "Approval failed");
+      if (allSuccess) {
+        setTimeout(() => window.location.reload(), 500);
       }
+
+      return allSuccess;
     }
   } catch (error) {
     console.error("Approval update error:", error);
@@ -236,67 +318,81 @@ function PaymentRequest() {
 };
 
 
-  // === Final CAM Batch Approval ===
-  const handleCAMBatchApproval = async () => {
-    try {
-      const token = localStorage.getItem("authToken");
-      const idsToApprove = pdfPayments.map((p) => p._id);
-      debugger; // Check selected IDs and token
-
-      if (pdfBlob) {
-        const link = document.createElement("a");
-        link.href = blobUrl;
-        link.download = "CAM_Approval.pdf";
-        link.click();
-      }
-
-      const approvalRes = await Axios.put(
-  "/account-approve",
-  {
-    _id: idsToApprove,
-    status: "Pending",
-  },
-  {
-    headers: { "x-auth-token": token },
-  }
-);
 
 
-      debugger; // After approval
-      if (approvalRes.status === 200) {
-        toast.success("All payments approved successfully");
-        setHiddenIds((prev) => [...prev, ...idsToApprove]);
-        setSelected((prev) => prev.filter((id) => !idsToApprove.includes(id)));
-        setIsPdfModalOpen(false);
-        setIsConfirmModalOpen(false);
-      }
-    } catch (error) {
-      debugger; // On error
-      console.error("CAM approval failed", error);
-      toast.error("Failed to approve payments");
-    }
+const RowMenu = ({ _id, onStatusChange, showApprove }) => {
+  const [open, setOpen] = useState(false);
+  const [remarks, setRemarks] = useState("");
+
+  const handleRejectSubmit = () => {
+    console.log("📌 RowMenu → handleRejectSubmit remarks:", remarks, "type:", typeof remarks);
+    onStatusChange(_id, "Rejected", remarks);
+    setOpen(false);
+    setRemarks("");
   };
 
-  const RowMenu = ({ _id, onStatusChange }) => (
-    <Box sx={{ display: "flex", justifyContent: "left", gap: 1 }}>
-      <Chip
-        variant="solid"
-        color="success"
-        label="Approved"
-        onClick={() => onStatusChange(_id, "Approved")}
-        sx={{ textTransform: "none", fontSize: "0.875rem", fontWeight: 500 }}
-        startDecorator={<CheckRoundedIcon />}
-      />
-      <Chip
-        variant="outlined"
-        color="danger"
-        label="Rejected"
-        onClick={() => onStatusChange(_id, "Rejected")}
-        sx={{ textTransform: "none", fontSize: "0.875rem", fontWeight: 500 }}
-        startDecorator={<BlockIcon />}
-      />
-    </Box>
+  return (
+    <>
+      <Box sx={{ display: "flex", justifyContent: "left", gap: 1 }}>
+        {showApprove && (
+          <Chip
+            component="div"
+            variant="solid"
+            color="success"
+            onClick={() => onStatusChange(_id, "Approved")}
+            sx={{ textTransform: "none", fontSize: "0.875rem", fontWeight: 500, cursor: "pointer" }}
+            startDecorator={<CheckRoundedIcon />}
+          >
+            Approve
+          </Chip>
+        )}
+        <Chip
+          component="div"
+          variant="outlined"
+          color="danger"
+          onClick={() => setOpen(true)}
+          sx={{ textTransform: "none", fontSize: "0.875rem", fontWeight: 500, cursor: "pointer" }}
+          startDecorator={<BlockIcon />}
+        >
+          Reject
+        </Chip>
+      </Box>
+
+      <Modal open={open} onClose={() => setOpen(false)}>
+        <ModalDialog>
+          <Typography level="h5">Rejection Remarks</Typography>
+          <Textarea
+  minRows={3}
+  placeholder="Enter remarks..."
+  value={remarks}
+  onChange={(e) => {
+    const value = e.target.value ?? "";
+    // console.log("Textarea onChange value:", value, "type:", typeof value);
+    setRemarks(value);
+  }}
+/>
+
+
+
+
+          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 2 }}>
+            <Button variant="plain" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button
+  variant="solid"
+  color="danger"
+  onClick={handleRejectSubmit}
+  disabled={!remarks}
+>
+  Submit
+</Button>
+          </Box>
+        </ModalDialog>
+      </Modal>
+    </>
   );
+};
+
+
   const handleSelectAll = (event) => {
     if (event.target.checked) {
       setSelected(paginatedData.map((row) => String(row._id)));
@@ -340,6 +436,7 @@ function PaymentRequest() {
           display: "flex",
           alignItems: "center",
           gap: 1.5,
+          mt:3,
         }}
       >
         {hasSelection && (
@@ -587,6 +684,26 @@ function PaymentRequest() {
           )}
         </Box>
 
+        
+      </Box>
+
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 2,
+          px: 1,
+          py: 1,
+          ml: { xl: "15%", lg: "18%", sm: 0 },
+          maxWidth: { lg: "85%", sm: "100%" },
+          // bgcolor: "background.level1",
+          borderRadius: "md",
+          mb: 2,
+        }}
+      >
+        
         <Box
           sx={{
             display: "flex",
@@ -598,6 +715,7 @@ function PaymentRequest() {
             justifyContent: "center",
           }}
         >
+          {user?.department === "Internal" && user?.role === "manager" && renderFilters()}
           <Box
             className="SearchAndFilters-tabletUp"
             sx={{
@@ -635,31 +753,8 @@ function PaymentRequest() {
                 }}
               />
             </FormControl>
-            {/* {renderFilters()} */}
           </Box>
-
-          <Box sx={{ mt: 3, display: "flex", gap: 1 }}></Box>
         </Box>
-      </Box>
-
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 2,
-          px: 1,
-          py: 1,
-          ml: { xl: "15%", lg: "18%", sm: 0 },
-          maxWidth: { lg: "85%", sm: "100%" },
-          // bgcolor: "background.level1",
-          borderRadius: "md",
-          mb: 2,
-        }}
-      >
-        {renderFilters()}
-        {/* Pagination Controls */}
         <Box
           sx={{
             display: "flex",
@@ -786,7 +881,7 @@ function PaymentRequest() {
                 "Project Id",
                 "Request For",
                 "Amount Requested",
-                ["SCM", "Accounts"].includes(user?.department) && "Action",
+                "Action",
               ]
                 .filter(Boolean)
                 .map((header, index) => (
@@ -908,41 +1003,21 @@ function PaymentRequest() {
                       />
                     </Box>
 
-                    <Box
-                      component="td"
-                      sx={{
-                        ...cellStyle,
-                        // minWidth: 50,
-                      }}
-                    >
-                      {user?.department === "SCM" ||
-                      user?.department === "Accounts" ? (
-                        <RowMenu
-                          _id={payment._id}
-                          onStatusChange={(_id, status) =>
-                            handleStatusChange(_id, status, payment)
-                          }
-                        />
-                      ) : user?.department === "CAM" && index === 0 ? (
-                        <Chip
-                          variant="solid"
-                          color="success"
-                          label="Approve Selected"
-                          onClick={() => {
-                            if (selected.length === 0) {
-                              toast.warn("Select payments to approve.");
-                              return;
-                            }
-                            const selectedPayments = paginatedData.filter((p) =>
-                              selected.includes(p._id)
-                            );
-                            setPdfPayments(selectedPayments);
-                            handleMultiPDFDownload(selectedPayments);
-                          }}
-                          disabled={selected.length === 0}
-                        />
-                      ) : null}
-                    </Box>
+                   <Box component="td" sx={{ ...cellStyle }}>
+
+ <RowMenu
+  _id={payment._id}
+  showApprove={["SCM", "Accounts"].includes(user?.department)}
+  onStatusChange={(id, status, remarks) =>
+    handleStatusChange(id, status,remarks)
+  }
+/>
+
+
+
+</Box>
+
+
                   </Box>
                 );
               })
@@ -982,67 +1057,75 @@ function PaymentRequest() {
         </Box>
       </Box>
 
-      <Modal open={isPdfModalOpen} onClose={handleClosePdfModal}>
-        <Box
-          sx={{
-            p: 2,
-            background: "white",
-            borderRadius: "md",
-            width: "90%",
-            maxWidth: 800,
-            mx: "auto",
-          }}
-        >
-          {blobUrl ? (
-            <iframe
-              src={blobUrl}
-              width="100%"
-              height="500px"
-              title="PDF Preview"
-              style={{ border: "none" }}
-            />
-          ) : (
-            <Typography>Loading PDF preview...</Typography>
-          )}
-          <Stack direction="row" justifyContent="flex-end" spacing={2} mt={2}>
-            <Button
-              variant="solid"
-              color="primary"
-              onClick={() => setIsConfirmModalOpen(true)}
-            >
-              Confirm
-            </Button>
-            <Button variant="outlined" onClick={handleClosePdfModal}>
-              Close
-            </Button>
-          </Stack>
-        </Box>
-      </Modal>
+   {/* PDF Preview Modal */}
+<Modal open={isPdfModalOpen} onClose={handleClosePdfModal}>
+  <ModalDialog
+    sx={{
+      width: "90%",
+      maxWidth: 800,
+      p: 2,
+    }}
+  >
+    <Typography level="title-lg" mb={1}>
+      PDF Preview
+    </Typography>
 
-      <Modal
-        open={isConfirmModalOpen}
-        onClose={() => setIsConfirmModalOpen(false)}
+    {blobUrl ? (
+      <iframe
+        src={blobUrl}
+        width="100%"
+        height="500px"
+        title="PDF Preview"
+        style={{ border: "none" }}
+      />
+    ) : (
+      <Typography>Loading PDF preview...</Typography>
+    )}
+
+    <Stack direction="row" justifyContent="flex-end" spacing={2} mt={2}>
+      <Button
+        variant="solid"
+        color="primary"
+        onClick={() => setIsConfirmModalOpen(true)}
       >
-        <ModalDialog>
-          <Typography level="title-lg">Are you sure?</Typography>
-          <Typography>Confirm approval of selected payments?</Typography>
-          <Stack direction="row" justifyContent="flex-end" spacing={2} mt={2}>
-            <Button
-              variant="solid"
-              color="success"
-              onClick={handleCAMBatchApproval}
-            >
-              Yes, Approve
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={() => setIsConfirmModalOpen(false)}
-            >
-              Cancel
-            </Button>
-          </Stack>
-        </ModalDialog>
-      </Modal>
+        Confirm
+      </Button>
+      <Button variant="outlined" onClick={handleClosePdfModal}>
+        Close
+      </Button>
+    </Stack>
+  </ModalDialog>
+</Modal>
+
+{/* Confirmation Modal */}
+<Modal
+  open={isConfirmModalOpen}
+  onClose={() => setIsConfirmModalOpen(false)}
+>
+  <ModalDialog>
+    <Typography level="title-lg">Are you sure?</Typography>
+    <Typography mt={1}>
+      Confirm approval of selected payments?
+    </Typography>
+
+    <Stack direction="row" justifyContent="flex-end" spacing={2} mt={2}>
+      <Button
+        variant="solid"
+        color="success"
+        onClick={handleCAMBatchApproval}
+      >
+        Yes, Approve
+      </Button>
+      <Button
+        variant="outlined"
+        onClick={() => setIsConfirmModalOpen(false)}
+      >
+        Cancel
+      </Button>
+    </Stack>
+  </ModalDialog>
+</Modal>
+
     </>
   );
 }
