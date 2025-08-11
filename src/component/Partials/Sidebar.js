@@ -32,6 +32,7 @@ import Main_Logo from "../../assets/protrac_logo.png";
 import Main_Logo2 from "../../assets/white_logo.png";
 import { closeSidebar } from "../../utils/utils";
 import ColorSchemeToggle from "./ColorSchemeToggle";
+import DatabaseIcon from '@mui/icons-material/Storage';
 
 function Toggler({ defaultExpanded = false, renderToggle, children }) {
   const [open, setOpen] = useState(defaultExpanded);
@@ -582,6 +583,38 @@ function Sidebar() {
                   <ListItem sx={{ mt: 0.5 }}>
                     <ListItemButton onClick={() => navigate("/all_task")}>
                       Task View
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+
+             <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <DatabaseIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">My Databases</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/items")}>
+                       Items
                     </ListItemButton>
                   </ListItem>
                 </List>
