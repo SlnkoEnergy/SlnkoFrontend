@@ -21,7 +21,7 @@ import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import NoData from "../assets/alert-bell.svg";
+import NoData from "../../assets/alert-bell.svg";
 import {
   CircularProgress,
   Modal,
@@ -31,12 +31,12 @@ import {
   useTheme,
 } from "@mui/joy";
 import { FileText } from "lucide-react";
-import { PaymentProvider } from "../store/Context/Payment_History";
-import PaymentHistory from "./PaymentHistory";
-import { useGetPaymentRecordQuery, useGetTrashRecordQuery } from "../redux/Accounts";
+import { PaymentProvider } from "../../store/Context/Payment_History";
+import PaymentHistory from "../PaymentHistory";
+import { useGetPaymentRecordQuery } from "../../redux/Accounts";
 import dayjs from "dayjs";
 
-const TrashRequest = forwardRef(() => {
+const InstantRequest = forwardRef(() => {
   const theme = useTheme();
   const navigate = useNavigate();
   const [error, setError] = useState(null);
@@ -49,11 +49,12 @@ const TrashRequest = forwardRef(() => {
   const [searchQuery, setSearchQuery] = useState("");
   const [status, setStatus] = useState("");
 
-  const { data: responseData, isLoading } = useGetTrashRecordQuery({
+  const { data: responseData, isLoading } = useGetPaymentRecordQuery({
     page: currentPage,
     pageSize: perPage,
     search: searchQuery,
     status,
+    tab: "instant",
   });
 
   const paginatedData = responseData?.data || [];
@@ -348,149 +349,6 @@ const TrashRequest = forwardRef(() => {
 
   return (
     <>
-
-    <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 2,
-          px: 1,
-          py: 1,
-          ml: { xl: "15%", lg: "18%", sm: 0 },
-          maxWidth: { lg: "85%", sm: "100%" },
-          // bgcolor: "background.level1",
-          borderRadius: "md",
-          mb: 2,
-        }}
-      >
-        
-        <Box
-          sx={{
-            display: "flex",
-            mb: 1,
-            gap: 1,
-            flexDirection: { xs: "column", sm: "row" },
-            alignItems: { xs: "none", sm: "center" },
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
-        >
-          {/* {renderFilters()} */}
-          <Box
-            className="SearchAndFilters-tabletUp"
-            sx={{
-              borderRadius: "sm",
-              py: 2,
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              flexWrap: "wrap",
-              gap: 1.5,
-            }}
-          >
-            <FormControl sx={{ flex: 1 }} size="sm">
-              <FormLabel>Search here</FormLabel>
-              <Input
-                size="sm"
-                placeholder="Search by Pay ID, Items, Clients Name or Vendor"
-                startDecorator={<SearchIcon />}
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                sx={{
-                  width: 350,
-
-                  borderColor: "neutral.outlinedBorder",
-                  borderBottom: searchQuery
-                    ? "2px solid #1976d2"
-                    : "1px solid #ddd",
-                  borderRadius: 5,
-                  boxShadow: "none",
-                  "&:hover": {
-                    borderBottom: "2px solid #1976d2",
-                  },
-                  "&:focus-within": {
-                    borderBottom: "2px solid #1976d2",
-                  },
-                }}
-              />
-            </FormControl>
-          </Box>
-        </Box>
-
-
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 1.5,
-          }}
-        >
-          {/* Rows per page */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography level="body-sm">Rows per page:</Typography>
-            <Select
-              size="sm"
-              value={perPage}
-              onChange={(_, value) => {
-                if (value) {
-                  setPerPage(Number(value));
-                  setCurrentPage(1);
-                }
-              }}
-              sx={{ minWidth: 64 }}
-            >
-              {[10, 25, 50, 100].map((value) => (
-                <Option key={value} value={value}>
-                  {value}
-                </Option>
-              ))}
-            </Select>
-          </Box>
-
-          {/* Pagination info */}
-          <Typography level="body-sm">
-            {`${startIndex}-${endIndex} of ${total}`}
-          </Typography>
-
-          {/* Navigation buttons */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <IconButton
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(1)}
-            >
-              <KeyboardDoubleArrowLeft />
-            </IconButton>
-            <IconButton
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            >
-              <KeyboardArrowLeft />
-            </IconButton>
-            <IconButton
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
-            >
-              <KeyboardArrowRight />
-            </IconButton>
-            <IconButton
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(totalPages)}
-            >
-              <KeyboardDoubleArrowRight />
-            </IconButton>
-          </Box>
-        </Box>
-      </Box>  
-
-
       {/* Table */}
       <Box
         sx={{
@@ -500,8 +358,6 @@ const TrashRequest = forwardRef(() => {
           borderRadius: "12px",
           border: "1px solid",
           borderColor: "divider",
-            marginLeft: { xl: "15%", lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%" },
           bgcolor: "background.body",
           "&::-webkit-scrollbar": {
             width: "8px",
@@ -666,7 +522,7 @@ const TrashRequest = forwardRef(() => {
                       style={{ width: "50px", height: "50px" }}
                     />
                     <Typography fontStyle={"italic"}>
-                      No trashes available
+                      No records available
                     </Typography>
                   </Box>
                 </Box>
@@ -678,4 +534,4 @@ const TrashRequest = forwardRef(() => {
     </>
   );
 });
-export default TrashRequest;
+export default InstantRequest;

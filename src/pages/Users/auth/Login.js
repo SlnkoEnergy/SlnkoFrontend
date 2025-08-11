@@ -59,10 +59,10 @@ const Login = () => {
   }, []);
 
   const handleLogin = async (values) => {
-    if (!geoInfo.latitude || !geoInfo.longitude || !geoInfo.fullAddress) {
-      toast.error("Location is required to login. Please enable location access.");
-      return;
-    }
+    // if (!geoInfo.latitude || !geoInfo.longitude || !geoInfo.fullAddress) {
+    //   toast.error("Location is required to login. Please enable location access.");
+    //   return;
+    // }
 
     setIsSubmitting(true);
     try {

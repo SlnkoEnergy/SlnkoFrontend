@@ -21,7 +21,7 @@ import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import NoData from "../assets/alert-bell.svg";
+import NoData from "../../assets/alert-bell.svg";
 import {
   CircularProgress,
   Modal,
@@ -31,12 +31,12 @@ import {
   useTheme,
 } from "@mui/joy";
 import { FileText } from "lucide-react";
-import { PaymentProvider } from "../store/Context/Payment_History";
-import PaymentHistory from "./PaymentHistory";
-import { useGetPaymentRecordQuery, useGetTrashRecordQuery } from "../redux/Accounts";
+import { PaymentProvider } from "../../store/Context/Payment_History";
+import PaymentHistory from "../PaymentHistory";
+import { useGetPaymentRecordQuery } from "../../redux/Accounts";
 import dayjs from "dayjs";
 
-const TrashRequest = forwardRef(() => {
+const CreditRequest = forwardRef(() => {
   const theme = useTheme();
   const navigate = useNavigate();
   const [error, setError] = useState(null);
@@ -49,11 +49,12 @@ const TrashRequest = forwardRef(() => {
   const [searchQuery, setSearchQuery] = useState("");
   const [status, setStatus] = useState("");
 
-  const { data: responseData, isLoading } = useGetTrashRecordQuery({
+  const { data: responseData, isLoading } = useGetPaymentRecordQuery({
     page: currentPage,
     pageSize: perPage,
     search: searchQuery,
     status,
+    tab: "credit",
   });
 
   const paginatedData = responseData?.data || [];
@@ -63,12 +64,6 @@ const TrashRequest = forwardRef(() => {
   const totalPages = Math.ceil(total / perPage);
   const startIndex = (currentPage - 1) * perPage + 1;
   const endIndex = Math.min(startIndex + count - 1, total);
-
-  console.log("Payment Request Data:", paginatedData);
-
-  const handleSearch = (query) => {
-    setSearchQuery(query.toLowerCase());
-  };
 
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
@@ -222,275 +217,91 @@ const TrashRequest = forwardRef(() => {
     );
   };
 
-  const MatchRow = ({ approved, timers, amount_paid }) => {
-    const [timeLeft, setTimeLeft] = useState("");
-    const [timerColor, setTimerColor] = useState("inherit");
-
-    useEffect(() => {
-      if (!timers?.draft_started_at) return;
-
-      const isFinal =
-        ["Approved", "Rejected", "Deleted"].includes(approved) ||
-        !!timers?.draft_frozen_at;
-
-      if (isFinal) {
-        setTimeLeft("Finalized");
-        setTimerColor("gray");
-        return;
-      }
-
-      const interval = setInterval(() => {
-        const startedAt = dayjs(timers.draft_started_at);
-        const now = dayjs();
-        const endTime = startedAt.add(48, "hour");
-        const diff = endTime.diff(now);
-
-        if (diff <= 0) {
-          setTimeLeft("⏱ Expired");
-          setTimerColor("red");
-        } else {
-          const dur = dayjs.duration(diff);
-          const hh = dur.hours() + dur.days() * 24;
-          const mm = dur.minutes();
-          const ss = dur.seconds();
-
-          setTimeLeft(
-            `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:${String(
-              ss
-            ).padStart(2, "0")} remaining`
-          );
-
-          const totalHoursLeft = dur.asHours();
-
-          if (totalHoursLeft <= 0.1667) {
-            setTimerColor("red");
-          } else if (totalHoursLeft >= 20 && totalHoursLeft < 30) {
-            setTimerColor("primary.main");
-          } else if (totalHoursLeft >= 30) {
-            setTimerColor("green");
-          } else {
-            setTimerColor("inherit");
-          }
-        }
-      }, 1000);
-
-      return () => clearInterval(interval);
-    }, [timers?.draft_started_at, timers?.draft_frozen_at, approved]);
-
+  const MatchRow = ({ approved, remaining_days, amount_paid }) => {
     return (
       <Box mt={1}>
+        {/* Amount */}
         <Box display="flex" alignItems="flex-start" gap={1} mb={0.5}>
           <Typography sx={labelStyle}>💰 Amount:</Typography>
-          <Typography
-            sx={{ ...valueStyle, wordBreak: "break-word", fontSize: "14px" }}
-          >
+          <Typography sx={{ ...valueStyle, fontSize: "14px" }}>
             {amount_paid || "—"}
           </Typography>
         </Box>
 
+        {/* Payment Status */}
         <Box display="flex" alignItems="flex-start" gap={1}>
           <Typography sx={labelStyle}>📑 Payment Status:</Typography>
-          {["Approved", "Pending", "Rejected", "Deleted"].includes(approved) ? (
-            <Chip
-              color={
-                {
-                  Approved: "success",
-                  Pending: "neutral",
-                  Rejected: "danger",
-                  Deleted: "warning",
-                }[approved]
-              }
-              variant="solid"
-              size="sm"
-              startDecorator={
-                {
-                  Approved: <CheckIcon fontSize="small" />,
-                  Pending: <AutorenewIcon fontSize="small" />,
-                  Rejected: <BlockIcon fontSize="small" />,
-                  Deleted: <DeleteIcon fontSize="small" />,
-                }[approved]
-              }
-            >
-              {approved}
-            </Chip>
-          ) : (
-            <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>
-              {approved || "Not Found"}
-            </Typography>
-          )}
+          <Chip
+            color={
+              {
+                Approved: "success",
+                Pending: "neutral",
+                Rejected: "danger",
+                Deleted: "warning",
+              }[approved] || "neutral"
+            }
+            variant="solid"
+            size="sm"
+          >
+            {approved}
+          </Chip>
         </Box>
 
+        {/* Remaining Days */}
         <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
           <Typography sx={labelStyle}>⏰</Typography>
           <Chip
             size="sm"
             variant="soft"
             color={
-              timeLeft === "Finalized"
-                ? "success"
-                : timeLeft === "Rejected"
-                  ? "danger"
-                  : timeLeft === "⏰ Expired"
-                    ? "danger"
-                    : timeLeft === "⏸ Frozen"
-                      ? "neutral"
-                      : timeLeft === "NA"
-                        ? "neutral"
-                        : "primary"
+              remaining_days <= 0
+                ? "danger"
+                : remaining_days <= 2
+                  ? "warning"
+                  : "success"
             }
           >
-            {timeLeft || "N/A"}
+            {remaining_days <= 0
+              ? "⏱ Expired"
+              : `${remaining_days} day${remaining_days > 1 ? "s" : ""} remaining`}
           </Chip>
         </Box>
       </Box>
     );
   };
 
+  // const renderFilters = () => {
+  //   return (
+  //     <Box
+  //       sx={{
+  //         position: "relative",
+  //         display: "flex",
+  //         alignItems: "center",
+  //         gap: 1.5,
+  //       }}
+  //     >
+  //       <FormControl size="sm" sx={{ minWidth: 150 }}>
+  //         <FormLabel>Select Status</FormLabel>
+  //         <Select
+  //           value={status || ""}
+  //           onChange={(e, newValue) => {
+  //             setStatus(newValue);
+  //             setCurrentPage(1);
+  //           }}
+  //           placeholder="All"
+  //         >
+  //           <Option value="">All</Option>
+  //           <Option value="Approved">Approved</Option>
+  //           <Option value="Pending">Pending</Option>
+  //           <Option value="Rejected">Rejected</Option>
+  //         </Select>
+  //       </FormControl>
+  //     </Box>
+  //   );
+  // };
+
   return (
     <>
-
-    <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 2,
-          px: 1,
-          py: 1,
-          ml: { xl: "15%", lg: "18%", sm: 0 },
-          maxWidth: { lg: "85%", sm: "100%" },
-          // bgcolor: "background.level1",
-          borderRadius: "md",
-          mb: 2,
-        }}
-      >
-        
-        <Box
-          sx={{
-            display: "flex",
-            mb: 1,
-            gap: 1,
-            flexDirection: { xs: "column", sm: "row" },
-            alignItems: { xs: "none", sm: "center" },
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
-        >
-          {/* {renderFilters()} */}
-          <Box
-            className="SearchAndFilters-tabletUp"
-            sx={{
-              borderRadius: "sm",
-              py: 2,
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              flexWrap: "wrap",
-              gap: 1.5,
-            }}
-          >
-            <FormControl sx={{ flex: 1 }} size="sm">
-              <FormLabel>Search here</FormLabel>
-              <Input
-                size="sm"
-                placeholder="Search by Pay ID, Items, Clients Name or Vendor"
-                startDecorator={<SearchIcon />}
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                sx={{
-                  width: 350,
-
-                  borderColor: "neutral.outlinedBorder",
-                  borderBottom: searchQuery
-                    ? "2px solid #1976d2"
-                    : "1px solid #ddd",
-                  borderRadius: 5,
-                  boxShadow: "none",
-                  "&:hover": {
-                    borderBottom: "2px solid #1976d2",
-                  },
-                  "&:focus-within": {
-                    borderBottom: "2px solid #1976d2",
-                  },
-                }}
-              />
-            </FormControl>
-          </Box>
-        </Box>
-
-
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 1.5,
-          }}
-        >
-          {/* Rows per page */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography level="body-sm">Rows per page:</Typography>
-            <Select
-              size="sm"
-              value={perPage}
-              onChange={(_, value) => {
-                if (value) {
-                  setPerPage(Number(value));
-                  setCurrentPage(1);
-                }
-              }}
-              sx={{ minWidth: 64 }}
-            >
-              {[10, 25, 50, 100].map((value) => (
-                <Option key={value} value={value}>
-                  {value}
-                </Option>
-              ))}
-            </Select>
-          </Box>
-
-          {/* Pagination info */}
-          <Typography level="body-sm">
-            {`${startIndex}-${endIndex} of ${total}`}
-          </Typography>
-
-          {/* Navigation buttons */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <IconButton
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(1)}
-            >
-              <KeyboardDoubleArrowLeft />
-            </IconButton>
-            <IconButton
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            >
-              <KeyboardArrowLeft />
-            </IconButton>
-            <IconButton
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
-            >
-              <KeyboardArrowRight />
-            </IconButton>
-            <IconButton
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(totalPages)}
-            >
-              <KeyboardDoubleArrowRight />
-            </IconButton>
-          </Box>
-        </Box>
-      </Box>  
-
-
       {/* Table */}
       <Box
         sx={{
@@ -500,8 +311,6 @@ const TrashRequest = forwardRef(() => {
           borderRadius: "12px",
           border: "1px solid",
           borderColor: "divider",
-            marginLeft: { xl: "15%", lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%" },
           bgcolor: "background.body",
           "&::-webkit-scrollbar": {
             width: "8px",
@@ -630,8 +439,8 @@ const TrashRequest = forwardRef(() => {
                   <Box component="td" sx={{ ...cellStyle, minWidth: 300 }}>
                     <MatchRow
                       approved={payment.approved}
-                      timers={payment.timers}
                       amount_paid={payment.amount_paid}
+                      remaining_days={payment.remaining_days}
                     />
                   </Box>
 
@@ -666,7 +475,7 @@ const TrashRequest = forwardRef(() => {
                       style={{ width: "50px", height: "50px" }}
                     />
                     <Typography fontStyle={"italic"}>
-                      No trashes available
+                      No records available
                     </Typography>
                   </Box>
                 </Box>
@@ -678,4 +487,4 @@ const TrashRequest = forwardRef(() => {
     </>
   );
 });
-export default TrashRequest;
+export default CreditRequest;
