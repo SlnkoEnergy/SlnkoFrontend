@@ -339,9 +339,9 @@ const CreditRequest = forwardRef(() => {
                 />
               </Box> */}
               {[
-                "Payment Id",
+                "Credit Id",
                 "Paid_for",
-                "Payment Status",
+                "Credit Status",
                 "UTR",
                 // "",
               ].map((header, index) => (
