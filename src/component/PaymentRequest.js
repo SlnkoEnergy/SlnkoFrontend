@@ -93,18 +93,17 @@ const PaymentRequest = forwardRef((props, ref) => {
     return null;
   };
 
-useEffect(() => {
-  const params = {};
+  useEffect(() => {
+    const params = {};
 
-  if (currentPage > 1) params.page = currentPage;
-  if (perPage !== 10) params.pageSize = perPage;
-  if (searchQuery) params.search = searchQuery;
-  if (status) params.status = status;
-  params.tab = activeTab === 0 ? "instant" : "credit";
+    if (currentPage > 1) params.page = currentPage;
+    if (perPage !== 10) params.pageSize = perPage;
+    if (searchQuery) params.search = searchQuery;
+    if (status) params.status = status;
+    params.tab = activeTab === 0 ? "instant" : "credit";
 
-  setSearchParams(params, { replace: true });
-}, [currentPage, perPage, searchQuery, status, activeTab, setSearchParams]);
-
+    setSearchParams(params, { replace: true });
+  }, [currentPage, perPage, searchQuery, status, activeTab, setSearchParams]);
 
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -146,6 +145,10 @@ useEffect(() => {
     );
   };
 
+  const filteredData = paginatedData.filter((item) =>
+    activeTab === 0 ? item.tab === "instant" : item.tab === "credit"
+  );
+
   return (
     <>
       <Box
@@ -177,8 +180,6 @@ useEffect(() => {
             justifyContent: "center",
           }}
         >
-          
-
           <Box sx={{ display: "flex", gap: 1 }}>
             {" "}
             {(user?.name === "IT Team" ||
@@ -235,7 +236,6 @@ useEffect(() => {
           maxWidth: { lg: "85%", sm: "100%" },
           p: 2,
           boxSizing: "border-box",
-          
         }}
       >
         <Box
@@ -258,18 +258,19 @@ useEffect(() => {
             onChange={(_, value) => {
               setActiveTab(value);
               setCurrentPage(1);
+              refetch();
             }}
             variant="plain"
             sx={{
-              bgcolor: "background.level2",
+              // bgcolor: "background.level2",
               borderRadius: "xl",
               p: 0.5,
               minHeight: "50px",
-              boxShadow: "sm",
-              "--Tabs-gap": "0px",
-              "--Tab-radius": "10px",
-              "--Tab-paddingInline": "1.2rem",
-              "--TabList-gap": "2px",
+              // boxShadow: "sm",
+              // "--Tabs-gap": "0px",
+              // "--Tab-radius": "10px",
+              // "--Tab-paddingInline": "1.2rem",
+              // "--TabList-gap": "2px",
             }}
           >
             <TabList
@@ -339,12 +340,12 @@ useEffect(() => {
                 onChange={(e) => handleSearch(e.target.value)}
                 sx={{
                   width: 350,
-                  
+
                   borderColor: "neutral.outlinedBorder",
                   borderBottom: searchQuery
                     ? "2px solid #1976d2"
                     : "1px solid #ddd",
-                  borderRadius: 5, 
+                  borderRadius: 5,
                   boxShadow: "none",
                   "&:hover": {
                     borderBottom: "2px solid #1976d2",
@@ -432,11 +433,10 @@ useEffect(() => {
 
         {/* Main Content */}
         <Box>
-          {activeTab === 0 && (
-            <InstantRequest data={paginatedData} isLoading={isLoading} />
-          )}
-          {activeTab === 1 && (
-            <CreditRequest data={paginatedData} isLoading={isLoading} />
+          {activeTab === 0 ? (
+            <InstantRequest data={filteredData} isLoading={isLoading} />
+          ) : (
+            <CreditRequest data={filteredData} isLoading={isLoading} />
           )}
         </Box>
       </Box>

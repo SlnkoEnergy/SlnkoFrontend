@@ -109,36 +109,6 @@ const CreditRequest = forwardRef(() => {
 
   dayjs.extend(duration);
 
-  const renderFilters = () => {
-    return (
-      <Box
-        sx={{
-          position: "relative",
-          display: "flex",
-          alignItems: "center",
-          gap: 1.5,
-        }}
-      >
-        <FormControl size="sm" sx={{ minWidth: 150 }}>
-          <FormLabel>Select Status</FormLabel>
-          <Select
-            value={status || ""}
-            onChange={(e, newValue) => {
-              setStatus(newValue);
-              setCurrentPage(1);
-            }}
-            placeholder="All"
-          >
-            <Option value="">All</Option>
-            <Option value="Approved">Approved</Option>
-            <Option value="Pending">Pending</Option>
-            <Option value="Rejected">Rejected</Option>
-          </Select>
-        </FormControl>
-      </Box>
-    );
-  };
-
   const PaymentID = ({ pay_id, dbt_date }) => (
     <>
       {pay_id && (
@@ -247,129 +217,88 @@ const CreditRequest = forwardRef(() => {
     );
   };
 
-  const MatchRow = ({ approved, timers, amount_paid }) => {
-    const [timeLeft, setTimeLeft] = useState("");
-    const [timerColor, setTimerColor] = useState("inherit");
-
-    useEffect(() => {
-      if (!timers?.draft_started_at) return;
-
-      const isFinal =
-        ["Approved", "Rejected", "Deleted"].includes(approved) ||
-        !!timers?.draft_frozen_at;
-
-      if (isFinal) {
-        setTimeLeft("Finalized");
-        setTimerColor("gray");
-        return;
-      }
-
-      const interval = setInterval(() => {
-        const startedAt = dayjs(timers.draft_started_at);
-        const now = dayjs();
-        const endTime = startedAt.add(48, "hour");
-        const diff = endTime.diff(now);
-
-        if (diff <= 0) {
-          setTimeLeft("⏱ Expired");
-          setTimerColor("red");
-        } else {
-          const dur = dayjs.duration(diff);
-          const hh = dur.hours() + dur.days() * 24;
-          const mm = dur.minutes();
-          const ss = dur.seconds();
-
-          setTimeLeft(
-            `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:${String(
-              ss
-            ).padStart(2, "0")} remaining`
-          );
-
-          const totalHoursLeft = dur.asHours();
-
-          if (totalHoursLeft <= 0.1667) {
-            setTimerColor("red");
-          } else if (totalHoursLeft >= 20 && totalHoursLeft < 30) {
-            setTimerColor("primary.main");
-          } else if (totalHoursLeft >= 30) {
-            setTimerColor("green");
-          } else {
-            setTimerColor("inherit");
-          }
-        }
-      }, 1000);
-
-      return () => clearInterval(interval);
-    }, [timers?.draft_started_at, timers?.draft_frozen_at, approved]);
-
+  const MatchRow = ({ approved, remaining_days, amount_paid }) => {
     return (
       <Box mt={1}>
+        {/* Amount */}
         <Box display="flex" alignItems="flex-start" gap={1} mb={0.5}>
           <Typography sx={labelStyle}>💰 Amount:</Typography>
-          <Typography
-            sx={{ ...valueStyle, wordBreak: "break-word", fontSize: "14px" }}
-          >
+          <Typography sx={{ ...valueStyle, fontSize: "14px" }}>
             {amount_paid || "—"}
           </Typography>
         </Box>
 
+        {/* Payment Status */}
         <Box display="flex" alignItems="flex-start" gap={1}>
           <Typography sx={labelStyle}>📑 Payment Status:</Typography>
-          {["Approved", "Pending", "Rejected", "Deleted"].includes(approved) ? (
-            <Chip
-              color={
-                {
-                  Approved: "success",
-                  Pending: "neutral",
-                  Rejected: "danger",
-                  Deleted: "warning",
-                }[approved]
-              }
-              variant="solid"
-              size="sm"
-              startDecorator={
-                {
-                  Approved: <CheckIcon fontSize="small" />,
-                  Pending: <AutorenewIcon fontSize="small" />,
-                  Rejected: <BlockIcon fontSize="small" />,
-                  Deleted: <DeleteIcon fontSize="small" />,
-                }[approved]
-              }
-            >
-              {approved}
-            </Chip>
-          ) : (
-            <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>
-              {approved || "Not Found"}
-            </Typography>
-          )}
+          <Chip
+            color={
+              {
+                Approved: "success",
+                Pending: "neutral",
+                Rejected: "danger",
+                Deleted: "warning",
+              }[approved] || "neutral"
+            }
+            variant="solid"
+            size="sm"
+          >
+            {approved}
+          </Chip>
         </Box>
 
+        {/* Remaining Days */}
         <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
           <Typography sx={labelStyle}>⏰</Typography>
           <Chip
             size="sm"
             variant="soft"
             color={
-              timeLeft === "Finalized"
-                ? "success"
-                : timeLeft === "Rejected"
-                  ? "danger"
-                  : timeLeft === "⏰ Expired"
-                    ? "danger"
-                    : timeLeft === "⏸ Frozen"
-                      ? "neutral"
-                      : timeLeft === "NA"
-                        ? "neutral"
-                        : "primary"
+              remaining_days <= 0
+                ? "danger"
+                : remaining_days <= 2
+                  ? "warning"
+                  : "success"
             }
           >
-            {timeLeft || "N/A"}
+            {remaining_days <= 0
+              ? "⏱ Expired"
+              : `${remaining_days} day${remaining_days > 1 ? "s" : ""} remaining`}
           </Chip>
         </Box>
       </Box>
     );
   };
+
+  // const renderFilters = () => {
+  //   return (
+  //     <Box
+  //       sx={{
+  //         position: "relative",
+  //         display: "flex",
+  //         alignItems: "center",
+  //         gap: 1.5,
+  //       }}
+  //     >
+  //       <FormControl size="sm" sx={{ minWidth: 150 }}>
+  //         <FormLabel>Select Status</FormLabel>
+  //         <Select
+  //           value={status || ""}
+  //           onChange={(e, newValue) => {
+  //             setStatus(newValue);
+  //             setCurrentPage(1);
+  //           }}
+  //           placeholder="All"
+  //         >
+  //           <Option value="">All</Option>
+  //           <Option value="Approved">Approved</Option>
+  //           <Option value="Pending">Pending</Option>
+  //           <Option value="Rejected">Rejected</Option>
+  //         </Select>
+  //       </FormControl>
+  //     </Box>
+  //   );
+  // };
 
   return (
     <>
@@ -510,8 +439,8 @@ const CreditRequest = forwardRef(() => {
                   <Box component="td" sx={{ ...cellStyle, minWidth: 300 }}>
                     <MatchRow
                       approved={payment.approved}
-                      timers={payment.timers}
                       amount_paid={payment.amount_paid}
+                      remaining_days={payment.remaining_days}
                     />
                   </Box>
 

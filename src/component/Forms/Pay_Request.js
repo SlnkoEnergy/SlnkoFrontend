@@ -846,7 +846,7 @@ function PaymentRequestForm() {
                 </Button>
               </Grid>
 
-              <Grid>
+              {/* <Grid>
                 <Button
                   variant="outlined"
                   color="neutral"
@@ -861,7 +861,7 @@ function PaymentRequestForm() {
                 >
                   StandBy
                 </Button>
-              </Grid>
+              </Grid> */}
 
               <Grid>
                 <Button
