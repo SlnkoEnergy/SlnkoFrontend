@@ -102,7 +102,8 @@ import Add_Task from "../pages/AllTask/ADD_Task";
 import AllTask from "../pages/AllTask/AllTask";
 import View_Task from "../pages/AllTask/View_Task";
 import SalesIframe from "../component/Sales_Iframe";
-import Items from "../pages/Databases/Items";
+import Products from "../pages/Databases/Products";
+import Categories from "../pages/Databases/Categories";
 
 function index() {
   return (
@@ -939,10 +940,18 @@ function index() {
 
       {/* Databases */}
       <Route
-      path="/items"
+      path="/products"
       element={
         <PrivateRoute>
-          <Items />
+          <Products />
+        </PrivateRoute>
+      }
+      />
+       <Route
+      path="/categories"
+      element={
+        <PrivateRoute>
+          <Categories />
         </PrivateRoute>
       }
       />

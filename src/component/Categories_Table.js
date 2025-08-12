@@ -38,7 +38,7 @@ import {
 } from "@mui/joy";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 
-function Items_Table() {
+function Categories_Table() {
   
   const filteredData = [];
 
@@ -61,41 +61,12 @@ function Items_Table() {
           <FormLabel>Search</FormLabel>
           <Input
             size="sm"
-            placeholder="Search by Title, Description or Type"
+            placeholder="Search by Product Name"
             startDecorator={<SearchIcon />}
            
           />
         </FormControl>
 
-        <FormControl size="sm">
-          <FormLabel>Status</FormLabel>
-          <Select
-            // value={statusFilter}
-            placeholder="Select Status"
-            // onChange={(e, newValue) => setStatusFilter(newValue || "")}
-            sx={{
-              height: "32px",
-              borderRadius: "6px",
-              padding: "2px 6px",
-              borderColor: "#ccc",
-            }}
-          >
-            <Option value="">Select Status</Option>
-            <Option value="pending">Pending</Option>
-            <Option value="in progress">In Progress</Option>
-            <Option value="completed">Completed</Option>
-          </Select>
-        </FormControl>
-
-        <FormControl size="sm">
-          <FormLabel>Filter by Date</FormLabel>
-          <Input
-            size="sm"
-            type="date"
-            // value={dateFilter}
-            // onChange={(e) => setDateFilter(e.target.value)}
-          />
-        </FormControl>
         <FormControl size="sm">
           <FormLabel>Items per page</FormLabel>
           {/* <Select
@@ -120,85 +91,6 @@ function Items_Table() {
           </Select> */}
         </FormControl>
 
-        <FormControl size="sm">
-          <FormLabel>Department</FormLabel>
-          {/* <Select
-            value={departmentFilter}
-            onChange={(e, newValue) => {
-              setDepartmentFilter(newValue || "");
-              setCurrentPage(1);
-            }}
-            disabled={isDeptLoading}
-            placeholder="All"
-            sx={{
-              height: "32px",
-              borderRadius: "6px",
-              padding: "0 8px",
-              borderColor: "#ccc",
-            }}
-          >
-            <Option value="">All</Option>
-            {deptList.map((dept) => (
-              <Option key={dept} value={dept}>
-                {dept}
-              </Option>
-            ))}
-          </Select> */}
-        </FormControl>
-
-        <Dropdown>
-          <MenuButton
-            slots={{ root: IconButton }}
-            slotProps={{
-              root: {
-                variant: "outlined",
-                color: "neutral",
-                size: "sm",
-                sx: {
-                  height: "32px",
-                  justifyContent: "center",
-                  borderRadius: "6px",
-                  mt: "23px",
-                },
-              },
-            }}
-          >
-            <Badge
-            //   badgeContent={hiddenCount > 0 ? `+${hiddenCount}` : null}
-              color="danger"
-              size="sm"
-              variant="solid"
-              sx={{ "--Badge-minHeight": "16px", "--Badge-fontSize": "10px" }}
-            >
-              <FilterAltIcon fontSize="small" />
-            </Badge>
-          </MenuButton>
-
-          <Menu>
-            <Typography
-              level="title-sm"
-              sx={{ px: 1.5, py: 1, fontWeight: 600 }}
-            >
-              Hide Status
-            </Typography>
-
-       
-              <MenuItem
-                // key={status}
-                // onClick={() => handleToggle(status)}
-                sx={{ display: "flex", alignItems: "center", gap: 1 }}
-              >
-                <Checkbox
-                //   checked={selectedValues.includes(status)}
-                  variant="outlined"
-                  size="sm"
-                  sx={{ pointerEvents: "none" }}
-                />
-                {/* {status.charAt(0).toUpperCase() + status.slice(1)} */}
-              </MenuItem>
-           
-          </Menu>
-        </Dropdown>
       </Box>
 
       {/* Table */}
@@ -239,7 +131,7 @@ function Items_Table() {
               </th>
 
               {/* The rest of the column headers */}
-              {["Name", "Type", "Project Info", "Description", "Status"].map(
+              {["Category Code", "Category Name", "Product Count", "Type"].map(
                 (header, i) => (
                   <th
                     key={i}
@@ -678,4 +570,4 @@ function Items_Table() {
   );
 }
 
-export default Items_Table;
+export default Categories_Table;

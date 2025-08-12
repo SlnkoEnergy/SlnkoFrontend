@@ -9,14 +9,13 @@ import Typography from "@mui/joy/Typography";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import ViewModuleRoundedIcon from "@mui/icons-material/ViewModuleRounded";
 import Sidebar from "../../component/Partials/Sidebar";
-import Dash_task from "../../component/TaskDashboard";
 import Header from "../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import { useExportTasksToCsvMutation } from "../../redux/globalTaskSlice";
-import Items_Table from "../../component/Items_Table";
+import Categories_Table from "../../component/Categories_Table";
 
-function Items() {
+function Categories() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -111,7 +110,7 @@ function Items() {
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Items
+                Categories
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -120,7 +119,6 @@ function Items() {
             sx={{
               display: "flex",
               mb: 1,
-              gap: 1,
               flexDirection: { xs: "column", sm: "row" },
               alignItems: { xs: "start", sm: "center" },
               flexWrap: "wrap",
@@ -129,7 +127,7 @@ function Items() {
             }}
           >
             <Typography level="h2" component="h1">
-              Items
+              Categories
             </Typography>
 
             <Box
@@ -139,7 +137,6 @@ function Items() {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 1.5,
-                p: 2,
                 flexWrap: "wrap",
                 borderRadius: "lg",
                 mb: 2,
@@ -162,14 +159,14 @@ function Items() {
                 size="md"
                 onClick={() => navigate("/add_task")}
               >
-                Add Items
+                Add Category
               </Button>
             </Box>
           </Box>
-          <Items_Table />
+          <Categories_Table />
         </Box>
       </Box>
     </CssVarsProvider>
   );
 }
-export default Items;
+export default Categories;
