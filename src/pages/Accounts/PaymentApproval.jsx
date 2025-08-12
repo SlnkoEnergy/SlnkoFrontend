@@ -12,9 +12,10 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 // import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
 import Header from "../../component/Partials/Header";
 import Sidebar from "../../component/Partials/Sidebar";
-import PaymentApproval from "../../component/PaymentApproval";
 import { useState } from "react";
 import { useEffect } from "react";
+import PaymentAccountApproval from "../../component/Payment Approval/PaymentAccountApproval";
+import PaymentRequest from "../../component/Payment Approval/PaymentApproval";
 
 function ProjectBalance() {
   const [user, setUser] = useState(null);
@@ -138,7 +139,9 @@ function ProjectBalance() {
               }}
             ></Box>
           </Box> */}
-          <PaymentApproval />
+
+          <PaymentRequest />
+
           {/* <OrderTable />
           <OrderList /> */}
         </Box>
