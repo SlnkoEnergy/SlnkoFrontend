@@ -2971,7 +2971,121 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
-          ): null}
+          ): user?.department === "Tender" && (
+          user?.name === "Satyadeep Mohanty" ) ? (
+          <List
+            size="sm"
+            sx={{
+              gap: 1,
+              "--List-nestedInsetStart": "30px",
+              "--ListItem-radius": (theme) => theme.vars.radius.sm,
+            }}
+          >
+              <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <AssignmentRoundedIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">BD</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() =>
+                        navigate("/sales", {
+                          state: { internalPath: "/dashboard", search: "" },
+                        })
+                      }
+                    >
+                      Dashboard
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+    
+
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <AccountBalanceWalletIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">Expense Sheet</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton
+                      onClick={() => navigate("/expense_dashboard")}
+                    >
+                      User Dashboard
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <TaskIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">Task</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/all_task")}>
+                      Task View
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+          </List>): null}
           
         <List
           size="sm"
