@@ -485,7 +485,7 @@ function ApprovalPayment() {
           <Box>
             <Chip
               variant="solid"
-              color="primary"
+              color="warning"
               size="sm"
               sx={{
                 fontWeight: 500,
@@ -963,7 +963,9 @@ function ApprovalPayment() {
                     <Box component="td" sx={{ ...cellStyle }}>
                       <RowMenu
                         _id={payment._id}
-
+showApprove={["SCM", "Accounts"].includes(
+                              user?.department
+                            )}
                         onStatusChange={(id, status, remarks) =>
                           handleStatusChange(id, status, remarks)
                         }

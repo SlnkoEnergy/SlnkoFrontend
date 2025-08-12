@@ -37,12 +37,13 @@ import {
   Tabs,
   Textarea,
 } from "@mui/joy";
-import { Calendar, CircleUser, UsersRound } from "lucide-react";
+import { Calendar, CircleUser, Receipt, UsersRound } from "lucide-react";
 import PaymentAccountApproval from "./PaymentAccountApproval";
 import { skipToken } from "@reduxjs/toolkit/query";
 import CreditPayment from "./creditPayment";
 import ApprovalPayment from "./ToBeApproved";
 import OverDue from "./Overdue";
+import { Money } from "@mui/icons-material";
 
 function PaymentRequest() {
   const [payments, setPayments] = useState([]);
@@ -56,6 +57,8 @@ function PaymentRequest() {
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [pdfPayments, setPdfPayments] = useState([]);
+  const [blobUrl, setBlobUrl] = useState(null);
+
 
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
@@ -115,6 +118,9 @@ function PaymentRequest() {
     isAccount,
     setSearchParams,
   ]);
+
+
+
 
   const handleStatusChange = async (_id, newStatus, remarks = "") => {
     // console.log("📌 handleStatusChange got:", { _id, newStatus, remarks, remarksType: typeof remarks });
@@ -465,10 +471,25 @@ function PaymentRequest() {
       checked ? [...prev, idStr] : prev.filter((item) => item !== idStr)
     );
   };
+    const handlePrint = () => {
+  if (!blobUrl) return;
+  // Open PDF blob in new window and trigger print
+  const printWindow = window.open(blobUrl);
+  if (printWindow) {
+    printWindow.focus();
+    printWindow.print();
+  } else {
+    toast.error("Unable to open print window");
+  }
+};
 
-  const blobUrl = useMemo(() => {
-    return pdfBlob ? URL.createObjectURL(pdfBlob) : null;
-  }, [pdfBlob]);
+useEffect(() => {
+  if (pdfBlob) {
+    const url = URL.createObjectURL(pdfBlob);
+    setBlobUrl(url);
+    return () => URL.revokeObjectURL(url); // cleanup on unmount or blob change
+  }
+}, [pdfBlob]);
 
   const handleClosePdfModal = () => {
     if (blobUrl) URL.revokeObjectURL(blobUrl);
@@ -671,16 +692,30 @@ function PaymentRequest() {
     );
   };
 
-  const BalanceData = ({ amount_requested, ClientBalance, groupBalance }) => {
+  const BalanceData = ({ amount_requested, ClientBalance, groupBalance, po_value }) => {
     return (
       <>
         {amount_requested && (
-          <Box>
-            <span style={{ cursor: "pointer", fontWeight: 400 }}>
-              {amount_requested}
-            </span>
-          </Box>
+        <Box display="flex" alignItems="center" mb={0.5}>
+          <Money size={16} />
+          <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+            Requested Amount:{" "}
+          </span>
+          <Typography sx={{ fontSize: 13, fontWeight: 400, ml: 0.5 }}>
+            {amount_requested || "-"}
+          </Typography>
+        </Box>
         )}
+          
+                <Box display="flex" alignItems="center" mb={0.5}>
+        <Receipt size={16} />
+        <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+          Total PO (incl. GST):{" "}
+        </span>
+        <Typography sx={{ fontSize: 12, fontWeight: 400, ml: 0.5 }}>
+          {po_value || "-"}
+        </Typography>
+      </Box>
 
         <Box display="flex" alignItems="center" mt={0.5}>
           <CircleUser size={12} />
@@ -1192,6 +1227,7 @@ function PaymentRequest() {
                           <BalanceData
                             amount_requested={payment?.amount_requested}
                             ClientBalance={payment?.ClientBalance}
+                            po_value={payment?.po_value}
                             groupBalance={payment?.groupBalance}
                           />
                         </Box>
@@ -1199,7 +1235,7 @@ function PaymentRequest() {
                         <Box component="td" sx={{ ...cellStyle }}>
                           <RowMenu
                             _id={payment._id}
-                            howApprove={["SCM", "Accounts"].includes(
+                            showApprove={["SCM", "Accounts"].includes(
                               user?.department
                             )}
                             onStatusChange={(id, status, remarks) =>
@@ -1274,17 +1310,17 @@ function PaymentRequest() {
           )}
 
           <Stack direction="row" justifyContent="flex-end" spacing={2} mt={2}>
-            <Button
-              variant="solid"
-              color="primary"
-              onClick={() => setIsConfirmModalOpen(true)}
-            >
-              Confirm
-            </Button>
-            <Button variant="outlined" onClick={handleClosePdfModal}>
-              Close
-            </Button>
-          </Stack>
+             <Button variant="solid" color="primary" onClick={() => setIsConfirmModalOpen(true)}>
+    Confirm
+  </Button>
+  <Button variant="outlined" color="danger" onClick={handlePrint}>
+    Print
+  </Button>
+  <Button variant="outlined" onClick={handleClosePdfModal}>
+    Cancel
+  </Button>
+</Stack>
+
         </ModalDialog>
       </Modal>
 

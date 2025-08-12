@@ -33,7 +33,8 @@ import {
   Stack,
   Textarea,
 } from "@mui/joy";
-import { Calendar, CircleUser, UsersRound } from "lucide-react";
+import { Calendar, CircleUser, Receipt, UsersRound } from "lucide-react";
+import { Money } from "@mui/icons-material";
 
 function PaymentAccountApproval() {
   const [payments, setPayments] = useState([]);
@@ -582,16 +583,30 @@ function PaymentAccountApproval() {
     );
   };
 
-  const BalanceData = ({ amount_requested, ClientBalance, groupBalance }) => {
+  const BalanceData = ({ amount_requested, ClientBalance, groupBalance ,po_value}) => {
     return (
       <>
         {amount_requested && (
-          <Box>
-            <span style={{ cursor: "pointer", fontWeight: 400 }}>
-              {amount_requested}
-            </span>
-          </Box>
+        <Box display="flex" alignItems="center" mb={0.5}>
+          <Money size={16} />
+          <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+            Requested Amount:{" "}
+          </span>
+          <Typography sx={{ fontSize: 13, fontWeight: 400, ml: 0.5 }}>
+            {amount_requested || "-"}
+          </Typography>
+        </Box>
         )}
+          
+                <Box display="flex" alignItems="center" mb={0.5}>
+        <Receipt size={16} />
+        <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+          Total PO (incl. GST):{" "}
+        </span>
+        <Typography sx={{ fontSize: 12, fontWeight: 400, ml: 0.5 }}>
+          {po_value || "-"}
+        </Typography>
+      </Box>
 
         <Box display="flex" alignItems="center" mt={0.5}>
           <CircleUser size={12} />
@@ -955,6 +970,7 @@ function PaymentAccountApproval() {
                       <BalanceData
                         amount_requested={payment?.amount_requested}
                         ClientBalance={payment?.ClientBalance}
+                        po_value={payment?.po_value}
                         groupBalance={payment?.groupBalance}
                       />
                     </Box>
@@ -962,7 +978,9 @@ function PaymentAccountApproval() {
                     <Box component="td" sx={{ ...cellStyle }}>
                       <RowMenu
                         _id={payment._id}
-
+showApprove={["SCM", "Accounts"].includes(
+                              user?.department
+                            )}
                         onStatusChange={(id, status, remarks) =>
                           handleStatusChange(id, status, remarks)
                         }

@@ -33,7 +33,8 @@ import {
   Stack,
   Textarea,
 } from "@mui/joy";
-import { Calendar, CircleUser, UsersRound } from "lucide-react";
+import { Calendar, CircleUser, Receipt, UsersRound } from "lucide-react";
+import { Money } from "@mui/icons-material";
 
 function CreditPayment() {
   const [payments, setPayments] = useState([]);
@@ -466,6 +467,14 @@ function CreditPayment() {
     borderColor: "divider",
   };
 
+    const labelStyle = {
+    fontSize: 13,
+    fontWeight: 600,
+    fontFamily: "Inter, Roboto, sans-serif",
+    color: "#2C3E50",
+  };
+
+
   // console.log(paginatedData);
 
   const handlePageChange = (page) => {
@@ -484,46 +493,49 @@ function CreditPayment() {
     setCurrentPage(page);
   }, [searchParams]);
 
-  const PaymentID = ({ pay_id, request_date }) => {
-    return (
-      <>
-        {pay_id && (
-          <Box>
-            <Chip
-              variant="solid"
-              color="primary"
-              size="sm"
-              sx={{
-                fontWeight: 500,
-                fontFamily: "Inter, Roboto, sans-serif",
-                fontSize: 14,
-                color: "#fff",
-                "&:hover": {
-                  boxShadow: "md",
-                  opacity: 0.9,
-                },
-              }}
-            >
-              {pay_id || "N/A"}
-            </Chip>
-          </Box>
-        )}
+  const PaymentID = ({ cr_id, request_date }) => {
+  const displayCrId = cr_id ? cr_id.slice(0, -2) + "XX" : null;
 
-        {request_date && (
-          <Box display="flex" alignItems="center" mt={0.5}>
-            <Calendar size={12} />
-            <span style={{ fontSize: 12, fontWeight: 600 }}>
-              Request Date :{" "}
-            </span>
-            &nbsp;
-            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              {request_date}
-            </Typography>
-          </Box>
-        )}
-      </>
-    );
-  };
+  return (
+    <>
+      {cr_id && (
+        <Box>
+          <Chip
+            variant="solid"
+            color="warning"
+            size="sm"
+            sx={{
+              fontWeight: 500,
+              fontFamily: "Inter, Roboto, sans-serif",
+              fontSize: 14,
+              color: "#fff",
+              "&:hover": {
+                boxShadow: "md",
+                opacity: 0.9,
+              },
+            }}
+          >
+            {displayCrId}
+          </Chip>
+        </Box>
+      )}
+
+      {request_date && (
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <Calendar size={12} />
+          <span style={{ fontSize: 12, fontWeight: 600 }}>
+            Request Date :{" "}
+          </span>
+          &nbsp;
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+            {request_date}
+          </Typography>
+        </Box>
+      )}
+    </>
+  );
+};
+
 
   const ProjectDetail = ({ project_id, client_name, group_name }) => {
     return (
@@ -563,7 +575,7 @@ function CreditPayment() {
     );
   };
 
-  const RequestedData = ({ request_for, payment_description }) => {
+  const RequestedData = ({ request_for, payment_description,remainingDays}) => {
     return (
       <>
         {request_for && (
@@ -585,20 +597,54 @@ function CreditPayment() {
             </Typography>
           </Box>
         )}
+        <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+          <Typography sx={labelStyle}>⏰</Typography>
+          <Chip
+            size="sm"
+            variant="soft"
+            color={
+              remainingDays <= 0
+                ? "danger"
+                : remainingDays <= 2
+                  ? "warning"
+                  : "success"
+            }
+          >
+            {remainingDays <= 0
+              ? "⏱ Expired"
+              : `${remainingDays} day${remainingDays > 1 ? "s" : ""} remaining`}
+          </Chip>
+        </Box>
       </>
     );
   };
 
-  const BalanceData = ({ amount_requested, ClientBalance, groupBalance }) => {
+  const BalanceData = ({ amount_requested, ClientBalance, groupBalance, po_value }) => {
     return (
       <>
         {amount_requested && (
-          <Box>
-            <span style={{ cursor: "pointer", fontWeight: 400 }}>
-              {amount_requested}
-            </span>
-          </Box>
+        <Box display="flex" alignItems="center" mb={0.5}>
+          <Money size={16} />
+          <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+            Requested Amount:{" "}
+          </span>
+          <Typography sx={{ fontSize: 13, fontWeight: 400, ml: 0.5 }}>
+            {amount_requested || "-"}
+          </Typography>
+        </Box>
         )}
+          
+                <Box display="flex" alignItems="center" mb={0.5}>
+        <Receipt size={16} />
+        <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+          Total PO (incl. GST):{" "}
+        </span>
+        <Typography sx={{ fontSize: 12, fontWeight: 400, ml: 0.5 }}>
+          {po_value || "-"}
+        </Typography>
+      </Box>
+
+        
 
         <Box display="flex" alignItems="center" mt={0.5}>
           <CircleUser size={12} />
@@ -844,7 +890,7 @@ function CreditPayment() {
                 "Project Id",
                 "Request For",
                 "Amount Requested",
-                "Action",
+                // "Action"
               ]
                 .filter(Boolean)
                 .map((header, index) => (
@@ -920,7 +966,7 @@ function CreditPayment() {
                       }}
                     >
                       <PaymentID
-                        pay_id={payment?.pay_id}
+                        cr_id={payment?.cr_id}
                         request_date={payment?.request_date}
                       />
                     </Box>
@@ -949,6 +995,7 @@ function CreditPayment() {
                       <RequestedData
                         request_for={payment?.request_for}
                         payment_description={payment?.payment_description}
+                        remainingDays={payment?.remainingDays}
                       />
                     </Box>
                     <Box
@@ -962,11 +1009,12 @@ function CreditPayment() {
                       <BalanceData
                         amount_requested={payment?.amount_requested}
                         ClientBalance={payment?.ClientBalance}
+                        po_value={payment?.po_value}
                         groupBalance={payment?.groupBalance}
                       />
                     </Box>
 
-                    <Box component="td" sx={{ ...cellStyle }}>
+                    {/* <Box component="td" sx={{ ...cellStyle }}>
                       <RowMenu
                         _id={payment._id}
 
@@ -974,7 +1022,7 @@ function CreditPayment() {
                           handleStatusChange(id, status, remarks)
                         }
                       />
-                    </Box>
+                    </Box> */}
                   </Box>
                 );
               })
