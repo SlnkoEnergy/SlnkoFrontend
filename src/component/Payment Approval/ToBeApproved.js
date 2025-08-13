@@ -914,7 +914,7 @@ function ApprovalPayment() {
                       }}
                     >
                       <PaymentID
-                        cr_id={payment?.cr_id}
+                        cr_id={payment?.cr_id || "N/A"}
                         request_date={payment?.request_date}
                       />
                     </Box>
