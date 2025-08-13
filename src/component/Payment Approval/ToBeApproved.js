@@ -285,7 +285,7 @@ function ApprovalPayment() {
 
     const handleRejectSubmit = () => {
       console.log(
-        "📌 RowMenu → handleRejectSubmit remarks:",
+        " RowMenu → handleRejectSubmit remarks:",
         remarks,
         "type:",
         typeof remarks
@@ -478,14 +478,14 @@ function ApprovalPayment() {
     setCurrentPage(page);
   }, [searchParams]);
 
-  const PaymentID = ({ pay_id, request_date }) => {
+  const PaymentID = ({ cr_id, request_date }) => {
     return (
       <>
-        {pay_id && (
+        {cr_id && (
           <Box>
             <Chip
               variant="solid"
-              color="warning"
+              color="success"
               size="sm"
               sx={{
                 fontWeight: 500,
@@ -498,7 +498,7 @@ function ApprovalPayment() {
                 },
               }}
             >
-              {pay_id || "N/A"}
+              {cr_id || "N/A"}
             </Chip>
           </Box>
         )}
@@ -914,7 +914,7 @@ function ApprovalPayment() {
                       }}
                     >
                       <PaymentID
-                        pay_id={payment?.pay_id}
+                        cr_id={payment?.cr_id}
                         request_date={payment?.request_date}
                       />
                     </Box>
