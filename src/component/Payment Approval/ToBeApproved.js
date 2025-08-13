@@ -33,7 +33,8 @@ import {
   Stack,
   Textarea,
 } from "@mui/joy";
-import { Calendar, CircleUser, UsersRound } from "lucide-react";
+import { Calendar, CircleUser, Receipt, UsersRound } from "lucide-react";
+import { Money } from "@mui/icons-material";
 
 function ApprovalPayment() {
   const [payments, setPayments] = useState([]);
@@ -52,14 +53,13 @@ function ApprovalPayment() {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [pdfPayments, setPdfPayments] = useState([]);
 
-//   const isAccount = user?.department === "Accounts";
+  //   const isAccount = user?.department === "Accounts";
 
   const { data: responseData, isLoading } = useGetPaymentApprovalQuery({
     page: currentPage,
     pageSize: perPage,
     search: searchQuery,
-    tab:"toBeApproved"
-    
+    tab: "toBeApproved",
   });
 
   const paginatedData = responseData?.data || [];
@@ -68,12 +68,9 @@ function ApprovalPayment() {
   // console.log(count);
   const total = responseData?.total || 0;
   const count = responseData?.count || paginatedData.length;
-//   const Approved = responseData?.toBeApprovedCount || 0;
+  //   const Approved = responseData?.toBeApprovedCount || 0;
 
-//   const Instant = responseData?.instantCount || 0;
-
-
-  
+  //   const Instant = responseData?.instantCount || 0;
 
   // console.log("Payment Approval Data:", paginatedData);
 
@@ -220,7 +217,6 @@ function ApprovalPayment() {
       setIsPdfLoading(false);
     }
   };
-
 
   // === Single Approval Logic ===
   const handleApprovalUpdate = async (ids, newStatus, remarks = "") => {
@@ -387,51 +383,48 @@ function ApprovalPayment() {
     );
   };
 
+  //   const renderFilters = () => {
+  //     const hasSelection = selected.length > 0;
 
+  //     const handlePreviewClick = () => {
+  //       const selectedPayments = paginatedData.filter((p) =>
+  //         selected.includes(String(p._id))
+  //       );
+  //       handleMultiPDFDownload(selectedPayments);
+  //     };
 
-
-//   const renderFilters = () => {
-//     const hasSelection = selected.length > 0;
-
-//     const handlePreviewClick = () => {
-//       const selectedPayments = paginatedData.filter((p) =>
-//         selected.includes(String(p._id))
-//       );
-//       handleMultiPDFDownload(selectedPayments);
-//     };
-
-//     return (
-//       <Box
-//         sx={{
-//           position: "relative",
-//           display: "flex",
-//           alignItems: "center",
-//           gap: 1.5,
-//           mt: 3,
-//         }}
-//       >
-//         {hasSelection && (
-//           <Button
-//             size="sm"
-//             variant="solid"
-//             color="primary"
-//             onClick={handlePreviewClick}
-//             disabled={isPdfLoading}
-//             sx={{ ml: "auto", minWidth: 200 }}
-//           >
-//             {isPdfLoading ? (
-//               <>
-//                 <CircularProgress size="sm" sx={{ mr: 1 }} />
-//                 Generating PDF...
-//               </>
-//             ) : (
-//               "📄 Preview & Download PDF"
-//             )}
-//           </Button>
-//         )}
-//       </Box>
-//     );
-//   };
+  //     return (
+  //       <Box
+  //         sx={{
+  //           position: "relative",
+  //           display: "flex",
+  //           alignItems: "center",
+  //           gap: 1.5,
+  //           mt: 3,
+  //         }}
+  //       >
+  //         {hasSelection && (
+  //           <Button
+  //             size="sm"
+  //             variant="solid"
+  //             color="primary"
+  //             onClick={handlePreviewClick}
+  //             disabled={isPdfLoading}
+  //             sx={{ ml: "auto", minWidth: 200 }}
+  //           >
+  //             {isPdfLoading ? (
+  //               <>
+  //                 <CircularProgress size="sm" sx={{ mr: 1 }} />
+  //                 Generating PDF...
+  //               </>
+  //             ) : (
+  //               "📄 Preview & Download PDF"
+  //             )}
+  //           </Button>
+  //         )}
+  //       </Box>
+  //     );
+  //   };
 
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
@@ -458,6 +451,12 @@ function ApprovalPayment() {
     fontWeight: 400,
     borderBottom: "1px solid",
     borderColor: "divider",
+  };
+     const labelStyle = {
+    fontSize: 13,
+    fontWeight: 600,
+    fontFamily: "Inter, Roboto, sans-serif",
+    color: "#2C3E50",
   };
 
   // console.log(paginatedData);
@@ -557,7 +556,11 @@ function ApprovalPayment() {
     );
   };
 
-  const RequestedData = ({ request_for, payment_description }) => {
+  const RequestedData = ({
+    request_for,
+    payment_description,
+    remainingDays,
+  }) => {
     return (
       <>
         {request_for && (
@@ -579,20 +582,58 @@ function ApprovalPayment() {
             </Typography>
           </Box>
         )}
+
+        <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+          <Typography sx={labelStyle}>⏰</Typography>
+          <Chip
+            size="sm"
+            variant="soft"
+            color={
+              remainingDays <= 0
+                ? "danger"
+                : remainingDays <= 2
+                  ? "warning"
+                  : "success"
+            }
+          >
+            {remainingDays <= 0
+              ? "⏱ Expired"
+              : `${remainingDays} day${remainingDays > 1 ? "s" : ""} remaining`}
+          </Chip>
+        </Box>
       </>
     );
   };
 
-  const BalanceData = ({ amount_requested, ClientBalance, groupBalance }) => {
+  const BalanceData = ({
+    amount_requested,
+    ClientBalance,
+    groupBalance,
+    po_value,
+  }) => {
     return (
       <>
         {amount_requested && (
-          <Box>
-            <span style={{ cursor: "pointer", fontWeight: 400 }}>
-              {amount_requested}
+          <Box display="flex" alignItems="center" mb={0.5}>
+            <Money size={16} />
+            <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+              Requested Amount:{" "}
             </span>
+            <Typography sx={{ fontSize: 13, fontWeight: 400, ml: 0.5 }}>
+              {amount_requested || "-"}
+            </Typography>
           </Box>
         )}
+
+        <Box display="flex" alignItems="center" mb={0.5}>
+          <Receipt size={16} />
+          <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+            Total PO (incl. GST):{" "}
+          </span>
+          <Typography sx={{ fontSize: 12, fontWeight: 400, ml: 0.5 }}>
+            {po_value || "-"}
+          </Typography>
+        </Box>
 
         <Box display="flex" alignItems="center" mt={0.5}>
           <CircleUser size={12} />
@@ -815,7 +856,6 @@ function ApprovalPayment() {
           },
         }}
       >
-        
         <Box
           component="table"
           sx={{ width: "100%", borderCollapse: "collapse" }}
@@ -943,6 +983,7 @@ function ApprovalPayment() {
                       <RequestedData
                         request_for={payment?.request_for}
                         payment_description={payment?.payment_description}
+                        remainingDays={payment.remainingDays}
                       />
                     </Box>
                     <Box
@@ -963,9 +1004,9 @@ function ApprovalPayment() {
                     <Box component="td" sx={{ ...cellStyle }}>
                       <RowMenu
                         _id={payment._id}
-showApprove={["SCM", "Accounts"].includes(
-                              user?.department
-                            )}
+                        showApprove={["SCM", "Accounts"].includes(
+                          user?.department
+                        )}
                         onStatusChange={(id, status, remarks) =>
                           handleStatusChange(id, status, remarks)
                         }
@@ -1009,8 +1050,6 @@ showApprove={["SCM", "Accounts"].includes(
           </Box>
         </Box>
       </Box>
-
-    
     </>
   );
 }

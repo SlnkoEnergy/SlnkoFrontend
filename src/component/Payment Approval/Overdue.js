@@ -53,14 +53,13 @@ function OverDue() {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [pdfPayments, setPdfPayments] = useState([]);
 
-//   const isAccount = user?.department === "Accounts";
+  //   const isAccount = user?.department === "Accounts";
 
   const { data: responseData, isLoading } = useGetPaymentApprovalQuery({
     page: currentPage,
     pageSize: perPage,
     search: searchQuery,
-    tab:"overdue"
-    
+    tab: "overdue",
   });
 
   const paginatedData = responseData?.data || [];
@@ -73,14 +72,9 @@ function OverDue() {
 
   const Instant = responseData?.instantCount || 0;
 
-//   console.log("Account--Instant", Instant);
-  
+  //   console.log("Account--Instant", Instant);
 
-
-
-//   console.log("tobeApproved--Account", Approved);
-
-  
+  //   console.log("tobeApproved--Account", Approved);
 
   // console.log("Payment Approval Data:", paginatedData);
 
@@ -227,7 +221,6 @@ function OverDue() {
       setIsPdfLoading(false);
     }
   };
-
 
   // === Single Approval Logic ===
   const handleApprovalUpdate = async (ids, newStatus, remarks = "") => {
@@ -394,51 +387,48 @@ function OverDue() {
     );
   };
 
+  //   const renderFilters = () => {
+  //     const hasSelection = selected.length > 0;
 
+  //     const handlePreviewClick = () => {
+  //       const selectedPayments = paginatedData.filter((p) =>
+  //         selected.includes(String(p._id))
+  //       );
+  //       handleMultiPDFDownload(selectedPayments);
+  //     };
 
-
-//   const renderFilters = () => {
-//     const hasSelection = selected.length > 0;
-
-//     const handlePreviewClick = () => {
-//       const selectedPayments = paginatedData.filter((p) =>
-//         selected.includes(String(p._id))
-//       );
-//       handleMultiPDFDownload(selectedPayments);
-//     };
-
-//     return (
-//       <Box
-//         sx={{
-//           position: "relative",
-//           display: "flex",
-//           alignItems: "center",
-//           gap: 1.5,
-//           mt: 3,
-//         }}
-//       >
-//         {hasSelection && (
-//           <Button
-//             size="sm"
-//             variant="solid"
-//             color="primary"
-//             onClick={handlePreviewClick}
-//             disabled={isPdfLoading}
-//             sx={{ ml: "auto", minWidth: 200 }}
-//           >
-//             {isPdfLoading ? (
-//               <>
-//                 <CircularProgress size="sm" sx={{ mr: 1 }} />
-//                 Generating PDF...
-//               </>
-//             ) : (
-//               "📄 Preview & Download PDF"
-//             )}
-//           </Button>
-//         )}
-//       </Box>
-//     );
-//   };
+  //     return (
+  //       <Box
+  //         sx={{
+  //           position: "relative",
+  //           display: "flex",
+  //           alignItems: "center",
+  //           gap: 1.5,
+  //           mt: 3,
+  //         }}
+  //       >
+  //         {hasSelection && (
+  //           <Button
+  //             size="sm"
+  //             variant="solid"
+  //             color="primary"
+  //             onClick={handlePreviewClick}
+  //             disabled={isPdfLoading}
+  //             sx={{ ml: "auto", minWidth: 200 }}
+  //           >
+  //             {isPdfLoading ? (
+  //               <>
+  //                 <CircularProgress size="sm" sx={{ mr: 1 }} />
+  //                 Generating PDF...
+  //               </>
+  //             ) : (
+  //               "📄 Preview & Download PDF"
+  //             )}
+  //           </Button>
+  //         )}
+  //       </Box>
+  //     );
+  //   };
 
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
@@ -466,6 +456,12 @@ function OverDue() {
     borderBottom: "1px solid",
     borderColor: "divider",
   };
+  const labelStyle = {
+    fontSize: 13,
+    fontWeight: 600,
+    fontFamily: "Inter, Roboto, sans-serif",
+    color: "#2C3E50",
+  };
 
   // console.log(paginatedData);
 
@@ -486,49 +482,48 @@ function OverDue() {
   }, [searchParams]);
 
   const PaymentID = ({ pay_id, cr_id, request_date }) => {
-  // Get last two characters of cr_id if it exists
-  const displayCrId = cr_id ? cr_id.slice(-2) : null;
+    // Get last two characters of cr_id if it exists
+    const displayCrId = cr_id ? cr_id.slice(-2) : null;
 
-  return (
-    <>
-      {(pay_id || cr_id) && (
-        <Box>
-          <Chip
-            variant="solid"
-            color="danger"
-            size="sm"
-            sx={{
-              fontWeight: 500,
-              fontFamily: "Inter, Roboto, sans-serif",
-              fontSize: 14,
-              color: "#fff",
-              "&:hover": {
-                boxShadow: "md",
-                opacity: 0.9,
-              },
-            }}
-          >
-            {pay_id || displayCrId}
-          </Chip>
-        </Box>
-      )}
+    return (
+      <>
+        {(pay_id || cr_id) && (
+          <Box>
+            <Chip
+              variant="solid"
+              color="danger"
+              size="sm"
+              sx={{
+                fontWeight: 500,
+                fontFamily: "Inter, Roboto, sans-serif",
+                fontSize: 14,
+                color: "#fff",
+                "&:hover": {
+                  boxShadow: "md",
+                  opacity: 0.9,
+                },
+              }}
+            >
+              {pay_id || displayCrId}
+            </Chip>
+          </Box>
+        )}
 
-      {request_date && (
-        <Box display="flex" alignItems="center" mt={0.5}>
-          <Calendar size={12} />
-          <span style={{ fontSize: 12, fontWeight: 600 }}>
-            Request Date :{" "}
-          </span>
-          &nbsp;
-          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-            {request_date}
-          </Typography>
-        </Box>
-      )}
-    </>
-  );
-};
-
+        {request_date && (
+          <Box display="flex" alignItems="center" mt={0.5}>
+            <Calendar size={12} />
+            <span style={{ fontSize: 12, fontWeight: 600 }}>
+              Request Date :{" "}
+            </span>
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {request_date}
+            </Typography>
+          </Box>
+        )}
+      </>
+    );
+  };
 
   const ProjectDetail = ({ project_id, client_name, group_name }) => {
     return (
@@ -568,7 +563,13 @@ function OverDue() {
     );
   };
 
-  const RequestedData = ({ request_for, payment_description }) => {
+  const RequestedData = ({
+    request_for,
+    payment_description,
+    remainingDays,
+  }) => {
+    const delayDays = remainingDays < 0 ? Math.abs(remainingDays) : 0;
+
     return (
       <>
         {request_for && (
@@ -590,34 +591,48 @@ function OverDue() {
             </Typography>
           </Box>
         )}
+
+        {delayDays > 0 && (
+          <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+            <Typography sx={{ fontSize: 14 }}>⏰</Typography>
+            <Chip size="sm" variant="soft" color="danger">
+              ⏱ {delayDays} day{delayDays > 1 ? "s" : ""} delayed
+            </Chip>
+          </Box>
+        )}
       </>
     );
   };
 
-  const BalanceData = ({ amount_requested, ClientBalance, groupBalance, po_value }) => {
+  const BalanceData = ({
+    amount_requested,
+    ClientBalance,
+    groupBalance,
+    po_value,
+  }) => {
     return (
       <>
         {amount_requested && (
+          <Box display="flex" alignItems="center" mb={0.5}>
+            <Money size={16} />
+            <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+              Requested Amount:{" "}
+            </span>
+            <Typography sx={{ fontSize: 13, fontWeight: 400, ml: 0.5 }}>
+              {amount_requested || "-"}
+            </Typography>
+          </Box>
+        )}
+
         <Box display="flex" alignItems="center" mb={0.5}>
-          <Money size={16} />
+          <Receipt size={16} />
           <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
-            Requested Amount:{" "}
+            Total PO (incl. GST):{" "}
           </span>
-          <Typography sx={{ fontSize: 13, fontWeight: 400, ml: 0.5 }}>
-            {amount_requested || "-"}
+          <Typography sx={{ fontSize: 12, fontWeight: 400, ml: 0.5 }}>
+            {po_value || "-"}
           </Typography>
         </Box>
-        )}
-          
-                <Box display="flex" alignItems="center" mb={0.5}>
-        <Receipt size={16} />
-        <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
-          Total PO (incl. GST):{" "}
-        </span>
-        <Typography sx={{ fontSize: 12, fontWeight: 400, ml: 0.5 }}>
-          {po_value || "-"}
-        </Typography>
-      </Box>
 
         <Box display="flex" alignItems="center" mt={0.5}>
           <CircleUser size={12} />
@@ -840,7 +855,6 @@ function OverDue() {
           },
         }}
       >
-        
         <Box
           component="table"
           sx={{ width: "100%", borderCollapse: "collapse" }}
@@ -930,20 +944,20 @@ function OverDue() {
                       />
                     </Box>
                     <Box
-  component="td"
-  sx={{
-    ...cellStyle,
-    fontSize: 14,
-    minWidth: 250,
-    padding: "12px 16px",
-  }}
->
-  <PaymentID
-    pay_id={payment?.pay_id}
-    cr_id={payment?.cr_id}
-    request_date={payment?.request_date}
-  />
-</Box>
+                      component="td"
+                      sx={{
+                        ...cellStyle,
+                        fontSize: 14,
+                        minWidth: 250,
+                        padding: "12px 16px",
+                      }}
+                    >
+                      <PaymentID
+                        pay_id={payment?.pay_id}
+                        cr_id={payment?.cr_id}
+                        request_date={payment?.request_date}
+                      />
+                    </Box>
 
                     <Box
                       component="td"
@@ -970,6 +984,7 @@ function OverDue() {
                       <RequestedData
                         request_for={payment?.request_for}
                         payment_description={payment?.payment_description}
+                        remainingDays={payment?.remainingDays}
                       />
                     </Box>
                     <Box
@@ -991,7 +1006,6 @@ function OverDue() {
                     <Box component="td" sx={{ ...cellStyle }}>
                       <RowMenu
                         _id={payment._id}
-
                         onStatusChange={(id, status, remarks) =>
                           handleStatusChange(id, status, remarks)
                         }
@@ -1035,8 +1049,6 @@ function OverDue() {
           </Box>
         </Box>
       </Box>
-
-    
     </>
   );
 }

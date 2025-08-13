@@ -48,6 +48,7 @@ export const AccountsApi = createApi({
           creditTotal: response.meta?.creditTotal ?? 0,
         };
       },
+      providesTags: ["Accounts"],
     }),
 
     getTrashRecord: builder.query({
@@ -72,25 +73,25 @@ export const AccountsApi = createApi({
       },
     }),
 
-  getPaymentApproval: builder.query({
-  query: ({ page = 1, search = "", pageSize = 10, tab = "" }) =>
-    `accounting/payment-approval?page=${page}&search=${search}&pageSize=${pageSize}&tab=${tab}`,
+    getPaymentApproval: builder.query({
+      query: ({ page = 1, search = "", pageSize = 10, tab = "" }) =>
+        `accounting/payment-approval?page=${page}&search=${search}&pageSize=${pageSize}&tab=${tab}`,
 
-  transformResponse: (response) => ({
-    data: response.data || [],
-    total: response.meta?.total || 0,
-    count: response.meta?.count || 0,
-    page: response.meta?.page || 1,
-    pageSize: response.meta?.pageSize || 10,
-    toBeApprovedCount: response.meta?.toBeApprovedCount || 0,
-    overdueCount: response.meta?.overdueCount || 0,
-    instantCount: response.meta?.instantCount || 0,
-    creditCount: response.meta?.creditCount || 0,
-    tab: response.meta?.tab || "",
-  }),
+      transformResponse: (response) => ({
+        data: response.data || [],
+        total: response.meta?.total || 0,
+        count: response.meta?.count || 0,
+        page: response.meta?.page || 1,
+        pageSize: response.meta?.pageSize || 10,
+        toBeApprovedCount: response.meta?.toBeApprovedCount || 0,
+        overdueCount: response.meta?.overdueCount || 0,
+        instantCount: response.meta?.instantCount || 0,
+        creditCount: response.meta?.creditCount || 0,
+        tab: response.meta?.tab || "",
+      }),
 
-  providesTags: ["Accounts"],
-}),
+      providesTags: ["Accounts"],
+    }),
 
     getPaymentHistory: builder.query({
       query: ({ po_number }) =>
@@ -188,6 +189,22 @@ export const AccountsApi = createApi({
         },
       }),
     }),
+
+    updateCreditExtension: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/credit-extension-by-id/${id}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["Accounts"],
+    }),
+    updateRequestExtension: builder.mutation({
+      query: (id) => ({
+        url: `/request-extension-by-id/${id}`,
+        method: "PUT",
+      }),
+      invalidatesTags: ["Accounts"],
+    }),
   }),
 });
 
@@ -202,4 +219,6 @@ export const {
   useGetExportProjectBalanceMutation,
   useGetPaymentRecordQuery,
   useGetTrashRecordQuery,
+  useUpdateCreditExtensionMutation,
+  useUpdateRequestExtensionMutation,
 } = AccountsApi;

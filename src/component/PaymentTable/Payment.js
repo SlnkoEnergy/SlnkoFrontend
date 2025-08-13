@@ -225,18 +225,27 @@ const InstantRequest = forwardRef(() => {
 
   const MatchRow = ({ approved, timers, amount_paid }) => {
     const [timeLeft, setTimeLeft] = useState("");
-    const [timerColor, setTimerColor] = useState("inherit");
+    const [timerColor, setTimerColor] = useState("neutral");
 
     useEffect(() => {
-      if (!timers?.draft_started_at) return;
+      if (!timers?.draft_started_at) {
+        setTimeLeft("NA");
+        setTimerColor("neutral");
+        return;
+      }
 
       const isFinal =
         ["Approved", "Rejected", "Deleted"].includes(approved) ||
         !!timers?.draft_frozen_at;
 
       if (isFinal) {
-        setTimeLeft("Finalized");
-        setTimerColor("gray");
+        if (timers?.draft_frozen_at) {
+          setTimeLeft("⏸ Frozen");
+          setTimerColor("neutral");
+        } else {
+          setTimeLeft("Finalized");
+          setTimerColor("success");
+        }
         return;
       }
 
@@ -248,7 +257,7 @@ const InstantRequest = forwardRef(() => {
 
         if (diff <= 0) {
           setTimeLeft("⏱ Expired");
-          setTimerColor("red");
+          setTimerColor("danger");
         } else {
           const dur = dayjs.duration(diff);
           const hh = dur.hours() + dur.days() * 24;
@@ -264,13 +273,13 @@ const InstantRequest = forwardRef(() => {
           const totalHoursLeft = dur.asHours();
 
           if (totalHoursLeft <= 0.1667) {
-            setTimerColor("red");
-          } else if (totalHoursLeft >= 20 && totalHoursLeft < 30) {
-            setTimerColor("primary.main");
+            setTimerColor("danger");
           } else if (totalHoursLeft >= 30) {
-            setTimerColor("green");
+            setTimerColor("success");
+          } else if (totalHoursLeft >= 20) {
+            setTimerColor("primary");
           } else {
-            setTimerColor("inherit");
+            setTimerColor("neutral");
           }
         }
       }, 1000);
@@ -280,6 +289,7 @@ const InstantRequest = forwardRef(() => {
 
     return (
       <Box mt={1}>
+        {/* Amount */}
         <Box display="flex" alignItems="flex-start" gap={1} mb={0.5}>
           <Typography sx={labelStyle}>💰 Amount:</Typography>
           <Typography
@@ -289,6 +299,7 @@ const InstantRequest = forwardRef(() => {
           </Typography>
         </Box>
 
+        {/* Payment Status */}
         <Box display="flex" alignItems="flex-start" gap={1}>
           <Typography sx={labelStyle}>📑 Payment Status:</Typography>
           {["Approved", "Pending", "Rejected", "Deleted"].includes(approved) ? (
@@ -321,25 +332,10 @@ const InstantRequest = forwardRef(() => {
           )}
         </Box>
 
+        {/* Timer */}
         <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
           <Typography sx={labelStyle}>⏰</Typography>
-          <Chip
-            size="sm"
-            variant="soft"
-            color={
-              timeLeft === "Finalized"
-                ? "success"
-                : timeLeft === "Rejected"
-                  ? "danger"
-                  : timeLeft === "⏰ Expired"
-                    ? "danger"
-                    : timeLeft === "⏸ Frozen"
-                      ? "neutral"
-                      : timeLeft === "NA"
-                        ? "neutral"
-                        : "primary"
-            }
-          >
+          <Chip size="sm" variant="soft" color={timerColor}>
             {timeLeft || "N/A"}
           </Chip>
         </Box>
