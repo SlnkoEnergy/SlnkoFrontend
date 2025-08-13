@@ -3,15 +3,12 @@ import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
 import KeyboardDoubleArrowRight from "@mui/icons-material/KeyboardDoubleArrowRight";
 import duration from "dayjs/plugin/duration";
-import relativeTime from "dayjs/plugin/relativeTime";
 import CheckIcon from "@mui/icons-material/Check";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import BlockIcon from "@mui/icons-material/Block";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
-import Button from "@mui/joy/Button";
-import Checkbox from "@mui/joy/Checkbox";
 import Chip from "@mui/joy/Chip";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
@@ -30,17 +27,15 @@ import {
   Tooltip,
   useTheme,
 } from "@mui/joy";
-import { FileText } from "lucide-react";
 import { PaymentProvider } from "../store/Context/Payment_History";
 import PaymentHistory from "./PaymentHistory";
-import { useGetPaymentRecordQuery, useGetTrashRecordQuery } from "../redux/Accounts";
+import {  useGetTrashRecordQuery } from "../redux/Accounts";
 import dayjs from "dayjs";
 
 const TrashRequest = forwardRef(() => {
-  const theme = useTheme();
+  // const theme = useTheme();
   const navigate = useNavigate();
   const [error, setError] = useState(null);
-  const [selected, setSelected] = useState([]);
   const [searchParams, setSearchParams] = useSearchParams();
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
