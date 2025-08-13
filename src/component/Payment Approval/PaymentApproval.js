@@ -587,46 +587,56 @@ useEffect(() => {
     }
   };
 
-  const PaymentID = ({ pay_id, request_date }) => {
-    return (
-      <>
-        {pay_id && (
-          <Box>
-            <Chip
-              variant="solid"
-              color="primary"
-              size="sm"
-              sx={{
-                fontWeight: 500,
-                fontFamily: "Inter, Roboto, sans-serif",
-                fontSize: 14,
-                color: "#fff",
-                "&:hover": {
-                  boxShadow: "md",
-                  opacity: 0.9,
-                },
-              }}
-            >
-              {pay_id || "N/A"}
-            </Chip>
-          </Box>
-        )}
+ const PaymentID = ({ pay_id, cr_id, request_date, approved }) => {
 
-        {request_date && (
-          <Box display="flex" alignItems="center" mt={0.5}>
-            <Calendar size={12} />
-            <span style={{ fontSize: 12, fontWeight: 600 }}>
-              Request Date :{" "}
-            </span>
-            &nbsp;
-            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              {request_date}
-            </Typography>
-          </Box>
-        )}
-      </>
-    );
+  const maskId = (id) => {
+    if (!id) return "N/A";
+    return approved === "Approved" ? id : id.replace(/(\d{2})$/, "XX");
   };
+
+ 
+  const idToShow = pay_id || cr_id;
+
+  return (
+    <>
+      {idToShow && (
+        <Box>
+          <Chip
+            variant="solid"
+            color="primary"
+            size="sm"
+            sx={{
+              fontWeight: 500,
+              fontFamily: "Inter, Roboto, sans-serif",
+              fontSize: 14,
+              color: "#fff",
+              "&:hover": {
+                boxShadow: "md",
+                opacity: 0.9,
+              },
+            }}
+          >
+            {maskId(idToShow)}
+          </Chip>
+        </Box>
+      )}
+
+      {request_date && (
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <Calendar size={12} />
+          <span style={{ fontSize: 12, fontWeight: 600 }}>
+            Request Date :{" "}
+          </span>
+          &nbsp;
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+            {request_date}
+          </Typography>
+        </Box>
+      )}
+    </>
+  );
+};
+
 
   const ProjectDetail = ({ project_id, client_name, group_name }) => {
     return (
@@ -1187,6 +1197,7 @@ useEffect(() => {
                           <PaymentID
                             pay_id={payment?.pay_id}
                             request_date={payment?.request_date}
+                            cr_id={payment?.cr_id}
                           />
                         </Box>
                         <Box

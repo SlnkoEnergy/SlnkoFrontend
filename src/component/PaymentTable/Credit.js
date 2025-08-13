@@ -25,16 +25,28 @@ import NoData from "../../assets/alert-bell.svg";
 import {
   CircularProgress,
   Modal,
+  ModalDialog,
   Option,
   Select,
   Tooltip,
   useTheme,
 } from "@mui/joy";
-import { FileText } from "lucide-react";
+import {
+  CheckCircle,
+  EditIcon,
+  FileText,
+  PenLine,
+  XCircle,
+} from "lucide-react";
 import { PaymentProvider } from "../../store/Context/Payment_History";
 import PaymentHistory from "../PaymentHistory";
-import { useGetPaymentRecordQuery } from "../../redux/Accounts";
+import {
+  useGetPaymentRecordQuery,
+  useUpdateCreditExtensionMutation,
+} from "../../redux/Accounts";
 import dayjs from "dayjs";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 const CreditRequest = forwardRef(() => {
   const theme = useTheme();
@@ -49,7 +61,11 @@ const CreditRequest = forwardRef(() => {
   const [searchQuery, setSearchQuery] = useState("");
   const [status, setStatus] = useState("");
 
-  const { data: responseData, isLoading } = useGetPaymentRecordQuery({
+  const {
+    data: responseData,
+    isLoading,
+    refetch,
+  } = useGetPaymentRecordQuery({
     page: currentPage,
     pageSize: perPage,
     search: searchQuery,
@@ -65,10 +81,27 @@ const CreditRequest = forwardRef(() => {
   const startIndex = (currentPage - 1) * perPage + 1;
   const endIndex = Math.min(startIndex + count - 1, total);
 
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
   }, [searchParams]);
+
+  const [updateCreditExtension] = useUpdateCreditExtensionMutation();
 
   const headerStyle = {
     position: "sticky",
@@ -109,40 +142,47 @@ const CreditRequest = forwardRef(() => {
 
   dayjs.extend(duration);
 
-  const PaymentID = ({ pay_id, dbt_date }) => (
-    <>
-      {pay_id && (
-        <Box>
-          <Chip
-            variant="solid"
-            color="primary"
-            size="sm"
-            sx={{
-              fontWeight: 500,
-              fontFamily: "Inter, Roboto, sans-serif",
-              fontSize: 14,
-              color: "#fff",
-              "&:hover": {
-                boxShadow: "md",
-                opacity: 0.9,
-              },
-            }}
-          >
-            {pay_id || "N/A"}
-          </Chip>
-        </Box>
-      )}
+  const PaymentID = ({ cr_id, dbt_date, approved }) => {
+    const maskCrId = (id) => {
+      if (!id) return "N/A";
+      return approved === "Approved" ? id : id.replace(/(\d{2})$/, "XX");
+    };
 
-      {dbt_date && (
-        <Box display="flex" alignItems="center" mt={0.5} gap={0.8}>
-          <Typography sx={labelStyle}>📅 Created Date:</Typography>
-          <Typography sx={valueStyle}>
-            {dayjs(dbt_date).format("DD-MM-YYYY")}
-          </Typography>
-        </Box>
-      )}
-    </>
-  );
+    return (
+      <>
+        {cr_id && (
+          <Box>
+            <Chip
+              variant="solid"
+              color="primary"
+              size="sm"
+              sx={{
+                fontWeight: 500,
+                fontFamily: "Inter, Roboto, sans-serif",
+                fontSize: 14,
+                color: "#fff",
+                "&:hover": {
+                  boxShadow: "md",
+                  opacity: 0.9,
+                },
+              }}
+            >
+              {maskCrId(cr_id)}
+            </Chip>
+          </Box>
+        )}
+
+        {dbt_date && (
+          <Box display="flex" alignItems="center" mt={0.5} gap={0.8}>
+            <Typography sx={labelStyle}>📅 Created Date:</Typography>
+            <Typography sx={valueStyle}>
+              {dayjs(dbt_date).format("DD-MM-YYYY")}
+            </Typography>
+          </Box>
+        )}
+      </>
+    );
+  };
 
   const ItemFetch = ({ paid_for, po_number, vendor }) => {
     const [open, setOpen] = useState(false);
@@ -217,7 +257,57 @@ const CreditRequest = forwardRef(() => {
     );
   };
 
-  const MatchRow = ({ approved, remaining_days, amount_paid }) => {
+  const MatchRow = ({ _id, approved, remaining_days, amount_paid,credit }) => {
+    const [open, setOpen] = useState(false);
+    const [formData, setFormData] = useState({
+      credit_deadline: "",
+      credit_remarks: "",
+    });
+
+    const handleOpen = () => setOpen(true);
+    const handleClose = () => setOpen(false);
+
+    const handleChange = (e) => {
+      const { name, value } = e.target;
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubmit = async () => {
+      try {
+        
+        await updateCreditExtension({ id: _id, ...formData }).unwrap();
+
+        toast.success("Credit days extended successfully!", {
+          icon: <CheckCircle size={20} color="#FFFFFF" />,
+          style: {
+            backgroundColor: "#2E7D32",
+            color: "#FFFFFF",
+            fontWeight: 500,
+            fontSize: "15px",
+            padding: "12px 20px",
+            borderRadius: "8px",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+          },
+        });
+
+        refetch();
+        handleClose();
+      } catch (err) {
+        toast.error("Failed to extend credit days", {
+          icon: <XCircle size={20} color="#FFFFFF" />,
+          style: {
+            backgroundColor: "#D32F2F",
+            color: "#FFFFFF",
+            fontWeight: 500,
+            fontSize: "15px",
+            padding: "12px 20px",
+            borderRadius: "8px",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+          },
+        });
+      }
+    };
+
     return (
       <Box mt={1}>
         {/* Amount */}
@@ -248,7 +338,7 @@ const CreditRequest = forwardRef(() => {
         </Box>
 
         {/* Remaining Days */}
-        <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+        <Box display="flex" alignItems="center" gap={1} mt={0.5}>
           <Typography sx={labelStyle}>⏰</Typography>
           <Chip
             size="sm"
@@ -265,7 +355,64 @@ const CreditRequest = forwardRef(() => {
               ? "⏱ Expired"
               : `${remaining_days} day${remaining_days > 1 ? "s" : ""} remaining`}
           </Chip>
+
+          {user?.department === "SCM" &&
+            credit?.credit_extension &&
+            remaining_days > 0 &&
+            approved !== "Approved" &&
+            approved !== "Rejected" && (
+              <IconButton
+                size="sm"
+                variant="soft"
+                color="neutral"
+                onClick={handleOpen}
+                sx={{
+                  borderRadius: "50%",
+                  p: 0.5,
+                  minWidth: "28px",
+                  minHeight: "28px",
+                  "&:hover": {
+                    backgroundColor: "neutral.softHoverBg",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                  },
+                }}
+              >
+                <PenLine size={14} strokeWidth={2} />
+              </IconButton>
+            )}
         </Box>
+
+        {/* Edit Credit Modal */}
+        <Modal open={open} onClose={handleClose}>
+          <ModalDialog>
+            <Typography level="h5" mb={1}>
+              Extend Credit
+            </Typography>
+            <Input
+              type="date"
+              name="credit_deadline"
+              value={formData.credit_deadline}
+              onChange={handleChange}
+              placeholder="New Credit Deadline"
+            />
+            <Input
+              type="text"
+              name="credit_remarks"
+              value={formData.credit_remarks}
+              onChange={handleChange}
+              placeholder="Credit Remarks"
+              sx={{ mt: 1 }}
+            />
+            <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
+              <Button variant="plain" onClick={handleClose}>
+                Cancel
+              </Button>
+              <Button variant="solid" onClick={handleSubmit}>
+                Extended
+              </Button>
+            </Box>
+          </ModalDialog>
+        </Modal>
       </Box>
     );
   };
@@ -420,8 +567,9 @@ const CreditRequest = forwardRef(() => {
                         <PaymentID
                           currentPage={currentPage}
                           p_id={payment.p_id}
-                          pay_id={payment.pay_id}
+                          cr_id={payment.cr_id}
                           dbt_date={payment.dbt_date}
+                          approved={payment?.approved}
                         />
                       </span>
                     </Tooltip>
@@ -438,9 +586,11 @@ const CreditRequest = forwardRef(() => {
                   </Box>
                   <Box component="td" sx={{ ...cellStyle, minWidth: 300 }}>
                     <MatchRow
+                      _id={payment._id}
                       approved={payment.approved}
                       amount_paid={payment.amount_paid}
                       remaining_days={payment.remaining_days}
+                      credit={payment.credit}
                     />
                   </Box>
 

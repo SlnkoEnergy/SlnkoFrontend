@@ -67,7 +67,7 @@ const PaymentRequest = forwardRef((props, ref) => {
     pageSize: perPage,
     search: searchQuery,
     status: status,
-    tab: tabValue,
+    tab: activeTab === 0 ? "instant" : "credit",
   });
 
   const paginatedData = responseData?.data || [];
@@ -108,6 +108,7 @@ const PaymentRequest = forwardRef((props, ref) => {
   const handleSearch = (query) => {
     setSearchQuery(query);
     setCurrentPage(1);
+    refetch();
   };
 
   useEffect(() => {
@@ -145,9 +146,9 @@ const PaymentRequest = forwardRef((props, ref) => {
     );
   };
 
-  const filteredData = paginatedData.filter((item) =>
-    activeTab === 0 ? item.tab === "instant" : item.tab === "credit"
-  );
+  // const filteredData = paginatedData.filter((item) =>
+  //   activeTab === 0 ? item.tab === "instant" : item.tab === "credit"
+  // );
 
   return (
     <>
@@ -262,15 +263,9 @@ const PaymentRequest = forwardRef((props, ref) => {
             }}
             variant="plain"
             sx={{
-              // bgcolor: "background.level2",
               borderRadius: "xl",
               p: 0.5,
               minHeight: "50px",
-              // boxShadow: "sm",
-              // "--Tabs-gap": "0px",
-              // "--Tab-radius": "10px",
-              // "--Tab-paddingInline": "1.2rem",
-              // "--TabList-gap": "2px",
             }}
           >
             <TabList
@@ -434,9 +429,17 @@ const PaymentRequest = forwardRef((props, ref) => {
         {/* Main Content */}
         <Box>
           {activeTab === 0 ? (
-            <InstantRequest data={filteredData} isLoading={isLoading} />
+            <InstantRequest
+              key={`instant-${searchQuery}-${currentPage}`}
+              data={paginatedData}
+              isLoading={isLoading}
+            />
           ) : (
-            <CreditRequest data={filteredData} isLoading={isLoading} />
+            <CreditRequest
+              key={`credit-${searchQuery}-${currentPage}`}
+              data={paginatedData}
+              isLoading={isLoading}
+            />
           )}
         </Box>
       </Box>

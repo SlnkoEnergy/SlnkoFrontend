@@ -25,7 +25,10 @@ import { useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import NoData from "../../assets/alert-bell.svg";
 import Axios from "../../utils/Axios";
-import { useGetPaymentApprovalQuery } from "../../redux/Accounts";
+import {
+  useGetPaymentApprovalQuery,
+  useUpdateRequestExtensionMutation,
+} from "../../redux/Accounts";
 import {
   CircularProgress,
   Modal,
@@ -53,14 +56,13 @@ function CreditPayment() {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [pdfPayments, setPdfPayments] = useState([]);
 
-//   const isAccount = user?.department === "Accounts";
+  //   const isAccount = user?.department === "Accounts";
 
   const { data: responseData, isLoading } = useGetPaymentApprovalQuery({
     page: currentPage,
     pageSize: perPage,
     search: searchQuery,
-    tab:"credit"
-    
+    tab: "credit",
   });
 
   const paginatedData = responseData?.data || [];
@@ -73,14 +75,9 @@ function CreditPayment() {
 
   const Instant = responseData?.instantCount || 0;
 
-//   console.log("Account--Instant", Instant);
-  
+  //   console.log("Account--Instant", Instant);
 
-
-
-//   console.log("tobeApproved--Account", Approved);
-
-  
+  //   console.log("tobeApproved--Account", Approved);
 
   // console.log("Payment Approval Data:", paginatedData);
 
@@ -228,7 +225,6 @@ function CreditPayment() {
     }
   };
 
-
   // === Single Approval Logic ===
   const handleApprovalUpdate = async (ids, newStatus, remarks = "") => {
     // console.log("📌 handleApprovalUpdate got:", { ids, newStatus, remarks, remarksType: typeof remarks });
@@ -286,96 +282,44 @@ function CreditPayment() {
     return false;
   };
 
-  const RowMenu = ({ _id, onStatusChange, showApprove }) => {
-    const [open, setOpen] = useState(false);
-    const [remarks, setRemarks] = useState("");
+  const RowMenu = ({ _id, credit_extension }) => {
+    const [updateCreditExtension, { isLoading }] =
+      useUpdateRequestExtensionMutation();
 
-    const handleRejectSubmit = () => {
-      console.log(
-        "📌 RowMenu → handleRejectSubmit remarks:",
-        remarks,
-        "type:",
-        typeof remarks
-      );
-      onStatusChange(_id, "Rejected", remarks);
-      setOpen(false);
-      setRemarks("");
+    const handleRequestExtension = async () => {
+      try {
+        await updateCreditExtension(_id).unwrap();
+        toast.success("Credit deadline extension requested successfully");
+      } catch (err) {
+        console.error("Failed to request extension", err);
+        toast.error("Failed to request credit extension");
+      }
     };
 
+
+    const isDisabled = isLoading || !!credit_extension;
+
     return (
-      <>
-        <Box sx={{ display: "flex", justifyContent: "left", gap: 1 }}>
-          {showApprove && (
-            <Chip
-              component="div"
-              variant="solid"
-              color="success"
-              onClick={() => onStatusChange(_id, "Approved")}
-              sx={{
-                textTransform: "none",
-                fontSize: "0.875rem",
-                fontWeight: 500,
-                cursor: "pointer",
-              }}
-              startDecorator={<CheckRoundedIcon />}
-            >
-              Approve
-            </Chip>
-          )}
-          <Chip
-            component="div"
-            variant="outlined"
-            color="danger"
-            onClick={() => setOpen(true)}
-            sx={{
-              textTransform: "none",
-              fontSize: "0.875rem",
-              fontWeight: 500,
-              cursor: "pointer",
-            }}
-            startDecorator={<BlockIcon />}
-          >
-            Reject
-          </Chip>
-        </Box>
-
-        <Modal open={open} onClose={() => setOpen(false)}>
-          <ModalDialog>
-            <Typography level="h5">Rejection Remarks</Typography>
-            <Textarea
-              minRows={3}
-              placeholder="Enter remarks..."
-              value={remarks}
-              onChange={(e) => {
-                const value = e.target.value ?? "";
-                // console.log("Textarea onChange value:", value, "type:", typeof value);
-                setRemarks(value);
-              }}
-            />
-
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: 1,
-                mt: 2,
-              }}
-            >
-              <Button variant="plain" onClick={() => setOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                variant="solid"
-                color="danger"
-                onClick={handleRejectSubmit}
-                disabled={!remarks}
-              >
-                Submit
-              </Button>
-            </Box>
-          </ModalDialog>
-        </Modal>
-      </>
+      <Button
+        size="sm"
+        color="success"
+        variant="solid"
+        disabled={isDisabled}
+        onClick={handleRequestExtension}
+         sx={{
+        borderRadius: '50px',        
+        textTransform: 'none',       
+        px: 3,                       
+        py: 1,                      
+        fontWeight: 600,            
+        transition: 'all 0.3s ease', 
+        '&:hover': {
+          backgroundColor: isDisabled ? undefined : '#2e7d32', 
+        },
+      }}
+      >
+        {isLoading ? "Requesting..." : "Extension Request "}
+      </Button>
     );
   };
 
@@ -393,52 +337,6 @@ function CreditPayment() {
       checked ? [...prev, idStr] : prev.filter((item) => item !== idStr)
     );
   };
-
-
-
-
-//   const renderFilters = () => {
-//     const hasSelection = selected.length > 0;
-
-//     const handlePreviewClick = () => {
-//       const selectedPayments = paginatedData.filter((p) =>
-//         selected.includes(String(p._id))
-//       );
-//       handleMultiPDFDownload(selectedPayments);
-//     };
-
-//     return (
-//       <Box
-//         sx={{
-//           position: "relative",
-//           display: "flex",
-//           alignItems: "center",
-//           gap: 1.5,
-//           mt: 3,
-//         }}
-//       >
-//         {hasSelection && (
-//           <Button
-//             size="sm"
-//             variant="solid"
-//             color="primary"
-//             onClick={handlePreviewClick}
-//             disabled={isPdfLoading}
-//             sx={{ ml: "auto", minWidth: 200 }}
-//           >
-//             {isPdfLoading ? (
-//               <>
-//                 <CircularProgress size="sm" sx={{ mr: 1 }} />
-//                 Generating PDF...
-//               </>
-//             ) : (
-//               "📄 Preview & Download PDF"
-//             )}
-//           </Button>
-//         )}
-//       </Box>
-//     );
-//   };
 
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
@@ -467,13 +365,12 @@ function CreditPayment() {
     borderColor: "divider",
   };
 
-    const labelStyle = {
+  const labelStyle = {
     fontSize: 13,
     fontWeight: 600,
     fontFamily: "Inter, Roboto, sans-serif",
     color: "#2C3E50",
   };
-
 
   // console.log(paginatedData);
 
@@ -494,48 +391,47 @@ function CreditPayment() {
   }, [searchParams]);
 
   const PaymentID = ({ cr_id, request_date }) => {
-  const displayCrId = cr_id ? cr_id.slice(0, -2) + "XX" : null;
+    const displayCrId = cr_id ? cr_id.slice(0, -2) + "XX" : null;
 
-  return (
-    <>
-      {cr_id && (
-        <Box>
-          <Chip
-            variant="solid"
-            color="warning"
-            size="sm"
-            sx={{
-              fontWeight: 500,
-              fontFamily: "Inter, Roboto, sans-serif",
-              fontSize: 14,
-              color: "#fff",
-              "&:hover": {
-                boxShadow: "md",
-                opacity: 0.9,
-              },
-            }}
-          >
-            {displayCrId}
-          </Chip>
-        </Box>
-      )}
+    return (
+      <>
+        {cr_id && (
+          <Box>
+            <Chip
+              variant="solid"
+              color="warning"
+              size="sm"
+              sx={{
+                fontWeight: 500,
+                fontFamily: "Inter, Roboto, sans-serif",
+                fontSize: 14,
+                color: "#fff",
+                "&:hover": {
+                  boxShadow: "md",
+                  opacity: 0.9,
+                },
+              }}
+            >
+              {displayCrId}
+            </Chip>
+          </Box>
+        )}
 
-      {request_date && (
-        <Box display="flex" alignItems="center" mt={0.5}>
-          <Calendar size={12} />
-          <span style={{ fontSize: 12, fontWeight: 600 }}>
-            Request Date :{" "}
-          </span>
-          &nbsp;
-          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-            {request_date}
-          </Typography>
-        </Box>
-      )}
-    </>
-  );
-};
-
+        {request_date && (
+          <Box display="flex" alignItems="center" mt={0.5}>
+            <Calendar size={12} />
+            <span style={{ fontSize: 12, fontWeight: 600 }}>
+              Request Date :{" "}
+            </span>
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {request_date}
+            </Typography>
+          </Box>
+        )}
+      </>
+    );
+  };
 
   const ProjectDetail = ({ project_id, client_name, group_name }) => {
     return (
@@ -575,7 +471,11 @@ function CreditPayment() {
     );
   };
 
-  const RequestedData = ({ request_for, payment_description,remainingDays}) => {
+  const RequestedData = ({
+    request_for,
+    payment_description,
+    remainingDays,
+  }) => {
     return (
       <>
         {request_for && (
@@ -619,32 +519,35 @@ function CreditPayment() {
     );
   };
 
-  const BalanceData = ({ amount_requested, ClientBalance, groupBalance, po_value }) => {
+  const BalanceData = ({
+    amount_requested,
+    ClientBalance,
+    groupBalance,
+    po_value,
+  }) => {
     return (
       <>
         {amount_requested && (
+          <Box display="flex" alignItems="center" mb={0.5}>
+            <Money size={16} />
+            <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+              Requested Amount:{" "}
+            </span>
+            <Typography sx={{ fontSize: 13, fontWeight: 400, ml: 0.5 }}>
+              {amount_requested || "-"}
+            </Typography>
+          </Box>
+        )}
+
         <Box display="flex" alignItems="center" mb={0.5}>
-          <Money size={16} />
+          <Receipt size={16} />
           <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
-            Requested Amount:{" "}
+            Total PO (incl. GST):{" "}
           </span>
-          <Typography sx={{ fontSize: 13, fontWeight: 400, ml: 0.5 }}>
-            {amount_requested || "-"}
+          <Typography sx={{ fontSize: 12, fontWeight: 400, ml: 0.5 }}>
+            {po_value || "-"}
           </Typography>
         </Box>
-        )}
-          
-                <Box display="flex" alignItems="center" mb={0.5}>
-        <Receipt size={16} />
-        <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
-          Total PO (incl. GST):{" "}
-        </span>
-        <Typography sx={{ fontSize: 12, fontWeight: 400, ml: 0.5 }}>
-          {po_value || "-"}
-        </Typography>
-      </Box>
-
-        
 
         <Box display="flex" alignItems="center" mt={0.5}>
           <CircleUser size={12} />
@@ -867,7 +770,6 @@ function CreditPayment() {
           },
         }}
       >
-        
         <Box
           component="table"
           sx={{ width: "100%", borderCollapse: "collapse" }}
@@ -886,11 +788,11 @@ function CreditPayment() {
                 />
               </Box>
               {[
-                "Payment Id",
+                "Credit Id",
                 "Project Id",
                 "Request For",
                 "Amount Requested",
-                // "Action"
+                "Action",
               ]
                 .filter(Boolean)
                 .map((header, index) => (
@@ -1014,15 +916,12 @@ function CreditPayment() {
                       />
                     </Box>
 
-                    {/* <Box component="td" sx={{ ...cellStyle }}>
+                    <Box component="td" sx={{ ...cellStyle }}>
                       <RowMenu
                         _id={payment._id}
-
-                        onStatusChange={(id, status, remarks) =>
-                          handleStatusChange(id, status, remarks)
-                        }
+                        credit_extension={payment.credit_extension}
                       />
-                    </Box> */}
+                    </Box>
                   </Box>
                 );
               })
@@ -1061,8 +960,6 @@ function CreditPayment() {
           </Box>
         </Box>
       </Box>
-
-    
     </>
   );
 }
