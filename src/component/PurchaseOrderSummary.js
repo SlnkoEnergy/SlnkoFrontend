@@ -193,8 +193,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     }
   };
 
-
-
   const handleDateFilterSelect = (type) => {
     setActiveDateFilter((prev) => (prev === type ? null : type));
     setOpenFilter(false);
@@ -404,13 +402,13 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const handleStatusChange = async () => {
     try {
       const nextStatusMap = {
+        material_ready: "ready_to_dispatch",
         ready_to_dispatch: "out_for_delivery",
         out_for_delivery: "delivered",
         delivered: "ready_to_dispatch",
       };
 
-      const updatedStatus =
-        nextStatusMap[selectedStatus] ?? "ready_to_dispatch";
+      const updatedStatus = nextStatusMap[selectedStatus] ?? "material_ready";
 
       await updateStatus({
         id: po,
@@ -429,7 +427,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     }
   };
 
-  const RowMenu = ({ currentPage, po_number, current_status }) => {
+  const RowMenu = ({ currentPage, po_number, current_status, etd }) => {
     const [user, setUser] = useState(null);
 
     useEffect(() => {
@@ -475,13 +473,31 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             ) : (
               <MenuItem
                 onClick={() => {
-                  if (current_status?.status === "ready_to_dispatch") {
+                  if (!etd) {
+                    toast.error("ETD must be set before changing status");
+                    return;
+                  }
+
+                  if (
+                    etd &&
+                    (current_status?.status?.toLowerCase() === "etd done" ||
+                      current_status?.status?.toLowerCase() === "draft")
+                  ) {
+                    setNextStatus("material_ready");
+                  } else if (current_status?.status === "ready_to_dispatch") {
                     setNextStatus("out_for_delivery");
                   } else if (current_status?.status === "out_for_delivery") {
                     setNextStatus("delivered");
+                  } else if (
+                    po.etd &&
+                    current_status?.status !== "material_ready"
+                  ) {
+                    // If ETD exists, first step is material_ready
+                    setNextStatus("material_ready");
                   } else {
                     setNextStatus("ready_to_dispatch");
                   }
+
                   setOpenModal(true);
                   setPO(po_number);
                   setSelectedStatus(current_status?.status);
@@ -633,6 +649,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     etd,
     rtd,
     delivery_date,
+    material_ready_date,
     current_status,
     po_number,
   }) => {
@@ -711,6 +728,22 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           ) : (
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
               ⚠️ RTD Not Found
+            </Typography>
+          )}
+        </Box>
+
+        {/* Material Ready Date */}
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <Calendar size={12} />
+          <span style={{ fontSize: 12, fontWeight: 600 }}>MR Date : </span>
+          &nbsp;
+          {material_ready_date ? (
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {formatDate(material_ready_date)}
+            </Typography>
+          ) : (
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              ⚠️ MR Date Not Found
             </Typography>
           )}
         </Box>
@@ -901,6 +934,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
   const getStatusIcon = (status) => {
     switch (status?.toLowerCase()) {
+      case "material_ready":
+        return <PackageCheck size={18} style={{ marginRight: 6 }} />;
       case "ready_to_dispatch":
         return <PackageCheck size={18} style={{ marginRight: 6 }} />;
       case "out_for_delivery":
@@ -918,6 +953,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
+      case "material_ready":
+        return "yellow"; // amber
       case "ready_to_dispatch":
         return "red";
       case "out_for_delivery":
@@ -1164,6 +1201,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         po_number={po?.po_number}
                         date={po?.date}
                         etd={po?.etd}
+                        material_ready_date={po?.material_ready_date}
                         rtd={po?.dispatch_date}
                         delivery_date={po?.delivery_date}
                         current_status={po?.current_status?.status}
@@ -1358,6 +1396,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                             currentPage={currentPage}
                             po_number={po.po_number}
                             current_status={po.current_status}
+                            etd={po.etd}
                           />
                         )}
                     </Box>
