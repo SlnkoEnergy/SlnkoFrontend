@@ -649,12 +649,13 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     etd,
     rtd,
     delivery_date,
-    material_ready_date,
+    mrd,
     current_status,
     po_number,
   }) => {
     const [etdDate, setEtdDate] = useState(etd || "");
     const [rtdDate, setRtdDate] = useState(rtd || "");
+    const [mrdDate, setMrdDate] = useState(mrd || "");
     const [deliveryDate, setDeliveryDate] = useState(delivery_date || "");
     const [updateEtdOrDeliveryDate] = useUpdateEtdOrDeliveryDateMutation();
     const [confirmType, setConfirmType] = useState("");
@@ -717,6 +718,22 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           )}
         </Box>
 
+        {/* Material Ready Date */}
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <Calendar size={12} />
+          <span style={{ fontSize: 12, fontWeight: 600 }}>MR Date : </span>
+          &nbsp;
+          {mrdDate ? (
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {formatDate(mrdDate)}
+            </Typography>
+          ) : (
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              ⚠️ MR Date Not Found
+            </Typography>
+          )}
+        </Box>
+
         <Box display="flex" alignItems="center" mt={0.5}>
           <Calendar size={12} />
           <span style={{ fontSize: 12, fontWeight: 600 }}>RTD Date : </span>
@@ -728,22 +745,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           ) : (
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
               ⚠️ RTD Not Found
-            </Typography>
-          )}
-        </Box>
-
-        {/* Material Ready Date */}
-        <Box display="flex" alignItems="center" mt={0.5}>
-          <Calendar size={12} />
-          <span style={{ fontSize: 12, fontWeight: 600 }}>MR Date : </span>
-          &nbsp;
-          {material_ready_date ? (
-            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              {formatDate(material_ready_date)}
-            </Typography>
-          ) : (
-            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              ⚠️ MR Date Not Found
             </Typography>
           )}
         </Box>
@@ -1201,7 +1202,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         po_number={po?.po_number}
                         date={po?.date}
                         etd={po?.etd}
-                        material_ready_date={po?.material_ready_date}
+                        mrd={po?.material_ready_date}
                         rtd={po?.dispatch_date}
                         delivery_date={po?.delivery_date}
                         current_status={po?.current_status?.status}
@@ -1336,6 +1337,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       {/* Render PO Number Info Below the Status */}
                       <RenderStatusDates
                         rtd={po?.dispatch_date}
+                        mrd={po?.material_ready_date}
                         etd={po?.etd}
                         delivery_date={po?.delivery_date}
                         current_status={po?.current_status?.status}
