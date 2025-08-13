@@ -159,7 +159,7 @@ function Products() {
                 color="primary"
                 startDecorator={<ViewModuleRoundedIcon />}
                 size="md"
-                onClick={() => navigate("/add_task")}
+                onClick={() => navigate("/add_product")}
               >
                 Add Product
               </Button>

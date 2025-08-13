@@ -23,6 +23,7 @@ import { tasksApi } from "../redux/tasksSlice";
 import { masterSheetApi } from "../redux/Eng/masterSheet";
 import { GlobalTaskApi } from "../redux/globalTaskSlice";
 import { AccountsApi } from "../redux/Accounts";
+import { productsApi } from "../redux/productsSlice";
 
 export const store = configureStore({
   reducer: {
@@ -49,7 +50,8 @@ export const store = configureStore({
     [billsApi.reducerPath]: billsApi.reducer,
     [masterSheetApi.reducerPath]: masterSheetApi.reducer,
     [GlobalTaskApi.reducerPath]:GlobalTaskApi.reducer,
-    [AccountsApi.reducerPath]:AccountsApi.reducer
+    [AccountsApi.reducerPath]:AccountsApi.reducer,
+    [productsApi.reducerPath]: productsApi.reducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -76,6 +78,7 @@ export const store = configureStore({
       billsApi.middleware,
       masterSheetApi.middleware,
       GlobalTaskApi.middleware,
-      AccountsApi.middleware
+      AccountsApi.middleware,
+      productsApi.middleware
     ),
 });

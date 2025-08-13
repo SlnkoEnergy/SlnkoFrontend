@@ -104,6 +104,7 @@ import View_Task from "../pages/AllTask/View_Task";
 import SalesIframe from "../component/Sales_Iframe";
 import Products from "../pages/Databases/Products";
 import Categories from "../pages/Databases/Categories";
+import Add_Product from "../pages/Databases/Add_Product";
 
 function index() {
   return (
@@ -954,6 +955,15 @@ function index() {
           <Categories />
         </PrivateRoute>
       }
+      />
+
+      <Route
+        path="/add_product"
+        element={
+          <PrivateRoute>
+            <Add_Product />
+          </PrivateRoute>
+        }
       />
     </Routes>
   );
