@@ -86,7 +86,7 @@ function PaymentRequest() {
   });
 
   const paginatedData = responseData?.data || [];
-  console.log("paginatedData :", paginatedData);
+  // console.log("paginatedData :", paginatedData);
 
   // console.log(count);
   const total = responseData?.total || 0;
@@ -980,7 +980,6 @@ function PaymentRequest() {
               boxShadow: 1,
             }}
           >
-           
             <Box
               sx={{
                 position: "sticky",
@@ -1073,6 +1072,9 @@ function PaymentRequest() {
                 <PaymentAccountApproval
                   data={paginatedData}
                   isLoading={isLoading}
+                  page={currentPage}
+                  pageSize={perPage}
+                  search={searchQuery}
                   sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
                 />
               )}
@@ -1080,6 +1082,9 @@ function PaymentRequest() {
                 <CreditPayment
                   data={paginatedData}
                   isLoading={isLoading}
+                  page={currentPage}
+                  pageSize={perPage}
+                  search={searchQuery}
                   sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
                 />
               )}
@@ -1087,6 +1092,9 @@ function PaymentRequest() {
                 <ApprovalPayment
                   data={paginatedData}
                   isLoading={isLoading}
+                  page={currentPage}
+                  pageSize={perPage}
+                  search={searchQuery}
                   sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
                 />
               )}
@@ -1094,6 +1102,9 @@ function PaymentRequest() {
                 <OverDue
                   data={paginatedData}
                   isLoading={isLoading}
+                  page={currentPage}
+                  pageSize={perPage}
+                  search={searchQuery}
                   sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
                 />
               )}

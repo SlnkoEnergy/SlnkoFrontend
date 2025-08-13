@@ -39,7 +39,7 @@ const PaymentRequest = forwardRef(() => {
     status: status,
     tab: activeTab === 0 ? "instant" : "credit",
   });
-  console.log(responseData?.data);
+  // console.log(responseData?.data);
 
   const [paginatedData, setPaginatedData] = useState(responseData?.data || []);
   const total = responseData?.total || 0;
@@ -87,7 +87,7 @@ const PaymentRequest = forwardRef(() => {
   const handleSearch = (query) => {
     setSearchQuery(query);
     setCurrentPage(1);
-    // refetch();
+    refetch();
   };
 
   useEffect(() => {
@@ -268,7 +268,7 @@ const PaymentRequest = forwardRef(() => {
                   ...(activeTab === 0),
                 }}
               >
-                Instant
+                Instant ({responseData?.instantTotal || 0})
               </Tab>
               <Tab
                 variant={activeTab === 1 ? "soft" : "plain"}
@@ -284,7 +284,7 @@ const PaymentRequest = forwardRef(() => {
                   ...(activeTab === 1),
                 }}
               >
-                Credit
+                Credit ({responseData?.creditTotal || 0})
               </Tab>
             </TabList>
           </Tabs>
@@ -405,15 +405,23 @@ const PaymentRequest = forwardRef(() => {
         <Box>
           {activeTab === 0 ? (
             <InstantRequest
-              key={`instant-${searchQuery}-${currentPage}`}
+             
               data={paginatedData}
               isLoading={isLoading}
+              searchQuery={searchQuery}
+              perPage={perPage}
+              currentPage={currentPage}
+              status={status}
             />
           ) : (
             <CreditRequest
-              key={`credit-${searchQuery}-${currentPage}`}
+            
               data={paginatedData}
               isLoading={isLoading}
+              searchQuery={searchQuery}
+              perPage={perPage}
+              currentPage={currentPage}
+              status={status}
             />
           )}
         </Box>
