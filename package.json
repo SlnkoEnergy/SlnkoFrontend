@@ -10,6 +10,8 @@
     "@mui/icons-material": "^6.1.10",
     "@mui/joy": "^5.0.0-beta.48",
     "@nivo/pie": "^0.99.0",
+    "@novu/api": "^1.5.0",
+    "@novu/notification-center": "^2.0.0",
     "@reduxjs/toolkit": "^2.6.0",
     "@sentry/react": "^10.0.0",
     "@tanstack/react-query": "^5.64.1",
