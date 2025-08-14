@@ -23,7 +23,7 @@ import DownloadIcon from "@mui/icons-material/Download";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { Clock, CheckCircle2 } from "lucide-react";
+import { Clock, CheckCircle2, AlarmClockMinusIcon } from "lucide-react";
 import CloseIcon from "@mui/icons-material/Close";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -208,6 +208,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const statusOptions = [
     "ETD Pending",
     "ETD Done",
+    "Material Ready",
     "Ready to Dispatch",
     "Out for Delivery",
     "Delivered",
@@ -936,7 +937,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const getStatusIcon = (status) => {
     switch (status?.toLowerCase()) {
       case "material_ready":
-        return <PackageCheck size={18} style={{ marginRight: 6 }} />;
+        return <AlarmClockMinusIcon size={18} style={{ marginRight: 6 }} />;
       case "ready_to_dispatch":
         return <PackageCheck size={18} style={{ marginRight: 6 }} />;
       case "out_for_delivery":
@@ -955,7 +956,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case "material_ready":
-        return "yellow"; // amber
+        return "#6002ee"; 
       case "ready_to_dispatch":
         return "red";
       case "out_for_delivery":
@@ -963,9 +964,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       case "delivered":
         return "green";
       case "etd pending":
-        return "#999"; // grey
+        return "#999"; 
       case "etd done":
-        return "#1976d2"; // blue
+        return "#1976d2";
       default:
         return "error";
     }
