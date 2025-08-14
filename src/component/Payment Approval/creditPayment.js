@@ -1,48 +1,27 @@
-import BlockIcon from "@mui/icons-material/Block";
-import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
-import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
-import KeyboardDoubleArrowLeft from "@mui/icons-material/KeyboardDoubleArrowLeft";
-import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
-import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
-import KeyboardDoubleArrowRight from "@mui/icons-material/KeyboardDoubleArrowRight";
-import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
-import Checkbox from "@mui/joy/Checkbox";
+
 import Chip from "@mui/joy/Chip";
-import FormControl from "@mui/joy/FormControl";
-import FormLabel from "@mui/joy/FormLabel";
-import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
-import Input from "@mui/joy/Input";
-import Option from "@mui/joy/Option";
-import Select from "@mui/joy/Select";
-import Sheet from "@mui/joy/Sheet";
+
 import Typography from "@mui/joy/Typography";
-import { forwardRef, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+
 import { toast } from "react-toastify";
 import NoData from "../../assets/alert-bell.svg";
-import Axios from "../../utils/Axios";
+
 import {
   useGetPaymentApprovalQuery,
   useUpdateRequestExtensionMutation,
 } from "../../redux/Accounts";
-import {
-  CircularProgress,
-  Modal,
-  ModalDialog,
-  Stack,
-  Textarea,
-} from "@mui/joy";
+import { CircularProgress } from "@mui/joy";
 import { Calendar, CircleUser, Receipt, UsersRound } from "lucide-react";
 import { Money } from "@mui/icons-material";
 
-const CreditPayment = forwardRef(({searchQuery,perPage,currentPage}) => {
-
-
-  const { data: responseData, error , isLoading} = useGetPaymentApprovalQuery({
+const CreditPayment = ({ searchQuery, currentPage, perPage }) => {
+  const {
+    data: responseData,
+    error,
+    isLoading,
+  } = useGetPaymentApprovalQuery({
     page: currentPage,
     pageSize: perPage,
     search: searchQuery,
@@ -51,23 +30,6 @@ const CreditPayment = forwardRef(({searchQuery,perPage,currentPage}) => {
 
   const paginatedData = responseData?.data || [];
   // console.log("paginatedData Credit are in Account :", paginatedData);
-
-
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const userData = getUserData();
-    setUser(userData);
-  }, []);
-
-  const getUserData = () => {
-    const userData = localStorage.getItem("userDetails");
-    if (userData) {
-      return JSON.parse(userData);
-    }
-    return null;
-  };
-
 
   const RowMenu = ({ _id, credit_extension }) => {
     const [updateCreditExtension, { isLoading }] =
@@ -83,7 +45,6 @@ const CreditPayment = forwardRef(({searchQuery,perPage,currentPage}) => {
       }
     };
 
-
     const isDisabled = isLoading || !!credit_extension;
 
     return (
@@ -93,23 +54,22 @@ const CreditPayment = forwardRef(({searchQuery,perPage,currentPage}) => {
         variant="solid"
         disabled={isDisabled}
         onClick={handleRequestExtension}
-         sx={{
-        borderRadius: '50px',        
-        textTransform: 'none',       
-        px: 3,                       
-        py: 1,                      
-        fontWeight: 600,            
-        transition: 'all 0.3s ease', 
-        '&:hover': {
-          backgroundColor: isDisabled ? undefined : '#2e7d32', 
-        },
-      }}
+        sx={{
+          borderRadius: "50px",
+          textTransform: "none",
+          px: 3,
+          py: 1,
+          fontWeight: 600,
+          transition: "all 0.3s ease",
+          "&:hover": {
+            backgroundColor: isDisabled ? undefined : "#2e7d32",
+          },
+        }}
       >
         {isLoading ? "Requesting..." : "Extension Request "}
       </Button>
     );
   };
-
 
   const headerStyle = {
     position: "sticky",
@@ -140,8 +100,6 @@ const CreditPayment = forwardRef(({searchQuery,perPage,currentPage}) => {
     fontFamily: "Inter, Roboto, sans-serif",
     color: "#2C3E50",
   };
-
-
 
   const PaymentID = ({ cr_id, request_date }) => {
     const displayCrId = cr_id ? cr_id.slice(0, -2) + "XX" : null;
@@ -228,6 +186,7 @@ const CreditPayment = forwardRef(({searchQuery,perPage,currentPage}) => {
     request_for,
     payment_description,
     remainingDays,
+    vendor,
   }) => {
     return (
       <>
@@ -250,6 +209,16 @@ const CreditPayment = forwardRef(({searchQuery,perPage,currentPage}) => {
             </Typography>
           </Box>
         )}
+        <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+          <Typography style={{ fontSize: 12, fontWeight: 600 }}>
+            🏢 Vendor:
+          </Typography>
+          <Typography
+            sx={{ fontSize: 12, fontWeight: 400, wordBreak: "break-word" }}
+          >
+            {vendor}
+          </Typography>
+        </Box>
         <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
           <Typography sx={labelStyle}>⏰</Typography>
           <Chip
@@ -368,8 +337,8 @@ const CreditPayment = forwardRef(({searchQuery,perPage,currentPage}) => {
         >
           <Box component="thead">
             <Box component="tr">
-              <Box component="th" sx={headerStyle}>
-                {/* <Checkbox
+              {/* <Box component="th" sx={headerStyle}>
+                <Checkbox
                   indeterminate={
                     selected.length > 0 &&
                     selected.length < paginatedData.length
@@ -377,8 +346,8 @@ const CreditPayment = forwardRef(({searchQuery,perPage,currentPage}) => {
                   checked={selected.length === paginatedData.length}
                   onChange={handleSelectAll}
                   color={selected.length > 0 ? "primary" : "neutral"}
-                /> */}
-              </Box>
+                />
+              </Box> */}
               {[
                 "Credit Id",
                 "Project Id",
@@ -489,6 +458,7 @@ const CreditPayment = forwardRef(({searchQuery,perPage,currentPage}) => {
                       <RequestedData
                         request_for={payment?.request_for}
                         payment_description={payment?.payment_description}
+                        vendor={payment?.vendor}
                         remainingDays={payment?.remainingDays}
                       />
                     </Box>
@@ -507,7 +477,6 @@ const CreditPayment = forwardRef(({searchQuery,perPage,currentPage}) => {
                         groupBalance={payment?.groupBalance}
                       />
                     </Box>
-
                     <Box component="td" sx={{ ...cellStyle }}>
                       <RowMenu
                         _id={payment._id}
@@ -543,7 +512,7 @@ const CreditPayment = forwardRef(({searchQuery,perPage,currentPage}) => {
                       style={{ width: "50px", height: "50px" }}
                     />
                     <Typography fontStyle={"italic"}>
-                      No approval available
+                      No credit payment available
                     </Typography>
                   </Box>
                 </Box>
@@ -554,5 +523,5 @@ const CreditPayment = forwardRef(({searchQuery,perPage,currentPage}) => {
       </Box>
     </>
   );
-});
+};
 export default CreditPayment;

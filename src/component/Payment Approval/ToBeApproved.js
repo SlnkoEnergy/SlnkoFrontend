@@ -1,24 +1,9 @@
 import BlockIcon from "@mui/icons-material/Block";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
-import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
-import KeyboardDoubleArrowLeft from "@mui/icons-material/KeyboardDoubleArrowLeft";
-import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
-import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
-import KeyboardDoubleArrowRight from "@mui/icons-material/KeyboardDoubleArrowRight";
-import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
 import Chip from "@mui/joy/Chip";
-import FormControl from "@mui/joy/FormControl";
-import FormLabel from "@mui/joy/FormLabel";
-import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
-import Input from "@mui/joy/Input";
-import Option from "@mui/joy/Option";
-import Select from "@mui/joy/Select";
-import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -36,26 +21,15 @@ import {
 import { Calendar, CircleUser, Receipt, UsersRound } from "lucide-react";
 import { Money } from "@mui/icons-material";
 
-function ApprovalPayment() {
-  const [payments, setPayments] = useState([]);
-  const [error, setError] = useState(null);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [selected, setSelected] = useState([]);
-  const initialPage = parseInt(searchParams.get("page")) || 1;
-  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
-  const [perPage, setPerPage] = useState(initialPageSize);
-  const [currentPage, setCurrentPage] = useState(initialPage);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [pdfBlob, setPdfBlob] = useState(null);
-  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
-  const [hiddenIds, setHiddenIds] = useState([]);
-  const [isPdfLoading, setIsPdfLoading] = useState(false);
-  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [pdfPayments, setPdfPayments] = useState([]);
-
+const ApprovalPayment = ({ searchQuery, currentPage, perPage }) => {
   //   const isAccount = user?.department === "Accounts";
+  const [selected, setSelected] = useState([]);
 
-  const { data: responseData, isLoading } = useGetPaymentApprovalQuery({
+  const {
+    data: responseData,
+    isLoading,
+    error,
+  } = useGetPaymentApprovalQuery({
     page: currentPage,
     pageSize: perPage,
     search: searchQuery,
@@ -63,21 +37,7 @@ function ApprovalPayment() {
   });
 
   const paginatedData = responseData?.data || [];
-  console.log("paginatedData Approveal are in Account :", paginatedData);
-
-  // console.log(count);
-  const total = responseData?.total || 0;
-  const count = responseData?.count || paginatedData.length;
-  //   const Approved = responseData?.toBeApprovedCount || 0;
-
-  //   const Instant = responseData?.instantCount || 0;
-
-  // console.log("Payment Approval Data:", paginatedData);
-
-  const totalPages = Math.ceil(total / perPage);
-
-  const startIndex = (currentPage - 1) * perPage + 1;
-  const endIndex = Math.min(startIndex + count - 1, total);
+  // console.log("paginatedData Approveal are in Account :", paginatedData);
 
   const [user, setUser] = useState(null);
 
@@ -160,61 +120,6 @@ function ApprovalPayment() {
 
       // console.log("📌 Selected PO IDs for PDF:", poIds);
       // console.log("📌 Selected Payments for PDF:", selectedPayments);
-
-      setPdfPayments(selectedPayments);
-      await handleMultiPDFDownload(selectedPayments);
-    }
-  };
-
-  // === Generate & Preview PDF ===
-  const handleMultiPDFDownload = async (payments) => {
-    // console.log("handleMultiPDFDownload called with:", payments);
-    setIsPdfLoading(true);
-
-    if (!Array.isArray(payments) || payments.length === 0) {
-      console.error("Invalid payments array:", payments);
-      toast.error("Unable to generate PDF. No valid payments selected.");
-      setIsPdfLoading(false);
-      return;
-    }
-
-    const validPayments = payments.filter((p) => p && p._id);
-    if (!validPayments.length) {
-      toast.error("No valid payment IDs found to generate PDF.");
-      setIsPdfLoading(false);
-      return;
-    }
-
-    // console.log("Valid payments for PDF generation:", validPayments);
-
-    try {
-      const token = localStorage.getItem("authToken");
-      if (!token) {
-        toast.error("Authentication token not found.");
-        setIsPdfLoading(false);
-        return;
-      }
-
-      const poIds = validPayments.map((p) => p._id);
-      console.log("Generating PDF for PO IDs:", poIds);
-
-      const response = await Axios.post(
-        "/accounting/po-approve-pdf",
-        { poIds },
-        {
-          headers: { "x-auth-token": token },
-          responseType: "blob",
-        }
-      );
-
-      const blob = new Blob([response.data], { type: "application/pdf" });
-      setPdfBlob(blob);
-      setIsPdfModalOpen(true);
-    } catch (error) {
-      console.error("PDF generation failed:", error);
-      toast.error("Failed to generate PDF");
-    } finally {
-      setIsPdfLoading(false);
     }
   };
 
@@ -252,7 +157,7 @@ function ApprovalPayment() {
               toast.error(`Payment Rejected`, { autoClose: 2000 });
             else if (newStatus === "Pending")
               toast.info(`Payment marked as Pending`, { autoClose: 2000 });
-            setHiddenIds((prev) => [...prev, result._id]);
+            // setHiddenIds((prev) => [...prev, result._id]);
           } else {
             allSuccess = false;
             toast.error(result.message || `Approval failed for ${result._id}`);
@@ -383,52 +288,6 @@ function ApprovalPayment() {
     );
   };
 
-  //   const renderFilters = () => {
-  //     const hasSelection = selected.length > 0;
-
-  //     const handlePreviewClick = () => {
-  //       const selectedPayments = paginatedData.filter((p) =>
-  //         selected.includes(String(p._id))
-  //       );
-  //       handleMultiPDFDownload(selectedPayments);
-  //     };
-
-  //     return (
-  //       <Box
-  //         sx={{
-  //           position: "relative",
-  //           display: "flex",
-  //           alignItems: "center",
-  //           gap: 1.5,
-  //           mt: 3,
-  //         }}
-  //       >
-  //         {hasSelection && (
-  //           <Button
-  //             size="sm"
-  //             variant="solid"
-  //             color="primary"
-  //             onClick={handlePreviewClick}
-  //             disabled={isPdfLoading}
-  //             sx={{ ml: "auto", minWidth: 200 }}
-  //           >
-  //             {isPdfLoading ? (
-  //               <>
-  //                 <CircularProgress size="sm" sx={{ mr: 1 }} />
-  //                 Generating PDF...
-  //               </>
-  //             ) : (
-  //               "📄 Preview & Download PDF"
-  //             )}
-  //           </Button>
-  //         )}
-  //       </Box>
-  //     );
-  //   };
-
-  const handleSearch = (query) => {
-    setSearchQuery(query.toLowerCase());
-  };
 
   const headerStyle = {
     position: "sticky",
@@ -452,7 +311,7 @@ function ApprovalPayment() {
     borderBottom: "1px solid",
     borderColor: "divider",
   };
-     const labelStyle = {
+  const labelStyle = {
     fontSize: 13,
     fontWeight: 600,
     fontFamily: "Inter, Roboto, sans-serif",
@@ -460,22 +319,6 @@ function ApprovalPayment() {
   };
 
   // console.log(paginatedData);
-
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setSearchParams((prev) => {
-        return {
-          ...Object.fromEntries(prev.entries()),
-          page: String(page),
-        };
-      });
-    }
-  };
-
-  useEffect(() => {
-    const page = parseInt(searchParams.get("page")) || 1;
-    setCurrentPage(page);
-  }, [searchParams]);
 
   const PaymentID = ({ cr_id, request_date }) => {
     return (
@@ -560,6 +403,7 @@ function ApprovalPayment() {
     request_for,
     payment_description,
     remainingDays,
+    vendor,
   }) => {
     return (
       <>
@@ -582,6 +426,16 @@ function ApprovalPayment() {
             </Typography>
           </Box>
         )}
+        <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+          <Typography style={{ fontSize: 12, fontWeight: 600 }}>
+            🏢 Vendor:
+          </Typography>
+          <Typography
+            sx={{ fontSize: 12, fontWeight: 400, wordBreak: "break-word" }}
+          >
+            {vendor}
+          </Typography>
+        </Box>
 
         <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
           <Typography sx={labelStyle}>⏰</Typography>
@@ -983,6 +837,7 @@ function ApprovalPayment() {
                       <RequestedData
                         request_for={payment?.request_for}
                         payment_description={payment?.payment_description}
+                        vendor={payment?.vendor}
                         remainingDays={payment.remainingDays}
                       />
                     </Box>
@@ -1041,7 +896,7 @@ function ApprovalPayment() {
                       style={{ width: "50px", height: "50px" }}
                     />
                     <Typography fontStyle={"italic"}>
-                      No approval available
+                      No payment available
                     </Typography>
                   </Box>
                 </Box>
@@ -1052,5 +907,5 @@ function ApprovalPayment() {
       </Box>
     </>
   );
-}
+};
 export default ApprovalPayment;

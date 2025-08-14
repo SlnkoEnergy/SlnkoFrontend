@@ -1,27 +1,11 @@
 import BlockIcon from "@mui/icons-material/Block";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
-import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
-import KeyboardDoubleArrowLeft from "@mui/icons-material/KeyboardDoubleArrowLeft";
-import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
-import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
-import KeyboardDoubleArrowRight from "@mui/icons-material/KeyboardDoubleArrowRight";
-import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
 import Chip from "@mui/joy/Chip";
-import FormControl from "@mui/joy/FormControl";
-import FormLabel from "@mui/joy/FormLabel";
-import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
-import Input from "@mui/joy/Input";
-import Option from "@mui/joy/Option";
-import Select from "@mui/joy/Select";
-import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import NoData from "../../assets/alert-bell.svg";
 import Axios from "../../utils/Axios";
@@ -30,57 +14,29 @@ import {
   CircularProgress,
   Modal,
   ModalDialog,
-  Stack,
   Textarea,
 } from "@mui/joy";
 import { Calendar, CircleUser, Receipt, UsersRound } from "lucide-react";
 import { Money } from "@mui/icons-material";
 
-function PaymentAccountApproval() {
-  const [payments, setPayments] = useState([]);
-  const [error, setError] = useState(null);
-  const [searchParams, setSearchParams] = useSearchParams();
+const PaymentAccountApproval = ({ searchQuery, currentPage, perPage }) => {
   const [selected, setSelected] = useState([]);
-  const initialPage = parseInt(searchParams.get("page")) || 1;
-  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
-  const [perPage, setPerPage] = useState(initialPageSize);
-  const [currentPage, setCurrentPage] = useState(initialPage);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [pdfBlob, setPdfBlob] = useState(null);
-  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
-  const [hiddenIds, setHiddenIds] = useState([]);
-  const [isPdfLoading, setIsPdfLoading] = useState(false);
-  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [pdfPayments, setPdfPayments] = useState([]);
 
-//   const isAccount = user?.department === "Accounts";
+  //   const isAccount = user?.department === "Accounts";
 
-  const { data: responseData, isLoading } = useGetPaymentApprovalQuery({
+  const {
+    data: responseData,
+    isLoading,
+    error,
+  } = useGetPaymentApprovalQuery({
     page: currentPage,
     pageSize: perPage,
     search: searchQuery,
-    tab:"instant"
-    
+    tab: "instant",
   });
 
   const paginatedData = responseData?.data || [];
-  console.log("paginatedData Instant are in Account :", paginatedData);
-
-  // console.log(count);
-  const total = responseData?.total || 0;
-  const count = responseData?.count || paginatedData.length;
-
-  const Instant = responseData?.instantCount || 0;
-
-//   console.log("Account--Instant", Instant);
-  
-
-  // console.log("Payment Approval Data:", paginatedData);
-
-  const totalPages = Math.ceil(total / perPage);
-
-  const startIndex = (currentPage - 1) * perPage + 1;
-  const endIndex = Math.min(startIndex + count - 1, total);
+  // console.log("paginatedData Instant are in Account :", paginatedData);
 
   const [user, setUser] = useState(null);
 
@@ -163,64 +119,8 @@ function PaymentAccountApproval() {
 
       // console.log("📌 Selected PO IDs for PDF:", poIds);
       // console.log("📌 Selected Payments for PDF:", selectedPayments);
-
-      setPdfPayments(selectedPayments);
-      await handleMultiPDFDownload(selectedPayments);
     }
   };
-
-  // === Generate & Preview PDF ===
-  const handleMultiPDFDownload = async (payments) => {
-    // console.log("handleMultiPDFDownload called with:", payments);
-    setIsPdfLoading(true);
-
-    if (!Array.isArray(payments) || payments.length === 0) {
-      console.error("Invalid payments array:", payments);
-      toast.error("Unable to generate PDF. No valid payments selected.");
-      setIsPdfLoading(false);
-      return;
-    }
-
-    const validPayments = payments.filter((p) => p && p._id);
-    if (!validPayments.length) {
-      toast.error("No valid payment IDs found to generate PDF.");
-      setIsPdfLoading(false);
-      return;
-    }
-
-    // console.log("Valid payments for PDF generation:", validPayments);
-
-    try {
-      const token = localStorage.getItem("authToken");
-      if (!token) {
-        toast.error("Authentication token not found.");
-        setIsPdfLoading(false);
-        return;
-      }
-
-      const poIds = validPayments.map((p) => p._id);
-      console.log("Generating PDF for PO IDs:", poIds);
-
-      const response = await Axios.post(
-        "/accounting/po-approve-pdf",
-        { poIds },
-        {
-          headers: { "x-auth-token": token },
-          responseType: "blob",
-        }
-      );
-
-      const blob = new Blob([response.data], { type: "application/pdf" });
-      setPdfBlob(blob);
-      setIsPdfModalOpen(true);
-    } catch (error) {
-      console.error("PDF generation failed:", error);
-      toast.error("Failed to generate PDF");
-    } finally {
-      setIsPdfLoading(false);
-    }
-  };
-
 
   // === Single Approval Logic ===
   const handleApprovalUpdate = async (ids, newStatus, remarks = "") => {
@@ -256,7 +156,7 @@ function PaymentAccountApproval() {
               toast.error(`Payment Rejected`, { autoClose: 2000 });
             else if (newStatus === "Pending")
               toast.info(`Payment marked as Pending`, { autoClose: 2000 });
-            setHiddenIds((prev) => [...prev, result._id]);
+            // setHiddenIds((prev) => [...prev, result._id]);
           } else {
             allSuccess = false;
             toast.error(result.message || `Approval failed for ${result._id}`);
@@ -387,56 +287,6 @@ function PaymentAccountApproval() {
     );
   };
 
-
-
-
-//   const renderFilters = () => {
-//     const hasSelection = selected.length > 0;
-
-//     const handlePreviewClick = () => {
-//       const selectedPayments = paginatedData.filter((p) =>
-//         selected.includes(String(p._id))
-//       );
-//       handleMultiPDFDownload(selectedPayments);
-//     };
-
-//     return (
-//       <Box
-//         sx={{
-//           position: "relative",
-//           display: "flex",
-//           alignItems: "center",
-//           gap: 1.5,
-//           mt: 3,
-//         }}
-//       >
-//         {hasSelection && (
-//           <Button
-//             size="sm"
-//             variant="solid"
-//             color="primary"
-//             onClick={handlePreviewClick}
-//             disabled={isPdfLoading}
-//             sx={{ ml: "auto", minWidth: 200 }}
-//           >
-//             {isPdfLoading ? (
-//               <>
-//                 <CircularProgress size="sm" sx={{ mr: 1 }} />
-//                 Generating PDF...
-//               </>
-//             ) : (
-//               "📄 Preview & Download PDF"
-//             )}
-//           </Button>
-//         )}
-//       </Box>
-//     );
-//   };
-
-  const handleSearch = (query) => {
-    setSearchQuery(query.toLowerCase());
-  };
-
   const headerStyle = {
     position: "sticky",
     top: 0,
@@ -459,24 +309,6 @@ function PaymentAccountApproval() {
     borderBottom: "1px solid",
     borderColor: "divider",
   };
-
-  // console.log(paginatedData);
-
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setSearchParams((prev) => {
-        return {
-          ...Object.fromEntries(prev.entries()),
-          page: String(page),
-        };
-      });
-    }
-  };
-
-  useEffect(() => {
-    const page = parseInt(searchParams.get("page")) || 1;
-    setCurrentPage(page);
-  }, [searchParams]);
 
   const PaymentID = ({ pay_id, request_date }) => {
     return (
@@ -557,7 +389,7 @@ function PaymentAccountApproval() {
     );
   };
 
-  const RequestedData = ({ request_for, payment_description }) => {
+  const RequestedData = ({ request_for, payment_description, vendor }) => {
     return (
       <>
         {request_for && (
@@ -579,34 +411,49 @@ function PaymentAccountApproval() {
             </Typography>
           </Box>
         )}
+        <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+          <Typography style={{ fontSize: 12, fontWeight: 600 }}>
+            🏢 Vendor:
+          </Typography>
+          <Typography
+            sx={{ fontSize: 12, fontWeight: 400, wordBreak: "break-word" }}
+          >
+            {vendor}
+          </Typography>
+        </Box>
       </>
     );
   };
 
-  const BalanceData = ({ amount_requested, ClientBalance, groupBalance ,po_value}) => {
+  const BalanceData = ({
+    amount_requested,
+    ClientBalance,
+    groupBalance,
+    po_value,
+  }) => {
     return (
       <>
         {amount_requested && (
+          <Box display="flex" alignItems="center" mb={0.5}>
+            <Money size={16} />
+            <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+              Requested Amount:{" "}
+            </span>
+            <Typography sx={{ fontSize: 13, fontWeight: 400, ml: 0.5 }}>
+              {amount_requested || "-"}
+            </Typography>
+          </Box>
+        )}
+
         <Box display="flex" alignItems="center" mb={0.5}>
-          <Money size={16} />
+          <Receipt size={16} />
           <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
-            Requested Amount:{" "}
+            Total PO (incl. GST):{" "}
           </span>
-          <Typography sx={{ fontSize: 13, fontWeight: 400, ml: 0.5 }}>
-            {amount_requested || "-"}
+          <Typography sx={{ fontSize: 12, fontWeight: 400, ml: 0.5 }}>
+            {po_value || "-"}
           </Typography>
         </Box>
-        )}
-          
-                <Box display="flex" alignItems="center" mb={0.5}>
-        <Receipt size={16} />
-        <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
-          Total PO (incl. GST):{" "}
-        </span>
-        <Typography sx={{ fontSize: 12, fontWeight: 400, ml: 0.5 }}>
-          {po_value || "-"}
-        </Typography>
-      </Box>
 
         <Box display="flex" alignItems="center" mt={0.5}>
           <CircleUser size={12} />
@@ -635,167 +482,6 @@ function PaymentAccountApproval() {
 
   return (
     <>
-      {/* Tablet and Up Filters */}
-      {/* <Box
-        sx={{
-          display: "flex",
-          mb: 1,
-          gap: 1,
-          flexDirection: { xs: "column", sm: "row" },
-          alignItems: { xs: "start", sm: "center" },
-          flexWrap: "wrap",
-          justifyContent: "space-between",
-          marginLeft: { xl: "15%", lg: "18%" },
-        }}
-      >
-        <Box>
-          {((user?.department === "Accounts" && user?.role === "manager") ||
-            user?.department === "admin") && (
-            <Typography level="h2" component="h1">
-              Accounts Payment Approval
-            </Typography>
-          )}
-        </Box>
-      </Box> */}
-
-      {/* <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 2,
-          px: 1,
-          py: 1,
-          ml: { xl: "15%", lg: "18%", sm: 0 },
-          maxWidth: { lg: "85%", sm: "100%" },
-          borderRadius: "md",
-          mb: 2,
-        }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            mb: 1,
-            gap: 1,
-            flexDirection: { xs: "column", sm: "row" },
-            alignItems: { xs: "none", sm: "center" },
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
-        >
-        
-           { renderFilters()}
-          <Box
-            className="SearchAndFilters-tabletUp"
-            sx={{
-              borderRadius: "sm",
-              py: 2,
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              flexWrap: "wrap",
-              gap: 1.5,
-            }}
-          >
-            <FormControl sx={{ flex: 1 }} size="sm">
-              <FormLabel>Search here</FormLabel>
-              <Input
-                size="sm"
-                placeholder="Search by Pay ID, Items, Clients Name or Vendor"
-                startDecorator={<SearchIcon />}
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                sx={{
-                  width: 350,
-
-                  borderColor: "neutral.outlinedBorder",
-                  borderBottom: searchQuery
-                    ? "2px solid #1976d2"
-                    : "1px solid #ddd",
-                  borderRadius: 5,
-                  boxShadow: "none",
-                  "&:hover": {
-                    borderBottom: "2px solid #1976d2",
-                  },
-                  "&:focus-within": {
-                    borderBottom: "2px solid #1976d2",
-                  },
-                }}
-              />
-            </FormControl>
-          </Box>
-        </Box>
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 1.5,
-          }}
-        >
-          {/* Rows per page 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography level="body-sm">Rows per page:</Typography>
-            <Select
-              size="sm"
-              value={perPage}
-              onChange={(_, value) => {
-                if (value) {
-                  setPerPage(Number(value));
-                  setCurrentPage(1);
-                }
-              }}
-              sx={{ minWidth: 64 }}
-            >
-              {[10, 25, 50, 100].map((value) => (
-                <Option key={value} value={value}>
-                  {value}
-                </Option>
-              ))}
-            </Select>
-          </Box>
-
-          {/* Pagination info 
-          <Typography level="body-sm">
-            {`${startIndex}-${endIndex} of ${total}`}
-          </Typography>
-
-          {/* Navigation buttons 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <IconButton
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(1)}
-            >
-              <KeyboardDoubleArrowLeft />
-            </IconButton>
-            <IconButton
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            >
-              <KeyboardArrowLeft />
-            </IconButton>
-            <IconButton
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
-            >
-              <KeyboardArrowRight />
-            </IconButton>
-            <IconButton
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(totalPages)}
-            >
-              <KeyboardDoubleArrowRight />
-            </IconButton>
-          </Box>
-        </Box>
-      </Box> */}
-
       {/* Table */}
       <Box
         className="OrderTableContainer"
@@ -829,7 +515,6 @@ function PaymentAccountApproval() {
           },
         }}
       >
-        
         <Box
           component="table"
           sx={{ width: "100%", borderCollapse: "collapse" }}
@@ -957,6 +642,7 @@ function PaymentAccountApproval() {
                       <RequestedData
                         request_for={payment?.request_for}
                         payment_description={payment?.payment_description}
+                        vendor={payment?.vendor}
                       />
                     </Box>
                     <Box
@@ -978,9 +664,9 @@ function PaymentAccountApproval() {
                     <Box component="td" sx={{ ...cellStyle }}>
                       <RowMenu
                         _id={payment._id}
-showApprove={["SCM", "Accounts"].includes(
-                              user?.department
-                            )}
+                        showApprove={["SCM", "Accounts"].includes(
+                          user?.department
+                        )}
                         onStatusChange={(id, status, remarks) =>
                           handleStatusChange(id, status, remarks)
                         }
@@ -1015,7 +701,7 @@ showApprove={["SCM", "Accounts"].includes(
                       style={{ width: "50px", height: "50px" }}
                     />
                     <Typography fontStyle={"italic"}>
-                      No approval available
+                      No payment available
                     </Typography>
                   </Box>
                 </Box>
@@ -1024,9 +710,7 @@ showApprove={["SCM", "Accounts"].includes(
           </Box>
         </Box>
       </Box>
-
-    
     </>
   );
-}
+};
 export default PaymentAccountApproval;

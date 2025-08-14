@@ -53,7 +53,7 @@ function PaymentRequest() {
   const [searchQuery, setSearchQuery] = useState("");
   const [pdfBlob, setPdfBlob] = useState(null);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
-  const [hiddenIds, setHiddenIds] = useState([]);
+  // const [hiddenIds, setHiddenIds] = useState([]);
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [pdfPayments, setPdfPayments] = useState([]);
@@ -91,16 +91,15 @@ function PaymentRequest() {
   // console.log(count);
   const total = responseData?.total || 0;
   const count = responseData?.count || paginatedData.length;
-  const Approved = responseData?.toBeApprovedCount || 0;
+  // const Approved = responseData?.toBeApprovedCount || 0;
 
   const startIndex = (currentPage - 1) * perPage + 1;
   const endIndex = Math.min(startIndex + count - 1, total);
 
   const totalPages = Math.ceil(total / perPage);
 
-  console.log("tobeApproved", Approved);
+  // console.log("tobeApproved", Approved);
 
-  // Sync URL params
   useEffect(() => {
     const params = {};
     if (currentPage > 1) params.page = currentPage;
@@ -281,7 +280,7 @@ function PaymentRequest() {
 
         if (successCount > 0) {
           toast.success(`${successCount} payment(s) approved successfully`);
-          setHiddenIds((prev) => [...prev, ...idsToApprove]);
+          // setHiddenIds((prev) => [...prev, ...idsToApprove]);
           setSelected((prev) =>
             prev.filter((id) => !idsToApprove.includes(id))
           );
@@ -337,7 +336,7 @@ function PaymentRequest() {
               toast.error(`Payment Rejected`, { autoClose: 2000 });
             else if (newStatus === "Pending")
               toast.info(`Payment marked as Pending`, { autoClose: 2000 });
-            setHiddenIds((prev) => [...prev, result._id]);
+            // setHiddenIds((prev) => [...prev, result._id]);
           } else {
             allSuccess = false;
             toast.error(result.message || `Approval failed for ${result._id}`);
