@@ -1,80 +1,37 @@
-import KeyboardDoubleArrowLeft from "@mui/icons-material/KeyboardDoubleArrowLeft";
-import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
-import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
-import KeyboardDoubleArrowRight from "@mui/icons-material/KeyboardDoubleArrowRight";
+
 import duration from "dayjs/plugin/duration";
-import relativeTime from "dayjs/plugin/relativeTime";
 import CheckIcon from "@mui/icons-material/Check";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import BlockIcon from "@mui/icons-material/Block";
 import DeleteIcon from "@mui/icons-material/Delete";
-import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
-import Button from "@mui/joy/Button";
-import Checkbox from "@mui/joy/Checkbox";
 import Chip from "@mui/joy/Chip";
-import FormControl from "@mui/joy/FormControl";
-import FormLabel from "@mui/joy/FormLabel";
-import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
-import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../../assets/alert-bell.svg";
 import {
   CircularProgress,
   Modal,
-  Option,
-  Select,
   Tooltip,
-  useTheme,
 } from "@mui/joy";
-import { FileText } from "lucide-react";
 import { PaymentProvider } from "../../store/Context/Payment_History";
 import PaymentHistory from "../PaymentHistory";
 import { useGetPaymentRecordQuery } from "../../redux/Accounts";
 import dayjs from "dayjs";
 
-const InstantRequest = forwardRef(() => {
-  const theme = useTheme();
-  const navigate = useNavigate();
-  const [error, setError] = useState(null);
-  const [selected, setSelected] = useState([]);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const initialPage = parseInt(searchParams.get("page")) || 1;
-  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
-  const [perPage, setPerPage] = useState(initialPageSize);
-  const [currentPage, setCurrentPage] = useState(initialPage);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [status, setStatus] = useState("");
+const InstantRequest = forwardRef(({searchQuery,perPage,currentPage,status}) => {
 
-  const { data: responseData, isLoading } = useGetPaymentRecordQuery({
-    page: currentPage,
-    pageSize: perPage,
-    search: searchQuery,
-    status,
+  const { data: responseData, isLoading , error} = useGetPaymentRecordQuery({
     tab: "instant",
+    search:searchQuery,
+    pageSize:perPage,
+    page:currentPage,
+    status:status
   });
 
   const paginatedData = responseData?.data || [];
-  const total = responseData?.total || 0;
-  const count = responseData?.count || paginatedData.length;
-
-  const totalPages = Math.ceil(total / perPage);
-  const startIndex = (currentPage - 1) * perPage + 1;
-  const endIndex = Math.min(startIndex + count - 1, total);
-
-  console.log("Payment Request Data:", paginatedData);
-
-  const handleSearch = (query) => {
-    setSearchQuery(query.toLowerCase());
-  };
-
-  useEffect(() => {
-    const page = parseInt(searchParams.get("page")) || 1;
-    setCurrentPage(page);
-  }, [searchParams]);
 
   const headerStyle = {
     position: "sticky",
@@ -461,7 +418,6 @@ const InstantRequest = forwardRef(() => {
                     <Tooltip title="View Summary" arrow>
                       <span>
                         <PaymentID
-                          currentPage={currentPage}
                           p_id={payment.p_id}
                           pay_id={payment.pay_id}
                           dbt_date={payment.dbt_date}

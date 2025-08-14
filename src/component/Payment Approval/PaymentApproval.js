@@ -53,12 +53,11 @@ function PaymentRequest() {
   const [searchQuery, setSearchQuery] = useState("");
   const [pdfBlob, setPdfBlob] = useState(null);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
-  const [hiddenIds, setHiddenIds] = useState([]);
+  // const [hiddenIds, setHiddenIds] = useState([]);
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [pdfPayments, setPdfPayments] = useState([]);
   const [blobUrl, setBlobUrl] = useState(null);
-
 
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
@@ -87,21 +86,20 @@ function PaymentRequest() {
   });
 
   const paginatedData = responseData?.data || [];
-  console.log("paginatedData :", paginatedData);
+  // console.log("paginatedData :", paginatedData);
 
   // console.log(count);
   const total = responseData?.total || 0;
   const count = responseData?.count || paginatedData.length;
-  const Approved = responseData?.toBeApprovedCount || 0;
+  // const Approved = responseData?.toBeApprovedCount || 0;
 
   const startIndex = (currentPage - 1) * perPage + 1;
   const endIndex = Math.min(startIndex + count - 1, total);
 
   const totalPages = Math.ceil(total / perPage);
 
-  console.log("tobeApproved", Approved);
+  // console.log("tobeApproved", Approved);
 
-  // Sync URL params
   useEffect(() => {
     const params = {};
     if (currentPage > 1) params.page = currentPage;
@@ -118,9 +116,6 @@ function PaymentRequest() {
     isAccount,
     setSearchParams,
   ]);
-
-
-
 
   const handleStatusChange = async (_id, newStatus, remarks = "") => {
     // console.log("📌 handleStatusChange got:", { _id, newStatus, remarks, remarksType: typeof remarks });
@@ -285,7 +280,7 @@ function PaymentRequest() {
 
         if (successCount > 0) {
           toast.success(`${successCount} payment(s) approved successfully`);
-          setHiddenIds((prev) => [...prev, ...idsToApprove]);
+          // setHiddenIds((prev) => [...prev, ...idsToApprove]);
           setSelected((prev) =>
             prev.filter((id) => !idsToApprove.includes(id))
           );
@@ -341,7 +336,7 @@ function PaymentRequest() {
               toast.error(`Payment Rejected`, { autoClose: 2000 });
             else if (newStatus === "Pending")
               toast.info(`Payment marked as Pending`, { autoClose: 2000 });
-            setHiddenIds((prev) => [...prev, result._id]);
+            // setHiddenIds((prev) => [...prev, result._id]);
           } else {
             allSuccess = false;
             toast.error(result.message || `Approval failed for ${result._id}`);
@@ -471,25 +466,25 @@ function PaymentRequest() {
       checked ? [...prev, idStr] : prev.filter((item) => item !== idStr)
     );
   };
-    const handlePrint = () => {
-  if (!blobUrl) return;
-  // Open PDF blob in new window and trigger print
-  const printWindow = window.open(blobUrl);
-  if (printWindow) {
-    printWindow.focus();
-    printWindow.print();
-  } else {
-    toast.error("Unable to open print window");
-  }
-};
+  const handlePrint = () => {
+    if (!blobUrl) return;
+    // Open PDF blob in new window and trigger print
+    const printWindow = window.open(blobUrl);
+    if (printWindow) {
+      printWindow.focus();
+      printWindow.print();
+    } else {
+      toast.error("Unable to open print window");
+    }
+  };
 
-useEffect(() => {
-  if (pdfBlob) {
-    const url = URL.createObjectURL(pdfBlob);
-    setBlobUrl(url);
-    return () => URL.revokeObjectURL(url); // cleanup on unmount or blob change
-  }
-}, [pdfBlob]);
+  useEffect(() => {
+    if (pdfBlob) {
+      const url = URL.createObjectURL(pdfBlob);
+      setBlobUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+  }, [pdfBlob]);
 
   const handleClosePdfModal = () => {
     if (blobUrl) URL.revokeObjectURL(blobUrl);
@@ -587,56 +582,53 @@ useEffect(() => {
     }
   };
 
- const PaymentID = ({ pay_id, cr_id, request_date, approved }) => {
+  const PaymentID = ({ pay_id, cr_id, request_date, approved }) => {
+    const maskId = (id) => {
+      if (!id) return "N/A";
+      return approved === "Approved" ? id : id.replace(/(\d{2})$/, "XX");
+    };
 
-  const maskId = (id) => {
-    if (!id) return "N/A";
-    return approved === "Approved" ? id : id.replace(/(\d{2})$/, "XX");
+    const idToShow = pay_id || cr_id;
+
+    return (
+      <>
+        {idToShow && (
+          <Box>
+            <Chip
+              variant="solid"
+              color="primary"
+              size="sm"
+              sx={{
+                fontWeight: 500,
+                fontFamily: "Inter, Roboto, sans-serif",
+                fontSize: 14,
+                color: "#fff",
+                "&:hover": {
+                  boxShadow: "md",
+                  opacity: 0.9,
+                },
+              }}
+            >
+              {maskId(idToShow)}
+            </Chip>
+          </Box>
+        )}
+
+        {request_date && (
+          <Box display="flex" alignItems="center" mt={0.5}>
+            <Calendar size={12} />
+            <span style={{ fontSize: 12, fontWeight: 600 }}>
+              Request Date :{" "}
+            </span>
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {request_date}
+            </Typography>
+          </Box>
+        )}
+      </>
+    );
   };
-
- 
-  const idToShow = pay_id || cr_id;
-
-  return (
-    <>
-      {idToShow && (
-        <Box>
-          <Chip
-            variant="solid"
-            color="primary"
-            size="sm"
-            sx={{
-              fontWeight: 500,
-              fontFamily: "Inter, Roboto, sans-serif",
-              fontSize: 14,
-              color: "#fff",
-              "&:hover": {
-                boxShadow: "md",
-                opacity: 0.9,
-              },
-            }}
-          >
-            {maskId(idToShow)}
-          </Chip>
-        </Box>
-      )}
-
-      {request_date && (
-        <Box display="flex" alignItems="center" mt={0.5}>
-          <Calendar size={12} />
-          <span style={{ fontSize: 12, fontWeight: 600 }}>
-            Request Date :{" "}
-          </span>
-          &nbsp;
-          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-            {request_date}
-          </Typography>
-        </Box>
-      )}
-    </>
-  );
-};
-
 
   const ProjectDetail = ({ project_id, client_name, group_name }) => {
     return (
@@ -702,30 +694,35 @@ useEffect(() => {
     );
   };
 
-  const BalanceData = ({ amount_requested, ClientBalance, groupBalance, po_value }) => {
+  const BalanceData = ({
+    amount_requested,
+    ClientBalance,
+    groupBalance,
+    po_value,
+  }) => {
     return (
       <>
         {amount_requested && (
+          <Box display="flex" alignItems="center" mb={0.5}>
+            <Money size={16} />
+            <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+              Requested Amount:{" "}
+            </span>
+            <Typography sx={{ fontSize: 13, fontWeight: 400, ml: 0.5 }}>
+              {amount_requested || "-"}
+            </Typography>
+          </Box>
+        )}
+
         <Box display="flex" alignItems="center" mb={0.5}>
-          <Money size={16} />
+          <Receipt size={16} />
           <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
-            Requested Amount:{" "}
+            Total PO (incl. GST):{" "}
           </span>
-          <Typography sx={{ fontSize: 13, fontWeight: 400, ml: 0.5 }}>
-            {amount_requested || "-"}
+          <Typography sx={{ fontSize: 12, fontWeight: 400, ml: 0.5 }}>
+            {po_value || "-"}
           </Typography>
         </Box>
-        )}
-          
-                <Box display="flex" alignItems="center" mb={0.5}>
-        <Receipt size={16} />
-        <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
-          Total PO (incl. GST):{" "}
-        </span>
-        <Typography sx={{ fontSize: 12, fontWeight: 400, ml: 0.5 }}>
-          {po_value || "-"}
-        </Typography>
-      </Box>
 
         <Box display="flex" alignItems="center" mt={0.5}>
           <CircleUser size={12} />
@@ -968,87 +965,149 @@ useEffect(() => {
 
           <Box
             className="OrderTableContainer"
-            variant="outlined"
             sx={{
-              display: { xs: "none", sm: "initial" },
               width: "100%",
-              flexShrink: 1,
-              overflow: "auto",
-              marginLeft: { xl: "15%", lg: "18%" },
+              borderRadius: "sm",
+              overflow: "hidden",
+              minHeight: 0,
+              ml: { xl: "15%", lg: "18%", sm: 0 },
               maxWidth: { lg: "85%", sm: "100%" },
-              maxHeight: "600px",
-              borderRadius: "12px",
+              boxSizing: "border-box",
               border: "1px solid",
-              borderColor: "divider",
+              borderColor: "neutral.outlinedBorder",
               bgcolor: "background.body",
-              "&::-webkit-scrollbar": { width: "8px" },
-              "&::-webkit-scrollbar-track": {
-                background: "#f0f0f0",
-                borderRadius: "8px",
-              },
-              "&::-webkit-scrollbar-thumb": {
-                backgroundColor: "#1976d2",
-                borderRadius: "8px",
-              },
+              boxShadow: 1,
             }}
           >
-            <Tabs
-              value={activeTab}
-              onChange={(e, val) => {
-                setActiveTab(val);
-                setSearchParams((prev) => ({
-                  ...Object.fromEntries(prev.entries()),
-                  tab: val,
-                  page: 1,
-                }));
-                setCurrentPage(1);
+            <Box
+              sx={{
+                position: "sticky",
+                top: 0,
+                zIndex: 10,
+                // width:"fit-content",
+                backgroundColor: "background.body",
+                borderBottom: "1px solid",
+                borderColor: "neutral.outlinedBorder",
+                px: 2,
+                py: 1,
+              }}
+            >
+              <Tabs
+                value={activeTab}
+                onChange={(e, val) => {
+                  setActiveTab(val);
+                  setSearchParams((prev) => ({
+                    ...Object.fromEntries(prev.entries()),
+                    tab: val,
+                    page: 1,
+                  }));
+                  setCurrentPage(1);
+                }}
+                variant="plain"
+                sx={{
+                  borderRadius: "xl",
+                  p: 0.5,
+                  minHeight: "50px",
                 }}
               >
-                <TabList>
-                <Tab value="instant">Instant Payments ({responseData?.instantCount || 0})</Tab>
-                <Tab value="credit">
-                  Credit Payments ({responseData?.creditCount || 0})
-                </Tab>
+                <TabList
+                  disableUnderline
+                  sx={{
+                    borderRadius: "xl",
+                    overflow: "hidden",
+                    minHeight: "36px",
+                    backgroundColor: "background.level1",
+                    border: "1px solid",
+                    borderColor: "neutral.outlinedBorder",
+                  }}
+                >
+                  {["instant", "credit", "toBeApproved", "overdue"].map(
+                    (tab) => (
+                      <Tab
+                        key={tab}
+                        variant="soft"
+                        color="neutral"
+                        disableIndicator
+                        value={tab}
+                        sx={{
+                          fontWeight: 500,
+                          transition: "all 0.2s",
+                          minHeight: "36px",
+                          "&:hover": { backgroundColor: "neutral.softHoverBg" },
+                        }}
+                      >
+                        {tab === "instant"
+                          ? `Instant Payments (${responseData?.instantCount || 0})`
+                          : tab === "credit"
+                            ? `Credit Payments (${responseData?.creditCount || 0})`
+                            : tab === "toBeApproved"
+                              ? `To Be Approved (${responseData?.toBeApprovedCount || 0})`
+                              : `Overdue (${responseData?.overdueCount || 0})`}
+                      </Tab>
+                    )
+                  )}
+                </TabList>
+              </Tabs>
+            </Box>
 
-                <Tab value="toBeApproved">
-                  To Be Approved ({responseData?.toBeApprovedCount || 0})
-                </Tab>
-                <Tab value="overdue">
-                  Overdue ({responseData?.overdueCount || 0})
-                </Tab>
-              </TabList>
-
-              <TabPanel value="instant">
+            {/* Table Content */}
+            <Box
+              sx={{
+                maxHeight: 600,
+                overflow: "auto",
+                "& table thead th": {
+                  position: "sticky",
+                  top: 0,
+                  backgroundColor: "background.level1",
+                  zIndex: 5,
+                },
+                "&:hover": {
+                  boxShadow: 3,
+                  transition: "0.3s all",
+                },
+              }}
+            >
+              {activeTab === "instant" && (
                 <PaymentAccountApproval
-                  data={activeTab === "instant" ? paginatedData : []}
+                  data={paginatedData}
                   isLoading={isLoading}
+                  page={currentPage}
+                  pageSize={perPage}
+                  search={searchQuery}
+                  sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
                 />
-              
-              </TabPanel>
-
-              <TabPanel value="credit">
+              )}
+              {activeTab === "credit" && (
                 <CreditPayment
-                  data={activeTab === "credit" ? paginatedData : []}
+                  data={paginatedData}
                   isLoading={isLoading}
+                  page={currentPage}
+                  pageSize={perPage}
+                  search={searchQuery}
+                  sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
                 />
-              
-              </TabPanel>
-
-              <TabPanel value="toBeApproved">
+              )}
+              {activeTab === "toBeApproved" && (
                 <ApprovalPayment
-                  data={activeTab === "toBeApproved" ? paginatedData : []}
+                  data={paginatedData}
                   isLoading={isLoading}
+                  page={currentPage}
+                  pageSize={perPage}
+                  search={searchQuery}
+                  sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
                 />
-                
-              </TabPanel>
-              <TabPanel value="overdue">
+              )}
+              {activeTab === "overdue" && (
                 <OverDue
-                  data={activeTab === "overdue" ? paginatedData : []}
+                  data={paginatedData}
                   isLoading={isLoading}
+                  page={currentPage}
+                  pageSize={perPage}
+                  search={searchQuery}
+                  sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
                 />
-                
-              </TabPanel>
-            </Tabs>
+              )}
+            </Box>
           </Box>
         </>
       ) : (
@@ -1321,17 +1380,20 @@ useEffect(() => {
           )}
 
           <Stack direction="row" justifyContent="flex-end" spacing={2} mt={2}>
-             <Button variant="solid" color="primary" onClick={() => setIsConfirmModalOpen(true)}>
-    Confirm
-  </Button>
-  <Button variant="outlined" color="danger" onClick={handlePrint}>
-    Print
-  </Button>
-  <Button variant="outlined" onClick={handleClosePdfModal}>
-    Cancel
-  </Button>
-</Stack>
-
+            <Button
+              variant="solid"
+              color="primary"
+              onClick={() => setIsConfirmModalOpen(true)}
+            >
+              Confirm
+            </Button>
+            <Button variant="outlined" color="danger" onClick={handlePrint}>
+              Print
+            </Button>
+            <Button variant="outlined" onClick={handleClosePdfModal}>
+              Cancel
+            </Button>
+          </Stack>
         </ModalDialog>
       </Modal>
 
