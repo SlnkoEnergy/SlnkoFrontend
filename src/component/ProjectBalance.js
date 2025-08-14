@@ -582,6 +582,15 @@ const ProjectBalances = forwardRef((props, ref) => {
       </>
     );
   };
+  const formatCurrencyINR = (val) => {
+    if (val === null || val === undefined) return "₹0";
+    return val.toLocaleString("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: val % 1 === 0 ? 0 : 2,
+      maximumFractionDigits: 2,
+    });
+  };
 
   return (
     <>
@@ -699,7 +708,12 @@ const ProjectBalances = forwardRef((props, ref) => {
                     const value = paginatedDataTotals?.[key] || 0;
                     const formattedValue = format
                       ? format(value)
-                      : value.toLocaleString("en-IN");
+                      : value.toLocaleString("en-IN", {
+                          style: "currency",
+                          currency: "INR",
+                          minimumFractionDigits: value % 1 === 0 ? 0 : 2,
+                          maximumFractionDigits: 2,
+                        });
 
                     const isRed =
                       key.includes("Debit") || key.includes("Required");
@@ -772,56 +786,45 @@ const ProjectBalances = forwardRef((props, ref) => {
             : [
                 {
                   label: "Total Plant Capacity (MW AC)",
-                  value: `${paginatedDataTotals.totalProjectKwp?.toLocaleString("en-IN")} MW AC`,
+                  value: `${formatCurrencyINR(paginatedDataTotals.totalProjectKwp)} MW AC`,
                 },
                 {
                   label: "Total Credit",
-                  value:
-                    paginatedDataTotals.totalCreditSum?.toLocaleString(
-                      "en-IN"
-                    ) || 0,
+                  value: formatCurrencyINR(paginatedDataTotals.totalCreditSum),
                 },
                 {
                   label: "Total Debit",
-                  value:
-                    paginatedDataTotals.totalDebitSum?.toLocaleString(
-                      "en-IN"
-                    ) || 0,
+                  value: formatCurrencyINR(paginatedDataTotals.totalDebitSum),
                 },
                 {
                   label: "Total Adjustment",
-                  value:
-                    paginatedDataTotals.totalAdjustmentSum?.toLocaleString(
-                      "en-IN"
-                    ) || 0,
+                  value: formatCurrencyINR(
+                    paginatedDataTotals.totalAdjustmentSum
+                  ),
                 },
                 {
                   label: "Available Amount (Old)",
-                  value:
-                    paginatedDataTotals.totalAvailableAmount?.toLocaleString(
-                      "en-IN"
-                    ) || 0,
+                  value: formatCurrencyINR(
+                    paginatedDataTotals.totalAvailableAmount
+                  ),
                 },
                 {
                   label: "Balance with Slnko",
-                  value:
-                    paginatedDataTotals.totalBalanceSlnko?.toLocaleString(
-                      "en-IN"
-                    ) || 0,
+                  value: formatCurrencyINR(
+                    paginatedDataTotals.totalBalanceSlnko
+                  ),
                 },
                 {
                   label: "Balance Payable to Vendors",
-                  value:
-                    paginatedDataTotals.totalBalancePayable?.toLocaleString(
-                      "en-IN"
-                    ) || 0,
+                  value: formatCurrencyINR(
+                    paginatedDataTotals.totalBalancePayable
+                  ),
                 },
                 {
                   label: "Balance Required",
-                  value:
-                    paginatedDataTotals.totalBalanceRequired?.toLocaleString(
-                      "en-IN"
-                    ) || 0,
+                  value: formatCurrencyINR(
+                    paginatedDataTotals.totalBalanceRequired
+                  ),
                 },
               ].map((item, index) => (
                 <Box

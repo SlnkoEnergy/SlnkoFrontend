@@ -8,9 +8,13 @@ export const usePayment = () => useContext(PaymentContext);
 export const PaymentProvider = ({ children, po_number }) => {
   const { data, isLoading, error } = useGetPaymentHistoryQuery({ po_number });
 
+  // console.log("Po number context ",po_number);
+  
+
   const value = {
     history: data?.history || [],
-    total: data?.total || 0,
+    total_debited: data?.total_debited || 0,
+    po_value: data?.po_value || 0,
     isLoading,
     error,
   };

@@ -13,14 +13,23 @@ const AnimatedNumber = ({ value }) => {
     }
   }, [value]);
 
+  const formatINR = (num) => {
+    return num.toLocaleString("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: isInteger ? 0 : 2,
+      maximumFractionDigits: 2
+    });
+  };
+
   return (
     <CountUp
       start={prevValueRef.current}
       end={value}
       duration={1.2}
-      separator=","
       decimals={isInteger ? 0 : 2}
       preserveValue
+      formattingFn={formatINR}
       ref={(el) => {
         if (el) countUpRef.current = el;
       }}
