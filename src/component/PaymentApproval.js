@@ -22,8 +22,10 @@ import { toast } from "react-toastify";
 import NoData from "../assets/alert-bell.svg";
 import Axios from "../utils/Axios";
 import { useGetPaymentApprovalQuery } from "../redux/Accounts";
-import { CircularProgress } from "@mui/joy";
-import { Calendar, CircleUser, UsersRound } from "lucide-react";
+import { CircularProgress, Modal } from "@mui/joy";
+import { Calendar, CircleUser, FileText, UsersRound } from "lucide-react";
+import { PaymentProvider } from "../store/Context/Payment_History";
+import PaymentHistory from "./PaymentHistory";
 
 function PaymentRequest() {
   const [payments, setPayments] = useState([]);
@@ -229,24 +231,24 @@ function PaymentRequest() {
       <>
         {payment_id && (
           <Box>
-          <Chip
-            variant="solid"
-            color="primary"
-            size="sm"
-            sx={{
-              fontWeight: 500,
-              fontFamily: "Inter, Roboto, sans-serif",
-              fontSize: 14,
-              color: "#fff",
-              "&:hover": {
-                boxShadow: "md",
-                opacity: 0.9,
-              },
-            }}
-          >
-            {payment_id || "N/A"}
-          </Chip>
-        </Box>
+            <Chip
+              variant="solid"
+              color="primary"
+              size="sm"
+              sx={{
+                fontWeight: 500,
+                fontFamily: "Inter, Roboto, sans-serif",
+                fontSize: 14,
+                color: "#fff",
+                "&:hover": {
+                  boxShadow: "md",
+                  opacity: 0.9,
+                },
+              }}
+            >
+              {payment_id || "N/A"}
+            </Chip>
+          </Box>
         )}
 
         {request_date && (
@@ -303,7 +305,19 @@ function PaymentRequest() {
     );
   };
 
-  const RequestedData = ({ request_for, payment_description }) => {
+  const RequestedData = ({
+    request_for,
+    payment_description,
+    vendor,
+    po_number,
+  }) => {
+    const [open, setOpen] = useState(false);
+
+    const handleOpen = () => setOpen(true);
+    const handleClose = () => setOpen(false);
+
+    
+
     return (
       <>
         {request_for && (
@@ -313,6 +327,45 @@ function PaymentRequest() {
             </span>
           </Box>
         )}
+        {po_number && (
+          <Box
+            display="flex"
+            alignItems="center"
+            mt={0.5}
+            sx={{ cursor: "pointer" }}
+            onClick={handleOpen}
+          >
+            <FileText size={12} />
+            <span style={{ fontSize: 12, fontWeight: 600 }}>PO Number: </span>
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {po_number}
+            </Typography>
+          </Box>
+        )}
+        <Modal open={open} onClose={handleClose}>
+          <Sheet
+            variant="outlined"
+            sx={{
+              mx: "auto",
+              mt: "8vh",
+              width: { xs: "95%", sm: 600 },
+              borderRadius: "12px",
+              p: 3,
+              boxShadow: "lg",
+              maxHeight: "80vh",
+              overflow: "auto",
+              backgroundColor: "#fff",
+              minWidth: 950,
+            }}
+          >
+            {po_number && (
+              <PaymentProvider po_number={po_number}>
+                <PaymentHistory po_number={po_number} />
+              </PaymentProvider>
+            )}
+          </Sheet>
+        </Modal>
 
         {payment_description && (
           <Box display="flex" alignItems="center" mt={0.5}>
@@ -325,6 +378,16 @@ function PaymentRequest() {
             </Typography>
           </Box>
         )}
+        <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+          <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
+            🏢 Vendor:
+          </Typography>
+          <Typography
+            sx={{ fontSize: 12, fontWeight: 400, wordBreak: "break-word" }}
+          >
+            {vendor}
+          </Typography>
+        </Box>
       </>
     );
   };
@@ -562,6 +625,8 @@ function PaymentRequest() {
                       <RequestedData
                         request_for={payment?.request_for}
                         payment_description={payment?.payment_description}
+                        vendor={payment?.vendor}
+                        po_number={payment?.po_number}
                       />
                     </Box>
                     <Box

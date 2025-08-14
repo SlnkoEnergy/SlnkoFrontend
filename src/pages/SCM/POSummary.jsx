@@ -43,17 +43,7 @@ function POSummary() {
     }
   };
 
-  const allowedUsers = [
-    "IT Team",
-    "Guddu Rani Dubey",
-    "Prachi Singh",
-    "Ajay Singh",
-    "Aryan Maheshwari",
-    "Sarthak Sharma",
-    "Naresh Kumar",
-    "Shubham Gupta",
-    "Gagan Tayal",
-  ];
+  const allowedUsers = ["IT Team", "Guddu Rani Dubey", "Prachi Singh"];
 
   const isAllowed =
     allowedUsers.includes(user?.name) || user?.department === "admin";
@@ -149,28 +139,13 @@ function POSummary() {
                   justifyContent: "center",
                 }}
               >
-               
-
-                {user?.name !== "Gagan Tayal" && (
-                  <>
-                    <Button
-                      color="primary"
-                      size="sm"
-                      onClick={() => navigate("/add_vendor")}
-                    >
-                      Add Vendor +
-                    </Button>
-                    {/* <Button
-                    <Button
-                      color="primary"
-                      startDecorator={<DownloadRoundedIcon />}
-                      size="sm"
-                      onClick={handleExportToCSV}
-                    >
-                      Export to CSV
-                    </Button> */}
-                  </>
-                )}
+                <Button
+                  color="primary"
+                  size="sm"
+                  onClick={() => navigate("/add_vendor")}
+                >
+                  Add Vendor +
+                </Button>
               </Box>
             )}
           </Box>

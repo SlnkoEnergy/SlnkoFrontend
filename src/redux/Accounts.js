@@ -45,7 +45,8 @@ export const AccountsApi = createApi({
         `accounting/payment-history?po_number=${po_number}`,
       transformResponse: (response) => ({
         history: response.history || [],
-        total: response.total || 0,
+        total_debited: response.total_debited || 0,
+        po_value: response.po_value || 0,
       }),
       providesTags: ["Accounts"],
     }),
@@ -83,20 +84,23 @@ export const AccountsApi = createApi({
     }),
 
     getExportPaymentHistory: builder.query({
-      query: ({ po_number }) => ({
-        url: `accounting/debithistorycsv?po_number=${po_number}`,
-        responseHandler: async (response) => {
-          const blob = await response.blob();
-          return {
-            blob,
-            filename:
-              response.headers
-                .get("Content-Disposition")
-                ?.split("filename=")[1] || "payment-history.csv",
-          };
-        },
-        method: "GET",
-      }),
+      async queryFn({ po_number }, _queryApi, _extraOptions, fetchWithBQ) {
+        const result = await fetchWithBQ({
+          url: `accounting/debithistorycsv?po_number=${po_number}`,
+          method: "GET",
+          responseHandler: (response) => response.blob(),
+        });
+
+        if (result.error) return { error: result.error };
+
+        const blob = result.data;
+        const filename =
+          result.meta?.response?.headers
+            ?.get("Content-Disposition")
+            ?.split("filename=")[1] || "payment-history.csv";
+
+        return { data: { blob, filename } };
+      },
     }),
 
     getPaymentApproved: builder.query({
