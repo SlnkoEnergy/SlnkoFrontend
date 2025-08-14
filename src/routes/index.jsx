@@ -105,6 +105,7 @@ import SalesIframe from "../component/Sales_Iframe";
 import Products from "../pages/Databases/Products";
 import Categories from "../pages/Databases/Categories";
 import Product_Form from "../pages/Databases/Product_Form";
+import PurchaseRequestForm from "../pages/CAM/PurchaseRequestForm";
 
 function index() {
   return (
@@ -351,6 +352,14 @@ function index() {
         element={
           <PrivateRoute>
             <PurchaseReqDetails />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/pr_form"
+        element={
+          <PrivateRoute>
+            <PurchaseRequestForm />
           </PrivateRoute>
         }
       />
