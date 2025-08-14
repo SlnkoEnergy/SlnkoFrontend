@@ -186,11 +186,11 @@ const PaymentRequest = forwardRef((props, ref) => {
               maxHeight: "80vh",
               overflow: "auto",
               backgroundColor: "#fff",
-              minWidth:950
+              minWidth: 950,
             }}
           >
             <PaymentProvider po_number={po_number}>
-              <PaymentHistory />
+              <PaymentHistory po_number={po_number} />
             </PaymentProvider>
           </Sheet>
         </Modal>

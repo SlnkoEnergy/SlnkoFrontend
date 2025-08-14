@@ -12,6 +12,7 @@ import {
   Grid,
   IconButton,
   Input,
+  Modal,
   Typography,
 } from "@mui/joy";
 import Sheet from "@mui/joy/Sheet";
@@ -33,6 +34,8 @@ import Img12 from "../../assets/slnko_blue_logo.png";
 import Axios from "../../utils/Axios";
 import { useGetCustomerSummaryQuery } from "../../redux/Accounts";
 import { debounce } from "lodash";
+import { PaymentProvider } from "../../store/Context/Payment_History";
+import PaymentHistory from "../PaymentHistory";
 
 const Customer_Payment_Summary = () => {
   const navigate = useNavigate();
@@ -452,7 +455,7 @@ const Customer_Payment_Summary = () => {
 
       toast.success("Adjustment(s) deleted successfully.");
       setSelectedAdjust([]);
-      refetch(); // 🔄 Refresh adjustment history from backend
+      refetch();
     } catch (err) {
       console.error("Error deleting adjustments:", err);
       const msg =
@@ -651,6 +654,15 @@ const Customer_Payment_Summary = () => {
       </Grid>
     );
   };
+  const [open, setOpen] = useState(false);
+  const [poNumber, setPoNumber] = useState(null);
+
+  const handleOpen = (po) => {
+    setPoNumber(po);
+    setOpen(true);
+  };
+
+  const handleClose = () => setOpen(false);
 
   return (
     <Sheet
@@ -1399,7 +1411,12 @@ const Customer_Payment_Summary = () => {
               ) : ClientSummary.length > 0 ? (
                 ClientSummary.map((client) => (
                   <tr key={client._id}>
-                    <td>{client.po_number || "N/A"}</td>
+                    <td
+                      style={{ cursor: "pointer",fontWeight:500 }}
+                      onClick={() => handleOpen(client.po_number)}
+                    >
+                      {client.po_number || "N/A"}
+                    </td>
                     <td>{client.vendor || "N/A"}</td>
                     <td>{client.item_name || "N/A"}</td>
                     <td>₹ {(client?.po_value || 0).toLocaleString("en-IN")}</td>
@@ -1466,6 +1483,29 @@ const Customer_Payment_Summary = () => {
               )}
             </tfoot>
           </Table>
+          <Modal open={open} onClose={handleClose}>
+            <Sheet
+              variant="outlined"
+              sx={{
+                mx: "auto",
+                mt: "8vh",
+                width: { xs: "95%", sm: 600 },
+                borderRadius: "12px",
+                p: 3,
+                boxShadow: "lg",
+                maxHeight: "80vh",
+                overflow: "auto",
+                backgroundColor: "#fff",
+                minWidth: 950,
+              }}
+            >
+              {poNumber && (
+                <PaymentProvider po_number={poNumber}>
+                  <PaymentHistory po_number={poNumber} />
+                </PaymentProvider>
+              )}
+            </Sheet>
+          </Modal>
         </Sheet>
       </Box>
 
