@@ -1,8 +1,5 @@
 import BlockIcon from "@mui/icons-material/Block";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
-import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import KeyboardDoubleArrowLeft from "@mui/icons-material/KeyboardDoubleArrowLeft";
 import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
@@ -14,13 +11,12 @@ import Checkbox from "@mui/joy/Checkbox";
 import Chip from "@mui/joy/Chip";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
-import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
+import IconButton from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
-import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import NoData from "../../assets/alert-bell.svg";
@@ -39,32 +35,24 @@ import {
 } from "@mui/joy";
 import { Calendar, CircleUser, Receipt, UsersRound } from "lucide-react";
 import PaymentAccountApproval from "./PaymentAccountApproval";
-import { skipToken } from "@reduxjs/toolkit/query";
 import CreditPayment from "./creditPayment";
 import ApprovalPayment from "./ToBeApproved";
 import OverDue from "./Overdue";
 import { Money } from "@mui/icons-material";
 
 function PaymentRequest() {
-  const [payments, setPayments] = useState([]);
-  const [error, setError] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [pdfBlob, setPdfBlob] = useState(null);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
-  // const [hiddenIds, setHiddenIds] = useState([]);
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [pdfPayments, setPdfPayments] = useState([]);
   const [blobUrl, setBlobUrl] = useState(null);
-
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
-
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [perPage, setPerPage] = useState(initialPageSize);
-
   const [activeTab, setActiveTab] = useState(() => {
     return searchParams.get("tab") || "instant";
   });
@@ -78,14 +66,18 @@ function PaymentRequest() {
 
   const isAccount = user?.department === "Accounts";
 
-  const { data: responseData, isLoading } = useGetPaymentApprovalQuery({
+  const {
+    data: responseData,
+    isLoading,
+    error,
+  } = useGetPaymentApprovalQuery({
     page: currentPage,
     pageSize: perPage,
     search: searchQuery,
     ...(isAccount ? { tab: activeTab } : {}),
   });
 
-  const paginatedData = responseData?.data || [];
+  const [paginatedData, setPaginatedData] = useState(responseData?.data || []);
   // console.log("paginatedData :", paginatedData);
 
   // console.log(count);
@@ -98,22 +90,21 @@ function PaymentRequest() {
 
   const totalPages = Math.ceil(total / perPage);
 
-  // console.log("tobeApproved", Approved);
-
   useEffect(() => {
     const params = {};
+    if (isAccount) params.tab = activeTab;
     if (currentPage > 1) params.page = currentPage;
     if (perPage !== 10) params.pageSize = perPage;
     if (searchQuery) params.search = searchQuery;
-    if (isAccount) params.tab = activeTab;
 
     setSearchParams(params, { replace: true });
   }, [
+    isAccount,
+    activeTab,
     currentPage,
     perPage,
     searchQuery,
-    activeTab,
-    isAccount,
+
     setSearchParams,
   ]);
 
@@ -184,7 +175,7 @@ function PaymentRequest() {
       // console.log("📌 Selected PO IDs for PDF:", poIds);
       // console.log("📌 Selected Payments for PDF:", selectedPayments);
 
-      setPdfPayments(selectedPayments);
+      // setPdfPayments(selectedPayments);
       await handleMultiPDFDownload(selectedPayments);
     }
   };
@@ -537,6 +528,7 @@ function PaymentRequest() {
   };
 
   const handleSearch = (query) => {
+    setPaginatedData([]);
     setSearchQuery(query);
     setCurrentPage(1);
   };
@@ -749,165 +741,6 @@ function PaymentRequest() {
     );
   };
 
-  const PaymentApprovalToolbar = ({
-    user,
-    searchQuery,
-    handleSearch,
-    perPage,
-    setPerPage,
-    currentPage,
-    setCurrentPage,
-    startIndex,
-    endIndex,
-    total,
-    totalPages,
-    renderFilters,
-  }) => {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 2,
-          px: 1,
-          py: 1,
-          ml: { xl: "15%", lg: "18%", sm: 0 },
-          maxWidth: { lg: "85%", sm: "100%" },
-          borderRadius: "md",
-          mb: 2,
-        }}
-      >
-        {/* Left Side - Filters + Search */}
-        <Box
-          sx={{
-            display: "flex",
-            mb: 1,
-            gap: 1,
-            flexDirection: { xs: "column", sm: "row" },
-            alignItems: { xs: "none", sm: "center" },
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
-        >
-          {user?.department === "Internal" &&
-            user?.role === "manager" &&
-            renderFilters?.()}
-
-          <Box
-            className="SearchAndFilters-tabletUp"
-            sx={{
-              borderRadius: "sm",
-              py: 2,
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              flexWrap: "wrap",
-              gap: 1.5,
-            }}
-          >
-            <FormControl sx={{ flex: 1 }} size="sm">
-              <FormLabel>Search here</FormLabel>
-              <Input
-                size="sm"
-                placeholder="Search by Pay ID, Items, Clients Name or Vendor"
-                startDecorator={<SearchIcon />}
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                sx={{
-                  width: 350,
-                  borderColor: "neutral.outlinedBorder",
-                  borderBottom: searchQuery
-                    ? "2px solid #1976d2"
-                    : "1px solid #ddd",
-                  borderRadius: 5,
-                  boxShadow: "none",
-                  "&:hover": {
-                    borderBottom: "2px solid #1976d2",
-                  },
-                  "&:focus-within": {
-                    borderBottom: "2px solid #1976d2",
-                  },
-                }}
-              />
-            </FormControl>
-          </Box>
-        </Box>
-
-        {/* Right Side - Rows per page + Pagination */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 1.5,
-          }}
-        >
-          {/* Rows per page */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography level="body-sm">Rows per page:</Typography>
-            <Select
-              size="sm"
-              value={perPage}
-              onChange={(_, value) => {
-                if (value) {
-                  setPerPage(Number(value));
-                  setCurrentPage(1);
-                }
-              }}
-              sx={{ minWidth: 64 }}
-            >
-              {[10, 25, 50, 100].map((value) => (
-                <Option key={value} value={value}>
-                  {value}
-                </Option>
-              ))}
-            </Select>
-          </Box>
-
-          {/* Pagination info */}
-          <Typography level="body-sm">
-            {`${startIndex}-${endIndex} of ${total}`}
-          </Typography>
-
-          {/* Navigation buttons */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <IconButton
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(1)}
-            >
-              <KeyboardDoubleArrowLeft />
-            </IconButton>
-            <IconButton
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            >
-              <KeyboardArrowLeft />
-            </IconButton>
-            <IconButton
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
-            >
-              <KeyboardArrowRight />
-            </IconButton>
-            <IconButton
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(totalPages)}
-            >
-              <KeyboardDoubleArrowRight />
-            </IconButton>
-          </Box>
-        </Box>
-      </Box>
-    );
-  };
-
   return (
     <>
       {/* Tablet and Up Filters */}
@@ -948,20 +781,149 @@ function PaymentRequest() {
       {isAccount ? (
         // ---------------- Accounts View with Tabs ----------------
         <>
-          <PaymentApprovalToolbar
-            user={user}
-            searchQuery={searchQuery}
-            handleSearch={setSearchQuery}
-            perPage={perPage}
-            setPerPage={setPerPage}
-            currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
-            startIndex={startIndex}
-            endIndex={endIndex}
-            total={total}
-            totalPages={totalPages}
-            renderFilters={renderFilters()}
-          />
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 2,
+              px: 1,
+              py: 1,
+              ml: { xl: "15%", lg: "18%", sm: 0 },
+              maxWidth: { lg: "85%", sm: "100%" },
+              borderRadius: "md",
+              mb: 2,
+            }}
+          >
+            {/* Left Side - Filters + Search */}
+            <Box
+              sx={{
+                display: "flex",
+                mb: 1,
+                gap: 1,
+                flexDirection: { xs: "column", sm: "row" },
+                alignItems: { xs: "none", sm: "center" },
+                flexWrap: "wrap",
+                justifyContent: "center",
+              }}
+            >
+              {user?.department === "Internal" &&
+                user?.role === "manager" &&
+                renderFilters?.()}
+
+              <Box
+                className="SearchAndFilters-tabletUp"
+                sx={{
+                  borderRadius: "sm",
+                  py: 2,
+                  display: "flex",
+                  flexDirection: { xs: "column", md: "row" },
+                  flexWrap: "wrap",
+                  gap: 1.5,
+                }}
+              >
+                <FormControl sx={{ flex: 1 }} size="sm">
+                  <FormLabel>Search here</FormLabel>
+                  <Input
+                    size="sm"
+                    placeholder="Search by Pay ID, Items, Clients Name or Vendor"
+                    startDecorator={<SearchIcon />}
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    sx={{
+                      width: 350,
+                      borderColor: "neutral.outlinedBorder",
+                      borderBottom: searchQuery
+                        ? "2px solid #1976d2"
+                        : "1px solid #ddd",
+                      borderRadius: 5,
+                      boxShadow: "none",
+                      "&:hover": {
+                        borderBottom: "2px solid #1976d2",
+                      },
+                      "&:focus-within": {
+                        borderBottom: "2px solid #1976d2",
+                      },
+                    }}
+                  />
+                </FormControl>
+              </Box>
+            </Box>
+
+            {/* Right Side - Rows per page + Pagination */}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 1.5,
+              }}
+            >
+              {/* Rows per page */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Typography level="body-sm">Rows per page:</Typography>
+                <Select
+                  size="sm"
+                  value={perPage}
+                  onChange={(_, value) => {
+                    if (value) {
+                      setPerPage(Number(value));
+                      setCurrentPage(1);
+                    }
+                  }}
+                  sx={{ minWidth: 64 }}
+                >
+                  {[10, 25, 50, 100].map((value) => (
+                    <Option key={value} value={value}>
+                      {value}
+                    </Option>
+                  ))}
+                </Select>
+              </Box>
+
+              {/* Pagination info */}
+              <Typography level="body-sm">
+                {`${startIndex}-${endIndex} of ${total}`}
+              </Typography>
+
+              {/* Navigation buttons */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <IconButton
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(1)}
+                >
+                  <KeyboardDoubleArrowLeft />
+                </IconButton>
+                <IconButton
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                >
+                  <KeyboardArrowLeft />
+                </IconButton>
+                <IconButton
+                  size="sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                >
+                  <KeyboardArrowRight />
+                </IconButton>
+                <IconButton
+                  size="sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(totalPages)}
+                >
+                  <KeyboardDoubleArrowRight />
+                </IconButton>
+              </Box>
+            </Box>
+          </Box>
 
           <Box
             className="OrderTableContainer"
@@ -1071,9 +1033,9 @@ function PaymentRequest() {
                 <PaymentAccountApproval
                   data={paginatedData}
                   isLoading={isLoading}
-                  page={currentPage}
-                  pageSize={perPage}
-                  search={searchQuery}
+                  searchQuery={searchQuery}
+                  perPage={perPage}
+                  currentPage={currentPage}
                   sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
                 />
               )}
@@ -1081,9 +1043,9 @@ function PaymentRequest() {
                 <CreditPayment
                   data={paginatedData}
                   isLoading={isLoading}
-                  page={currentPage}
-                  pageSize={perPage}
-                  search={searchQuery}
+                  searchQuery={searchQuery}
+                  perPage={perPage}
+                  currentPage={currentPage}
                   sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
                 />
               )}
@@ -1091,9 +1053,9 @@ function PaymentRequest() {
                 <ApprovalPayment
                   data={paginatedData}
                   isLoading={isLoading}
-                  page={currentPage}
-                  pageSize={perPage}
-                  search={searchQuery}
+                  searchQuery={searchQuery}
+                  perPage={perPage}
+                  currentPage={currentPage}
                   sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
                 />
               )}
@@ -1101,9 +1063,9 @@ function PaymentRequest() {
                 <OverDue
                   data={paginatedData}
                   isLoading={isLoading}
-                  page={currentPage}
-                  pageSize={perPage}
-                  search={searchQuery}
+                  searchQuery={searchQuery}
+                  perPage={perPage}
+                  currentPage={currentPage}
                   sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
                 />
               )}
@@ -1113,20 +1075,149 @@ function PaymentRequest() {
       ) : (
         // ---------------- SCM / CAM View without Tabs ----------------
         <>
-          <PaymentApprovalToolbar
-            user={user}
-            searchQuery={searchQuery}
-            handleSearch={setSearchQuery}
-            perPage={perPage}
-            setPerPage={setPerPage}
-            currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
-            startIndex={startIndex}
-            endIndex={endIndex}
-            total={total}
-            totalPages={totalPages}
-            renderFilters={renderFilters}
-          />
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 2,
+              px: 1,
+              py: 1,
+              ml: { xl: "15%", lg: "18%", sm: 0 },
+              maxWidth: { lg: "85%", sm: "100%" },
+              borderRadius: "md",
+              mb: 2,
+            }}
+          >
+            {/* Left Side - Filters + Search */}
+            <Box
+              sx={{
+                display: "flex",
+                mb: 1,
+                gap: 1,
+                flexDirection: { xs: "column", sm: "row" },
+                alignItems: { xs: "none", sm: "center" },
+                flexWrap: "wrap",
+                justifyContent: "center",
+              }}
+            >
+              {user?.department === "Internal" &&
+                user?.role === "manager" &&
+                renderFilters?.()}
+
+              <Box
+                className="SearchAndFilters-tabletUp"
+                sx={{
+                  borderRadius: "sm",
+                  py: 2,
+                  display: "flex",
+                  flexDirection: { xs: "column", md: "row" },
+                  flexWrap: "wrap",
+                  gap: 1.5,
+                }}
+              >
+                <FormControl sx={{ flex: 1 }} size="sm">
+                  <FormLabel>Search here</FormLabel>
+                  <Input
+                    size="sm"
+                    placeholder="Search by Pay ID, Items, Clients Name or Vendor"
+                    startDecorator={<SearchIcon />}
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    sx={{
+                      width: 350,
+                      borderColor: "neutral.outlinedBorder",
+                      borderBottom: searchQuery
+                        ? "2px solid #1976d2"
+                        : "1px solid #ddd",
+                      borderRadius: 5,
+                      boxShadow: "none",
+                      "&:hover": {
+                        borderBottom: "2px solid #1976d2",
+                      },
+                      "&:focus-within": {
+                        borderBottom: "2px solid #1976d2",
+                      },
+                    }}
+                  />
+                </FormControl>
+              </Box>
+            </Box>
+
+            {/* Right Side - Rows per page + Pagination */}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 1.5,
+              }}
+            >
+              {/* Rows per page */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Typography level="body-sm">Rows per page:</Typography>
+                <Select
+                  size="sm"
+                  value={perPage}
+                  onChange={(_, value) => {
+                    if (value) {
+                      setPerPage(Number(value));
+                      setCurrentPage(1);
+                    }
+                  }}
+                  sx={{ minWidth: 64 }}
+                >
+                  {[10, 25, 50, 100].map((value) => (
+                    <Option key={value} value={value}>
+                      {value}
+                    </Option>
+                  ))}
+                </Select>
+              </Box>
+
+              {/* Pagination info */}
+              <Typography level="body-sm">
+                {`${startIndex}-${endIndex} of ${total}`}
+              </Typography>
+
+              {/* Navigation buttons */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <IconButton
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(1)}
+                >
+                  <KeyboardDoubleArrowLeft />
+                </IconButton>
+                <IconButton
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                >
+                  <KeyboardArrowLeft />
+                </IconButton>
+                <IconButton
+                  size="sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                >
+                  <KeyboardArrowRight />
+                </IconButton>
+                <IconButton
+                  size="sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(totalPages)}
+                >
+                  <KeyboardDoubleArrowRight />
+                </IconButton>
+              </Box>
+            </Box>
+          </Box>
           <Box
             className="OrderTableContainer"
             variant="outlined"

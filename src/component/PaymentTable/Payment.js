@@ -21,7 +21,7 @@ import PaymentHistory from "../PaymentHistory";
 import { useGetPaymentRecordQuery } from "../../redux/Accounts";
 import dayjs from "dayjs";
 
-const InstantRequest = forwardRef(({searchQuery,perPage,currentPage,status}) => {
+const InstantRequest = forwardRef(({searchQuery,perPage,currentPage,status},ref) => {
 
   const { data: responseData, isLoading , error} = useGetPaymentRecordQuery({
     tab: "instant",
@@ -172,7 +172,7 @@ const InstantRequest = forwardRef(({searchQuery,perPage,currentPage,status}) => 
             }}
           >
             <PaymentProvider po_number={po_number}>
-              <PaymentHistory />
+              <PaymentHistory po_number={po_number} />
             </PaymentProvider>
           </Sheet>
         </Modal>
