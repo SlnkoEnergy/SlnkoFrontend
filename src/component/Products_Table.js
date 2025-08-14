@@ -12,8 +12,8 @@ import Sheet from "@mui/joy/Sheet";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import NoData from "../assets/alert-bell.svg";
 import { useGetProductsQuery } from "../redux/productsSlice";
-import { Option, Select, Typography } from "@mui/joy";
-import { useSearchParams } from "react-router-dom";
+import { Chip, Option, Select, Typography } from "@mui/joy";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 function Products_Table() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -28,7 +28,7 @@ function Products_Table() {
   const [rowsPerPage, setRowsPerPage] = useState(
     () => Number(searchParams.get("pageSize")) || 10
   );
-
+  const navigate = useNavigate();
   useEffect(() => {
     setSearchParams((prev) => {
       const p = new URLSearchParams(prev);
@@ -89,7 +89,7 @@ function Products_Table() {
           <FormLabel>Search</FormLabel>
           <Input
             size="sm"
-            placeholder="Search by SKU, Product Name, Category, or GST"
+            placeholder="Search by SKU, Product Category, Name, Make or GST"
             startDecorator={<SearchIcon />}
             value={searchTerm}
             onChange={(e) => {
@@ -170,6 +170,7 @@ function Products_Table() {
                 "SKU Code",
                 "Product Category",
                 "Product Name",
+                "Make",
                 "Cost",
                 "UoM",
                 "GST(%)",
@@ -200,7 +201,15 @@ function Products_Table() {
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
-                    {product.sku_code}
+                    <Chip
+                      color="primary"
+                      variant="solid"
+                      onClick={() =>
+                        navigate(`/product_form?mode=view&id=${product._id}`)
+                      }
+                    >
+                      {product.sku_code}
+                    </Chip>
                   </td>
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
@@ -215,13 +224,21 @@ function Products_Table() {
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
-                    {getValue(product, "Cost")}
+                    {getValue(product, "Make")}
                   </td>
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
-                    {getValue(product, "UoM")}
+                    ₹ {getValue(product, "Cost")}
                   </td>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
+                  >
+                    {String(getValue(product, "UoM") || "")
+                      .toLowerCase()
+                      .replace(/\b\w/g, (char) => char.toUpperCase())}
+                  </td>
+
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >

@@ -118,7 +118,7 @@ function Products() {
           <Box
             sx={{
               display: "flex",
-              
+
               gap: 1,
               flexDirection: { xs: "column", sm: "row" },
               alignItems: { xs: "start", sm: "center" },
@@ -138,7 +138,7 @@ function Products() {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 1.5,
-              
+
                 flexWrap: "wrap",
                 borderRadius: "lg",
                 mb: 2,
@@ -147,19 +147,9 @@ function Products() {
               <Button
                 variant="solid"
                 color="primary"
-                startDecorator={<DownloadRoundedIcon />}
-                size="md"
-                onClick={() => handleExport(selectedIds)}
-              >
-                Export to CSV
-              </Button>
-
-              <Button
-                variant="solid"
-                color="primary"
                 startDecorator={<ViewModuleRoundedIcon />}
                 size="md"
-                onClick={() => navigate("/add_product")}
+                onClick={() => navigate("/product_form?mode=create")}
               >
                 Add Product
               </Button>

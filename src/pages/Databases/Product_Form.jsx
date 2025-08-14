@@ -8,11 +8,9 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import Sidebar from "../../component/Partials/Sidebar";
 import Header from "../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
-import AddTask from "../../component/Forms/Add_Task";
-import { ChevronLeftIcon } from "lucide-react";
-import AddProduct from "../../component/Forms/Add_Product";
+import ProductForm from "../../component/Forms/Product_Form";
 
-const Add_Product = () => {
+const Product_Form = () => {
   const navigate = useNavigate();
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -70,9 +68,9 @@ const Add_Product = () => {
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
-                onClick={() => navigate("/add_product")}
+                onClick={() => navigate("/product_form")}
               >
-                Add Product
+                Product Form
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -88,11 +86,11 @@ const Add_Product = () => {
               justifyContent: "space-between",
             }}
           >
-            <AddProduct />
+            <ProductForm />
           </Box>
         </Box>
       </Box>
     </CssVarsProvider>
   );
 };
-export default Add_Product;
+export default Product_Form;
