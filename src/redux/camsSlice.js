@@ -79,12 +79,6 @@ export const camsApi = createApi({
     }),
 
     // Purchase Request
-    getProjectDropdown: builder.query({
-      query: () => "project-dropdown",
-    }),
-    getProjectSearchDropdown: builder.query({
-      query: ({search, page, limit}) => `project-search?search=${search}&page=${page}&limit=${limit}`
-    }),
     getMaterialCategory: builder.query({
       query: ({project_id}) => `engineering/material-category-drop?project_id=${project_id}`,
     }),
@@ -169,8 +163,6 @@ export const {
   useUpdateHandOverMutation,
   useUpdateUnlockHandoversheetMutation,
   useUpdateStatusHandOverMutation,
-  useGetProjectDropdownQuery,
-  useGetProjectSearchDropdownQuery,
   useGetMaterialCategoryQuery,
   useCreatePurchaseRequestMutation,
   useGetAllPurchaseRequestQuery,
