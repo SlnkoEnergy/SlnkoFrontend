@@ -91,6 +91,12 @@ function PaymentRequest() {
   const totalPages = Math.ceil(total / perPage);
 
   useEffect(() => {
+  if (responseData?.data) {
+    setPaginatedData(responseData.data);
+  }
+}, [responseData]);
+
+  useEffect(() => {
     const params = {};
     if (isAccount) params.tab = activeTab;
     if (currentPage > 1) params.page = currentPage;

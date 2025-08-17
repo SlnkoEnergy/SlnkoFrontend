@@ -78,7 +78,7 @@ export const AccountsApi = createApi({
         `accounting/payment-approval?page=${page}&search=${search}&pageSize=${pageSize}&tab=${tab}`,
 
       transformResponse: (response) => ({
-        data: response.data || [],
+        data: response?.data || [],
         total: response.meta?.total || 0,
         count: response.meta?.count || 0,
         page: response.meta?.page || 1,
