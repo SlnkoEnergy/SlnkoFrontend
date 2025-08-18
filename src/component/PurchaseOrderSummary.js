@@ -103,6 +103,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const location = useLocation();
   const isFromCAM = location.pathname === "/project_detail";
   const isFromPR = location.pathname === "/purchase_detail";
+  const isLogisticsPage = location.pathname === "/logistics";
 
   const {
     data: getPO = [],
@@ -234,6 +235,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           gap: 1.5,
         }}
       >
+        {!isLogisticsPage && (
         <FormControl sx={{ flex: 1 }} size="sm">
           <FormLabel>Bill Status</FormLabel>
           <Select
@@ -261,7 +263,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             ))}
           </Select>
         </FormControl>
-
+        )}
         <FormControl sx={{ flex: 1 }} size="sm">
           <FormLabel>Status Filter</FormLabel>
           <Select
@@ -289,7 +291,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             ))}
           </Select>
         </FormControl>
-
+{!isLogisticsPage && (
         <Box mt={3} sx={{ display: "flex", gap: 1 }}>
           <Button
             variant="soft"
@@ -302,7 +304,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             Export All
           </Button>
         </Box>
-
+)}
+{!isLogisticsPage && (
         <Dropdown>
           <MenuButton
             slots={{ root: IconButton }}
@@ -322,7 +325,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             </MenuItem>
           </Menu>
         </Dropdown>
-
+    )}
         {activeDateFilter && (
           <ClickAwayListener onClickAway={() => setActiveDateFilter(null)}>
             <Sheet
@@ -902,34 +905,35 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             ₹ {formattedAmount}
           </Typography>
         )}
+        {!isLogisticsPage && (
+          <Box display="flex" alignItems="center" gap={1} mt={0.5}>
+            {showAddBilling && (
+              <Tooltip title="Add Billing">
+                <IconButton
+                  size="sm"
+                  variant="outlined"
+                  color="primary"
+                  onClick={() => handleOpen(po_number, "add_bill")}
+                >
+                  <CirclePlus size={18} />
+                </IconButton>
+              </Tooltip>
+            )}
 
-        <Box display="flex" alignItems="center" gap={1} mt={0.5}>
-          {showAddBilling && (
-            <Tooltip title="Add Billing">
-              <IconButton
-                size="sm"
-                variant="outlined"
-                color="primary"
-                onClick={() => handleOpen(po_number, "add_bill")}
-              >
-                <CirclePlus size={18} />
-              </IconButton>
-            </Tooltip>
-          )}
-
-          {showBillingHistory && (
-            <Tooltip title="View Billing History">
-              <IconButton
-                size="sm"
-                variant="outlined"
-                color="neutral"
-                onClick={() => handleOpen(po_number, "view_bill")}
-              >
-                <History size={18} />
-              </IconButton>
-            </Tooltip>
-          )}
-        </Box>
+            {showBillingHistory && (
+              <Tooltip title="View Billing History">
+                <IconButton
+                  size="sm"
+                  variant="outlined"
+                  color="neutral"
+                  onClick={() => handleOpen(po_number, "view_bill")}
+                >
+                  <History size={18} />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
+        )}
       </Box>
     );
   };
@@ -956,7 +960,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case "material_ready":
-        return "#6002ee"; 
+        return "#6002ee";
       case "ready_to_dispatch":
         return "red";
       case "out_for_delivery":
@@ -964,7 +968,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       case "delivered":
         return "green";
       case "etd pending":
-        return "#999"; 
+        return "#999";
       case "etd done":
         return "#1976d2";
       default:
@@ -1025,6 +1029,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         >
           <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
             <Box component="tr">
+              {/* Checkbox column */}
               <Box
                 component="th"
                 sx={{
@@ -1043,36 +1048,39 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                   color={selected.length > 0 ? "primary" : "neutral"}
                 />
               </Box>
-              {[
-                "",
-                "",
-                "Project ID",
-                "PO Number",
-                "Partial Billing",
-                "Item Name",
-                "PO Value(incl. GST)",
-                "Advance Paid",
-                "Bill Status",
-                "Total Billed",
-                "Status",
-                "Delay",
-                "",
-              ].map((header, index) => (
-                <Box
-                  component="th"
-                  key={index}
-                  sx={{
-                    padding: 1,
-                    textAlign: "left",
-                    borderBottom: "1px solid",
-                    fontWeight: "bold",
-                  }}
-                >
-                  {header}
-                </Box>
-              ))}
+
+              {/* Dynamic headers */}
+              {(!isLogisticsPage
+                ? ["", "", "Project ID", "PO Number", "Partial Billing"]
+                : ["Project ID", "PO Number"]
+              )
+                .concat([
+                  "Item Name",
+                  "PO Value(incl. GST)",
+                  "Advance Paid",
+                  ...(isLogisticsPage ? [] : ["Bill Status"]),
+                  ...(isLogisticsPage ? [] : ["Total Billed"]),
+                  "Status",
+                  "Delay",
+                  "",
+                ])
+                .map((header, index) => (
+                  <Box
+                    component="th"
+                    key={index}
+                    sx={{
+                      padding: 1,
+                      textAlign: "left",
+                      borderBottom: "1px solid",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {header}
+                  </Box>
+                ))}
             </Box>
           </Box>
+
           <Box component="tbody">
             {error ? (
               <Typography color="danger" textAlign="center">
@@ -1153,29 +1161,30 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         }
                       />
                     </Box>
-
-                    <Box
-                      component="td"
-                      sx={{
-                        padding: 1,
-                        textAlign: "left",
-                        borderBottom: "1px solid",
-                      }}
-                    >
-                      <ViewPOHistory po_number={po.po_number} />
-                    </Box>
-
-                    <Box
-                      component="td"
-                      sx={{
-                        padding: 1,
-                        textAlign: "left",
-                        borderBottom: "1px solid",
-                      }}
-                    >
-                      <EditPo po_number={po.po_number} />
-                    </Box>
-
+                    {!isLogisticsPage && (
+                      <Box
+                        component="td"
+                        sx={{
+                          padding: 1,
+                          textAlign: "left",
+                          borderBottom: "1px solid",
+                        }}
+                      >
+                        <ViewPOHistory po_number={po.po_number} />
+                      </Box>
+                    )}
+                    {!isLogisticsPage && (
+                      <Box
+                        component="td"
+                        sx={{
+                          padding: 1,
+                          textAlign: "left",
+                          borderBottom: "1px solid",
+                        }}
+                      >
+                        <EditPo po_number={po.po_number} />
+                      </Box>
+                    )}
                     <Box
                       component="td"
                       sx={{
@@ -1209,20 +1218,20 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         current_status={po?.current_status?.status}
                       />
                     </Box>
-
-                    <Box
-                      component="td"
-                      sx={{
-                        padding: 1,
-                        textAlign: "left",
-                        borderBottom: "1px solid",
-                        fontSize: 14,
-                        minWidth: 150,
-                      }}
-                    >
-                      <BillingTypeChip type={po.type} />
-                    </Box>
-
+                    {!isLogisticsPage && (
+                      <Box
+                        component="td"
+                        sx={{
+                          padding: 1,
+                          textAlign: "left",
+                          borderBottom: "1px solid",
+                          fontSize: 14,
+                          minWidth: 150,
+                        }}
+                      >
+                        <BillingTypeChip type={po.type} />
+                      </Box>
+                    )}
                     <Box
                       component="td"
                       sx={{
@@ -1273,36 +1282,37 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         maximumFractionDigits: 2,
                       }).format(po.amount_paid) || "0"}
                     </Box>
-
-                    <Box
-                      component="td"
-                      sx={{
-                        padding: 1,
-                        textAlign: "left",
-                        borderBottom: "1px solid",
-                        fontSize: 14,
-                        minWidth: 150,
-                      }}
-                    >
-                      <BillingStatusChip status={po.partial_billing} />
-                    </Box>
-
-                    <Box
-                      component="td"
-                      sx={{
-                        padding: 1,
-                        textAlign: "left",
-                        borderBottom: "1px solid",
-                        minWidth: 150,
-                      }}
-                    >
-                      <RenderTotalBilled
-                        total_billed={po.total_billed}
-                        po_value={po.po_value}
-                        po_number={po.po_number}
-                      />
-                    </Box>
-
+                    {!isLogisticsPage && (
+                      <Box
+                        component="td"
+                        sx={{
+                          padding: 1,
+                          textAlign: "left",
+                          borderBottom: "1px solid",
+                          fontSize: 14,
+                          minWidth: 150,
+                        }}
+                      >
+                        <BillingStatusChip status={po.partial_billing} />
+                      </Box>
+                    )}
+                    {!isLogisticsPage && (
+                      <Box
+                        component="td"
+                        sx={{
+                          padding: 1,
+                          textAlign: "left",
+                          borderBottom: "1px solid",
+                          minWidth: 150,
+                        }}
+                      >
+                        <RenderTotalBilled
+                          total_billed={po.total_billed}
+                          po_value={po.po_value}
+                          po_number={po.po_number}
+                        />
+                      </Box>
+                    )}
                     <Box
                       component="td"
                       sx={{

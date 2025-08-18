@@ -453,8 +453,8 @@ function Sidebar() {
                     </ListItemButton>
                   </ListItem>
                   <ListItem>
-                    <ListItemButton onClick={() => navigate("#")}>
-                      Material Status
+                    <ListItemButton onClick={() => navigate("/logistics")}>
+                      Logistics
                     </ListItemButton>
                   </ListItem>
                   <ListItem>
