@@ -89,6 +89,9 @@ export default function Purchase_Request_Form() {
   const isEdit = mode === "edit";
   const isCreate = mode === "create";
 
+  // *** CHANGED: read item_id from URL
+  const itemCategoryId = (searchParams.get("item_id") || "").trim();
+
   // Top-level
   const [projectCode, setProjectCode] = useState("");
   const [projectLocation, setProjectLocation] = useState("");
@@ -372,32 +375,102 @@ export default function Purchase_Request_Form() {
     setDeliverTo(d?.delivery_address || "");
     setPoCount(d?.overall_total_number_of_po || 0);
     setDescription(d?.description || "");
+
     if (Array.isArray(d?.category)) setCategory(d.category);
 
+    // *** CHANGED: correctly derive category from product for each line
     const incomingItems = Array.isArray(d?.items) ? d.items : [];
     setLines(
       incomingItems.length
-        ? incomingItems.map((l) => ({
-            id: crypto.randomUUID(),
-            _selected: false,
-            productId: l.item_id?._id || "",
-            productName: l.product_name || "",
-            productCategoryId: l.item_id?._id || "",
-            productCategoryName: l.item_id?.name || "",
-            make: l.product_make || "",
-            uom: l.uom || "",
-            quantity: Number(l.quantity || 0),
-            unitPrice: Number(l.cost ?? 0),
-            taxPercent: Number(l.gst ?? 0),
-            note: l.note || "",
-          }))
+        ? incomingItems.map((l) => {
+            const productDoc = l?.item_id || {};
+            const catDoc = productDoc?.category || l?.category || {};
+            const catId = catDoc?._id || catDoc || "";
+            const catName = catDoc?.name || "";
+
+            return {
+              id: crypto.randomUUID(),
+              _selected: false,
+              productId: productDoc?._id || "",
+              productName: l.product_name || "",
+              productCategoryId: catId,
+              productCategoryName: catName,
+              make: l.product_make || "",
+              uom: l.uom || "",
+              quantity: Number(l.quantity || 0),
+              unitPrice: Number(l.cost ?? 0),
+              taxPercent: Number(l.gst ?? 0),
+              note: l.note || "",
+            };
+          })
         : [EMPTY_LINE()]
     );
   }, [prDataResp]);
 
+  // *** CHANGED: In VIEW mode, force category filter to [itemCategoryId]
   useEffect(() => {
+    if (!prDataResp) return;
+    const d = prDataResp?.data || prDataResp;
+
+    setCreatedBy(d?.created_by?.name || "");
+    setProjectCode(d?.project_id?.code || "");
+    setPrNo(d?.pr_no || "");
+    setProjectLocation(
+      typeof d?.project_id?.site_address === "string"
+        ? d.project_id.site_address
+        : `${d?.project_id?.site_address?.village_name || ""}${
+            d?.project_id?.site_address?.village_name &&
+            d?.project_id?.site_address?.district_name
+              ? ", "
+              : ""
+          }${d?.project_id?.site_address?.district_name || ""}`
+    );
+    setProjectName(d?.project_id?.name || "");
+    setAskConfirmation(Boolean(d?.fetch_from_bom || d?.ask_confirmation));
+    setDeliverTo(d?.delivery_address || "");
+    setPoCount(d?.overall_total_number_of_po || 0);
+    setDescription(d?.description || "");
+
+    if (Array.isArray(d?.category)) setCategory(d.category);
+
+    const incomingItems = Array.isArray(d?.items) ? d.items : [];
+
+    // 🔑 filter by itemCategoryId if provided
+    const filteredItems = itemCategoryId
+      ? incomingItems.filter((l) => l.item_id?._id === itemCategoryId)
+      : incomingItems;
+
+    setLines(
+      filteredItems.length
+        ? filteredItems.map((l) => {
+            const productDoc = l?.item_id || {};
+            const catId = productDoc?._id || "";
+            const catName = productDoc?.name || "";
+
+            return {
+              id: crypto.randomUUID(),
+              _selected: false,
+              productId: productDoc?._id || "",
+              productName: l.product_name || "",
+              productCategoryId: catId,
+              productCategoryName: catName,
+              make: l.product_make || "",
+              uom: l.uom || "",
+              quantity: Number(l.quantity || 0),
+              unitPrice: Number(l.cost ?? 0),
+              taxPercent: Number(l.gst ?? 0),
+              note: l.note || "",
+            };
+          })
+        : [EMPTY_LINE()]
+    );
+  }, [prDataResp, itemCategoryId]);
+
+  // Filter lines whenever category changes (already in your code)
+  useEffect(() => {
+    if (!Array.isArray(category) || category.length === 0) return;
+    if (!Array.isArray(lines) || lines.length === 0) return;
     setLines((prev) => {
-      if (!Array.isArray(prev) || prev.length === 0) return prev;
       const selectedSet = new Set(category || []);
       const filtered = prev.filter((l) => {
         if (!l.productId) return true;
@@ -408,7 +481,7 @@ export default function Purchase_Request_Form() {
       });
       return filtered.length ? filtered : [EMPTY_LINE()];
     });
-  }, [category]);
+  }, [category]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---------- Amounts ----------
   const amounts = useMemo(() => {
@@ -591,7 +664,7 @@ export default function Purchase_Request_Form() {
     <Box
       sx={{
         p: 2,
-        maxWidth: "full",
+        maxWidth: 1200,
         ml: { xs: "0%", lg: "22%" },
         boxShadow: "md",
       }}
@@ -975,9 +1048,7 @@ export default function Purchase_Request_Form() {
                       placeholder={
                         category.length === 0
                           ? "Pick category first"
-                          : productsLoading
-                            ? "Loading products..."
-                            : "Select product"
+                          : "Select product"
                       }
                       disabled={isView || category.length === 0}
                       renderValue={() =>
@@ -999,7 +1070,9 @@ export default function Purchase_Request_Form() {
                           getProdField(p, "Product Name") || p?.sku_code || "";
                         const catName = p?.category?.name || "";
                         const label = p.sku_code
-                          ? `${p.sku_code} – ${name}${catName ? ` (${catName})` : ""}`
+                          ? `${p.sku_code} – ${name}${
+                              catName ? ` (${catName})` : ""
+                            }`
                           : `${name}${catName ? ` (${catName})` : ""}`;
                         return (
                           <Option key={p._id} value={p._id}>

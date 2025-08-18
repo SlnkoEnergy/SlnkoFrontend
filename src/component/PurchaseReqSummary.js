@@ -320,7 +320,7 @@ const renderFilters = () => {
             style={{ cursor: "pointer", fontWeight: 500 }}
             onClick={() =>
               navigate(
-                `/purchase_detail?project_id=${project_id}&item_id=${item_id}&pr_id=${pr_id}`
+                `/pr_form?mode=view&id=${pr_id}&item_id=${item_id}`
               )
             }
           >
