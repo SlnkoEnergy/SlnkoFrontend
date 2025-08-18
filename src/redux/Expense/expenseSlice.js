@@ -89,8 +89,8 @@ export const expensesApi = createApi({
     }),
   
     exportExpenseToCSV: builder.mutation({
-      query: ({sheetIds}) => ({
-        url: `expense-to-csv`,
+      query: ({sheetIds, dashboard}) => ({
+        url: `expense-to-csv?dashboard=${dashboard}`,
         method: "POST",
         body: { sheetIds },
     responseHandler: async (response) => await response.blob(),
