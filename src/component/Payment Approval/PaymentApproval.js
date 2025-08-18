@@ -989,7 +989,7 @@ function PaymentRequest() {
                     borderColor: "neutral.outlinedBorder",
                   }}
                 >
-                  {["instant", "credit", "toBeApproved", "overdue"].map(
+                  {["instant", "toBeApproved", "overdue", "credit"].map(
                     (tab) => (
                       <Tab
                         key={tab}
@@ -1006,11 +1006,11 @@ function PaymentRequest() {
                       >
                         {tab === "instant"
                           ? `Instant Payments (${responseData?.instantCount || 0})`
-                          : tab === "credit"
-                            ? `Credit Payments (${responseData?.creditCount || 0})`
-                            : tab === "toBeApproved"
-                              ? `To Be Approved (${responseData?.toBeApprovedCount || 0})`
-                              : `Overdue (${responseData?.overdueCount || 0})`}
+                          : tab === "toBeApproved"
+                            ? `To Be Approved (${responseData?.toBeApprovedCount || 0})`
+                            : tab === "overdue"
+                              ? `Overdue (${responseData?.overdueCount || 0})`
+                              : `Credit Payments (${responseData?.creditCount || 0})`}
                       </Tab>
                     )
                   )}
@@ -1045,16 +1045,7 @@ function PaymentRequest() {
                   sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
                 />
               )}
-              {activeTab === "credit" && (
-                <CreditPayment
-                  data={paginatedData}
-                  isLoading={isLoading}
-                  searchQuery={searchQuery}
-                  perPage={perPage}
-                  currentPage={currentPage}
-                  sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
-                />
-              )}
+
               {activeTab === "toBeApproved" && (
                 <ApprovalPayment
                   data={paginatedData}
@@ -1067,6 +1058,16 @@ function PaymentRequest() {
               )}
               {activeTab === "overdue" && (
                 <OverDue
+                  data={paginatedData}
+                  isLoading={isLoading}
+                  searchQuery={searchQuery}
+                  perPage={perPage}
+                  currentPage={currentPage}
+                  sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
+                />
+              )}
+              {activeTab === "credit" && (
+                <CreditPayment
                   data={paginatedData}
                   isLoading={isLoading}
                   searchQuery={searchQuery}

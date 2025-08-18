@@ -13,8 +13,9 @@ import { useGetPaymentApprovalQuery } from "../../redux/Accounts";
 import { CircularProgress, Modal, ModalDialog, Textarea } from "@mui/joy";
 import { Calendar, CircleUser, Receipt, UsersRound } from "lucide-react";
 import { Money } from "@mui/icons-material";
+import dayjs from "dayjs";
 
-const OverDue = forwardRef( ({ searchQuery, currentPage, perPage },ref) => {
+const OverDue = forwardRef(({ searchQuery, currentPage, perPage }, ref) => {
   const [selected, setSelected] = useState([]);
   const {
     data: responseData,
@@ -308,12 +309,21 @@ const OverDue = forwardRef( ({ searchQuery, currentPage, perPage },ref) => {
   // console.log(paginatedData);
 
   const PaymentID = ({ pay_id, cr_id, request_date }) => {
-    // Get last two characters of cr_id if it exists
-    const displayCrId = cr_id ? cr_id.slice(-2) : null;
+    const maskCrId = (id) => {
+      if (!id) return "N/A";
+      const parts = id.split("/");
+      const lastIndex = parts.length - 2;
+
+      if (!isNaN(parts[lastIndex])) {
+        parts[lastIndex] = parts[lastIndex].replace(/\d{2}$/, "XX");
+      }
+
+      return parts.join("/");
+    };
 
     return (
       <>
-        {(pay_id || cr_id) && (
+        {cr_id && (
           <Box>
             <Chip
               variant="solid"
@@ -330,7 +340,7 @@ const OverDue = forwardRef( ({ searchQuery, currentPage, perPage },ref) => {
                 },
               }}
             >
-              {pay_id || displayCrId}
+              {maskCrId(cr_id)}
             </Chip>
           </Box>
         )}
@@ -338,12 +348,12 @@ const OverDue = forwardRef( ({ searchQuery, currentPage, perPage },ref) => {
         {request_date && (
           <Box display="flex" alignItems="center" mt={0.5}>
             <Calendar size={12} />
-            <span style={{ fontSize: 12, fontWeight: 600 }}>
-              Request Date :{" "}
-            </span>
-            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
+              Request Date:
+            </Typography>
+
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              {request_date}
+              {dayjs(request_date).format("DD-MM-YYYY")}
             </Typography>
           </Box>
         )}
