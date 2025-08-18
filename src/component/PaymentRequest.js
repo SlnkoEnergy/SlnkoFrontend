@@ -21,7 +21,7 @@ const PaymentRequest = forwardRef(() => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialPage = parseInt(searchParams.get("page")) || 1;
-  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
+  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10; 
   const [perPage, setPerPage] = useState(initialPageSize);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [searchQuery, setSearchQuery] = useState("");
@@ -328,76 +328,83 @@ const PaymentRequest = forwardRef(() => {
             </FormControl>
             {renderFilters()}
           </Box>
-
-          {/* Pagination Controls */}
+        </Box>
+        {/* Pagination Controls */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent:"flex-end",
+            flexWrap: "wrap",
+            padding:"5px"
+          }}
+        >
+          {/* Rows per page */}
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
-              flexWrap: "wrap",
-              gap: 1.5,
+              justifyContent: "flex-end",
+              gap: 1,
             }}
           >
-            {/* Rows per page */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Typography level="body-sm">Rows per page:</Typography>
-              <Select
-                size="sm"
-                value={perPage}
-                onChange={(_, value) => {
-                  if (value) {
-                    setPerPage(Number(value));
-                    setCurrentPage(1);
-                  }
-                }}
-                sx={{ minWidth: 64 }}
-              >
-                {[10, 25, 50, 100].map((value) => (
-                  <Option key={value} value={value}>
-                    {value}
-                  </Option>
-                ))}
-              </Select>
-            </Box>
-
-            {/* Pagination info */}
-            <Typography level="body-sm">
-              {`${startIndex}-${endIndex} of ${total}`}
-            </Typography>
-
-            {/* Navigation buttons */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <IconButton
-                size="sm"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(1)}
-              >
-                <KeyboardDoubleArrowLeft />
-              </IconButton>
-              <IconButton
-                size="sm"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              >
-                <KeyboardArrowLeft />
-              </IconButton>
-              <IconButton
-                size="sm"
-                disabled={currentPage === totalPages}
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            <Typography level="body-sm">Rows per page:</Typography>
+            <Select
+              size="sm"
+              value={perPage}
+              onChange={(_, value) => {
+                if (value) {
+                  setPerPage(Number(value));
+                  setCurrentPage(1);
                 }
-              >
-                <KeyboardArrowRight />
-              </IconButton>
-              <IconButton
-                size="sm"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(totalPages)}
-              >
-                <KeyboardDoubleArrowRight />
-              </IconButton>
-            </Box>
+              }}
+              sx={{ minWidth: 64 }}
+            >
+              {[10, 25, 50, 100].map((value) => (
+                <Option key={value} value={value}>
+                  {value}
+                </Option>
+              ))}
+            </Select>
+          </Box>
+
+          {/* Pagination info */}
+          <Typography level="body-sm">
+            {`${startIndex}-${endIndex} of ${total}`}
+          </Typography>
+
+          {/* Navigation buttons */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <IconButton
+              size="sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(1)}
+            >
+              <KeyboardDoubleArrowLeft />
+            </IconButton>
+            <IconButton
+              size="sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            >
+              <KeyboardArrowLeft />
+            </IconButton>
+            <IconButton
+              size="sm"
+              disabled={currentPage === totalPages}
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+            >
+              <KeyboardArrowRight />
+            </IconButton>
+            <IconButton
+              size="sm"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(totalPages)}
+            >
+              <KeyboardDoubleArrowRight />
+            </IconButton>
           </Box>
         </Box>
 
@@ -405,7 +412,6 @@ const PaymentRequest = forwardRef(() => {
         <Box>
           {activeTab === 0 ? (
             <InstantRequest
-             
               data={paginatedData}
               isLoading={isLoading}
               searchQuery={searchQuery}
@@ -415,7 +421,6 @@ const PaymentRequest = forwardRef(() => {
             />
           ) : (
             <CreditRequest
-            
               data={paginatedData}
               isLoading={isLoading}
               searchQuery={searchQuery}

@@ -221,56 +221,44 @@ const TrashRequest = forwardRef(() => {
     const [timeLeft, setTimeLeft] = useState("");
     const [timerColor, setTimerColor] = useState("inherit");
 
-    useEffect(() => {
-      if (!timers?.draft_started_at) return;
+useEffect(() => {
+  if (!timers?.trash_started_at) return;
 
-      const isFinal =
-        ["Approved", "Rejected", "Deleted"].includes(approved) ||
-        !!timers?.draft_frozen_at;
+  const isFinal =
+    ["Approved", "Rejected", "Deleted"].includes(approved) ||
+    !!timers?.draft_frozen_at;
 
-      if (isFinal) {
-        setTimeLeft("Finalized");
-        setTimerColor("gray");
-        return;
-      }
+  if (isFinal) {
+    setTimeLeft("Finalized");
+    setTimerColor("gray");
+    return;
+  }
 
-      const interval = setInterval(() => {
-        const startedAt = dayjs(timers.draft_started_at);
-        const now = dayjs();
-        const endTime = startedAt.add(48, "hour");
-        const diff = endTime.diff(now);
+  const interval = setInterval(() => {
+    const now = dayjs();
+    const trashStartedAt = dayjs(timers.trash_started_at);
+    const totalDiffMs = trashStartedAt.add(15, "day").diff(now);
 
-        if (diff <= 0) {
-          setTimeLeft("⏱ Expired");
-          setTimerColor("red");
-        } else {
-          const dur = dayjs.duration(diff);
-          const hh = dur.hours() + dur.days() * 24;
-          const mm = dur.minutes();
-          const ss = dur.seconds();
+    if (totalDiffMs <= 0) {
+      setTimeLeft("⏱ Expired");
+      setTimerColor("red");
+      return;
+    }
 
-          setTimeLeft(
-            `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:${String(
-              ss
-            ).padStart(2, "0")} remaining`
-          );
+    const daysLeft = Math.ceil(dayjs.duration(totalDiffMs).asDays());
+    setTimeLeft(`${daysLeft} day${daysLeft > 1 ? "s" : ""} remaining`);
 
-          const totalHoursLeft = dur.asHours();
+    // Set color based on days left
+    if (daysLeft <= 1) setTimerColor("red");
+    else if (daysLeft <= 3) setTimerColor("primary.main");
+    else setTimerColor("green");
 
-          if (totalHoursLeft <= 0.1667) {
-            setTimerColor("red");
-          } else if (totalHoursLeft >= 20 && totalHoursLeft < 30) {
-            setTimerColor("primary.main");
-          } else if (totalHoursLeft >= 30) {
-            setTimerColor("green");
-          } else {
-            setTimerColor("inherit");
-          }
-        }
-      }, 1000);
+  }, 1000);
 
-      return () => clearInterval(interval);
-    }, [timers?.draft_started_at, timers?.draft_frozen_at, approved]);
+  return () => clearInterval(interval);
+}, [timers?.trash_started_at, timers?.draft_frozen_at, approved]);
+
+
 
     return (
       <Box mt={1}>

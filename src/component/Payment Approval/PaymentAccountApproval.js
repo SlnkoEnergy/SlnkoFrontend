@@ -5,7 +5,7 @@ import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
 import Chip from "@mui/joy/Chip";
 import Typography from "@mui/joy/Typography";
-import { useEffect, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import NoData from "../../assets/alert-bell.svg";
 import Axios from "../../utils/Axios";
@@ -19,7 +19,7 @@ import {
 import { Calendar, CircleUser, Receipt, UsersRound } from "lucide-react";
 import { Money } from "@mui/icons-material";
 
-const PaymentAccountApproval = ({ searchQuery, currentPage, perPage }) => {
+const PaymentAccountApproval = forwardRef( ({ searchQuery, currentPage, perPage },ref) => {
   const [selected, setSelected] = useState([]);
 
   //   const isAccount = user?.department === "Accounts";
@@ -712,5 +712,5 @@ const PaymentAccountApproval = ({ searchQuery, currentPage, perPage }) => {
       </Box>
     </>
   );
-};
+});
 export default PaymentAccountApproval;

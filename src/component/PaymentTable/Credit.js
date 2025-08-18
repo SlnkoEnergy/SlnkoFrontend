@@ -29,7 +29,7 @@ import dayjs from "dayjs";
 import { toast } from "react-toastify";
 
 const CreditRequest = forwardRef(
-  ({ searchQuery, perPage, currentPage, status }) => {
+  ({ searchQuery, perPage, currentPage, status },ref) => {
     const {
       data: responseData,
       isLoading,
@@ -208,7 +208,7 @@ const CreditRequest = forwardRef(
               }}
             >
               <PaymentProvider po_number={po_number}>
-                <PaymentHistory />
+                <PaymentHistory po_number={po_number} />
               </PaymentProvider>
             </Sheet>
           </Modal>

@@ -78,7 +78,7 @@ export const AccountsApi = createApi({
         `accounting/payment-approval?page=${page}&search=${search}&pageSize=${pageSize}&tab=${tab}`,
 
       transformResponse: (response) => ({
-        data: response.data || [],
+        data: response?.data || [],
         total: response.meta?.total || 0,
         count: response.meta?.count || 0,
         page: response.meta?.page || 1,
@@ -98,7 +98,8 @@ export const AccountsApi = createApi({
         `accounting/payment-history?po_number=${po_number}`,
       transformResponse: (response) => ({
         history: response.history || [],
-        total: response.total || 0,
+        total_debited: response.total_debited || 0,
+        po_value: response.po_value || 0,
       }),
       providesTags: ["Accounts"],
     }),
@@ -135,23 +136,7 @@ export const AccountsApi = createApi({
       providesTags: ["Accounts"],
     }),
 
-    getExportPaymentHistory: builder.query({
-      query: ({ po_number }) => ({
-        url: `accounting/debithistorycsv?po_number=${po_number}`,
-        responseHandler: async (response) => {
-          const blob = await response.blob();
-          return {
-            blob,
-            filename:
-              response.headers
-                .get("Content-Disposition")
-                ?.split("filename=")[1] || "payment-history.csv",
-          };
-        },
-        method: "GET",
-      }),
-    }),
-
+  
     getPaymentApproved: builder.query({
       query: ({ page = 1, search = "", pageSize = 10 }) =>
         `accounting/approved-payment?page=${page}&search=${search}&pageSize=${pageSize}`,
@@ -212,7 +197,6 @@ export const {
   useGetProjectBalanceQuery,
   useGetPaymentApprovalQuery,
   useGetPaymentHistoryQuery,
-  useGetExportPaymentHistoryQuery,
   useGetCustomerSummaryQuery,
   useGetPaymentApprovedQuery,
   useGetUtrSubmissionQuery,
