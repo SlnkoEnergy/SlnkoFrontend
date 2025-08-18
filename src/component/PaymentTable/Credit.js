@@ -14,7 +14,10 @@ import NoData from "../../assets/alert-bell.svg";
 import {
   CircularProgress,
   Modal,
+  ModalClose,
   ModalDialog,
+  ModalOverflow,
+  Textarea,
   Tooltip,
   useTheme,
 } from "@mui/joy";
@@ -231,20 +234,31 @@ const CreditRequest = forwardRef(
       remaining_days,
       amount_paid,
       credit,
-      credit_extension,
     }) => {
-      console.log(_id);
 
+      
       const [updateCreditExtension, { isLoading }] =
         useUpdateRequestExtensionMutation();
 
-      const [requested, setRequested] = useState(!!credit_extension);
+      const [requested, setRequested] = useState(!!credit?.credit_extension);
+      const [open, setOpen] = useState(false);
+      const [remarks, setRemarks] = useState("");
 
       const handleRequestExtension = async () => {
+        if (!remarks.trim()) {
+          toast.error("Remarks are required");
+          return;
+        }
+
         try {
-          await updateCreditExtension(_id).unwrap();
-          toast.success("Credit deadline extension requested successfully");
-          setRequested(true); // ✅ update local state
+          await updateCreditExtension({
+            id: _id,
+            credit_remarks: remarks,
+          }).unwrap();
+
+          toast.success("Credit extension requested successfully");
+          setRequested(true);
+          setOpen(false);
         } catch (err) {
           console.error("Failed to request extension", err);
           toast.error("Failed to request credit extension");
@@ -314,32 +328,58 @@ const CreditRequest = forwardRef(
                 >
                   Requested
                 </Chip>
-              ) : credit?.credit_extension ? (
-                isLoading ? (
-                  <Chip size="sm" variant="soft" color="neutral" disabled>
-                    <HourglassTopRoundedIcon
-                      fontSize="sm"
-                      style={{ marginRight: 6 }}
-                    />
-                    Requesting…
-                  </Chip>
-                ) : (
-                  <Chip
-                    size="sm"
-                    variant="solid"
-                    color="danger"
-                    onClick={handleRequestExtension}
-                    sx={{ cursor: "pointer" }}
-                  >
-                    Request Extension
-                  </Chip>
-                )
-              ) : (
+              ) : isLoading ? (
                 <Chip size="sm" variant="soft" color="neutral" disabled>
-                  Extension N/A
+                  <HourglassTopRoundedIcon
+                    fontSize="sm"
+                    style={{ marginRight: 6 }}
+                  />
+                  Requesting…
+                </Chip>
+              ) : (
+                <Chip
+                  size="sm"
+                  variant="solid"
+                  color="danger"
+                  onClick={() => setOpen(true)}
+                  sx={{ cursor: "pointer" }}
+                >
+                  Request Extension
                 </Chip>
               ))}
           </Box>
+
+          {/* Remarks Dialog */}
+            <Modal open={open} onClose={() => setOpen(false)}>
+        <ModalOverflow>
+          <ModalDialog variant="outlined" role="alertdialog">
+            <ModalClose />
+            <Typography level="h5" mb={1}>
+              Request Credit Extension
+            </Typography>
+            <Textarea
+              placeholder="Enter remarks"
+              minRows={3}
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              sx={{ mb: 2 }}
+            />
+            <Box display="flex" justifyContent="flex-end" gap={1}>
+              <Button variant="plain" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="solid"
+                color="danger"
+                onClick={handleRequestExtension}
+                loading={isLoading}
+              >
+                Submit
+              </Button>
+            </Box>
+          </ModalDialog>
+        </ModalOverflow>
+      </Modal>
         </Box>
       );
     };

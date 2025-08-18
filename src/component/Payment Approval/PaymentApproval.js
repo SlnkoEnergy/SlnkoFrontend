@@ -49,6 +49,7 @@ function PaymentRequest() {
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [blobUrl, setBlobUrl] = useState(null);
+  const [hasPrinted, setHasPrinted] = useState(false);
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
   const [currentPage, setCurrentPage] = useState(initialPage);
@@ -463,17 +464,20 @@ function PaymentRequest() {
       checked ? [...prev, idStr] : prev.filter((item) => item !== idStr)
     );
   };
-  const handlePrint = () => {
-    if (!blobUrl) return;
-    // Open PDF blob in new window and trigger print
-    const printWindow = window.open(blobUrl);
-    if (printWindow) {
-      printWindow.focus();
+const handlePrint = () => {
+  if (!blobUrl) return;
+
+  const printWindow = window.open(blobUrl);
+  if (printWindow) {
+    printWindow.focus();
+    printWindow.onload = () => {
       printWindow.print();
-    } else {
-      toast.error("Unable to open print window");
-    }
-  };
+      setHasPrinted(true);
+    };
+  } else {
+    toast.error("Unable to open print window");
+  }
+};
 
   useEffect(() => {
     if (pdfBlob) {
@@ -482,6 +486,12 @@ function PaymentRequest() {
       return () => URL.revokeObjectURL(url);
     }
   }, [pdfBlob]);
+  useEffect(() => {
+  if (isPdfModalOpen) {
+    setHasPrinted(false);
+  }
+}, [isPdfModalOpen]);
+
 
   const handleClosePdfModal = () => {
     if (blobUrl) URL.revokeObjectURL(blobUrl);
@@ -567,18 +577,6 @@ function PaymentRequest() {
     borderColor: "divider",
   };
 
-  // console.log(paginatedData);
-
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setSearchParams((prev) => {
-        return {
-          ...Object.fromEntries(prev.entries()),
-          page: String(page),
-        };
-      });
-    }
-  };
 
   const PaymentID = ({ pay_id, cr_id, request_date, approved }) => {
     const maskId = (id) => {
@@ -1482,6 +1480,7 @@ function PaymentRequest() {
               variant="solid"
               color="primary"
               onClick={() => setIsConfirmModalOpen(true)}
+              disabled={!hasPrinted}
             >
               Confirm
             </Button>

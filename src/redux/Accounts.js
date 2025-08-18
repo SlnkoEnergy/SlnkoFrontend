@@ -136,7 +136,6 @@ export const AccountsApi = createApi({
       providesTags: ["Accounts"],
     }),
 
-  
     getPaymentApproved: builder.query({
       query: ({ page = 1, search = "", pageSize = 10 }) =>
         `accounting/approved-payment?page=${page}&search=${search}&pageSize=${pageSize}`,
@@ -184,9 +183,10 @@ export const AccountsApi = createApi({
       invalidatesTags: ["Accounts"],
     }),
     updateRequestExtension: builder.mutation({
-      query: (id) => ({
+      query: ({ id, credit_remarks }) => ({
         url: `/request-extension-by-id/${id}`,
         method: "PUT",
+        body: { credit_remarks },
       }),
       invalidatesTags: ["Accounts"],
     }),

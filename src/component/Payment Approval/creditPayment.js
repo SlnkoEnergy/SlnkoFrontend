@@ -2,7 +2,7 @@ import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Input from "@mui/joy/Input";
 import Chip from "@mui/joy/Chip";
-import { CheckCircle, PenLine, XCircle } from "lucide-react";
+import { CheckCircle, CreditCard, PenLine, XCircle } from "lucide-react";
 import Typography from "@mui/joy/Typography";
 import IconButton from "@mui/joy/IconButton";
 import { toast } from "react-toastify";
@@ -409,6 +409,7 @@ const CreditPayment = forwardRef(
       amount_requested,
       ClientBalance,
       groupBalance,
+      creditBalance,
       po_value,
     }) => {
       return (
@@ -456,6 +457,17 @@ const CreditPayment = forwardRef(
             &nbsp;
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
               {groupBalance || "0"}
+            </Typography>
+          </Box>
+           <Box display="flex" alignItems="center" mt={0.5}>
+            <CreditCard size={12} />
+            &nbsp;
+            <span style={{ fontSize: 12, fontWeight: 600 }}>
+              Credit Balance:{" "}
+            </span>
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {creditBalance || "0"}
             </Typography>
           </Box>
         </>
@@ -645,6 +657,7 @@ const CreditPayment = forwardRef(
                           ClientBalance={payment?.ClientBalance}
                           po_value={payment?.po_value}
                           groupBalance={payment?.groupBalance}
+                          creditBalance={payment?.creditBalance}
                         />
                       </Box>
                       <Box component="td" sx={{ ...cellStyle }}>

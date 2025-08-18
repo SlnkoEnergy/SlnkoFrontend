@@ -18,7 +18,7 @@ import {
   Stack,
   Textarea,
 } from "@mui/joy";
-import { Calendar, CircleUser, Receipt, UsersRound } from "lucide-react";
+import { Calendar, CircleUser, CreditCard, Receipt, UsersRound } from "lucide-react";
 import { Money } from "@mui/icons-material";
 import dayjs from "dayjs";
 
@@ -481,6 +481,7 @@ const ApprovalPayment = forwardRef(
       amount_requested,
       ClientBalance,
       groupBalance,
+      creditBalance,
       po_value,
     }) => {
       return (
@@ -528,6 +529,17 @@ const ApprovalPayment = forwardRef(
             &nbsp;
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
               {groupBalance || "0"}
+            </Typography>
+          </Box>
+          <Box display="flex" alignItems="center" mt={0.5}>
+            <CreditCard size={12} />
+            &nbsp;
+            <span style={{ fontSize: 12, fontWeight: 600 }}>
+              Credit Balance:{" "}
+            </span>
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {creditBalance || "0"}
             </Typography>
           </Box>
         </>
@@ -876,6 +888,7 @@ const ApprovalPayment = forwardRef(
                           amount_requested={payment?.amount_requested}
                           ClientBalance={payment?.ClientBalance}
                           groupBalance={payment?.groupBalance}
+                          creditBalance={payment?.creditBalance}
                         />
                       </Box>
 

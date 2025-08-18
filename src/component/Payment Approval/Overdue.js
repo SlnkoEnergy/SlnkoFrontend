@@ -11,7 +11,7 @@ import NoData from "../../assets/alert-bell.svg";
 import Axios from "../../utils/Axios";
 import { useGetPaymentApprovalQuery } from "../../redux/Accounts";
 import { CircularProgress, Modal, ModalDialog, Textarea } from "@mui/joy";
-import { Calendar, CircleUser, Receipt, UsersRound } from "lucide-react";
+import { Calendar, CircleUser, CreditCard, Receipt, UsersRound } from "lucide-react";
 import { Money } from "@mui/icons-material";
 import dayjs from "dayjs";
 
@@ -455,6 +455,7 @@ const OverDue = forwardRef(({ searchQuery, currentPage, perPage }, ref) => {
     amount_requested,
     ClientBalance,
     groupBalance,
+    creditBalance,
     po_value,
   }) => {
     return (
@@ -500,6 +501,17 @@ const OverDue = forwardRef(({ searchQuery, currentPage, perPage }, ref) => {
           &nbsp;
           <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
             {groupBalance || "0"}
+          </Typography>
+        </Box>
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <CreditCard size={12} />
+          &nbsp;
+          <span style={{ fontSize: 12, fontWeight: 600 }}>
+            Credit Balance:{" "}
+          </span>
+          &nbsp;
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+            {creditBalance || "0"}
           </Typography>
         </Box>
       </>
@@ -687,6 +699,7 @@ const OverDue = forwardRef(({ searchQuery, currentPage, perPage }, ref) => {
                         ClientBalance={payment?.ClientBalance}
                         po_value={payment?.po_value}
                         groupBalance={payment?.groupBalance}
+                        creditBalance={payment?.creditBalance}
                       />
                     </Box>
 
