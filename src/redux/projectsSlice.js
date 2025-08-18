@@ -52,11 +52,14 @@ export const projectsApi = createApi({
       query: (id) => `get-project-iD-IT/${id}`,
       providesTags: ["Project"],
     }),
-     getProjectDropdown: builder.query({
+    getProjectDropdown: builder.query({
       query: () => "project-dropdown",
+      providesTags: ["Project"],
     }),
     getProjectSearchDropdown: builder.query({
-      query: ({search, page, limit}) => `project-search?search=${search}&page=${page}&limit=${limit}`
+      query: ({ search, page, limit }) =>
+        `project-search?search=${search}&page=${page}&limit=${limit}`,
+      providesTags: ["Project"],
     }),
   }),
 });
@@ -70,5 +73,5 @@ export const {
   useGetProjectByIdQuery,
   useGetProjectDropdownQuery,
   useGetProjectSearchDropdownQuery,
-  useLazyGetProjectSearchDropdownQuery
+  useLazyGetProjectSearchDropdownQuery,
 } = projectsApi;

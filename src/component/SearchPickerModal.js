@@ -36,25 +36,41 @@ export default function SearchPickerModal({
   searchKey = "name",
   pageSize = 7,
   rowKey = "_id",
+  multi = false,
   backdropSx = { backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" },
 }) {
   const [search, setSearch] = useState("");
   const debounced = useDebounce(search, 400);
   const [page, setPage] = useState(1);
+
   const [rows, setRows] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
 
+  // track selected rows for highlight
+  const [selectedRows, setSelectedRows] = useState([]); // array of ids
+
+  // keep latest fetchPage in a ref (stable in effects)
   const fetchPageRef = useRef(fetchPage);
   useEffect(() => {
     fetchPageRef.current = fetchPage;
   }, [fetchPage]);
 
+  // Reset pagination and search state on open
+  useEffect(() => {
+    if (!open) return;
+    setPage(1);
+    // keep selection when modal reopens? Typically reset:
+    setSelectedRows([]);
+  }, [open]);
+
+  // Reset to page 1 whenever search changes
   useEffect(() => {
     if (!open) return;
     setPage(1);
   }, [debounced, open]);
 
+  // Fetch current page
   useEffect(() => {
     let cancelled = false;
     async function run() {
@@ -64,6 +80,7 @@ export default function SearchPickerModal({
         const { rows: r = [], total: t = 0 } = await fetchPageRef.current({
           page,
           search: debounced,
+          pageSize,
         });
         if (!cancelled) {
           setRows(r);
@@ -77,7 +94,7 @@ export default function SearchPickerModal({
     return () => {
       cancelled = true;
     };
-  }, [open, page, debounced]);
+  }, [open, page, debounced, pageSize]);
 
   const start = total ? (page - 1) * pageSize + 1 : 0;
   const end = Math.min(page * pageSize, total);
@@ -100,14 +117,42 @@ export default function SearchPickerModal({
     </Box>
   );
 
+  const isSelected = (id) => selectedRows.includes(id);
+
+  const toggleSelect = (row) => {
+    const id = row[rowKey];
+    if (id == null) return;
+
+    if (multi) {
+      setSelectedRows((prev) =>
+        prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      );
+    } else {
+      setSelectedRows([id]);
+    }
+  };
+
+  const handleRowClick = (row) => {
+    // update local selection highlight
+    toggleSelect(row);
+
+    // notify parent
+    onPick?.(row);
+
+    // close only when not multi
+    if (!multi) {
+      onClose?.();
+    }
+  };
+
   return (
     <Modal
       open={open}
       onClose={onClose}
       slotProps={{ backdrop: { sx: backdropSx } }}
       sx={{
-        ml:{xs:"0%", lg:"18%", xl:"8%"},
-        mb:{xs:"0%", lg:"3%", xl:"3%"}
+        ml: { xs: "0%", lg: "18%", xl: "8%" },
+        mb: { xs: "0%", lg: "3%", xl: "3%" },
       }}
     >
       <ModalDialog size="lg" variant="outlined" sx={{ minWidth: 840 }}>
@@ -122,9 +167,9 @@ export default function SearchPickerModal({
             display: "flex",
             alignItems: "center",
             flexWrap: "wrap",
+            gap: 1,
           }}
         >
-          <Box sx={{ width: "full" }} />
           <Input
             placeholder={`Search by ${searchKey}…`}
             value={search}
@@ -135,7 +180,7 @@ export default function SearchPickerModal({
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Typography
               level="body-sm"
-              sx={{ minWidth: 90, textAlign: "right" }}
+              sx={{ minWidth: 100, textAlign: "right" }}
             >
               {start}-{end} / {total}
             </Typography>
@@ -168,6 +213,7 @@ export default function SearchPickerModal({
             overflow: "hidden",
           }}
         >
+          {loading && LoadingOverlay}
           <Table
             borderAxis="bothBetween"
             stickyHeader
@@ -200,25 +246,36 @@ export default function SearchPickerModal({
                   </td>
                 </tr>
               ) : (
-                rows.map((r) => (
-                  <tr
-                    key={r[rowKey] ?? JSON.stringify(r)}
-                    style={{ cursor: "pointer" }}
-                    onClick={() => onPick?.(r)}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.backgroundColor = "#f5f5f5")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.backgroundColor = "")
-                    }
-                  >
-                    {columns.map((c) => (
-                      <td key={c.key} style={{ width: c.width ?? "auto" }}>
-                        {String(r[c.key] ?? "-")}
-                      </td>
-                    ))}
-                  </tr>
-                ))
+                rows.map((r) => {
+                  const id = r[rowKey] ?? JSON.stringify(r);
+                  const selected = isSelected(r[rowKey]);
+                  return (
+                    <tr
+                      key={id}
+                      style={{
+                        cursor: "pointer",
+                        backgroundColor: selected ? "#e0e0e0" : "",
+                      }}
+                      onClick={() => handleRowClick(r)}
+                      onMouseEnter={(e) => {
+                        if (!selected)
+                          e.currentTarget.style.backgroundColor = "#f5f5f5";
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!selected)
+                          e.currentTarget.style.backgroundColor = "";
+                      }}
+                    >
+                      {columns.map((c) => (
+                        <td key={c.key} style={{ width: c.width ?? "auto" }}>
+                          {typeof c.render === "function"
+                            ? c.render(r)
+                            : String(r[c.key] ?? "-")}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </Table>

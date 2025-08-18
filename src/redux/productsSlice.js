@@ -3,7 +3,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 export const productsApi = createApi({
   reducerPath: "productsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: `${process.env.REACT_APP_API_URL}/`,
+    baseUrl: `${process.env.REACT_APP_API_URL}`,
     credentials: "include",
     prepareHeaders: (headers) => {
       const token = localStorage.getItem("authToken");
@@ -18,8 +18,8 @@ export const productsApi = createApi({
   tagTypes: ["Products"],
   endpoints: (builder) => ({
     getProducts: builder.query({
-      query: ({ limit, search, page }) =>
-        `products/product?search=${search}&limit=${limit}&page=${page}`,
+      query: ({ limit, search, page, category }) =>
+        `products/product?search=${search}&limit=${limit}&page=${page}&category=${category}`,
       providesTags: (result) =>
         result?.data
           ? [
@@ -29,8 +29,8 @@ export const productsApi = createApi({
           : [{ type: "Products", id: "LIST" }],
     }),
     getCategoriesNameSearch: builder.query({
-      query: ({ page, search }) =>
-        `products/category?search=${search}&page=${page}`,
+      query: ({ page, search, limit, pr, projectId }) =>
+        `products/category?search=${search}&page=${page}&pr=${pr}&project_id=${projectId}`,
       providesTags: ["Products"],
     }),
     createProduct: builder.mutation({
@@ -57,6 +57,7 @@ export const productsApi = createApi({
 
 export const {
   useGetProductsQuery,
+  useLazyGetProductsQuery,
   useGetCategoriesNameSearchQuery,
   useLazyGetCategoriesNameSearchQuery,
   useCreateProductMutation,

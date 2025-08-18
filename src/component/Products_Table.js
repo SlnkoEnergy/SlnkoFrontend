@@ -50,6 +50,7 @@ function Products_Table() {
       page: currentPage,
       limit: rowsPerPage,
       search: searchTerm,
+      category:"",
     },
     {
       refetchOnMountOrArgChange: true,
