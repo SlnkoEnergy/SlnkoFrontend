@@ -71,7 +71,7 @@ import { toast } from "react-toastify";
 import { Money } from "@mui/icons-material";
 
 const PurchaseOrderSummary = forwardRef((props, ref) => {
-  const { project_code, pr_id, item_id } = props;
+  const { project_code } = props;
   const [po, setPO] = useState("");
   const [selectedpo, setSelectedpo] = useState("");
   const [selectedtype, setSelectedtype] = useState("");
@@ -99,10 +99,16 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const [remarks, setRemarks] = useState("");
   const [perPage, setPerPage] = useState(initialPageSize);
   const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
+  const { search, state } = useLocation();
+  const [sp] = useSearchParams();
+  const navigate = useNavigate();
 
   const location = useLocation();
   const isFromCAM = location.pathname === "/project_detail";
   const isFromPR = location.pathname === "/purchase_detail";
+
+  const pr_id = sp.get("pr_id") || state?.pr_id || "";
+  const item_id = sp.get("item_id") || state?.item_id || "";
 
   const {
     data: getPO = [],
@@ -119,9 +125,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     deliveryFrom: deliveryFrom,
     deliveryTo: deliveryTo,
     filter: selectedStatusFilter,
-    project_id: isFromCAM || isFromPR ? project_code : "",
-    pr_id: isFromPR && pr_id ? pr_id.toString() : "",
-    item_id: isFromPR && item_id ? item_id.toString() : "",
+    project_id: project_code ? project_code : "",
+    pr_id: pr_id ? pr_id.toString() : "",
+    item_id: item_id ? item_id.toString() : "",
   });
 
   const handleOpen = (po_number, action) => {
@@ -193,8 +199,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     }
   };
 
-
-
   const handleDateFilterSelect = (type) => {
     setActiveDateFilter((prev) => (prev === type ? null : type));
     setOpenFilter(false);
@@ -208,6 +212,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   };
 
   const statusOptions = [
+    "Approval Pending",
+    "Approval Done",
     "ETD Pending",
     "ETD Done",
     "Ready to Dispatch",
@@ -591,7 +597,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       </>
     );
   };
-  const RenderPONumber = ({ po_number, date }) => {
+  const RenderPONumber = ({ po_number, date, po_id }) => {
     const formatDate = (dateStr) => {
       if (!dateStr) return "-";
       const dateObj = new Date(dateStr);
@@ -607,7 +613,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       <>
         {/* PO Number */}
         {po_number && (
-          <Box>
+          <Box onClick={()=> navigate(`/add_po?mode=edit&po_number=${po_number}`)}>
             <span style={{ cursor: "pointer", fontWeight: 400 }}>
               {po_number}
             </span>
@@ -616,7 +622,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
         {/* PO Date */}
         {date && (
-          <Box display="flex" alignItems="center" mt={0.5}>
+          <Box onClick={()=> navigate(`/add_po?mode=edit&_id=${po_id}`)} display="flex" alignItems="center" mt={0.5}>
             <Calendar size={12} />
             <span style={{ fontSize: 12, fontWeight: 600 }}>PO Date : </span>
             &nbsp;
@@ -918,6 +924,10 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
+      case "approval_pending":
+        return "#214b7b";
+      case "approval_done":
+        return "#90EE90";
       case "ready_to_dispatch":
         return "red";
       case "out_for_delivery":
@@ -925,9 +935,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       case "delivered":
         return "green";
       case "etd pending":
-        return "#999"; // grey
+        return "#999";
       case "etd done":
-        return "#1976d2"; // blue
+        return "#1976d2";
       default:
         return "error";
     }
@@ -1162,6 +1172,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                     >
                       <RenderPONumber
                         po_number={po?.po_number}
+                        po_id={po?._id}
                         date={po?.date}
                         etd={po?.etd}
                         rtd={po?.dispatch_date}

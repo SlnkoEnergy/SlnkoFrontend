@@ -10,20 +10,28 @@ import {
   IconButton,
   Chip,
 } from "@mui/joy";
+import { Modal, ModalDialog, Textarea } from "@mui/joy";
 import DeleteOutline from "@mui/icons-material/DeleteOutline";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Select from "react-select";
 import Axios from "../../utils/Axios";
 import { toast } from "react-toastify";
 import Send from "@mui/icons-material/Send";
-import { ConfirmationNumber, Print, RestartAlt } from "@mui/icons-material";
+import {
+  Close,
+  ConfirmationNumber,
+  Print,
+  RestartAlt,
+} from "@mui/icons-material";
 import SearchPickerModal from "../SearchPickerModal";
 
 import {
   useGetVendorsNameSearchQuery,
   useLazyGetVendorsNameSearchQuery,
 } from "../../redux/vendorSlice";
+import { Check, Cross } from "lucide-react";
 
+// ---------- helpers ----------
 const makeEmptyLine = () => ({
   id: crypto.randomUUID(),
   productId: "",
@@ -43,23 +51,32 @@ const VENDOR_LIMIT = 7;
 const SEARCH_MORE_VENDOR = "__SEARCH_MORE_VENDOR__";
 
 const AddPurchaseOrder = ({
+  onSuccess,
   onClose,
-  pr_id,
-  // legacy single-item fields (optional)
-  item_id,
-  item_name,
-  other_item_name,
-  // project fields
-  project_id,
+  pr_id, // PR _id
+  p_id, // project id (your backend currently shows string; we store whatever is valid)
   project_code,
-  // seeds from PR
   initialLines = [],
-  categories = [],
   categoryNames = [],
+  mode = "create", // "create" | "edit"
+  fromModal = false,
+  poStatus = "draft",
+  poNumberPreset = "",
 }) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  // ----- Vendors (server search + modal) -----
+  // -------- URL params --------
+  const modeQ = (searchParams.get("mode") || "").toLowerCase(); // "view" | "edit" | ""
+  const poNumberQ = searchParams.get("po_number") || "";
+  const effectiveMode = modeQ || mode;
+  const viewMode = effectiveMode === "view";
+  const [openRefuse, setOpenRefuse] = useState(false);
+  const [remarks, setRemarks] = useState("");
+  // -------- actions --------
+  const [submitAction, setSubmitAction] = useState(null); // 'send_approval' | 'confirm_order' | 'edit_save'
+
+  // -------- vendor search (server + modal) --------
   const [vendorSearch, setVendorSearch] = useState("");
   const [vendorPage, setVendorPage] = useState(1);
   const [vendorModalOpen, setVendorModalOpen] = useState(false);
@@ -103,13 +120,16 @@ const AddPurchaseOrder = ({
     setVendorModalOpen(false);
   };
 
-  // ----- Form state -----
+  // -------- form state --------
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [manualEdit, setManualEdit] = useState(false);
 
   const [formData, setFormData] = useState({
-    p_id: project_code || "",
-    po_number: "",
-    name: "", // vendor name string
+    _id: "",
+    p_id: p_id ?? "", // do not force numeric; backend sample shows string
+    project_code: project_code || "",
+    po_number: poNumberPreset || poNumberQ || "",
+    name: "",
     date: "",
     po_value: "",
     po_basic: "",
@@ -118,7 +138,6 @@ const AddPurchaseOrder = ({
     submitted_By: "",
   });
 
-  // Lines (prefilled from PR if provided)
   const [lines, setLines] = useState(() =>
     Array.isArray(initialLines) && initialLines.length
       ? initialLines.map((l) => ({
@@ -139,7 +158,7 @@ const AddPurchaseOrder = ({
       prev.map((l) => (l.id === id ? { ...l, [field]: value } : l))
     );
 
-  // Totals
+  // -------- totals --------
   const amounts = useMemo(() => {
     const untaxed = lines.reduce((sum, l) => {
       const q = Number(l.quantity || 0);
@@ -166,7 +185,7 @@ const AddPurchaseOrder = ({
     }));
   }, [amounts]);
 
-  // ----- Auth/user helpers -----
+  // -------- auth helper --------
   const getUserData = () => {
     const raw = localStorage.getItem("userDetails");
     try {
@@ -176,7 +195,7 @@ const AddPurchaseOrder = ({
     }
   };
 
-  // Prefill submitted_By from local user
+  // submitted_By prefill
   useEffect(() => {
     const user = getUserData();
     if (user?.name) {
@@ -184,7 +203,93 @@ const AddPurchaseOrder = ({
     }
   }, []);
 
-  // ----- Handlers -----
+  // -------- map PO -> lines --------
+  const mapPOtoLines = (po) => {
+    const arr = Array.isArray(po?.items)
+      ? po.items
+      : Array.isArray(po?.item)
+        ? po.item
+        : [];
+    return arr.length
+      ? arr.map((it) => ({
+          ...makeEmptyLine(),
+          productCategoryId:
+            typeof it?.category === "object"
+              ? (it?.category?._id ?? "")
+              : (it?.category ?? ""),
+          productCategoryName:
+            typeof it?.category === "object" ? (it?.category?.name ?? "") : "",
+          productName: it?.product_name ?? "",
+          make: it?.product_make ?? "",
+          uom: it?.uom ?? "",
+          quantity: Number(it?.quantity ?? 0),
+          unitPrice: Number(it?.cost ?? 0),
+          taxPercent: Number(it?.gst_percent ?? it?.gst ?? 0),
+        }))
+      : [makeEmptyLine()];
+  };
+
+  // -------- fetch PO (edit/view) --------
+  const [poLoading, setPoLoading] = useState(false);
+  const [fetchedPoStatus, setFetchedPoStatus] = useState(poStatus || "draft");
+  const _id = searchParams.get("_id") || "";
+  useEffect(() => {
+    if (effectiveMode !== "view" && effectiveMode !== "edit") return;
+
+    const token = localStorage.getItem("authToken");
+
+    (async () => {
+      try {
+        setPoLoading(true);
+        const { data: resp } = await Axios.get(
+          `/get-po-by-po_number?po_number=${encodeURIComponent(poNumberQ)}&_id=${_id}`,
+          { headers: { "x-auth-token": token } }
+        );
+        // backend now returns { data: <object> }
+        const po = Array.isArray(resp?.data)
+          ? resp.data[0]
+          : (resp?.data ?? resp);
+        if (!po) {
+          toast.error("PO not found.");
+          return;
+        }
+
+        setFetchedPoStatus(po?.current_status?.status || "draft");
+
+        setFormData((prev) => ({
+          ...prev,
+          _id: po?._id || prev._id,
+          p_id: po?.p_id ?? prev.p_id,
+          project_code: po?.p_id ?? prev.p_id ?? "",
+          po_number: po?.po_number ?? prev.po_number ?? "",
+          name: po?.vendor ?? "",
+          date: po?.date ?? "",
+          partial_billing: po?.partial_billing ?? "",
+          submitted_By: po?.submitted_By ?? prev.submitted_By,
+          po_basic: String(po?.po_basic ?? prev.po_basic ?? ""),
+          gst: String(po?.gst ?? prev.gst ?? ""),
+          po_value: String(po?.po_value ?? prev.po_value ?? ""),
+        }));
+
+        setLines(mapPOtoLines(po));
+      } catch (err) {
+        console.error("Failed to load PO:", err);
+        toast.error("Failed to load PO.");
+      } finally {
+        setPoLoading(false);
+      }
+    })();
+  }, [poNumberQ, effectiveMode]);
+
+  // -------- status-based gating --------
+  const statusNow = fetchedPoStatus; // backend: "approval_pending" | "approval_done" | "po_created" | ...
+  const isApprovalPending = statusNow === "approval_pending";
+  const canConfirm = statusNow === "approval_done";
+  const approvalRejected = statusNow === "approval_rejected"
+
+  const inputsDisabled = viewMode || !(isApprovalPending && manualEdit) || !approvalRejected;
+
+  // -------- handlers --------
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -206,7 +311,6 @@ const AddPurchaseOrder = ({
   };
 
   const handleVendorChange = (opt) => {
-    // opt can be null (cleared), the special "search more", or a real vendor
     if (!opt) {
       setFormData((prev) => ({ ...prev, name: "" }));
       return;
@@ -218,78 +322,225 @@ const AddPurchaseOrder = ({
     setFormData((prev) => ({ ...prev, name: opt.value || "" }));
   };
 
-  // ----- Submit -----
+  // -------- submit --------
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
 
-    if (!formData.po_number) return toast.error("PO Number is required.");
-    if (!formData.name) return toast.error("Vendor is required.");
-    if (!formData.date) return toast.error("PO Date is required.");
+    const item = (lines || [])
+      .filter((l) => l?.productName || l?.productCategoryName)
+      .map((l) => {
+        const categoryId =
+          typeof l.productCategoryId === "object" && l.productCategoryId?._id
+            ? String(l.productCategoryId._id)
+            : l.productCategoryId != null
+              ? String(l.productCategoryId)
+              : "";
 
-    setIsSubmitting(true);
-    try {
-      const user = getUserData();
-      if (!user?.name) {
-        toast.error("User details not found. Please log in again.");
-        setIsSubmitting(false);
+        return {
+          category: String(categoryId),
+          product_name: String(l.productName || ""),
+          product_make: String(l.make || ""),
+          uom: String(l.uom ?? ""),
+          quantity: String(l.quantity ?? 0),
+          cost: String(l.unitPrice ?? 0),
+          gst_percent: String(l.taxPercent ?? 0),
+        };
+      });
+
+    const hasValidLine =
+      item.length > 0 && item.some((it) => Number(it.quantity) > 0);
+
+    if (submitAction === "edit_save") {
+      if (!formData?._id) {
+        toast.error("PO id missing.");
+        return;
+      }
+      if (!isApprovalPending) {
+        toast.error("Editing allowed only during approval pending.");
+        return;
+      }
+      if (!hasValidLine) {
+        toast.error("Add at least one valid product row.");
         return;
       }
 
-      const dataToPost = {
-        p_id: project_code,
-        project_id: project_id || null,
-        po_number: formData.po_number,
-        vendor: formData.name,
-        date: formData.date,
-        item: item_name === "Others" ? other_item_name || "Others" : item_id,
-        other: "",
-        po_value: String(amounts.total ?? 0),
-        po_basic: String(amounts.untaxed ?? 0),
-        gst: String(amounts.tax ?? 0),
-        partial_billing: formData.partial_billing || "",
-        submitted_By: user.name,
-        pr_id,
+      const token = localStorage.getItem("authToken");
+      setIsSubmitting(true);
+      try {
+        const body = {
+          po_number: formData.po_number,
+          vendor: formData.name,
+          date: formData.date,
+          partial_billing: formData.partial_billing || "",
+          submitted_By: formData.submitted_By,
+          po_basic: String(amounts.untaxed ?? 0),
+          gst: String(amounts.tax ?? 0),
+          po_value: Number(amounts.total ?? 0),
+          item,
+        };
+        await Axios.put(`/edit-pO-IT/${formData._id}`, body, {
+          headers: { "x-auth-token": token },
+        });
+        toast.success("PO updated.");
+        setManualEdit(false);
+        onSuccess?.({ created: false, updated: true, status: statusNow });
+        return;
+      } catch (err) {
+        console.error(err);
+        toast.error(err?.response?.data?.msg || "Failed to update PO");
+        return;
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
 
-        // include full lines / categories if you pass them in
-        categories: Array.isArray(categories) ? categories : [],
-        category_names: Array.isArray(categoryNames) ? categoryNames : [],
-        lines: lines.map((l) => ({
-          productId: l.productId || "",
-          productName: l.productName || "",
-          productCategoryId: l.productCategoryId || "",
-          productCategoryName: l.productCategoryName || "",
-          make: l.make || "",
-          uom: l.uom || "",
-          quantity: String(l.quantity ?? 0),
-          cost: String(l.unitPrice ?? 0),
-          gst: String(l.taxPercent ?? 0),
-        })),
-      };
+    if (submitAction === "confirm_order") {
+      if (!canConfirm) {
+        toast.error("Confirm is available only after approval is done.");
+        return;
+      }
+      if (!formData.po_number) {
+        toast.error("PO Number is required to confirm this PO.");
+        return;
+      }
 
       const token = localStorage.getItem("authToken");
-      await Axios.post("/Add-purchase-ordeR-IT", dataToPost, {
-        headers: { "x-auth-token": token },
-      });
+      setIsSubmitting(true);
+      try {
+        await Axios.put(
+          "/updateStatusPO",
+          {
+            id: formData.po_number,
+            status: "po_created",
+            remarks: "",
+            new_po_number: formData.po_number,
+          },
+          { headers: { "x-auth-token": token } }
+        );
 
-      toast.success("Purchase Order Successfully Added!");
-      if (onClose) onClose();
-      else navigate("/purchase-order");
-    } catch (error) {
-      console.error("Error posting PO:", error);
-      if (
-        error?.response?.status === 400 &&
-        error?.response?.data?.message === "PO Number already used!"
-      ) {
-        toast.error("PO Number already used. Please enter a unique one.");
-      } else {
-        toast.error("Something went wrong. Please check your connection.");
+        toast.success("PO confirmed.");
+        onSuccess?.({ created: false, updated: true, status: "po_created" });
+        return onClose ? onClose() : navigate("/purchase-order");
+      } catch (err) {
+        console.error("Confirm error:", err);
+        toast.error("Failed to confirm PO");
+      } finally {
+        setIsSubmitting(false);
       }
-    } finally {
-      setIsSubmitting(false);
+      return;
+    }
+
+    // ---------- CREATE ----------
+    if (effectiveMode === "create" || fromModal) {
+      if (!formData.name) return toast.error("Vendor is required.");
+      if (!formData.date) return toast.error("PO Date is required.");
+      if (!hasValidLine) {
+        return toast.error("Add at least one valid product row.");
+      }
+      if (submitAction === "confirm_order" && !formData.po_number) {
+        return toast.error("PO Number is required to confirm the order.");
+      }
+
+      setIsSubmitting(true);
+      try {
+        const user = getUserData();
+        if (!user?.name) throw new Error("No user");
+
+        const token = localStorage.getItem("authToken");
+        const initial_status =
+          submitAction === "send_approval" ? "po_approval" : "po_created";
+
+        const dataToPost = {
+          p_id: formData.p_id,
+          po_number:
+            submitAction === "send_approval" ? undefined : formData.po_number,
+          vendor: formData.name,
+          date: formData.date,
+          partial_billing: formData.partial_billing || "",
+          submitted_By: user.name,
+          pr_id,
+          po_basic: String(amounts.untaxed ?? 0),
+          gst: String(amounts.tax ?? 0),
+          po_value: Number(amounts.total ?? 0),
+          item,
+          initial_status,
+        };
+
+        const resp = await Axios.post("/Add-purchase-ordeR-IT", dataToPost, {
+          headers: { "x-auth-token": token },
+        });
+
+        const createdId = resp?.data?.newPO?._id;
+        if (createdId) localStorage.setItem("lastPOApprovalId", createdId);
+
+        toast.success(
+          submitAction === "send_approval"
+            ? "PO sent for approval."
+            : "PO created."
+        );
+        onSuccess?.({
+          created: true,
+          updated: submitAction === "confirm_order",
+          status: initial_status,
+        });
+        return onClose ? onClose() : navigate("/purchase-order");
+      } catch (error) {
+        const msg = error?.response?.data?.message;
+        const statusCode = error?.response?.status;
+        if (statusCode === 400 && msg === "PO Number already used!") {
+          toast.error("PO Number already used. Please enter a unique one.");
+        } else {
+          console.error("Error posting PO:", error);
+          toast.error("Something went wrong. Please check your connection.");
+        }
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
+  const handleApprove = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      await Axios.put(
+        "/updateStatusPO",
+        {
+          id: _id,
+          status: "approval_done",
+          remarks: "Approved by CAM",
+        },
+        { headers: { "x-auth-token": token } }
+      );
+      toast.success("PO Approved");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to approve");
+    }
+  };
+
+  const handleRefuse = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      await Axios.put(
+        "/updateStatusPO",
+        {
+          id: _id || poNumberQ,
+          status: "approval_rejected",
+          remarks: remarks,
+        },
+        { headers: { "x-auth-token": token } }
+      );
+      toast.success("PO Refused");
+      setOpenRefuse(false);
+      setRemarks("");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to refuse");
+    }
+  };
+
+  const user = getUserData();
+
+  // -------- vendor options --------
   const vendorOptions = [
     ...(formData.name && !vendorRows.some((v) => v.name === formData.name)
       ? [{ value: formData.name, label: formData.name }]
@@ -315,7 +566,7 @@ const AddPurchaseOrder = ({
       {/* Card container */}
       <Box
         sx={{
-          maxWidth: "full",
+          maxWidth: 1200,
           width: "100%",
           p: 3,
           boxShadow: "md",
@@ -323,7 +574,7 @@ const AddPurchaseOrder = ({
           bgcolor: "background.surface",
         }}
       >
-        {/* Header with actions (INSIDE the card) */}
+        {/* Header */}
         <Box
           sx={{
             display: "flex",
@@ -333,44 +584,124 @@ const AddPurchaseOrder = ({
           }}
         >
           <Typography level="h3" sx={{ fontWeight: 700 }}>
-            Purchase Order
+            {viewMode
+              ? "View Purchase Order"
+              : effectiveMode === "edit"
+                ? "Edit Purchase Order"
+                : "Purchase Order"}
           </Typography>
 
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-            <Button
-              variant="solid"
-              startDecorator={<Send />}
-              sx={{
-                bgcolor: "#214b7b",
-                color: "#fff",
-                "&:hover": { bgcolor: "#163553" },
-              }}
-              onClick={() => {
-                const form = document.getElementById("po-form");
-                if (form) form.requestSubmit();
-              }}
-            >
-              Send Approval
-            </Button>
-            <Button
-              variant="outlined"
-              startDecorator={<ConfirmationNumber />}
-              sx={{
-                borderColor: "#214b7b",
-                color: "#214b7b",
-                "&:hover": {
-                  bgcolor: "rgba(33, 75, 123, 0.1)",
-                  borderColor: "#163553",
-                  color: "#163553",
-                },
-              }}
-              onClick={() => {
-                const form = document.getElementById("po-form");
-                if (form) form.requestSubmit();
-              }}
-            >
-              Confirm Order
-            </Button>
+            {/* Create flow buttons (optional keep) */}
+            {!viewMode && (effectiveMode === "create" || fromModal || (effectiveMode === "edit" && statusNow === "approval_rejected")) && (
+              <>
+                <Button
+                  variant="solid"
+                  startDecorator={<Send />}
+                  sx={{
+                    bgcolor: "#214b7b",
+                    color: "#fff",
+                    "&:hover": { bgcolor: "#163553" },
+                  }}
+                  disabled={isSubmitting}
+                  onClick={() => {
+                    setSubmitAction("send_approval");
+                    const form = document.getElementById("po-form");
+                    if (form) form.requestSubmit();
+                  }}
+                >
+                  Send Approval
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  startDecorator={<ConfirmationNumber />}
+                  sx={{
+                    borderColor: "#214b7b",
+                    color: "#214b7b",
+                    "&:hover": {
+                      bgcolor: "rgba(33, 75, 123, 0.1)",
+                      borderColor: "#163553",
+                      color: "#163553",
+                    },
+                  }}
+                  disabled={isSubmitting}
+                  onClick={() => {
+                    setSubmitAction("confirm_order");
+                    const form = document.getElementById("po-form");
+                    if (form) form.requestSubmit();
+                  }}
+                >
+                  Confirm Order
+                </Button>
+              </>
+            )}
+            {!viewMode && effectiveMode === "edit" && isApprovalPending || approvalRejected && (
+              <Box display="flex" gap={2}>
+                <Box>
+                  <Button
+                    variant={manualEdit ? "outlined" : "solid"}
+                    color={manualEdit ? "neutral" : "primary"}
+                    onClick={() => setManualEdit((s) => !s)}
+                    sx={{ width: "fit-content" }}
+                  >
+                    {manualEdit ? "Cancel Edit" : "Edit"}
+                  </Button>
+                </Box>
+
+                {(user?.department === "CAM" ||
+                  user?.name === "Sushant Ranjan Dubey" ||
+                  user?.name === "Sanjiv Kumar" ||
+                  user?.name === "IT Team") && (
+                  <Box display="flex" gap={1}>
+                    <Button
+                      variant="solid"
+                      color="success"
+                      sx={{ minWidth: 100 }}
+                      startDecorator={<Check />}
+                      onClick={handleApprove}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="danger"
+                      sx={{ minWidth: 100 }}
+                      startDecorator={<Close />}
+                      onClick={() => setOpenRefuse(true)}
+                    >
+                      Refuse
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+            )}
+
+            {/* Confirm Order only when approval_done */}
+            {!viewMode && effectiveMode === "edit" && canConfirm && (
+              <Button
+                variant="outlined"
+                startDecorator={<ConfirmationNumber />}
+                sx={{
+                  borderColor: "#214b7b",
+                  color: "#214b7b",
+                  "&:hover": {
+                    bgcolor: "rgba(33, 75, 123, 0.1)",
+                    borderColor: "#163553",
+                    color: "#163553",
+                  },
+                }}
+                disabled={isSubmitting}
+                onClick={() => {
+                  setSubmitAction("confirm_order");
+                  const form = document.getElementById("po-form");
+                  if (form) form.requestSubmit();
+                }}
+              >
+                Confirm Order
+              </Button>
+            )}
+
             <Button
               variant="soft"
               startDecorator={<Print />}
@@ -386,7 +717,7 @@ const AddPurchaseOrder = ({
           </Box>
         </Box>
 
-        {/* Optional: show categories passed from PR */}
+        {/* Optional tags */}
         {Array.isArray(categoryNames) && categoryNames.length > 0 && (
           <Box sx={{ mb: 1, display: "flex", gap: 0.5, flexWrap: "wrap" }}>
             {categoryNames.map((c) => (
@@ -397,7 +728,7 @@ const AddPurchaseOrder = ({
           </Box>
         )}
 
-        {/* PO Number directly BELOW the buttons, still inside the card */}
+        {/* PO Number */}
         <Box sx={{ mb: 2 }}>
           <Typography level="body-sm" fontWeight="lg" sx={{ mb: 0.5 }}>
             PO Number
@@ -408,6 +739,7 @@ const AddPurchaseOrder = ({
             onChange={handleChange}
             placeholder="e.g. PO-0001"
             variant="plain"
+            disabled={inputsDisabled}
             sx={{
               "--Input-minHeight": "52px",
               fontSize: 28,
@@ -435,12 +767,12 @@ const AddPurchaseOrder = ({
             <Grid container spacing={2} sx={{ mb: 2 }}>
               <Grid xs={12} md={4}>
                 <Typography level="body1" fontWeight="bold" mb={0.5}>
-                  Project ID
+                  Project Code
                 </Typography>
-                <Input disabled value={formData.p_id} />
+                <Input disabled value={formData.project_code} />
               </Grid>
 
-              {/* Vendor with 7 results + SearchPickerModal */}
+              {/* Vendor */}
               <Grid xs={12} md={4}>
                 <Typography level="body1" fontWeight="bold" mb={0.5}>
                   Vendor
@@ -461,8 +793,7 @@ const AddPurchaseOrder = ({
                       setVendorPage(1);
                     }
                   }}
-                  // Don't client-filter — we already server-filter
-                  filterOption={() => true}
+                  filterOption={() => true} // server-filtered
                   options={vendorOptions}
                   value={
                     formData.name
@@ -474,6 +805,7 @@ const AddPurchaseOrder = ({
                   noOptionsMessage={() =>
                     vendorsLoading ? "Loading…" : "No vendors"
                   }
+                  isDisabled={inputsDisabled}
                 />
               </Grid>
 
@@ -486,7 +818,7 @@ const AddPurchaseOrder = ({
                   type="date"
                   value={formData.date}
                   onChange={handleChange}
-                  required
+                  disabled={inputsDisabled}
                 />
               </Grid>
             </Grid>
@@ -549,17 +881,23 @@ const AddPurchaseOrder = ({
                           onChange={(e) =>
                             updateLine(l.id, "productName", e.target.value)
                           }
+                          disabled
                         />
                       </td>
                       <td>
                         <Input
                           size="sm"
                           variant="plain"
-                          placeholder="Product name"
+                          placeholder="Category"
                           value={l.productCategoryName}
                           onChange={(e) =>
-                            updateLine(l.id, "categoryName", e.target.value)
+                            updateLine(
+                              l.id,
+                              "productCategoryName",
+                              e.target.value
+                            )
                           }
+                          disabled
                         />
                       </td>
                       <td>
@@ -571,6 +909,7 @@ const AddPurchaseOrder = ({
                           onChange={(e) =>
                             updateLine(l.id, "make", e.target.value)
                           }
+                          disabled={inputsDisabled}
                         />
                       </td>
                       <td>
@@ -583,6 +922,7 @@ const AddPurchaseOrder = ({
                             updateLine(l.id, "quantity", e.target.value)
                           }
                           slotProps={{ input: { min: 0, step: "1" } }}
+                          disabled={inputsDisabled}
                         />
                       </td>
                       <td>
@@ -595,6 +935,7 @@ const AddPurchaseOrder = ({
                             updateLine(l.id, "unitPrice", e.target.value)
                           }
                           slotProps={{ input: { min: 0, step: "0.01" } }}
+                          disabled={inputsDisabled}
                         />
                       </td>
                       <td>
@@ -607,6 +948,7 @@ const AddPurchaseOrder = ({
                             updateLine(l.id, "taxPercent", e.target.value)
                           }
                           slotProps={{ input: { min: 0, step: "0.01" } }}
+                          disabled={inputsDisabled}
                         />
                       </td>
                       <td>
@@ -619,13 +961,15 @@ const AddPurchaseOrder = ({
                         </Typography>
                       </td>
                       <td>
-                        <IconButton
-                          variant="plain"
-                          color="danger"
-                          onClick={() => removeLine(l.id)}
-                        >
-                          <DeleteOutline />
-                        </IconButton>
+                        {isApprovalPending && manualEdit && (
+                          <IconButton
+                            variant="plain"
+                            color="danger"
+                            onClick={() => removeLine(l.id)}
+                          >
+                            <DeleteOutline />
+                          </IconButton>
+                        )}
                       </td>
                     </tr>
                   );
@@ -633,11 +977,15 @@ const AddPurchaseOrder = ({
               </tbody>
             </Box>
 
-            <Box sx={{ display: "flex", gap: 3, color: "primary.600", mt: 1 }}>
-              <Button variant="plain" size="sm" onClick={addLine}>
-                Add a product
-              </Button>
-            </Box>
+            {isApprovalPending && manualEdit && (
+              <Box
+                sx={{ display: "flex", gap: 3, color: "primary.600", mt: 1 }}
+              >
+                <Button variant="plain" size="sm" onClick={addLine}>
+                  Add a product
+                </Button>
+              </Box>
+            )}
 
             <Divider sx={{ my: 2 }} />
 
@@ -697,6 +1045,20 @@ const AddPurchaseOrder = ({
               mt: 2,
             }}
           >
+            {isApprovalPending && manualEdit && (
+              <Button
+                variant="solid"
+                loading={isSubmitting}
+                onClick={() => {
+                  setSubmitAction("edit_save");
+                  const form = document.getElementById("po-form");
+                  if (form) form.requestSubmit();
+                }}
+              >
+                Save changes
+              </Button>
+            )}
+
             <Button
               variant="soft"
               startDecorator={<RestartAlt />}
@@ -731,6 +1093,21 @@ const AddPurchaseOrder = ({
         pageSize={VENDOR_LIMIT}
         backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
       />
+
+      <Modal open={openRefuse} onClose={() => setOpenRefuse(false)}>
+        <ModalDialog>
+          <Typography level="h5">Refuse Purchase Order</Typography>
+          <Textarea
+            minRows={3}
+            placeholder="Enter refusal remarks..."
+            value={remarks}
+            onChange={(e) => setRemarks(e.target.value)}
+          />
+          <Button color="danger" onClick={handleRefuse}>
+            Submit Refuse
+          </Button>
+        </ModalDialog>
+      </Modal>
     </Box>
   );
 };

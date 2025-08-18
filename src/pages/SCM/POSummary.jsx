@@ -6,13 +6,8 @@ import Link from "@mui/joy/Link";
 import { CssVarsProvider } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
 import { useRef } from "react";
-
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
-
 import Sidebar from "../../component/Partials/Sidebar";
-// import OrderTable from '../../component/OrderTable';
-// import OrderList from '../../component/OrderList';
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../../component/Partials/Header";
@@ -96,14 +91,6 @@ function POSummary() {
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
               sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
-              {/* <Link
-                underline="none"
-                color="neutral"
-                href="#some-link"
-                aria-label="Home"
-              >
-                <HomeRoundedIcon />
-              </Link> */}
               <Link
                 underline="hover"
                 color="neutral"
@@ -149,8 +136,6 @@ function POSummary() {
                   justifyContent: "center",
                 }}
               >
-               
-
                 {user?.name !== "Gagan Tayal" && (
                   <>
                     <Button
@@ -160,23 +145,12 @@ function POSummary() {
                     >
                       Add Vendor +
                     </Button>
-                    {/* <Button
-                    <Button
-                      color="primary"
-                      startDecorator={<DownloadRoundedIcon />}
-                      size="sm"
-                      onClick={handleExportToCSV}
-                    >
-                      Export to CSV
-                    </Button> */}
                   </>
                 )}
               </Box>
             )}
           </Box>
           <PurchaseOrder ref={poSummaryRef} />
-          {/* <OrderTable /> */}
-          {/* <OrderList /> */}
         </Box>
       </Box>
     </CssVarsProvider>

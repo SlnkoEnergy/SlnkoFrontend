@@ -18,7 +18,14 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { Calendar, Handshake, PackageCheck, Truck, TruckIcon, User } from "lucide-react";
+import {
+  Calendar,
+  Handshake,
+  PackageCheck,
+  Truck,
+  TruckIcon,
+  User,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
@@ -134,169 +141,167 @@ function PurchaseReqSummary() {
   const { data: materialCategories, isLoading: isMaterialLoading } =
     useGetMaterialCategoryQuery();
 
-const renderFilters = () => {
-  const pr_status = [
-  
-    { value: "ready_to_dispatch", label: "Ready to Dispatch" },
-    { value: "out_for_delivery", label: "Out For Delivery" },
-    { value: "delivered", label: "Delivered" },
-  ];
+  const renderFilters = () => {
+    const pr_status = [
+      { value: "ready_to_dispatch", label: "Ready to Dispatch" },
+      { value: "out_for_delivery", label: "Out For Delivery" },
+      { value: "delivered", label: "Delivered" },
+    ];
 
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: 2,
-        alignItems: "center",
-        mb: 2,
-      }}
-    >
-      <FormControl sx={{ flex: 1 }} size="sm">
-        <FormLabel>PR Status</FormLabel>
-        <Select
-          value={selectedstatus}
-          onChange={(e, newValue) => {
-            setSelectedstatus(newValue);
-            setCurrentPage(1);
-            setSearchParams({
-              page: 1,
-              search: searchQuery,
-              statusSearch: newValue || "",
-              itemSearch: selecteditem,
-              poValueSearch: selectedpovalue,
-            });
-          }}
-          size="sm"
-          placeholder="Select Status"
-        >
-          <Option value="">All status</Option>
-          {pr_status.map((status) => (
-            <Option key={status.value} value={status.value}>
-              {status.label}
-            </Option>
-          ))}
-        </Select>
-      </FormControl>
-
-      <FormControl sx={{ flex: 1 }} size="sm">
-        <FormLabel>Item Queue</FormLabel>
-        <Select
-          value={selecteditem}
-          onChange={(e, newValue) => {
-            setSelecteditem(newValue);
-            setCurrentPage(1);
-            setSearchParams({
-              page: 1,
-              search: searchQuery,
-              itemSearch: newValue || "",
-              statusSearch: selectedstatus,
-              poValueSearch: selectedpovalue,
-            });
-          }}
-          size="sm"
-          placeholder="Select Item"
-        >
-          <Option value="">All Items</Option>
-          {materialCategories?.data?.map((item) => (
-            <Option key={item.name} value={item.name}>
-              {item.name}
-            </Option>
-          ))}
-        </Select>
-      </FormControl>
-
-      <FormControl sx={{ flex: 1 }} size="sm">
-        <FormLabel>Created At</FormLabel>
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <Input
-            type="date"
-            size="sm"
-            value={createdDateRange[0] || ""}
-            onChange={(e) => {
-              const from = e.target.value;
-              const to = createdDateRange[1];
-              setCreatedDateRange([from, to]);
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 2,
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <FormControl sx={{ flex: 1 }} size="sm">
+          <FormLabel>PR Status</FormLabel>
+          <Select
+            value={selectedstatus}
+            onChange={(e, newValue) => {
+              setSelectedstatus(newValue);
+              setCurrentPage(1);
               setSearchParams({
                 page: 1,
                 search: searchQuery,
+                statusSearch: newValue || "",
                 itemSearch: selecteditem,
-                statusSearch: selectedstatus,
                 poValueSearch: selectedpovalue,
-                createdFrom: from,
-                createdTo: to,
               });
             }}
-          />
-          <Input
-            type="date"
             size="sm"
-            value={createdDateRange[1] || ""}
-            onChange={(e) => {
-              const from = createdDateRange[0];
-              const to = e.target.value;
-              setCreatedDateRange([from, to]);
-              setSearchParams({
-                page: 1,
-                search: searchQuery,
-                itemSearch: selecteditem,
-                statusSearch: selectedstatus,
-                poValueSearch: selectedpovalue,
-                createdFrom: from,
-                createdTo: to,
-              });
-            }}
-          />
-        </Box>
-      </FormControl>
+            placeholder="Select Status"
+          >
+            <Option value="">All status</Option>
+            {pr_status.map((status) => (
+              <Option key={status.value} value={status.value}>
+                {status.label}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
 
-      <FormControl sx={{ flex: 1 }} size="sm">
-        <FormLabel>ETD Date</FormLabel>
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <Input
-            type="date"
-            size="sm"
-            value={etdDateRange[0] || ""}
-            onChange={(e) => {
-              const from = e.target.value;
-              const to = etdDateRange[1];
-              setEtdDateRange([from, to]);
+        <FormControl sx={{ flex: 1 }} size="sm">
+          <FormLabel>Item Queue</FormLabel>
+          <Select
+            value={selecteditem}
+            onChange={(e, newValue) => {
+              setSelecteditem(newValue);
+              setCurrentPage(1);
               setSearchParams({
                 page: 1,
                 search: searchQuery,
-                itemSearch: selecteditem,
+                itemSearch: newValue || "",
                 statusSearch: selectedstatus,
                 poValueSearch: selectedpovalue,
-                etdFrom: from,
-                etdTo: to,
               });
             }}
-          />
-          <Input
-            type="date"
             size="sm"
-            value={etdDateRange[1] || ""}
-            onChange={(e) => {
-              const from = etdDateRange[0];
-              const to = e.target.value;
-              setEtdDateRange([from, to]);
-              setSearchParams({
-                page: 1,
-                search: searchQuery,
-                itemSearch: selecteditem,
-                statusSearch: selectedstatus,
-                poValueSearch: selectedpovalue,
-                etdFrom: from,
-                etdTo: to,
-              });
-            }}
-          />
-        </Box>
-      </FormControl>
-    </Box>
-  );
-};
+            placeholder="Select Item"
+          >
+            <Option value="">All Items</Option>
+            {materialCategories?.data?.map((item) => (
+              <Option key={item.name} value={item.name}>
+                {item.name}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
 
+        <FormControl sx={{ flex: 1 }} size="sm">
+          <FormLabel>Created At</FormLabel>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Input
+              type="date"
+              size="sm"
+              value={createdDateRange[0] || ""}
+              onChange={(e) => {
+                const from = e.target.value;
+                const to = createdDateRange[1];
+                setCreatedDateRange([from, to]);
+                setSearchParams({
+                  page: 1,
+                  search: searchQuery,
+                  itemSearch: selecteditem,
+                  statusSearch: selectedstatus,
+                  poValueSearch: selectedpovalue,
+                  createdFrom: from,
+                  createdTo: to,
+                });
+              }}
+            />
+            <Input
+              type="date"
+              size="sm"
+              value={createdDateRange[1] || ""}
+              onChange={(e) => {
+                const from = createdDateRange[0];
+                const to = e.target.value;
+                setCreatedDateRange([from, to]);
+                setSearchParams({
+                  page: 1,
+                  search: searchQuery,
+                  itemSearch: selecteditem,
+                  statusSearch: selectedstatus,
+                  poValueSearch: selectedpovalue,
+                  createdFrom: from,
+                  createdTo: to,
+                });
+              }}
+            />
+          </Box>
+        </FormControl>
+
+        <FormControl sx={{ flex: 1 }} size="sm">
+          <FormLabel>ETD Date</FormLabel>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Input
+              type="date"
+              size="sm"
+              value={etdDateRange[0] || ""}
+              onChange={(e) => {
+                const from = e.target.value;
+                const to = etdDateRange[1];
+                setEtdDateRange([from, to]);
+                setSearchParams({
+                  page: 1,
+                  search: searchQuery,
+                  itemSearch: selecteditem,
+                  statusSearch: selectedstatus,
+                  poValueSearch: selectedpovalue,
+                  etdFrom: from,
+                  etdTo: to,
+                });
+              }}
+            />
+            <Input
+              type="date"
+              size="sm"
+              value={etdDateRange[1] || ""}
+              onChange={(e) => {
+                const from = etdDateRange[0];
+                const to = e.target.value;
+                setEtdDateRange([from, to]);
+                setSearchParams({
+                  page: 1,
+                  search: searchQuery,
+                  itemSearch: selecteditem,
+                  statusSearch: selectedstatus,
+                  poValueSearch: selectedpovalue,
+                  etdFrom: from,
+                  etdTo: to,
+                });
+              }}
+            />
+          </Box>
+        </FormControl>
+      </Box>
+    );
+  };
 
   const RenderPRNo = ({
     pr_no,
@@ -318,11 +323,7 @@ const renderFilters = () => {
         <Box>
           <span
             style={{ cursor: "pointer", fontWeight: 500 }}
-            onClick={() =>
-              navigate(
-                `/pr_form?mode=view&id=${pr_id}&item_id=${item_id}`
-              )
-            }
+            onClick={() => navigate(`/pr_form?mode=view&id=${pr_id}`)}
           >
             {pr_no || "-"}
           </span>
@@ -353,7 +354,51 @@ const renderFilters = () => {
     );
   };
 
-const RenderItemCell = (item) => {
+  // helper: pick a stable key
+  const getItemName = (it) =>
+    it?.item_id?.name || it?.other_item_name || it?.name || "(Unnamed item)";
+
+  const ItemsCell = ({ items }) => {
+    const arr = Array.isArray(items)
+      ? items.filter(Boolean)
+      : [items].filter(Boolean);
+    if (arr.length === 0) return <span>-</span>;
+    if (arr.length === 1) return <>{RenderItemCell(arr[0])}</>;
+
+    const names = arr.map(getItemName);
+
+    const tooltipContent = (
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, py: 0.5 }}>
+        {names.map((n, i) => (
+          <Typography level="body-sm" key={`${n}-${i}`}>
+            {n}
+          </Typography>
+        ))}
+      </Box>
+    );
+
+    return (
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+        <span>{RenderItemCell(arr[0])}</span>
+        <Tooltip title={tooltipContent} variant="soft" arrow placement="bottom">
+          <Chip
+            size="sm"
+            variant="solid"
+            sx={{
+              bgcolor: "#214b7b",
+              color: "#fff",
+              cursor: "pointer",
+              "&:hover": { bgcolor: "#1d416b" },
+            }}
+          >
+            +{arr.length - 1}
+          </Chip>
+        </Tooltip>
+      </Box>
+    );
+  };
+
+  const RenderItemCell = (item) => {
     const name = item?.item_id?.name;
     const isOthers = name === "Others";
     return (
@@ -362,10 +407,17 @@ const RenderItemCell = (item) => {
         {isOthers && (
           <Box sx={{ fontSize: 12, color: "gray" }}>
             <div>
-              <b> <TruckIcon size={13} /> Other Item Name:</b> {item?.other_item_name || "-"}
+              <b>
+                {" "}
+                <TruckIcon size={13} /> Other Item Name:
+              </b>{" "}
+              {item?.other_item_name || "-"}
             </div>
             <div>
-              <b><Money /> Amount:</b> ₹{item?.amount || "0"}
+              <b>
+                <Money /> Amount:
+              </b>{" "}
+              ₹{item?.amount || "0"}
             </div>
           </Box>
         )}
@@ -554,16 +606,15 @@ const RenderItemCell = (item) => {
                       </Box>
                     </td>
 
-                   <td
-  style={{
-    borderBottom: "1px solid #ddd",
-    textAlign: "left",
-    padding: "8px",
-  }}
->
-  {RenderItemCell(item)}
-</td>
-
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "left",
+                        padding: "8px",
+                      }}
+                    >
+                      <ItemsCell items={row.items ?? item} />
+                    </td>
 
                     <td
                       style={{

@@ -21,7 +21,7 @@ import DeleteOutline from "@mui/icons-material/DeleteOutline";
 import Add from "@mui/icons-material/Add";
 import RestartAlt from "@mui/icons-material/RestartAlt";
 import Send from "@mui/icons-material/Send";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import LocalMallOutlinedIcon from "@mui/icons-material/LocalMallOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
@@ -88,12 +88,12 @@ export default function Purchase_Request_Form() {
   const isView = mode === "view";
   const isEdit = mode === "edit";
   const isCreate = mode === "create";
-
-  // *** CHANGED: read item_id from URL
-  const itemCategoryId = (searchParams.get("item_id") || "").trim();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // Top-level
   const [projectCode, setProjectCode] = useState("");
+  const [pId, setPId] = useState(0);
   const [projectLocation, setProjectLocation] = useState("");
   const [projectName, setProjectName] = useState("");
   const [askConfirmation, setAskConfirmation] = useState(false);
@@ -359,6 +359,7 @@ export default function Purchase_Request_Form() {
 
     setCreatedBy(d?.created_by?.name || "");
     setProjectCode(d?.project_id?.code || "");
+    setPId(d?.project_id?.p_id || "");
     setPrNo(d?.pr_no || "");
     setProjectLocation(
       typeof d?.project_id?.site_address === "string"
@@ -407,7 +408,6 @@ export default function Purchase_Request_Form() {
     );
   }, [prDataResp]);
 
-  // *** CHANGED: In VIEW mode, force category filter to [itemCategoryId]
   useEffect(() => {
     if (!prDataResp) return;
     const d = prDataResp?.data || prDataResp;
@@ -435,14 +435,9 @@ export default function Purchase_Request_Form() {
 
     const incomingItems = Array.isArray(d?.items) ? d.items : [];
 
-    // 🔑 filter by itemCategoryId if provided
-    const filteredItems = itemCategoryId
-      ? incomingItems.filter((l) => l.item_id?._id === itemCategoryId)
-      : incomingItems;
-
     setLines(
-      filteredItems.length
-        ? filteredItems.map((l) => {
+      incomingItems.length
+        ? incomingItems.map((l) => {
             const productDoc = l?.item_id || {};
             const catId = productDoc?._id || "";
             const catName = productDoc?.name || "";
@@ -464,7 +459,7 @@ export default function Purchase_Request_Form() {
           })
         : [EMPTY_LINE()]
     );
-  }, [prDataResp, itemCategoryId]);
+  }, [prDataResp]);
 
   // Filter lines whenever category changes (already in your code)
   useEffect(() => {
@@ -628,6 +623,7 @@ export default function Purchase_Request_Form() {
       pr_id: prId || null,
       project_id: projectId || null,
       project_code: projectCode || "",
+      p_id: pId || "",
       categories: category || [],
       categoryNames: (category || []).map(
         (id) => categoryIdToName[id] || String(id)
@@ -659,6 +655,19 @@ export default function Purchase_Request_Form() {
   // For category phantom options
   const idsInRows = new Set((categoryRows || [])?.map((r) => r._id));
   const missingSelected = (category || []).filter((id) => !idsInRows.has(id));
+
+  const goToPOList = () => {
+    const params = new URLSearchParams();
+    if (prId) params.set("pr_id", prId);
+    if (projectId) params.set("project_id", projectId);
+    params.set("returnTo", location.pathname + location.search);
+    navigate(`/purchase-order?${params.toString()}`);
+  };
+
+  const handlePoSubmitted = ({ created, updated, status, newPO }) => {
+    if (created) setPoCount((c) => c + 1);
+    setPoModalOpen(false);
+  };
 
   return (
     <Box
@@ -749,6 +758,12 @@ export default function Purchase_Request_Form() {
                   py: 0.75,
                   cursor: "pointer",
                   "&:hover": { bgcolor: "neutral.softHoverBg" },
+                }}
+                onClick={goToPOList}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") goToPOList();
                 }}
               >
                 <LocalMallOutlinedIcon fontSize="small" color="primary" />
@@ -1318,8 +1333,10 @@ export default function Purchase_Request_Form() {
           <ModalClose />
           {poSeed && (
             <AddPurchaseOrder
+              onSuccess={handlePoSubmitted}
               onClose={() => setPoModalOpen(false)}
               pr_id={poSeed.pr_id}
+              p_id={poSeed.p_id}
               project_id={poSeed.project_id}
               project_code={poSeed.project_code}
               categories={poSeed.categories}
