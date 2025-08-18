@@ -77,7 +77,7 @@ function PaymentRequest() {
     ...(isAccount ? { tab: activeTab } : {}),
   });
 
-  const [paginatedData, setPaginatedData] = useState(responseData?.data || []);
+  const [paginatedData, setPaginatedData] = useState([]);
   // console.log("paginatedData :", paginatedData);
 
   // console.log(count);
@@ -91,10 +91,10 @@ function PaymentRequest() {
   const totalPages = Math.ceil(total / perPage);
 
   useEffect(() => {
-  if (responseData?.data) {
-    setPaginatedData(responseData.data);
-  }
-}, [responseData]);
+    if (responseData?.data) {
+      setPaginatedData(responseData.data);
+    }
+  }, [responseData]);
 
   useEffect(() => {
     const params = {};

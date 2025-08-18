@@ -192,10 +192,10 @@ const InstantRequest = forwardRef(
           return;
         }
 
-        // Finalized or frozen drafts
         const isFinal =
           ["Approved", "Rejected", "Deleted"].includes(stage) ||
           !!timers?.draft_frozen_at;
+
         if (isFinal) {
           if (timers?.draft_frozen_at) {
             setTimeLeft("⏸ Frozen");
@@ -207,34 +207,10 @@ const InstantRequest = forwardRef(
           return;
         }
 
-        // Trash Pending logic (show remaining days)
-        if (stage === "Trash Pending" && timers?.trash_started_at) {
-          const interval = setInterval(
-            () => {
-              const trashStarted = dayjs(timers.trash_started_at);
-              const now = dayjs();
-              const endTime = trashStarted.add(15, "day");
-              const diff = endTime.diff(now, "day");
-
-              if (diff <= 0) {
-                setTimeLeft("Deleted");
-                setTimerColor("danger");
-              } else {
-                setTimeLeft(`${diff} day${diff > 1 ? "s" : ""} remaining`);
-                setTimerColor("warning");
-              }
-            },
-            1000 * 60 * 60
-          ); // update hourly
-
-          return () => clearInterval(interval);
-        }
-
-        // Regular draft countdown
         const interval = setInterval(() => {
           const startedAt = dayjs(timers.draft_started_at);
           const now = dayjs();
-          const endTime = startedAt.add(2, "minute"); // for testing
+          const endTime = startedAt.add(48, "hour");
           const diff = endTime.diff(now);
 
           if (diff <= 0) {
@@ -242,24 +218,20 @@ const InstantRequest = forwardRef(
             setTimerColor("danger");
           } else {
             const dur = dayjs.duration(diff);
-            const mm = dur.minutes();
-            const ss = dur.seconds();
-            setTimeLeft(`${mm}:${String(ss).padStart(2, "0")} remaining`);
+            const hh = String(Math.floor(dur.asHours())).padStart(2, "0");
+            const mm = String(dur.minutes()).padStart(2, "0");
+            const ss = String(dur.seconds()).padStart(2, "0");
+            setTimeLeft(`${hh}:${mm}:${ss} remaining`);
 
             const totalSecondsLeft = dur.asSeconds();
-            if (totalSecondsLeft <= 30) setTimerColor("danger");
-            else if (totalSecondsLeft <= 60) setTimerColor("warning");
+            if (totalSecondsLeft <= 3600) setTimerColor("danger");
+            else if (totalSecondsLeft <= 7200) setTimerColor("warning");
             else setTimerColor("success");
           }
         }, 1000);
 
         return () => clearInterval(interval);
-      }, [
-        timers?.draft_started_at,
-        timers?.draft_frozen_at,
-        timers?.trash_started_at,
-        stage,
-      ]);
+      }, [timers?.draft_started_at, timers?.draft_frozen_at, stage]);
 
       return (
         <Box mt={1}>
@@ -470,7 +442,6 @@ const InstantRequest = forwardRef(
               ) : (
                 <Box component="tr">
                   <Box
-                  
                     component="td"
                     colSpan={6}
                     sx={{
