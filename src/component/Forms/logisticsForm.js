@@ -287,10 +287,7 @@ const addLine = () => setLines((prev) => [...prev, EMPTY_LINE()]);
               <th style={{ width: "10%", fontWeight: 700 }}>Make</th>
               <th style={{ width: "8%", fontWeight: 700 }}>Qty</th>
               <th style={{ width: "8%", fontWeight: 700 }}>UoM</th>
-              <th style={{ width: "12%", fontWeight: 700 }}>Unit Price</th>
-              <th style={{ width: "10%", fontWeight: 700 }}>Tax %</th>
-              <th style={{ width: "12%", fontWeight: 700 }}>Amount</th>
-              <th style={{ width: 60 }}></th>
+              <th style={{ width: "10%", fontWeight: 700 }}>Weight (Ton)</th>
             </tr>
           </thead>
           <tbody>
@@ -334,7 +331,7 @@ const addLine = () => setLines((prev) => [...prev, EMPTY_LINE()]);
                 columnGap: 1.5,
               }}
             >
-              <Typography level="body-sm">Untaxed Amount:</Typography>
+              <Typography level="body-sm">Total Weight:</Typography>
               <Typography level="body-sm" fontWeight={700}>
                 ₹ 
               </Typography>
