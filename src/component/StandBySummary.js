@@ -3,15 +3,12 @@ import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
 import KeyboardDoubleArrowRight from "@mui/icons-material/KeyboardDoubleArrowRight";
 import duration from "dayjs/plugin/duration";
-import relativeTime from "dayjs/plugin/relativeTime";
 import CheckIcon from "@mui/icons-material/Check";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import BlockIcon from "@mui/icons-material/Block";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
-import Button from "@mui/joy/Button";
-import Checkbox from "@mui/joy/Checkbox";
 import Chip from "@mui/joy/Chip";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
@@ -30,17 +27,15 @@ import {
   Tooltip,
   useTheme,
 } from "@mui/joy";
-import { FileText } from "lucide-react";
 import { PaymentProvider } from "../store/Context/Payment_History";
 import PaymentHistory from "./PaymentHistory";
-import { useGetPaymentRecordQuery, useGetTrashRecordQuery } from "../redux/Accounts";
+import {  useGetTrashRecordQuery } from "../redux/Accounts";
 import dayjs from "dayjs";
 
 const TrashRequest = forwardRef(() => {
-  const theme = useTheme();
+  // const theme = useTheme();
   const navigate = useNavigate();
   const [error, setError] = useState(null);
-  const [selected, setSelected] = useState([]);
   const [searchParams, setSearchParams] = useSearchParams();
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
@@ -226,56 +221,44 @@ const TrashRequest = forwardRef(() => {
     const [timeLeft, setTimeLeft] = useState("");
     const [timerColor, setTimerColor] = useState("inherit");
 
-    useEffect(() => {
-      if (!timers?.draft_started_at) return;
+useEffect(() => {
+  if (!timers?.trash_started_at) return;
 
-      const isFinal =
-        ["Approved", "Rejected", "Deleted"].includes(approved) ||
-        !!timers?.draft_frozen_at;
+  const isFinal =
+    ["Approved", "Rejected", "Deleted"].includes(approved) ||
+    !!timers?.draft_frozen_at;
 
-      if (isFinal) {
-        setTimeLeft("Finalized");
-        setTimerColor("gray");
-        return;
-      }
+  if (isFinal) {
+    setTimeLeft("Finalized");
+    setTimerColor("gray");
+    return;
+  }
 
-      const interval = setInterval(() => {
-        const startedAt = dayjs(timers.draft_started_at);
-        const now = dayjs();
-        const endTime = startedAt.add(48, "hour");
-        const diff = endTime.diff(now);
+  const interval = setInterval(() => {
+    const now = dayjs();
+    const trashStartedAt = dayjs(timers.trash_started_at);
+    const totalDiffMs = trashStartedAt.add(15, "day").diff(now);
 
-        if (diff <= 0) {
-          setTimeLeft("⏱ Expired");
-          setTimerColor("red");
-        } else {
-          const dur = dayjs.duration(diff);
-          const hh = dur.hours() + dur.days() * 24;
-          const mm = dur.minutes();
-          const ss = dur.seconds();
+    if (totalDiffMs <= 0) {
+      setTimeLeft("⏱ Expired");
+      setTimerColor("red");
+      return;
+    }
 
-          setTimeLeft(
-            `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:${String(
-              ss
-            ).padStart(2, "0")} remaining`
-          );
+    const daysLeft = Math.ceil(dayjs.duration(totalDiffMs).asDays());
+    setTimeLeft(`${daysLeft} day${daysLeft > 1 ? "s" : ""} remaining`);
 
-          const totalHoursLeft = dur.asHours();
+    // Set color based on days left
+    if (daysLeft <= 1) setTimerColor("red");
+    else if (daysLeft <= 3) setTimerColor("primary.main");
+    else setTimerColor("green");
 
-          if (totalHoursLeft <= 0.1667) {
-            setTimerColor("red");
-          } else if (totalHoursLeft >= 20 && totalHoursLeft < 30) {
-            setTimerColor("primary.main");
-          } else if (totalHoursLeft >= 30) {
-            setTimerColor("green");
-          } else {
-            setTimerColor("inherit");
-          }
-        }
-      }, 1000);
+  }, 1000);
 
-      return () => clearInterval(interval);
-    }, [timers?.draft_started_at, timers?.draft_frozen_at, approved]);
+  return () => clearInterval(interval);
+}, [timers?.trash_started_at, timers?.draft_frozen_at, approved]);
+
+
 
     return (
       <Box mt={1}>

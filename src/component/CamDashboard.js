@@ -303,8 +303,8 @@ function Dash_cam() {
     setSearchQuery(query.toLowerCase());
   };
   const handleCreatePR = (project) => {
-    setSelectedPRProject(project);
-    setIsPRModalOpen(true);
+    navigate(`/pr_form?mode=create&projectId=${project.project_id}`);
+    console.log({ project });
   };
 
   const filteredAndSortedData = useMemo(() => {

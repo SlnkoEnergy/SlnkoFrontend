@@ -17,7 +17,7 @@ import {
 import StarIcon from "@mui/icons-material/Star";
 import StarBorderIcon from "@mui/icons-material/StarBorder";
 import { useState } from "react";
-import { useGetProjectDropdownQuery } from "../../redux/camsSlice";
+import { useGetProjectDropdownQuery } from "../../redux/projectsSlice";
 import {
   useCreateTaskMutation,
   useGetAllDeptQuery,

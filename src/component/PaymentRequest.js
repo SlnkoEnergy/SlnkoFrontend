@@ -2,61 +2,31 @@ import KeyboardDoubleArrowLeft from "@mui/icons-material/KeyboardDoubleArrowLeft
 import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
 import KeyboardDoubleArrowRight from "@mui/icons-material/KeyboardDoubleArrowRight";
-import duration from "dayjs/plugin/duration";
-import relativeTime from "dayjs/plugin/relativeTime";
-import CheckIcon from "@mui/icons-material/Check";
-import AutorenewIcon from "@mui/icons-material/Autorenew";
-import BlockIcon from "@mui/icons-material/Block";
-import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
-import Checkbox from "@mui/joy/Checkbox";
-import Chip from "@mui/joy/Chip";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
-import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
+import IconButton from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
-import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import NoData from "../assets/alert-bell.svg";
-import {
-  CircularProgress,
-  Modal,
-  Option,
-  Select,
-  Tab,
-  TabList,
-  TabPanel,
-  Tabs,
-  Tooltip,
-  useTheme,
-} from "@mui/joy";
-import { FileText } from "lucide-react";
-import { PaymentProvider } from "../store/Context/Payment_History";
-import PaymentHistory from "./PaymentHistory";
+import { Option, Select, Tab, TabList, Tabs } from "@mui/joy";
 import { useGetPaymentRecordQuery } from "../redux/Accounts";
-import dayjs from "dayjs";
 import InstantRequest from "./PaymentTable/Payment";
 import CreditRequest from "./PaymentTable/Credit";
 
-const PaymentRequest = forwardRef((props, ref) => {
-  const theme = useTheme();
+const PaymentRequest = forwardRef(() => {
   const navigate = useNavigate();
-  const [error, setError] = useState(null);
-  const [selected, setSelected] = useState([]);
   const [searchParams, setSearchParams] = useSearchParams();
   const initialPage = parseInt(searchParams.get("page")) || 1;
-  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
+  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10; 
   const [perPage, setPerPage] = useState(initialPageSize);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [searchQuery, setSearchQuery] = useState("");
   const [status, setStatus] = useState("");
   const [activeTab, setActiveTab] = useState(0);
-
-  const tabValue = activeTab === 0 ? "instant" : "credit";
 
   const {
     data: responseData,
@@ -67,10 +37,11 @@ const PaymentRequest = forwardRef((props, ref) => {
     pageSize: perPage,
     search: searchQuery,
     status: status,
-    tab: tabValue,
+    tab: activeTab === 0 ? "instant" : "credit",
   });
+  // console.log(responseData?.data);
 
-  const paginatedData = responseData?.data || [];
+  const [paginatedData, setPaginatedData] = useState(responseData?.data || []);
   const total = responseData?.total || 0;
   const count = responseData?.count || paginatedData.length;
 
@@ -105,9 +76,18 @@ const PaymentRequest = forwardRef((props, ref) => {
     setSearchParams(params, { replace: true });
   }, [currentPage, perPage, searchQuery, status, activeTab, setSearchParams]);
 
+  useEffect(() => {
+    if (responseData && responseData.data) {
+      setPaginatedData(responseData.data);
+    } else {
+      setPaginatedData([]);
+    }
+  }, [responseData]);
+
   const handleSearch = (query) => {
     setSearchQuery(query);
     setCurrentPage(1);
+    refetch();
   };
 
   useEffect(() => {
@@ -144,10 +124,6 @@ const PaymentRequest = forwardRef((props, ref) => {
       </Box>
     );
   };
-
-  const filteredData = paginatedData.filter((item) =>
-    activeTab === 0 ? item.tab === "instant" : item.tab === "credit"
-  );
 
   return (
     <>
@@ -262,15 +238,9 @@ const PaymentRequest = forwardRef((props, ref) => {
             }}
             variant="plain"
             sx={{
-              // bgcolor: "background.level2",
               borderRadius: "xl",
               p: 0.5,
               minHeight: "50px",
-              // boxShadow: "sm",
-              // "--Tabs-gap": "0px",
-              // "--Tab-radius": "10px",
-              // "--Tab-paddingInline": "1.2rem",
-              // "--TabList-gap": "2px",
             }}
           >
             <TabList
@@ -298,7 +268,7 @@ const PaymentRequest = forwardRef((props, ref) => {
                   ...(activeTab === 0),
                 }}
               >
-                Instant
+                Instant ({responseData?.instantTotal || 0})
               </Tab>
               <Tab
                 variant={activeTab === 1 ? "soft" : "plain"}
@@ -314,7 +284,7 @@ const PaymentRequest = forwardRef((props, ref) => {
                   ...(activeTab === 1),
                 }}
               >
-                Credit
+                Credit ({responseData?.creditTotal || 0})
               </Tab>
             </TabList>
           </Tabs>
@@ -358,85 +328,106 @@ const PaymentRequest = forwardRef((props, ref) => {
             </FormControl>
             {renderFilters()}
           </Box>
-
-          {/* Pagination Controls */}
+        </Box>
+        {/* Pagination Controls */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent:"flex-end",
+            flexWrap: "wrap",
+            padding:"5px"
+          }}
+        >
+          {/* Rows per page */}
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
-              flexWrap: "wrap",
-              gap: 1.5,
+              justifyContent: "flex-end",
+              gap: 1,
             }}
           >
-            {/* Rows per page */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Typography level="body-sm">Rows per page:</Typography>
-              <Select
-                size="sm"
-                value={perPage}
-                onChange={(_, value) => {
-                  if (value) {
-                    setPerPage(Number(value));
-                    setCurrentPage(1);
-                  }
-                }}
-                sx={{ minWidth: 64 }}
-              >
-                {[10, 25, 50, 100].map((value) => (
-                  <Option key={value} value={value}>
-                    {value}
-                  </Option>
-                ))}
-              </Select>
-            </Box>
-
-            {/* Pagination info */}
-            <Typography level="body-sm">
-              {`${startIndex}-${endIndex} of ${total}`}
-            </Typography>
-
-            {/* Navigation buttons */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <IconButton
-                size="sm"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(1)}
-              >
-                <KeyboardDoubleArrowLeft />
-              </IconButton>
-              <IconButton
-                size="sm"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              >
-                <KeyboardArrowLeft />
-              </IconButton>
-              <IconButton
-                size="sm"
-                disabled={currentPage === totalPages}
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            <Typography level="body-sm">Rows per page:</Typography>
+            <Select
+              size="sm"
+              value={perPage}
+              onChange={(_, value) => {
+                if (value) {
+                  setPerPage(Number(value));
+                  setCurrentPage(1);
                 }
-              >
-                <KeyboardArrowRight />
-              </IconButton>
-              <IconButton
-                size="sm"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(totalPages)}
-              >
-                <KeyboardDoubleArrowRight />
-              </IconButton>
-            </Box>
+              }}
+              sx={{ minWidth: 64 }}
+            >
+              {[10, 25, 50, 100].map((value) => (
+                <Option key={value} value={value}>
+                  {value}
+                </Option>
+              ))}
+            </Select>
+          </Box>
+
+          {/* Pagination info */}
+          <Typography level="body-sm">
+            {`${startIndex}-${endIndex} of ${total}`}
+          </Typography>
+
+          {/* Navigation buttons */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <IconButton
+              size="sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(1)}
+            >
+              <KeyboardDoubleArrowLeft />
+            </IconButton>
+            <IconButton
+              size="sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            >
+              <KeyboardArrowLeft />
+            </IconButton>
+            <IconButton
+              size="sm"
+              disabled={currentPage === totalPages}
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+            >
+              <KeyboardArrowRight />
+            </IconButton>
+            <IconButton
+              size="sm"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(totalPages)}
+            >
+              <KeyboardDoubleArrowRight />
+            </IconButton>
           </Box>
         </Box>
 
         {/* Main Content */}
         <Box>
           {activeTab === 0 ? (
-            <InstantRequest data={filteredData} isLoading={isLoading} />
+            <InstantRequest
+              data={paginatedData}
+              isLoading={isLoading}
+              searchQuery={searchQuery}
+              perPage={perPage}
+              currentPage={currentPage}
+              status={status}
+            />
           ) : (
-            <CreditRequest data={filteredData} isLoading={isLoading} />
+            <CreditRequest
+              data={paginatedData}
+              isLoading={isLoading}
+              searchQuery={searchQuery}
+              perPage={perPage}
+              currentPage={currentPage}
+              status={status}
+            />
           )}
         </Box>
       </Box>
