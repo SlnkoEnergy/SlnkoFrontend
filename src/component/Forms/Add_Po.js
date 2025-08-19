@@ -53,7 +53,7 @@ const AddPurchaseOrder = ({
   onSuccess,
   onClose,
   pr_id,
-  p_id, 
+  p_id,
   project_code,
   initialLines = [],
   categoryNames = [],
@@ -68,13 +68,11 @@ const AddPurchaseOrder = ({
   // -------- URL params --------
   const modeQ = (searchParams.get("mode") || "").toLowerCase();
   const poNumberQ = searchParams.get("po_number") || "";
-  const effectiveMode =fromModal ? mode : modeQ || mode;
+  const effectiveMode = fromModal ? mode : modeQ || mode;
 
   const viewMode = effectiveMode === "view";
   const [openRefuse, setOpenRefuse] = useState(false);
   const [remarks, setRemarks] = useState("");
-  // -------- actions --------
-  const [submitAction, setSubmitAction] = useState(null); 
 
   // -------- vendor search (server + modal) --------
   const [vendorSearch, setVendorSearch] = useState("");
@@ -126,7 +124,7 @@ const AddPurchaseOrder = ({
 
   const [formData, setFormData] = useState({
     _id: "",
-    p_id: p_id ?? "", 
+    p_id: p_id ?? "",
     project_code: project_code || "",
     po_number: poNumberPreset || poNumberQ || "",
     name: "",
@@ -208,17 +206,17 @@ const AddPurchaseOrder = ({
     const arr = Array.isArray(po?.items)
       ? po.items
       : Array.isArray(po?.item)
-        ? po.item
-        : [];
+      ? po.item
+      : [];
     return arr.length
       ? arr.map((it) => ({
           ...makeEmptyLine(),
           productCategoryId:
             typeof it?.category === "object"
-              ? (it?.category?._id ?? "")
-              : (it?.category ?? ""),
+              ? it?.category?._id ?? ""
+              : it?.category ?? "",
           productCategoryName:
-            typeof it?.category === "object" ? (it?.category?.name ?? "") : "",
+            typeof it?.category === "object" ? it?.category?.name ?? "" : "",
           productName: it?.product_name ?? "",
           make: it?.product_make ?? "",
           uom: it?.uom ?? "",
@@ -242,13 +240,15 @@ const AddPurchaseOrder = ({
       try {
         setPoLoading(true);
         const { data: resp } = await Axios.get(
-          `/get-po-by-po_number?po_number=${encodeURIComponent(poNumberQ)}&_id=${_id}`,
+          `/get-po-by-po_number?po_number=${encodeURIComponent(
+            poNumberQ
+          )}&_id=${_id}`,
           { headers: { "x-auth-token": token } }
         );
         // backend now returns { data: <object> }
         const po = Array.isArray(resp?.data)
           ? resp.data[0]
-          : (resp?.data ?? resp);
+          : resp?.data ?? resp;
         if (!po) {
           toast.error("PO not found.");
           return;
@@ -282,17 +282,12 @@ const AddPurchaseOrder = ({
   }, [poNumberQ, effectiveMode]);
 
   // -------- status-based gating --------
-  const statusNow = fetchedPoStatus; 
+  const statusNow = fetchedPoStatus;
   const isApprovalPending = statusNow === "approval_pending";
   const canConfirm = statusNow === "approval_done";
   const approvalRejected = statusNow === "approval_rejected";
-  
 
-  const inputsDisabled =
-    viewMode || !(isApprovalPending && manualEdit) || !approvalRejected || !fromModal;
-  
-  console.log({inputsDisabled, isApprovalPending})
-
+  const inputsDisabled = !fromModal;
   // -------- handlers --------
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -331,6 +326,11 @@ const AddPurchaseOrder = ({
     e.preventDefault();
     if (isSubmitting) return;
 
+    // Determine which button triggered submit
+    const submitter = e.nativeEvent?.submitter;
+    const action =
+      submitter?.value || new FormData(e.currentTarget).get("action") || "";
+
     const item = (lines || [])
       .filter((l) => l?.productName || l?.productCategoryName)
       .map((l) => {
@@ -338,8 +338,8 @@ const AddPurchaseOrder = ({
           typeof l.productCategoryId === "object" && l.productCategoryId?._id
             ? String(l.productCategoryId._id)
             : l.productCategoryId != null
-              ? String(l.productCategoryId)
-              : "";
+            ? String(l.productCategoryId)
+            : "";
 
         return {
           category: String(categoryId),
@@ -355,7 +355,7 @@ const AddPurchaseOrder = ({
     const hasValidLine =
       item.length > 0 && item.some((it) => Number(it.quantity) > 0);
 
-    if (submitAction === "edit_save") {
+    if (action === "edit_save" && !fromModal) {
       if (!formData?._id) {
         toast.error("PO id missing.");
         return;
@@ -399,7 +399,7 @@ const AddPurchaseOrder = ({
       }
     }
 
-    if (submitAction === "confirm_order") {
+    if (action === "confirm_order" && !fromModal) {
       if (!canConfirm) {
         toast.error("Confirm is available only after approval is done.");
         return;
@@ -442,7 +442,7 @@ const AddPurchaseOrder = ({
       if (!hasValidLine) {
         return toast.error("Add at least one valid product row.");
       }
-      if (submitAction === "confirm_order" && !formData.po_number) {
+      if (action === "confirm_order" && !formData.po_number) {
         return toast.error("PO Number is required to confirm the order.");
       }
 
@@ -453,12 +453,11 @@ const AddPurchaseOrder = ({
 
         const token = localStorage.getItem("authToken");
         const initial_status =
-          submitAction === "send_approval" ? "po_approval" : "po_created";
+          action === "send_approval" ? "approval_pending" : "po_created";
 
         const dataToPost = {
-          p_id: formData.p_id,
-          po_number:
-            submitAction === "send_approval" ? undefined : formData.po_number,
+          p_id: formData.project_code,
+          po_number: action === "send_approval" ? undefined : formData.po_number,
           vendor: formData.name,
           date: formData.date,
           partial_billing: formData.partial_billing || "",
@@ -479,13 +478,13 @@ const AddPurchaseOrder = ({
         if (createdId) localStorage.setItem("lastPOApprovalId", createdId);
 
         toast.success(
-          submitAction === "send_approval"
+          action === "send_approval"
             ? "PO sent for approval."
             : "PO created."
         );
         onSuccess?.({
           created: true,
-          updated: submitAction === "confirm_order",
+          updated: action === "confirm_order",
           status: initial_status,
         });
         return onClose ? onClose() : navigate("/purchase-order");
@@ -570,7 +569,7 @@ const AddPurchaseOrder = ({
       {/* Card container */}
       <Box
         sx={{
-          maxWidth: 1200,
+          maxWidth: 1400,
           width: "100%",
           p: 3,
           boxShadow: "md",
@@ -591,8 +590,8 @@ const AddPurchaseOrder = ({
             {viewMode
               ? "View Purchase Order"
               : effectiveMode === "edit"
-                ? "Edit Purchase Order"
-                : "Purchase Order"}
+              ? "Edit Purchase Order"
+              : "Purchase Order"}
           </Typography>
 
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
@@ -600,10 +599,14 @@ const AddPurchaseOrder = ({
             {!viewMode &&
               (effectiveMode === "create" ||
                 fromModal ||
-                (effectiveMode === "edit" &&
-                  statusNow === "approval_rejected")) && (
+                (effectiveMode === "edit" && statusNow === "approval_rejected")) && (
                 <>
                   <Button
+                    component="button"
+                    type="submit"
+                    form="po-form"
+                    name="action"
+                    value="send_approval"
                     variant="solid"
                     startDecorator={<Send />}
                     sx={{
@@ -612,16 +615,16 @@ const AddPurchaseOrder = ({
                       "&:hover": { bgcolor: "#163553" },
                     }}
                     disabled={isSubmitting}
-                    onClick={() => {
-                      setSubmitAction("send_approval");
-                      const form = document.getElementById("po-form");
-                      if (form) form.requestSubmit();
-                    }}
                   >
                     Send Approval
                   </Button>
 
                   <Button
+                    component="button"
+                    type="submit"
+                    form="po-form"
+                    name="action"
+                    value="confirm_order"
                     variant="outlined"
                     startDecorator={<ConfirmationNumber />}
                     sx={{
@@ -634,18 +637,13 @@ const AddPurchaseOrder = ({
                       },
                     }}
                     disabled={isSubmitting}
-                    onClick={() => {
-                      setSubmitAction("confirm_order");
-                      const form = document.getElementById("po-form");
-                      if (form) form.requestSubmit();
-                    }}
                   >
                     Confirm Order
                   </Button>
                 </>
               )}
-            {(!viewMode && effectiveMode === "edit" && isApprovalPending) ||
-              (approvalRejected && (
+            {/* {(effectiveMode === "edit" && isApprovalPending) ||
+              (approvalRejected) && ( */}
                 <Box display="flex" gap={2}>
                   <Box>
                     <Button
@@ -684,11 +682,16 @@ const AddPurchaseOrder = ({
                     </Box>
                   )}
                 </Box>
-              ))}
+              
 
             {/* Confirm Order only when approval_done */}
             {!viewMode && effectiveMode === "edit" && canConfirm && (
               <Button
+                component="button"
+                type="submit"
+                form="po-form"
+                name="action"
+                value="confirm_order"
                 variant="outlined"
                 startDecorator={<ConfirmationNumber />}
                 sx={{
@@ -701,11 +704,6 @@ const AddPurchaseOrder = ({
                   },
                 }}
                 disabled={isSubmitting}
-                onClick={() => {
-                  setSubmitAction("confirm_order");
-                  const form = document.getElementById("po-form");
-                  if (form) form.requestSubmit();
-                }}
               >
                 Confirm Order
               </Button>
@@ -802,7 +800,7 @@ const AddPurchaseOrder = ({
                       setVendorPage(1);
                     }
                   }}
-                  filterOption={() => true} // server-filtered
+                  filterOption={() => true}
                   options={vendorOptions}
                   value={
                     formData.name
@@ -1056,13 +1054,13 @@ const AddPurchaseOrder = ({
           >
             {isApprovalPending && manualEdit && (
               <Button
+                component="button"
+                type="submit"
+                form="po-form"
+                name="action"
+                value="edit_save"
                 variant="solid"
                 loading={isSubmitting}
-                onClick={() => {
-                  setSubmitAction("edit_save");
-                  const form = document.getElementById("po-form");
-                  if (form) form.requestSubmit();
-                }}
               >
                 Save changes
               </Button>
