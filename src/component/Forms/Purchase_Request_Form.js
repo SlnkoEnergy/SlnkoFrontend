@@ -57,6 +57,7 @@ const EMPTY_LINE = () => ({
   productName: "",
   productCategoryId: "",
   productCategoryName: "",
+  briefDescription:"",
   make: "",
   uom: "",
   quantity: 1,
@@ -98,12 +99,14 @@ export function mapBoqRowToLine(row, idx = 0) {
   const sno = pick(row, "S. NO.", "S.NO.", "S.NO", "SNO", "S No.");
 
 
-  const productLabel = [rating, itemName].filter(Boolean).join(" – ");
+  const productLabel = rating;
+  const description = itemName;
 
   return {
     id: crypto?.randomUUID?.() ?? `boq-${Date.now()}-${idx}`,
     productId: `boq:${sno || idx + 1}`,
     productName: productLabel,
+    briefDescription: description,
     productCategoryId: "",
     productCategoryName: category || "",
     make,
@@ -382,6 +385,7 @@ export default function Purchase_Request_Form() {
     const pickedCost = Number(getProdField(row, "Cost") || 0);
     const pickedGST = Number(getProdField(row, "GST") || 0);
     const pickedMake = getProdField(row, "Make" || "");
+    const pickedDescription = getProdField(row, "Description" || "");
     const pickedUOM = getProdField(row, "UOM" || "");
     const catId = row?.category?._id || "";
     const catName = row?.category?.name || "";
@@ -393,6 +397,7 @@ export default function Purchase_Request_Form() {
               ...l,
               productId: row._id || "",
               productName: pickedName,
+              briefDescription: pickedDescription,
               productCategoryId: catId,
               productCategoryName: catName,
               unitPrice: pickedCost,
@@ -453,6 +458,7 @@ export default function Purchase_Request_Form() {
               _selected: false,
               productId: productDoc?._id || "",
               productName: l.product_name || "",
+              briefDescription: l.description || "",
               productCategoryId: catId,
               productCategoryName: catName,
               make: l.product_make || "",
@@ -505,6 +511,7 @@ export default function Purchase_Request_Form() {
               _selected: false,
               productId: productDoc?._id || "",
               productName: l.product_name || "",
+              briefDescription: l.description || "",
               productCategoryId: catId,
               productCategoryName: catName,
               make: l.product_make || "",
@@ -534,7 +541,7 @@ export default function Purchase_Request_Form() {
       });
       return filtered.length ? filtered : [EMPTY_LINE()];
     });
-  }, [category]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [category]); 
 
   // ---------- Amounts ----------
   const amounts = useMemo(() => {
@@ -630,6 +637,7 @@ export default function Purchase_Request_Form() {
           item_id: l.productCategoryId || null,
           product_name: l.productName || "",
           product_make: l.make || "",
+          description: l.briefDescription || "",
           uom: String(l.uom ?? ""),
           quantity: String(l.quantity ?? ""),
           cost: String(l.unitPrice ?? ""),
@@ -668,6 +676,7 @@ export default function Purchase_Request_Form() {
     const initialLines = source.map((l) => ({
       productId: l.productId || "",
       productName: l.productName || "",
+      briefDescription: l.briefDescription || "",
       productCategoryId: l.productCategoryId || "",
       productCategoryName: l.productCategoryName || "",
       make: l.make || "",
@@ -753,7 +762,6 @@ const handleConfirmFetchFromBOM = async () => {
       project_id: projectId,
       category_mode: "exact",
       category_logic: "or",
-      sheet: 1,
       category: categoryParam,
     };
 
@@ -795,6 +803,7 @@ const handleConfirmFetchFromBOM = async () => {
             ...next[i],
             productId: m.productId,
             productName: m.productName,
+            briefDescription: m.briefDescription,
             productCategoryId: m.productCategoryId,
             productCategoryName: m.productCategoryName,
             make: m.make,
@@ -1215,10 +1224,11 @@ const handleConfirmFetchFromBOM = async () => {
         >
           <thead>
             <tr>
-              <th style={{ width: "26%", fontWeight: 700 }}>Product</th>
               <th style={{ width: "16%", fontWeight: 700 }}>Category</th>
+              <th style={{ width: "18%", fontWeight: 700 }}>Product</th>
+              <th style={{ width: "18%", fontWeight: 700 }}>Brief Description</th>
               <th style={{ width: "10%", fontWeight: 700 }}>Make</th>
-              <th style={{ width: "8%", fontWeight: 700 }}>Qty</th>
+              <th style={{ width: "12%", fontWeight: 700 }}>Qty</th>
               <th style={{ width: "8%", fontWeight: 700 }}>UoM</th>
               <th style={{ width: "12%", fontWeight: 700 }}>Unit Price</th>
               <th style={{ width: "10%", fontWeight: 700 }}>Tax %</th>
@@ -1238,6 +1248,7 @@ const handleConfirmFetchFromBOM = async () => {
 
               return (
                 <tr key={l.id}>
+                  <td>{l.productCategoryName || "—"}</td>
                   <td>
                     <Box sx={{ maxWidth: "100%" }}>
                       <Select
@@ -1283,8 +1294,8 @@ const handleConfirmFetchFromBOM = async () => {
                           if (prod) {
                             const name =
                               getProdField(prod, "Product Name") ||
-                              prod?.sku_code ||
                               "";
+                            const description = getProdField(prod, "Description")
                             const cost = Number(
                               getProdField(prod, "Cost") || 0
                             );
@@ -1295,6 +1306,7 @@ const handleConfirmFetchFromBOM = async () => {
                             const catName = prod?.category?.name || "";
                             updateLine(l.id, "productId", prod._id);
                             updateLine(l.id, "productName", name);
+                            updateLine(l.id, "briefDescription", description);
                             updateLine(l.id, "productCategoryId", catId);
                             updateLine(l.id, "productCategoryName", catName);
                             updateLine(l.id, "unitPrice", cost);
@@ -1304,6 +1316,8 @@ const handleConfirmFetchFromBOM = async () => {
                           } else {
                             updateLine(l.id, "productId", v || "");
                             updateLine(l.id, "productName", "");
+                            updateLine(l.id, "briefDescription", "");
+                             updateLine(l.id, "productName", "");
                             updateLine(l.id, "productCategoryId", "");
                             updateLine(l.id, "productCategoryName", "");
                           }
@@ -1374,8 +1388,8 @@ const handleConfirmFetchFromBOM = async () => {
                     </Box>
                   </td>
 
-                  <td>{l.productCategoryName || "—"}</td>
-
+                  
+                  <td>{l.briefDescription}</td>
                   <td>
                     <Input
                       variant="plain"
