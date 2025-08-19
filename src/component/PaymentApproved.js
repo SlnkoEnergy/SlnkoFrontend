@@ -354,9 +354,9 @@ function PaymentRequest() {
     color: "#34495E",
   };
 
-  const PaymentID = ({ pay_id, createdAt }) => (
+  const PaymentID = ({ pay_id, cr_id, createdAt }) => (
     <>
-      {pay_id && (
+      {(cr_id || pay_id) && (
         <Box>
           <Chip
             variant="solid"
@@ -373,7 +373,7 @@ function PaymentRequest() {
               },
             }}
           >
-            {pay_id || "N/A"}
+            {cr_id || pay_id}
           </Chip>
         </Box>
       )}
@@ -583,6 +583,7 @@ function PaymentRequest() {
                   >
                     <PaymentID
                       pay_id={payment.pay_id}
+                      cr_id={payment.cr_id}
                       createdAt={payment.createdAt}
                     />
                   </Box>

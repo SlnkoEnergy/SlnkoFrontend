@@ -18,6 +18,7 @@ import {
   Sheet,
   Stack,
   Textarea,
+  Tooltip,
 } from "@mui/joy";
 import {
   Calendar,
@@ -535,68 +536,114 @@ const ApprovalPayment = forwardRef(
 
     const BalanceData = ({
       amount_requested,
-      ClientBalance,
-      groupBalance,
-      creditBalance,
+      ClientBalance = 0,
+      groupBalance = 0,
+      creditBalance = 0,
+      totalCredited = 0,
+      totalPaid = 0,
       po_value,
     }) => {
+      const inr = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 });
+
+      const fmt = (v, dashIfEmpty = false) => {
+        if (v === null || v === undefined || v === "") {
+          return dashIfEmpty ? "—" : "0";
+        }
+        const num = Number(v);
+        return Number.isFinite(num) ? inr.format(num) : dashIfEmpty ? "—" : "0";
+      };
+
+      const chipColor =
+        Number(creditBalance) > 0
+          ? "success"
+          : Number(creditBalance) < 0
+            ? "danger"
+            : "neutral";
+
       return (
         <>
-          {amount_requested && (
-            <Box display="flex" alignItems="center" mb={0.5}>
-              <Money size={16} />
-              <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
-                Requested Amount:{" "}
-              </span>
-              <Typography sx={{ fontSize: 13, fontWeight: 400, ml: 0.5 }}>
-                {amount_requested || "-"}
-              </Typography>
-            </Box>
-          )}
+          {amount_requested !== undefined &&
+            amount_requested !== null &&
+            amount_requested !== "" && (
+              <Box display="flex" alignItems="center" mb={0.5}>
+                <Money size={16} />
+                <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+                  Requested Amount:&nbsp;
+                </span>
+                <Typography sx={{ fontSize: 13, fontWeight: 400 }}>
+                  ₹ {fmt(amount_requested, true)}
+                </Typography>
+              </Box>
+            )}
 
           <Box display="flex" alignItems="center" mb={0.5}>
             <Receipt size={16} />
             <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
-              Total PO (incl. GST):{" "}
+              Total PO (incl. GST):&nbsp;
             </span>
-            <Typography sx={{ fontSize: 12, fontWeight: 400, ml: 0.5 }}>
-              {po_value || "-"}
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {po_value == null || po_value === "" ? "—" : `₹ ${fmt(po_value)}`}
             </Typography>
           </Box>
 
           <Box display="flex" alignItems="center" mt={0.5}>
             <CircleUser size={12} />
-            &nbsp;
-            <span style={{ fontSize: 12, fontWeight: 600 }}>
-              Client Balance:{" "}
+            <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+              Client Balance:&nbsp;
             </span>
-            &nbsp;
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              {ClientBalance || "0"}
+              ₹ {fmt(ClientBalance)}
             </Typography>
           </Box>
 
           <Box display="flex" alignItems="center" mt={0.5}>
             <UsersRound size={12} />
-            &nbsp;
-            <span style={{ fontSize: 12, fontWeight: 600 }}>
-              Group Balance:{" "}
+            <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+              Group Balance:&nbsp;
             </span>
-            &nbsp;
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              {groupBalance || "0"}
+              ₹ {fmt(groupBalance)}
             </Typography>
           </Box>
+
           <Box display="flex" alignItems="center" mt={0.5}>
-            <CreditCard size={12} />
-            &nbsp;
-            <span style={{ fontSize: 12, fontWeight: 600 }}>
-              Credit Balance:{" "}
+            <CreditCard size={14} />
+            <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+              Credit Balance:&nbsp;
             </span>
-            &nbsp;
-            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              {creditBalance || "0"}
-            </Typography>
+
+            <Tooltip
+              arrow
+              placement="top"
+              title={
+                <Box>
+                  <Typography
+                    level="body-xs"
+                    sx={{ fontSize: 11, fontWeight: 600, color: "#fff" }}
+                  >
+                    Total Credited − Total Amount Paid
+                  </Typography>
+                  <Typography
+                    level="body-xs"
+                    sx={{ fontSize: 11, color: "#fff" }}
+                  >
+                    ₹ {fmt(totalCredited)} − ₹ {fmt(totalPaid)} = ₹{" "}
+                    {fmt(
+                      (Number(totalCredited) || 0) - (Number(totalPaid) || 0)
+                    )}
+                  </Typography>
+                </Box>
+              }
+            >
+              <Chip
+                size="sm"
+                variant="soft"
+                color={chipColor}
+                sx={{ fontSize: 12, fontWeight: 500, ml: 0.5 }}
+              >
+                ₹ {fmt(creditBalance)}
+              </Chip>
+            </Tooltip>
           </Box>
         </>
       );
@@ -604,167 +651,6 @@ const ApprovalPayment = forwardRef(
 
     return (
       <>
-        {/* Tablet and Up Filters */}
-        {/* <Box
-        sx={{
-          display: "flex",
-          mb: 1,
-          gap: 1,
-          flexDirection: { xs: "column", sm: "row" },
-          alignItems: { xs: "start", sm: "center" },
-          flexWrap: "wrap",
-          justifyContent: "space-between",
-          marginLeft: { xl: "15%", lg: "18%" },
-        }}
-      >
-        <Box>
-          {((user?.department === "Accounts" && user?.role === "manager") ||
-            user?.department === "admin") && (
-            <Typography level="h2" component="h1">
-              Accounts Payment Approval
-            </Typography>
-          )}
-        </Box>
-      </Box> */}
-
-        {/* <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 2,
-          px: 1,
-          py: 1,
-          ml: { xl: "15%", lg: "18%", sm: 0 },
-          maxWidth: { lg: "85%", sm: "100%" },
-          borderRadius: "md",
-          mb: 2,
-        }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            mb: 1,
-            gap: 1,
-            flexDirection: { xs: "column", sm: "row" },
-            alignItems: { xs: "none", sm: "center" },
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
-        >
-        
-           { renderFilters()}
-          <Box
-            className="SearchAndFilters-tabletUp"
-            sx={{
-              borderRadius: "sm",
-              py: 2,
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              flexWrap: "wrap",
-              gap: 1.5,
-            }}
-          >
-            <FormControl sx={{ flex: 1 }} size="sm">
-              <FormLabel>Search here</FormLabel>
-              <Input
-                size="sm"
-                placeholder="Search by Pay ID, Items, Clients Name or Vendor"
-                startDecorator={<SearchIcon />}
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                sx={{
-                  width: 350,
-
-                  borderColor: "neutral.outlinedBorder",
-                  borderBottom: searchQuery
-                    ? "2px solid #1976d2"
-                    : "1px solid #ddd",
-                  borderRadius: 5,
-                  boxShadow: "none",
-                  "&:hover": {
-                    borderBottom: "2px solid #1976d2",
-                  },
-                  "&:focus-within": {
-                    borderBottom: "2px solid #1976d2",
-                  },
-                }}
-              />
-            </FormControl>
-          </Box>
-        </Box>
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 1.5,
-          }}
-        >
-          {/* Rows per page 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography level="body-sm">Rows per page:</Typography>
-            <Select
-              size="sm"
-              value={perPage}
-              onChange={(_, value) => {
-                if (value) {
-                  setPerPage(Number(value));
-                  setCurrentPage(1);
-                }
-              }}
-              sx={{ minWidth: 64 }}
-            >
-              {[10, 25, 50, 100].map((value) => (
-                <Option key={value} value={value}>
-                  {value}
-                </Option>
-              ))}
-            </Select>
-          </Box>
-
-          {/* Pagination info 
-          <Typography level="body-sm">
-            {`${startIndex}-${endIndex} of ${total}`}
-          </Typography>
-
-          {/* Navigation buttons 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <IconButton
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(1)}
-            >
-              <KeyboardDoubleArrowLeft />
-            </IconButton>
-            <IconButton
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            >
-              <KeyboardArrowLeft />
-            </IconButton>
-            <IconButton
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
-            >
-              <KeyboardArrowRight />
-            </IconButton>
-            <IconButton
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(totalPages)}
-            >
-              <KeyboardDoubleArrowRight />
-            </IconButton>
-          </Box>
-        </Box>
-      </Box> */}
-
         {/* Table */}
         <Box
           className="OrderTableContainer"
@@ -946,6 +832,9 @@ const ApprovalPayment = forwardRef(
                           ClientBalance={payment?.ClientBalance}
                           groupBalance={payment?.groupBalance}
                           creditBalance={payment?.creditBalance}
+                          totalCredited={payment?.totalCredited}
+                          totalPaid={payment?.totalPaid}
+                          po_value={payment?.po_value}
                         />
                       </Box>
 

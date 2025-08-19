@@ -34,7 +34,13 @@ import {
   Tabs,
   Textarea,
 } from "@mui/joy";
-import { Calendar, CircleUser, FileText, Receipt, UsersRound } from "lucide-react";
+import {
+  Calendar,
+  CircleUser,
+  FileText,
+  Receipt,
+  UsersRound,
+} from "lucide-react";
 import PaymentAccountApproval from "./PaymentAccountApproval";
 import CreditPayment from "./creditPayment";
 import ApprovalPayment from "./ToBeApproved";
@@ -467,20 +473,20 @@ function PaymentRequest() {
       checked ? [...prev, idStr] : prev.filter((item) => item !== idStr)
     );
   };
-const handlePrint = () => {
-  if (!blobUrl) return;
+  const handlePrint = () => {
+    if (!blobUrl) return;
 
-  const printWindow = window.open(blobUrl);
-  if (printWindow) {
-    printWindow.focus();
-    printWindow.onload = () => {
-      printWindow.print();
-      setHasPrinted(true);
-    };
-  } else {
-    toast.error("Unable to open print window");
-  }
-};
+    const printWindow = window.open(blobUrl);
+    if (printWindow) {
+      printWindow.focus();
+      printWindow.onload = () => {
+        printWindow.print();
+        setHasPrinted(true);
+      };
+    } else {
+      toast.error("Unable to open print window");
+    }
+  };
 
   useEffect(() => {
     if (pdfBlob) {
@@ -490,11 +496,10 @@ const handlePrint = () => {
     }
   }, [pdfBlob]);
   useEffect(() => {
-  if (isPdfModalOpen) {
-    setHasPrinted(false);
-  }
-}, [isPdfModalOpen]);
-
+    if (isPdfModalOpen) {
+      setHasPrinted(false);
+    }
+  }, [isPdfModalOpen]);
 
   const handleClosePdfModal = () => {
     if (blobUrl) URL.revokeObjectURL(blobUrl);
@@ -580,11 +585,17 @@ const handlePrint = () => {
     borderColor: "divider",
   };
 
-
   const PaymentID = ({ pay_id, cr_id, request_date, approved }) => {
     const maskId = (id) => {
       if (!id) return "N/A";
-      return approved === "Approved" ? id : id.replace(/(\d{2})$/, "XX");
+      const parts = id.split("/");
+      const lastIndex = parts.length - 2;
+
+      if (!isNaN(parts[lastIndex])) {
+        parts[lastIndex] = parts[lastIndex].replace(/\d{2}$/, "XX");
+      }
+
+      return parts.join("/");
     };
 
     const idToShow = pay_id || cr_id;
@@ -667,9 +678,13 @@ const handlePrint = () => {
     );
   };
 
-  const RequestedData = ({ request_for, payment_description , po_number, vendor}) => {
-
-      const [open, setOpen] = useState(false);
+  const RequestedData = ({
+    request_for,
+    payment_description,
+    po_number,
+    vendor,
+  }) => {
+    const [open, setOpen] = useState(false);
 
     const handleOpen = () => setOpen(true);
     const handleClose = () => setOpen(false);
@@ -683,7 +698,7 @@ const handlePrint = () => {
             </span>
           </Box>
         )}
-         {po_number && (
+        {po_number && (
           <Box
             display="flex"
             alignItems="center"
@@ -723,7 +738,7 @@ const handlePrint = () => {
           </Sheet>
         </Modal>
 
-         <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+        <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
           <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
             🏢 Vendor:
           </Typography>
@@ -733,7 +748,6 @@ const handlePrint = () => {
             {vendor}
           </Typography>
         </Box>
-
 
         {payment_description && (
           <Box display="flex" alignItems="center" mt={0.5}>
@@ -746,7 +760,6 @@ const handlePrint = () => {
             </Typography>
           </Box>
         )}
-        
       </>
     );
   };
