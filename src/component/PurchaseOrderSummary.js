@@ -236,33 +236,33 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         }}
       >
         {!isLogisticsPage && (
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Bill Status</FormLabel>
-          <Select
-            value={searchParams.get("poStatus") || ""}
-            onChange={(_, newValue) => {
-              setSearchParams((prev) => {
-                const updated = new URLSearchParams(prev);
-                if (newValue) {
-                  updated.set("poStatus", newValue);
-                } else {
-                  updated.delete("poStatus");
-                }
-                updated.set("page", "1"); // Reset to first page when filter changes
-                return updated;
-              });
-            }}
-            size="sm"
-            placeholder="Select Status"
-          >
-            <Option value="">All status</Option>
-            {po_status.map((status) => (
-              <Option key={status} value={status}>
-                {status}
-              </Option>
-            ))}
-          </Select>
-        </FormControl>
+          <FormControl sx={{ flex: 1 }} size="sm">
+            <FormLabel>Bill Status</FormLabel>
+            <Select
+              value={searchParams.get("poStatus") || ""}
+              onChange={(_, newValue) => {
+                setSearchParams((prev) => {
+                  const updated = new URLSearchParams(prev);
+                  if (newValue) {
+                    updated.set("poStatus", newValue);
+                  } else {
+                    updated.delete("poStatus");
+                  }
+                  updated.set("page", "1"); // Reset to first page when filter changes
+                  return updated;
+                });
+              }}
+              size="sm"
+              placeholder="Select Status"
+            >
+              <Option value="">All status</Option>
+              {po_status.map((status) => (
+                <Option key={status} value={status}>
+                  {status}
+                </Option>
+              ))}
+            </Select>
+          </FormControl>
         )}
         <FormControl sx={{ flex: 1 }} size="sm">
           <FormLabel>Status Filter</FormLabel>
@@ -291,41 +291,41 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             ))}
           </Select>
         </FormControl>
-{!isLogisticsPage && (
-        <Box mt={3} sx={{ display: "flex", gap: 1 }}>
-          <Button
-            variant="soft"
-            size="sm"
-            color="neutral"
-            onClick={() => handleExport(true)}
-            loading={isExporting}
-            startDecorator={<DownloadIcon />}
-          >
-            Export All
-          </Button>
-        </Box>
-)}
-{!isLogisticsPage && (
-        <Dropdown>
-          <MenuButton
-            slots={{ root: IconButton }}
-            slotProps={{
-              root: { variant: "soft", size: "sm", color: "neutral" },
-            }}
-            sx={{ mt: 3 }}
-          >
-            <CalendarSearch />
-          </MenuButton>
-          <Menu placement="bottom-start">
-            <MenuItem onClick={() => handleDateFilterSelect("etd")}>
-              ETD Date
-            </MenuItem>
-            <MenuItem onClick={() => handleDateFilterSelect("delivery")}>
-              Delivery Date
-            </MenuItem>
-          </Menu>
-        </Dropdown>
-    )}
+        {!isLogisticsPage && (
+          <Box mt={3} sx={{ display: "flex", gap: 1 }}>
+            <Button
+              variant="soft"
+              size="sm"
+              color="neutral"
+              onClick={() => handleExport(true)}
+              loading={isExporting}
+              startDecorator={<DownloadIcon />}
+            >
+              Export All
+            </Button>
+          </Box>
+        )}
+        {!isLogisticsPage && (
+          <Dropdown>
+            <MenuButton
+              slots={{ root: IconButton }}
+              slotProps={{
+                root: { variant: "soft", size: "sm", color: "neutral" },
+              }}
+              sx={{ mt: 3 }}
+            >
+              <CalendarSearch />
+            </MenuButton>
+            <Menu placement="bottom-start">
+              <MenuItem onClick={() => handleDateFilterSelect("etd")}>
+                ETD Date
+              </MenuItem>
+              <MenuItem onClick={() => handleDateFilterSelect("delivery")}>
+                Delivery Date
+              </MenuItem>
+            </Menu>
+          </Dropdown>
+        )}
         {activeDateFilter && (
           <ClickAwayListener onClickAway={() => setActiveDateFilter(null)}>
             <Sheet
