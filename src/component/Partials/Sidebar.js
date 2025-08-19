@@ -32,6 +32,7 @@ import Main_Logo from "../../assets/protrac_logo.png";
 import Main_Logo2 from "../../assets/white_logo.png";
 import { closeSidebar } from "../../utils/utils";
 import ColorSchemeToggle from "./ColorSchemeToggle";
+import DatabaseIcon from '@mui/icons-material/Storage';
 
 function Toggler({ defaultExpanded = false, renderToggle, children }) {
   const [open, setOpen] = useState(defaultExpanded);
@@ -453,13 +454,13 @@ function Sidebar() {
                     </ListItemButton>
                   </ListItem>
                   <ListItem>
-                    <ListItemButton onClick={() => navigate("#")}>
-                      Material Status
+                    <ListItemButton onClick={() => navigate("/vendor_bill")}>
+                      Vendor Bill
                     </ListItemButton>
                   </ListItem>
                   <ListItem>
-                    <ListItemButton onClick={() => navigate("/vendor_bill")}>
-                      Vendor Bill
+                    <ListItemButton onClick={() => navigate("/logistics")}>
+                      Logistics 
                     </ListItemButton>
                   </ListItem>
                 </List>
@@ -585,6 +586,45 @@ function Sidebar() {
                     </ListItemButton>
                   </ListItem>
                 </List>
+              </Toggler>
+            </ListItem>
+
+             <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <DatabaseIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">My Databases</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/products")}>
+                       Products
+                    </ListItemButton>
+                  </ListItem>
+
+                   <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/categories")}>
+                       Categories
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+
               </Toggler>
             </ListItem>
           </List>

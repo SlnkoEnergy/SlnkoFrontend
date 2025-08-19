@@ -311,6 +311,8 @@ function PurchaseReqSummary() {
     item_id,
     pr_id,
   }) => {
+    const navigate = useNavigate();
+
     const formattedDate = createdAt
       ? new Date(createdAt).toLocaleDateString("en-IN", {
           day: "2-digit",
@@ -318,48 +320,104 @@ function PurchaseReqSummary() {
           year: "numeric",
         })
       : "N/A";
+
+    const isClickable = Boolean(pr_no && pr_id);
+
+    const handleOpen = () => {
+      if (isClickable) navigate(`/pr_form?mode=view&id=${pr_id}`);
+    };
+
     return (
       <>
         <Box>
-          <span
-            style={{ cursor: "pointer", fontWeight: 500 }}
-            onClick={() =>
-              navigate(
-                `/purchase_detail?project_id=${project_id}&item_id=${item_id}&pr_id=${pr_id}`
-              )
-            }
+          <Tooltip
+            title={isClickable ? "Open PR" : ""}
+            placement="bottom"
+            arrow
           >
-            {pr_no || "-"}
-          </span>
+            <Chip
+              size="sm"
+              variant="solid"
+              color={isClickable ? "primary" : "neutral"}
+              onClick={handleOpen}
+              component={isClickable ? "button" : "div"}
+              role={isClickable ? "link" : undefined}
+              tabIndex={isClickable ? 0 : -1}
+              onKeyDown={(e) => {
+                if (isClickable && (e.key === "Enter" || e.key === " ")) {
+                  e.preventDefault();
+                  handleOpen();
+                }
+              }}
+              sx={{
+                "--Chip-radius": "9999px", // full pill
+                "--Chip-borderWidth": 0, // no border
+                "--Chip-paddingInline": "10px", // tighter pill
+                "--Chip-minHeight": "22px", // slim height like the image
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+                cursor: isClickable ? "pointer" : "default",
+                border: "none",
+                userSelect: "none",
+              }}
+            >
+              {pr_no || "-"}
+            </Chip>
+          </Tooltip>
         </Box>
-        <Box display="flex" alignItems="center">
+
+        <Box display="flex" alignItems="center" mt={0.5} gap={0.5}>
           <Calendar size={12} />
-          &nbsp;
           <span style={{ fontSize: 12, fontWeight: 600 }}>
-            Created At:{" "}
-          </span>{" "}
-          &nbsp;
+            Created At:&nbsp;
+          </span>
           <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
             {formattedDate}
           </Typography>
         </Box>
-        <Box display="flex" alignItems="center">
+
+        <Box display="flex" alignItems="center" gap={0.5}>
           <User size={12} />
-          &nbsp;
           <span style={{ fontSize: 12, fontWeight: 600 }}>
-            Created By:{" "}
-          </span>{" "}
-          &nbsp;
+            Created By:&nbsp;
+          </span>
           <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-            {createdBy}
+            {createdBy || "-"}
           </Typography>
         </Box>
       </>
     );
   };
 
+  // helper: pick a stable key
+  // helper: pick a stable display name
+  const getItemName = (it) =>
+    it?.item_id?.name || it?.other_item_name || it?.name || "(Unnamed item)";
+
+  // normalize for uniqueness (case-insensitive, trimmed)
+  const norm = (s) => (s == null ? "" : String(s).trim().toLowerCase());
+
+  // keep only first occurrence of each unique name
+  const uniqueByName = (items) => {
+    const seen = new Set();
+    const out = [];
+    const arr = Array.isArray(items)
+      ? items.filter(Boolean)
+      : [items].filter(Boolean);
+
+    for (const it of arr) {
+      const name = getItemName(it);
+      const key = norm(name);
+      if (!seen.has(key)) {
+        seen.add(key);
+        out.push({ item: it, name }); // keep both to render later
+      }
+    }
+    return out;
+  };
+
   const RenderItemCell = (item) => {
-    const name = item?.item_id?.name;
+    const name = item?.item_id?.name || item?.name || item?.other_item_name;
     const isOthers = name === "Others";
     return (
       <Box>
@@ -368,7 +426,6 @@ function PurchaseReqSummary() {
           <Box sx={{ fontSize: 12, color: "gray" }}>
             <div>
               <b>
-                {" "}
                 <TruckIcon size={13} /> Other Item Name:
               </b>{" "}
               {item?.other_item_name || "-"}
@@ -381,6 +438,43 @@ function PurchaseReqSummary() {
             </div>
           </Box>
         )}
+      </Box>
+    );
+  };
+
+  const ItemsCell = ({ items }) => {
+    const uniq = uniqueByName(items); // [{ item, name }, ...]
+
+    if (uniq.length === 0) return <span>-</span>;
+    if (uniq.length === 1) return <>{RenderItemCell(uniq[0].item)}</>;
+
+    const tooltipContent = (
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, py: 0.5 }}>
+        {uniq.slice(1).map(({ name }, i) => (
+          <Typography level="body-sm" key={`${name}-${i}`}>
+            {name}
+          </Typography>
+        ))}
+      </Box>
+    );
+
+    return (
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+        <span>{RenderItemCell(uniq[0].item)}</span>
+        <Tooltip title={tooltipContent} variant="soft" arrow placement="bottom">
+          <Chip
+            size="sm"
+            variant="solid"
+            sx={{
+              bgcolor: "#214b7b",
+              color: "#fff",
+              cursor: "pointer",
+              "&:hover": { bgcolor: "#1d416b" },
+            }}
+          >
+            +{uniq.length - 1}
+          </Chip>
+        </Tooltip>
       </Box>
     );
   };
@@ -481,7 +575,7 @@ function PurchaseReqSummary() {
               {[
                 "PR No.",
                 "Project Code",
-                "Item Name",
+                "Category Name",
                 "Status",
                 "PO Number",
                 "PO Value",
@@ -573,7 +667,7 @@ function PurchaseReqSummary() {
                         padding: "8px",
                       }}
                     >
-                      {RenderItemCell(item)}
+                      <ItemsCell items={row.items ?? item} />
                     </td>
 
                     <td

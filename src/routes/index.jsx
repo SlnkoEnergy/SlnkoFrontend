@@ -102,6 +102,10 @@ import Add_Task from "../pages/AllTask/ADD_Task";
 import AllTask from "../pages/AllTask/AllTask";
 import View_Task from "../pages/AllTask/View_Task";
 import SalesIframe from "../component/Sales_Iframe";
+import Products from "../pages/Databases/Products";
+import Categories from "../pages/Databases/Categories";
+import Product_Form from "../pages/Databases/Product_Form";
+import PurchaseRequestForm from "../pages/CAM/PurchaseRequestForm";
 
 function index() {
   return (
@@ -348,6 +352,14 @@ function index() {
         element={
           <PrivateRoute>
             <PurchaseReqDetails />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/pr_form"
+        element={
+          <PrivateRoute>
+            <PurchaseRequestForm />
           </PrivateRoute>
         }
       />
@@ -932,6 +944,33 @@ function index() {
         element={
           <PrivateRoute>
             <View_Task />
+          </PrivateRoute>
+        }
+      />
+
+      {/* Databases */}
+      <Route
+      path="/products"
+      element={
+        <PrivateRoute>
+          <Products />
+        </PrivateRoute>
+      }
+      />
+       <Route
+      path="/categories"
+      element={
+        <PrivateRoute>
+          <Categories />
+        </PrivateRoute>
+      }
+      />
+
+      <Route
+        path="/product_form"
+        element={
+          <PrivateRoute>
+            <Product_Form />
           </PrivateRoute>
         }
       />

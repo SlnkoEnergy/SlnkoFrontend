@@ -473,8 +473,6 @@ const Overview = () => {
     }
   };
 
-  console.log("templateId", activeTemplateId);
-
   const handleLogsOpen = (rawUrls) => {
     const grouped = {};
     console.log({ rawUrls });

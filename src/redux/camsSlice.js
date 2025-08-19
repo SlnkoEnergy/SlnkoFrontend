@@ -79,9 +79,6 @@ export const camsApi = createApi({
     }),
 
     // Purchase Request
-    getProjectDropdown: builder.query({
-      query: () => "project-dropdown",
-    }),
     getMaterialCategory: builder.query({
       query: ({project_id}) => `engineering/material-category-drop?project_id=${project_id}`,
     }),
@@ -129,6 +126,12 @@ export const camsApi = createApi({
         body: payload,
       }),
     }),
+    fetchFromBOM: builder.query({
+  query: (params) => ({
+    url: "purchaseRequest/fetch-boq",
+    params,  
+  }),
+}),
 
     // Scope
     getScopeByProjectId: builder.query({
@@ -166,7 +169,6 @@ export const {
   useUpdateHandOverMutation,
   useUpdateUnlockHandoversheetMutation,
   useUpdateStatusHandOverMutation,
-  useGetProjectDropdownQuery,
   useGetMaterialCategoryQuery,
   useCreatePurchaseRequestMutation,
   useGetAllPurchaseRequestQuery,
@@ -174,6 +176,7 @@ export const {
   useGetPurchaseRequestByProjectIdQuery,
   useGetPurchaseRequestQuery,
   useEditPurchaseRequestMutation,
+  useLazyFetchFromBOMQuery,
   useGetScopeByProjectIdQuery,
   useUpdateScopeByProjectIdMutation,
   useUpdateScopeStatusMutation,

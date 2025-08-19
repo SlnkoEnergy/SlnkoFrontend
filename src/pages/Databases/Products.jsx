@@ -1,21 +1,24 @@
 import Box from "@mui/joy/Box";
-import Breadcrumbs from "@mui/joy/Breadcrumbs";
-import Button from "@mui/joy/Button";
 import CssBaseline from "@mui/joy/CssBaseline";
-import Link from "@mui/joy/Link";
 import { CssVarsProvider } from "@mui/joy/styles";
-import Typography from "@mui/joy/Typography";
-import { useRef } from "react";
-import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import Sidebar from "../../component/Partials/Sidebar";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import Button from "@mui/joy/Button";
+import Breadcrumbs from "@mui/joy/Breadcrumbs";
+import Link from "@mui/joy/Link";
+import Typography from "@mui/joy/Typography";
+import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import ViewModuleRoundedIcon from "@mui/icons-material/ViewModuleRounded";
+import Sidebar from "../../component/Partials/Sidebar";
 import Header from "../../component/Partials/Header";
-import PurchaseOrder from "../../component/PurchaseOrderSummary";
+import { useNavigate } from "react-router-dom";
+import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
+import { useExportTasksToCsvMutation } from "../../redux/globalTaskSlice";
+import Products_Table from "../../component/Products_Table";
 
-function POSummary() {
+function Products() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
 
   useEffect(() => {
     const userData = getUserData();
@@ -30,28 +33,32 @@ function POSummary() {
     return null;
   };
 
-  const poSummaryRef = useRef();
+  const [exportTasksToCsv] = useExportTasksToCsvMutation();
 
-  const handleExportToCSV = () => {
-    if (poSummaryRef.current) {
-      poSummaryRef.current.exportToCSV();
+  const handleExport = async (selectedIds) => {
+    try {
+      if (!selectedIds || selectedIds.length === 0) {
+        alert("No tasks selected for export.");
+        return;
+      }
+      const response = await exportTasksToCsv(selectedIds).unwrap();
+
+      const blob = new Blob([response], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "tasks_export.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("Failed to export tasks to CSV.");
     }
   };
-
-  const allowedUsers = [
-    "IT Team",
-    "Guddu Rani Dubey",
-    "Prachi Singh",
-    "Ajay Singh",
-    "Aryan Maheshwari",
-    "Sarthak Sharma",
-    "Naresh Kumar",
-    "Shubham Gupta",
-    "Gagan Tayal",
-  ];
-
-  const isAllowed =
-    allowedUsers.includes(user?.name) || user?.department === "admin";
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -92,18 +99,18 @@ function POSummary() {
               sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
               <Link
-                underline="hover"
+                underline="none"
                 color="neutral"
-                href=""
                 sx={{ fontSize: 12, fontWeight: 500 }}
               >
-                SCM
+                My Databases
               </Link>
+
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Purchase Order Summary
+                Products
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -111,7 +118,7 @@ function POSummary() {
           <Box
             sx={{
               display: "flex",
-              mb: 1,
+
               gap: 1,
               flexDirection: { xs: "column", sm: "row" },
               alignItems: { xs: "start", sm: "center" },
@@ -121,39 +128,37 @@ function POSummary() {
             }}
           >
             <Typography level="h2" component="h1">
-              Purchase Order Summary
+              Products
             </Typography>
 
-            {isAllowed && (
-              <Box
-                sx={{
-                  display: "flex",
-                  mb: 1,
-                  gap: 1,
-                  flexDirection: { xs: "column", sm: "row" },
-                  alignItems: { xs: "start", sm: "center" },
-                  flexWrap: "wrap",
-                  justifyContent: "center",
-                }}
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 1.5,
+
+                flexWrap: "wrap",
+                borderRadius: "lg",
+                mb: 2,
+              }}
+            >
+              <Button
+                variant="solid"
+                color="primary"
+                startDecorator={<ViewModuleRoundedIcon />}
+                size="md"
+                onClick={() => navigate("/product_form?mode=create")}
               >
-                {user?.name !== "Gagan Tayal" && (
-                  <>
-                    <Button
-                      color="primary"
-                      size="sm"
-                      onClick={() => navigate("/add_vendor")}
-                    >
-                      Add Vendor +
-                    </Button>
-                  </>
-                )}
-              </Box>
-            )}
+                Add Product
+              </Button>
+            </Box>
           </Box>
-          <PurchaseOrder ref={poSummaryRef} />
+          <Products_Table />
         </Box>
       </Box>
     </CssVarsProvider>
   );
 }
-export default POSummary;
+export default Products;
