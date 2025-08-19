@@ -15,12 +15,22 @@ import {
   CircularProgress,
   Modal,
   ModalDialog,
+  Sheet,
   Stack,
   Textarea,
 } from "@mui/joy";
-import { Calendar, CircleUser, CreditCard, Receipt, UsersRound } from "lucide-react";
+import {
+  Calendar,
+  CircleUser,
+  CreditCard,
+  FileText,
+  Receipt,
+  UsersRound,
+} from "lucide-react";
 import { Money } from "@mui/icons-material";
 import dayjs from "dayjs";
+import { PaymentProvider } from "../../store/Context/Payment_History";
+import PaymentHistory from "../PaymentHistory";
 
 const ApprovalPayment = forwardRef(
   ({ searchQuery, currentPage, perPage }, ref) => {
@@ -422,7 +432,12 @@ const ApprovalPayment = forwardRef(
       payment_description,
       remainingDays,
       vendor,
+      po_number,
     }) => {
+      const [open, setOpen] = useState(false);
+
+      const handleOpen = () => setOpen(true);
+      const handleClose = () => setOpen(false);
       return (
         <>
           {request_for && (
@@ -432,6 +447,47 @@ const ApprovalPayment = forwardRef(
               </span>
             </Box>
           )}
+
+          {po_number && (
+            <Box
+              display="flex"
+              alignItems="center"
+              mt={0.5}
+              sx={{ cursor: "pointer" }}
+              onClick={handleOpen}
+            >
+              <FileText size={12} />
+              <span style={{ fontSize: 12, fontWeight: 600 }}>PO Number: </span>
+              &nbsp;
+              <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+                {po_number}
+              </Typography>
+            </Box>
+          )}
+          <Modal open={open} onClose={handleClose}>
+            <Sheet
+              tabIndex={-1}
+              variant="outlined"
+              sx={{
+                mx: "auto",
+                mt: "8vh",
+                width: { xs: "95%", sm: 600 },
+                borderRadius: "12px",
+                p: 3,
+                boxShadow: "lg",
+                maxHeight: "80vh",
+                overflow: "auto",
+                backgroundColor: "#fff",
+                minWidth: 950,
+              }}
+            >
+              {po_number && (
+                <PaymentProvider po_number={po_number}>
+                  <PaymentHistory po_number={po_number} />
+                </PaymentProvider>
+              )}
+            </Sheet>
+          </Modal>
 
           {payment_description && (
             <Box display="flex" alignItems="center" mt={0.5}>
@@ -874,6 +930,7 @@ const ApprovalPayment = forwardRef(
                           payment_description={payment?.payment_description}
                           vendor={payment?.vendor}
                           remainingDays={payment.remainingDays}
+                          po_number={payment?.po_number}
                         />
                       </Box>
                       <Box

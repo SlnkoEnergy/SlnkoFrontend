@@ -26,6 +26,7 @@ import {
   CircularProgress,
   Modal,
   ModalDialog,
+  Sheet,
   Stack,
   Tab,
   TabList,
@@ -33,12 +34,14 @@ import {
   Tabs,
   Textarea,
 } from "@mui/joy";
-import { Calendar, CircleUser, Receipt, UsersRound } from "lucide-react";
+import { Calendar, CircleUser, FileText, Receipt, UsersRound } from "lucide-react";
 import PaymentAccountApproval from "./PaymentAccountApproval";
 import CreditPayment from "./creditPayment";
 import ApprovalPayment from "./ToBeApproved";
 import OverDue from "./Overdue";
 import { Money } from "@mui/icons-material";
+import { PaymentProvider } from "../../store/Context/Payment_History";
+import PaymentHistory from "../PaymentHistory";
 
 function PaymentRequest() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -664,7 +667,13 @@ const handlePrint = () => {
     );
   };
 
-  const RequestedData = ({ request_for, payment_description }) => {
+  const RequestedData = ({ request_for, payment_description , po_number, vendor}) => {
+
+      const [open, setOpen] = useState(false);
+
+    const handleOpen = () => setOpen(true);
+    const handleClose = () => setOpen(false);
+
     return (
       <>
         {request_for && (
@@ -674,6 +683,57 @@ const handlePrint = () => {
             </span>
           </Box>
         )}
+         {po_number && (
+          <Box
+            display="flex"
+            alignItems="center"
+            mt={0.5}
+            sx={{ cursor: "pointer" }}
+            onClick={handleOpen}
+          >
+            <FileText size={12} />
+            <span style={{ fontSize: 12, fontWeight: 600 }}>PO Number: </span>
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {po_number}
+            </Typography>
+          </Box>
+        )}
+        <Modal open={open} onClose={handleClose}>
+          <Sheet
+            variant="outlined"
+            sx={{
+              mx: "auto",
+              mt: "8vh",
+              width: { xs: "95%", sm: 600 },
+              borderRadius: "12px",
+              p: 3,
+              boxShadow: "lg",
+              maxHeight: "80vh",
+              overflow: "auto",
+              backgroundColor: "#fff",
+              minWidth: 950,
+            }}
+          >
+            {po_number && (
+              <PaymentProvider po_number={po_number}>
+                <PaymentHistory po_number={po_number} />
+              </PaymentProvider>
+            )}
+          </Sheet>
+        </Modal>
+
+         <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+          <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
+            🏢 Vendor:
+          </Typography>
+          <Typography
+            sx={{ fontSize: 12, fontWeight: 400, wordBreak: "break-word" }}
+          >
+            {vendor}
+          </Typography>
+        </Box>
+
 
         {payment_description && (
           <Box display="flex" alignItems="center" mt={0.5}>
@@ -686,6 +746,7 @@ const handlePrint = () => {
             </Typography>
           </Box>
         )}
+        
       </>
     );
   };
@@ -1380,6 +1441,8 @@ const handlePrint = () => {
                           <RequestedData
                             request_for={payment?.request_for}
                             payment_description={payment?.payment_description}
+                            po_number={payment?.po_number}
+                            vendor={payment?.vendor}
                           />
                         </Box>
                         <Box

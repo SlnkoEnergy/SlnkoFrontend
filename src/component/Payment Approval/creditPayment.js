@@ -2,7 +2,7 @@ import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Input from "@mui/joy/Input";
 import Chip from "@mui/joy/Chip";
-import { CheckCircle, CreditCard, PenLine, XCircle } from "lucide-react";
+import { CheckCircle, CreditCard, Info, PenLine, XCircle } from "lucide-react";
 import Typography from "@mui/joy/Typography";
 import IconButton from "@mui/joy/IconButton";
 import { toast } from "react-toastify";
@@ -13,7 +13,7 @@ import {
   useUpdateCreditExtensionMutation,
   useUpdateRequestExtensionMutation,
 } from "../../redux/Accounts";
-import { CircularProgress, Modal, ModalDialog } from "@mui/joy";
+import { CircularProgress, Modal, ModalDialog, Tooltip } from "@mui/joy";
 import {
   Calendar,
   CircleUser,
@@ -53,8 +53,9 @@ const CreditPayment = forwardRef(
 
     const [updateCreditExtension] = useUpdateCreditExtensionMutation();
 
-    const RowMenu = ({ _id, credit_extension }) => {
-      
+    const RowMenu = ({ _id, credit_extension, credit_remarks, credit_user_name }) => {
+      console.log(credit_remarks);
+
       const [open, setOpen] = useState(false);
       const [formData, setFormData] = useState({
         credit_deadline: "",
@@ -108,24 +109,54 @@ const CreditPayment = forwardRef(
         <>
           {/* Button to open modal */}
           {credit_extension === true ? (
-            <IconButton
-              size="sm"
-              variant="soft"
-              color="neutral"
-              onClick={handleOpen}
-              sx={{
-                borderRadius: "50%",
-                p: 0.5,
-                minWidth: "28px",
-                minHeight: "28px",
-                "&:hover": {
-                  backgroundColor: "neutral.softHoverBg",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                },
-              }}
-            >
-              <PenLine size={14} strokeWidth={2} />
-            </IconButton>
+            <Box display="flex" alignItems="center" gap={1}>
+              {/* Edit button */}
+              <Tooltip title="Edit Credit Extension" placement="top" arrow>
+                <IconButton
+                  size="sm"
+                  variant="soft"
+                  color="primary"
+                  onClick={handleOpen}
+                  sx={{
+                    borderRadius: "50%",
+                    p: 0.7,
+                    minWidth: "32px",
+                    minHeight: "32px",
+                    "&:hover": {
+                      backgroundColor: "primary.softHoverBg",
+                      transform: "scale(1.05)",
+                      transition: "all 0.2s ease-in-out",
+                    },
+                  }}
+                >
+                  <PenLine size={16} strokeWidth={2} />
+                </IconButton>
+              </Tooltip>
+
+              {/* Info icon showing latest remarks */}
+              {credit_remarks && credit_remarks.length > 0 && (
+                <Tooltip
+                  placement="top"
+                  arrow
+                  title={
+                    <Box>
+                      <ul style={{ margin: 0, paddingLeft: "18px" }}>
+                        <li>Extension Remarks: {credit_remarks}</li>
+                        <li>
+                          Requested by: {credit_user_name || "Unknown"}
+                        </li>
+                      </ul>
+                    </Box>
+                  }
+                >
+                  <Info
+                    size={18}
+                    strokeWidth={2}
+                    style={{ cursor: "pointer" }}
+                  />
+                </Tooltip>
+              )}
+            </Box>
           ) : (
             <Chip size="sm" variant="soft" color="danger">
               no extension required
@@ -459,7 +490,7 @@ const CreditPayment = forwardRef(
               {groupBalance || "0"}
             </Typography>
           </Box>
-           <Box display="flex" alignItems="center" mt={0.5}>
+          <Box display="flex" alignItems="center" mt={0.5}>
             <CreditCard size={12} />
             &nbsp;
             <span style={{ fontSize: 12, fontWeight: 600 }}>
@@ -662,8 +693,10 @@ const CreditPayment = forwardRef(
                       </Box>
                       <Box component="td" sx={{ ...cellStyle }}>
                         <RowMenu
-                          _id={payment._id}
-                          credit_extension={payment.credit_extension}
+                          _id={payment?._id}
+                          credit_extension={payment?.credit_extension}
+                          credit_remarks={payment?.credit_remarks}
+                          credit_user_name={payment?.credit_user_name}
                         />
                       </Box>
                     </Box>
