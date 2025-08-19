@@ -107,6 +107,7 @@ import Products from "../pages/Databases/Products";
 import Categories from "../pages/Databases/Categories";
 import Product_Form from "../pages/Databases/Product_Form";
 import PurchaseRequestForm from "../pages/CAM/PurchaseRequestForm";
+import LogisticsForm from "../pages/SCM/LogisticsForm";
 
 function index() {
   return (
@@ -309,6 +310,15 @@ function index() {
         element={
           <PrivateRoute>
             <Logistics />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/logistics-form"
+        element={
+          <PrivateRoute>
+            <LogisticsForm />
           </PrivateRoute>
         }
       />

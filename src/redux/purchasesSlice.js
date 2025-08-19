@@ -108,6 +108,41 @@ export const purchasesApi = createApi({
       }),
       invalidatesTags: ["Purchase"],
     }),
+    getLogistics: builder.query({
+      query: () => "logistic",
+      providesTags: ["Logistic"],
+    }),
+
+    getLogisticById: builder.query({
+      query: (id) => `logistic/${id}`,
+      providesTags: ["Logistic"],
+    }),
+
+    addLogistic: builder.mutation({
+      query: (newLogistic) => ({
+        url: "logistic",
+        method: "POST",
+        body: newLogistic,
+      }),
+      invalidatesTags: ["Logistic"],
+    }),
+
+    updateLogistic: builder.mutation({
+      query: ({ id, updatedData }) => ({
+        url: `logistic/${id}`,
+        method: "PUT",
+        body: updatedData,
+      }),
+      invalidatesTags: ["Logistic"],
+    }),
+
+    deleteLogistic: builder.mutation({
+      query: (id) => ({
+        url: `logistic/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Logistic"],
+    }),
   }),
 });
 
@@ -120,4 +155,9 @@ export const {
   useUpdatePurchasesMutation,
   useUpdateEtdOrDeliveryDateMutation,
   useUpdatePurchasesStatusMutation,
+   useGetLogisticsQuery,
+  useGetLogisticByIdQuery,
+  useAddLogisticMutation,
+  useUpdateLogisticMutation,
+  useDeleteLogisticMutation,
 } = purchasesApi;
