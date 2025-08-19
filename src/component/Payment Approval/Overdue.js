@@ -10,11 +10,27 @@ import { toast } from "react-toastify";
 import NoData from "../../assets/alert-bell.svg";
 import Axios from "../../utils/Axios";
 import { useGetPaymentApprovalQuery } from "../../redux/Accounts";
-import { CircularProgress, Modal, ModalDialog, Textarea } from "@mui/joy";
-import { Calendar, CircleUser, Receipt, UsersRound } from "lucide-react";
+import {
+  CircularProgress,
+  Modal,
+  ModalDialog,
+  Sheet,
+  Textarea,
+} from "@mui/joy";
+import {
+  Calendar,
+  CircleUser,
+  CreditCard,
+  FileText,
+  Receipt,
+  UsersRound,
+} from "lucide-react";
 import { Money } from "@mui/icons-material";
+import dayjs from "dayjs";
+import { PaymentProvider } from "../../store/Context/Payment_History";
+import PaymentHistory from "../PaymentHistory";
 
-const OverDue = forwardRef( ({ searchQuery, currentPage, perPage },ref) => {
+const OverDue = forwardRef(({ searchQuery, currentPage, perPage }, ref) => {
   const [selected, setSelected] = useState([]);
   const {
     data: responseData,
@@ -308,12 +324,21 @@ const OverDue = forwardRef( ({ searchQuery, currentPage, perPage },ref) => {
   // console.log(paginatedData);
 
   const PaymentID = ({ pay_id, cr_id, request_date }) => {
-    // Get last two characters of cr_id if it exists
-    const displayCrId = cr_id ? cr_id.slice(-2) : null;
+    const maskCrId = (id) => {
+      if (!id) return "N/A";
+      const parts = id.split("/");
+      const lastIndex = parts.length - 2;
+
+      if (!isNaN(parts[lastIndex])) {
+        parts[lastIndex] = parts[lastIndex].replace(/\d{2}$/, "XX");
+      }
+
+      return parts.join("/");
+    };
 
     return (
       <>
-        {(pay_id || cr_id) && (
+        {cr_id && (
           <Box>
             <Chip
               variant="solid"
@@ -330,7 +355,7 @@ const OverDue = forwardRef( ({ searchQuery, currentPage, perPage },ref) => {
                 },
               }}
             >
-              {pay_id || displayCrId}
+              {maskCrId(cr_id)}
             </Chip>
           </Box>
         )}
@@ -338,12 +363,12 @@ const OverDue = forwardRef( ({ searchQuery, currentPage, perPage },ref) => {
         {request_date && (
           <Box display="flex" alignItems="center" mt={0.5}>
             <Calendar size={12} />
-            <span style={{ fontSize: 12, fontWeight: 600 }}>
-              Request Date :{" "}
-            </span>
-            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
+              Request Date:
+            </Typography>
+
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              {request_date}
+              {dayjs(request_date).format("DD-MM-YYYY")}
             </Typography>
           </Box>
         )}
@@ -394,8 +419,13 @@ const OverDue = forwardRef( ({ searchQuery, currentPage, perPage },ref) => {
     payment_description,
     remainingDays,
     vendor,
+    po_number,
   }) => {
     const delayDays = remainingDays < 0 ? Math.abs(remainingDays) : 0;
+    const [open, setOpen] = useState(false);
+
+    const handleOpen = () => setOpen(true);
+    const handleClose = () => setOpen(false);
 
     return (
       <>
@@ -406,6 +436,46 @@ const OverDue = forwardRef( ({ searchQuery, currentPage, perPage },ref) => {
             </span>
           </Box>
         )}
+        {po_number && (
+          <Box
+            display="flex"
+            alignItems="center"
+            mt={0.5}
+            sx={{ cursor: "pointer" }}
+            onClick={handleOpen}
+          >
+            <FileText size={12} />
+            <span style={{ fontSize: 12, fontWeight: 600 }}>PO Number: </span>
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {po_number}
+            </Typography>
+          </Box>
+        )}
+        <Modal open={open} onClose={handleClose}>
+          <Sheet
+            tabIndex={-1}
+            variant="outlined"
+            sx={{
+              mx: "auto",
+              mt: "8vh",
+              width: { xs: "95%", sm: 600 },
+              borderRadius: "12px",
+              p: 3,
+              boxShadow: "lg",
+              maxHeight: "80vh",
+              overflow: "auto",
+              backgroundColor: "#fff",
+              minWidth: 950,
+            }}
+          >
+            {po_number && (
+              <PaymentProvider po_number={po_number}>
+                <PaymentHistory po_number={po_number} />
+              </PaymentProvider>
+            )}
+          </Sheet>
+        </Modal>
 
         {payment_description && (
           <Box display="flex" alignItems="center" mt={0.5}>
@@ -445,6 +515,7 @@ const OverDue = forwardRef( ({ searchQuery, currentPage, perPage },ref) => {
     amount_requested,
     ClientBalance,
     groupBalance,
+    creditBalance,
     po_value,
   }) => {
     return (
@@ -490,6 +561,17 @@ const OverDue = forwardRef( ({ searchQuery, currentPage, perPage },ref) => {
           &nbsp;
           <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
             {groupBalance || "0"}
+          </Typography>
+        </Box>
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <CreditCard size={12} />
+          &nbsp;
+          <span style={{ fontSize: 12, fontWeight: 600 }}>
+            Credit Balance:{" "}
+          </span>
+          &nbsp;
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+            {creditBalance || "0"}
           </Typography>
         </Box>
       </>
@@ -662,6 +744,7 @@ const OverDue = forwardRef( ({ searchQuery, currentPage, perPage },ref) => {
                         payment_description={payment?.payment_description}
                         vendor={payment?.vendor}
                         remainingDays={payment?.remainingDays}
+                        po_number={payment?.po_number}
                       />
                     </Box>
                     <Box
@@ -677,6 +760,7 @@ const OverDue = forwardRef( ({ searchQuery, currentPage, perPage },ref) => {
                         ClientBalance={payment?.ClientBalance}
                         po_value={payment?.po_value}
                         groupBalance={payment?.groupBalance}
+                        creditBalance={payment?.creditBalance}
                       />
                     </Box>
 

@@ -26,6 +26,7 @@ import {
   CircularProgress,
   Modal,
   ModalDialog,
+  Sheet,
   Stack,
   Tab,
   TabList,
@@ -33,12 +34,14 @@ import {
   Tabs,
   Textarea,
 } from "@mui/joy";
-import { Calendar, CircleUser, Receipt, UsersRound } from "lucide-react";
+import { Calendar, CircleUser, FileText, Receipt, UsersRound } from "lucide-react";
 import PaymentAccountApproval from "./PaymentAccountApproval";
 import CreditPayment from "./creditPayment";
 import ApprovalPayment from "./ToBeApproved";
 import OverDue from "./Overdue";
 import { Money } from "@mui/icons-material";
+import { PaymentProvider } from "../../store/Context/Payment_History";
+import PaymentHistory from "../PaymentHistory";
 
 function PaymentRequest() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -49,6 +52,7 @@ function PaymentRequest() {
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [blobUrl, setBlobUrl] = useState(null);
+  const [hasPrinted, setHasPrinted] = useState(false);
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
   const [currentPage, setCurrentPage] = useState(initialPage);
@@ -463,17 +467,20 @@ function PaymentRequest() {
       checked ? [...prev, idStr] : prev.filter((item) => item !== idStr)
     );
   };
-  const handlePrint = () => {
-    if (!blobUrl) return;
-    // Open PDF blob in new window and trigger print
-    const printWindow = window.open(blobUrl);
-    if (printWindow) {
-      printWindow.focus();
+const handlePrint = () => {
+  if (!blobUrl) return;
+
+  const printWindow = window.open(blobUrl);
+  if (printWindow) {
+    printWindow.focus();
+    printWindow.onload = () => {
       printWindow.print();
-    } else {
-      toast.error("Unable to open print window");
-    }
-  };
+      setHasPrinted(true);
+    };
+  } else {
+    toast.error("Unable to open print window");
+  }
+};
 
   useEffect(() => {
     if (pdfBlob) {
@@ -482,6 +489,12 @@ function PaymentRequest() {
       return () => URL.revokeObjectURL(url);
     }
   }, [pdfBlob]);
+  useEffect(() => {
+  if (isPdfModalOpen) {
+    setHasPrinted(false);
+  }
+}, [isPdfModalOpen]);
+
 
   const handleClosePdfModal = () => {
     if (blobUrl) URL.revokeObjectURL(blobUrl);
@@ -567,18 +580,6 @@ function PaymentRequest() {
     borderColor: "divider",
   };
 
-  // console.log(paginatedData);
-
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setSearchParams((prev) => {
-        return {
-          ...Object.fromEntries(prev.entries()),
-          page: String(page),
-        };
-      });
-    }
-  };
 
   const PaymentID = ({ pay_id, cr_id, request_date, approved }) => {
     const maskId = (id) => {
@@ -666,7 +667,13 @@ function PaymentRequest() {
     );
   };
 
-  const RequestedData = ({ request_for, payment_description }) => {
+  const RequestedData = ({ request_for, payment_description , po_number, vendor}) => {
+
+      const [open, setOpen] = useState(false);
+
+    const handleOpen = () => setOpen(true);
+    const handleClose = () => setOpen(false);
+
     return (
       <>
         {request_for && (
@@ -676,6 +683,57 @@ function PaymentRequest() {
             </span>
           </Box>
         )}
+         {po_number && (
+          <Box
+            display="flex"
+            alignItems="center"
+            mt={0.5}
+            sx={{ cursor: "pointer" }}
+            onClick={handleOpen}
+          >
+            <FileText size={12} />
+            <span style={{ fontSize: 12, fontWeight: 600 }}>PO Number: </span>
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {po_number}
+            </Typography>
+          </Box>
+        )}
+        <Modal open={open} onClose={handleClose}>
+          <Sheet
+            variant="outlined"
+            sx={{
+              mx: "auto",
+              mt: "8vh",
+              width: { xs: "95%", sm: 600 },
+              borderRadius: "12px",
+              p: 3,
+              boxShadow: "lg",
+              maxHeight: "80vh",
+              overflow: "auto",
+              backgroundColor: "#fff",
+              minWidth: 950,
+            }}
+          >
+            {po_number && (
+              <PaymentProvider po_number={po_number}>
+                <PaymentHistory po_number={po_number} />
+              </PaymentProvider>
+            )}
+          </Sheet>
+        </Modal>
+
+         <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+          <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
+            🏢 Vendor:
+          </Typography>
+          <Typography
+            sx={{ fontSize: 12, fontWeight: 400, wordBreak: "break-word" }}
+          >
+            {vendor}
+          </Typography>
+        </Box>
+
 
         {payment_description && (
           <Box display="flex" alignItems="center" mt={0.5}>
@@ -688,6 +746,7 @@ function PaymentRequest() {
             </Typography>
           </Box>
         )}
+        
       </>
     );
   };
@@ -989,7 +1048,7 @@ function PaymentRequest() {
                     borderColor: "neutral.outlinedBorder",
                   }}
                 >
-                  {["instant", "credit", "toBeApproved", "overdue"].map(
+                  {["instant", "toBeApproved", "overdue", "credit"].map(
                     (tab) => (
                       <Tab
                         key={tab}
@@ -1006,11 +1065,11 @@ function PaymentRequest() {
                       >
                         {tab === "instant"
                           ? `Instant Payments (${responseData?.instantCount || 0})`
-                          : tab === "credit"
-                            ? `Credit Payments (${responseData?.creditCount || 0})`
-                            : tab === "toBeApproved"
-                              ? `To Be Approved (${responseData?.toBeApprovedCount || 0})`
-                              : `Overdue (${responseData?.overdueCount || 0})`}
+                          : tab === "toBeApproved"
+                            ? `To Be Approved (${responseData?.toBeApprovedCount || 0})`
+                            : tab === "overdue"
+                              ? `Overdue (${responseData?.overdueCount || 0})`
+                              : `Credit Payments (${responseData?.creditCount || 0})`}
                       </Tab>
                     )
                   )}
@@ -1045,16 +1104,7 @@ function PaymentRequest() {
                   sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
                 />
               )}
-              {activeTab === "credit" && (
-                <CreditPayment
-                  data={paginatedData}
-                  isLoading={isLoading}
-                  searchQuery={searchQuery}
-                  perPage={perPage}
-                  currentPage={currentPage}
-                  sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
-                />
-              )}
+
               {activeTab === "toBeApproved" && (
                 <ApprovalPayment
                   data={paginatedData}
@@ -1067,6 +1117,16 @@ function PaymentRequest() {
               )}
               {activeTab === "overdue" && (
                 <OverDue
+                  data={paginatedData}
+                  isLoading={isLoading}
+                  searchQuery={searchQuery}
+                  perPage={perPage}
+                  currentPage={currentPage}
+                  sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
+                />
+              )}
+              {activeTab === "credit" && (
+                <CreditPayment
                   data={paginatedData}
                   isLoading={isLoading}
                   searchQuery={searchQuery}
@@ -1381,6 +1441,8 @@ function PaymentRequest() {
                           <RequestedData
                             request_for={payment?.request_for}
                             payment_description={payment?.payment_description}
+                            po_number={payment?.po_number}
+                            vendor={payment?.vendor}
                           />
                         </Box>
                         <Box
@@ -1481,6 +1543,7 @@ function PaymentRequest() {
               variant="solid"
               color="primary"
               onClick={() => setIsConfirmModalOpen(true)}
+              disabled={!hasPrinted}
             >
               Confirm
             </Button>

@@ -1,18 +1,19 @@
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
-
+import Input from "@mui/joy/Input";
 import Chip from "@mui/joy/Chip";
-
+import { CheckCircle, CreditCard, Info, PenLine, XCircle } from "lucide-react";
 import Typography from "@mui/joy/Typography";
-
+import IconButton from "@mui/joy/IconButton";
 import { toast } from "react-toastify";
 import NoData from "../../assets/alert-bell.svg";
 
 import {
   useGetPaymentApprovalQuery,
+  useUpdateCreditExtensionMutation,
   useUpdateRequestExtensionMutation,
 } from "../../redux/Accounts";
-import { CircularProgress, Modal } from "@mui/joy";
+import { CircularProgress, Modal, ModalDialog, Tooltip } from "@mui/joy";
 import {
   Calendar,
   CircleUser,
@@ -22,9 +23,10 @@ import {
   UsersRound,
 } from "lucide-react";
 import { Money } from "@mui/icons-material";
-import { forwardRef, useState } from "react";
+import { forwardRef, useState, useEffect } from "react";
 import { PaymentProvider } from "../../store/Context/Payment_History";
 import PaymentHistory from "../PaymentHistory";
+import dayjs from "dayjs";
 
 const CreditPayment = forwardRef(
   ({ searchQuery, currentPage, perPage }, ref) => {
@@ -32,6 +34,7 @@ const CreditPayment = forwardRef(
       data: responseData,
       error,
       isLoading,
+      refetch,
     } = useGetPaymentApprovalQuery({
       page: currentPage,
       pageSize: perPage,
@@ -39,46 +42,166 @@ const CreditPayment = forwardRef(
       tab: "credit",
     });
 
-    const paginatedData = responseData?.data || [];
+    const [paginatedData, setPaginatedData] = useState([]);
     // console.log("paginatedData Credit are in Account :", paginatedData);
 
-    const RowMenu = ({ _id, credit_extension }) => {
-      const [updateCreditExtension, { isLoading }] =
-        useUpdateRequestExtensionMutation();
+    useEffect(() => {
+      if (responseData?.data) {
+        setPaginatedData(responseData?.data);
+      }
+    }, [responseData?.data]);
 
-      const handleRequestExtension = async () => {
+    const [updateCreditExtension] = useUpdateCreditExtensionMutation();
+
+    const RowMenu = ({ _id, credit_extension, credit_remarks, credit_user_name }) => {
+      console.log(credit_remarks);
+
+      const [open, setOpen] = useState(false);
+      const [formData, setFormData] = useState({
+        credit_deadline: "",
+        credit_remarks: "",
+      });
+
+      const handleOpen = () => setOpen(true);
+      const handleClose = () => setOpen(false);
+
+      const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({ ...prev, [name]: value }));
+      };
+
+      const handleSubmit = async () => {
         try {
-          await updateCreditExtension(_id).unwrap();
-          toast.success("Credit deadline extension requested successfully");
+          await updateCreditExtension({ id: _id, ...formData }).unwrap();
+
+          toast.success("Credit days extended successfully!", {
+            icon: <CheckCircle size={20} color="#FFFFFF" />,
+            style: {
+              backgroundColor: "#2E7D32",
+              color: "#FFFFFF",
+              fontWeight: 500,
+              fontSize: "15px",
+              padding: "12px 20px",
+              borderRadius: "8px",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+            },
+          });
+
+          refetch();
+          handleClose();
         } catch (err) {
-          console.error("Failed to request extension", err);
-          toast.error("Failed to request credit extension");
+          toast.error("Failed to extend credit days", {
+            icon: <XCircle size={20} color="#FFFFFF" />,
+            style: {
+              backgroundColor: "#D32F2F",
+              color: "#FFFFFF",
+              fontWeight: 500,
+              fontSize: "15px",
+              padding: "12px 20px",
+              borderRadius: "8px",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+            },
+          });
         }
       };
 
-      const isDisabled = isLoading || !!credit_extension;
-
       return (
-        <Button
-          size="sm"
-          color="success"
-          variant="solid"
-          disabled={isDisabled}
-          onClick={handleRequestExtension}
-          sx={{
-            borderRadius: "50px",
-            textTransform: "none",
-            px: 3,
-            py: 1,
-            fontWeight: 600,
-            transition: "all 0.3s ease",
-            "&:hover": {
-              backgroundColor: isDisabled ? undefined : "#2e7d32",
-            },
-          }}
-        >
-          {isLoading ? "Requesting..." : "Extension Request "}
-        </Button>
+        <>
+          {/* Button to open modal */}
+          {credit_extension === true ? (
+            <Box display="flex" alignItems="center" gap={1}>
+              {/* Edit button */}
+              <Tooltip title="Edit Credit Extension" placement="top" arrow>
+                <IconButton
+                  size="sm"
+                  variant="soft"
+                  color="primary"
+                  onClick={handleOpen}
+                  sx={{
+                    borderRadius: "50%",
+                    p: 0.7,
+                    minWidth: "32px",
+                    minHeight: "32px",
+                    "&:hover": {
+                      backgroundColor: "primary.softHoverBg",
+                      transform: "scale(1.05)",
+                      transition: "all 0.2s ease-in-out",
+                    },
+                  }}
+                >
+                  <PenLine size={16} strokeWidth={2} />
+                </IconButton>
+              </Tooltip>
+
+              {/* Info icon showing latest remarks */}
+              {credit_remarks && credit_remarks.length > 0 && (
+                <Tooltip
+                  placement="top"
+                  arrow
+                  title={
+                    <Box>
+                      <ul style={{ margin: 0, paddingLeft: "18px" }}>
+                        <li>Extension Remarks: {credit_remarks}</li>
+                        <li>
+                          Requested by: {credit_user_name || "Unknown"}
+                        </li>
+                      </ul>
+                    </Box>
+                  }
+                >
+                  <Info
+                    size={18}
+                    strokeWidth={2}
+                    style={{ cursor: "pointer" }}
+                  />
+                </Tooltip>
+              )}
+            </Box>
+          ) : (
+            <Chip size="sm" variant="soft" color="danger">
+              no extension required
+            </Chip>
+          )}
+
+          {/* Modal */}
+          <Modal open={open} onClose={handleClose}>
+            <ModalDialog>
+              <Typography level="h5" mb={1}>
+                Extend Credit
+              </Typography>
+
+              <Input
+                type="date"
+                name="credit_deadline"
+                value={formData.credit_deadline}
+                onChange={handleChange}
+                placeholder="New Credit Deadline"
+              />
+
+              <Input
+                type="text"
+                name="credit_remarks"
+                value={formData.credit_remarks}
+                onChange={handleChange}
+                placeholder="Credit Remarks"
+                sx={{ mt: 1 }}
+              />
+
+              <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
+                <Button variant="plain" onClick={handleClose}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="solid"
+                  onClick={handleSubmit}
+                  // disabled={isLoading}
+                >
+                  Extend
+                </Button>
+              </Box>
+            </ModalDialog>
+          </Modal>
+        </>
       );
     };
 
@@ -113,7 +236,17 @@ const CreditPayment = forwardRef(
     };
 
     const PaymentID = ({ cr_id, request_date }) => {
-      const displayCrId = cr_id ? cr_id.slice(0, -2) + "XX" : null;
+      const maskCrId = (id) => {
+        if (!id) return "N/A";
+        const parts = id.split("/");
+        const lastIndex = parts.length - 2;
+
+        if (!isNaN(parts[lastIndex])) {
+          parts[lastIndex] = parts[lastIndex].replace(/\d{2}$/, "XX");
+        }
+
+        return parts.join("/");
+      };
 
       return (
         <>
@@ -134,7 +267,7 @@ const CreditPayment = forwardRef(
                   },
                 }}
               >
-                {displayCrId}
+                {maskCrId(cr_id)}
               </Chip>
             </Box>
           )}
@@ -142,12 +275,12 @@ const CreditPayment = forwardRef(
           {request_date && (
             <Box display="flex" alignItems="center" mt={0.5}>
               <Calendar size={12} />
-              <span style={{ fontSize: 12, fontWeight: 600 }}>
-                Request Date :{" "}
-              </span>
-              &nbsp;
+              <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
+                Request Date:
+              </Typography>
+
               <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-                {request_date}
+                {dayjs(request_date).format("DD-MM-YYYY")}
               </Typography>
             </Box>
           )}
@@ -236,7 +369,7 @@ const CreditPayment = forwardRef(
           )}
           <Modal open={open} onClose={handleClose}>
             <Sheet
-            tabIndex={-1}
+              tabIndex={-1}
               variant="outlined"
               sx={{
                 mx: "auto",
@@ -307,6 +440,7 @@ const CreditPayment = forwardRef(
       amount_requested,
       ClientBalance,
       groupBalance,
+      creditBalance,
       po_value,
     }) => {
       return (
@@ -354,6 +488,17 @@ const CreditPayment = forwardRef(
             &nbsp;
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
               {groupBalance || "0"}
+            </Typography>
+          </Box>
+          <Box display="flex" alignItems="center" mt={0.5}>
+            <CreditCard size={12} />
+            &nbsp;
+            <span style={{ fontSize: 12, fontWeight: 600 }}>
+              Credit Balance:{" "}
+            </span>
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {creditBalance || "0"}
             </Typography>
           </Box>
         </>
@@ -543,12 +688,15 @@ const CreditPayment = forwardRef(
                           ClientBalance={payment?.ClientBalance}
                           po_value={payment?.po_value}
                           groupBalance={payment?.groupBalance}
+                          creditBalance={payment?.creditBalance}
                         />
                       </Box>
                       <Box component="td" sx={{ ...cellStyle }}>
                         <RowMenu
-                          _id={payment._id}
-                          credit_extension={payment.credit_extension}
+                          _id={payment?._id}
+                          credit_extension={payment?.credit_extension}
+                          credit_remarks={payment?.credit_remarks}
+                          credit_user_name={payment?.credit_user_name}
                         />
                       </Box>
                     </Box>

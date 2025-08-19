@@ -3,18 +3,21 @@ import duration from "dayjs/plugin/duration";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Chip from "@mui/joy/Chip";
-
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
+import HourglassTopRoundedIcon from "@mui/icons-material/HourglassTopRounded";
 import IconButton from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { forwardRef, useEffect, useState } from "react";
 import NoData from "../../assets/alert-bell.svg";
 import {
   CircularProgress,
   Modal,
+  ModalClose,
   ModalDialog,
+  ModalOverflow,
+  Textarea,
   Tooltip,
   useTheme,
 } from "@mui/joy";
@@ -23,13 +26,13 @@ import { PaymentProvider } from "../../store/Context/Payment_History";
 import PaymentHistory from "../PaymentHistory";
 import {
   useGetPaymentRecordQuery,
-  useUpdateCreditExtensionMutation,
+  useUpdateRequestExtensionMutation,
 } from "../../redux/Accounts";
 import dayjs from "dayjs";
 import { toast } from "react-toastify";
 
 const CreditRequest = forwardRef(
-  ({ searchQuery, perPage, currentPage, status },ref) => {
+  ({ searchQuery, perPage, currentPage, status }, ref) => {
     const {
       data: responseData,
       isLoading,
@@ -60,7 +63,7 @@ const CreditRequest = forwardRef(
       return null;
     };
 
-    const [updateCreditExtension] = useUpdateCreditExtensionMutation();
+    // const [updateCreditExtension] = useUpdateCreditExtensionMutation();
 
     const headerStyle = {
       position: "sticky",
@@ -104,7 +107,16 @@ const CreditRequest = forwardRef(
     const PaymentID = ({ cr_id, dbt_date, approved }) => {
       const maskCrId = (id) => {
         if (!id) return "N/A";
-        return approved === "Approved" ? id : id.replace(/(\d{2})$/, "XX");
+        if (approved === "Approved") return id;
+
+        const parts = id.split("/");
+        const lastIndex = parts.length - 2;
+
+        if (!isNaN(parts[lastIndex])) {
+          parts[lastIndex] = parts[lastIndex].replace(/\d{2}$/, "XX");
+        }
+
+        return parts.join("/");
       };
 
       return (
@@ -113,7 +125,7 @@ const CreditRequest = forwardRef(
             <Box>
               <Chip
                 variant="solid"
-                color="primary"
+                color={approved === "Approved" ? "success" : "neutral"}
                 size="sm"
                 sx={{
                   fontWeight: 500,
@@ -223,52 +235,33 @@ const CreditRequest = forwardRef(
       amount_paid,
       credit,
     }) => {
+
+      
+      const [updateCreditExtension, { isLoading }] =
+        useUpdateRequestExtensionMutation();
+
+      const [requested, setRequested] = useState(!!credit?.credit_extension);
       const [open, setOpen] = useState(false);
-      const [formData, setFormData] = useState({
-        credit_deadline: "",
-        credit_remarks: "",
-      });
+      const [remarks, setRemarks] = useState("");
 
-      const handleOpen = () => setOpen(true);
-      const handleClose = () => setOpen(false);
+      const handleRequestExtension = async () => {
+        if (!remarks.trim()) {
+          toast.error("Remarks are required");
+          return;
+        }
 
-      const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-      };
-
-      const handleSubmit = async () => {
         try {
-          await updateCreditExtension({ id: _id, ...formData }).unwrap();
+          await updateCreditExtension({
+            id: _id,
+            credit_remarks: remarks,
+          }).unwrap();
 
-          toast.success("Credit days extended successfully!", {
-            icon: <CheckCircle size={20} color="#FFFFFF" />,
-            style: {
-              backgroundColor: "#2E7D32",
-              color: "#FFFFFF",
-              fontWeight: 500,
-              fontSize: "15px",
-              padding: "12px 20px",
-              borderRadius: "8px",
-              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-            },
-          });
-
-          refetch();
-          handleClose();
+          toast.success("Credit extension requested successfully");
+          setRequested(true);
+          setOpen(false);
         } catch (err) {
-          toast.error("Failed to extend credit days", {
-            icon: <XCircle size={20} color="#FFFFFF" />,
-            style: {
-              backgroundColor: "#D32F2F",
-              color: "#FFFFFF",
-              fontWeight: 500,
-              fontSize: "15px",
-              padding: "12px 20px",
-              borderRadius: "8px",
-              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-            },
-          });
+          console.error("Failed to request extension", err);
+          toast.error("Failed to request credit extension");
         }
       };
 
@@ -321,62 +314,72 @@ const CreditRequest = forwardRef(
             </Chip>
 
             {user?.department === "SCM" &&
-              credit?.credit_extension &&
+              credit?.credit_extension === false &&
               remaining_days > 0 &&
               approved !== "Approved" &&
-              approved !== "Rejected" && (
-                <IconButton
+              approved !== "Rejected" &&
+              (requested ? (
+                <Chip
                   size="sm"
-                  variant="soft"
-                  color="neutral"
-                  onClick={handleOpen}
-                  sx={{
-                    borderRadius: "50%",
-                    p: 0.5,
-                    minWidth: "28px",
-                    minHeight: "28px",
-                    "&:hover": {
-                      backgroundColor: "neutral.softHoverBg",
-                      boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                    },
-                  }}
+                  variant="solid"
+                  color="success"
+                  startDecorator={<CheckRoundedIcon fontSize="sm" />}
+                  disabled
                 >
-                  <PenLine size={14} strokeWidth={2} />
-                </IconButton>
-              )}
+                  Requested
+                </Chip>
+              ) : isLoading ? (
+                <Chip size="sm" variant="soft" color="neutral" disabled>
+                  <HourglassTopRoundedIcon
+                    fontSize="sm"
+                    style={{ marginRight: 6 }}
+                  />
+                  Requesting…
+                </Chip>
+              ) : (
+                <Chip
+                  size="sm"
+                  variant="solid"
+                  color="danger"
+                  onClick={() => setOpen(true)}
+                  sx={{ cursor: "pointer" }}
+                >
+                  Request Extension
+                </Chip>
+              ))}
           </Box>
 
-          {/* Edit Credit Modal */}
-          <Modal open={open} onClose={handleClose}>
-            <ModalDialog>
-              <Typography level="h5" mb={1}>
-                Extend Credit
-              </Typography>
-              <Input
-                type="date"
-                name="credit_deadline"
-                value={formData.credit_deadline}
-                onChange={handleChange}
-                placeholder="New Credit Deadline"
-              />
-              <Input
-                type="text"
-                name="credit_remarks"
-                value={formData.credit_remarks}
-                onChange={handleChange}
-                placeholder="Credit Remarks"
-                sx={{ mt: 1 }}
-              />
-              <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
-                <Button variant="plain" onClick={handleClose}>
-                  Cancel
-                </Button>
-                <Button variant="solid" onClick={handleSubmit}>
-                  Extended
-                </Button>
-              </Box>
-            </ModalDialog>
-          </Modal>
+          {/* Remarks Dialog */}
+            <Modal open={open} onClose={() => setOpen(false)}>
+        <ModalOverflow>
+          <ModalDialog variant="outlined" role="alertdialog">
+            <ModalClose />
+            <Typography level="h5" mb={1}>
+              Request Credit Extension
+            </Typography>
+            <Textarea
+              placeholder="Enter remarks"
+              minRows={3}
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              sx={{ mb: 2 }}
+            />
+            <Box display="flex" justifyContent="flex-end" gap={1}>
+              <Button variant="plain" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="solid"
+                color="danger"
+                onClick={handleRequestExtension}
+                loading={isLoading}
+              >
+                Submit
+              </Button>
+            </Box>
+          </ModalDialog>
+        </ModalOverflow>
+      </Modal>
         </Box>
       );
     };
@@ -527,7 +530,8 @@ const CreditRequest = forwardRef(
                         approved={payment.approved}
                         amount_paid={payment.amount_paid}
                         remaining_days={payment.remaining_days}
-                        credit={payment.credit}
+                        credit={payment?.credit}
+                        credit_extension={payment.credit_extension}
                       />
                     </Box>
 
