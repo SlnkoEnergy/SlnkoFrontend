@@ -24,12 +24,11 @@ import {
   RestartAlt,
 } from "@mui/icons-material";
 import SearchPickerModal from "../SearchPickerModal";
-
 import {
   useGetVendorsNameSearchQuery,
   useLazyGetVendorsNameSearchQuery,
 } from "../../redux/vendorSlice";
-import { Check, Cross } from "lucide-react";
+import { Check } from "lucide-react";
 
 // ---------- helpers ----------
 const makeEmptyLine = () => ({
@@ -53,12 +52,12 @@ const SEARCH_MORE_VENDOR = "__SEARCH_MORE_VENDOR__";
 const AddPurchaseOrder = ({
   onSuccess,
   onClose,
-  pr_id, // PR _id
-  p_id, // project id (your backend currently shows string; we store whatever is valid)
+  pr_id,
+  p_id, 
   project_code,
   initialLines = [],
   categoryNames = [],
-  mode = "create", // "create" | "edit"
+  mode = "create",
   fromModal = false,
   poStatus = "draft",
   poNumberPreset = "",
@@ -67,14 +66,15 @@ const AddPurchaseOrder = ({
   const [searchParams] = useSearchParams();
 
   // -------- URL params --------
-  const modeQ = (searchParams.get("mode") || "").toLowerCase(); // "view" | "edit" | ""
+  const modeQ = (searchParams.get("mode") || "").toLowerCase();
   const poNumberQ = searchParams.get("po_number") || "";
-  const effectiveMode = modeQ || mode;
+  const effectiveMode =fromModal ? mode : modeQ || mode;
+
   const viewMode = effectiveMode === "view";
   const [openRefuse, setOpenRefuse] = useState(false);
   const [remarks, setRemarks] = useState("");
   // -------- actions --------
-  const [submitAction, setSubmitAction] = useState(null); // 'send_approval' | 'confirm_order' | 'edit_save'
+  const [submitAction, setSubmitAction] = useState(null); 
 
   // -------- vendor search (server + modal) --------
   const [vendorSearch, setVendorSearch] = useState("");
@@ -126,7 +126,7 @@ const AddPurchaseOrder = ({
 
   const [formData, setFormData] = useState({
     _id: "",
-    p_id: p_id ?? "", // do not force numeric; backend sample shows string
+    p_id: p_id ?? "", 
     project_code: project_code || "",
     po_number: poNumberPreset || poNumberQ || "",
     name: "",
@@ -282,12 +282,16 @@ const AddPurchaseOrder = ({
   }, [poNumberQ, effectiveMode]);
 
   // -------- status-based gating --------
-  const statusNow = fetchedPoStatus; // backend: "approval_pending" | "approval_done" | "po_created" | ...
+  const statusNow = fetchedPoStatus; 
   const isApprovalPending = statusNow === "approval_pending";
   const canConfirm = statusNow === "approval_done";
-  const approvalRejected = statusNow === "approval_rejected"
+  const approvalRejected = statusNow === "approval_rejected";
+  
 
-  const inputsDisabled = viewMode || !(isApprovalPending && manualEdit) || !approvalRejected;
+  const inputsDisabled =
+    viewMode || !(isApprovalPending && manualEdit) || !approvalRejected || !fromModal;
+  
+  console.log({inputsDisabled, isApprovalPending})
 
   // -------- handlers --------
   const handleChange = (e) => {
@@ -593,89 +597,94 @@ const AddPurchaseOrder = ({
 
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
             {/* Create flow buttons (optional keep) */}
-            {!viewMode && (effectiveMode === "create" || fromModal || (effectiveMode === "edit" && statusNow === "approval_rejected")) && (
-              <>
-                <Button
-                  variant="solid"
-                  startDecorator={<Send />}
-                  sx={{
-                    bgcolor: "#214b7b",
-                    color: "#fff",
-                    "&:hover": { bgcolor: "#163553" },
-                  }}
-                  disabled={isSubmitting}
-                  onClick={() => {
-                    setSubmitAction("send_approval");
-                    const form = document.getElementById("po-form");
-                    if (form) form.requestSubmit();
-                  }}
-                >
-                  Send Approval
-                </Button>
-
-                <Button
-                  variant="outlined"
-                  startDecorator={<ConfirmationNumber />}
-                  sx={{
-                    borderColor: "#214b7b",
-                    color: "#214b7b",
-                    "&:hover": {
-                      bgcolor: "rgba(33, 75, 123, 0.1)",
-                      borderColor: "#163553",
-                      color: "#163553",
-                    },
-                  }}
-                  disabled={isSubmitting}
-                  onClick={() => {
-                    setSubmitAction("confirm_order");
-                    const form = document.getElementById("po-form");
-                    if (form) form.requestSubmit();
-                  }}
-                >
-                  Confirm Order
-                </Button>
-              </>
-            )}
-            {!viewMode && effectiveMode === "edit" && isApprovalPending || approvalRejected && (
-              <Box display="flex" gap={2}>
-                <Box>
+            {!viewMode &&
+              (effectiveMode === "create" ||
+                fromModal ||
+                (effectiveMode === "edit" &&
+                  statusNow === "approval_rejected")) && (
+                <>
                   <Button
-                    variant={manualEdit ? "outlined" : "solid"}
-                    color={manualEdit ? "neutral" : "primary"}
-                    onClick={() => setManualEdit((s) => !s)}
-                    sx={{ width: "fit-content" }}
+                    variant="solid"
+                    startDecorator={<Send />}
+                    sx={{
+                      bgcolor: "#214b7b",
+                      color: "#fff",
+                      "&:hover": { bgcolor: "#163553" },
+                    }}
+                    disabled={isSubmitting}
+                    onClick={() => {
+                      setSubmitAction("send_approval");
+                      const form = document.getElementById("po-form");
+                      if (form) form.requestSubmit();
+                    }}
                   >
-                    {manualEdit ? "Cancel Edit" : "Edit"}
+                    Send Approval
                   </Button>
-                </Box>
 
-                {(user?.department === "CAM" ||
-                  user?.name === "Sushant Ranjan Dubey" ||
-                  user?.name === "Sanjiv Kumar" ||
-                  user?.name === "IT Team") && (
-                  <Box display="flex" gap={1}>
+                  <Button
+                    variant="outlined"
+                    startDecorator={<ConfirmationNumber />}
+                    sx={{
+                      borderColor: "#214b7b",
+                      color: "#214b7b",
+                      "&:hover": {
+                        bgcolor: "rgba(33, 75, 123, 0.1)",
+                        borderColor: "#163553",
+                        color: "#163553",
+                      },
+                    }}
+                    disabled={isSubmitting}
+                    onClick={() => {
+                      setSubmitAction("confirm_order");
+                      const form = document.getElementById("po-form");
+                      if (form) form.requestSubmit();
+                    }}
+                  >
+                    Confirm Order
+                  </Button>
+                </>
+              )}
+            {(!viewMode && effectiveMode === "edit" && isApprovalPending) ||
+              (approvalRejected && (
+                <Box display="flex" gap={2}>
+                  <Box>
                     <Button
-                      variant="solid"
-                      color="success"
-                      sx={{ minWidth: 100 }}
-                      startDecorator={<Check />}
-                      onClick={handleApprove}
+                      variant={manualEdit ? "outlined" : "solid"}
+                      color={manualEdit ? "neutral" : "primary"}
+                      onClick={() => setManualEdit((s) => !s)}
+                      sx={{ width: "fit-content" }}
                     >
-                      Approve
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="danger"
-                      sx={{ minWidth: 100 }}
-                      startDecorator={<Close />}
-                      onClick={() => setOpenRefuse(true)}
-                    >
-                      Refuse
+                      {manualEdit ? "Cancel Edit" : "Edit"}
                     </Button>
                   </Box>
-                )}
-              </Box>
-            )}
+
+                  {(user?.department === "CAM" ||
+                    user?.name === "Sushant Ranjan Dubey" ||
+                    user?.name === "Sanjiv Kumar" ||
+                    user?.name === "IT Team") && (
+                    <Box display="flex" gap={1}>
+                      <Button
+                        variant="solid"
+                        color="success"
+                        sx={{ minWidth: 100 }}
+                        startDecorator={<Check />}
+                        onClick={handleApprove}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="danger"
+                        sx={{ minWidth: 100 }}
+                        startDecorator={<Close />}
+                        onClick={() => setOpenRefuse(true)}
+                      >
+                        Refuse
+                      </Button>
+                    </Box>
+                  )}
+                </Box>
+              ))}
 
             {/* Confirm Order only when approval_done */}
             {!viewMode && effectiveMode === "edit" && canConfirm && (

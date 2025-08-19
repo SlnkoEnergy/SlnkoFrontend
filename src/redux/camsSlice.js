@@ -126,6 +126,12 @@ export const camsApi = createApi({
         body: payload,
       }),
     }),
+    fetchFromBOM: builder.query({
+  query: (params) => ({
+    url: "purchaseRequest/fetch-boq",
+    params,  
+  }),
+}),
 
     // Scope
     getScopeByProjectId: builder.query({
@@ -170,6 +176,7 @@ export const {
   useGetPurchaseRequestByProjectIdQuery,
   useGetPurchaseRequestQuery,
   useEditPurchaseRequestMutation,
+  useLazyFetchFromBOMQuery,
   useGetScopeByProjectIdQuery,
   useUpdateScopeByProjectIdMutation,
   useUpdateScopeStatusMutation,

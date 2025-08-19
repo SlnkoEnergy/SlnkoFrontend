@@ -613,7 +613,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       <>
         {/* PO Number */}
         {po_number && (
-          <Box onClick={()=> navigate(`/add_po?mode=edit&po_number=${po_number}`)}>
+          <Box
+            onClick={() => navigate(`/add_po?mode=edit&po_number=${po_number}`)}
+          >
             <span style={{ cursor: "pointer", fontWeight: 400 }}>
               {po_number}
             </span>
@@ -622,7 +624,12 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
         {/* PO Date */}
         {date && (
-          <Box onClick={()=> navigate(`/add_po?mode=edit&_id=${po_id}`)} display="flex" alignItems="center" mt={0.5}>
+          <Box
+            onClick={() => navigate(`/add_po?mode=edit&_id=${po_id}`)}
+            display="flex"
+            alignItems="center"
+            mt={0.5}
+          >
             <Calendar size={12} />
             <span style={{ fontSize: 12, fontWeight: 600 }}>PO Date : </span>
             &nbsp;

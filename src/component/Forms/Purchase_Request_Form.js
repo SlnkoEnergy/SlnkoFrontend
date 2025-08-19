@@ -16,6 +16,10 @@ import {
   Modal,
   ModalDialog,
   ModalClose,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Tooltip,
 } from "@mui/joy";
 import DeleteOutline from "@mui/icons-material/DeleteOutline";
 import Add from "@mui/icons-material/Add";
@@ -34,6 +38,7 @@ import {
   useGetPurchaseRequestByIdQuery,
   useCreatePurchaseRequestMutation,
   useEditPurchaseRequestMutation,
+  useLazyFetchFromBOMQuery,
 } from "../../redux/camsSlice";
 import {
   useGetCategoriesNameSearchQuery,
@@ -42,12 +47,12 @@ import {
   useLazyGetProductsQuery,
 } from "../../redux/productsSlice";
 import SearchPickerModal from "../SearchPickerModal";
-import AddPurchaseOrder from "./Add_Po"; // <- adjust path if needed
+import AddPurchaseOrder from "./Add_Po";
 import { toast } from "react-toastify";
 
 const EMPTY_LINE = () => ({
   id: crypto.randomUUID(),
-  _selected: false, // for "Create PO" selection
+  _selected: false, 
   productId: "",
   productName: "",
   productCategoryId: "",
@@ -60,7 +65,55 @@ const EMPTY_LINE = () => ({
   note: "",
 });
 
-// site_address -> string
+const compact = (s) =>
+  String(s ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
+const toNum = (v) => {
+  const n = Number(String(v ?? "").replace(/,/g, ""));
+  return Number.isFinite(n) ? n : 0;
+};
+const round3 = (n) => Math.round(n);
+const firstBrand = (s) =>
+  compact(s)
+    .split(/\/|,|\||\bor\b/i)[0]
+    ?.trim() || "";
+
+const pick = (row, ...keys) => {
+  for (const k of keys) if (row[k] !== undefined) return row[k];
+  return "";
+};
+
+export function mapBoqRowToLine(row, idx = 0) {
+  const category = pick(row, "Category", "CATEGORY");
+  const itemName = compact(pick(row, "ITEM NAME", "Item Name", "Item"));
+  const rating = compact(pick(row, "RATING", "Rating", "Specs"));
+  const qtyRaw = toNum(pick(row, "R0", "Quantity", "Qty"));
+  const qty = round3(qtyRaw);
+  const uom = compact(pick(row, "UoM", "UOM", "UOM"));
+  const unitPrice = toNum(pick(row, "UNIT PRICE", "Unit Price", "Rate"));
+  const gst = toNum(pick(row, "GST", "Tax %", "GST %"));
+  const makeFull = pick(row, "TENTATIVE MAKE", "MAKE");
+  const make = firstBrand(makeFull);
+  const sno = pick(row, "S. NO.", "S.NO.", "S.NO", "SNO", "S No.");
+
+
+  const productLabel = [rating, itemName].filter(Boolean).join(" – ");
+
+  return {
+    id: crypto?.randomUUID?.() ?? `boq-${Date.now()}-${idx}`,
+    productId: `boq:${sno || idx + 1}`,
+    productName: productLabel,
+    productCategoryId: "",
+    productCategoryName: category || "",
+    make,
+    uom,
+    quantity: qty,
+    unitPrice,
+    taxPercent: gst || 0,
+  };
+}
+
 const siteAddressToString = (site_address) => {
   if (!site_address) return "";
   if (typeof site_address === "string") return site_address;
@@ -72,7 +125,7 @@ const siteAddressToString = (site_address) => {
   }
   return "";
 };
-// helper to read a named field from product.data[]
+
 const getProdField = (row, fieldName) => {
   if (!row?.data) return "";
   const f = row.data.find((d) => d?.name === fieldName);
@@ -104,7 +157,7 @@ export default function Purchase_Request_Form() {
   const [poCount, setPoCount] = useState(0);
   const [createdBy, setCreatedBy] = useState("");
   const [submitting, setSubmitting] = useState(false);
-
+  const canFetchFromBOM = !isView && Array.isArray(category) && category.length > 0;
   // Lines
   const [lines, setLines] = useState([EMPTY_LINE()]);
 
@@ -132,6 +185,13 @@ export default function Purchase_Request_Form() {
 
   const projectRows = getProjectSearchDropdown?.data || [];
   const [triggerProjectSearch] = useLazyGetProjectSearchDropdownQuery();
+  
+  useEffect(() => {
+  if (!canFetchFromBOM) {
+    setAskConfirmation(false);
+    setConfirmFetchOpen(false);
+  }
+}, [canFetchFromBOM]);
 
   const fetchProjectsPage = async ({ search = "", page = 1, pageSize = 7 }) => {
     const res = await triggerProjectSearch(
@@ -372,7 +432,6 @@ export default function Purchase_Request_Form() {
           }${d?.project_id?.site_address?.district_name || ""}`
     );
     setProjectName(d?.project_id?.name || "");
-    setAskConfirmation(Boolean(d?.fetch_from_bom || d?.ask_confirmation));
     setDeliverTo(d?.delivery_address || "");
     setPoCount(d?.overall_total_number_of_po || 0);
     setDescription(d?.description || "");
@@ -426,7 +485,6 @@ export default function Purchase_Request_Form() {
           }${d?.project_id?.site_address?.district_name || ""}`
     );
     setProjectName(d?.project_id?.name || "");
-    setAskConfirmation(Boolean(d?.fetch_from_bom || d?.ask_confirmation));
     setDeliverTo(d?.delivery_address || "");
     setPoCount(d?.overall_total_number_of_po || 0);
     setDescription(d?.description || "");
@@ -669,6 +727,106 @@ export default function Purchase_Request_Form() {
     setPoModalOpen(false);
   };
 
+  const [confirmFetchOpen, setConfirmFetchOpen] = useState(false);
+  const [isFetchingBOM, setIsFetchingBOM] = useState(false);
+
+  // Helpers: turn selected category IDs into display names (fallback to ID if missing)
+  const selectedCategoryNames = (category || []).map(
+    (id) => categoryIdToName?.[id] ?? String(id)
+  );
+
+  const [triggerFetchFromBOM, { isFetching: isFetchingBOMRTK }] =
+    useLazyFetchFromBOMQuery();
+
+const norm = (s) => (s == null ? "" : String(s).trim().toLowerCase());
+
+const handleConfirmFetchFromBOM = async () => {
+  try {
+    setIsFetchingBOM(true);
+
+    const selectedCategoryNames = (category || []).map(
+      (catId) => categoryIdToName?.[catId] ?? String(catId)
+    );
+    const categoryParam = selectedCategoryNames.join(",");
+
+    const args = {
+      project_id: projectId,
+      category_mode: "exact",
+      category_logic: "or",
+      sheet: 1,
+      category: categoryParam,
+    };
+
+    const res = await triggerFetchFromBOM(args).unwrap();
+    const rows = Array.isArray(res?.data) ? res.data : [];
+
+    let mapped = rows.map((r, i) => mapBoqRowToLine(r, i));
+
+    const selectedNameToId = {};
+    (category || []).forEach((catId) => {
+      const name = categoryIdToName?.[catId];
+      if (name) selectedNameToId[norm(name)] = catId;
+    });
+
+    mapped = mapped.map((m) => {
+      const cid = selectedNameToId[norm(m.productCategoryName)];
+      if (cid) {
+        return {
+          ...m,
+          productCategoryId: cid,
+          productCategoryName: categoryIdToName[cid] || m.productCategoryName,
+        };
+      }
+      return m;
+    });
+
+    // 🧩 Fill first empty lines, then append leftovers
+    setLines((prev) => {
+      const next = [...prev];
+
+      const isEmptyLine = (line) => !line?.productId && !line?.productName;
+      let mi = 0;
+
+      // 1) Fill existing empty rows first
+      for (let i = 0; i < next.length && mi < mapped.length; i++) {
+        if (isEmptyLine(next[i])) {
+          const m = mapped[mi++];
+          next[i] = {
+            ...next[i],
+            productId: m.productId,
+            productName: m.productName,
+            productCategoryId: m.productCategoryId,
+            productCategoryName: m.productCategoryName,
+            make: m.make,
+            uom: m.uom,
+            quantity: m.quantity,
+            unitPrice: m.unitPrice,
+            taxPercent: m.taxPercent,
+          };
+        }
+      }
+
+      // 2) Append any remaining mapped rows
+      while (mi < mapped.length) {
+        const m = mapped[mi++];
+        next.push({
+          id: m.id ?? crypto?.randomUUID?.() ?? `row-${Date.now()}-${mi}`,
+          ...m,
+        });
+      }
+
+      return next;
+    });
+
+    setConfirmFetchOpen(false);
+  } catch (err) {
+    console.error("Fetch from BOM failed:", err);
+  } finally {
+    setIsFetchingBOM(false);
+  }
+};
+
+
   return (
     <Box
       sx={{
@@ -694,7 +852,6 @@ export default function Purchase_Request_Form() {
             mt: 1,
           }}
         >
-          {/* Left: PR meta (PR Code + Created By) */}
           <Sheet
             variant="outlined"
             sx={{
@@ -778,7 +935,6 @@ export default function Purchase_Request_Form() {
               </Box>
             </Sheet>
 
-            {/* Only show button if at least one line selected */}
             {isAnyProductChecked && (
               <Box
                 sx={{
@@ -877,81 +1033,140 @@ export default function Purchase_Request_Form() {
           </Grid>
 
           {/* Category (multi) */}
-          {!isView && (
-            <Grid xs={12} md={6}>
-              <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 700 }}>
-                Category
-              </Typography>
+         {!isView && (
+  <Grid xs={12} md={6}>
+    <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 700 }}>
+      Category
+    </Typography>
 
-              <Select
-                multiple
-                value={category}
-                onChange={(_, v) => {
-                  if (Array.isArray(v) && v.includes("__SEARCH_MORE_CAT__")) {
-                    setCategoryModalOpen(true);
-                    return;
-                  }
-                  setCategory(v || []);
-                  setCategoryIdToName((prev) => {
-                    const next = {};
-                    (v || []).forEach((id) => {
-                      next[id] = prev[id] || categoryIdToName[id] || String(id);
-                    });
-                    return next;
-                  });
-                }}
-                placeholder={
-                  catLoading ? "Loading..." : "Search or pick categories"
-                }
-                renderValue={(selectedOptions) =>
-                  selectedOptions?.length ? (
-                    <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
-                      {selectedOptions.map((opt) => (
-                        <Chip key={String(opt.value)} size="sm">
-                          {typeof opt.label === "string"
-                            ? opt.label
-                            : (categoryIdToName[opt.value] ??
-                              String(opt.value))}
-                        </Chip>
-                      ))}
-                    </Box>
-                  ) : (
-                    "Search or pick categories"
-                  )
-                }
-                {...commonDisable}
-              >
-                {/* keep already-selected values visible even if not in current page */}
-                {missingSelected?.map((id) => (
-                  <Option key={`selected-${id}`} value={id}>
-                    {categoryIdToName[id] || String(id)}
-                  </Option>
-                ))}
+    <Select
+      multiple
+      value={category}
+      onChange={(_, v) => {
+        // open search modal sentinel
+        if (Array.isArray(v) && v.includes("__SEARCH_MORE_CAT__")) {
+          setCategoryModalOpen(true);
+          return;
+        }
 
-                {(categoryRows || []).map((r) => (
-                  <Option key={r._id} value={r._id}>
-                    {r.name}
-                  </Option>
-                ))}
+        const nextIds = Array.isArray(v) ? v : [];
+        const prevIds = Array.isArray(category) ? category : [];
 
-                <Option value="__SEARCH_MORE_CAT__" color="primary">
-                  Search more…
-                </Option>
-              </Select>
-            </Grid>
-          )}
+        // figure out which category IDs were removed
+        const removedIds = prevIds.filter((catId) => !nextIds.includes(catId));
 
-          {/* Fetch from BOM */}
-          {!isView && (
-            <Grid xs={12} md={6} sx={{ display: "flex", alignItems: "center" }}>
-              <Checkbox
-                checked={askConfirmation}
-                onChange={(e) => setAskConfirmation(e.target.checked)}
-                label="Fetch From BOM"
-                disabled={isView}
-              />
-            </Grid>
-          )}
+        if (removedIds.length) {
+          // derive removed names (fallback to current page if not in map)
+          const removedNamesNorm = removedIds
+            .map(
+              (catId) =>
+                categoryIdToName[catId] ||
+                (categoryRows || []).find((r) => r._id === catId)?.name
+            )
+            .filter(Boolean)
+            .map(norm);
+
+          // prune lines matching removed category id OR name
+          setLines((prev) =>
+            prev.filter((l) => {
+              const idHit =
+                !!l.productCategoryId && removedIds.includes(l.productCategoryId);
+              const nameHit = removedNamesNorm.includes(
+                norm(l.productCategoryName)
+              );
+              return !(idHit || nameHit);
+            })
+          );
+        }
+
+        // update selection
+        setCategory(nextIds);
+
+        // update id->name map; drop removed to keep it tidy
+        setCategoryIdToName((prev) => {
+          const nextMap = { ...prev };
+
+          // add/ensure names for currently selected ids
+          nextIds.forEach((catId) => {
+            if (!nextMap[catId]) {
+              nextMap[catId] =
+                prev[catId] ||
+                categoryIdToName[catId] ||
+                (categoryRows || []).find((r) => r._id === catId)?.name ||
+                String(catId);
+            }
+          });
+
+          // optionally remove mappings for deselected ids
+          removedIds.forEach((catId) => {
+            delete nextMap[catId];
+          });
+
+          return nextMap;
+        });
+      }}
+      placeholder={catLoading ? "Loading..." : "Search or pick categories"}
+      renderValue={(selectedOptions) =>
+        selectedOptions?.length ? (
+          <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+            {selectedOptions.map((opt) => (
+              <Chip key={String(opt.value)} size="sm">
+                {typeof opt.label === "string"
+                  ? opt.label
+                  : categoryIdToName[opt.value] ?? String(opt.value)}
+              </Chip>
+            ))}
+          </Box>
+        ) : (
+          "Search or pick categories"
+        )
+      }
+      {...commonDisable}
+    >
+      {/* keep already-selected values visible even if not in current page */}
+      {missingSelected?.map((catId) => (
+        <Option key={`selected-${catId}`} value={catId}>
+          {categoryIdToName[catId] || String(catId)}
+        </Option>
+      ))}
+
+      {(categoryRows || []).map((r) => (
+        <Option key={r._id} value={r._id}>
+          {r.name}
+        </Option>
+      ))}
+
+      <Option value="__SEARCH_MORE_CAT__" color="primary">
+        Search more…
+      </Option>
+    </Select>
+  </Grid>
+)}
+
+    
+{!isView && (
+  <Grid xs={12} md={6} sx={{ display: "flex", alignItems: "center" }}>
+    <Tooltip
+      title={!canFetchFromBOM ? "Select at least one category" : ""}
+      placement="top"
+    >
+      <span>
+        <Checkbox
+          checked={askConfirmation}
+          onChange={(e) => {
+            if (!canFetchFromBOM) return;        
+            const checked = e.target.checked;
+            setAskConfirmation(checked);
+            if (checked) setConfirmFetchOpen(true);
+          }}
+          label="Fetch From BOM"
+          disabled={!canFetchFromBOM}
+        />
+      </span>
+    </Tooltip>
+  </Grid>
+)}
+
 
           {/* Deliver To */}
           <Grid xs={12} md={6}>
@@ -979,6 +1194,7 @@ export default function Purchase_Request_Form() {
           component="table"
           sx={{
             width: "100%",
+            tableLayout: "fixed", // ⬅️ important
             borderCollapse: "separate",
             borderSpacing: 0,
             "& th, & td": {
@@ -986,8 +1202,15 @@ export default function Purchase_Request_Form() {
                 "1px solid var(--joy-palette-neutral-outlinedBorder)",
               p: 1,
               textAlign: "left",
+              verticalAlign: "top", // ⬅️ top-align multi-line cells
             },
             "& th": { fontWeight: 700, bgcolor: "background.level1" },
+            "& td:nth-of-type(1)": {
+              // ⬅️ product column wraps
+              whiteSpace: "normal",
+              overflowWrap: "anywhere",
+              wordBreak: "break-word",
+            },
           }}
         >
           <thead>
@@ -996,6 +1219,7 @@ export default function Purchase_Request_Form() {
               <th style={{ width: "16%", fontWeight: 700 }}>Category</th>
               <th style={{ width: "10%", fontWeight: 700 }}>Make</th>
               <th style={{ width: "8%", fontWeight: 700 }}>Qty</th>
+              <th style={{ width: "8%", fontWeight: 700 }}>UoM</th>
               <th style={{ width: "12%", fontWeight: 700 }}>Unit Price</th>
               <th style={{ width: "10%", fontWeight: 700 }}>Tax %</th>
               <th style={{ width: "12%", fontWeight: 700 }}>Amount</th>
@@ -1007,7 +1231,6 @@ export default function Purchase_Request_Form() {
               const base = Number(l.quantity || 0) * Number(l.unitPrice || 0);
               const taxAmt = (base * Number(l.taxPercent || 0)) / 100;
               const gross = base + taxAmt;
-
               const selectedId = l.productId;
               const inlineHasSelected =
                 !!selectedId &&
@@ -1016,90 +1239,139 @@ export default function Purchase_Request_Form() {
               return (
                 <tr key={l.id}>
                   <td>
-                    <Select
-                      variant="plain"
-                      size="sm"
-                      value={l.productId || ""}
-                      sx={{
-                        border: "none",
-                        boxShadow: "none",
-                        bgcolor: "transparent",
-                      }}
-                      onChange={(_, v) => {
-                        if (v === "__SEARCH_MORE_PROD__") {
-                          setActiveLineId(l.id);
-                          setProductModalOpen(true);
-                          return;
-                        }
-                        const prod = (productRows || []).find(
-                          (p) => p._id === v
-                        );
-                        if (prod) {
-                          const name =
-                            getProdField(prod, "Product Name") ||
-                            prod?.sku_code ||
-                            "";
-                          const cost = Number(getProdField(prod, "Cost") || 0);
-                          const gst = Number(getProdField(prod, "GST") || 0);
-                          const make = getProdField(prod, "Make") || "";
-                          const uom = getProdField(prod, "UOM") || "";
-                          const catId = prod?.category?._id || "";
-                          const catName = prod?.category?.name || "";
-                          updateLine(l.id, "productId", prod._id);
-                          updateLine(l.id, "productName", name);
-                          updateLine(l.id, "productCategoryId", catId);
-                          updateLine(l.id, "productCategoryName", catName);
-                          updateLine(l.id, "unitPrice", cost);
-                          updateLine(l.id, "taxPercent", gst);
-                          updateLine(l.id, "make", make);
-                          updateLine(l.id, "uom", uom);
-                        } else {
-                          updateLine(l.id, "productId", v || "");
-                          updateLine(l.id, "productName", "");
-                          updateLine(l.id, "productCategoryId", "");
-                          updateLine(l.id, "productCategoryName", "");
-                        }
-                      }}
-                      placeholder={
-                        category.length === 0
-                          ? "Pick category first"
-                          : "Select product"
-                      }
-                      disabled={isView || category.length === 0}
-                      renderValue={() =>
-                        l.productName
-                          ? `${l.productName}`
-                          : l.productId
-                            ? l.productId
+                    <Box sx={{ maxWidth: "100%" }}>
+                      <Select
+                        variant="plain"
+                        size="sm"
+                        value={l.productId || ""}
+                        sx={{
+                          width: "100%", 
+                          border: "none",
+                          boxShadow: "none",
+                          bgcolor: "transparent",
+                          p: 0,
+                        }}
+                        slotProps={{
+                          button: {
+                            sx: {
+                              whiteSpace: "normal", 
+                              textAlign: "left",
+                              overflowWrap: "anywhere",
+                              alignItems: "flex-start",
+                              py: 0.25,
+                            },
+                          },
+                          listbox: {
+                            sx: {
+                              "& li": {
+                                whiteSpace: "normal",
+                                overflowWrap: "anywhere",
+                                wordBreak: "break-word",
+                              },
+                            },
+                          },
+                        }}
+                        onChange={(_, v) => {
+                          if (v === "__SEARCH_MORE_PROD__") {
+                            setActiveLineId(l.id);
+                            setProductModalOpen(true);
+                            return;
+                          }
+                          const prod = (productRows || []).find(
+                            (p) => p._id === v
+                          );
+                          if (prod) {
+                            const name =
+                              getProdField(prod, "Product Name") ||
+                              prod?.sku_code ||
+                              "";
+                            const cost = Number(
+                              getProdField(prod, "Cost") || 0
+                            );
+                            const gst = Number(getProdField(prod, "GST") || 0);
+                            const make = getProdField(prod, "Make") || "";
+                            const uom = getProdField(prod, "UOM") || "";
+                            const catId = prod?.category?._id || "";
+                            const catName = prod?.category?.name || "";
+                            updateLine(l.id, "productId", prod._id);
+                            updateLine(l.id, "productName", name);
+                            updateLine(l.id, "productCategoryId", catId);
+                            updateLine(l.id, "productCategoryName", catName);
+                            updateLine(l.id, "unitPrice", cost);
+                            updateLine(l.id, "taxPercent", gst);
+                            updateLine(l.id, "make", make);
+                            updateLine(l.id, "uom", uom);
+                          } else {
+                            updateLine(l.id, "productId", v || "");
+                            updateLine(l.id, "productName", "");
+                            updateLine(l.id, "productCategoryId", "");
+                            updateLine(l.id, "productCategoryName", "");
+                          }
+                        }}
+                        placeholder={
+                          category.length === 0
+                            ? "Pick category first"
                             : "Select product"
-                      }
-                    >
-                      {!inlineHasSelected && selectedId && (
-                        <Option key={`sel-${selectedId}`} value={selectedId}>
-                          {l.productName || selectedId}
-                        </Option>
-                      )}
-
-                      {(productRows || []).map((p) => {
-                        const name =
-                          getProdField(p, "Product Name") || p?.sku_code || "";
-                        const catName = p?.category?.name || "";
-                        const label = p.sku_code
-                          ? `${p.sku_code} – ${name}${
-                              catName ? ` (${catName})` : ""
-                            }`
-                          : `${name}${catName ? ` (${catName})` : ""}`;
-                        return (
-                          <Option key={p._id} value={p._id}>
-                            {label}
+                        }
+                        disabled={isView || category.length === 0}
+                        renderValue={() => (
+                          <Typography
+                            level="body-sm"
+                            sx={{
+                              whiteSpace: "normal",
+                              overflowWrap: "anywhere",
+                              wordBreak: "break-word",
+                            }}
+                          >
+                            {l.productName
+                              ? l.productName
+                              : l.productId
+                                ? l.productId
+                                : "Select product"}
+                          </Typography>
+                        )}
+                      >
+                        {!inlineHasSelected && selectedId && (
+                          <Option
+                            key={`sel-${selectedId}`}
+                            value={selectedId}
+                            sx={{
+                              whiteSpace: "normal",
+                              overflowWrap: "anywhere",
+                            }}
+                          >
+                            {l.productName || selectedId}
                           </Option>
-                        );
-                      })}
+                        )}
 
-                      <Option value="__SEARCH_MORE_PROD__" color="primary">
-                        Search more…
-                      </Option>
-                    </Select>
+                        {(productRows || []).map((p) => {
+                          const name =
+                            getProdField(p, "Product Name") ||
+                            p?.sku_code ||
+                            "";
+                          const catName = p?.category?.name || "";
+                          const label = p.sku_code
+                            ? `${p.sku_code} – ${name}${catName ? ` (${catName})` : ""}`
+                            : `${name}${catName ? ` (${catName})` : ""}`;
+                          return (
+                            <Option
+                              key={p._id}
+                              value={p._id}
+                              sx={{
+                                whiteSpace: "normal",
+                                overflowWrap: "anywhere",
+                              }}
+                            >
+                              {label}
+                            </Option>
+                          );
+                        })}
+
+                        <Option value="__SEARCH_MORE_PROD__" color="primary">
+                          Search more…
+                        </Option>
+                      </Select>
+                    </Box>
                   </td>
 
                   <td>{l.productCategoryName || "—"}</td>
@@ -1122,6 +1394,19 @@ export default function Purchase_Request_Form() {
                       value={l.quantity}
                       onChange={(e) =>
                         updateLine(l.id, "quantity", e.target.value)
+                      }
+                      slotProps={{ input: { min: 0, step: "1" } }}
+                      disabled={isView}
+                    />
+                  </td>
+
+                   <td>
+                    <Input
+                      variant="plain"
+                      size="sm"
+                      value={l.uom}
+                      onChange={(e) =>
+                        updateLine(l.id, "uom", e.target.value)
                       }
                       slotProps={{ input: { min: 0, step: "1" } }}
                       disabled={isView}
@@ -1342,8 +1627,59 @@ export default function Purchase_Request_Form() {
               categories={poSeed.categories}
               categoryNames={poSeed.categoryNames}
               initialLines={poSeed.initialLines}
+              mode="create"
+              fromModal
             />
           )}
+        </ModalDialog>
+      </Modal>
+
+      <Modal
+        open={confirmFetchOpen}
+        onClose={() => {
+          setConfirmFetchOpen(false);
+          setAskConfirmation(false); // uncheck if user closes without confirming
+        }}
+      >
+        <ModalDialog>
+          <DialogTitle>Confirm Fetch</DialogTitle>
+          <DialogContent>
+            <Typography level="body-md" sx={{ mb: 1 }}>
+              Are you sure you want to fetch from BOM for the following
+              categories?
+            </Typography>
+
+            {selectedCategoryNames.length ? (
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                {selectedCategoryNames.map((name) => (
+                  <Chip key={name} size="sm">
+                    {name}
+                  </Chip>
+                ))}
+              </Box>
+            ) : (
+              <Typography level="body-sm" color="neutral">
+                No categories selected. This will fetch all rows (no category
+                filter).
+              </Typography>
+            )}
+          </DialogContent>
+
+          <DialogActions>
+            <Button
+              variant="plain"
+              color="neutral"
+              onClick={() => {
+                setConfirmFetchOpen(false);
+                setAskConfirmation(false); 
+              }}
+            >
+              Cancel
+            </Button>
+            <Button loading={isFetchingBOM} onClick={handleConfirmFetchFromBOM}>
+              Yes, Fetch
+            </Button>
+          </DialogActions>
         </ModalDialog>
       </Modal>
     </Box>
