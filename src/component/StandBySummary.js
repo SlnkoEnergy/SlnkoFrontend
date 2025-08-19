@@ -1,260 +1,68 @@
-import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
+import KeyboardDoubleArrowLeft from "@mui/icons-material/KeyboardDoubleArrowLeft";
+import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
+import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
+import KeyboardDoubleArrowRight from "@mui/icons-material/KeyboardDoubleArrowRight";
+import duration from "dayjs/plugin/duration";
+import CheckIcon from "@mui/icons-material/Check";
+import AutorenewIcon from "@mui/icons-material/Autorenew";
+import BlockIcon from "@mui/icons-material/Block";
 import DeleteIcon from "@mui/icons-material/Delete";
-import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
-import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
-import Button from "@mui/joy/Button";
-import Checkbox from "@mui/joy/Checkbox";
-import Divider from "@mui/joy/Divider";
-import Dropdown from "@mui/joy/Dropdown";
+import Chip from "@mui/joy/Chip";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
-import Menu from "@mui/joy/Menu";
-import MenuButton from "@mui/joy/MenuButton";
-import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { useEffect, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import Axios from "../utils/Axios";
+import NoData from "../assets/alert-bell.svg";
+import {
+  CircularProgress,
+  Modal,
+  Option,
+  Select,
+  Tooltip,
+  useTheme,
+} from "@mui/joy";
+import { PaymentProvider } from "../store/Context/Payment_History";
+import PaymentHistory from "./PaymentHistory";
+import {  useGetTrashRecordQuery } from "../redux/Accounts";
+import dayjs from "dayjs";
 
-const StandByRequest = () => {
+const TrashRequest = forwardRef(() => {
+  // const theme = useTheme();
   const navigate = useNavigate();
-  const [payments, setPayments] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  // const [states, setStates] = useState([]);
-  // const [customers, setCustomers] = useState([]);
-  // const [stateFilter, setStateFilter] = useState("");
-  // const [customerFilter, setCustomerFilter] = useState("");
-  const [open, setOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [selected, setSelected] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [mergedData, setMergedData] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
+  const initialPage = parseInt(searchParams.get("page")) || 1;
+  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
+  const [perPage, setPerPage] = useState(initialPageSize);
+  const [currentPage, setCurrentPage] = useState(initialPage);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [status, setStatus] = useState("");
 
-  useEffect(() => {
-    const fetchTableData = async () => {
-      try {
-        const token = localStorage.getItem("authToken");
-        const config = { headers: { "x-auth-token": token } };
+  const { data: responseData, isLoading } = useGetTrashRecordQuery({
+    page: currentPage,
+    pageSize: perPage,
+    search: searchQuery,
+    status,
+  });
 
-        const [paymentResponse, projectResponse] = await Promise.all([
-          Axios.get("/hold-pay-summary-IT", config),
-          Axios.get("/get-all-projecT-IT", config),
-        ]);
+  const paginatedData = responseData?.data || [];
+  const total = responseData?.total || 0;
+  const count = responseData?.count || paginatedData.length;
 
-        setPayments(paymentResponse.data.data);
-        console.log("Payment Data are:", paymentResponse.data.data);
+  const totalPages = Math.ceil(total / perPage);
+  const startIndex = (currentPage - 1) * perPage + 1;
+  const endIndex = Math.min(startIndex + count - 1, total);
 
-        setProjects(projectResponse.data.data);
-        console.log("Project Data are:", projectResponse.data.data);
-
-        // const uniqueStates = [
-        //   ...new Set(paymentsData.map((payment) => payment.state)),
-        // ].filter(Boolean);
-
-        // const uniqueCustomers = [
-        //   ...new Set(paymentsData.map((payment) => payment.customer)),
-        // ].filter(Boolean);
-
-        // setStates(uniqueStates);
-        // setCustomers(uniqueCustomers);
-      } catch (err) {
-        console.error("API Error:", err);
-        setError("Failed to fetch table data.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTableData();
-  }, []);
-
-  useEffect(() => {
-    if (payments.length > 0 && projects.length > 0) {
-      const merged = payments.map((payment) => {
-        const matchingProject = projects.find(
-          (project) => Number(project.p_id) === Number(payment.p_id)
-        );
-        return {
-          ...payment,
-          // projectCode: matchingProject?.code || "-",
-          // projectName: matchingProject?.name || "-",
-          projectCustomer: matchingProject?.customer || "-",
-          // projectGroup: matchingProject?.p_group || "-",
-        };
-      });
-      setMergedData(merged);
-    }
-  }, [payments, projects]);
-
-  // const renderFilters = () => (
-  //   <>
-  //     <FormControl size="sm">
-  //       <FormLabel>State</FormLabel>
-  //       <Select
-  //         size="sm"
-  //         placeholder="Filter by state"
-  //         // value={stateFilter}
-  //         // onChange={(e) => setStateFilter(e.target.value)}
-  //       >
-  //         <Option value="">All</Option>
-  //         {/* {states.map((state, index) => (
-  //           <Option key={index} value={state}>
-  //             {state}
-  //           </Option>
-  //         ))} */}
-  //       </Select>
-  //     </FormControl>
-  //     <FormControl size="sm">
-  //       <FormLabel>Customer</FormLabel>
-  //       <Select
-  //         size="sm"
-  //         placeholder="Filter by customer"
-  //         // value={customerFilter}
-  //         // onChange={(e) => setCustomerFilter(e.target.value)}
-  //       >
-  //         <Option value="">All</Option>
-  //         {/* {customers.map((customer, index) => (
-  //           <Option key={index} value={customer}>
-  //             {customer}
-  //           </Option>
-  //         ))} */}
-  //       </Select>
-  //     </FormControl>
-  //   </>
-  // );
-  const handleSelectAll = (event) => {
-    if (event.target.checked) {
-      setSelected(paginatedPayments.map((row) => row.id));
-    } else {
-      setSelected([]);
-    }
-  };
-
-  const handleRowSelect = (id, isSelected) => {
-    // console.log("currentPage:", currentPage, "pay_id:", pay_id, "p_id:", p_id);
-    setSelected((prevSelected) =>
-      isSelected
-        ? [...prevSelected, id]
-        : prevSelected.filter((item) => item !== id)
-    );
-  };
-
-  const RowMenu = ({ currentPage, pay_id, p_id }) => {
-    return (
-      <Dropdown>
-        <MenuButton
-          slots={{ root: IconButton }}
-          slotProps={{
-            root: { variant: "plain", color: "neutral", size: "sm" },
-          }}
-        >
-          <MoreHorizRoundedIcon />
-        </MenuButton>
-        <Menu size="sm" sx={{ minWidth: 140 }}>
-          <MenuItem
-            color="primary"
-            onClick={() => {
-              const page = currentPage;
-              const payId = String(pay_id);
-              const projectID = Number(p_id);
-              localStorage.setItem("standby_summary", payId);
-              localStorage.setItem("p_id", projectID);
-              navigate(`/standby_Request?page=${page}&pay_id=${payId}`);
-            }}
-          >
-            <ContentPasteGoIcon />
-            <Typography>StandBy summary</Typography>
-          </MenuItem>
-          <Divider sx={{ backgroundColor: "lightblue" }} />
-          <MenuItem color="danger">
-            <DeleteIcon />
-            <Typography>Delete</Typography>
-          </MenuItem>
-        </Menu>
-      </Dropdown>
-    );
-  };
+  console.log("Payment Request Data:", paginatedData);
 
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
-  };
-  const filteredAndSortedData = mergedData
-    .filter((payment) => {
-      const matchesSearchQuery = [
-        "pay_id",
-        "vendor",
-        "approved",
-        "projectCustomer",
-        "paid_for",
-      ].some((key) => payment[key]?.toLowerCase().includes(searchQuery));
-
-      // const matchesDateFilter =
-      //   !dateFilter ||
-      //   new Date(payment.date).toLocaleDateString() ===
-      //     new Date(dateFilter).toLocaleDateString();
-
-      // const matchesStatusFilter =
-      //   !statusFilter || payment.approved === statusFilter;
-      // console.log("MatchVendors are: ", matchesStatusFilter);
-
-      // const matchesVendorFilter =
-      //   !vendorFilter || payment.vendor === vendorFilter;
-      // console.log("MatchVendors are: ", matchesVendorFilter);
-
-      return matchesSearchQuery;
-    })
-    .sort((a, b) => {
-      if (a.pay_id?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.pay_id?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.paid_for?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.paid_for?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.projectCustomer?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.projectCustomer?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.vendor?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.vendor?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.approved?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.approved?.toLowerCase().includes(searchQuery)) return 1;
-      return 0;
-    });
-
-  const generatePageNumbers = (currentPage, totalPages) => {
-    const pages = [];
-
-    if (currentPage > 2) {
-      pages.push(1);
-    }
-
-    if (currentPage > 3) {
-      pages.push("...");
-    }
-
-    for (
-      let i = Math.max(1, currentPage - 1);
-      i <= Math.min(totalPages, currentPage + 1);
-      i++
-    ) {
-      pages.push(i);
-    }
-
-    if (currentPage < totalPages - 2) {
-      pages.push("...");
-    }
-
-    if (currentPage < totalPages - 1) {
-      pages.push(totalPages);
-    }
-
-    return pages;
   };
 
   useEffect(() => {
@@ -262,411 +70,595 @@ const StandByRequest = () => {
     setCurrentPage(page);
   }, [searchParams]);
 
-  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
-
-  const formatDate = (dateString) => {
-    if (!dateString) {
-      return "-";
-    }
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-      console.warn(`Invalid date value: "${dateString}"`);
-      return "-";
-    }
-    const options = { day: "2-digit", month: "short", year: "numeric" };
-    return new Intl.DateTimeFormat("en-GB", options)
-      .format(date)
-      .replace(/ /g, "/");
+  const headerStyle = {
+    position: "sticky",
+    top: 0,
+    zIndex: 2,
+    backgroundColor: "primary.softBg",
+    fontSize: 14,
+    fontWeight: 600,
+    padding: "12px 16px",
+    textAlign: "left",
+    color: "#000",
+    borderBottom: "1px soft",
+    borderColor: "primary.softBorder",
   };
 
-  const paginatedPayments = filteredAndSortedData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+  const cellStyle = {
+    padding: "12px 16px",
+    verticalAlign: "top",
+    fontSize: 13,
+    fontWeight: 400,
+    borderBottom: "1px solid",
+    borderColor: "divider",
+  };
+
+  const labelStyle = {
+    fontSize: 13,
+    fontWeight: 600,
+    fontFamily: "Inter, Roboto, sans-serif",
+    color: "#2C3E50",
+  };
+
+  const valueStyle = {
+    fontSize: 13,
+    fontWeight: 400,
+    fontFamily: "Inter, Roboto, sans-serif",
+    color: "#34495E",
+  };
+
+  dayjs.extend(duration);
+
+  const PaymentID = ({ pay_id, dbt_date }) => (
+    <>
+      {pay_id && (
+        <Box>
+          <Chip
+            variant="solid"
+            color="primary"
+            size="sm"
+            sx={{
+              fontWeight: 500,
+              fontFamily: "Inter, Roboto, sans-serif",
+              fontSize: 14,
+              color: "#fff",
+              "&:hover": {
+                boxShadow: "md",
+                opacity: 0.9,
+              },
+            }}
+          >
+            {pay_id || "N/A"}
+          </Chip>
+        </Box>
+      )}
+
+      {dbt_date && (
+        <Box display="flex" alignItems="center" mt={0.5} gap={0.8}>
+          <Typography sx={labelStyle}>📅 Created Date:</Typography>
+          <Typography sx={valueStyle}>
+            {dayjs(dbt_date).format("DD-MM-YYYY")}
+          </Typography>
+        </Box>
+      )}
+    </>
   );
 
-  const paymentsWithFormattedDate = paginatedPayments.map((payment) => ({
-    ...payment,
-    formattedDate: formatDate(payment.dbt_date),
-  }));
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
+  const ItemFetch = ({ paid_for, po_number, vendor }) => {
+    const [open, setOpen] = useState(false);
+
+    const handleOpen = () => setOpen(true);
+    const handleClose = () => setOpen(false);
+
+    // console.log(po_number);
+
+    return (
+      <>
+        {paid_for && (
+          <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+            <Typography sx={{ ...labelStyle, minWidth: 100 }}>
+              📦 Requested For:
+            </Typography>
+            <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>
+              {paid_for}
+            </Typography>
+          </Box>
+        )}
+
+        {po_number && (
+          <Box
+            display="flex"
+            alignItems="flex-start"
+            gap={1}
+            mt={0.5}
+            sx={{ cursor: "pointer" }}
+            onClick={handleOpen}
+          >
+            <Typography sx={{ ...labelStyle, minWidth: 100 }}>
+              🧾 PO Number:
+            </Typography>
+            <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>
+              {po_number}
+            </Typography>
+          </Box>
+        )}
+
+        <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+          <Typography sx={{ ...labelStyle, minWidth: 70 }}>
+            🏢 Vendor:
+          </Typography>
+          <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>
+            {vendor}
+          </Typography>
+        </Box>
+
+        <Modal open={open} onClose={handleClose}>
+          <Sheet
+            variant="outlined"
+            sx={{
+              mx: "auto",
+              mt: "8vh",
+              width: { xs: "95%", sm: 600 },
+              borderRadius: "12px",
+              p: 3,
+              boxShadow: "lg",
+              maxHeight: "80vh",
+              overflow: "auto",
+              backgroundColor: "#fff",
+              minWidth: 950,
+            }}
+          >
+            <PaymentProvider po_number={po_number}>
+              <PaymentHistory />
+            </PaymentProvider>
+          </Sheet>
+        </Modal>
+      </>
+    );
   };
 
-  // if (loading) {
-  //   return <Typography>Loading...</Typography>;
-  // }
+  const MatchRow = ({ approved, timers, amount_paid }) => {
+    const [timeLeft, setTimeLeft] = useState("");
+    const [timerColor, setTimerColor] = useState("inherit");
 
-  // if (error) {
-  //   return <Typography color="danger">{error}</Typography>;
-  // }
+useEffect(() => {
+  if (!timers?.trash_started_at) return;
+
+  const isFinal =
+    ["Approved", "Rejected", "Deleted"].includes(approved) ||
+    !!timers?.draft_frozen_at;
+
+  if (isFinal) {
+    setTimeLeft("Finalized");
+    setTimerColor("gray");
+    return;
+  }
+
+  const interval = setInterval(() => {
+    const now = dayjs();
+    const trashStartedAt = dayjs(timers.trash_started_at);
+    const totalDiffMs = trashStartedAt.add(15, "day").diff(now);
+
+    if (totalDiffMs <= 0) {
+      setTimeLeft("⏱ Expired");
+      setTimerColor("red");
+      return;
+    }
+
+    const daysLeft = Math.ceil(dayjs.duration(totalDiffMs).asDays());
+    setTimeLeft(`${daysLeft} day${daysLeft > 1 ? "s" : ""} remaining`);
+
+    // Set color based on days left
+    if (daysLeft <= 1) setTimerColor("red");
+    else if (daysLeft <= 3) setTimerColor("primary.main");
+    else setTimerColor("green");
+
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, [timers?.trash_started_at, timers?.draft_frozen_at, approved]);
+
+
+
+    return (
+      <Box mt={1}>
+        <Box display="flex" alignItems="flex-start" gap={1} mb={0.5}>
+          <Typography sx={labelStyle}>💰 Amount:</Typography>
+          <Typography
+            sx={{ ...valueStyle, wordBreak: "break-word", fontSize: "14px" }}
+          >
+            {amount_paid || "—"}
+          </Typography>
+        </Box>
+
+        <Box display="flex" alignItems="flex-start" gap={1}>
+          <Typography sx={labelStyle}>📑 Payment Status:</Typography>
+          {["Approved", "Pending", "Rejected", "Deleted"].includes(approved) ? (
+            <Chip
+              color={
+                {
+                  Approved: "success",
+                  Pending: "neutral",
+                  Rejected: "danger",
+                  Deleted: "warning",
+                }[approved]
+              }
+              variant="solid"
+              size="sm"
+              startDecorator={
+                {
+                  Approved: <CheckIcon fontSize="small" />,
+                  Pending: <AutorenewIcon fontSize="small" />,
+                  Rejected: <BlockIcon fontSize="small" />,
+                  Deleted: <DeleteIcon fontSize="small" />,
+                }[approved]
+              }
+            >
+              {approved}
+            </Chip>
+          ) : (
+            <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>
+              {approved || "Not Found"}
+            </Typography>
+          )}
+        </Box>
+
+        <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+          <Typography sx={labelStyle}>⏰</Typography>
+          <Chip
+            size="sm"
+            variant="soft"
+            color={
+              timeLeft === "Finalized"
+                ? "success"
+                : timeLeft === "Rejected"
+                  ? "danger"
+                  : timeLeft === "⏰ Expired"
+                    ? "danger"
+                    : timeLeft === "⏸ Frozen"
+                      ? "neutral"
+                      : timeLeft === "NA"
+                        ? "neutral"
+                        : "primary"
+            }
+          >
+            {timeLeft || "N/A"}
+          </Chip>
+        </Box>
+      </Box>
+    );
+  };
 
   return (
     <>
-      {/* Mobile Filters */}
-      {/* <Sheet
-        className="SearchAndFilters-mobile"
-        sx={{ display: { xs: "flex", sm: "none" }, my: 1, gap: 1 }}
-      >
-        <Input
-          size="sm"
-          placeholder="Search"
-          startDecorator={<SearchIcon />}
-          sx={{ flexGrow: 1 }}
-        />
-        <IconButton
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          onClick={() => setOpen(true)}
-        >
-          <FilterAltIcon />
-        </IconButton>
-        <Modal open={open} onClose={() => setOpen(false)}>
-          <ModalDialog aria-labelledby="filter-modal" layout="fullscreen">
-            <ModalClose />
-            <Typography id="filter-modal" level="h2">
-              Filters
-            </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Sheet sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {renderFilters()}
-              <Button color="primary" onClick={() => setOpen(false)}>
-                Submit
-              </Button>
-            </Sheet>
-          </ModalDialog>
-        </Modal>
-      </Sheet> */}
 
-      {/* Tablet and Up Filters */}
-      <Box
-        className="SearchAndFilters-tabletUp"
+    <Box
         sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 2,
-          // display: { xs: "none", sm: "flex" },
           display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
           flexWrap: "wrap",
-          gap: 1.5,
-          "& > *": {
-            minWidth: { xs: "120px", md: "160px" },
+          gap: 2,
+          px: 1,
+          py: 1,
+          ml: { xl: "15%", lg: "18%", sm: 0 },
+          maxWidth: { lg: "85%", sm: "100%" },
+          // bgcolor: "background.level1",
+          borderRadius: "md",
+          mb: 2,
+        }}
+      >
+        
+        <Box
+          sx={{
+            display: "flex",
+            mb: 1,
+            gap: 1,
+            flexDirection: { xs: "column", sm: "row" },
+            alignItems: { xs: "none", sm: "center" },
+            flexWrap: "wrap",
+            justifyContent: "center",
+          }}
+        >
+          {/* {renderFilters()} */}
+          <Box
+            className="SearchAndFilters-tabletUp"
+            sx={{
+              borderRadius: "sm",
+              py: 2,
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
+              flexWrap: "wrap",
+              gap: 1.5,
+            }}
+          >
+            <FormControl sx={{ flex: 1 }} size="sm">
+              <FormLabel>Search here</FormLabel>
+              <Input
+                size="sm"
+                placeholder="Search by Pay ID, Items, Clients Name or Vendor"
+                startDecorator={<SearchIcon />}
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                sx={{
+                  width: 350,
+
+                  borderColor: "neutral.outlinedBorder",
+                  borderBottom: searchQuery
+                    ? "2px solid #1976d2"
+                    : "1px solid #ddd",
+                  borderRadius: 5,
+                  boxShadow: "none",
+                  "&:hover": {
+                    borderBottom: "2px solid #1976d2",
+                  },
+                  "&:focus-within": {
+                    borderBottom: "2px solid #1976d2",
+                  },
+                }}
+              />
+            </FormControl>
+          </Box>
+        </Box>
+
+
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 1.5,
+          }}
+        >
+          {/* Rows per page */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography level="body-sm">Rows per page:</Typography>
+            <Select
+              size="sm"
+              value={perPage}
+              onChange={(_, value) => {
+                if (value) {
+                  setPerPage(Number(value));
+                  setCurrentPage(1);
+                }
+              }}
+              sx={{ minWidth: 64 }}
+            >
+              {[10, 25, 50, 100].map((value) => (
+                <Option key={value} value={value}>
+                  {value}
+                </Option>
+              ))}
+            </Select>
+          </Box>
+
+          {/* Pagination info */}
+          <Typography level="body-sm">
+            {`${startIndex}-${endIndex} of ${total}`}
+          </Typography>
+
+          {/* Navigation buttons */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <IconButton
+              size="sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(1)}
+            >
+              <KeyboardDoubleArrowLeft />
+            </IconButton>
+            <IconButton
+              size="sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            >
+              <KeyboardArrowLeft />
+            </IconButton>
+            <IconButton
+              size="sm"
+              disabled={currentPage === totalPages}
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+            >
+              <KeyboardArrowRight />
+            </IconButton>
+            <IconButton
+              size="sm"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(totalPages)}
+            >
+              <KeyboardDoubleArrowRight />
+            </IconButton>
+          </Box>
+        </Box>
+      </Box>  
+
+
+      {/* Table */}
+      <Box
+        sx={{
+          maxWidth: "100%",
+          overflowY: "auto",
+          maxHeight: "600px",
+          borderRadius: "12px",
+          border: "1px solid",
+          borderColor: "divider",
+            marginLeft: { xl: "15%", lg: "18%" },
+          maxWidth: { lg: "85%", sm: "100%" },
+          bgcolor: "background.body",
+          "&::-webkit-scrollbar": {
+            width: "8px",
+          },
+          "&::-webkit-scrollbar-track": {
+            background: "#f0f0f0",
+            borderRadius: "8px",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "#1976d2",
+            borderRadius: "8px",
           },
         }}
       >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search here</FormLabel>
-          <Input
-            size="sm"
-            startDecorator={<SearchIcon />}
-            placeholder="Search by Project ID, Customer, or Name"
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </FormControl>
-        {/* {renderFilters()} */}
-      </Box>
-
-      {/* Table */}
-      <Sheet
-        className="OrderTableContainer"
-        variant="outlined"
-        sx={{
-          display: { xs: "none", sm: "initial" },
-          width: "100%",
-          borderRadius: "sm",
-          flexShrink: 1,
-          overflow: "auto",
-          minHeight: 0,
-          marginLeft: { xl: "15%", lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%" },
-        }}
-      >
-        {error ? (
-          <Typography color="danger" textAlign="center">
-            {error}
-          </Typography>
-        ) : loading ? (
-          <Typography textAlign="center">Loading...</Typography>
-        ) : (
-          <Box
-            component="table"
-            sx={{ width: "100%", borderCollapse: "collapse" }}
-          >
-            <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
+        <Box
+          component="table"
+          sx={{ width: "100%", borderCollapse: "collapse" }}
+        >
+          <Box component="thead">
+            <Box component="tr">
+              {/* <Box component="th" sx={headerStyle}>
+                <Checkbox
+                  size="sm"
+                  checked={selected.length === paginatedData.length}
+                  onChange={handleSelectAll}
+                />
+              </Box> */}
+              {[
+                "Payment Id",
+                "Paid_for",
+                "Payment Status",
+                "UTR",
+                // "",
+              ].map((header, index) => (
+                <Box key={index} component="th" sx={headerStyle}>
+                  {header}
+                </Box>
+              ))}
+            </Box>
+          </Box>
+          <Box component="tbody">
+            {error ? (
+              <Typography color="danger" textAlign="center">
+                {error}
+              </Typography>
+            ) : isLoading ? (
               <Box component="tr">
                 <Box
-                  component="th"
+                  component="td"
+                  colSpan={5}
                   sx={{
-                    borderBottom: "1px solid #ddd",
-                    padding: "8px",
+                    py: 2,
                     textAlign: "center",
                   }}
                 >
-                  <Checkbox
-                    size="sm"
-                    checked={
-                      selected.length === paymentsWithFormattedDate.length
-                    }
-                    onChange={(event) =>
-                      handleRowSelect("all", event.target.checked)
-                    }
-                    indeterminate={
-                      selected.length > 0 &&
-                      selected.length < paymentsWithFormattedDate.length
-                    }
-                  />
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 1,
+                    }}
+                  >
+                    <CircularProgress size="sm" sx={{ color: "primary.500" }} />
+                    <Typography fontStyle="italic">
+                      Loading payments… please hang tight ⏳
+                    </Typography>
+                  </Box>
                 </Box>
-                {[
-                  "Payment Id",
-                  "Request Date",
-                  "Paid To",
-                  "Client Name",
-                  "Amount (₹)",
-                  // "Payment Status",
-                  "UTR",
-                  "",
-                ].map((header, index) => (
-                  <Box
-                    component="th"
-                    key={index}
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {header}
-                  </Box>
-                ))}
               </Box>
-            </Box>
-            <Box component="tbody">
-              {paymentsWithFormattedDate.length > 0 ? (
-                paymentsWithFormattedDate.map((payment, index) => (
-                  <Box
-                    component="tr"
-                    key={index}
-                    sx={{
-                      "&:hover": { backgroundColor: "neutral.plainHoverBg" },
-                    }}
-                  >
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <Checkbox
-                        size="sm"
-                        checked={selected.includes(payment.pay_id)}
-                        onChange={(event) =>
-                          handleRowSelect(payment.pay_id, event.target.checked)
-                        }
-                      />
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.pay_id}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.formattedDate}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.vendor}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.projectCustomer || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.amt_for_customer}
-                    </Box>
-                    {/* <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <Chip
-                        variant="soft"
-                        size="sm"
-                        startDecorator={
-                          {
-                            Approved: <CheckRoundedIcon />,
-                            Pending: <AutorenewRoundedIcon />,
-                            Rejected: <BlockIcon />,
-                          }[payment.approved]
-                        }
-                        color={
-                          {
-                            Approved: "success",
-                            Pending: "neutral",
-                            Rejected: "danger",
-                          }[payment.approved]
-                        }
-                      >
-                        {payment.approved}
-                      </Chip>
-                    </Box> */}
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.utr || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <RowMenu
-                        currentPage={currentPage}
-                        pay_id={payment.pay_id}
-                        p_id={payment.p_id}
-                      />
-                    </Box>
-                  </Box>
-                ))
-              ) : (
-                <Box component="tr">
+            ) : paginatedData.length > 0 ? (
+              paginatedData.map((payment, index) => (
+                <Box
+                  component="tr"
+                  key={index}
+                  sx={{
+                    backgroundColor: "background.surface",
+                    borderRadius: "8px",
+                    boxShadow: "xs",
+                    transition: "all 0.2s",
+                    "&:hover": {
+                      backgroundColor: "neutral.softHoverBg",
+                    },
+                  }}
+                >
+                  {/* <Box component="td" sx={cellStyle}>
+                    <Checkbox
+                      size="sm"
+                      checked={selected.includes(payment.pay_id)}
+                      onChange={(event) =>
+                        handleRowSelect(payment.pay_id, event.target.checked)
+                      }
+                    />
+                  </Box> */}
                   <Box
                     component="td"
-                    colSpan={9}
                     sx={{
-                      padding: "8px",
-                      textAlign: "center",
-                      fontStyle: "italic",
+                      ...cellStyle,
+                      minWidth: 280,
+                      padding: "12px 16px",
                     }}
                   >
-                    No data available
+                    {/* {payment.pay_id} */}
+                    <Tooltip title="View Summary" arrow>
+                      <span>
+                        <PaymentID
+                          currentPage={currentPage}
+                          p_id={payment.p_id}
+                          pay_id={payment.pay_id}
+                          dbt_date={payment.dbt_date}
+                        />
+                      </span>
+                    </Tooltip>
+                  </Box>
+
+                  <Box component="td" sx={{ ...cellStyle, minWidth: 300 }}>
+                    <ItemFetch
+                      paid_for={payment.paid_for}
+                      po_number={payment.po_number}
+                      p_id={payment.p_id}
+                      vendor={payment.vendor}
+                      customer_name={payment.customer_name}
+                    />
+                  </Box>
+                  <Box component="td" sx={{ ...cellStyle, minWidth: 300 }}>
+                    <MatchRow
+                      approved={payment.approved}
+                      timers={payment.timers}
+                      amount_paid={payment.amount_paid}
+                    />
+                  </Box>
+
+                  <Box component="td" sx={{ ...cellStyle, fontSize: 15 }}>
+                    {payment.utr || "-"}
                   </Box>
                 </Box>
-              )}
-            </Box>
-          </Box>
-        )}
-      </Sheet>
-
-      {/* Pagination */}
-      <Box
-        className="Pagination-laptopUp"
-        sx={{
-          pt: 2,
-          gap: 1,
-          [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
-          // display: { xs: "none", md: "flex" },
-          display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
-          alignItems: "center",
-          marginLeft: { xl: "15%", lg: "18%" },
-        }}
-      >
-        <Button
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          startDecorator={<KeyboardArrowLeftIcon />}
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-        >
-          Previous
-        </Button>
-
-        <Box
-          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
-        >
-          {generatePageNumbers(currentPage, totalPages).map((page, index) =>
-            typeof page === "number" ? (
-              <IconButton
-                key={index}
-                size="sm"
-                variant={page === currentPage ? "contained" : "outlined"}
-                color="neutral"
-                onClick={() => handlePageChange(page)}
-              >
-                {page}
-              </IconButton>
+              ))
             ) : (
-              <Typography key={index} sx={{ px: 1, alignSelf: "center" }}>
-                {page}
-              </Typography>
-            )
-          )}
+              <Box component="tr">
+                <Box
+                  component="td"
+                  colSpan={6}
+                  sx={{
+                    padding: "8px",
+                    textAlign: "center",
+                    fontStyle: "italic",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      fontStyle: "italic",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <img
+                      src={NoData}
+                      alt="No data Image"
+                      style={{ width: "50px", height: "50px" }}
+                    />
+                    <Typography fontStyle={"italic"}>
+                      No trashes available
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+            )}
+          </Box>
         </Box>
-        {/* <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
-    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-      <IconButton
-        key={page}
-        size="sm"
-        variant={page === currentPage ? "contained" : "outlined"}
-        color="neutral"
-        onClick={() => handlePageChange(page)}
-      >
-        {page}
-      </IconButton>
-    ))}
-  </Box> */}
-
-        <Button
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          endDecorator={<KeyboardArrowRightIcon />}
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-        >
-          Next
-        </Button>
       </Box>
     </>
   );
-};
-export default StandByRequest;
+});
+export default TrashRequest;

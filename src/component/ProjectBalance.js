@@ -123,7 +123,7 @@ const ProjectBalances = forwardRef((props, ref) => {
       const token = localStorage.getItem("authToken");
 
       const response = await axios.post(
-        "http://localhost:8080/v1/accounting/export-project-balance",
+        `${process.env.REACT_APP_API_URL}/accounting/export-project-balance`,
         { selectedIds, selectAll },
         {
           responseType: "blob",

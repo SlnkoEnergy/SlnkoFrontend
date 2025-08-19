@@ -28,15 +28,68 @@ export const AccountsApi = createApi({
       }),
       providesTags: ["Accounts"],
     }),
+    getPaymentRecord: builder.query({
+      query: ({
+        page = 1,
+        search = "",
+        status = "",
+        pageSize = 10,
+        tab = "",
+      }) =>
+        `get-pay-sumrY-IT?page=${page}&search=${search}&status=${status}&pageSize=${pageSize}&tab=${tab}`,
+
+      transformResponse: (response, meta, arg) => {
+        return {
+          data: Array.isArray(response.data) ? response.data : [],
+          total: response.meta?.total ?? 0,
+          count: response.meta?.count ?? 0,
+          page: response.meta?.page ?? 1,
+          instantTotal: response.meta?.instantTotal ?? 0,
+          creditTotal: response.meta?.creditTotal ?? 0,
+        };
+      },
+      providesTags: ["Accounts"],
+    }),
+
+    getTrashRecord: builder.query({
+      query: ({
+        page = 1,
+        search = "",
+        status = "",
+        pageSize = 10,
+        tab = "",
+      }) =>
+        `hold-pay-summary-IT?page=${page}&search=${search}&status=${status}&pageSize=${pageSize}&tab=${tab}`,
+
+      transformResponse: (response, meta, arg) => {
+        return {
+          data: Array.isArray(response.data) ? response.data : [],
+          total: response.meta?.total ?? 0,
+          count: response.meta?.count ?? 0,
+          page: response.meta?.page ?? 1,
+          instantTotal: response.meta?.instantTotal ?? 0,
+          creditTotal: response.meta?.creditTotal ?? 0,
+        };
+      },
+    }),
 
     getPaymentApproval: builder.query({
-      query: ({ page = 1, search = "", pageSize = 10 }) =>
-        `accounting/payment-approval?page=${page}&search=${search}&pageSize=${pageSize}`,
+      query: ({ page = 1, search = "", pageSize = 10, tab = "" }) =>
+        `accounting/payment-approval?page=${page}&search=${search}&pageSize=${pageSize}&tab=${tab}`,
+
       transformResponse: (response) => ({
-        data: response.data || [],
+        data: response?.data || [],
         total: response.meta?.total || 0,
         count: response.meta?.count || 0,
+        page: response.meta?.page || 1,
+        pageSize: response.meta?.pageSize || 10,
+        toBeApprovedCount: response.meta?.toBeApprovedCount || 0,
+        overdueCount: response.meta?.overdueCount || 0,
+        instantCount: response.meta?.instantCount || 0,
+        creditCount: response.meta?.creditCount || 0,
+        tab: response.meta?.tab || "",
       }),
+
       providesTags: ["Accounts"],
     }),
 
@@ -45,7 +98,8 @@ export const AccountsApi = createApi({
         `accounting/payment-history?po_number=${po_number}`,
       transformResponse: (response) => ({
         history: response.history || [],
-        total: response.total || 0,
+        total_debited: response.total_debited || 0,
+        po_value: response.po_value || 0,
       }),
       providesTags: ["Accounts"],
     }),
@@ -80,23 +134,6 @@ export const AccountsApi = createApi({
         ...response,
       }),
       providesTags: ["Accounts"],
-    }),
-
-    getExportPaymentHistory: builder.query({
-      query: ({ po_number }) => ({
-        url: `accounting/debithistorycsv?po_number=${po_number}`,
-        responseHandler: async (response) => {
-          const blob = await response.blob();
-          return {
-            blob,
-            filename:
-              response.headers
-                .get("Content-Disposition")
-                ?.split("filename=")[1] || "payment-history.csv",
-          };
-        },
-        method: "GET",
-      }),
     }),
 
     getPaymentApproved: builder.query({
@@ -136,6 +173,23 @@ export const AccountsApi = createApi({
         },
       }),
     }),
+
+    updateCreditExtension: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/credit-extension-by-id/${id}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["Accounts"],
+    }),
+    updateRequestExtension: builder.mutation({
+      query: ({ id, credit_remarks }) => ({
+        url: `/request-extension-by-id/${id}`,
+        method: "PUT",
+        body: { credit_remarks },
+      }),
+      invalidatesTags: ["Accounts"],
+    }),
   }),
 });
 
@@ -143,9 +197,12 @@ export const {
   useGetProjectBalanceQuery,
   useGetPaymentApprovalQuery,
   useGetPaymentHistoryQuery,
-  useGetExportPaymentHistoryQuery,
   useGetCustomerSummaryQuery,
   useGetPaymentApprovedQuery,
   useGetUtrSubmissionQuery,
   useGetExportProjectBalanceMutation,
+  useGetPaymentRecordQuery,
+  useGetTrashRecordQuery,
+  useUpdateCreditExtensionMutation,
+  useUpdateRequestExtensionMutation,
 } = AccountsApi;

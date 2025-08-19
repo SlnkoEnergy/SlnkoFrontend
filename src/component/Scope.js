@@ -201,7 +201,7 @@ const handleUomChange = (index, value) => {
         >
           <thead>
             <tr>
-              <th>Items</th>
+              <th>Categories</th>
               <th style={{ textAlign: "left" }}>Scope</th>
               <th style={{ textAlign: "left" }}>Tentative Quantity</th>
               <th>UoM</th>
