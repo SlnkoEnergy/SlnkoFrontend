@@ -9,6 +9,7 @@ import {
   Sheet,
   IconButton,
   Chip,
+  Checkbox,
 } from "@mui/joy";
 import { Modal, ModalDialog, Textarea } from "@mui/joy";
 import DeleteOutline from "@mui/icons-material/DeleteOutline";
@@ -17,12 +18,7 @@ import Select from "react-select";
 import Axios from "../../utils/Axios";
 import { toast } from "react-toastify";
 import Send from "@mui/icons-material/Send";
-import {
-  Close,
-  ConfirmationNumber,
-  Print,
-  RestartAlt,
-} from "@mui/icons-material";
+import { Close, ConfirmationNumber, RestartAlt } from "@mui/icons-material";
 import SearchPickerModal from "../SearchPickerModal";
 import {
   useGetVendorsNameSearchQuery,
@@ -37,6 +33,7 @@ const makeEmptyLine = () => ({
   productName: "",
   productCategoryId: "",
   productCategoryName: "",
+  briefDescription: "",
   make: "",
   uom: "",
   quantity: 1,
@@ -134,6 +131,7 @@ const AddPurchaseOrder = ({
     gst: "",
     partial_billing: "",
     submitted_By: "",
+    delivery_type: "",
   });
 
   const [lines, setLines] = useState(() =>
@@ -206,19 +204,20 @@ const AddPurchaseOrder = ({
     const arr = Array.isArray(po?.items)
       ? po.items
       : Array.isArray(po?.item)
-      ? po.item
-      : [];
+        ? po.item
+        : [];
     return arr.length
       ? arr.map((it) => ({
           ...makeEmptyLine(),
           productCategoryId:
             typeof it?.category === "object"
-              ? it?.category?._id ?? ""
-              : it?.category ?? "",
+              ? (it?.category?._id ?? "")
+              : (it?.category ?? ""),
           productCategoryName:
-            typeof it?.category === "object" ? it?.category?.name ?? "" : "",
+            typeof it?.category === "object" ? (it?.category?.name ?? "") : "",
           productName: it?.product_name ?? "",
           make: it?.product_make ?? "",
+          briefDescription: it?.description ?? "",
           uom: it?.uom ?? "",
           quantity: Number(it?.quantity ?? 0),
           unitPrice: Number(it?.cost ?? 0),
@@ -248,7 +247,7 @@ const AddPurchaseOrder = ({
         // backend now returns { data: <object> }
         const po = Array.isArray(resp?.data)
           ? resp.data[0]
-          : resp?.data ?? resp;
+          : (resp?.data ?? resp);
         if (!po) {
           toast.error("PO not found.");
           return;
@@ -269,6 +268,7 @@ const AddPurchaseOrder = ({
           po_basic: String(po?.po_basic ?? prev.po_basic ?? ""),
           gst: String(po?.gst ?? prev.gst ?? ""),
           po_value: String(po?.po_value ?? prev.po_value ?? ""),
+          delivery_type: String(po?.delivery_type ?? prev.delivery_type ?? ""),
         }));
 
         setLines(mapPOtoLines(po));
@@ -286,8 +286,10 @@ const AddPurchaseOrder = ({
   const isApprovalPending = statusNow === "approval_pending";
   const canConfirm = statusNow === "approval_done";
   const approvalRejected = statusNow === "approval_rejected";
+  const ready_to_dispatch = statusNow === "ready_to_dispatch";
 
-  const inputsDisabled = !fromModal;
+  const inputsDisabled = !fromModal && !manualEdit;
+
   // -------- handlers --------
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -326,7 +328,6 @@ const AddPurchaseOrder = ({
     e.preventDefault();
     if (isSubmitting) return;
 
-    // Determine which button triggered submit
     const submitter = e.nativeEvent?.submitter;
     const action =
       submitter?.value || new FormData(e.currentTarget).get("action") || "";
@@ -338,13 +339,14 @@ const AddPurchaseOrder = ({
           typeof l.productCategoryId === "object" && l.productCategoryId?._id
             ? String(l.productCategoryId._id)
             : l.productCategoryId != null
-            ? String(l.productCategoryId)
-            : "";
+              ? String(l.productCategoryId)
+              : "";
 
         return {
           category: String(categoryId),
           product_name: String(l.productName || ""),
           product_make: String(l.make || ""),
+          description: String(l.briefDescription || ""),
           uom: String(l.uom ?? ""),
           quantity: String(l.quantity ?? 0),
           cost: String(l.unitPrice ?? 0),
@@ -378,6 +380,7 @@ const AddPurchaseOrder = ({
           date: formData.date,
           partial_billing: formData.partial_billing || "",
           submitted_By: formData.submitted_By,
+          delivery_type: formData.delivery_type,
           po_basic: String(amounts.untaxed ?? 0),
           gst: String(amounts.tax ?? 0),
           po_value: Number(amounts.total ?? 0),
@@ -415,7 +418,7 @@ const AddPurchaseOrder = ({
         await Axios.put(
           "/updateStatusPO",
           {
-            id: formData.po_number,
+            id: _id,
             status: "po_created",
             remarks: "",
             new_po_number: formData.po_number,
@@ -429,6 +432,85 @@ const AddPurchaseOrder = ({
       } catch (err) {
         console.error("Confirm error:", err);
         toast.error("Failed to confirm PO");
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
+    if (effectiveMode === "edit" && action === "send_approval") {
+      const token = localStorage.getItem("authToken");
+      setIsSubmitting(true);
+
+      try {
+        if (fromModal) {
+          const user = getUserData();
+          if (!user?.name) throw new Error("No user");
+
+          const dataToPost = {
+            p_id: formData.project_code,
+            po_number: undefined,
+            vendor: formData.name,
+            date: formData.date,
+            partial_billing: formData.partial_billing || "",
+            submitted_By: user.name,
+            delivery_type: formData.delivery_type,
+            pr_id,
+            po_basic: String(amounts.untaxed ?? 0),
+            gst: String(amounts.tax ?? 0),
+            po_value: Number(amounts.total ?? 0),
+            item,
+            initial_status: "approval_pending",
+          };
+
+          const resp = await Axios.post("/Add-purchase-ordeR-IT", dataToPost, {
+            headers: { "x-auth-token": token },
+          });
+
+          const createdId = resp?.data?.newPO?._id;
+          if (createdId) localStorage.setItem("lastPOApprovalId", createdId);
+
+          toast.success("PO sent for approval.");
+          onSuccess?.({
+            created: true,
+            updated: false,
+            status: "approval_pending",
+          });
+          return onClose ? onClose() : navigate("/purchase-order");
+        } else {
+          if (!formData?._id) {
+            toast.error("PO id missing.");
+            return;
+          }
+
+          const body = {
+            po_number: formData.po_number,
+            vendor: formData.name,
+            date: formData.date,
+            partial_billing: formData.partial_billing || "",
+            submitted_By: formData.submitted_By,
+            delivery_type: formData.delivery_type,
+            po_basic: String(amounts.untaxed ?? 0),
+            gst: String(amounts.tax ?? 0),
+            po_value: Number(amounts.total ?? 0),
+            item,
+          };
+
+          await Axios.put(`/edit-pO-IT/${formData._id}`, body, {
+            headers: { "x-auth-token": token },
+          });
+
+          toast.success("PO sent for approval.");
+          onSuccess?.({
+            created: false,
+            updated: true,
+            status: "approval_pending",
+          });
+          return onClose ? onClose() : navigate("/purchase-order");
+        }
+      } catch (err) {
+        console.error("Send approval error:", err);
+        toast.error("Failed to send PO for approval");
       } finally {
         setIsSubmitting(false);
       }
@@ -457,11 +539,13 @@ const AddPurchaseOrder = ({
 
         const dataToPost = {
           p_id: formData.project_code,
-          po_number: action === "send_approval" ? undefined : formData.po_number,
+          po_number:
+            action === "send_approval" ? undefined : formData.po_number,
           vendor: formData.name,
           date: formData.date,
           partial_billing: formData.partial_billing || "",
           submitted_By: user.name,
+          delivery_type: formData.delivery_type,
           pr_id,
           po_basic: String(amounts.untaxed ?? 0),
           gst: String(amounts.tax ?? 0),
@@ -478,9 +562,7 @@ const AddPurchaseOrder = ({
         if (createdId) localStorage.setItem("lastPOApprovalId", createdId);
 
         toast.success(
-          action === "send_approval"
-            ? "PO sent for approval."
-            : "PO created."
+          action === "send_approval" ? "PO sent for approval." : "PO created."
         );
         onSuccess?.({
           created: true,
@@ -587,20 +669,16 @@ const AddPurchaseOrder = ({
           }}
         >
           <Typography level="h3" sx={{ fontWeight: 700 }}>
-            {viewMode
-              ? "View Purchase Order"
-              : effectiveMode === "edit"
-              ? "Edit Purchase Order"
-              : "Purchase Order"}
+            Purchase Order
           </Typography>
 
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
             {/* Create flow buttons (optional keep) */}
-            {!viewMode &&
-              (effectiveMode === "create" ||
-                fromModal ||
-                (effectiveMode === "edit" && statusNow === "approval_rejected")) && (
-                <>
+            {!viewMode && (
+              <>
+                {((effectiveMode === "edit" &&
+                  statusNow === "approval_rejected") ||
+                  fromModal) && (
                   <Button
                     component="button"
                     type="submit"
@@ -618,98 +696,86 @@ const AddPurchaseOrder = ({
                   >
                     Send Approval
                   </Button>
+                )}
 
-                  <Button
-                    component="button"
-                    type="submit"
-                    form="po-form"
-                    name="action"
-                    value="confirm_order"
-                    variant="outlined"
-                    startDecorator={<ConfirmationNumber />}
-                    sx={{
-                      borderColor: "#214b7b",
-                      color: "#214b7b",
-                      "&:hover": {
-                        bgcolor: "rgba(33, 75, 123, 0.1)",
-                        borderColor: "#163553",
-                        color: "#163553",
-                      },
-                    }}
-                    disabled={isSubmitting}
-                  >
-                    Confirm Order
-                  </Button>
-                </>
-              )}
-            {/* {(effectiveMode === "edit" && isApprovalPending) ||
-              (approvalRejected) && ( */}
-                <Box display="flex" gap={2}>
-                  <Box>
-                    <Button
-                      variant={manualEdit ? "outlined" : "solid"}
-                      color={manualEdit ? "neutral" : "primary"}
-                      onClick={() => setManualEdit((s) => !s)}
-                      sx={{ width: "fit-content" }}
-                    >
-                      {manualEdit ? "Cancel Edit" : "Edit"}
-                    </Button>
-                  </Box>
-
-                  {(user?.department === "CAM" ||
-                    user?.name === "Sushant Ranjan Dubey" ||
-                    user?.name === "Sanjiv Kumar" ||
-                    user?.name === "IT Team") && (
-                    <Box display="flex" gap={1}>
+                {(effectiveMode === "edit" &&
+                  statusNow === "approval_done" &&
+                  user?.department === "SCM") ||
+                  (user?.name === "IT Team" &&
+                    !fromModal &&
+                    statusNow === "approval_done" && (
                       <Button
-                        variant="solid"
-                        color="success"
-                        sx={{ minWidth: 100 }}
-                        startDecorator={<Check />}
-                        onClick={handleApprove}
-                      >
-                        Approve
-                      </Button>
-                      <Button
+                        component="button"
+                        type="submit"
+                        form="po-form"
+                        name="action"
+                        value="confirm_order"
                         variant="outlined"
-                        color="danger"
-                        sx={{ minWidth: 100 }}
-                        startDecorator={<Close />}
-                        onClick={() => setOpenRefuse(true)}
+                        startDecorator={<ConfirmationNumber />}
+                        sx={{
+                          borderColor: "#214b7b",
+                          color: "#214b7b",
+                          "&:hover": {
+                            bgcolor: "rgba(33, 75, 123, 0.1)",
+                            borderColor: "#163553",
+                            color: "#163553",
+                          },
+                        }}
+                        disabled={isSubmitting}
                       >
-                        Refuse
+                        Confirm Order
+                      </Button>
+                    ))}
+              </>
+            )}
+            {(user?.department === "CAM" ||
+              user?.name === "Sushant Ranjan Dubey" ||
+              user?.name === "Sanjiv Kumar" ||
+              user?.name === "IT Team") &&
+              isApprovalPending && (
+                <Box display="flex" gap={2}>
+                  <Button
+                    variant="solid"
+                    color="success"
+                    sx={{ minWidth: 100 }}
+                    startDecorator={<Check />}
+                    onClick={handleApprove}
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="danger"
+                    sx={{ minWidth: 100 }}
+                    startDecorator={<Close />}
+                    onClick={() => setOpenRefuse(true)}
+                  >
+                    Refuse
+                  </Button>
+                </Box>
+              )}
+
+            {((effectiveMode === "edit" && isApprovalPending) ||
+              approvalRejected) && (
+              <Box display="flex" gap={2}>
+                {user?.department === "SCM" ||
+                  user?.name === "Guddu Rani Dubey" ||
+                  (user?.name === "IT Team" && (
+                    <Box>
+                      <Button
+                        variant={manualEdit ? "outlined" : "solid"}
+                        color={manualEdit ? "neutral" : "primary"}
+                        onClick={() => setManualEdit((s) => !s)}
+                        sx={{ width: "fit-content" }}
+                      >
+                        {manualEdit ? "Cancel Edit" : "Edit"}
                       </Button>
                     </Box>
-                  )}
-                </Box>
-              
-
-            {/* Confirm Order only when approval_done */}
-            {!viewMode && effectiveMode === "edit" && canConfirm && (
-              <Button
-                component="button"
-                type="submit"
-                form="po-form"
-                name="action"
-                value="confirm_order"
-                variant="outlined"
-                startDecorator={<ConfirmationNumber />}
-                sx={{
-                  borderColor: "#214b7b",
-                  color: "#214b7b",
-                  "&:hover": {
-                    bgcolor: "rgba(33, 75, 123, 0.1)",
-                    borderColor: "#163553",
-                    color: "#163553",
-                  },
-                }}
-                disabled={isSubmitting}
-              >
-                Confirm Order
-              </Button>
+                  ))}
+              </Box>
             )}
 
-            <Button
+            {/* <Button
               variant="soft"
               startDecorator={<Print />}
               sx={{
@@ -720,7 +786,7 @@ const AddPurchaseOrder = ({
               onClick={() => window.print()}
             >
               Print
-            </Button>
+            </Button> */}
           </Box>
         </Box>
 
@@ -735,39 +801,42 @@ const AddPurchaseOrder = ({
           </Box>
         )}
 
-        {/* PO Number */}
-        <Box sx={{ mb: 2 }}>
-          <Typography level="body-sm" fontWeight="lg" sx={{ mb: 0.5 }}>
-            PO Number
-          </Typography>
-          <Input
-            name="po_number"
-            value={formData.po_number}
-            onChange={handleChange}
-            placeholder="e.g. PO-0001"
-            variant="plain"
-            disabled={inputsDisabled}
-            sx={{
-              "--Input-minHeight": "52px",
-              fontSize: 28,
-              px: 0,
-              color: "#607d8b",
-              "--Input-focusedHighlight": "transparent",
-              "--Input-focusedThickness": "0px",
-              "&:focus-within": {
-                boxShadow: "none",
-                borderBottomColor: "#163553",
-              },
-              "& .MuiInput-root": { boxShadow: "none" },
-              "& input": { outline: "none" },
-              borderBottom: "2px solid #214b7b",
-              borderRadius: 0,
-              "&:hover": { borderBottomColor: "#163553" },
-              "& input::placeholder": { color: "#9aa8b5", opacity: 1 },
-            }}
-          />
-        </Box>
-
+        {effectiveMode === "edit" &&
+          statusNow === "approval_done" &&
+          (user?.department === "SCM" || user?.name === "IT Team") &&
+          (!fromModal || statusNow !== "approval_rejected") && (
+            <Box sx={{ mb: 2 }}>
+              <Typography level="body-sm" fontWeight="lg" sx={{ mb: 0.5 }}>
+                PO Number
+              </Typography>
+              <Input
+                name="po_number"
+                value={formData.po_number}
+                onChange={handleChange}
+                placeholder="e.g. PO-0001"
+                variant="plain"
+                disabled={statusNow === "po_created"}
+                sx={{
+                  "--Input-minHeight": "52px",
+                  fontSize: 28,
+                  px: 0,
+                  color: "#607d8b",
+                  "--Input-focusedHighlight": "transparent",
+                  "--Input-focusedThickness": "0px",
+                  "&:focus-within": {
+                    boxShadow: "none",
+                    borderBottomColor: "#163553",
+                  },
+                  "& .MuiInput-root": { boxShadow: "none" },
+                  "& input": { outline: "none" },
+                  borderBottom: "2px solid #214b7b",
+                  borderRadius: 0,
+                  "&:hover": { borderBottomColor: "#163553" },
+                  "& input::placeholder": { color: "#9aa8b5", opacity: 1 },
+                }}
+              />
+            </Box>
+          )}
         {/* Form */}
         <form id="po-form" onSubmit={handleSubmit}>
           <Sheet variant="outlined" sx={{ p: 2, borderRadius: "lg", mb: 1.5 }}>
@@ -828,6 +897,47 @@ const AddPurchaseOrder = ({
                   disabled={inputsDisabled}
                 />
               </Grid>
+
+              <Grid xs={12} md={4}>
+                <Typography level="body1" fontWeight="bold" mb={0.5}>
+                  Delivery Type
+                </Typography>
+                <Select
+                  styles={{
+                    control: (base) => ({ ...base, minHeight: 40 }),
+                    dropdownIndicator: (base) => ({ ...base, padding: 4 }),
+                    valueContainer: (base) => ({ ...base, padding: "0 6px" }),
+                    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                  }}
+                  menuPortalTarget={document.body}
+                  isClearable
+                  options={[
+                    { value: "afor", label: "Afor" },
+                    { value: "slnko", label: "Slnko" },
+                  ]}
+                  value={
+                    formData.delivery_type
+                      ? {
+                          value: formData.delivery_type,
+                          label:
+                            formData.delivery_type === "afor"
+                              ? "Afor"
+                              : formData.delivery_type === "slnko"
+                                ? "Slnko"
+                                : "",
+                        }
+                      : null
+                  }
+                  onChange={(selected) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      delivery_type: selected ? selected.value : "",
+                    }))
+                  }
+                  placeholder="Select Delivery Type"
+                  isDisabled={inputsDisabled}
+                />
+              </Grid>
             </Grid>
           </Sheet>
 
@@ -846,6 +956,7 @@ const AddPurchaseOrder = ({
               component="table"
               sx={{
                 width: "100%",
+                tableLayout: "fixed",
                 borderCollapse: "separate",
                 borderSpacing: 0,
                 "& th, & td": {
@@ -853,20 +964,27 @@ const AddPurchaseOrder = ({
                     "1px solid var(--joy-palette-neutral-outlinedBorder)",
                   p: 1,
                   textAlign: "left",
-                  verticalAlign: "middle",
+                  verticalAlign: "top",
                 },
                 "& th": { fontWeight: 700, bgcolor: "background.level1" },
+                "& td:nth-of-type(1)": {
+                  whiteSpace: "normal",
+                  overflowWrap: "anywhere",
+                  wordBreak: "break-word",
+                },
               }}
             >
               <thead>
                 <tr>
-                  <th style={{ width: "12%" }}>Product</th>
                   <th style={{ width: "12%" }}>Category</th>
+                  <th style={{ width: "12%" }}>Product</th>
+                  <th style={{ width: "12%" }}>Brief Description</th>
                   <th style={{ width: "14%" }}>Make</th>
                   <th style={{ width: "10%" }}>Qty</th>
                   <th style={{ width: "14%" }}>Unit Price</th>
                   <th style={{ width: "10%" }}>Taxes</th>
                   <th style={{ width: "14%" }}>Amount</th>
+
                   <th style={{ width: 40 }} />
                 </tr>
               </thead>
@@ -883,6 +1001,22 @@ const AddPurchaseOrder = ({
                         <Input
                           size="sm"
                           variant="plain"
+                          placeholder="Category"
+                          value={l.productCategoryName}
+                          onChange={(e) =>
+                            updateLine(
+                              l.id,
+                              "productCategoryName",
+                              e.target.value
+                            )
+                          }
+                          disabled
+                        />
+                      </td>
+                      <td>
+                        <Input
+                          size="sm"
+                          variant="plain"
                           placeholder="Product name"
                           value={l.productName}
                           onChange={(e) =>
@@ -895,14 +1029,10 @@ const AddPurchaseOrder = ({
                         <Input
                           size="sm"
                           variant="plain"
-                          placeholder="Category"
-                          value={l.productCategoryName}
+                          placeholder="Brief Description"
+                          value={l.briefDescription}
                           onChange={(e) =>
-                            updateLine(
-                              l.id,
-                              "productCategoryName",
-                              e.target.value
-                            )
+                            updateLine(l.id, "briefDescription", e.target.value)
                           }
                           disabled
                         />
@@ -978,6 +1108,16 @@ const AddPurchaseOrder = ({
                           </IconButton>
                         )}
                       </td>
+                      {ready_to_dispatch && (
+                        <td>
+                          <Checkbox
+                            checked={!!l._selected}
+                            // onChange={(e) =>
+                            //   handleProductCheckbox(e.target.checked, l.id)
+                            // }
+                          />
+                        </td>
+                      )}
                     </tr>
                   );
                 })}

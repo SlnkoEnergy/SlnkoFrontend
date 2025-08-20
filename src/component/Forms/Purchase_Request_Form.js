@@ -1623,7 +1623,7 @@ const handleConfirmFetchFromBOM = async () => {
           size="lg"
           sx={{
             width: "full",
-            maxWidth: "98vw",
+            maxWidth: "100vw",
             p: 0,
             overflow: "auto",
             ml: { xs: "12%", lg: "5%" },
@@ -1641,6 +1641,7 @@ const handleConfirmFetchFromBOM = async () => {
               categories={poSeed.categories}
               categoryNames={poSeed.categoryNames}
               initialLines={poSeed.initialLines}
+              briefDescription={poSeed.briefDescription}
               mode="create"
               fromModal
             />
@@ -1652,7 +1653,7 @@ const handleConfirmFetchFromBOM = async () => {
         open={confirmFetchOpen}
         onClose={() => {
           setConfirmFetchOpen(false);
-          setAskConfirmation(false); // uncheck if user closes without confirming
+          setAskConfirmation(false); 
         }}
       >
         <ModalDialog>
