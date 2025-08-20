@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import CountUp from "react-countup";
 
-const AnimatedNumber = ({ value }) => {
+const AnimatedNumber = ({ value, format = "inr", unit = "" }) => {
   const countUpRef = useRef(null);
   const prevValueRef = useRef(value);
   const isInteger = Number.isInteger(value);
@@ -13,13 +13,22 @@ const AnimatedNumber = ({ value }) => {
     }
   }, [value]);
 
-  const formatINR = (num) => {
-    return num.toLocaleString("en-IN", {
-      style: "currency",
-      currency: "INR",
-      minimumFractionDigits: isInteger ? 0 : 2,
-      maximumFractionDigits: 2
-    });
+  const formatNumber = (num) => {
+    if (format === "inr") {
+      return num.toLocaleString("en-IN", {
+        style: "currency",
+        currency: "INR",
+        minimumFractionDigits: isInteger ? 0 : 2,
+        maximumFractionDigits: 2,
+      });
+    }
+    if (format === "number") {
+      return num.toLocaleString("en-IN", {
+        minimumFractionDigits: isInteger ? 0 : 2,
+        maximumFractionDigits: 2,
+      });
+    }
+    return num;
   };
 
   return (
@@ -29,7 +38,7 @@ const AnimatedNumber = ({ value }) => {
       duration={1.2}
       decimals={isInteger ? 0 : 2}
       preserveValue
-      formattingFn={formatINR}
+      formattingFn={(num) => `${formatNumber(num)}${unit ? ` ${unit}` : ""}`}
       ref={(el) => {
         if (el) countUpRef.current = el;
       }}
