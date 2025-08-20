@@ -16,6 +16,7 @@ import {
   ModalDialog,
   Sheet,
   Textarea,
+  Tooltip,
 } from "@mui/joy";
 import {
   Calendar,
@@ -513,66 +514,112 @@ const OverDue = forwardRef(({ searchQuery, currentPage, perPage }, ref) => {
 
   const BalanceData = ({
     amount_requested,
-    ClientBalance,
-    groupBalance,
-    creditBalance,
+    ClientBalance = 0,
+    groupBalance = 0,
+    creditBalance = 0,
+    totalCredited = 0,
+    totalPaid = 0,
     po_value,
   }) => {
+    const inr = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 });
+
+    const fmt = (v, dashIfEmpty = false) => {
+      if (v === null || v === undefined || v === "") {
+        return dashIfEmpty ? "—" : "0";
+      }
+      const num = Number(v);
+      return Number.isFinite(num) ? inr.format(num) : dashIfEmpty ? "—" : "0";
+    };
+
+    const chipColor =
+      Number(creditBalance) > 0
+        ? "success"
+        : Number(creditBalance) < 0
+          ? "danger"
+          : "neutral";
+
     return (
       <>
-        {amount_requested && (
-          <Box display="flex" alignItems="center" mb={0.5}>
-            <Money size={16} />
-            <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
-              Requested Amount:{" "}
-            </span>
-            <Typography sx={{ fontSize: 13, fontWeight: 400, ml: 0.5 }}>
-              {amount_requested || "-"}
-            </Typography>
-          </Box>
-        )}
+        {amount_requested !== undefined &&
+          amount_requested !== null &&
+          amount_requested !== "" && (
+            <Box display="flex" alignItems="center" mb={0.5}>
+              <Money size={16} />
+              <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+                Requested Amount:&nbsp;
+              </span>
+              <Typography sx={{ fontSize: 13, fontWeight: 400 }}>
+                ₹ {fmt(amount_requested, true)}
+              </Typography>
+            </Box>
+          )}
 
         <Box display="flex" alignItems="center" mb={0.5}>
           <Receipt size={16} />
           <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
-            Total PO (incl. GST):{" "}
+            Total PO (incl. GST):&nbsp;
           </span>
-          <Typography sx={{ fontSize: 12, fontWeight: 400, ml: 0.5 }}>
-            {po_value || "-"}
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+            {po_value == null || po_value === "" ? "—" : `₹ ${fmt(po_value)}`}
           </Typography>
         </Box>
 
         <Box display="flex" alignItems="center" mt={0.5}>
           <CircleUser size={12} />
-          &nbsp;
-          <span style={{ fontSize: 12, fontWeight: 600 }}>
-            Client Balance:{" "}
+          <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+            Client Balance:&nbsp;
           </span>
-          &nbsp;
           <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-            {ClientBalance || "0"}
+            ₹ {fmt(ClientBalance)}
           </Typography>
         </Box>
 
         <Box display="flex" alignItems="center" mt={0.5}>
           <UsersRound size={12} />
-          &nbsp;
-          <span style={{ fontSize: 12, fontWeight: 600 }}>Group Balance: </span>
-          &nbsp;
+          <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+            Group Balance:&nbsp;
+          </span>
           <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-            {groupBalance || "0"}
+            ₹ {fmt(groupBalance)}
           </Typography>
         </Box>
+
         <Box display="flex" alignItems="center" mt={0.5}>
-          <CreditCard size={12} />
-          &nbsp;
-          <span style={{ fontSize: 12, fontWeight: 600 }}>
-            Credit Balance:{" "}
+          <CreditCard size={14} />
+          <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+            Credit Balance:&nbsp;
           </span>
-          &nbsp;
-          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-            {creditBalance || "0"}
-          </Typography>
+
+          <Tooltip
+            arrow
+            placement="top"
+            title={
+              <Box>
+                <Typography
+                  level="body-xs"
+                  sx={{ fontSize: 11, fontWeight: 600, color: "#fff" }}
+                >
+                  Total Credited − Total Amount Paid
+                </Typography>
+                <Typography
+                  level="body-xs"
+                  sx={{ fontSize: 11, color: "#fff" }}
+                >
+                  ₹ {fmt(totalCredited)} − ₹ {fmt(totalPaid)} = ₹{" "}
+                  {fmt((Number(totalCredited) || 0) - (Number(totalPaid) || 0))}
+                </Typography>
+              </Box>
+            }
+          >
+            <Chip
+              size="sm"
+              variant="soft"
+              color={chipColor}
+              sx={{ fontSize: 12, fontWeight: 500, ml: 0.5 }}
+            >
+              ₹ {fmt(creditBalance)}
+            </Chip>
+          </Tooltip>
         </Box>
       </>
     );
@@ -761,6 +808,8 @@ const OverDue = forwardRef(({ searchQuery, currentPage, perPage }, ref) => {
                         po_value={payment?.po_value}
                         groupBalance={payment?.groupBalance}
                         creditBalance={payment?.creditBalance}
+                        totalCredited={payment?.totalCredited}
+                        totalPaid={payment?.totalPaid}
                       />
                     </Box>
 
