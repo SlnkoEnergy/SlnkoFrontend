@@ -143,6 +143,28 @@ export const purchasesApi = createApi({
       }),
       invalidatesTags: ["Logistic"],
     }),
+
+   getPoBasic: builder.query({
+  query: ({ page = 1, pageSize = 10, search = "" }) =>
+    `get-po-basic?page=${page}&pageSize=${pageSize}&search=${search}`,
+  transformResponse: (response) => ({
+    data: response.data || [],
+    total:
+      response.total ??
+      response.pagination?.total ??
+      response.meta?.total ??
+      0,
+    count:
+      response.count ??
+      response.pagination?.count ??
+      response.meta?.count ??
+      (response.data ? response.data.length : 0),
+    pagination: response.pagination || null,
+  }),
+  providesTags: ["Purchase"],
+}),
+
+
   }),
 });
 
@@ -160,4 +182,7 @@ export const {
   useAddLogisticMutation,
   useUpdateLogisticMutation,
   useDeleteLogisticMutation,
+  useGetPoBasicQuery,
+  useLazyGetPoBasicQuery,
+
 } = purchasesApi;
