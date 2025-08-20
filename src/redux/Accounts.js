@@ -83,10 +83,8 @@ export const AccountsApi = createApi({
         count: response.meta?.count || 0,
         page: response.meta?.page || 1,
         pageSize: response.meta?.pageSize || 10,
-        toBeApprovedCount: response.meta?.toBeApprovedCount || 0,
-        overdueCount: response.meta?.overdueCount || 0,
-        instantCount: response.meta?.instantCount || 0,
-        creditCount: response.meta?.creditCount || 0,
+        finalApprovalPaymentsCount: response.meta?.finalApprovalPaymentsCount || 0,
+        paymentsCount: response.meta?.paymentsCount || 0,
         tab: response.meta?.tab || "",
       }),
 

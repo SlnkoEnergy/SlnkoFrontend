@@ -43,8 +43,6 @@ import {
 } from "lucide-react";
 import PaymentAccountApproval from "./PaymentAccountApproval";
 import CreditPayment from "./creditPayment";
-import ApprovalPayment from "./ToBeApproved";
-import OverDue from "./Overdue";
 import { Money } from "@mui/icons-material";
 import { PaymentProvider } from "../../store/Context/Payment_History";
 import PaymentHistory from "../PaymentHistory";
@@ -64,7 +62,7 @@ function PaymentRequest() {
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [perPage, setPerPage] = useState(initialPageSize);
   const [activeTab, setActiveTab] = useState(() => {
-    return searchParams.get("tab") || "instant";
+    return searchParams.get("tab") || "payments";
   });
 
   const [user, setUser] = useState(null);
@@ -371,12 +369,12 @@ function PaymentRequest() {
     const [remarks, setRemarks] = useState("");
 
     const handleRejectSubmit = () => {
-      console.log(
-        "📌 RowMenu → handleRejectSubmit remarks:",
-        remarks,
-        "type:",
-        typeof remarks
-      );
+      // console.log(
+      //   "📌 RowMenu → handleRejectSubmit remarks:",
+      //   remarks,
+      //   "type:",
+      //   typeof remarks
+      // );
       onStatusChange(_id, "Rejected", remarks);
       setOpen(false);
       setRemarks("");
@@ -586,17 +584,17 @@ function PaymentRequest() {
   };
 
   const PaymentID = ({ pay_id, cr_id, request_date, approved }) => {
-    const maskId = (id) => {
-      if (!id) return "N/A";
-      const parts = id.split("/");
-      const lastIndex = parts.length - 2;
+    // const maskId = (id) => {
+    //   if (!id) return "N/A";
+    //   const parts = id.split("/");
+    //   const lastIndex = parts.length - 2;
 
-      if (!isNaN(parts[lastIndex])) {
-        parts[lastIndex] = parts[lastIndex].replace(/\d{2}$/, "XX");
-      }
+    //   if (!isNaN(parts[lastIndex])) {
+    //     parts[lastIndex] = parts[lastIndex].replace(/\d{2}$/, "XX");
+    //   }
 
-      return parts.join("/");
-    };
+    //   return parts.join("/");
+    // };
 
     const idToShow = pay_id || cr_id;
 
@@ -619,7 +617,7 @@ function PaymentRequest() {
                 },
               }}
             >
-              {maskId(idToShow)}
+              {idToShow}
             </Chip>
           </Box>
         )}
@@ -1061,31 +1059,25 @@ function PaymentRequest() {
                     borderColor: "neutral.outlinedBorder",
                   }}
                 >
-                  {["instant", "toBeApproved", "overdue", "credit"].map(
-                    (tab) => (
-                      <Tab
-                        key={tab}
-                        variant="soft"
-                        color="neutral"
-                        disableIndicator
-                        value={tab}
-                        sx={{
-                          fontWeight: 500,
-                          transition: "all 0.2s",
-                          minHeight: "36px",
-                          "&:hover": { backgroundColor: "neutral.softHoverBg" },
-                        }}
-                      >
-                        {tab === "instant"
-                          ? `Instant Payments (${responseData?.instantCount || 0})`
-                          : tab === "toBeApproved"
-                            ? `To Be Approved (${responseData?.toBeApprovedCount || 0})`
-                            : tab === "overdue"
-                              ? `Overdue (${responseData?.overdueCount || 0})`
-                              : `Credit Payments (${responseData?.creditCount || 0})`}
-                      </Tab>
-                    )
-                  )}
+                  {["payments", "finalApprovalPayments"].map((tab) => (
+                    <Tab
+                      key={tab}
+                      variant="soft"
+                      color="neutral"
+                      disableIndicator
+                      value={tab}
+                      sx={{
+                        fontWeight: 500,
+                        transition: "all 0.2s",
+                        minHeight: "36px",
+                        "&:hover": { backgroundColor: "neutral.softHoverBg" },
+                      }}
+                    >
+                      {tab === "payments"
+                        ? `Aggrgate Payments (${responseData?.paymentsCount || 0})`
+                        : `Final Approval Payments(${responseData?.finalApprovalPaymentsCount || 0})`}
+                    </Tab>
+                  ))}
                 </TabList>
               </Tabs>
             </Box>
@@ -1107,39 +1099,18 @@ function PaymentRequest() {
                 },
               }}
             >
-              {activeTab === "instant" && (
-                <PaymentAccountApproval
-                  data={paginatedData}
-                  isLoading={isLoading}
-                  searchQuery={searchQuery}
-                  perPage={perPage}
-                  currentPage={currentPage}
-                  sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
-                />
-              )}
-
-              {activeTab === "toBeApproved" && (
-                <ApprovalPayment
-                  data={paginatedData}
-                  isLoading={isLoading}
-                  searchQuery={searchQuery}
-                  perPage={perPage}
-                  currentPage={currentPage}
-                  sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
-                />
-              )}
-              {activeTab === "overdue" && (
-                <OverDue
-                  data={paginatedData}
-                  isLoading={isLoading}
-                  searchQuery={searchQuery}
-                  perPage={perPage}
-                  currentPage={currentPage}
-                  sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
-                />
-              )}
-              {activeTab === "credit" && (
+              {activeTab === "payments" && (
                 <CreditPayment
+                  data={paginatedData}
+                  isLoading={isLoading}
+                  searchQuery={searchQuery}
+                  perPage={perPage}
+                  currentPage={currentPage}
+                  sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
+                />
+              )}
+              {activeTab === "finalApprovalPayments" && (
+                <PaymentAccountApproval
                   data={paginatedData}
                   isLoading={isLoading}
                   searchQuery={searchQuery}

@@ -1,6 +1,8 @@
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Input from "@mui/joy/Input";
+import BlockIcon from "@mui/icons-material/Block";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import Chip from "@mui/joy/Chip";
 import { CheckCircle, CreditCard, Info, PenLine, XCircle } from "lucide-react";
 import Typography from "@mui/joy/Typography";
@@ -11,9 +13,14 @@ import NoData from "../../assets/alert-bell.svg";
 import {
   useGetPaymentApprovalQuery,
   useUpdateCreditExtensionMutation,
-  useUpdateRequestExtensionMutation,
 } from "../../redux/Accounts";
-import { CircularProgress, Modal, ModalDialog, Tooltip } from "@mui/joy";
+import {
+  CircularProgress,
+  Modal,
+  ModalDialog,
+  Textarea,
+  Tooltip,
+} from "@mui/joy";
 import {
   Calendar,
   CircleUser,
@@ -27,6 +34,7 @@ import { forwardRef, useState, useEffect } from "react";
 import { PaymentProvider } from "../../store/Context/Payment_History";
 import PaymentHistory from "../PaymentHistory";
 import dayjs from "dayjs";
+import Axios from "../../utils/Axios";
 
 const CreditPayment = forwardRef(
   ({ searchQuery, currentPage, perPage }, ref) => {
@@ -39,11 +47,27 @@ const CreditPayment = forwardRef(
       page: currentPage,
       pageSize: perPage,
       search: searchQuery,
-      tab: "credit",
+      tab: "payments",
     });
 
     const [paginatedData, setPaginatedData] = useState([]);
+    const [selected, setSelected] = useState([]);
     // console.log("paginatedData Credit are in Account :", paginatedData);
+
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+      const userData = getUserData();
+      setUser(userData);
+    }, []);
+
+    const getUserData = () => {
+      const userData = localStorage.getItem("userDetails");
+      if (userData) {
+        return JSON.parse(userData);
+      }
+      return null;
+    };
 
     useEffect(() => {
       if (responseData?.data) {
@@ -51,155 +75,220 @@ const CreditPayment = forwardRef(
       }
     }, [responseData?.data]);
 
-    const [updateCreditExtension] = useUpdateCreditExtensionMutation();
+    const handleStatusChange = async (_id, newStatus, remarks = "") => {
+      // console.log("📌 handleStatusChange got:", { _id, newStatus, remarks, remarksType: typeof remarks });
 
-    const RowMenu = ({
-      _id,
-      credit_extension,
-      credit_remarks,
-      credit_user_name,
-    }) => {
-      console.log(credit_remarks);
+      if (!user) {
+        toast.error("User not found");
+        return;
+      }
 
-      const [open, setOpen] = useState(false);
-      const [formData, setFormData] = useState({
-        credit_deadline: "",
-        credit_remarks: "",
-      });
+      const { department, role } = user;
+      const isInternalManager = department === "Internal" && role === "manager";
+      const isSCMOrAccountsManager =
+        ["SCM", "Accounts"].includes(department) && role === "manager";
 
-      const handleOpen = () => setOpen(true);
-      const handleClose = () => setOpen(false);
-
-      const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-      };
-
-      const handleSubmit = async () => {
-        try {
-          await updateCreditExtension({ id: _id, ...formData }).unwrap();
-
-          toast.success("Credit days extended successfully!", {
-            icon: <CheckCircle size={20} color="#FFFFFF" />,
-            style: {
-              backgroundColor: "#2E7D32",
-              color: "#FFFFFF",
-              fontWeight: 500,
-              fontSize: "15px",
-              padding: "12px 20px",
-              borderRadius: "8px",
-              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-            },
-          });
-
-          refetch();
-          handleClose();
-        } catch (err) {
-          toast.error("Failed to extend credit days", {
-            icon: <XCircle size={20} color="#FFFFFF" />,
-            style: {
-              backgroundColor: "#D32F2F",
-              color: "#FFFFFF",
-              fontWeight: 500,
-              fontSize: "15px",
-              padding: "12px 20px",
-              borderRadius: "8px",
-              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-            },
-          });
+      if (newStatus === "Rejected") {
+        if (!_id) {
+          toast.error("Mongo Id is required for rejection.");
+          return;
         }
+        const remarksStr = remarks;
+        // console.log("📌 handleStatusChange → cleaned remarks:", remarksStr);
+        const success = await handleApprovalUpdate(_id, newStatus, remarksStr);
+        if (success) setSelected((prev) => prev.filter((id) => id !== _id));
+        return;
+      }
+
+      if (isSCMOrAccountsManager && newStatus === "Approved") {
+        if (!_id) {
+          toast.error("Mongo Id is required for approval.");
+          return;
+        }
+        const success = await handleApprovalUpdate(_id, newStatus);
+        if (success) setSelected((prev) => prev.filter((id) => id !== _id));
+        return;
+      }
+
+      if (isInternalManager && newStatus === "Approved") {
+        if (!Array.isArray(paginatedData)) {
+          toast.error("Payment data is not available yet.");
+          return;
+        }
+
+        if (!Array.isArray(selected) || selected.length === 0) {
+          toast.warn("Please select at least one payment to approve.");
+          return;
+        }
+
+        const selectedPayments = paginatedData.filter((p) =>
+          selected.includes(String(p._id))
+        );
+
+        if (!selectedPayments.length) {
+          toast.warn("No matching selected payments found in current page.");
+          return;
+        }
+
+        const poIds = selectedPayments
+          .map((p) => p?._id)
+          .filter((id) => typeof id === "string" && id.trim().length > 0);
+
+        if (!poIds.length) {
+          toast.error("No valid PO IDs found for PDF generation.");
+          return;
+        }
+
+        // console.log("📌 Selected PO IDs for PDF:", poIds);
+        // console.log("📌 Selected Payments for PDF:", selectedPayments);
+      }
+    };
+
+    const handleApprovalUpdate = async (ids, newStatus, remarks = "") => {
+      // console.log("📌 handleApprovalUpdate got:", { ids, newStatus, remarks, remarksType: typeof remarks });
+
+      try {
+        const token = localStorage.getItem("authToken");
+        const payload = {
+          _id: Array.isArray(ids) ? ids : [ids],
+          status: newStatus,
+        };
+
+        if (newStatus === "Rejected") {
+          payload.remarks = remarks || "Rejected by manager";
+        } else if (remarks) {
+          payload.remarks = remarks;
+        }
+
+        // console.log("📌 handleApprovalUpdate payload:", payload);
+
+        const response = await Axios.put("/account-approve", payload, {
+          headers: { "x-auth-token": token },
+        });
+
+        if (response.status === 200 && Array.isArray(response.data.results)) {
+          let allSuccess = true;
+
+          response.data.results.forEach((result) => {
+            if (result.status === "success") {
+              if (newStatus === "Approved") {
+                toast.success(
+                  `Payment Approved${result?.utr ? ` (UTR: ${result.utr})` : ""}!`,
+                  { autoClose: 2000 }
+                );
+              } else if (newStatus === "Rejected") {
+                toast.error(`Payment Rejected`, { autoClose: 2000 });
+              } else if (newStatus === "Pending") {
+                toast.info(`Payment marked as Pending`, { autoClose: 2000 });
+              }
+            } else {
+              allSuccess = false;
+              toast.error(
+                result.message || `Approval failed for ${result._id}`
+              );
+            }
+          });
+
+          if (allSuccess) {
+            setTimeout(() => window.location.reload(), 500);
+          }
+
+          return allSuccess;
+        }
+      } catch (error) {
+        console.error("Approval update error:", error);
+        toast.error(
+          error.response?.data?.message || "Network error. Please try again."
+        );
+      }
+
+      return false;
+    };
+
+    const RowMenu = ({ _id, onStatusChange, showApprove }) => {
+      // separate modal states
+      const [openReject, setOpenReject] = useState(false);
+
+      // missing local state for rejection remarks
+      const [remarks, setRemarks] = useState("");
+
+      const handleRejectSubmit = () => {
+        const trimmed = (remarks || "").trim();
+        onStatusChange?.(_id, "Rejected", trimmed);
+        setOpenReject(false);
+        setRemarks("");
       };
+
+      const handleOpenReject = () => setOpenReject(true);
+      const handleCloseReject = () => setOpenReject(false);
 
       return (
         <>
-          {/* Button to open modal */}
-          {credit_extension === true ? (
-            <Box display="flex" alignItems="center" gap={1}>
-              {/* Edit button */}
-              <Tooltip title="Edit Credit Extension" placement="top" arrow>
-                <IconButton
-                  size="sm"
-                  variant="soft"
-                  color="primary"
-                  onClick={handleOpen}
-                  sx={{
-                    borderRadius: "50%",
-                    p: 0.7,
-                    minWidth: "32px",
-                    minHeight: "32px",
-                    "&:hover": {
-                      backgroundColor: "primary.softHoverBg",
-                      transform: "scale(1.05)",
-                      transition: "all 0.2s ease-in-out",
-                    },
-                  }}
-                >
-                  <PenLine size={16} strokeWidth={2} />
-                </IconButton>
-              </Tooltip>
-
-              {/* Info icon showing latest remarks */}
-              {credit_remarks && credit_remarks.length > 0 && (
-                <Tooltip
-                  placement="top"
-                  arrow
-                  title={
-                    <Box>
-                      <ul style={{ margin: 0, paddingLeft: "18px" }}>
-                        <li>Extension Remarks: {credit_remarks}</li>
-                        <li>Requested by: {credit_user_name || "Unknown"}</li>
-                      </ul>
-                    </Box>
-                  }
-                >
-                  <Info
-                    size={18}
-                    strokeWidth={2}
-                    style={{ cursor: "pointer" }}
-                  />
-                </Tooltip>
-              )}
-            </Box>
-          ) : (
-            <Chip size="sm" variant="soft" color="danger">
-              no extension required
+          {/* Approve / Reject actions */}
+          <Box sx={{ display: "flex", justifyContent: "left", gap: 1 }}>
+            {showApprove && (
+              <Chip
+                component="div"
+                variant="solid"
+                color="success"
+                onClick={() => onStatusChange?.(_id, "Approved")}
+                sx={{
+                  textTransform: "none",
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                }}
+                startDecorator={<CheckRoundedIcon />}
+              >
+                Approve
+              </Chip>
+            )}
+            <Chip
+              component="div"
+              variant="outlined"
+              color="danger"
+              onClick={handleOpenReject}
+              sx={{
+                textTransform: "none",
+                fontSize: "0.875rem",
+                fontWeight: 500,
+                cursor: "pointer",
+              }}
+              startDecorator={<BlockIcon />}
+            >
+              Reject
             </Chip>
-          )}
+          </Box>
 
-          {/* Modal */}
-          <Modal open={open} onClose={handleClose}>
+          {/* Reject Modal */}
+          <Modal open={openReject} onClose={handleCloseReject}>
             <ModalDialog>
-              <Typography level="h5" mb={1}>
-                Extend Credit
-              </Typography>
-
-              <Input
-                type="date"
-                name="credit_deadline"
-                value={formData.credit_deadline}
-                onChange={handleChange}
-                placeholder="New Credit Deadline"
+              <Typography level="h5">Rejection Remarks</Typography>
+              <Textarea
+                minRows={3}
+                placeholder="Enter remarks..."
+                value={remarks}
+                onChange={(e) => setRemarks(e.target.value ?? "")}
               />
 
-              <Input
-                type="text"
-                name="credit_remarks"
-                value={formData.credit_remarks}
-                onChange={handleChange}
-                placeholder="Credit Remarks"
-                sx={{ mt: 1 }}
-              />
-
-              <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
-                <Button variant="plain" onClick={handleClose}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 1,
+                  mt: 2,
+                }}
+              >
+                <Button variant="plain" onClick={handleCloseReject}>
                   Cancel
                 </Button>
                 <Button
                   variant="solid"
-                  onClick={handleSubmit}
-                  // disabled={isLoading}
+                  color="danger"
+                  onClick={handleRejectSubmit}
+                  disabled={!remarks?.trim()}
                 >
-                  Extend
+                  Submit
                 </Button>
               </Box>
             </ModalDialog>
@@ -238,22 +327,22 @@ const CreditPayment = forwardRef(
       color: "#2C3E50",
     };
 
-    const PaymentID = ({ cr_id, request_date }) => {
-      const maskCrId = (id) => {
-        if (!id) return "N/A";
-        const parts = id.split("/");
-        const lastIndex = parts.length - 2;
+    const PaymentID = ({ cr_id, pay_id, request_date }) => {
+      // const maskCrId = (id) => {
+      //   if (!id) return "N/A";
+      //   const parts = id.split("/");
+      //   const lastIndex = parts.length - 2;
 
-        if (!isNaN(parts[lastIndex])) {
-          parts[lastIndex] = parts[lastIndex].replace(/\d{2}$/, "XX");
-        }
+      //   if (!isNaN(parts[lastIndex])) {
+      //     parts[lastIndex] = parts[lastIndex].replace(/\d{2}$/, "XX");
+      //   }
 
-        return parts.join("/");
-      };
+      //   return parts.join("/");
+      // };
 
       return (
         <>
-          {cr_id && (
+          {(cr_id || pay_id) && (
             <Box>
               <Chip
                 variant="solid"
@@ -270,7 +359,7 @@ const CreditPayment = forwardRef(
                   },
                 }}
               >
-                {maskCrId(cr_id)}
+                {cr_id || pay_id}
               </Chip>
             </Box>
           )}
@@ -336,7 +425,6 @@ const CreditPayment = forwardRef(
     const RequestedData = ({
       request_for,
       payment_description,
-      remainingDays,
       vendor,
       po_number,
     }) => {
@@ -353,7 +441,6 @@ const CreditPayment = forwardRef(
               </span>
             </Box>
           )}
-
           {po_number && (
             <Box
               display="flex"
@@ -406,7 +493,6 @@ const CreditPayment = forwardRef(
               </Typography>
             </Box>
           )}
-
           <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
             <Typography style={{ fontSize: 12, fontWeight: 600 }}>
               🏢 Vendor:
@@ -416,24 +502,6 @@ const CreditPayment = forwardRef(
             >
               {vendor}
             </Typography>
-          </Box>
-          <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
-            <Typography sx={labelStyle}>⏰</Typography>
-            <Chip
-              size="sm"
-              variant="soft"
-              color={
-                remainingDays <= 0
-                  ? "danger"
-                  : remainingDays <= 2
-                    ? "warning"
-                    : "success"
-              }
-            >
-              {remainingDays <= 0
-                ? "⏱ Expired"
-                : `${remainingDays} day${remainingDays > 1 ? "s" : ""} remaining`}
-            </Chip>
           </Box>
         </>
       );
@@ -691,6 +759,7 @@ const CreditPayment = forwardRef(
                       >
                         <PaymentID
                           cr_id={payment?.cr_id}
+                          pay_id={payment?.pay_id}
                           request_date={payment?.request_date}
                         />
                       </Box>
@@ -745,9 +814,12 @@ const CreditPayment = forwardRef(
                       <Box component="td" sx={{ ...cellStyle }}>
                         <RowMenu
                           _id={payment?._id}
-                          credit_extension={payment?.credit_extension}
-                          credit_remarks={payment?.credit_remarks}
-                          credit_user_name={payment?.credit_user_name}
+                          showApprove={["SCM", "Accounts"].includes(
+                            user?.department
+                          )}
+                          onStatusChange={(id, status, remarks) =>
+                            handleStatusChange(id, status, remarks)
+                          }
                         />
                       </Box>
                     </Box>
