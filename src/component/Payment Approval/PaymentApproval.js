@@ -847,12 +847,13 @@ function PaymentRequest() {
             </Typography>
           )}
 
-          {((user?.department === "Accounts" && user?.role === "manager") ||
-            user?.department === "admin") && (
-            <Typography level="h2" component="h1">
-              Accounts Payment Approval
-            </Typography>
-          )}
+          {(user?.department === "Accounts" && user?.role === "manager") ||
+            user?.department === "admin" ||
+            (user?.department === "superadmin" && (
+              <Typography level="h2" component="h1">
+                Accounts Payment Approval
+              </Typography>
+            ))}
         </Box>
       </Box>
 
