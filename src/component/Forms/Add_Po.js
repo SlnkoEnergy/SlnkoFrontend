@@ -10,11 +10,15 @@ import {
   IconButton,
   Chip,
   Checkbox,
+  Select as JSelect,
+  Option,
+  Modal,
+  ModalDialog,
+  Textarea,
 } from "@mui/joy";
-import { Modal, ModalDialog, Textarea } from "@mui/joy";
 import DeleteOutline from "@mui/icons-material/DeleteOutline";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import Select from "react-select";
+import ReactSelect from "react-select";
 import Axios from "../../utils/Axios";
 import { toast } from "react-toastify";
 import Send from "@mui/icons-material/Send";
@@ -25,8 +29,12 @@ import {
   useLazyGetVendorsNameSearchQuery,
 } from "../../redux/vendorSlice";
 import { Check } from "lucide-react";
+import {
+  useGetProductsQuery,
+  useLazyGetProductsQuery,
+} from "../../redux/productsSlice";
+import ProductForm from "./Product_Form";
 
-// ---------- helpers ----------
 const makeEmptyLine = () => ({
   id: crypto.randomUUID(),
   productId: "",
@@ -43,8 +51,46 @@ const makeEmptyLine = () => ({
   taxPercent: 0,
 });
 
+/* helper to read product.data fields */
+const getProdField = (row, fieldName) => {
+  const arr = Array.isArray(row?.data) ? row.data : [];
+  const item = arr.find(
+    (d) =>
+      String(d?.name || "").trim().toLowerCase() ===
+      String(fieldName).trim().toLowerCase()
+  );
+  const val =
+    item && Array.isArray(item.values) && item.values[0]
+      ? item.values[0].input_values
+      : "";
+  return val || "";
+};
+
+/* normalize product payload shapes coming from API */
+const normalizeCreatedProduct = (res) => {
+  let p = res;
+  if (p?.data?.data && (p?.data?.category || p?.data?.category?._id)) p = p.data;
+  if (p?.newProduct) p = p.newProduct;
+  if (p?.newMaterial) p = p.newMaterial;
+  if (p?.product) p = p.product;
+  if (p?.material) p = p.material;
+  return p;
+};
+
+const isValidMake = (m) => {
+  const s = String(m ?? "").trim();
+  return !!s && !/^\d+(\.\d+)?$/.test(s) && s.toLowerCase() !== "na";
+};
+
+const mkKey = (catId, prodName) =>
+  `${String(catId || "").trim()}@@${String(prodName || "")
+    .trim()
+    .toLowerCase()}`;
+
 const VENDOR_LIMIT = 7;
 const SEARCH_MORE_VENDOR = "__SEARCH_MORE_VENDOR__";
+const SEARCH_MORE_MAKE = "__SEARCH_MORE_MAKE__";
+const CREATE_PRODUCT_INLINE = "__CREATE_PRODUCT_INLINE__";
 
 const AddPurchaseOrder = ({
   onSuccess,
@@ -204,19 +250,19 @@ const AddPurchaseOrder = ({
     const arr = Array.isArray(po?.items)
       ? po.items
       : Array.isArray(po?.item)
-        ? po.item
-        : [];
+      ? po.item
+      : [];
     return arr.length
       ? arr.map((it) => ({
           ...makeEmptyLine(),
           productCategoryId:
             typeof it?.category === "object"
-              ? (it?.category?._id ?? "")
-              : (it?.category ?? ""),
+              ? it?.category?._id ?? ""
+              : it?.category ?? "",
           productCategoryName:
-            typeof it?.category === "object" ? (it?.category?.name ?? "") : "",
+            typeof it?.category === "object" ? it?.category?.name ?? "" : "",
           productName: it?.product_name ?? "",
-          make: it?.product_make ?? "",
+          make: isValidMake(it?.product_make) ? it.product_make : "",
           briefDescription: it?.description ?? "",
           uom: it?.uom ?? "",
           quantity: Number(it?.quantity ?? 0),
@@ -244,10 +290,9 @@ const AddPurchaseOrder = ({
           )}&_id=${_id}`,
           { headers: { "x-auth-token": token } }
         );
-        // backend now returns { data: <object> }
         const po = Array.isArray(resp?.data)
           ? resp.data[0]
-          : (resp?.data ?? resp);
+          : resp?.data ?? resp;
         if (!po) {
           toast.error("PO not found.");
           return;
@@ -323,6 +368,256 @@ const AddPurchaseOrder = ({
     setFormData((prev) => ({ ...prev, name: opt.value || "" }));
   };
 
+  /* =========================
+     Products & Makes
+     ========================= */
+
+  const [activeLineId, setActiveLineId] = useState(null);
+
+  // product queries (used for "search more"/makes fetch)
+  useGetProductsQuery(
+    { search: "", page: 1, limit: 1, category: "" },
+    { skip: true }
+  );
+  const [triggerGetProducts] = useLazyGetProductsQuery();
+
+  // Product modal (optional — not used in this ask but left ready)
+  const [productModalOpen, setProductModalOpen] = useState(false);
+
+  const onPickProduct = (row) => {
+    if (!row || !activeLineId) {
+      setProductModalOpen(false);
+      return;
+    }
+    const pickedMake = getProdField(row, "Make") || "";
+    const pickedUom =
+      getProdField(row, "UoM") || getProdField(row, "UOM") || "";
+
+    const patch = {
+      productId: row?._id || "",
+      productName: getProdField(row, "Product Name") || "",
+      productCategoryId:
+        row?.category?._id ||
+        lines.find((l) => l.id === activeLineId)?.productCategoryId ||
+        "",
+      productCategoryName:
+        row?.category?.name ||
+        lines.find((l) => l.id === activeLineId)?.productCategoryName ||
+        "",
+      briefDescription: getProdField(row, "Description") || "",
+      make: isValidMake(pickedMake) ? pickedMake : "",
+      uom: pickedUom,
+      unitPrice: Number(getProdField(row, "Cost") || 0),
+      taxPercent: Number(getProdField(row, "GST") || 0),
+    };
+    Object.entries(patch).forEach(([k, v]) => updateLine(activeLineId, k, v));
+    setProductModalOpen(false);
+  };
+
+  // ---------- MAKE: unique per (category + productName) ----------
+  const [makesCache, setMakesCache] = useState({}); // { [cat@@name]: string[] }
+
+  const fetchUniqueMakes = async (categoryId, productName) => {
+    if (!categoryId || !productName) return [];
+    const key = mkKey(categoryId, productName);
+    if (makesCache[key]) return makesCache[key];
+
+    const res = await triggerGetProducts(
+      { search: productName, page: 1, limit: 200, category: String(categoryId) },
+      true
+    );
+    const rows = res?.data?.data || [];
+    const normalized = String(productName).trim().toLowerCase();
+
+    const makes = rows
+      .filter(
+        (r) =>
+          String(getProdField(r, "Product Name") || "")
+            .trim()
+            .toLowerCase() === normalized
+      )
+      .map((r) => String(getProdField(r, "Make") || "").trim())
+      .filter(isValidMake);
+
+    const unique = Array.from(new Set(makes));
+    setMakesCache((prev) => ({ ...prev, [key]: unique }));
+    return unique;
+  };
+
+  // Prefetch per row when (category + productName) present
+  useEffect(() => {
+    const pairs = Array.from(
+      new Set(
+        (lines || [])
+          .filter((l) => l.productCategoryId && l.productName)
+          .map((l) => mkKey(l.productCategoryId, l.productName))
+      )
+    );
+    pairs.forEach(async (pairKey) => {
+      if (!makesCache[pairKey]) {
+        const [cat, name] = pairKey.split("@@");
+        await fetchUniqueMakes(cat, name);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    lines.map((l) => `${l.productCategoryId}::${l.productName}`).join("|"),
+  ]);
+
+  // ---------- Make modal (search more within same filter) ----------
+  const [makeModalOpen, setMakeModalOpen] = useState(false);
+
+  const fetchMakesPage = async ({
+    search = "",
+    page = 1,
+    pageSize = 7,
+  }) => {
+    const row = lines.find((r) => r.id === activeLineId);
+    const cat = row?.productCategoryId;
+    const pname = row?.productName;
+    if (!cat || !pname) {
+      return { rows: [], total: 0, page: 1, pageSize };
+    }
+
+    const res = await triggerGetProducts(
+      { search: pname, page: 1, limit: 300, category: String(cat) },
+      true
+    );
+    const rows = res?.data?.data || [];
+    const normalized = String(pname).trim().toLowerCase();
+
+    const makes = rows
+      .filter(
+        (r) =>
+          String(getProdField(r, "Product Name") || "")
+            .trim()
+            .toLowerCase() === normalized
+      )
+      .map((r) => String(getProdField(r, "Make") || "").trim())
+      .filter(isValidMake);
+
+    const unique = Array.from(new Set(makes));
+
+    const filtered = search
+      ? unique.filter((m) =>
+          m.toLowerCase().includes(String(search).toLowerCase())
+        )
+      : unique;
+
+    const total = filtered.length;
+    const start = (page - 1) * pageSize;
+    const pageRows = filtered
+      .slice(start, start + pageSize)
+      .map((m) => ({ make: m }));
+    return { rows: pageRows, total, page, pageSize };
+  };
+
+  const onPickMake = (row) => {
+    if (!row || !activeLineId) {
+      setMakeModalOpen(false);
+      return;
+    }
+    updateLine(activeLineId, "make", row.make || "");
+    setMakeModalOpen(false);
+  };
+
+  /* =========================
+     Embedded "Create Product" modal
+     ========================= */
+  const [createProdOpen, setCreateProdOpen] = useState(false);
+  const [createProdInitial, setCreateProdInitial] = useState(null);
+  const [createProdLineId, setCreateProdLineId] = useState(null);
+
+  const openCreateProductForLine = (line) => {
+    if (!line?.productCategoryId || !line?.productName) {
+      toast.error("Pick category and product name first.");
+      return;
+    }
+    setCreateProdLineId(line.id);
+    setCreateProdInitial({
+      name: line.productName || "",
+      productCategory: line.productCategoryId || "",
+      productCategoryName: line.productCategoryName || "",
+      gst: String(line.taxPercent || ""),
+      unitOfMeasure: line.uom || "",
+      cost: String(line.unitPrice || ""),
+      Description: line.briefDescription || "",
+      make: "", // user will enter in form
+      productType: "",
+      imageFile: null,
+      imageUrl: "",
+      internalReference: "",
+    });
+    setCreateProdOpen(true);
+  };
+
+  const handleProductCreated = (raw) => {
+    try {
+      const newProduct = normalizeCreatedProduct(raw);
+      if (!newProduct || !createProdLineId) return;
+
+      const name = getProdField(newProduct, "Product Name") || "";
+      const make = getProdField(newProduct, "Make") || "";
+      const uom =
+        getProdField(newProduct, "UoM") ||
+        getProdField(newProduct, "UOM") ||
+        "";
+      const gst = Number(getProdField(newProduct, "GST") || 0);
+      const cost = Number(getProdField(newProduct, "Cost") || 0);
+      const desc = getProdField(newProduct, "Description") || "";
+      const catId = newProduct?.category?._id || newProduct?.category || "";
+      const catName = newProduct?.category?.name || "";
+
+      // Update row with new product info (keep/confirm product name)
+      updateLine(createProdLineId, "productId", newProduct?._id || "");
+      updateLine(createProdLineId, "productName", name);
+      updateLine(createProdLineId, "productCategoryId", catId);
+      updateLine(createProdLineId, "productCategoryName", catName);
+      updateLine(createProdLineId, "briefDescription", desc);
+      updateLine(createProdLineId, "uom", uom);
+      updateLine(createProdLineId, "taxPercent", gst);
+      updateLine(createProdLineId, "unitPrice", cost);
+      if (isValidMake(make)) updateLine(createProdLineId, "make", make);
+
+      // Update makes cache immediately for this (cat+name)
+      const key = mkKey(catId, name);
+      setMakesCache((prev) => {
+        const existing = prev[key] || [];
+        const exists = existing
+          .map((s) => s.toLowerCase())
+          .includes(String(make).toLowerCase());
+        const next =
+          isValidMake(make) && !exists ? [...existing, make] : existing;
+        return { ...prev, [key]: next };
+      });
+
+      toast.success("Product created and row updated.");
+    } finally {
+      setCreateProdOpen(false);
+      setCreateProdLineId(null);
+      setCreateProdInitial(null);
+    }
+  };
+
+  // If API list changes and a row's make is not present, clear it.
+  useEffect(() => {
+    setLines((prev) =>
+      prev.map((l) => {
+        if (!l.productCategoryId || !l.productName || !l.make) return l;
+        const list =
+          makesCache[mkKey(l.productCategoryId, l.productName)] || [];
+        const ok = list.some(
+          (m) => String(m).toLowerCase() === String(l.make).toLowerCase()
+        );
+        return ok ? l : { ...l, make: "" };
+      })
+    );
+  }, [makesCache]);
+
+  /* =========================
+     END Products & Make flow
+     ========================= */
+
   // -------- submit --------
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -339,13 +634,12 @@ const AddPurchaseOrder = ({
           typeof l.productCategoryId === "object" && l.productCategoryId?._id
             ? String(l.productCategoryId._id)
             : l.productCategoryId != null
-              ? String(l.productCategoryId)
-              : "";
-
+            ? String(l.productCategoryId)
+            : "";
         return {
           category: String(categoryId),
           product_name: String(l.productName || ""),
-          product_make: String(l.make || ""),
+          product_make: String(isValidMake(l.make) ? l.make : ""),
           description: String(l.briefDescription || ""),
           uom: String(l.uom ?? ""),
           quantity: String(l.quantity ?? 0),
@@ -639,19 +933,10 @@ const AddPurchaseOrder = ({
   ];
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "flex-start",
-        width: "100%",
-        p: 3,
-      }}
-    >
-      {/* Card container */}
+    <Box sx={{ display: "flex", justifyContent: "center", alignItems: "flex-start", width: "100%", p: 3 }}>
       <Box
         sx={{
-          maxWidth: 1400,
+          maxWidth: "full",
           width: "100%",
           p: 3,
           boxShadow: "md",
@@ -660,24 +945,15 @@ const AddPurchaseOrder = ({
         }}
       >
         {/* Header */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 1,
-          }}
-        >
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
           <Typography level="h3" sx={{ fontWeight: 700 }}>
             Purchase Order
           </Typography>
 
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-            {/* Create flow buttons (optional keep) */}
             {!viewMode && (
               <>
-                {((effectiveMode === "edit" &&
-                  statusNow === "approval_rejected") ||
+                {((effectiveMode === "edit" && statusNow === "approval_rejected") ||
                   fromModal) && (
                   <Button
                     component="button"
@@ -734,29 +1010,16 @@ const AddPurchaseOrder = ({
               user?.name === "IT Team") &&
               isApprovalPending && (
                 <Box display="flex" gap={2}>
-                  <Button
-                    variant="solid"
-                    color="success"
-                    sx={{ minWidth: 100 }}
-                    startDecorator={<Check />}
-                    onClick={handleApprove}
-                  >
+                  <Button variant="solid" color="success" sx={{ minWidth: 100 }} startDecorator={<Check />} onClick={handleApprove}>
                     Approve
                   </Button>
-                  <Button
-                    variant="outlined"
-                    color="danger"
-                    sx={{ minWidth: 100 }}
-                    startDecorator={<Close />}
-                    onClick={() => setOpenRefuse(true)}
-                  >
+                  <Button variant="outlined" color="danger" sx={{ minWidth: 100 }} startDecorator={<Close />} onClick={() => setOpenRefuse(true)}>
                     Refuse
                   </Button>
                 </Box>
               )}
 
-            {((effectiveMode === "edit" && isApprovalPending) ||
-              approvalRejected) && (
+            {((effectiveMode === "edit" && isApprovalPending) || approvalRejected) && (
               <Box display="flex" gap={2}>
                 {user?.department === "SCM" ||
                   user?.name === "Guddu Rani Dubey" ||
@@ -774,19 +1037,6 @@ const AddPurchaseOrder = ({
                   ))}
               </Box>
             )}
-
-            {/* <Button
-              variant="soft"
-              startDecorator={<Print />}
-              sx={{
-                bgcolor: "rgba(33, 75, 123, 0.1)",
-                color: "#214b7b",
-                "&:hover": { bgcolor: "rgba(33, 75, 123, 0.2)" },
-              }}
-              onClick={() => window.print()}
-            >
-              Print
-            </Button> */}
           </Box>
         </Box>
 
@@ -801,6 +1051,7 @@ const AddPurchaseOrder = ({
           </Box>
         )}
 
+        {/* PO Number entry for confirm stage */}
         {effectiveMode === "edit" &&
           statusNow === "approval_done" &&
           (user?.department === "SCM" || user?.name === "IT Team") &&
@@ -837,6 +1088,7 @@ const AddPurchaseOrder = ({
               />
             </Box>
           )}
+
         {/* Form */}
         <form id="po-form" onSubmit={handleSubmit}>
           <Sheet variant="outlined" sx={{ p: 2, borderRadius: "lg", mb: 1.5 }}>
@@ -853,7 +1105,7 @@ const AddPurchaseOrder = ({
                 <Typography level="body1" fontWeight="bold" mb={0.5}>
                   Vendor
                 </Typography>
-                <Select
+                <ReactSelect
                   styles={{
                     control: (base) => ({ ...base, minHeight: 40 }),
                     dropdownIndicator: (base) => ({ ...base, padding: 4 }),
@@ -876,7 +1128,7 @@ const AddPurchaseOrder = ({
                       ? { value: formData.name, label: formData.name }
                       : null
                   }
-                  onChange={handleVendorChange}
+                  onChange={(opt) => handleVendorChange(opt)}
                   placeholder="Search vendor"
                   noOptionsMessage={() =>
                     vendorsLoading ? "Loading…" : "No vendors"
@@ -902,7 +1154,7 @@ const AddPurchaseOrder = ({
                 <Typography level="body1" fontWeight="bold" mb={0.5}>
                   Delivery Type
                 </Typography>
-                <Select
+                <ReactSelect
                   styles={{
                     control: (base) => ({ ...base, minHeight: 40 }),
                     dropdownIndicator: (base) => ({ ...base, padding: 4 }),
@@ -923,8 +1175,8 @@ const AddPurchaseOrder = ({
                             formData.delivery_type === "afor"
                               ? "Afor"
                               : formData.delivery_type === "slnko"
-                                ? "Slnko"
-                                : "",
+                              ? "Slnko"
+                              : "",
                         }
                       : null
                   }
@@ -942,10 +1194,7 @@ const AddPurchaseOrder = ({
           </Sheet>
 
           {/* Product Table */}
-          <Sheet
-            variant="outlined"
-            sx={{ p: 2, borderRadius: "xl", mb: 2, overflow: "hidden" }}
-          >
+          <Sheet variant="outlined" sx={{ p: 2, borderRadius: "xl", mb: 2, overflow: "hidden" }}>
             <Box sx={{ display: "flex", gap: 2, mb: 1 }}>
               <Chip color="primary" variant="soft" size="sm">
                 Products
@@ -984,7 +1233,6 @@ const AddPurchaseOrder = ({
                   <th style={{ width: "14%" }}>Unit Price</th>
                   <th style={{ width: "10%" }}>Taxes</th>
                   <th style={{ width: "14%" }}>Amount</th>
-
                   <th style={{ width: 40 }} />
                 </tr>
               </thead>
@@ -995,6 +1243,17 @@ const AddPurchaseOrder = ({
                   const taxAmt = (base * Number(l.taxPercent || 0)) / 100;
                   const gross = base + taxAmt;
 
+                  const key = mkKey(l.productCategoryId, l.productName);
+                  const rowMakes = makesCache[key] || [];
+
+                  const selectedMakeSafe = isValidMake(l.make) ? l.make : "";
+                  const inList = rowMakes.some(
+                    (m) =>
+                      String(m).toLowerCase() ===
+                      String(selectedMakeSafe).toLowerCase()
+                  );
+                  const selectValue = inList ? selectedMakeSafe : "";
+                  console.log({selectValue})
                   return (
                     <tr key={l.id}>
                       <td>
@@ -1037,18 +1296,97 @@ const AddPurchaseOrder = ({
                           disabled
                         />
                       </td>
+
+                      {/* Make dropdown */}
                       <td>
-                        <Input
-                          size="sm"
-                          variant="plain"
-                          placeholder="Make"
-                          value={l.make}
-                          onChange={(e) =>
-                            updateLine(l.id, "make", e.target.value)
-                          }
-                          disabled={inputsDisabled}
-                        />
+                        <Box sx={{ maxWidth: "100%" }}>
+                          <JSelect
+                            variant="plain"
+                            size="sm"
+                            value={selectValue}
+                            sx={{
+                              width: "100%",
+                              border: "none",
+                              boxShadow: "none",
+                              bgcolor: "transparent",
+                              p: 0,
+                            }}
+                            slotProps={{
+                              button: {
+                                sx: {
+                                  whiteSpace: "normal",
+                                  textAlign: "left",
+                                  overflowWrap: "anywhere",
+                                  alignItems: "flex-start",
+                                  py: 0.25,
+                                },
+                              },
+                              listbox: {
+                                sx: {
+                                  "& li": {
+                                    whiteSpace: "normal",
+                                    overflowWrap: "anywhere",
+                                    wordBreak: "break-word",
+                                  },
+                                },
+                              },
+                            }}
+                            onChange={(_, v) => {
+                              if (v === SEARCH_MORE_MAKE) {
+                                setActiveLineId(l.id);
+                                setMakeModalOpen(true);
+                                return;
+                              }
+                              if (v === CREATE_PRODUCT_INLINE) {
+                                openCreateProductForLine(l);
+                                return;
+                              }
+                              updateLine(l.id, "make", v || "");
+                            }}
+                            placeholder={
+                             "Make"
+                            }
+                            disabled={
+                              inputsDisabled || !l.productCategoryId || !l.productName
+                            }
+                            renderValue={() => (
+                              <Typography
+                                level="body-sm"
+                                sx={{
+                                  whiteSpace: "normal",
+                                  overflowWrap: "anywhere",
+                                  wordBreak: "break-word",
+                                }}
+                              >
+                                {selectValue || "Select make"}
+                              </Typography>
+                            )}
+                          >
+                            {rowMakes.slice(0, 7).map((m) => (
+                              <Option
+                                key={m}
+                                value={m}
+                                sx={{ whiteSpace: "normal", overflowWrap: "anywhere" }}
+                              >
+                                {m}
+                              </Option>
+                            ))}
+
+                            {(l.productCategoryId && l.productName) && (
+                              <Option value={SEARCH_MORE_MAKE} color="neutral">
+                                Search more…
+                              </Option>
+                            )}
+
+                            {(l.productCategoryId && l.productName) && (
+                              <Option value={CREATE_PRODUCT_INLINE} color="primary">
+                                + Create Product…
+                              </Option>
+                            )}
+                          </JSelect>
+                        </Box>
                       </td>
+
                       <td>
                         <Input
                           size="sm"
@@ -1108,16 +1446,6 @@ const AddPurchaseOrder = ({
                           </IconButton>
                         )}
                       </td>
-                      {ready_to_dispatch && (
-                        <td>
-                          <Checkbox
-                            checked={!!l._selected}
-                            // onChange={(e) =>
-                            //   handleProductCheckbox(e.target.checked, l.id)
-                            // }
-                          />
-                        </td>
-                      )}
                     </tr>
                   );
                 })}
@@ -1125,9 +1453,7 @@ const AddPurchaseOrder = ({
             </Box>
 
             {isApprovalPending && manualEdit && (
-              <Box
-                sx={{ display: "flex", gap: 3, color: "primary.600", mt: 1 }}
-              >
+              <Box sx={{ display: "flex", gap: 3, color: "primary.600", mt: 1 }}>
                 <Button variant="plain" size="sm" onClick={addLine}>
                   Add a product
                 </Button>
@@ -1138,10 +1464,7 @@ const AddPurchaseOrder = ({
 
             {/* Totals */}
             <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-              <Sheet
-                variant="soft"
-                sx={{ borderRadius: "lg", p: 2, minWidth: 320 }}
-              >
+              <Sheet variant="soft" sx={{ borderRadius: "lg", p: 2, minWidth: 320 }}>
                 <Box
                   sx={{
                     display: "grid",
@@ -1183,25 +1506,9 @@ const AddPurchaseOrder = ({
           </Sheet>
 
           {/* Bottom buttons */}
-          <Box
-            sx={{
-              display: "flex",
-              gap: 1,
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-              mt: 2,
-            }}
-          >
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "space-between", mt: 2 }}>
             {isApprovalPending && manualEdit && (
-              <Button
-                component="button"
-                type="submit"
-                form="po-form"
-                name="action"
-                value="edit_save"
-                variant="solid"
-                loading={isSubmitting}
-              >
+              <Button component="button" type="submit" form="po-form" name="action" value="edit_save" variant="solid" loading={isSubmitting}>
                 Save changes
               </Button>
             )}
@@ -1218,9 +1525,7 @@ const AddPurchaseOrder = ({
                   color: "#163553",
                 },
               }}
-              onClick={() =>
-                onClose ? onClose() : navigate("/purchase-order")
-              }
+              onClick={() => (onClose ? onClose() : navigate("/purchase-order"))}
             >
               Back
             </Button>
@@ -1240,6 +1545,76 @@ const AddPurchaseOrder = ({
         pageSize={VENDOR_LIMIT}
         backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
       />
+
+      {/* Product picker (optional) */}
+      <SearchPickerModal
+        open={productModalOpen}
+        onClose={() => {
+          setProductModalOpen(false);
+          setActiveLineId(null);
+        }}
+        onPick={onPickProduct}
+        title="Search: Product"
+        columns={[
+          { key: "sku_code", label: "Code", width: 160 },
+          { key: "name", label: "Product Name", width: 320, render: (row) => getProdField(row, "Product Name") || "-" },
+          { key: "category", label: "Category", width: 220, render: (row) => row?.category?.name || "-" },
+        ]}
+        fetchPage={async ({ search = "", page = 1, pageSize = 7 }) => {
+          const res = await triggerGetProducts(
+            {
+              search,
+              page,
+              limit: pageSize,
+              category: "",
+            },
+            true
+          );
+          const d = res?.data;
+          const total = d?.meta?.total ?? d?.pagination?.total ?? 0;
+          const curPage = d?.meta?.page ?? d?.pagination?.page ?? page;
+          const limit = d?.meta?.limit ?? d?.pagination?.limit ?? pageSize;
+          return { rows: d?.data || [], total, page: curPage, pageSize: limit };
+        }}
+        searchKey="name"
+        pageSize={7}
+        backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
+      />
+
+      {/* Make Search Modal */}
+      <SearchPickerModal
+        open={makeModalOpen}
+        onClose={() => {
+          setMakeModalOpen(false);
+          setActiveLineId(null);
+        }}
+        onPick={onPickMake}
+        title="Select Make"
+        columns={[{ key: "make", label: "Make", width: 320 }]}
+        fetchPage={fetchMakesPage}
+        searchKey="make"
+        pageSize={7}
+        backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
+      />
+
+      {/* Create Product (embedded ProductForm) */}
+      <Modal open={createProdOpen} onClose={() => setCreateProdOpen(false)}>
+        <ModalDialog
+          sx={{ maxWidth: 1000, width: "95vw", p: 0, overflow: "hidden" }}
+        >
+          <Box sx={{ p: 2, borderBottom: "1px solid var(--joy-palette-neutral-outlinedBorder)" }}>
+            <Typography level="h5">Create Product</Typography>
+          </Box>
+          <Box sx={{ p: 2, maxHeight: "70vh", overflow: "auto" }}>
+            <ProductForm
+              embedded
+              initialForm={createProdInitial}
+              onClose={() => setCreateProdOpen(false)}
+              onCreated={(created) => handleProductCreated(created)}
+            />
+          </Box>
+        </ModalDialog>
+      </Modal>
 
       <Modal open={openRefuse} onClose={() => setOpenRefuse(false)}>
         <ModalDialog>
