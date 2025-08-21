@@ -996,7 +996,7 @@ function PaymentRequest() {
                         <Chip
                           size="sm"
                           variant="solid"
-                          color="primary"
+                           color={t.key === "finalApprovalPayments" ? "danger" : "primary"}
                           sx={{
                             ml: 0.5,
                             fontWeight: 700,

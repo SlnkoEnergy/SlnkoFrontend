@@ -4,7 +4,15 @@ import Input from "@mui/joy/Input";
 import BlockIcon from "@mui/icons-material/Block";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import Chip from "@mui/joy/Chip";
-import { CheckCircle, CreditCard, Info, PenLine, XCircle } from "lucide-react";
+import {
+  CheckCircle,
+  CreditCard,
+  DollarSign,
+  Info,
+  PenLine,
+  XCircle,
+  Zap,
+} from "lucide-react";
 import Typography from "@mui/joy/Typography";
 import IconButton from "@mui/joy/IconButton";
 import { toast } from "react-toastify";
@@ -327,18 +335,22 @@ const CreditPayment = forwardRef(
       color: "#2C3E50",
     };
 
-    const PaymentID = ({ cr_id, pay_id, request_date }) => {
-      // const maskCrId = (id) => {
-      //   if (!id) return "N/A";
-      //   const parts = id.split("/");
-      //   const lastIndex = parts.length - 2;
+    const PaymentID = ({ cr_id, pay_id, request_date, pay_type }) => {
+      const normType = String(pay_type || "")
+        .trim()
+        .toLowerCase();
 
-      //   if (!isNaN(parts[lastIndex])) {
-      //     parts[lastIndex] = parts[lastIndex].replace(/\d{2}$/, "XX");
-      //   }
+      const payTypeColor = normType.includes("instant")
+        ? "success"
+        : normType.includes("credit")
+          ? "danger"
+          : "neutral";
 
-      //   return parts.join("/");
-      // };
+      const PayTypeIcon = normType.includes("instant")
+        ? Zap
+        : normType.includes("credit")
+          ? CreditCard
+          : DollarSign;
 
       return (
         <>
@@ -353,10 +365,7 @@ const CreditPayment = forwardRef(
                   fontFamily: "Inter, Roboto, sans-serif",
                   fontSize: 14,
                   color: "#fff",
-                  "&:hover": {
-                    boxShadow: "md",
-                    opacity: 0.9,
-                  },
+                  "&:hover": { boxShadow: "md", opacity: 0.9 },
                 }}
               >
                 {cr_id || pay_id}
@@ -365,15 +374,34 @@ const CreditPayment = forwardRef(
           )}
 
           {request_date && (
-            <Box display="flex" alignItems="center" mt={0.5}>
+            <Box display="flex" alignItems="center" mt={0.5} gap={0.5}>
               <Calendar size={12} />
               <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
                 Request Date:
               </Typography>
-
               <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
                 {dayjs(request_date).format("DD-MM-YYYY")}
               </Typography>
+            </Box>
+          )}
+
+          {pay_type && (
+            <Box display="flex" alignItems="center" gap={1} mt={0.5}>
+              <Box display="flex" alignItems="center" gap={0.5}>
+                <PayTypeIcon size={12} />
+                <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
+                  Payment Type:
+                </Typography>
+              </Box>
+
+              <Chip
+                variant="solid"
+                size="sm"
+                color={payTypeColor}
+                sx={{ fontSize: 12, fontWeight: 600 }}
+              >
+                {pay_type}
+              </Chip>
             </Box>
           )}
         </>
@@ -675,7 +703,7 @@ const CreditPayment = forwardRef(
                 />
               </Box> */}
                 {[
-                  "Credit Id",
+                  "Payment Id",
                   "Project Id",
                   "Request For",
                   "Amount Requested",
@@ -761,6 +789,7 @@ const CreditPayment = forwardRef(
                           cr_id={payment?.cr_id}
                           pay_id={payment?.pay_id}
                           request_date={payment?.request_date}
+                          pay_type={payment?.pay_type}
                         />
                       </Box>
                       <Box

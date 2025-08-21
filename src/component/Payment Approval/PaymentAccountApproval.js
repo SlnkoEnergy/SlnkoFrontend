@@ -216,17 +216,12 @@ const PaymentAccountApproval = forwardRef(
       const numDays = Number(remainingDays);
       const isFiniteDays = Number.isFinite(numDays);
 
-      // near-due = within 2 days
       const nearDue = isFiniteDays ? numDays <= 2 : false;
 
-      // show approve/reject only if allowed AND near due
       const showApproveReject = !!showApprove && nearDue;
 
-      // extension UI (edit button + modal) only when extension requested AND not near due
-      const showExtensionUI = credit_extension === true && !nearDue;
 
-      // show "No extension required" if no extension is active OR we are near due
-      // (so it appears alongside Approve/Reject when near due)
+      const showExtensionUI = credit_extension === true && !nearDue;
       const showNoExtensionChip = credit_extension !== true || nearDue;
 
       const [openReject, setOpenReject] = useState(false);
@@ -300,7 +295,6 @@ const PaymentAccountApproval = forwardRef(
               flexWrap: "wrap",
             }}
           >
-            {/* Show Approve/Reject when near due */}
             {showApproveReject && (
               <>
                 <Chip
@@ -907,7 +901,7 @@ const PaymentAccountApproval = forwardRef(
                   />
                 </Box>
                 {[
-                  "Payment Id",
+                  "Credit Id",
                   "Project Id",
                   "Request For",
                   "Amount Requested",
