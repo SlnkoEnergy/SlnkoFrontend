@@ -851,7 +851,7 @@ const CreditPayment = forwardRef(
                         style={{ width: "50px", height: "50px" }}
                       />
                       <Typography fontStyle={"italic"}>
-                        No credit payment available
+                        No payment available
                       </Typography>
                     </Box>
                   </Box>

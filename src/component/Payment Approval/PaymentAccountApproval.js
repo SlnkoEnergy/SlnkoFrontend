@@ -204,242 +204,275 @@ const PaymentAccountApproval = forwardRef(
 
     const [updateCreditExtension] = useUpdateCreditExtensionMutation();
 
-   const RowMenu = ({
-  _id,
-  credit_extension,
-  credit_remarks,
-  credit_user_name,
-  remainingDays,
-  onStatusChange,
-  showApprove, // keep this prop; we'll combine with nearDue
-}) => {
-  // parse remainingDays safely
-  const numDays = Number(remainingDays);
-  const isFiniteDays = Number.isFinite(numDays);
+    const RowMenu = ({
+      _id,
+      credit_extension,
+      credit_remarks,
+      credit_user_name,
+      remainingDays,
+      onStatusChange,
+      showApprove,
+    }) => {
+      const numDays = Number(remainingDays);
+      const isFiniteDays = Number.isFinite(numDays);
 
-  // "near due" = last 2 days (including due/overdue)
-  const nearDue = isFiniteDays ? numDays <= 2 : false;
+      // near-due = within 2 days
+      const nearDue = isFiniteDays ? numDays <= 2 : false;
 
-  // Show approve/reject only when near due
-  const showApproveReject = !!showApprove && nearDue;
+      // show approve/reject only if allowed AND near due
+      const showApproveReject = !!showApprove && nearDue;
 
-  // Show extension UI only when extension is enabled and NOT near due
-  const showExtensionUI = credit_extension === true && !nearDue;
+      // extension UI (edit button + modal) only when extension requested AND not near due
+      const showExtensionUI = credit_extension === true && !nearDue;
 
-  // Show "No extension required" chip when NOT near due
-  const showNoExtensionChip = !nearDue;
+      // show "No extension required" if no extension is active OR we are near due
+      // (so it appears alongside Approve/Reject when near due)
+      const showNoExtensionChip = credit_extension !== true || nearDue;
 
-  // local modal states
-  const [openReject, setOpenReject] = useState(false);
-  const [openExtend, setOpenExtend] = useState(false);
+      const [openReject, setOpenReject] = useState(false);
+      const [openExtend, setOpenExtend] = useState(false);
 
-  // rejection remarks
-  const [remarks, setRemarks] = useState("");
+      const [remarks, setRemarks] = useState("");
 
-  // credit extension form
-  const [formData, setFormData] = useState({
-    credit_deadline: "",
-    credit_remarks: "",
-  });
-
-  const handleRejectSubmit = () => {
-    const trimmed = (remarks || "").trim();
-    onStatusChange?.(_id, "Rejected", trimmed);
-    setOpenReject(false);
-    setRemarks("");
-  };
-
-  const handleOpenExtend = () => setOpenExtend(true);
-  const handleCloseExtend = () => setOpenExtend(false);
-  const handleOpenReject = () => setOpenReject(true);
-  const handleCloseReject = () => setOpenReject(false);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async () => {
-    try {
-      await updateCreditExtension({ id: _id, ...formData }).unwrap();
-      toast.success("Credit days extended successfully!", {
-        icon: <CheckCircle size={20} color="#FFFFFF" />,
-        style: {
-          backgroundColor: "#2E7D32",
-          color: "#FFFFFF",
-          fontWeight: 500,
-          fontSize: "15px",
-          padding: "12px 20px",
-          borderRadius: "8px",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-        },
+      const [formData, setFormData] = useState({
+        credit_deadline: "",
+        credit_remarks: "",
       });
-      refetch?.();
-      handleCloseExtend();
-    } catch (err) {
-      toast.error("Failed to extend credit days", {
-        icon: <XCircle size={20} color="#FFFFFF" />,
-        style: {
-          backgroundColor: "#D32F2F",
-          color: "#FFFFFF",
-          fontWeight: 500,
-          fontSize: "15px",
-          padding: "12px 20px",
-          borderRadius: "8px",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-        },
-      });
-    }
-  };
 
-  return (
-    <>
-      {/* Actions / Status */}
-      <Box sx={{ display: "flex", justifyContent: "left", alignItems: "center", gap: 1 }}>
-        {showApproveReject ? (
-          <>
-            <Chip
-              component="div"
-              variant="solid"
-              color="success"
-              onClick={() => onStatusChange?.(_id, "Approved")}
-              sx={{ textTransform: "none", fontSize: "0.875rem", fontWeight: 500, cursor: "pointer" }}
-              startDecorator={<CheckRoundedIcon />}
-            >
-              Approve
-            </Chip>
+      const handleRejectSubmit = () => {
+        const trimmed = (remarks || "").trim();
+        onStatusChange?.(_id, "Rejected", trimmed);
+        setOpenReject(false);
+        setRemarks("");
+      };
 
-            <Chip
-              component="div"
-              variant="outlined"
-              color="danger"
-              onClick={handleOpenReject}
-              sx={{ textTransform: "none", fontSize: "0.875rem", fontWeight: 500, cursor: "pointer" }}
-              startDecorator={<BlockIcon />}
-            >
-              Reject
-            </Chip>
-          </>
-        ) : (
-          showNoExtensionChip && (
-            <Chip
-              component="div"
-              variant="soft"
-              color="neutral"
-              sx={{ textTransform: "none", fontSize: "0.8rem", fontWeight: 500 }}
-            >
-              No extension required
-            </Chip>
-          )
-        )}
-      </Box>
+      const handleOpenExtend = () => setOpenExtend(true);
+      const handleCloseExtend = () => setOpenExtend(false);
+      const handleOpenReject = () => setOpenReject(true);
+      const handleCloseReject = () => setOpenReject(false);
 
-      {/* Reject Modal */}
-      <Modal open={openReject} onClose={handleCloseReject}>
-        <ModalDialog>
-          <Typography level="h5">Rejection Remarks</Typography>
-          <Textarea
-            minRows={3}
-            placeholder="Enter remarks..."
-            value={remarks}
-            onChange={(e) => setRemarks(e.target.value ?? "")}
-          />
+      const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({ ...prev, [name]: value }));
+      };
 
-          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 2 }}>
-            <Button variant="plain" onClick={handleCloseReject}>
-              Cancel
-            </Button>
-            <Button variant="solid" color="danger" onClick={handleRejectSubmit} disabled={!remarks?.trim()}>
-              Submit
-            </Button>
+      const handleSubmit = async () => {
+        try {
+          await updateCreditExtension({ id: _id, ...formData }).unwrap();
+          toast.success("Credit days extended successfully!", {
+            icon: <CheckCircle size={20} color="#FFFFFF" />,
+            style: {
+              backgroundColor: "#2E7D32",
+              color: "#FFFFFF",
+              fontWeight: 500,
+              fontSize: "15px",
+              padding: "12px 20px",
+              borderRadius: "8px",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+            },
+          });
+          refetch?.();
+          handleCloseExtend();
+        } catch (err) {
+          toast.error("Failed to extend credit days", {
+            icon: <XCircle size={20} color="#FFFFFF" />,
+            style: {
+              backgroundColor: "#D32F2F",
+              color: "#FFFFFF",
+              fontWeight: 500,
+              fontSize: "15px",
+              padding: "12px 20px",
+              borderRadius: "8px",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+            },
+          });
+        }
+      };
+
+      return (
+        <>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "left",
+              alignItems: "center",
+              gap: 1,
+              flexWrap: "wrap",
+            }}
+          >
+            {/* Show Approve/Reject when near due */}
+            {showApproveReject && (
+              <>
+                <Chip
+                  component="div"
+                  variant="solid"
+                  color="success"
+                  onClick={() => onStatusChange?.(_id, "Approved")}
+                  sx={{
+                    textTransform: "none",
+                    fontSize: "0.875rem",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                  }}
+                  startDecorator={<CheckRoundedIcon />}
+                >
+                  Approve
+                </Chip>
+
+                <Chip
+                  component="div"
+                  variant="outlined"
+                  color="danger"
+                  onClick={handleOpenReject}
+                  sx={{
+                    textTransform: "none",
+                    fontSize: "0.875rem",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                  }}
+                  startDecorator={<BlockIcon />}
+                >
+                  Reject
+                </Chip>
+              </>
+            )}
+
+            {/* Show "No extension required" chip also when near due (so it appears together) */}
+            {showNoExtensionChip && (
+              <Chip
+                component="div"
+                variant="soft"
+                color="neutral"
+                sx={{
+                  textTransform: "none",
+                  fontSize: "0.8rem",
+                  fontWeight: 500,
+                }}
+              >
+                No extension required
+              </Chip>
+            )}
           </Box>
-        </ModalDialog>
-      </Modal>
 
-      {/* Credit extension controls (enabled only when NOT near due) */}
-      {showExtensionUI ? (
-        <Box display="flex" alignItems="center" gap={1} mt={5}>
-          {/* Edit extension */}
-          <Tooltip title="Edit Credit Extension" placement="top" arrow>
-            <IconButton
-              size="sm"
-              variant="soft"
-              color="primary"
-              onClick={handleOpenExtend}
-              sx={{
-                borderRadius: "50%",
-                p: 0.7,
-                minWidth: "32px",
-                minHeight: "32px",
-                "&:hover": {
-                  backgroundColor: "primary.softHoverBg",
-                  transform: "scale(1.05)",
-                  transition: "all 0.2s ease-in-out",
-                },
-              }}
-            >
-              <PenLine size={16} strokeWidth={2} />
-            </IconButton>
-          </Tooltip>
+          {/* Reject Modal */}
+          <Modal open={openReject} onClose={handleCloseReject}>
+            <ModalDialog>
+              <Typography level="h5">Rejection Remarks</Typography>
+              <Textarea
+                minRows={3}
+                placeholder="Enter remarks..."
+                value={remarks}
+                onChange={(e) => setRemarks(e.target.value ?? "")}
+              />
 
-          {/* Latest remarks tooltip */}
-          {credit_remarks && credit_remarks.length > 0 && (
-            <Tooltip
-              placement="top"
-              arrow
-              title={
-                <Box>
-                  <ul style={{ margin: 0, paddingLeft: "18px" }}>
-                    <li>Extension Remarks: {credit_remarks}</li>
-                    <li>Requested by: {credit_user_name || "Unknown"}</li>
-                  </ul>
-                </Box>
-              }
-            >
-              <Info size={18} strokeWidth={2} style={{ cursor: "pointer" }} />
-            </Tooltip>
-          )}
-        </Box>
-      ) : null}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 1,
+                  mt: 2,
+                }}
+              >
+                <Button variant="plain" onClick={handleCloseReject}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="solid"
+                  color="danger"
+                  onClick={handleRejectSubmit}
+                  disabled={!remarks?.trim()}
+                >
+                  Submit
+                </Button>
+              </Box>
+            </ModalDialog>
+          </Modal>
 
-      {/* Extend Credit Modal */}
-      <Modal open={openExtend} onClose={handleCloseExtend}>
-        <ModalDialog>
-          <Typography level="h5" mb={1}>
-            Extend Credit
-          </Typography>
+          {/* Extension edit affordance only when not near due */}
+          {showExtensionUI ? (
+            <Box display="flex" alignItems="center" gap={1} mt={5}>
+              <Tooltip title="Edit Credit Extension" placement="top" arrow>
+                <IconButton
+                  size="sm"
+                  variant="soft"
+                  color="primary"
+                  onClick={handleOpenExtend}
+                  sx={{
+                    borderRadius: "50%",
+                    p: 0.7,
+                    minWidth: "32px",
+                    minHeight: "32px",
+                    "&:hover": {
+                      backgroundColor: "primary.softHoverBg",
+                      transform: "scale(1.05)",
+                      transition: "all 0.2s ease-in-out",
+                    },
+                  }}
+                >
+                  <PenLine size={16} strokeWidth={2} />
+                </IconButton>
+              </Tooltip>
 
-          <Input
-            type="date"
-            name="credit_deadline"
-            value={formData.credit_deadline}
-            onChange={handleChange}
-            placeholder="New Credit Deadline"
-          />
+              {credit_remarks && credit_remarks.length > 0 && (
+                <Tooltip
+                  placement="top"
+                  arrow
+                  title={
+                    <Box>
+                      <ul style={{ margin: 0, paddingLeft: "18px" }}>
+                        <li>Extension Remarks: {credit_remarks}</li>
+                        <li>Requested by: {credit_user_name || "Unknown"}</li>
+                      </ul>
+                    </Box>
+                  }
+                >
+                  <Info
+                    size={18}
+                    strokeWidth={2}
+                    style={{ cursor: "pointer" }}
+                  />
+                </Tooltip>
+              )}
+            </Box>
+          ) : null}
 
-          <Input
-            type="text"
-            name="credit_remarks"
-            value={formData.credit_remarks}
-            onChange={handleChange}
-            placeholder="Credit Remarks"
-            sx={{ mt: 1 }}
-          />
+          {/* Extend Credit Modal */}
+          <Modal open={openExtend} onClose={handleCloseExtend}>
+            <ModalDialog>
+              <Typography level="h5" mb={1}>
+                Extend Credit
+              </Typography>
 
-          <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
-            <Button variant="plain" onClick={handleCloseExtend}>
-              Cancel
-            </Button>
-            <Button variant="solid" onClick={handleSubmit}>
-              Extend
-            </Button>
-          </Box>
-        </ModalDialog>
-      </Modal>
-    </>
-  );
-};
+              <Input
+                type="date"
+                name="credit_deadline"
+                value={formData.credit_deadline}
+                onChange={handleChange}
+                placeholder="New Credit Deadline"
+              />
 
+              <Input
+                type="text"
+                name="credit_remarks"
+                value={formData.credit_remarks}
+                onChange={handleChange}
+                placeholder="Credit Remarks"
+                sx={{ mt: 1 }}
+              />
+
+              <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
+                <Button variant="plain" onClick={handleCloseExtend}>
+                  Cancel
+                </Button>
+                <Button variant="solid" onClick={handleSubmit}>
+                  Extend
+                </Button>
+              </Box>
+            </ModalDialog>
+          </Modal>
+        </>
+      );
+    };
 
     const handleSelectAll = (event) => {
       if (event.target.checked) {
@@ -489,7 +522,7 @@ const PaymentAccountApproval = forwardRef(
     const PaymentID = ({ pay_id, cr_id, request_date }) => {
       return (
         <>
-          {( cr_id) && (
+          {cr_id && (
             <Box>
               <Chip
                 variant="solid"
@@ -506,7 +539,7 @@ const PaymentAccountApproval = forwardRef(
                   },
                 }}
               >
-                { cr_id}
+                {cr_id}
               </Chip>
             </Box>
           )}
@@ -957,7 +990,6 @@ const PaymentAccountApproval = forwardRef(
                         }}
                       >
                         <PaymentID
-                         
                           cr_id={payment?.cr_id}
                           request_date={payment?.request_date}
                         />
@@ -1014,15 +1046,15 @@ const PaymentAccountApproval = forwardRef(
                       <Box component="td" sx={{ ...cellStyle }}>
                         <RowMenu
                           _id={payment._id}
+                          remainingDays={Number(payment?.remainingDays)}
                           showApprove={["SCM", "Accounts"].includes(
                             user?.department
                           )}
-                          onStatusChange={(id, status, remarks) =>
-                            handleStatusChange(id, status, remarks)
-                          }
-                          credit_extension={payment?.credit_extension}
-                          credit_remarks={payment?.credit_remarks}
-                          credit_user_name={payment?.credit_user_name}
+                          onStatusChange={handleStatusChange}
+                          credit_extension={Boolean(payment?.credit_extension)}
+                          credit_remarks={payment?.credit_remarks || ""}
+                          credit_user_name={payment?.credit_user_name || ""}
+                          refetch={refetch}
                         />
                       </Box>
                     </Box>

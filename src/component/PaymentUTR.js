@@ -77,45 +77,57 @@ function UTRPayment() {
     return pages;
   };
 
-  const UTRRow = ({ paymentId, onSuccess }) => {
-    const [utr, setUtr] = useState("");
-    const [submitted, setSubmitted] = useState(false);
+  const UTRRow = ({ payId, crId, initialUTR = "", onSuccess }) => {
+    const [utr, setUtr] = useState(initialUTR);
+    const [submitted, setSubmitted] = useState(Boolean(initialUTR));
     const [progressVisible, setProgressVisible] = useState(false);
     const { enqueueSnackbar } = useSnackbar();
 
+    const idKey = payId ? "pay_id" : crId ? "cr_id" : null;
+    const idValue = payId || crId || null;
+
     const handleSubmit = async (e) => {
       e.preventDefault();
-      if (!utr.trim())
-        return enqueueSnackbar("Please enter a UTR.", { variant: "warning" });
+
+      if (!idKey || !idValue) {
+        enqueueSnackbar("Missing pay_id or cr_id.", { variant: "error" });
+        return;
+      }
+
+      const trimmed = (utr || "").trim();
+      if (!trimmed) {
+        enqueueSnackbar("Please enter a valid UTR.", { variant: "warning" });
+        return;
+      }
 
       try {
         setProgressVisible(true);
         const token = localStorage.getItem("authToken");
-        const user = JSON.parse(localStorage.getItem("userDetails"));
 
-        const response = await Axios.put(
-          "/utr-update",
-          {
-            pay_id: paymentId,
-            utr,
-            utr_submitted_by: user?.name || "Unknown",
-          },
-          { headers: { "x-auth-token": token } }
-        );
+        const payload = { [idKey]: idValue, utr: trimmed };
 
-        if (response.status === 200) {
-          enqueueSnackbar("UTR submitted successfully!", {
-            variant: "success",
-          });
+        const resp = await Axios.put("/utr-update", payload, {
+          headers: { "x-auth-token": token },
+        });
+
+        if (resp?.status === 200) {
+          enqueueSnackbar(
+            resp?.data?.message || "UTR submitted successfully!",
+            {
+              variant: "success",
+            }
+          );
           setSubmitted(true);
-          onSuccess?.(utr);
+          setUtr(trimmed);
+          onSuccess?.(trimmed, resp?.data);
         } else {
           enqueueSnackbar("Submission failed!", { variant: "error" });
         }
-      } catch (error) {
-        enqueueSnackbar("Network error or server not reachable.", {
-          variant: "error",
-        });
+      } catch (err) {
+        const msg =
+          err?.response?.data?.message ||
+          "Network error or server not reachable.";
+        enqueueSnackbar(msg, { variant: "error" });
       } finally {
         setProgressVisible(false);
       }
@@ -128,7 +140,7 @@ function UTRPayment() {
           p: 2,
           borderRadius: "md",
           boxShadow: "sm",
-          width: 240,
+          width: 260,
           textAlign: "center",
         }}
       >
@@ -141,6 +153,7 @@ function UTRPayment() {
               sx={{ mt: 1 }}
               required
             />
+
             <Box mt={1}>
               <Button
                 type="submit"
@@ -152,6 +165,7 @@ function UTRPayment() {
                 {progressVisible ? "Submitting..." : "Submit UTR"}
               </Button>
             </Box>
+
             {progressVisible && (
               <LinearProgress
                 variant="plain"
@@ -573,7 +587,14 @@ function UTRPayment() {
                   </Box>
 
                   <Box component="td" sx={cellStyle}>
-                    <UTRRow paymentId={payment.pay_id} />
+                    <UTRRow
+                      payId={payment.pay_id ?? undefined}
+                      crId={payment.pay_id ? undefined : payment.cr_id}
+                      initialUTR={payment.utr}
+                      onSuccess={(newUtr, resp) => {
+                        refetch?.();
+                      }}
+                    />
                   </Box>
                 </Box>
               ))
