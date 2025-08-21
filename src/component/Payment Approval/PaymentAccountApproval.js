@@ -39,7 +39,7 @@ import { PaymentProvider } from "../../store/Context/Payment_History";
 import PaymentHistory from "../PaymentHistory";
 
 const PaymentAccountApproval = forwardRef(
-  ({ searchQuery, currentPage, perPage }, ref) => {
+  ({ searchQuery, currentPage, perPage , delaydays}, ref) => {
     const [selected, setSelected] = useState([]);
 
     //   const isAccount = user?.department === "Accounts";
@@ -53,6 +53,7 @@ const PaymentAccountApproval = forwardRef(
       page: currentPage,
       pageSize: perPage,
       search: searchQuery,
+      delaydays: delaydays, 
       tab: "finalApprovalPayments",
     });
 
