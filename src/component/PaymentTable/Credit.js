@@ -393,6 +393,55 @@ const CreditRequest = forwardRef(
       );
     };
 
+    const UtrCell = ({ payment, cellStyle, user }) => {
+      const department = user?.department;
+      const role = user?.role;
+
+      const createdUtr = payment?.utr_history?.find(
+        (h) => h.status === "Created"
+      )?.utr;
+
+      const displayUtr = payment?.utr ? payment.utr : createdUtr || "-";
+
+      const historyContent = payment?.utr_history?.length ? (
+        <Box>
+          <Typography level="body-sm" fontWeight={600} mb={0.5}>
+            UTR History
+          </Typography>
+          <ul style={{ margin: 0, paddingLeft: "1rem" }}>
+            {payment.utr_history.map((h, idx) => (
+              <li key={idx}>
+                <Typography level="body-sm">
+                  {h.utr}{" "}
+                  <span style={{ color: "gray", fontSize: 12 }}>
+                    ({h.status})
+                  </span>
+                </Typography>
+              </li>
+            ))}
+          </ul>
+        </Box>
+      ) : (
+        "No UTR history"
+      );
+
+      const content = <span style={{ fontSize: 15, fontWeight:600 }}>{displayUtr}</span>;
+
+      return (
+        <Box>
+          {(department === "SCM" && role === "manager") ||
+          department === "admin" ||
+          department === "superadmin" ? (
+            <Tooltip title={historyContent} arrow placement="top">
+              <span>{content}</span>
+            </Tooltip>
+          ) : (
+            content
+          )}
+        </Box>
+      );
+    };
+
     return (
       <>
         {/* Table */}
@@ -546,7 +595,10 @@ const CreditRequest = forwardRef(
                     </Box>
 
                     <Box component="td" sx={{ ...cellStyle, fontSize: 15 }}>
-                      {payment.utr || "-"}
+                      <UtrCell
+                        payment={payment}
+                        user={user}
+                      />
                     </Box>
                   </Box>
                 ))
