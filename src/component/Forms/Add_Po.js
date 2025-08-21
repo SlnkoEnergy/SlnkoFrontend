@@ -17,7 +17,7 @@ import {
   Textarea,
 } from "@mui/joy";
 import DeleteOutline from "@mui/icons-material/DeleteOutline";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import ReactSelect from "react-select";
 import Axios from "../../utils/Axios";
 import { toast } from "react-toastify";
@@ -56,8 +56,9 @@ const getProdField = (row, fieldName) => {
   const arr = Array.isArray(row?.data) ? row.data : [];
   const item = arr.find(
     (d) =>
-      String(d?.name || "").trim().toLowerCase() ===
-      String(fieldName).trim().toLowerCase()
+      String(d?.name || "")
+        .trim()
+        .toLowerCase() === String(fieldName).trim().toLowerCase()
   );
   const val =
     item && Array.isArray(item.values) && item.values[0]
@@ -69,7 +70,8 @@ const getProdField = (row, fieldName) => {
 /* normalize product payload shapes coming from API */
 const normalizeCreatedProduct = (res) => {
   let p = res;
-  if (p?.data?.data && (p?.data?.category || p?.data?.category?._id)) p = p.data;
+  if (p?.data?.data && (p?.data?.category || p?.data?.category?._id))
+    p = p.data;
   if (p?.newProduct) p = p.newProduct;
   if (p?.newMaterial) p = p.newMaterial;
   if (p?.product) p = p.product;
@@ -250,17 +252,17 @@ const AddPurchaseOrder = ({
     const arr = Array.isArray(po?.items)
       ? po.items
       : Array.isArray(po?.item)
-      ? po.item
-      : [];
+        ? po.item
+        : [];
     return arr.length
       ? arr.map((it) => ({
           ...makeEmptyLine(),
           productCategoryId:
             typeof it?.category === "object"
-              ? it?.category?._id ?? ""
-              : it?.category ?? "",
+              ? (it?.category?._id ?? "")
+              : (it?.category ?? ""),
           productCategoryName:
-            typeof it?.category === "object" ? it?.category?.name ?? "" : "",
+            typeof it?.category === "object" ? (it?.category?.name ?? "") : "",
           productName: it?.product_name ?? "",
           make: isValidMake(it?.product_make) ? it.product_make : "",
           briefDescription: it?.description ?? "",
@@ -292,7 +294,7 @@ const AddPurchaseOrder = ({
         );
         const po = Array.isArray(resp?.data)
           ? resp.data[0]
-          : resp?.data ?? resp;
+          : (resp?.data ?? resp);
         if (!po) {
           toast.error("PO not found.");
           return;
@@ -423,7 +425,12 @@ const AddPurchaseOrder = ({
     if (makesCache[key]) return makesCache[key];
 
     const res = await triggerGetProducts(
-      { search: productName, page: 1, limit: 200, category: String(categoryId) },
+      {
+        search: productName,
+        page: 1,
+        limit: 200,
+        category: String(categoryId),
+      },
       true
     );
     const rows = res?.data?.data || [];
@@ -460,18 +467,12 @@ const AddPurchaseOrder = ({
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    lines.map((l) => `${l.productCategoryId}::${l.productName}`).join("|"),
-  ]);
+  }, [lines.map((l) => `${l.productCategoryId}::${l.productName}`).join("|")]);
 
   // ---------- Make modal (search more within same filter) ----------
   const [makeModalOpen, setMakeModalOpen] = useState(false);
 
-  const fetchMakesPage = async ({
-    search = "",
-    page = 1,
-    pageSize = 7,
-  }) => {
+  const fetchMakesPage = async ({ search = "", page = 1, pageSize = 7 }) => {
     const row = lines.find((r) => r.id === activeLineId);
     const cat = row?.productCategoryId;
     const pname = row?.productName;
@@ -614,11 +615,6 @@ const AddPurchaseOrder = ({
     );
   }, [makesCache]);
 
-  /* =========================
-     END Products & Make flow
-     ========================= */
-
-  // -------- submit --------
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -634,8 +630,8 @@ const AddPurchaseOrder = ({
           typeof l.productCategoryId === "object" && l.productCategoryId?._id
             ? String(l.productCategoryId._id)
             : l.productCategoryId != null
-            ? String(l.productCategoryId)
-            : "";
+              ? String(l.productCategoryId)
+              : "";
         return {
           category: String(categoryId),
           product_name: String(l.productName || ""),
@@ -932,20 +928,39 @@ const AddPurchaseOrder = ({
     { value: SEARCH_MORE_VENDOR, label: "Search more…" },
   ];
 
+  const location = useLocation();
+  
+
   return (
-    <Box sx={{ display: "flex", justifyContent: "center", alignItems: "flex-start", width: "100%", p: 3 }}>
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "flex-start",
+        width: "100%",
+        p: 3,
+      }}
+    >
       <Box
         sx={{
-          maxWidth: "full",
+          maxWidth: fromModal ? 'full' : 1400,
           width: "100%",
           p: 3,
           boxShadow: "md",
           borderRadius: "lg",
           bgcolor: "background.surface",
+          ml:fromModal ? 0 : {xs: '2%', lg:'6%', xl:'10%'}
         }}
       >
         {/* Header */}
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 1,
+          }}
+        >
           <Typography level="h3" sx={{ fontWeight: 700 }}>
             Purchase Order
           </Typography>
@@ -953,7 +968,8 @@ const AddPurchaseOrder = ({
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
             {!viewMode && (
               <>
-                {((effectiveMode === "edit" && statusNow === "approval_rejected") ||
+                {((effectiveMode === "edit" &&
+                  statusNow === "approval_rejected") ||
                   fromModal) && (
                   <Button
                     component="button"
@@ -1010,16 +1026,29 @@ const AddPurchaseOrder = ({
               user?.name === "IT Team") &&
               isApprovalPending && (
                 <Box display="flex" gap={2}>
-                  <Button variant="solid" color="success" sx={{ minWidth: 100 }} startDecorator={<Check />} onClick={handleApprove}>
+                  <Button
+                    variant="solid"
+                    color="success"
+                    sx={{ minWidth: 100 }}
+                    startDecorator={<Check />}
+                    onClick={handleApprove}
+                  >
                     Approve
                   </Button>
-                  <Button variant="outlined" color="danger" sx={{ minWidth: 100 }} startDecorator={<Close />} onClick={() => setOpenRefuse(true)}>
+                  <Button
+                    variant="outlined"
+                    color="danger"
+                    sx={{ minWidth: 100 }}
+                    startDecorator={<Close />}
+                    onClick={() => setOpenRefuse(true)}
+                  >
                     Refuse
                   </Button>
                 </Box>
               )}
 
-            {((effectiveMode === "edit" && isApprovalPending) || approvalRejected) && (
+            {((effectiveMode === "edit" && isApprovalPending) ||
+              approvalRejected) && (
               <Box display="flex" gap={2}>
                 {user?.department === "SCM" ||
                   user?.name === "Guddu Rani Dubey" ||
@@ -1175,8 +1204,8 @@ const AddPurchaseOrder = ({
                             formData.delivery_type === "afor"
                               ? "Afor"
                               : formData.delivery_type === "slnko"
-                              ? "Slnko"
-                              : "",
+                                ? "Slnko"
+                                : "",
                         }
                       : null
                   }
@@ -1194,7 +1223,10 @@ const AddPurchaseOrder = ({
           </Sheet>
 
           {/* Product Table */}
-          <Sheet variant="outlined" sx={{ p: 2, borderRadius: "xl", mb: 2, overflow: "hidden" }}>
+          <Sheet
+            variant="outlined"
+            sx={{ p: 2, borderRadius: "xl", mb: 2, overflow: "hidden" }}
+          >
             <Box sx={{ display: "flex", gap: 2, mb: 1 }}>
               <Chip color="primary" variant="soft" size="sm">
                 Products
@@ -1253,7 +1285,7 @@ const AddPurchaseOrder = ({
                       String(selectedMakeSafe).toLowerCase()
                   );
                   const selectValue = inList ? selectedMakeSafe : "";
-                  console.log({selectValue})
+                  console.log({ selectValue });
                   return (
                     <tr key={l.id}>
                       <td>
@@ -1343,11 +1375,11 @@ const AddPurchaseOrder = ({
                               }
                               updateLine(l.id, "make", v || "");
                             }}
-                            placeholder={
-                             "Make"
-                            }
+                            placeholder={"Make"}
                             disabled={
-                              inputsDisabled || !l.productCategoryId || !l.productName
+                              inputsDisabled ||
+                              !l.productCategoryId ||
+                              !l.productName
                             }
                             renderValue={() => (
                               <Typography
@@ -1366,20 +1398,26 @@ const AddPurchaseOrder = ({
                               <Option
                                 key={m}
                                 value={m}
-                                sx={{ whiteSpace: "normal", overflowWrap: "anywhere" }}
+                                sx={{
+                                  whiteSpace: "normal",
+                                  overflowWrap: "anywhere",
+                                }}
                               >
                                 {m}
                               </Option>
                             ))}
 
-                            {(l.productCategoryId && l.productName) && (
+                            {l.productCategoryId && l.productName && (
                               <Option value={SEARCH_MORE_MAKE} color="neutral">
                                 Search more…
                               </Option>
                             )}
 
-                            {(l.productCategoryId && l.productName) && (
-                              <Option value={CREATE_PRODUCT_INLINE} color="primary">
+                            {l.productCategoryId && l.productName && (
+                              <Option
+                                value={CREATE_PRODUCT_INLINE}
+                                color="primary"
+                              >
                                 + Create Product…
                               </Option>
                             )}
@@ -1453,7 +1491,9 @@ const AddPurchaseOrder = ({
             </Box>
 
             {isApprovalPending && manualEdit && (
-              <Box sx={{ display: "flex", gap: 3, color: "primary.600", mt: 1 }}>
+              <Box
+                sx={{ display: "flex", gap: 3, color: "primary.600", mt: 1 }}
+              >
                 <Button variant="plain" size="sm" onClick={addLine}>
                   Add a product
                 </Button>
@@ -1464,7 +1504,10 @@ const AddPurchaseOrder = ({
 
             {/* Totals */}
             <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-              <Sheet variant="soft" sx={{ borderRadius: "lg", p: 2, minWidth: 320 }}>
+              <Sheet
+                variant="soft"
+                sx={{ borderRadius: "lg", p: 2, minWidth: 320 }}
+              >
                 <Box
                   sx={{
                     display: "grid",
@@ -1506,9 +1549,25 @@ const AddPurchaseOrder = ({
           </Sheet>
 
           {/* Bottom buttons */}
-          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "space-between", mt: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 1,
+              flexWrap: "wrap",
+              justifyContent: "space-between",
+              mt: 2,
+            }}
+          >
             {isApprovalPending && manualEdit && (
-              <Button component="button" type="submit" form="po-form" name="action" value="edit_save" variant="solid" loading={isSubmitting}>
+              <Button
+                component="button"
+                type="submit"
+                form="po-form"
+                name="action"
+                value="edit_save"
+                variant="solid"
+                loading={isSubmitting}
+              >
                 Save changes
               </Button>
             )}
@@ -1525,7 +1584,9 @@ const AddPurchaseOrder = ({
                   color: "#163553",
                 },
               }}
-              onClick={() => (onClose ? onClose() : navigate("/purchase-order"))}
+              onClick={() =>
+                onClose ? onClose() : navigate("/purchase-order")
+              }
             >
               Back
             </Button>
@@ -1557,8 +1618,18 @@ const AddPurchaseOrder = ({
         title="Search: Product"
         columns={[
           { key: "sku_code", label: "Code", width: 160 },
-          { key: "name", label: "Product Name", width: 320, render: (row) => getProdField(row, "Product Name") || "-" },
-          { key: "category", label: "Category", width: 220, render: (row) => row?.category?.name || "-" },
+          {
+            key: "name",
+            label: "Product Name",
+            width: 320,
+            render: (row) => getProdField(row, "Product Name") || "-",
+          },
+          {
+            key: "category",
+            label: "Category",
+            width: 220,
+            render: (row) => row?.category?.name || "-",
+          },
         ]}
         fetchPage={async ({ search = "", page = 1, pageSize = 7 }) => {
           const res = await triggerGetProducts(
@@ -1602,7 +1673,13 @@ const AddPurchaseOrder = ({
         <ModalDialog
           sx={{ maxWidth: 1000, width: "95vw", p: 0, overflow: "hidden" }}
         >
-          <Box sx={{ p: 2, borderBottom: "1px solid var(--joy-palette-neutral-outlinedBorder)" }}>
+          <Box
+            sx={{
+              p: 2,
+              borderBottom:
+                "1px solid var(--joy-palette-neutral-outlinedBorder)",
+            }}
+          >
             <Typography level="h5">Create Product</Typography>
           </Box>
           <Box sx={{ p: 2, maxHeight: "70vh", overflow: "auto" }}>

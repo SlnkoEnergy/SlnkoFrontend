@@ -58,8 +58,10 @@ const Login = () => {
     );
   }, []);
 
+  console.log({geoInfo})
+
   const handleLogin = async (values) => {
-    if (!geoInfo.latitude || !geoInfo.longitude || !geoInfo.fullAddress) {
+    if (!geoInfo.latitude || !geoInfo.longitude) {
       toast.error("Location is required to login. Please enable location access.");
       return;
     }

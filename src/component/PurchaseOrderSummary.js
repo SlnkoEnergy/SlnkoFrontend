@@ -579,69 +579,115 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       </Chip>
     );
   };
-  const RenderPid = ({ p_id, pr_no }) => {
-    return (
-      <>
-        <Box>
-          <span style={{ cursor: "pointer", fontWeight: 500 }}>
-            {p_id || "-"}
+const RenderPid = ({ p_id }) => {
+  return (
+    <Box>
+      {p_id ? (
+        <Chip
+          variant="solid"
+          color="primary"
+          size="md"
+          sx={{
+            fontWeight: 600,
+            fontSize: 13,
+            borderRadius: "20px", 
+            cursor: "pointer",
+          }}
+        >
+          {p_id}
+        </Chip>
+      ) : (
+        <Chip
+          variant="soft"
+          color="neutral"
+          size="md"
+          sx={{
+            fontWeight: 500,
+            fontSize: 13,
+            borderRadius: "20px",
+          }}
+        >
+          -
+        </Chip>
+      )}
+    </Box>
+  );
+};
+ const RenderPONumber = ({ po_number, date, po_id, pr_no }) => {
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "-";
+    const dateObj = new Date(dateStr);
+    if (isNaN(dateObj)) return "-";
+    return dateObj.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  return (
+    <>
+      {/* PO Number */}
+      {po_number ? (
+        <Box
+          onClick={() => navigate(`/add_po?mode=edit&po_number=${po_number}`)}
+        >
+          <span style={{ cursor: "pointer", fontWeight: 500, color: "#1976d2" }}>
+            {po_number}
           </span>
         </Box>
-        <Box display="flex" alignItems="center" mt={0.5}>
-          <FileCheck size={12} />
+      ) : (
+        <Chip
+          onClick={() => navigate(`/add_po?mode=edit&_id=${po_id}`)}
+          variant="soft"
+          color="warning"
+          size="sm"
+          startDecorator={<Clock size={14} />}
+          sx={{ fontWeight: 500, mt: 0.5, cursor: "pointer", }}
+        >
+          Coming Soon
+        </Chip>
+      )}
+      
+      <Box display="flex" alignItems="center" mt={0.5}>
           <span style={{ fontSize: 12, fontWeight: 500 }}>PR No : </span> &nbsp;
           <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
             {pr_no || "0"}
           </Typography>
         </Box>
-      </>
-    );
-  };
-  const RenderPONumber = ({ po_number, date, po_id }) => {
-    const formatDate = (dateStr) => {
-      if (!dateStr) return "-";
-      const dateObj = new Date(dateStr);
-      if (isNaN(dateObj)) return "-";
-      return dateObj.toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      });
-    };
 
-    return (
-      <>
-        {/* PO Number */}
-        {po_number && (
-          <Box
-            onClick={() => navigate(`/add_po?mode=edit&po_number=${po_number}`)}
-          >
-            <span style={{ cursor: "pointer", fontWeight: 400 }}>
-              {po_number}
-            </span>
-          </Box>
-        )}
-
-        {/* PO Date */}
-        {date && (
-          <Box
-            onClick={() => navigate(`/add_po?mode=edit&_id=${po_id}`)}
-            display="flex"
-            alignItems="center"
-            mt={0.5}
-          >
-            <Calendar size={12} />
-            <span style={{ fontSize: 12, fontWeight: 600 }}>PO Date : </span>
-            &nbsp;
-            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              {formatDate(date)}
-            </Typography>
-          </Box>
-        )}
-      </>
-    );
-  };
-
+      {/* PO Date */}
+      {date ? (
+        <Box
+         
+          display="flex"
+          alignItems="center"
+          mt={0.5}
+          sx={{ cursor: "pointer", color: "text.secondary" }}
+        >
+         
+          <span style={{ fontSize: 12, fontWeight: 600 }}>PO Date: </span>
+          &nbsp;
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+            {formatDate(date)}
+          </Typography>
+        </Box>
+      ) : (
+        <Typography
+          level="body2"
+          sx={{
+            mt: 0.5,
+            fontSize: 12,
+            fontStyle: "italic",
+            color: "neutral.500",
+          }}
+        >
+          Awaiting Date Assignment
+        </Typography>
+      )}
+    </>
+  );
+};
   const RenderStatusDates = ({
     etd,
     rtd,
@@ -799,23 +845,10 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     return (
       <>
         <Box>
-          <span style={{ cursor: "pointer", fontWeight: 400, fontSize: 14 }}>
+          <span style={{fontWeight: 400, fontSize: 14 }}>
             {item}
           </span>
         </Box>
-        {!!other_item && (
-          <Box display="flex" alignItems="center" mt={0.5}>
-            <TruckIcon size={12} color="green" />
-            &nbsp;
-            <span style={{ fontSize: 12, fontWeight: 600 }}>
-              Other Item Name :{" "}
-            </span>{" "}
-            &nbsp;
-            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              {other_item}
-            </Typography>
-          </Box>
-        )}
         {!!amount && (
           <Box display="flex" alignItems="center" mt={0.5}>
             <Money size={12} color="green" />
@@ -830,7 +863,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           </Box>
         )}
         <Box display="flex" alignItems="center" mt={0.5}>
-          <Store size={12} color="green" />
+       
           &nbsp;
           <span style={{ fontSize: 12, fontWeight: 600 }}>Vendor : </span>{" "}
           &nbsp;
@@ -1022,16 +1055,15 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                 />
               </Box>
               {[
-                "",
-                "",
+                // "",
                 "Project ID",
                 "PO Number",
-                "Partial Billing",
+                // "Partial Billing",
                 "Item Name",
                 "PO Value(incl. GST)",
                 "Advance Paid",
                 "Bill Status",
-                "Total Billed",
+                // "Total Billed",
                 "Status",
                 "Delay",
                 "",
@@ -1132,7 +1164,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       />
                     </Box>
 
-                    <Box
+                    {/* <Box
                       component="td"
                       sx={{
                         padding: 1,
@@ -1141,18 +1173,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       }}
                     >
                       <ViewPOHistory po_number={po.po_number} />
-                    </Box>
-
-                    <Box
-                      component="td"
-                      sx={{
-                        padding: 1,
-                        textAlign: "left",
-                        borderBottom: "1px solid",
-                      }}
-                    >
-                      <EditPo po_number={po.po_number} />
-                    </Box>
+                    </Box> */}
 
                     <Box
                       component="td"
@@ -1164,7 +1185,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         minWidth: 350,
                       }}
                     >
-                      <RenderPid p_id={po.p_id} pr_no={po.pr_no} />
+                      <RenderPid p_id={po.p_id}  />
                     </Box>
 
                     <Box
@@ -1185,10 +1206,11 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         rtd={po?.dispatch_date}
                         delivery_date={po?.delivery_date}
                         current_status={po?.current_status?.status}
+                        pr_no={po.pr_no}
                       />
                     </Box>
 
-                    <Box
+                    {/* <Box
                       component="td"
                       sx={{
                         padding: 1,
@@ -1199,7 +1221,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       }}
                     >
                       <BillingTypeChip type={po.type} />
-                    </Box>
+                    </Box> */}
 
                     <Box
                       component="td"
@@ -1265,7 +1287,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       <BillingStatusChip status={po.partial_billing} />
                     </Box>
 
-                    <Box
+                    {/* <Box
                       component="td"
                       sx={{
                         padding: 1,
@@ -1279,7 +1301,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         po_value={po.po_value}
                         po_number={po.po_number}
                       />
-                    </Box>
+                    </Box> */}
 
                     <Box
                       component="td"
