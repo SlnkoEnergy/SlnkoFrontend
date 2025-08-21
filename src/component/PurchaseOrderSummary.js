@@ -583,19 +583,22 @@ const RenderPid = ({ p_id }) => {
   return (
     <Box>
       {p_id ? (
-        <Chip
-          variant="solid"
-          color="primary"
-          size="md"
-          sx={{
-            fontWeight: 600,
-            fontSize: 13,
-            borderRadius: "20px", 
-            cursor: "pointer",
-          }}
-        >
-          {p_id}
-        </Chip>
+        <Tooltip title={p_id} arrow placement="top">
+          <Chip
+            variant="solid"
+            color="primary"
+            size="md"
+            sx={{
+              fontWeight: 600,
+              fontSize: 13,
+              borderRadius: "20px",
+              cursor: "pointer",
+              maxWidth: 200,
+            }}
+          >
+            {p_id}
+          </Chip>
+        </Tooltip>
       ) : (
         <Chip
           variant="soft"
@@ -1059,7 +1062,7 @@ const RenderPid = ({ p_id }) => {
                 "Project ID",
                 "PO Number",
                 // "Partial Billing",
-                "Item Name",
+                "Category",
                 "PO Value(incl. GST)",
                 "Advance Paid",
                 "Bill Status",
@@ -1182,7 +1185,7 @@ const RenderPid = ({ p_id }) => {
                         textAlign: "left",
                         borderBottom: "1px solid",
                         fontSize: 15,
-                        minWidth: 350,
+                        minWidth: 250,
                       }}
                     >
                       <RenderPid p_id={po.p_id}  />

@@ -9,7 +9,6 @@ import {
   Sheet,
   IconButton,
   Chip,
-  Checkbox,
   Select as JSelect,
   Option,
   Modal,
@@ -17,12 +16,20 @@ import {
   Textarea,
 } from "@mui/joy";
 import DeleteOutline from "@mui/icons-material/DeleteOutline";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import ReactSelect from "react-select";
 import Axios from "../../utils/Axios";
 import { toast } from "react-toastify";
 import Send from "@mui/icons-material/Send";
-import { Close, ConfirmationNumber, RestartAlt } from "@mui/icons-material";
+import {
+  Add,
+  Close,
+  ConfirmationNumber,
+  RestartAlt,
+} from "@mui/icons-material";
+import LocalMallOutlinedIcon from "@mui/icons-material/LocalMallOutlined";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import SearchPickerModal from "../SearchPickerModal";
 import {
   useGetVendorsNameSearchQuery,
@@ -43,6 +50,7 @@ const makeEmptyLine = () => ({
   productCategoryName: "",
   briefDescription: "",
   make: "",
+  makeQ: "",
   uom: "",
   quantity: 1,
   received: 0,
@@ -51,7 +59,6 @@ const makeEmptyLine = () => ({
   taxPercent: 0,
 });
 
-/* helper to read product.data fields */
 const getProdField = (row, fieldName) => {
   const arr = Array.isArray(row?.data) ? row.data : [];
   const item = arr.find(
@@ -67,7 +74,6 @@ const getProdField = (row, fieldName) => {
   return val || "";
 };
 
-/* normalize product payload shapes coming from API */
 const normalizeCreatedProduct = (res) => {
   let p = res;
   if (p?.data?.data && (p?.data?.category || p?.data?.category?._id))
@@ -110,16 +116,12 @@ const AddPurchaseOrder = ({
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // -------- URL params --------
   const modeQ = (searchParams.get("mode") || "").toLowerCase();
   const poNumberQ = searchParams.get("po_number") || "";
   const effectiveMode = fromModal ? mode : modeQ || mode;
-
   const viewMode = effectiveMode === "view";
   const [openRefuse, setOpenRefuse] = useState(false);
   const [remarks, setRemarks] = useState("");
-
-  // -------- vendor search (server + modal) --------
   const [vendorSearch, setVendorSearch] = useState("");
   const [vendorPage, setVendorPage] = useState(1);
   const [vendorModalOpen, setVendorModalOpen] = useState(false);
@@ -265,6 +267,7 @@ const AddPurchaseOrder = ({
             typeof it?.category === "object" ? (it?.category?.name ?? "") : "",
           productName: it?.product_name ?? "",
           make: isValidMake(it?.product_make) ? it.product_make : "",
+          makeQ: isValidMake(it?.product_make) ? it.product_make : "",
           briefDescription: it?.description ?? "",
           uom: it?.uom ?? "",
           quantity: Number(it?.quantity ?? 0),
@@ -328,16 +331,13 @@ const AddPurchaseOrder = ({
     })();
   }, [poNumberQ, effectiveMode]);
 
-  // -------- status-based gating --------
   const statusNow = fetchedPoStatus;
   const isApprovalPending = statusNow === "approval_pending";
   const canConfirm = statusNow === "approval_done";
   const approvalRejected = statusNow === "approval_rejected";
-  const ready_to_dispatch = statusNow === "ready_to_dispatch";
 
   const inputsDisabled = !fromModal && !manualEdit;
 
-  // -------- handlers --------
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -370,20 +370,14 @@ const AddPurchaseOrder = ({
     setFormData((prev) => ({ ...prev, name: opt.value || "" }));
   };
 
-  /* =========================
-     Products & Makes
-     ========================= */
-
   const [activeLineId, setActiveLineId] = useState(null);
 
-  // product queries (used for "search more"/makes fetch)
   useGetProductsQuery(
     { search: "", page: 1, limit: 1, category: "" },
     { skip: true }
   );
   const [triggerGetProducts] = useLazyGetProductsQuery();
 
-  // Product modal (optional — not used in this ask but left ready)
   const [productModalOpen, setProductModalOpen] = useState(false);
 
   const onPickProduct = (row) => {
@@ -416,8 +410,7 @@ const AddPurchaseOrder = ({
     setProductModalOpen(false);
   };
 
-  // ---------- MAKE: unique per (category + productName) ----------
-  const [makesCache, setMakesCache] = useState({}); // { [cat@@name]: string[] }
+  const [makesCache, setMakesCache] = useState({});
 
   const fetchUniqueMakes = async (categoryId, productName) => {
     if (!categoryId || !productName) return [];
@@ -451,7 +444,6 @@ const AddPurchaseOrder = ({
     return unique;
   };
 
-  // Prefetch per row when (category + productName) present
   useEffect(() => {
     const pairs = Array.from(
       new Set(
@@ -522,9 +514,6 @@ const AddPurchaseOrder = ({
     setMakeModalOpen(false);
   };
 
-  /* =========================
-     Embedded "Create Product" modal
-     ========================= */
   const [createProdOpen, setCreateProdOpen] = useState(false);
   const [createProdInitial, setCreateProdInitial] = useState(null);
   const [createProdLineId, setCreateProdLineId] = useState(null);
@@ -543,7 +532,7 @@ const AddPurchaseOrder = ({
       unitOfMeasure: line.uom || "",
       cost: String(line.unitPrice || ""),
       Description: line.briefDescription || "",
-      make: "", // user will enter in form
+      make: "",
       productType: "",
       imageFile: null,
       imageUrl: "",
@@ -928,8 +917,7 @@ const AddPurchaseOrder = ({
     { value: SEARCH_MORE_VENDOR, label: "Search more…" },
   ];
 
-  const location = useLocation();
-  
+  console.log({ manualEdit, fromModal });
 
   return (
     <Box
@@ -943,13 +931,13 @@ const AddPurchaseOrder = ({
     >
       <Box
         sx={{
-          maxWidth: fromModal ? 'full' : 1400,
+          maxWidth: fromModal ? "full" : 1400,
           width: "100%",
           p: 3,
           boxShadow: "md",
           borderRadius: "lg",
           bgcolor: "background.surface",
-          ml:fromModal ? 0 : {xs: '2%', lg:'6%', xl:'10%'}
+          ml: fromModal ? 0 : { xs: "2%", lg: "6%", xl: "10%" },
         }}
       >
         {/* Header */}
@@ -1117,7 +1105,116 @@ const AddPurchaseOrder = ({
               />
             </Box>
           )}
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 1.5,
+            alignItems: "center",
+            justifyContent: "space-between",
+            mb: 2,
+            mt: 1,
+          }}
+        >
+          <Sheet
+            variant="outlined"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              borderRadius: "lg",
+              px: 1.5,
+              py: 1,
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+              <DescriptionOutlinedIcon fontSize="small" color="primary" />
+              <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+                PO Number
+              </Typography>
+              <Chip
+                color="primary"
+                size="sm"
+                variant="solid"
+                sx={{ fontWeight: 700 }}
+              >
+                {"—"}
+              </Chip>
+            </Box>
 
+            <Divider orientation="vertical" />
+
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+              <PersonOutlineOutlinedIcon fontSize="small" color="primary" />
+              <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+                Created By
+              </Typography>
+              <Chip
+                variant="soft"
+                size="sm"
+                sx={{ fontWeight: 700, pl: 0.5, pr: 1 }}
+              >
+                Siddharth
+              </Chip>
+            </Box>
+          </Sheet>
+          <Box
+            display={"flex"}
+            gap={2}
+            alignItems={"center"}
+            justifyContent={"center"}
+          >
+            <Box display={"flex"} gap={2}>
+              <Sheet
+                variant="outlined"
+                sx={{
+                  display: "flex",
+                  alignItems: "stretch",
+                  borderRadius: "lg",
+                  overflow: "hidden",
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    px: 1.25,
+                    py: 0.75,
+                    cursor: "pointer",
+                    "&:hover": { bgcolor: "neutral.softHoverBg" },
+                  }}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <LocalMallOutlinedIcon fontSize="small" color="primary" />
+                  <Box sx={{ lineHeight: 1.1 }}>
+                    <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+                      Vendor Bills
+                    </Typography>
+                    <Typography
+                      level="body-xs"
+                      sx={{ color: "text.secondary" }}
+                    >
+                      0
+                    </Typography>
+                  </Box>
+                </Box>
+              </Sheet>
+            </Box>
+
+            <Box>
+              <Button
+                color="primary"
+                size="sm"
+                variant="solid"
+                startDecorator={<Add />}
+              >
+                Add Bill
+              </Button>
+            </Box>
+          </Box>
+        </Box>
         {/* Form */}
         <form id="po-form" onSubmit={handleSubmit}>
           <Sheet variant="outlined" sx={{ p: 2, borderRadius: "lg", mb: 1.5 }}>
@@ -1279,13 +1376,14 @@ const AddPurchaseOrder = ({
                   const rowMakes = makesCache[key] || [];
 
                   const selectedMakeSafe = isValidMake(l.make) ? l.make : "";
+
                   const inList = rowMakes.some(
                     (m) =>
                       String(m).toLowerCase() ===
                       String(selectedMakeSafe).toLowerCase()
                   );
                   const selectValue = inList ? selectedMakeSafe : "";
-                  console.log({ selectValue });
+                  console.log({ inList });
                   return (
                     <tr key={l.id}>
                       <td>
@@ -1331,98 +1429,115 @@ const AddPurchaseOrder = ({
 
                       {/* Make dropdown */}
                       <td>
-                        <Box sx={{ maxWidth: "100%" }}>
-                          <JSelect
-                            variant="plain"
-                            size="sm"
-                            value={selectValue}
+                        {!manualEdit && !fromModal ? (
+                          <Typography
+                            level="body-sm"
                             sx={{
-                              width: "100%",
-                              border: "none",
-                              boxShadow: "none",
-                              bgcolor: "transparent",
-                              p: 0,
+                              whiteSpace: "normal",
+                              overflowWrap: "anywhere",
+                              wordBreak: "break-word",
+                              fontWeight: 400,
                             }}
-                            slotProps={{
-                              button: {
-                                sx: {
-                                  whiteSpace: "normal",
-                                  textAlign: "left",
-                                  overflowWrap: "anywhere",
-                                  alignItems: "flex-start",
-                                  py: 0.25,
+                          >
+                            {l.makeQ || "—"}
+                          </Typography>
+                        ) : (
+                          <Box sx={{ maxWidth: "100%" }}>
+                            <JSelect
+                              variant="plain"
+                              size="sm"
+                              value={selectValue}
+                              sx={{
+                                width: "100%",
+                                border: "none",
+                                boxShadow: "none",
+                                bgcolor: "transparent",
+                                p: 0,
+                              }}
+                              slotProps={{
+                                button: {
+                                  sx: {
+                                    whiteSpace: "normal",
+                                    textAlign: "left",
+                                    overflowWrap: "anywhere",
+                                    alignItems: "flex-start",
+                                    py: 0.25,
+                                  },
                                 },
-                              },
-                              listbox: {
-                                sx: {
-                                  "& li": {
+                                listbox: {
+                                  sx: {
+                                    "& li": {
+                                      whiteSpace: "normal",
+                                      overflowWrap: "anywhere",
+                                      wordBreak: "break-word",
+                                    },
+                                  },
+                                },
+                              }}
+                              onChange={(_, v) => {
+                                if (v === SEARCH_MORE_MAKE) {
+                                  setActiveLineId(l.id);
+                                  setMakeModalOpen(true);
+                                  return;
+                                }
+                                if (v === CREATE_PRODUCT_INLINE) {
+                                  openCreateProductForLine(l);
+                                  return;
+                                }
+                                updateLine(l.id, "make", v || "");
+                              }}
+                              placeholder="Make"
+                              disabled={
+                                inputsDisabled ||
+                                !l.productCategoryId ||
+                                !l.productName
+                              }
+                              renderValue={() => (
+                                <Typography
+                                  level="body-sm"
+                                  sx={{
                                     whiteSpace: "normal",
                                     overflowWrap: "anywhere",
                                     wordBreak: "break-word",
-                                  },
-                                },
-                              },
-                            }}
-                            onChange={(_, v) => {
-                              if (v === SEARCH_MORE_MAKE) {
-                                setActiveLineId(l.id);
-                                setMakeModalOpen(true);
-                                return;
-                              }
-                              if (v === CREATE_PRODUCT_INLINE) {
-                                openCreateProductForLine(l);
-                                return;
-                              }
-                              updateLine(l.id, "make", v || "");
-                            }}
-                            placeholder={"Make"}
-                            disabled={
-                              inputsDisabled ||
-                              !l.productCategoryId ||
-                              !l.productName
-                            }
-                            renderValue={() => (
-                              <Typography
-                                level="body-sm"
-                                sx={{
-                                  whiteSpace: "normal",
-                                  overflowWrap: "anywhere",
-                                  wordBreak: "break-word",
-                                }}
-                              >
-                                {selectValue || "Select make"}
-                              </Typography>
-                            )}
-                          >
-                            {rowMakes.slice(0, 7).map((m) => (
-                              <Option
-                                key={m}
-                                value={m}
-                                sx={{
-                                  whiteSpace: "normal",
-                                  overflowWrap: "anywhere",
-                                }}
-                              >
-                                {m}
-                              </Option>
-                            ))}
+                                  }}
+                                >
+                                  {selectValue || "Select make"}
+                                </Typography>
+                              )}
+                            >
+                              {rowMakes.slice(0, 7).map((m) => (
+                                <Option
+                                  key={m}
+                                  value={m}
+                                  sx={{
+                                    whiteSpace: "normal",
+                                    overflowWrap: "anywhere",
+                                  }}
+                                >
+                                  {m}
+                                </Option>
+                              ))}
 
-                            {l.productCategoryId && l.productName && (
-                              <Option value={SEARCH_MORE_MAKE} color="neutral">
-                                Search more…
-                              </Option>
-                            )}
+                              {l.productCategoryId && l.productName && (
+                                <Option
+                                  value={SEARCH_MORE_MAKE}
+                                  color="neutral"
+                                >
+                                  Search more…
+                                </Option>
+                              )}
 
-                            {l.productCategoryId && l.productName && (
-                              <Option
-                                value={CREATE_PRODUCT_INLINE}
-                                color="primary"
-                              >
-                                + Create Product…
-                              </Option>
-                            )}
-                          </JSelect>
-                        </Box>
+                              {l.productCategoryId && l.productName && (
+                                <Option
+                                  value={CREATE_PRODUCT_INLINE}
+                                  color="primary"
+                                >
+                                  + Create Product…
+                                </Option>
+                              )}
+                            </JSelect>
+                          </Box>
+                        )}
                       </td>
 
                       <td>

@@ -824,7 +824,7 @@ export default function Purchase_Request_Form() {
         boxShadow: "md",
       }}
     >
-      <Typography level="h3" sx={{ fontWeight: 700, mb: 1 }}>
+      <Typography level="h3" sx={{ fontWeight: 600, mb: 1 }}>
         Purchase Request
       </Typography>
 
@@ -950,7 +950,7 @@ export default function Purchase_Request_Form() {
         <Grid container spacing={2}>
           {/* Project Code */}
           <Grid xs={12} md={6}>
-            <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 700 }}>
+            <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 600 }}>
               Project Code
             </Typography>
 
@@ -997,7 +997,7 @@ export default function Purchase_Request_Form() {
 
           {/* Project Name */}
           <Grid xs={12} md={6}>
-            <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 700 }}>
+            <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 600 }}>
               Project Name
             </Typography>
             <Input
@@ -1009,7 +1009,7 @@ export default function Purchase_Request_Form() {
 
           {/* Project Location */}
           <Grid xs={12} md={6}>
-            <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 700 }}>
+            <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 600 }}>
               Project Location
             </Typography>
             <Input
@@ -1022,7 +1022,7 @@ export default function Purchase_Request_Form() {
           {/* Category (multi) */}
           {!isView && (
             <Grid xs={12} md={6}>
-              <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 700 }}>
+              <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 600 }}>
                 Category
               </Typography>
 
@@ -1164,7 +1164,7 @@ export default function Purchase_Request_Form() {
           {/* NEW: Per-category "Fetch from BOM" toggles */}
           {!isView && category.length > 0 && (
             <Grid xs={12}>
-              <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 700 }}>
+              <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 600 }}>
                 Fetch from BOM (per category)
               </Typography>
               <Box
@@ -1229,7 +1229,7 @@ export default function Purchase_Request_Form() {
 
           {/* Deliver To */}
           <Grid xs={12} md={6}>
-            <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 700 }}>
+            <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 600 }}>
               Deliver To
             </Typography>
             <Input
