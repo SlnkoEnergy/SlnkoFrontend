@@ -13,6 +13,9 @@ import {
   Sheet,
   Chip,
 } from "@mui/joy";
+import DeleteOutline from "@mui/icons-material/DeleteOutline";
+import { IconButton } from "@mui/joy";
+
 import { toast } from "react-toastify";
 import Select from "react-select";
 import {
@@ -24,7 +27,7 @@ import SearchPickerModal from "../SearchPickerModal";
 
 const AddLogisticForm = () => {
   const [formData, setFormData] = useState({
-    po_ids: [],
+    po_id: [],
     project_code: "",
     vendor: "",
     vehicle_number: "",
@@ -136,7 +139,7 @@ const AddLogisticForm = () => {
 
   const handleReset = () => {
     setFormData({
-      po_ids: [],
+      po_id: [],
       project_code: "",
       vendor: "",
       vehicle_number: "",
@@ -341,8 +344,6 @@ const AddLogisticForm = () => {
               </FormControl>
             </Grid>
 
-         
-
             {/* Vendor */}
             <Grid xs={12} sm={6}>
               <FormControl>
@@ -431,6 +432,8 @@ const AddLogisticForm = () => {
                   <th style={{ width: "8%" }}>Qty</th>
                   <th style={{ width: "8%" }}>UoM</th>
                   <th style={{ width: "10%" }}>Weight (Ton)</th>
+                  <th style={{ width: "60px", textAlign: "center" }}>Action</th>
+
                 </tr>
               </thead>
               <tbody>
@@ -472,22 +475,31 @@ const AddLogisticForm = () => {
                           const { po } = selected;
                           if (!po) return;
 
-                          const firstProduct = po.items[0] || {};
+                          // ✅ Expand PO.items into rows
+                          const productItems =
+                            Array.isArray(po.items) && po.items.length > 0
+                              ? po.items
+                              : [{}]; // fallback
 
                           setItems((prev) => {
                             const copy = [...prev];
-                            copy[idx] = {
-                              ...copy[idx],
-                              po_id: po._id,
-                              po_number: po.po_number,
-                              project_id: po.p_id,
-                              product_name: firstProduct.product_name || "",
-                              category_name: firstProduct.category?.name || "",
-                              product_make: firstProduct.make || "",
-                              uom: firstProduct.uom || "",
-                              quantity_requested: firstProduct.quantity || "",
-                              vendor: po.vendor || "",
-                            };
+                            // remove the current row (idx) and insert expanded rows
+                            copy.splice(
+                              idx,
+                              1,
+                              ...productItems.map((prod) => ({
+                                po_id: po._id,
+                                po_number: po.po_number,
+                                project_id: po.p_id,
+                                product_name: prod.product_name || "",
+                                category_name: prod.category?.name || "",
+                                product_make: prod.make || "",
+                                uom: prod.uom || "",
+                                quantity_requested: prod.quantity || "",
+                                ton: "",
+                                vendor: po.vendor || "",
+                              }))
+                            );
                             return copy;
                           });
 
@@ -527,6 +539,26 @@ const AddLogisticForm = () => {
                           handleItemChange(idx, "ton", e.target.value)
                         }
                       />
+                    </td>
+                    <td>
+                      <IconButton
+                        size="sm"
+                        color="danger"
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              "Are you sure you want to delete this row?"
+                            )
+                          ) {
+                            removeItemRow(idx);
+                            toast.success("Row deleted successfully");
+                          } else {
+                            toast.info("Delete cancelled");
+                          }
+                        }}
+                      >
+                        <DeleteOutline />
+                      </IconButton>
                     </td>
                   </tr>
                 ))}
