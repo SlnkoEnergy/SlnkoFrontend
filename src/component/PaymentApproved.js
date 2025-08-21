@@ -107,32 +107,28 @@ function PaymentRequest() {
 
       try {
         const token = localStorage.getItem("authToken");
-        // console.log("Sending account match request...");
+
         const response = await Axios.put(
           "/acc-matched",
           {
-            pay_id: paymentId,
-            acc_number: accountMatch,
-            ifsc: ifsc,
+            pay_id: String(paymentId).trim(),
+            acc_number: accountMatch.trim(),
+            ifsc: ifsc.trim(),
           },
-          {
-            headers: { "x-auth-token": token },
-          }
+          { headers: { "x-auth-token": token } }
         );
 
-        // console.log("Account match response:", response);
-
-        if (response.status === 200) {
+        if (
+          response.status === 200 &&
+          response.data?.data?.acc_match === "matched"
+        ) {
           setIsMatched(true);
-          enqueueSnackbar("Account matched successfully!", {
+          enqueueSnackbar("✅ Account matched successfully!", {
             variant: "success",
           });
-
-          if (onAccountMatchSuccess) {
-            onAccountMatchSuccess();
-          }
+          onAccountMatchSuccess?.();
         } else {
-          enqueueSnackbar("Failed to match account. Please try again.", {
+          enqueueSnackbar("⚠️ Failed to match account. Please try again.", {
             variant: "error",
           });
         }
@@ -142,35 +138,20 @@ function PaymentRequest() {
         if (!window.navigator.onLine) {
           enqueueSnackbar(
             "No internet connection. Please check your network.",
-            {
-              variant: "error",
-            }
+            { variant: "error" }
           );
           return;
         }
 
-        if (error.response) {
-          const { data } = error.response;
-
-          if (data.message?.includes("account number not matched")) {
-            enqueueSnackbar("Account number not matched with our records.", {
-              variant: "error",
-            });
-          } else if (data.message?.includes("ifsc not matched")) {
-            enqueueSnackbar("IFSC code not matched with our records.", {
-              variant: "error",
-            });
-          } else {
-            enqueueSnackbar("Account match failed. Please check the details.", {
-              variant: "error",
-            });
-          }
+        if (error.response?.status === 404) {
+          enqueueSnackbar(
+            "❌ No matching record found. Please check account/IFSC.",
+            { variant: "error" }
+          );
         } else {
           enqueueSnackbar(
-            "An internal error occurred. Please try again later.",
-            {
-              variant: "error",
-            }
+            "⚠️ Account match failed. Please check the details.",
+            { variant: "error" }
           );
         }
       }

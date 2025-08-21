@@ -232,11 +232,10 @@ const CreditRequest = forwardRef(
       _id,
       approved,
       remaining_days,
+      timers,
       amount_paid,
       credit,
     }) => {
-
-      
       const [updateCreditExtension, { isLoading }] =
         useUpdateRequestExtensionMutation();
 
@@ -295,29 +294,39 @@ const CreditRequest = forwardRef(
           </Box>
 
           {/* Remaining Days */}
+          {/* Remaining Days */}
           <Box display="flex" alignItems="center" gap={1} mt={0.5}>
             <Typography sx={labelStyle}>⏰</Typography>
-            <Chip
-              size="sm"
-              variant="soft"
-              color={
-                remaining_days <= 0
-                  ? "danger"
-                  : remaining_days <= 2
-                    ? "warning"
-                    : "success"
-              }
-            >
-              {remaining_days <= 0
-                ? "⏱ Expired"
-                : `${remaining_days} day${remaining_days > 1 ? "s" : ""} remaining`}
-            </Chip>
 
+            {timers?.draft_frozen_at ? (
+              <Chip size="sm" variant="soft" color="primary">
+                ⏸ Frozen
+              </Chip>
+            ) : (
+              <Chip
+                size="sm"
+                variant="soft"
+                color={
+                  remaining_days <= 0
+                    ? "danger"
+                    : remaining_days <= 2
+                      ? "warning"
+                      : "success"
+                }
+              >
+                {remaining_days <= 0
+                  ? "⏱ Expired"
+                  : `${remaining_days} day${remaining_days > 1 ? "s" : ""} remaining`}
+              </Chip>
+            )}
+
+            {/* Request Extension Button/State */}
             {user?.department === "SCM" &&
               credit?.credit_extension === false &&
               remaining_days > 0 &&
               approved !== "Approved" &&
               approved !== "Rejected" &&
+              !timers?.draft_frozen_at && // 🔒 Hide request if frozen
               (requested ? (
                 <Chip
                   size="sm"
@@ -350,36 +359,36 @@ const CreditRequest = forwardRef(
           </Box>
 
           {/* Remarks Dialog */}
-            <Modal open={open} onClose={() => setOpen(false)}>
-        <ModalOverflow>
-          <ModalDialog variant="outlined" role="alertdialog">
-            <ModalClose />
-            <Typography level="h5" mb={1}>
-              Request Credit Extension
-            </Typography>
-            <Textarea
-              placeholder="Enter remarks"
-              minRows={3}
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-              sx={{ mb: 2 }}
-            />
-            <Box display="flex" justifyContent="flex-end" gap={1}>
-              <Button variant="plain" onClick={() => setOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                variant="solid"
-                color="danger"
-                onClick={handleRequestExtension}
-                loading={isLoading}
-              >
-                Submit
-              </Button>
-            </Box>
-          </ModalDialog>
-        </ModalOverflow>
-      </Modal>
+          <Modal open={open} onClose={() => setOpen(false)}>
+            <ModalOverflow>
+              <ModalDialog variant="outlined" role="alertdialog">
+                <ModalClose />
+                <Typography level="h5" mb={1}>
+                  Request Credit Extension
+                </Typography>
+                <Textarea
+                  placeholder="Enter remarks"
+                  minRows={3}
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  sx={{ mb: 2 }}
+                />
+                <Box display="flex" justifyContent="flex-end" gap={1}>
+                  <Button variant="plain" onClick={() => setOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="solid"
+                    color="danger"
+                    onClick={handleRequestExtension}
+                    loading={isLoading}
+                  >
+                    Submit
+                  </Button>
+                </Box>
+              </ModalDialog>
+            </ModalOverflow>
+          </Modal>
         </Box>
       );
     };
@@ -532,6 +541,7 @@ const CreditRequest = forwardRef(
                         remaining_days={payment.remaining_days}
                         credit={payment?.credit}
                         credit_extension={payment.credit_extension}
+                        timers={payment.timers}
                       />
                     </Box>
 
