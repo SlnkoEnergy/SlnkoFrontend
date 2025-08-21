@@ -170,8 +170,9 @@ const AddLogisticForm = () => {
   const [transportationModalOpen, setTransportationModalOpen] = useState(false);
   const [transportation, setTransportation] = useState([]);
   const [transportationIdToName, setTransportationIdToName] = useState({});
-const [itemPoModalOpen, setItemPoModalOpen] = useState(false);
-const [activeItemIndex, setActiveItemIndex] = useState(null);
+  const [itemPoModalOpen, setItemPoModalOpen] = useState(false);
+  const [activeItemIndex, setActiveItemIndex] = useState(null);
+  const [transportationPos, setTransportationPos] = useState({});
 
   const transportationColumns = [
     { key: "po_number", label: "PO Number", width: 200 },
@@ -181,38 +182,53 @@ const [activeItemIndex, setActiveItemIndex] = useState(null);
 
   const onPickTransportation = (row) => {
     if (!row?._id) return;
+
     setTransportation((prev) =>
       prev.includes(row._id) ? prev : [...prev, row._id]
     );
+
     setTransportationIdToName((prev) => ({
       ...prev,
       [row._id]: row.po_number || String(row._id),
     }));
 
-    // ✅ update vendor when selecting transportation PO
+    // ✅ keep full PO details for cost calculation
+    setTransportationIdToName((prev) => ({
+      ...prev,
+      [row._id]: row.po_number || String(row._id),
+    }));
+
+    // ✅ store PO in a new map
+    setTransportationPos((prev) => ({
+      ...prev,
+      [row._id]: row,
+    }));
+
+    // ✅ update vendor
     setFormData((prev) => ({
       ...prev,
       vendor: row.vendor || prev.vendor,
     }));
   };
-const itemPoColumns = [
-  { key: "po_number", label: "PO Number", width: 200 },
-  { key: "vendor", label: "Vendor", width: 200 },
-  { key: "project_code", label: "Project Code", width: 150 },
-];
 
-const [triggerItemPoSearch] = useLazyGetPoBasicQuery();
+  const itemPoColumns = [
+    { key: "po_number", label: "PO Number", width: 200 },
+    { key: "vendor", label: "Vendor", width: 200 },
+    { key: "project_code", label: "Project Code", width: 150 },
+  ];
 
-const fetchItemPoPage = async ({ search = "", page = 1, pageSize = 7 }) => {
-  const res = await triggerItemPoSearch({ search, page, pageSize }, true);
-  const d = res?.data;
-  return {
-    rows: d?.data || [],
-    total: d?.total ?? d?.pagination?.total ?? 0,
-    page: d?.pagination?.page || page,
-    pageSize: d?.pagination?.pageSize || pageSize,
+  const [triggerItemPoSearch] = useLazyGetPoBasicQuery();
+
+  const fetchItemPoPage = async ({ search = "", page = 1, pageSize = 7 }) => {
+    const res = await triggerItemPoSearch({ search, page, pageSize }, true);
+    const d = res?.data;
+    return {
+      rows: d?.data || [],
+      total: d?.total ?? d?.pagination?.total ?? 0,
+      page: d?.pagination?.page || page,
+      pageSize: d?.pagination?.pageSize || pageSize,
+    };
   };
-};
   const [triggerTransportationSearch] = useLazyGetPoBasicQuery();
 
   const fetchTransportationPage = async ({
@@ -236,19 +252,19 @@ const fetchItemPoPage = async ({ search = "", page = 1, pageSize = 7 }) => {
 
   // ✅ Vehicle cost only from transportation POs
   useEffect(() => {
-    if (!poData?.data || transportation.length === 0) {
+    if (transportation.length === 0) {
       setVehicleCost(0);
       return;
     }
-    const selectedTransportationPOs = poData.data.filter((po) =>
-      transportation.includes(po._id)
-    );
-    const total = selectedTransportationPOs.reduce(
-      (acc, po) => acc + (parseFloat(po.po_value) || 0),
-      0
-    );
+
+    const total = transportation.reduce((acc, id) => {
+      const po =
+        transportationPos[id] || poData?.data?.find((p) => p._id === id);
+      return acc + (parseFloat(po?.po_value) || 0);
+    }, 0);
+
     setVehicleCost(total);
-  }, [transportation, poData]);
+  }, [transportation, poData, transportationPos]);
 
   return (
     <Box
@@ -280,10 +296,15 @@ const fetchItemPoPage = async ({ search = "", page = 1, pageSize = 7 }) => {
                     })),
                     { label: "Search more...", value: "__search_more__" },
                   ]}
-                  value={transportation.map((id) => ({
-                    value: id,
-                    label: transportationIdToName[id] || id,
-                  }))}
+                  value={transportation.map((id) => {
+                    const po =
+                      transportationPos[id] ||
+                      poData?.data?.find((p) => p._id === id);
+                    return {
+                      value: id,
+                      label: po?.po_number || transportationIdToName[id] || id,
+                    };
+                  })}
                   isMulti
                   isLoading={poLoading}
                   onChange={(selected) => {
@@ -320,19 +341,7 @@ const fetchItemPoPage = async ({ search = "", page = 1, pageSize = 7 }) => {
               </FormControl>
             </Grid>
 
-            {/* Project Code */}
-            <Grid xs={12} sm={6}>
-              <FormControl>
-                <FormLabel>Project Code</FormLabel>
-                <Input
-                  name="project_code"
-                  value={formData.project_code}
-                  onChange={handleChange}
-                  placeholder="Auto-filled"
-                  readOnly
-                />
-              </FormControl>
-            </Grid>
+         
 
             {/* Vendor */}
             <Grid xs={12} sm={6}>
@@ -430,62 +439,64 @@ const fetchItemPoPage = async ({ search = "", page = 1, pageSize = 7 }) => {
                     {/* PO Number selection */}
                     <td>
                       <Select
-  placeholder="Select PO"
-  options={[
-    ...(poData?.data || []).map((po) => ({
-      label: po.po_number || "(No PO)",
-      value: po._id,
-      po,
-    })),
-    { label: "Search more...", value: "__search_more__" },
-  ]}
-  value={
-    item.po_id
-      ? {
-          value: item.po_id,
-          label:
-            poData?.data?.find((po) => po._id === item.po_id)?.po_number ||
-            "(No PO)",
-        }
-      : null
-  }
-  onChange={(selected) => {
-    if (!selected) return;
-    if (selected.value === "__search_more__") {
-      setActiveItemIndex(idx);
-      setItemPoModalOpen(true);
-      return;
-    }
+                        placeholder="Select PO"
+                        options={[
+                          ...(poData?.data || []).map((po) => ({
+                            label: po.po_number || "(No PO)",
+                            value: po._id,
+                            po,
+                          })),
+                          { label: "Search more...", value: "__search_more__" },
+                        ]}
+                        value={
+                          item.po_id
+                            ? {
+                                value: item.po_id,
+                                label:
+                                  poData?.data?.find(
+                                    (po) => po._id === item.po_id
+                                  )?.po_number ||
+                                  item.po_number || // ✅ fallback when selected from modal
+                                  "(No PO)",
+                              }
+                            : null
+                        }
+                        onChange={(selected) => {
+                          if (!selected) return;
+                          if (selected.value === "__search_more__") {
+                            setActiveItemIndex(idx);
+                            setItemPoModalOpen(true);
+                            return;
+                          }
 
-    const { po } = selected;
-    if (!po) return;
+                          const { po } = selected;
+                          if (!po) return;
 
-    const firstProduct = po.items[0] || {};
+                          const firstProduct = po.items[0] || {};
 
-    setItems((prev) => {
-      const copy = [...prev];
-      copy[idx] = {
-        ...copy[idx],
-        po_id: po._id,
-        po_number: po.po_number,
-        project_id: po.p_id,
-        product_name: firstProduct.product_name || "",
-        category_name: firstProduct.category?.name || "",
-        product_make: firstProduct.make || "",
-        uom: firstProduct.uom || "",
-        quantity_requested: firstProduct.quantity || "",
-        vendor: po.vendor || "",
-      };
-      return copy;
-    });
+                          setItems((prev) => {
+                            const copy = [...prev];
+                            copy[idx] = {
+                              ...copy[idx],
+                              po_id: po._id,
+                              po_number: po.po_number,
+                              project_id: po.p_id,
+                              product_name: firstProduct.product_name || "",
+                              category_name: firstProduct.category?.name || "",
+                              product_make: firstProduct.make || "",
+                              uom: firstProduct.uom || "",
+                              quantity_requested: firstProduct.quantity || "",
+                              vendor: po.vendor || "",
+                            };
+                            return copy;
+                          });
 
-    setFormData((prev) => ({
-      ...prev,
-      project_code: po.p_id,
-    }));
-  }}
-/>
-
+                          setFormData((prev) => ({
+                            ...prev,
+                            project_code: po.p_id,
+                          }));
+                        }}
+                      />
                     </td>
 
                     <td>
@@ -605,46 +616,50 @@ const fetchItemPoPage = async ({ search = "", page = 1, pageSize = 7 }) => {
         backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
       />
       <SearchPickerModal
-  open={itemPoModalOpen}
-  onClose={() => setItemPoModalOpen(false)}
-  onPick={(po) => {
-    if (!po?._id || activeItemIndex === null) return;
+        open={itemPoModalOpen}
+        onClose={() => setItemPoModalOpen(false)}
+        onPick={(po) => {
+          if (!po?._id || activeItemIndex === null) return;
 
-    const firstProduct = po.items[0] || {};
+          const firstProduct = po.items[0] || {};
 
-    setItems((prev) => {
-      const copy = [...prev];
-      copy[activeItemIndex] = {
-        ...copy[activeItemIndex],
-        po_id: po._id,
-        po_number: po.po_number,
-        project_id: po.p_id,
-        product_name: firstProduct.product_name || "",
-        category_name: firstProduct.category?.name || "",
-        product_make: firstProduct.make || "",
-        uom: firstProduct.uom || "",
-        quantity_requested: firstProduct.quantity || "",
-        vendor: po.vendor || "",
-      };
-      return copy;
-    });
+          setItems((prev) => {
+            const copy = [...prev];
+            copy[activeItemIndex] = {
+              ...copy[activeItemIndex],
+              po_id: po._id,
+              po_number: po.po_number,
+              project_id: po.p_id,
+              product_name: firstProduct.product_name || "",
+              category_name: firstProduct.category?.name || "",
+              product_make: firstProduct.make || "",
+              uom: firstProduct.uom || "",
+              quantity_requested: firstProduct.quantity || "",
+              vendor: po.vendor || "",
+              __selectValue: {
+                value: po._id,
+                label: po.po_number,
+                po,
+              },
+            };
+            return copy;
+          });
 
-    setFormData((prev) => ({
-      ...prev,
-      project_code: po.p_id,
-    }));
+          setFormData((prev) => ({
+            ...prev,
+            project_code: po.p_id,
+          }));
 
-    setItemPoModalOpen(false);
-    setActiveItemIndex(null);
-  }}
-  title="Search: PO for Product Row"
-  columns={itemPoColumns}
-  fetchPage={fetchItemPoPage}
-  searchKey="po_number"
-  pageSize={7}
-  backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
-/>
-
+          setItemPoModalOpen(false);
+          setActiveItemIndex(null);
+        }}
+        title="Search: PO for Product Row"
+        columns={itemPoColumns}
+        fetchPage={fetchItemPoPage}
+        searchKey="po_number"
+        pageSize={7}
+        backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
+      />
     </Box>
   );
 };
