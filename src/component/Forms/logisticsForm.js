@@ -27,35 +27,37 @@ import SearchPickerModal from "../SearchPickerModal";
 
 const AddLogisticForm = () => {
   const [formData, setFormData] = useState({
-    po_id: [],
+    po_id: [],                 // will be set from `transportation` when submitting
     project_code: "",
     vendor: "",
     vehicle_number: "",
     driver_number: "",
     total_ton: "",
-    vehicle_cost: 0,
+    total_transport_po_value: 0, // ✅ backend key
     attachment_url: "",
     description: "",
   });
 
-  // items table
+  // items table (UI fields + backend ids)
   const [items, setItems] = useState([
     {
-      po_id: "",
-      po_number: "",
-      project_id: "",
+      po_id: "",            // UI: purchaseOrder _id for this row (used to map → material_po on submit)
+      po_number: "",        // UI only
+      project_id: "",       // UI only
+      vendor: "",           // UI only
       product_name: "",
-      category_name: "",
+      category_id: null,    // ✅ backend needs ObjectId (from prod.category?._id)
+      category_name: "",    // UI only
       product_make: "",
-      uom: "",
+      uom: "",              // UI only
       quantity_requested: "",
-      ton: "",
-      vendor: "",
+      quantity_po: "",      // leave blank unless you have it
+      ton: "",              // UI name; mapped to backend "weight"
     },
   ]);
 
   const [totalWeight, setTotalWeight] = useState(0);
-  const [vehicleCost, setVehicleCost] = useState(0);
+  const [vehicleCost, setVehicleCost] = useState(0); // summed transport PO value
 
   // ✅ Recalculate total weight when items change
   useEffect(() => {
@@ -101,13 +103,15 @@ const AddLogisticForm = () => {
         po_id: "",
         po_number: "",
         project_id: "",
+        vendor: "",
         product_name: "",
+        category_id: null,
         category_name: "",
         product_make: "",
         uom: "",
         quantity_requested: "",
+        quantity_po: "",
         ton: "",
-        vendor: "",
       },
     ]);
   };
@@ -117,65 +121,15 @@ const AddLogisticForm = () => {
     setItems(newItems);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const payload = {
-        ...formData,
-        items,
-        total_ton: totalWeight,
-        vehicle_cost: vehicleCost,
-      };
-      console.log("Submitting Logistic Data:", payload);
-
-      await addLogistic(payload).unwrap();
-      toast.success("Logistic entry created successfully");
-      handleReset();
-    } catch (err) {
-      console.error("Failed to submit logistic:", err);
-      toast.error("Failed to create logistic entry");
-    }
-  };
-
-  const handleReset = () => {
-    setFormData({
-      po_id: [],
-      project_code: "",
-      vendor: "",
-      vehicle_number: "",
-      driver_number: "",
-      total_ton: "",
-      vehicle_cost: 0,
-      attachment_url: "",
-      description: "",
-    });
-    setItems([
-      {
-        po_id: "",
-        po_number: "",
-        project_id: "",
-        product_name: "",
-        category_name: "",
-        product_make: "",
-        uom: "",
-        quantity_requested: "",
-        ton: "",
-        vendor: "",
-      },
-    ]);
-    setTransportation([]);
-    setTransportationIdToName({});
-    setTotalWeight(0);
-    setVehicleCost(0);
-  };
-
   // 🚚 Transportation PO Number state
   const [transportationModalOpen, setTransportationModalOpen] = useState(false);
-  const [transportation, setTransportation] = useState([]);
+  const [transportation, setTransportation] = useState([]); // array of transport PO ids (top-level po_id)
   const [transportationIdToName, setTransportationIdToName] = useState({});
   const [itemPoModalOpen, setItemPoModalOpen] = useState(false);
   const [activeItemIndex, setActiveItemIndex] = useState(null);
   const [transportationPos, setTransportationPos] = useState({});
+
+  const [addLogisticTrigger] = useAddLogisticMutation(); // (not used directly, kept for completeness)
 
   const transportationColumns = [
     { key: "po_number", label: "PO Number", width: 200 },
@@ -195,19 +149,13 @@ const AddLogisticForm = () => {
       [row._id]: row.po_number || String(row._id),
     }));
 
-    // ✅ keep full PO details for cost calculation
-    setTransportationIdToName((prev) => ({
-      ...prev,
-      [row._id]: row.po_number || String(row._id),
-    }));
-
-    // ✅ store PO in a new map
+    // keep full PO details for value calculation
     setTransportationPos((prev) => ({
       ...prev,
       [row._id]: row,
     }));
 
-    // ✅ update vendor
+    // update vendor display (optional)
     setFormData((prev) => ({
       ...prev,
       vendor: row.vendor || prev.vendor,
@@ -221,6 +169,7 @@ const AddLogisticForm = () => {
   ];
 
   const [triggerItemPoSearch] = useLazyGetPoBasicQuery();
+  const [triggerTransportationSearch] = useLazyGetPoBasicQuery();
 
   const fetchItemPoPage = async ({ search = "", page = 1, pageSize = 7 }) => {
     const res = await triggerItemPoSearch({ search, page, pageSize }, true);
@@ -232,7 +181,6 @@ const AddLogisticForm = () => {
       pageSize: d?.pagination?.pageSize || pageSize,
     };
   };
-  const [triggerTransportationSearch] = useLazyGetPoBasicQuery();
 
   const fetchTransportationPage = async ({
     search = "",
@@ -243,7 +191,6 @@ const AddLogisticForm = () => {
       { search, page, pageSize },
       true
     );
-
     const d = res?.data;
     return {
       rows: d?.data || [],
@@ -253,21 +200,92 @@ const AddLogisticForm = () => {
     };
   };
 
-  // ✅ Vehicle cost only from transportation POs
+  // ✅ Vehicle cost only from transportation POs (sum of po_value)
   useEffect(() => {
     if (transportation.length === 0) {
       setVehicleCost(0);
       return;
     }
-
     const total = transportation.reduce((acc, id) => {
       const po =
         transportationPos[id] || poData?.data?.find((p) => p._id === id);
       return acc + (parseFloat(po?.po_value) || 0);
     }, 0);
-
     setVehicleCost(total);
   }, [transportation, poData, transportationPos]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      // 🔁 Normalize items for backend schema
+      const normalizedItems = items.map((i) => ({
+        material_po: i.po_id,                              // map UI po_id → backend material_po
+        category_id: i.category_id ?? null,                // must be ObjectId (store when expanding PO items)
+        product_name: i.product_name,
+        product_make: i.product_make,
+        quantity_requested: String(i.quantity_requested || ""),
+        quantity_po: String(i.quantity_po || ""),          // keep empty if unknown
+        weight: String(i.ton || ""),                       // map UI "ton" → backend "weight"
+      }));
+
+      const payload = {
+        // top-level required fields
+        po_id: transportation,                              // ✅ backend expects selected transport PO ids
+        vehicle_number: formData.vehicle_number,
+        driver_number: formData.driver_number,
+        total_ton: String(totalWeight),                     // backend type: String
+        total_transport_po_value: String(vehicleCost),      // ✅ backend key (string)
+        attachment_url: formData.attachment_url,
+        description: formData.description,
+
+        // items
+        items: normalizedItems,
+      };
+
+      console.log("Submitting Logistic Data:", payload);
+
+      await addLogistic(payload).unwrap();
+      toast.success("Logistic entry created successfully");
+      handleReset();
+    } catch (err) {
+      console.error("Failed to submit logistic:", err);
+      toast.error("Failed to create logistic entry");
+    }
+  };
+
+  const handleReset = () => {
+    setFormData({
+      po_id: [],
+      project_code: "",
+      vendor: "",
+      vehicle_number: "",
+      driver_number: "",
+      total_ton: "",
+      total_transport_po_value: 0,
+      attachment_url: "",
+      description: "",
+    });
+    setItems([
+      {
+        po_id: "",
+        po_number: "",
+        project_id: "",
+        vendor: "",
+        product_name: "",
+        category_id: null,
+        category_name: "",
+        product_make: "",
+        uom: "",
+        quantity_requested: "",
+        quantity_po: "",
+        ton: "",
+      },
+    ]);
+    setTransportation([]);
+    setTransportationIdToName({});
+    setTotalWeight(0);
+    setVehicleCost(0);
+  };
 
   return (
     <Box
@@ -433,7 +451,6 @@ const AddLogisticForm = () => {
                   <th style={{ width: "8%" }}>UoM</th>
                   <th style={{ width: "10%" }}>Weight (Ton)</th>
                   <th style={{ width: "60px", textAlign: "center" }}>Action</th>
-
                 </tr>
               </thead>
               <tbody>
@@ -459,7 +476,7 @@ const AddLogisticForm = () => {
                                   poData?.data?.find(
                                     (po) => po._id === item.po_id
                                   )?.po_number ||
-                                  item.po_number || // ✅ fallback when selected from modal
+                                  item.po_number ||
                                   "(No PO)",
                               }
                             : null
@@ -488,16 +505,21 @@ const AddLogisticForm = () => {
                               idx,
                               1,
                               ...productItems.map((prod) => ({
-                                po_id: po._id,
+                                // base ids for backend
+                                po_id: po._id,                                  // later → material_po
+                                category_id: prod?.category?._id || null,       // backend id
+                                // UI/Display extras
                                 po_number: po.po_number,
                                 project_id: po.p_id,
-                                product_name: prod.product_name || "",
-                                category_name: prod.category?.name || "",
-                                product_make: prod.make || "",
-                                uom: prod.uom || "",
-                                quantity_requested: prod.quantity || "",
-                                ton: "",
                                 vendor: po.vendor || "",
+                                category_name: prod?.category?.name || "",
+                                uom: prod?.uom || "",
+                                // product fields
+                                product_name: prod?.product_name || "",
+                                product_make: prod?.make || "",
+                                quantity_requested: prod?.quantity || "",
+                                quantity_po: "",
+                                ton: "", // user will enter
                               }))
                             );
                             return copy;
@@ -598,7 +620,7 @@ const AddLogisticForm = () => {
                     columnGap: 1.5,
                   }}
                 >
-                  <Typography level="body-sm">Vehicle Cost:</Typography>
+                  <Typography level="body-sm">Transport PO Total:</Typography>
                   <Typography level="body-sm" fontWeight={700}>
                     {vehicleCost > 0 ? vehicleCost.toFixed(2) : "—"}
                   </Typography>
@@ -635,6 +657,8 @@ const AddLogisticForm = () => {
           </Box>
         </form>
       </Card>
+
+      {/* Modals */}
       <SearchPickerModal
         open={transportationModalOpen}
         onClose={() => setTransportationModalOpen(false)}
@@ -647,32 +671,35 @@ const AddLogisticForm = () => {
         multi
         backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
       />
+
       <SearchPickerModal
         open={itemPoModalOpen}
         onClose={() => setItemPoModalOpen(false)}
         onPick={(po) => {
           if (!po?._id || activeItemIndex === null) return;
 
-          const firstProduct = po.items[0] || {};
+          const firstProduct = po.items?.[0] || {};
 
           setItems((prev) => {
             const copy = [...prev];
             copy[activeItemIndex] = {
               ...copy[activeItemIndex],
+              // ids for backend
               po_id: po._id,
+              category_id: firstProduct?.category?._id || null,
+
+              // UI
               po_number: po.po_number,
               project_id: po.p_id,
-              product_name: firstProduct.product_name || "",
-              category_name: firstProduct.category?.name || "",
-              product_make: firstProduct.make || "",
-              uom: firstProduct.uom || "",
-              quantity_requested: firstProduct.quantity || "",
               vendor: po.vendor || "",
-              __selectValue: {
-                value: po._id,
-                label: po.po_number,
-                po,
-              },
+              category_name: firstProduct?.category?.name || "",
+              uom: firstProduct?.uom || "",
+
+              // product fields
+              product_name: firstProduct?.product_name || "",
+              product_make: firstProduct?.make || "",
+              quantity_requested: firstProduct?.quantity || "",
+              quantity_po: "",
             };
             return copy;
           });

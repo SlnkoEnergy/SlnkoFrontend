@@ -35,7 +35,7 @@ export const purchasesApi = createApi({
         etdTo,
         deliveryFrom,
         deliveryTo,
-        filter
+        filter,
       }) =>
         `get-paginated-po?page=${page}&search=${search}&status=${status}&pageSize=${pageSize}&type=${type}&project_id=${project_id}&pr_id=${pr_id}&item_id=${item_id}&etdFrom=${etdFrom}&etdTo=${etdTo}&deliveryFrom=${deliveryFrom}&deliveryTo=${deliveryTo}&filter=${filter}`,
       transformResponse: (response) => ({
@@ -120,7 +120,7 @@ export const purchasesApi = createApi({
 
     addLogistic: builder.mutation({
       query: (newLogistic) => ({
-        url: "logistic",
+        url: "logistics/logistic",
         method: "POST",
         body: newLogistic,
       }),
@@ -144,27 +144,25 @@ export const purchasesApi = createApi({
       invalidatesTags: ["Logistic"],
     }),
 
-   getPoBasic: builder.query({
-  query: ({ page = 1, pageSize = 10, search = "" }) =>
-    `get-po-basic?page=${page}&pageSize=${pageSize}&search=${search}`,
-  transformResponse: (response) => ({
-    data: response.data || [],
-    total:
-      response.total ??
-      response.pagination?.total ??
-      response.meta?.total ??
-      0,
-    count:
-      response.count ??
-      response.pagination?.count ??
-      response.meta?.count ??
-      (response.data ? response.data.length : 0),
-    pagination: response.pagination || null,
-  }),
-  providesTags: ["Purchase"],
-}),
-
-
+    getPoBasic: builder.query({
+      query: ({ page = 1, pageSize = 10, search = "" }) =>
+        `get-po-basic?page=${page}&pageSize=${pageSize}&search=${search}`,
+      transformResponse: (response) => ({
+        data: response.data || [],
+        total:
+          response.total ??
+          response.pagination?.total ??
+          response.meta?.total ??
+          0,
+        count:
+          response.count ??
+          response.pagination?.count ??
+          response.meta?.count ??
+          (response.data ? response.data.length : 0),
+        pagination: response.pagination || null,
+      }),
+      providesTags: ["Purchase"],
+    }),
   }),
 });
 
@@ -177,12 +175,11 @@ export const {
   useUpdatePurchasesMutation,
   useUpdateEtdOrDeliveryDateMutation,
   useUpdatePurchasesStatusMutation,
-   useGetLogisticsQuery,
+  useGetLogisticsQuery,
   useGetLogisticByIdQuery,
   useAddLogisticMutation,
   useUpdateLogisticMutation,
   useDeleteLogisticMutation,
   useGetPoBasicQuery,
   useLazyGetPoBasicQuery,
-
 } = purchasesApi;
