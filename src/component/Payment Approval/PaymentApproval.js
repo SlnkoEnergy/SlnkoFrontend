@@ -63,6 +63,7 @@ function PaymentRequest() {
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [perPage, setPerPage] = useState(initialPageSize);
+  const [delaydays, setDelaydays] = useState("");
   const [activeTab, setActiveTab] = useState(() => {
     return searchParams.get("tab") || "payments";
   });
@@ -85,6 +86,7 @@ function PaymentRequest() {
     page: currentPage,
     pageSize: perPage,
     search: searchQuery,
+    delaydays: delaydays || undefined,
     ...(isAccount ? { tab: activeTab } : {}),
   });
 
@@ -124,6 +126,18 @@ function PaymentRequest() {
 
     setSearchParams,
   ]);
+  useEffect(() => {
+    setSearchParams((prev) => {
+      const updated = new URLSearchParams(prev);
+      if (!delaydays) {
+        updated.delete("delaydays");
+      } else {
+        updated.set("delaydays", delaydays);
+      }
+
+      return updated;
+    })
+  }, [delaydays, setSearchParams])
 
   const handleStatusChange = async (_id, newStatus, remarks = "") => {
     // console.log("📌 handleStatusChange got:", { _id, newStatus, remarks, remarksType: typeof remarks });
@@ -366,6 +380,13 @@ function PaymentRequest() {
 
     return false;
   };
+
+  const DaysOptions = [
+    { value: "10", label: "10 Days" },
+    { value: "20", label: "20 Days" },
+    { value: "30", label: "30 Days" },
+    { value: "clear", label: "Clear Filter" },
+  ]
 
   const RowMenu = ({ _id, onStatusChange, showApprove }) => {
     const [open, setOpen] = useState(false);
@@ -907,10 +928,10 @@ function PaymentRequest() {
 
           {((user?.department === "Accounts" && user?.role === "manager") ||
             user?.department === "admin") && (
-            <Typography level="h2" component="h1">
-              Accounts Payment Approval
-            </Typography>
-          )}
+              <Typography level="h2" component="h1">
+                Accounts Payment Approval
+              </Typography>
+            )}
         </Box>
       </Box>
 
@@ -1021,6 +1042,26 @@ function PaymentRequest() {
                       <RefreshRounded />
                     </IconButton>
                   </Tooltip>
+
+                  <Select
+                    size="m"
+                    placeholder = "Days Filter"
+                    value={delaydays || null}
+                    onChange={(_, v) => {
+                      if (v === "clear") {
+                        setDelaydays(""); // reset to default
+                      } else {
+                        setDelaydays(v ?? "");
+                      }
+                    }}
+                    sx={{ width: 135, height: 35, padding : 1}}
+                  >
+                    {DaysOptions.map((n) => (
+                      <Option key={n.value} value={n.value} sx={n.value === "clear" ? { color: "red" } : {}}>
+                        {n.label}
+                      </Option>
+                    ))}
+                  </Select>
                 </Box>
               </Box>
 

@@ -74,8 +74,8 @@ export const AccountsApi = createApi({
     }),
 
     getPaymentApproval: builder.query({
-      query: ({ page = 1, search = "", pageSize = 10, tab = "" }) =>
-        `accounting/payment-approval?page=${page}&search=${search}&pageSize=${pageSize}&tab=${tab}`,
+      query: ({ page = 1, search = "", pageSize = 10, tab = "", delaydays }) =>
+        `accounting/payment-approval?page=${page}&search=${search}&pageSize=${pageSize}&tab=${tab}&delaydays=${delaydays ?? ""}`,
 
       transformResponse: (response) => ({
         data: response?.data || [],
