@@ -31,6 +31,7 @@ import LocalMallOutlinedIcon from "@mui/icons-material/LocalMallOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import SearchPickerModal from "../SearchPickerModal";
+import AddBill from "./Add_Bill";
 import {
   useGetVendorsNameSearchQuery,
   useLazyGetVendorsNameSearchQuery,
@@ -125,7 +126,7 @@ const AddPurchaseOrder = ({
   const [vendorSearch, setVendorSearch] = useState("");
   const [vendorPage, setVendorPage] = useState(1);
   const [vendorModalOpen, setVendorModalOpen] = useState(false);
-
+  const [billModalOpen, setBillModalOpen] = useState(false);
   const { data: vendorsResp, isFetching: vendorsLoading } =
     useGetVendorsNameSearchQuery({
       search: vendorSearch,
@@ -182,6 +183,8 @@ const AddPurchaseOrder = ({
     partial_billing: "",
     submitted_By: "",
     delivery_type: "",
+    total_billed: "",
+    createdAt: "",
   });
 
   const [lines, setLines] = useState(() =>
@@ -311,6 +314,8 @@ const AddPurchaseOrder = ({
           p_id: po?.p_id ?? prev.p_id,
           project_code: po?.p_id ?? prev.p_id ?? "",
           po_number: po?.po_number ?? prev.po_number ?? "",
+          total_billed: po?.total_billed ?? prev.total_billed ?? "",
+          createdAt: po?.createdAt ?? prev.createdAt ?? "",
           name: po?.vendor ?? "",
           date: po?.date ?? "",
           partial_billing: po?.partial_billing ?? "",
@@ -330,6 +335,7 @@ const AddPurchaseOrder = ({
       }
     })();
   }, [poNumberQ, effectiveMode]);
+
 
   const statusNow = fetchedPoStatus;
   const isApprovalPending = statusNow === "approval_pending";
@@ -1209,6 +1215,7 @@ const AddPurchaseOrder = ({
                 size="sm"
                 variant="solid"
                 startDecorator={<Add />}
+                onClick={() => setBillModalOpen(true)}
               >
                 Add Bill
               </Button>
@@ -1820,6 +1827,26 @@ const AddPurchaseOrder = ({
           <Button color="danger" onClick={handleRefuse}>
             Submit Refuse
           </Button>
+        </ModalDialog>
+      </Modal>
+
+      <Modal open={billModalOpen} onClose={() => setBillModalOpen(false)}>
+        <ModalDialog
+          sx={{
+            maxWidth: 1200,
+            width: "100vw",
+            maxHeight: "90vh",
+            overflow: "auto",
+            p: 0,
+          }}
+        >
+          <Box sx={{ p: 0 }}>
+            <AddBill
+              poData={formData}
+              poLines={lines}
+              onClose={() => setBillModalOpen(false)}
+            />
+          </Box>
         </ModalDialog>
       </Modal>
     </Box>
