@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Box,
   Grid,
@@ -15,6 +15,7 @@ import {
 } from "@mui/joy";
 import DeleteOutline from "@mui/icons-material/DeleteOutline";
 import { IconButton } from "@mui/joy";
+import CloudUpload from "@mui/icons-material/CloudUpload";
 
 import { toast } from "react-toastify";
 import Select from "react-select";
@@ -24,42 +25,45 @@ import {
   useLazyGetPoBasicQuery,
 } from "../../redux/purchasesSlice";
 import SearchPickerModal from "../SearchPickerModal";
+import { CloseRounded, InsertDriveFile } from "@mui/icons-material";
 
 const AddLogisticForm = () => {
   const [formData, setFormData] = useState({
-    po_id: [],                 // will be set from `transportation` when submitting
+    po_id: [],
     project_code: "",
     vendor: "",
     vehicle_number: "",
     driver_number: "",
     total_ton: "",
-    total_transport_po_value: 0, // ✅ backend key
+    total_transport_po_value: 0,
     attachment_url: "",
     description: "",
   });
 
-  // items table (UI fields + backend ids)
   const [items, setItems] = useState([
     {
-      po_id: "",            // UI: purchaseOrder _id for this row (used to map → material_po on submit)
-      po_number: "",        // UI only
-      project_id: "",       // UI only
-      vendor: "",           // UI only
+      po_id: "",
+      po_number: "",
+      project_id: "",
+      vendor: "",
       product_name: "",
-      category_id: null,    // ✅ backend needs ObjectId (from prod.category?._id)
-      category_name: "",    // UI only
+      category_id: null,
+      category_name: "",
       product_make: "",
-      uom: "",              // UI only
+      uom: "",
       quantity_requested: "",
-      quantity_po: "",      // leave blank unless you have it
-      ton: "",              // UI name; mapped to backend "weight"
+      quantity_po: "",
+      ton: "",
     },
   ]);
 
   const [totalWeight, setTotalWeight] = useState(0);
-  const [vehicleCost, setVehicleCost] = useState(0); // summed transport PO value
+  const [vehicleCost, setVehicleCost] = useState(0);
 
-  // ✅ Recalculate total weight when items change
+  const [selectedFile, setSelectedFile] = useState(null);
+  const fileInputRef = useRef(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
+
   useEffect(() => {
     const sum = items.reduce(
       (acc, item) => acc + (parseFloat(item.ton) || 0),
@@ -82,12 +86,16 @@ const AddLogisticForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    setFormData((prev) => ({
-      ...prev,
-      attachment_url: file ? file.name : "",
-    }));
+  const onFileInput = (e) => {
+    const f = e.target?.files?.[0] ?? null;
+    setSelectedFile(f);
+    setFormData((p) => ({ ...p, attachment_url: f ? f.name : "" }));
+  };
+
+  const clearFile = () => {
+    setSelectedFile(null);
+    setFormData((p) => ({ ...p, attachment_url: "" }));
+    setFileInputKey((k) => k + 1);
   };
 
   const handleItemChange = (index, field, value) => {
@@ -217,30 +225,28 @@ const AddLogisticForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // 🔁 Normalize items for backend schema
       const normalizedItems = items.map((i) => ({
-        material_po: i.po_id,                              // map UI po_id → backend material_po
-        category_id: i.category_id ?? null,                // must be ObjectId (store when expanding PO items)
+        material_po: i.po_id,
+        category_id: i.category_id ?? null,
         product_name: i.product_name,
         product_make: i.product_make,
         quantity_requested: String(i.quantity_requested || ""),
-        quantity_po: String(i.quantity_po || ""),          // keep empty if unknown
-        weight: String(i.ton || ""),                       // map UI "ton" → backend "weight"
+        quantity_po: String(i.quantity_po || ""),
+        weight: String(i.ton || ""),
       }));
 
       const payload = {
-        // top-level required fields
-        po_id: transportation,                              // ✅ backend expects selected transport PO ids
+        po_id: transportation,
         vehicle_number: formData.vehicle_number,
         driver_number: formData.driver_number,
-        total_ton: String(totalWeight),                     // backend type: String
-        total_transport_po_value: String(vehicleCost),      // ✅ backend key (string)
+        total_ton: String(totalWeight),
+        total_transport_po_value: String(vehicleCost),
         attachment_url: formData.attachment_url,
         description: formData.description,
-
-        // items
         items: normalizedItems,
       };
+
+      clearFile();
 
       console.log("Submitting Logistic Data:", payload);
 
@@ -285,6 +291,8 @@ const AddLogisticForm = () => {
     setTransportationIdToName({});
     setTotalWeight(0);
     setVehicleCost(0);
+    setSelectedFile(null);
+    setFileInputKey((k) => k + 1); // ensures the <input> is fresh
   };
 
   return (
@@ -408,7 +416,67 @@ const AddLogisticForm = () => {
             <Grid xs={12} sm={6}>
               <FormControl>
                 <FormLabel>Attachment</FormLabel>
-                <Input type="file" onChange={handleFileChange} />
+
+                <Button
+                  component="label"
+                  variant="soft"
+                  startDecorator={<CloudUpload />}
+                  sx={{ width: "fit-content" }}
+                >
+                  Upload file
+                  <input
+                    key={fileInputKey} // <- forces remount after clear
+                    hidden
+                    ref={fileInputRef}
+                    type="file"
+                    onClick={(e) => {
+                      e.target.value = "";
+                    }} // allow re-selecting same file
+                    onChange={(e) => {
+                      const f = e.target?.files?.[0] ?? null;
+                      setSelectedFile(f);
+                      setFormData((p) => ({
+                        ...p,
+                        attachment_url: f ? f.name : "",
+                      }));
+                    }}
+                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                  />
+                </Button>
+
+                {selectedFile ? (
+                  <Chip
+                    variant="soft"
+                    startDecorator={<InsertDriveFile />}
+                    endDecorator={
+                      <IconButton
+                        type="button"
+                        variant="plain"
+                        size="sm"
+                        aria-label="Remove file"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          clearFile();
+                        }}
+                      >
+                        <CloseRounded />
+                      </IconButton>
+                    }
+                    sx={{ mt: 1, maxWidth: "100%" }}
+                    title={selectedFile.name}
+                  >
+                    {selectedFile.name}
+                  </Chip>
+                ) : (
+                  <Typography
+                    level="body-xs"
+                    sx={{ mt: 0.75, color: "neutral.plainColor" }}
+                  >
+                    Supported: PDF, DOCX, PNG, JPG (max ~25MB)
+                  </Typography>
+                )}
               </FormControl>
             </Grid>
           </Grid>
@@ -423,32 +491,32 @@ const AddLogisticForm = () => {
             </Box>
 
             <Box
-              component="table"
-              sx={{
-                width: "100%",
-                tableLayout: "fixed",
-                borderCollapse: "separate",
-                borderSpacing: 0,
-                "& th, & td": {
-                  borderBottom:
-                    "1px solid var(--joy-palette-neutral-outlinedBorder)",
-                  p: 1,
-                  textAlign: "left",
-                  verticalAlign: "top",
-                },
-                "& th": { fontWeight: 700, bgcolor: "background.level1" },
-              }}
-            >
+                 component="table"
+          sx={{
+            width: "100%",
+            tableLayout: "fixed",
+            borderCollapse: "separate",
+            borderSpacing: 0,
+            "& th, & td": {
+              borderBottom:
+                "1px solid var(--joy-palette-neutral-outlinedBorder)",
+              p: 1,
+              textAlign: "left",
+              verticalAlign: "top",
+            },
+            "& th": { fontWeight: 700, bgcolor: "background.level1" },
+          }}
+        >
               <thead>
                 <tr>
                   <th style={{ width: "20%" }}>PO Number</th>
                   <th style={{ width: "12%" }}>Project ID</th>
-                  <th style={{ width: "20%" }}>Vendor</th>
-                  <th style={{ width: "20%" }}>Product</th>
+                  <th style={{ width: "10%" }}>Vendor</th>
                   <th style={{ width: "15%" }}>Category</th>
+                  <th style={{ width: "15%" }}>Product</th>
                   <th style={{ width: "10%" }}>Make</th>
-                  <th style={{ width: "8%" }}>Qty</th>
-                  <th style={{ width: "8%" }}>UoM</th>
+                  <th style={{ width: "10%" }}>Qty</th>
+                  <th style={{ width: "10%" }}>UoM</th>
                   <th style={{ width: "10%" }}>Weight (Ton)</th>
                   <th style={{ width: "60px", textAlign: "center" }}>Action</th>
                 </tr>
@@ -459,6 +527,14 @@ const AddLogisticForm = () => {
                     {/* PO Number selection */}
                     <td>
                       <Select
+                      variant="plain"
+                      sx={{
+                          width: "100%", 
+                          border: "none",
+                          boxShadow: "none",
+                          bgcolor: "transparent",
+                          p: 0,
+                        }}
                         placeholder="Select PO"
                         options={[
                           ...(poData?.data || []).map((po) => ({
@@ -506,8 +582,8 @@ const AddLogisticForm = () => {
                               1,
                               ...productItems.map((prod) => ({
                                 // base ids for backend
-                                po_id: po._id,                                  // later → material_po
-                                category_id: prod?.category?._id || null,       // backend id
+                                po_id: po._id, // later → material_po
+                                category_id: prod?.category?._id || null, // backend id
                                 // UI/Display extras
                                 po_number: po.po_number,
                                 project_id: po.p_id,
@@ -534,29 +610,32 @@ const AddLogisticForm = () => {
                     </td>
 
                     <td>
-                      <Input value={item.project_id || ""} readOnly />
+                      <Input variant="plain" placeholder="Project Id" value={item.project_id || ""} readOnly />
                     </td>
                     <td>
-                      <Input value={item.vendor || ""} readOnly />
+                      <Input variant="plain" placeholder="Vendor" value={item.vendor || ""} readOnly />
                     </td>
                     <td>
-                      <Input value={item.product_name} readOnly />
+                      <Input variant="plain" placeholder="Category" value={item.category_name} readOnly />
                     </td>
                     <td>
-                      <Input value={item.category_name} readOnly />
+                      <Input variant="plain" placeholder="Product Name" value={item.product_name} readOnly />
                     </td>
                     <td>
-                      <Input value={item.product_make} readOnly />
+                      <Input variant="plain" placeholder="Make" value={item.product_make} readOnly />
                     </td>
                     <td>
-                      <Input value={item.quantity_requested} readOnly />
+                      <Input  variant="plain" placeholder="Quantity" value={item.quantity_requested} readOnly />
                     </td>
                     <td>
-                      <Input value={item.uom} readOnly />
+                      <Input variant="plain" placeholder="UoM" value={item.uom} readOnly />
                     </td>
                     <td>
                       <Input
                         value={item.ton}
+                        variant="plain"
+                        type="number"
+                        placeholder="Ton"
                         onChange={(e) =>
                           handleItemChange(idx, "ton", e.target.value)
                         }
