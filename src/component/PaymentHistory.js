@@ -1,30 +1,43 @@
-import React from "react";
 import { usePayment } from "../store/Context/Payment_History";
-import {
-    useGetExportPaymentHistoryQuery,
-
-} from "../redux/Accounts";
-
-
+import Axios from "../utils/Axios";
 
 const PaymentHistory = ({ po_number }) => {
-  const { history, total, isLoading, error } = usePayment();
+  const { history, total_debited, isLoading, error } = usePayment();
 
-  const { data: exportData } = useGetExportPaymentHistoryQuery(
-    { po_number },
-    { skip: !po_number }
-  );
+  // console.log("PoNumber payment history: ", po_number);
 
-  const handleCSVDownload = () => {
-    if (exportData?.blob) {
-      const blobUrl = window.URL.createObjectURL(exportData.blob);
+  const handleCSVDownload = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await Axios.get(
+        `accounting/debithistorycsv?po_number=${po_number}`,
+        {
+          responseType: "blob",
+          headers: {
+            "x-auth-token": token,
+          },
+        }
+      );
+
+      const contentDisposition = response.headers["content-disposition"];
+      let filename = "payment-history.csv";
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?(.+)"?/);
+        if (match?.[1]) {
+          filename = match[1];
+        }
+      }
+
+      const blobUrl = window.URL.createObjectURL(response.data);
       const link = document.createElement("a");
       link.href = blobUrl;
-      link.download = exportData.filename || "payment-history.csv";
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error("Error downloading CSV:", err);
     }
   };
 
@@ -79,9 +92,11 @@ const PaymentHistory = ({ po_number }) => {
           <tfoot>
             <tr style={tfootStyle}>
               <td colSpan="4" style={{ textAlign: "right" }}>
-                Total
+                Total:&nbsp;
               </td>
-              <td style={{ fontWeight: "bold" }}>₹{total.toLocaleString()}</td>
+              <td style={{ fontWeight: "bold" }}>
+                ₹{total_debited?.toLocaleString("en-IN")}
+              </td>
               <td colSpan="2"></td>
             </tr>
           </tfoot>
@@ -90,8 +105,6 @@ const PaymentHistory = ({ po_number }) => {
     </div>
   );
 };
-
-
 
 const containerStyle = {
   padding: "0.5rem",
@@ -113,7 +126,6 @@ const headerStyle = {
   gap: "0.5rem 1rem",
   marginBottom: "1rem",
 };
-
 
 const buttonStyle = {
   backgroundColor: "#1976d2",

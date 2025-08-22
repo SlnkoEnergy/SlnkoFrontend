@@ -1,8 +1,5 @@
 import BlockIcon from "@mui/icons-material/Block";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
-import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import PermScanWifiIcon from "@mui/icons-material/PermScanWifi";
 import KeyboardDoubleArrowLeft from "@mui/icons-material/KeyboardDoubleArrowLeft";
 import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
@@ -14,13 +11,12 @@ import Checkbox from "@mui/joy/Checkbox";
 import Chip from "@mui/joy/Chip";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
-import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
+import IconButton from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
-import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import NoData from "../../assets/alert-bell.svg";
@@ -28,46 +24,47 @@ import Axios from "../../utils/Axios";
 import { useGetPaymentApprovalQuery } from "../../redux/Accounts";
 import {
   CircularProgress,
+  Divider,
   Modal,
   ModalDialog,
+  Sheet,
   Stack,
   Tab,
   TabList,
   TabPanel,
   Tabs,
   Textarea,
+  Tooltip,
 } from "@mui/joy";
-import { Calendar, CircleUser, Receipt, UsersRound } from "lucide-react";
+import {
+  Calendar,
+  CircleUser,
+  FileText,
+  Receipt,
+  UsersRound,
+} from "lucide-react";
 import PaymentAccountApproval from "./PaymentAccountApproval";
-import { skipToken } from "@reduxjs/toolkit/query";
 import CreditPayment from "./creditPayment";
-import ApprovalPayment from "./ToBeApproved";
-import OverDue from "./Overdue";
-import { Money } from "@mui/icons-material";
+import { InfoOutlined, Money, RefreshRounded } from "@mui/icons-material";
+import { PaymentProvider } from "../../store/Context/Payment_History";
+import PaymentHistory from "../PaymentHistory";
 
 function PaymentRequest() {
-  const [payments, setPayments] = useState([]);
-  const [error, setError] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [pdfBlob, setPdfBlob] = useState(null);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
-  const [hiddenIds, setHiddenIds] = useState([]);
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [pdfPayments, setPdfPayments] = useState([]);
   const [blobUrl, setBlobUrl] = useState(null);
-
-
+  const [hasPrinted, setHasPrinted] = useState(false);
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
-
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [perPage, setPerPage] = useState(initialPageSize);
-
   const [activeTab, setActiveTab] = useState(() => {
-    return searchParams.get("tab") || "instant";
+    return searchParams.get("tab") || "payments";
   });
 
   const [user, setUser] = useState(null);
@@ -79,48 +76,54 @@ function PaymentRequest() {
 
   const isAccount = user?.department === "Accounts";
 
-  const { data: responseData, isLoading } = useGetPaymentApprovalQuery({
+  const {
+    data: responseData,
+    isLoading,
+    error,
+    onRefresh,
+  } = useGetPaymentApprovalQuery({
     page: currentPage,
     pageSize: perPage,
     search: searchQuery,
     ...(isAccount ? { tab: activeTab } : {}),
   });
 
-  const paginatedData = responseData?.data || [];
-  console.log("paginatedData :", paginatedData);
+  const [paginatedData, setPaginatedData] = useState([]);
+  // console.log("paginatedData :", paginatedData);
 
   // console.log(count);
   const total = responseData?.total || 0;
   const count = responseData?.count || paginatedData.length;
-  const Approved = responseData?.toBeApprovedCount || 0;
+  // const Approved = responseData?.toBeApprovedCount || 0;
 
   const startIndex = (currentPage - 1) * perPage + 1;
   const endIndex = Math.min(startIndex + count - 1, total);
 
   const totalPages = Math.ceil(total / perPage);
 
-  console.log("tobeApproved", Approved);
+  useEffect(() => {
+    if (responseData?.data) {
+      setPaginatedData(responseData.data);
+    }
+  }, [responseData]);
 
-  // Sync URL params
   useEffect(() => {
     const params = {};
+    if (isAccount) params.tab = activeTab;
     if (currentPage > 1) params.page = currentPage;
     if (perPage !== 10) params.pageSize = perPage;
     if (searchQuery) params.search = searchQuery;
-    if (isAccount) params.tab = activeTab;
 
     setSearchParams(params, { replace: true });
   }, [
+    isAccount,
+    activeTab,
     currentPage,
     perPage,
     searchQuery,
-    activeTab,
-    isAccount,
+
     setSearchParams,
   ]);
-
-
-
 
   const handleStatusChange = async (_id, newStatus, remarks = "") => {
     // console.log("📌 handleStatusChange got:", { _id, newStatus, remarks, remarksType: typeof remarks });
@@ -189,7 +192,7 @@ function PaymentRequest() {
       // console.log("📌 Selected PO IDs for PDF:", poIds);
       // console.log("📌 Selected Payments for PDF:", selectedPayments);
 
-      setPdfPayments(selectedPayments);
+      // setPdfPayments(selectedPayments);
       await handleMultiPDFDownload(selectedPayments);
     }
   };
@@ -285,7 +288,7 @@ function PaymentRequest() {
 
         if (successCount > 0) {
           toast.success(`${successCount} payment(s) approved successfully`);
-          setHiddenIds((prev) => [...prev, ...idsToApprove]);
+          // setHiddenIds((prev) => [...prev, ...idsToApprove]);
           setSelected((prev) =>
             prev.filter((id) => !idsToApprove.includes(id))
           );
@@ -341,7 +344,7 @@ function PaymentRequest() {
               toast.error(`Payment Rejected`, { autoClose: 2000 });
             else if (newStatus === "Pending")
               toast.info(`Payment marked as Pending`, { autoClose: 2000 });
-            setHiddenIds((prev) => [...prev, result._id]);
+            // setHiddenIds((prev) => [...prev, result._id]);
           } else {
             allSuccess = false;
             toast.error(result.message || `Approval failed for ${result._id}`);
@@ -369,12 +372,12 @@ function PaymentRequest() {
     const [remarks, setRemarks] = useState("");
 
     const handleRejectSubmit = () => {
-      console.log(
-        "📌 RowMenu → handleRejectSubmit remarks:",
-        remarks,
-        "type:",
-        typeof remarks
-      );
+      // console.log(
+      //   "📌 RowMenu → handleRejectSubmit remarks:",
+      //   remarks,
+      //   "type:",
+      //   typeof remarks
+      // );
       onStatusChange(_id, "Rejected", remarks);
       setOpen(false);
       setRemarks("");
@@ -471,25 +474,33 @@ function PaymentRequest() {
       checked ? [...prev, idStr] : prev.filter((item) => item !== idStr)
     );
   };
-    const handlePrint = () => {
-  if (!blobUrl) return;
-  // Open PDF blob in new window and trigger print
-  const printWindow = window.open(blobUrl);
-  if (printWindow) {
-    printWindow.focus();
-    printWindow.print();
-  } else {
-    toast.error("Unable to open print window");
-  }
-};
+  const handlePrint = () => {
+    if (!blobUrl) return;
 
-useEffect(() => {
-  if (pdfBlob) {
-    const url = URL.createObjectURL(pdfBlob);
-    setBlobUrl(url);
-    return () => URL.revokeObjectURL(url); // cleanup on unmount or blob change
-  }
-}, [pdfBlob]);
+    const printWindow = window.open(blobUrl);
+    if (printWindow) {
+      printWindow.focus();
+      printWindow.onload = () => {
+        printWindow.print();
+        setHasPrinted(true);
+      };
+    } else {
+      toast.error("Unable to open print window");
+    }
+  };
+
+  useEffect(() => {
+    if (pdfBlob) {
+      const url = URL.createObjectURL(pdfBlob);
+      setBlobUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+  }, [pdfBlob]);
+  useEffect(() => {
+    if (isPdfModalOpen) {
+      setHasPrinted(false);
+    }
+  }, [isPdfModalOpen]);
 
   const handleClosePdfModal = () => {
     if (blobUrl) URL.revokeObjectURL(blobUrl);
@@ -542,6 +553,7 @@ useEffect(() => {
   };
 
   const handleSearch = (query) => {
+    setPaginatedData([]);
     setSearchQuery(query);
     setCurrentPage(1);
   };
@@ -574,69 +586,60 @@ useEffect(() => {
     borderColor: "divider",
   };
 
-  // console.log(paginatedData);
+  const PaymentID = ({ pay_id, cr_id, request_date, approved }) => {
+    // const maskId = (id) => {
+    //   if (!id) return "N/A";
+    //   const parts = id.split("/");
+    //   const lastIndex = parts.length - 2;
 
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setSearchParams((prev) => {
-        return {
-          ...Object.fromEntries(prev.entries()),
-          page: String(page),
-        };
-      });
-    }
+    //   if (!isNaN(parts[lastIndex])) {
+    //     parts[lastIndex] = parts[lastIndex].replace(/\d{2}$/, "XX");
+    //   }
+
+    //   return parts.join("/");
+    // };
+
+    const idToShow = pay_id || cr_id;
+
+    return (
+      <>
+        {idToShow && (
+          <Box>
+            <Chip
+              variant="solid"
+              color="primary"
+              size="sm"
+              sx={{
+                fontWeight: 500,
+                fontFamily: "Inter, Roboto, sans-serif",
+                fontSize: 14,
+                color: "#fff",
+                "&:hover": {
+                  boxShadow: "md",
+                  opacity: 0.9,
+                },
+              }}
+            >
+              {idToShow}
+            </Chip>
+          </Box>
+        )}
+
+        {request_date && (
+          <Box display="flex" alignItems="center" mt={0.5}>
+            <Calendar size={12} />
+            <span style={{ fontSize: 12, fontWeight: 600 }}>
+              Request Date :{" "}
+            </span>
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {request_date}
+            </Typography>
+          </Box>
+        )}
+      </>
+    );
   };
-
- const PaymentID = ({ pay_id, cr_id, request_date, approved }) => {
-
-  const maskId = (id) => {
-    if (!id) return "N/A";
-    return approved === "Approved" ? id : id.replace(/(\d{2})$/, "XX");
-  };
-
- 
-  const idToShow = pay_id || cr_id;
-
-  return (
-    <>
-      {idToShow && (
-        <Box>
-          <Chip
-            variant="solid"
-            color="primary"
-            size="sm"
-            sx={{
-              fontWeight: 500,
-              fontFamily: "Inter, Roboto, sans-serif",
-              fontSize: 14,
-              color: "#fff",
-              "&:hover": {
-                boxShadow: "md",
-                opacity: 0.9,
-              },
-            }}
-          >
-            {maskId(idToShow)}
-          </Chip>
-        </Box>
-      )}
-
-      {request_date && (
-        <Box display="flex" alignItems="center" mt={0.5}>
-          <Calendar size={12} />
-          <span style={{ fontSize: 12, fontWeight: 600 }}>
-            Request Date :{" "}
-          </span>
-          &nbsp;
-          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-            {request_date}
-          </Typography>
-        </Box>
-      )}
-    </>
-  );
-};
-
 
   const ProjectDetail = ({ project_id, client_name, group_name }) => {
     return (
@@ -676,7 +679,17 @@ useEffect(() => {
     );
   };
 
-  const RequestedData = ({ request_for, payment_description }) => {
+  const RequestedData = ({
+    request_for,
+    payment_description,
+    po_number,
+    vendor,
+  }) => {
+    const [open, setOpen] = useState(false);
+
+    const handleOpen = () => setOpen(true);
+    const handleClose = () => setOpen(false);
+
     return (
       <>
         {request_for && (
@@ -686,6 +699,56 @@ useEffect(() => {
             </span>
           </Box>
         )}
+        {po_number && (
+          <Box
+            display="flex"
+            alignItems="center"
+            mt={0.5}
+            sx={{ cursor: "pointer" }}
+            onClick={handleOpen}
+          >
+            <FileText size={12} />
+            <span style={{ fontSize: 12, fontWeight: 600 }}>PO Number: </span>
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {po_number}
+            </Typography>
+          </Box>
+        )}
+        <Modal open={open} onClose={handleClose}>
+          <Sheet
+            variant="outlined"
+            sx={{
+              mx: "auto",
+              mt: "8vh",
+              width: { xs: "95%", sm: 600 },
+              borderRadius: "12px",
+              p: 3,
+              boxShadow: "lg",
+              maxHeight: "80vh",
+              overflow: "auto",
+              backgroundColor: "#fff",
+              minWidth: 950,
+            }}
+          >
+            {po_number && (
+              <PaymentProvider po_number={po_number}>
+                <PaymentHistory po_number={po_number} />
+              </PaymentProvider>
+            )}
+          </Sheet>
+        </Modal>
+
+        <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+          <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
+            🏢 Vendor:
+          </Typography>
+          <Typography
+            sx={{ fontSize: 12, fontWeight: 400, wordBreak: "break-word" }}
+          >
+            {vendor}
+          </Typography>
+        </Box>
 
         {payment_description && (
           <Box display="flex" alignItems="center" mt={0.5}>
@@ -702,30 +765,35 @@ useEffect(() => {
     );
   };
 
-  const BalanceData = ({ amount_requested, ClientBalance, groupBalance, po_value }) => {
+  const BalanceData = ({
+    amount_requested,
+    ClientBalance,
+    groupBalance,
+    po_value,
+  }) => {
     return (
       <>
         {amount_requested && (
+          <Box display="flex" alignItems="center" mb={0.5}>
+            <Money size={16} />
+            <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+              Requested Amount:{" "}
+            </span>
+            <Typography sx={{ fontSize: 13, fontWeight: 400, ml: 0.5 }}>
+              {amount_requested || "-"}
+            </Typography>
+          </Box>
+        )}
+
         <Box display="flex" alignItems="center" mb={0.5}>
-          <Money size={16} />
+          <Receipt size={16} />
           <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
-            Requested Amount:{" "}
+            Total PO (incl. GST):{" "}
           </span>
-          <Typography sx={{ fontSize: 13, fontWeight: 400, ml: 0.5 }}>
-            {amount_requested || "-"}
+          <Typography sx={{ fontSize: 12, fontWeight: 400, ml: 0.5 }}>
+            {po_value || "-"}
           </Typography>
         </Box>
-        )}
-          
-                <Box display="flex" alignItems="center" mb={0.5}>
-        <Receipt size={16} />
-        <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
-          Total PO (incl. GST):{" "}
-        </span>
-        <Typography sx={{ fontSize: 12, fontWeight: 400, ml: 0.5 }}>
-          {po_value || "-"}
-        </Typography>
-      </Box>
 
         <Box display="flex" alignItems="center" mt={0.5}>
           <CircleUser size={12} />
@@ -752,164 +820,62 @@ useEffect(() => {
     );
   };
 
-  const PaymentApprovalToolbar = ({
-    user,
-    searchQuery,
-    handleSearch,
-    perPage,
-    setPerPage,
-    currentPage,
-    setCurrentPage,
-    startIndex,
-    endIndex,
-    total,
-    totalPages,
-    renderFilters,
-  }) => {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 2,
-          px: 1,
-          py: 1,
-          ml: { xl: "15%", lg: "18%", sm: 0 },
-          maxWidth: { lg: "85%", sm: "100%" },
-          borderRadius: "md",
-          mb: 2,
-        }}
-      >
-        {/* Left Side - Filters + Search */}
-        <Box
-          sx={{
-            display: "flex",
-            mb: 1,
-            gap: 1,
-            flexDirection: { xs: "column", sm: "row" },
-            alignItems: { xs: "none", sm: "center" },
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
-        >
-          {user?.department === "Internal" &&
-            user?.role === "manager" &&
-            renderFilters?.()}
-
-          <Box
-            className="SearchAndFilters-tabletUp"
-            sx={{
-              borderRadius: "sm",
-              py: 2,
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              flexWrap: "wrap",
-              gap: 1.5,
-            }}
-          >
-            <FormControl sx={{ flex: 1 }} size="sm">
-              <FormLabel>Search here</FormLabel>
-              <Input
-                size="sm"
-                placeholder="Search by Pay ID, Items, Clients Name or Vendor"
-                startDecorator={<SearchIcon />}
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                sx={{
-                  width: 350,
-                  borderColor: "neutral.outlinedBorder",
-                  borderBottom: searchQuery
-                    ? "2px solid #1976d2"
-                    : "1px solid #ddd",
-                  borderRadius: 5,
-                  boxShadow: "none",
-                  "&:hover": {
-                    borderBottom: "2px solid #1976d2",
-                  },
-                  "&:focus-within": {
-                    borderBottom: "2px solid #1976d2",
-                  },
-                }}
-              />
-            </FormControl>
-          </Box>
-        </Box>
-
-        {/* Right Side - Rows per page + Pagination */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 1.5,
-          }}
-        >
-          {/* Rows per page */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography level="body-sm">Rows per page:</Typography>
-            <Select
-              size="sm"
-              value={perPage}
-              onChange={(_, value) => {
-                if (value) {
-                  setPerPage(Number(value));
-                  setCurrentPage(1);
-                }
-              }}
-              sx={{ minWidth: 64 }}
-            >
-              {[10, 25, 50, 100].map((value) => (
-                <Option key={value} value={value}>
-                  {value}
-                </Option>
-              ))}
-            </Select>
-          </Box>
-
-          {/* Pagination info */}
-          <Typography level="body-sm">
-            {`${startIndex}-${endIndex} of ${total}`}
-          </Typography>
-
-          {/* Navigation buttons */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <IconButton
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(1)}
-            >
-              <KeyboardDoubleArrowLeft />
-            </IconButton>
-            <IconButton
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            >
-              <KeyboardArrowLeft />
-            </IconButton>
-            <IconButton
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
-            >
-              <KeyboardArrowRight />
-            </IconButton>
-            <IconButton
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(totalPages)}
-            >
-              <KeyboardDoubleArrowRight />
-            </IconButton>
-          </Box>
-        </Box>
-      </Box>
+  const useDebounced = (fn, delay = 350) => {
+    const t = useRef();
+    return useCallback(
+      (...args) => {
+        clearTimeout(t.current);
+        t.current = setTimeout(() => fn(...args), delay);
+      },
+      [fn, delay]
     );
   };
+  const [scrolled, setScrolled] = useState(false);
+
+  const paymentsCount = responseData?.paymentsCount ?? 0;
+  const finalCount = responseData?.finalApprovalPaymentsCount ?? 0;
+
+  const handleTabChange = (_e, val) => {
+    setActiveTab(val);
+    setSearchParams((prev) => ({
+      ...Object.fromEntries(prev.entries()),
+      tab: val,
+      page: 1,
+    }));
+    setCurrentPage(1);
+  };
+
+  const handleScroll = (e) => setScrolled(e.currentTarget.scrollTop > 0);
+
+  const debouncedSearch = useDebounced((val) => {
+    setSearchParams((prev) => ({
+      ...Object.fromEntries(prev.entries()),
+      page: 1,
+      search: val || "",
+    }));
+    setCurrentPage(1);
+  }, 350);
+
+  const onSearchChange = (e) => {
+    setSearchQuery?.(e.target.value);
+    debouncedSearch(e.target.value);
+  };
+
+  const tabDefs = useMemo(
+    () => [
+      {
+        key: "payments",
+        label: "Aggregate Payments",
+        count: paymentsCount,
+      },
+      {
+        key: "finalApprovalPayments",
+        label: "Final Approval Payments",
+        count: finalCount,
+      },
+    ],
+    [paymentsCount, finalCount]
+  );
 
   return (
     <>
@@ -939,135 +905,410 @@ useEffect(() => {
             </Typography>
           )}
 
-          {((user?.department === "Accounts" && user?.role === "manager") ||
-            user?.department === "admin") && (
-            <Typography level="h2" component="h1">
-              Accounts Payment Approval
-            </Typography>
-          )}
+          {(user?.department === "Accounts" && user?.role === "manager") ||
+            user?.department === "admin" ||
+            (user?.department === "superadmin" && (
+              <Typography level="h2" component="h1">
+                Accounts Payment Approval
+              </Typography>
+            ))}
         </Box>
       </Box>
 
       {isAccount ? (
         // ---------------- Accounts View with Tabs ----------------
         <>
-          <PaymentApprovalToolbar
-            user={user}
-            searchQuery={searchQuery}
-            handleSearch={setSearchQuery}
-            perPage={perPage}
-            setPerPage={setPerPage}
-            currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
-            startIndex={startIndex}
-            endIndex={endIndex}
-            total={total}
-            totalPages={totalPages}
-            renderFilters={renderFilters()}
-          />
-
           <Box
             className="OrderTableContainer"
-            variant="outlined"
             sx={{
-              display: { xs: "none", sm: "initial" },
               width: "100%",
-              flexShrink: 1,
-              overflow: "auto",
-              marginLeft: { xl: "15%", lg: "18%" },
+              borderRadius: "md",
+              overflow: "hidden",
+              minHeight: 0,
+              ml: { xl: "15%", lg: "18%", sm: 0 },
               maxWidth: { lg: "85%", sm: "100%" },
-              maxHeight: "600px",
-              borderRadius: "12px",
+              boxSizing: "border-box",
               border: "1px solid",
-              borderColor: "divider",
+              borderColor: "neutral.outlinedBorder",
               bgcolor: "background.body",
-              "&::-webkit-scrollbar": { width: "8px" },
-              "&::-webkit-scrollbar-track": {
-                background: "#f0f0f0",
-                borderRadius: "8px",
-              },
-              "&::-webkit-scrollbar-thumb": {
-                backgroundColor: "#1976d2",
-                borderRadius: "8px",
-              },
+              boxShadow: "sm",
             }}
           >
-            <Tabs
-              value={activeTab}
-              onChange={(e, val) => {
-                setActiveTab(val);
-                setSearchParams((prev) => ({
-                  ...Object.fromEntries(prev.entries()),
-                  tab: val,
-                  page: 1,
-                }));
-                setCurrentPage(1);
+            <Sheet
+              variant="plain"
+              sx={{
+                position: "sticky",
+                top: 0,
+                zIndex: 10,
+                backgroundColor: "background.body",
+                borderBottom: "1px solid",
+                borderColor: "neutral.outlinedBorder",
+                px: 2,
+                py: 1,
+
+                boxShadow: scrolled ? "sm" : "none",
+                transition: "box-shadow .2s ease",
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  flexWrap: "wrap",
+                  justifyContent: "space-between",
                 }}
               >
-                <TabList>
-                <Tab value="instant">Instant Payments ({responseData?.instantCount || 0})</Tab>
-                <Tab value="credit">
-                  Credit Payments ({responseData?.creditCount || 0})
-                </Tab>
+                <Tabs
+                  aria-label="Payments view tabs"
+                  value={activeTab}
+                  onChange={handleTabChange}
+                  variant="plain"
+                  sx={{ borderRadius: "xl", p: 0.5, minHeight: 50 }}
+                >
+                  <TabList
+                    disableUnderline
+                    sx={{
+                      borderRadius: "xl",
+                      overflow: "hidden",
+                      minHeight: 36,
+                      backgroundColor: "background.level1",
+                      border: "1px solid",
+                      borderColor: "neutral.outlinedBorder",
+                    }}
+                  >
+                    {tabDefs.map((t) => (
+                      <Tab
+                        key={t.key}
+                        value={t.key}
+                        variant="soft"
+                        color="neutral"
+                        disableIndicator
+                        sx={{
+                          gap: 0.5,
+                          fontWeight: 600,
+                          transition: "all 0.2s",
+                          minHeight: 36,
+                          px: 1.25,
+                          "&:hover": { backgroundColor: "neutral.softHoverBg" },
+                        }}
+                      >
+                        {t.label}
+                        <Chip
+                          size="sm"
+                          variant="solid"
+                           color={t.key === "finalApprovalPayments" ? "danger" : "primary"}
+                          sx={{
+                            ml: 0.5,
+                            fontWeight: 700,
+                          }}
+                        >
+                          {t.count}
+                        </Chip>
+                      </Tab>
+                    ))}
+                  </TabList>
+                </Tabs>
 
-                <Tab value="toBeApproved">
-                  To Be Approved ({responseData?.toBeApprovedCount || 0})
-                </Tab>
-                <Tab value="overdue">
-                  Overdue ({responseData?.overdueCount || 0})
-                </Tab>
-              </TabList>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Tooltip placement="top" title="Refresh">
+                    <IconButton
+                      size="sm"
+                      variant="soft"
+                      color="neutral"
+                      onClick={onRefresh}
+                      disabled={isLoading}
+                    >
+                      <RefreshRounded />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </Box>
 
-              <TabPanel value="instant">
-                <PaymentAccountApproval
-                  data={activeTab === "instant" ? paginatedData : []}
-                  isLoading={isLoading}
+              {/* Toolbar Row */}
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mt: 1,
+                  flexWrap: "wrap",
+                }}
+              >
+                <Input
+                  size="sm"
+                  value={searchQuery ?? ""}
+                  onChange={onSearchChange}
+                  placeholder="Search by code, pay_id, cr_id, name, group, PO…"
+                  startDecorator={<SearchIcon />}
+                  sx={{
+                    flex: 1,
+                    minWidth: 240,
+                  }}
+                  aria-label="Search payments"
                 />
-              
-              </TabPanel>
 
-              <TabPanel value="credit">
+                <Divider orientation="vertical" sx={{ height: 28 }} />
+
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                  <Box
+                    component="span"
+                    sx={{ fontSize: 12, color: "text.tertiary" }}
+                  >
+                    Rows per page
+                  </Box>
+                  <Select
+                    size="sm"
+                    value={perPage ?? 50}
+                    onChange={(_, v) => {
+                      const next = Number(v) || 50;
+                      setPerPage?.(next);
+                      setCurrentPage(1);
+                      setSearchParams((prev) => ({
+                        ...Object.fromEntries(prev.entries()),
+                        page: "1",
+                        pageSize: String(next),
+                      }));
+                    }}
+                    sx={{ width: 96 }}
+                  >
+                    {[50, 250, 500, 1000].map((n) => (
+                      <Option key={n} value={n}>
+                        {n}
+                      </Option>
+                    ))}
+                  </Select>
+                  <Typography level="body-sm">
+                    {`${startIndex}-${endIndex} of ${total}`}
+                  </Typography>
+
+                  {/* Navigation buttons */}
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <IconButton
+                      size="sm"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(1)}
+                    >
+                      <KeyboardDoubleArrowLeft />
+                    </IconButton>
+                    <IconButton
+                      size="sm"
+                      disabled={currentPage === 1}
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                      }
+                    >
+                      <KeyboardArrowLeft />
+                    </IconButton>
+                    <IconButton
+                      size="sm"
+                      disabled={currentPage === totalPages}
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                      }
+                    >
+                      <KeyboardArrowRight />
+                    </IconButton>
+                    <IconButton
+                      size="sm"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(totalPages)}
+                    >
+                      <KeyboardDoubleArrowRight />
+                    </IconButton>
+                  </Box>
+                </Box>
+              </Box>
+            </Sheet>
+
+            {/* Table Content */}
+            <Box
+              onScroll={handleScroll}
+              sx={{
+                maxHeight: 600,
+                overflow: "auto",
+                "& table thead th": {
+                  position: "sticky",
+                  top: 0,
+                  backgroundColor: "background.level1",
+                  zIndex: 5,
+                },
+                "&:hover": {
+                  boxShadow: "md",
+                  transition: "0.3s all",
+                },
+              }}
+            >
+              {activeTab === "payments" && (
                 <CreditPayment
-                  data={activeTab === "credit" ? paginatedData : []}
+                  data={paginatedData}
                   isLoading={isLoading}
+                  searchQuery={searchQuery}
+                  perPage={perPage}
+                  currentPage={currentPage}
+                  sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
                 />
-              
-              </TabPanel>
+              )}
 
-              <TabPanel value="toBeApproved">
-                <ApprovalPayment
-                  data={activeTab === "toBeApproved" ? paginatedData : []}
+              {activeTab === "finalApprovalPayments" && (
+                <PaymentAccountApproval
+                  data={paginatedData}
                   isLoading={isLoading}
+                  searchQuery={searchQuery}
+                  perPage={perPage}
+                  currentPage={currentPage}
+                  sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
                 />
-                
-              </TabPanel>
-              <TabPanel value="overdue">
-                <OverDue
-                  data={activeTab === "overdue" ? paginatedData : []}
-                  isLoading={isLoading}
-                />
-                
-              </TabPanel>
-            </Tabs>
+              )}
+            </Box>
           </Box>
         </>
       ) : (
         // ---------------- SCM / CAM View without Tabs ----------------
         <>
-          <PaymentApprovalToolbar
-            user={user}
-            searchQuery={searchQuery}
-            handleSearch={setSearchQuery}
-            perPage={perPage}
-            setPerPage={setPerPage}
-            currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
-            startIndex={startIndex}
-            endIndex={endIndex}
-            total={total}
-            totalPages={totalPages}
-            renderFilters={renderFilters}
-          />
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 2,
+              px: 1,
+              py: 1,
+              ml: { xl: "15%", lg: "18%", sm: 0 },
+              maxWidth: { lg: "85%", sm: "100%" },
+              borderRadius: "md",
+              mb: 2,
+            }}
+          >
+            {/* Left Side - Filters + Search */}
+            <Box
+              sx={{
+                display: "flex",
+                mb: 1,
+                gap: 1,
+                flexDirection: { xs: "column", sm: "row" },
+                alignItems: { xs: "none", sm: "center" },
+                flexWrap: "wrap",
+                justifyContent: "center",
+              }}
+            >
+              {user?.department === "Internal" &&
+                user?.role === "manager" &&
+                renderFilters?.()}
+
+              <Box
+                className="SearchAndFilters-tabletUp"
+                sx={{
+                  borderRadius: "sm",
+                  py: 2,
+                  display: "flex",
+                  flexDirection: { xs: "column", md: "row" },
+                  flexWrap: "wrap",
+                  gap: 1.5,
+                }}
+              >
+                <FormControl sx={{ flex: 1 }} size="sm">
+                  <FormLabel>Search here</FormLabel>
+                  <Input
+                    size="sm"
+                    placeholder="Search by Pay ID, Items, Clients Name or Vendor"
+                    startDecorator={<SearchIcon />}
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    sx={{
+                      width: 350,
+                      borderColor: "neutral.outlinedBorder",
+                      borderBottom: searchQuery
+                        ? "2px solid #1976d2"
+                        : "1px solid #ddd",
+                      borderRadius: 5,
+                      boxShadow: "none",
+                      "&:hover": {
+                        borderBottom: "2px solid #1976d2",
+                      },
+                      "&:focus-within": {
+                        borderBottom: "2px solid #1976d2",
+                      },
+                    }}
+                  />
+                </FormControl>
+              </Box>
+            </Box>
+
+            {/* Right Side - Rows per page + Pagination */}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 1.5,
+              }}
+            >
+              {/* Rows per page */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Typography level="body-sm">Rows per page:</Typography>
+                <Select
+                  size="sm"
+                  value={perPage}
+                  onChange={(_, value) => {
+                    if (value) {
+                      setPerPage(Number(value));
+                      setCurrentPage(1);
+                    }
+                  }}
+                  sx={{ minWidth: 64 }}
+                >
+                  {[10, 25, 50, 100].map((value) => (
+                    <Option key={value} value={value}>
+                      {value}
+                    </Option>
+                  ))}
+                </Select>
+              </Box>
+
+              {/* Pagination info */}
+              <Typography level="body-sm">
+                {`${startIndex}-${endIndex} of ${total}`}
+              </Typography>
+
+              {/* Navigation buttons */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <IconButton
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(1)}
+                >
+                  <KeyboardDoubleArrowLeft />
+                </IconButton>
+                <IconButton
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                >
+                  <KeyboardArrowLeft />
+                </IconButton>
+                <IconButton
+                  size="sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                >
+                  <KeyboardArrowRight />
+                </IconButton>
+                <IconButton
+                  size="sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(totalPages)}
+                >
+                  <KeyboardDoubleArrowRight />
+                </IconButton>
+              </Box>
+            </Box>
+          </Box>
           <Box
             className="OrderTableContainer"
             variant="outlined"
@@ -1225,6 +1466,8 @@ useEffect(() => {
                           <RequestedData
                             request_for={payment?.request_for}
                             payment_description={payment?.payment_description}
+                            po_number={payment?.po_number}
+                            vendor={payment?.vendor}
                           />
                         </Box>
                         <Box
@@ -1321,17 +1564,21 @@ useEffect(() => {
           )}
 
           <Stack direction="row" justifyContent="flex-end" spacing={2} mt={2}>
-             <Button variant="solid" color="primary" onClick={() => setIsConfirmModalOpen(true)}>
-    Confirm
-  </Button>
-  <Button variant="outlined" color="danger" onClick={handlePrint}>
-    Print
-  </Button>
-  <Button variant="outlined" onClick={handleClosePdfModal}>
-    Cancel
-  </Button>
-</Stack>
-
+            <Button
+              variant="solid"
+              color="primary"
+              onClick={() => setIsConfirmModalOpen(true)}
+              disabled={!hasPrinted}
+            >
+              Confirm
+            </Button>
+            <Button variant="outlined" color="danger" onClick={handlePrint}>
+              Print
+            </Button>
+            <Button variant="outlined" onClick={handleClosePdfModal}>
+              Cancel
+            </Button>
+          </Stack>
         </ModalDialog>
       </Modal>
 
