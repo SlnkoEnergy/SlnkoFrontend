@@ -10,7 +10,7 @@ import FormLabel from "@mui/joy/FormLabel";
 import IconButton from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Typography from "@mui/joy/Typography";
-import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Option, Select, Tab, TabList, Tabs } from "@mui/joy";
 import { useGetPaymentRecordQuery } from "../redux/Accounts";
@@ -20,10 +20,8 @@ import CreditRequest from "./PaymentTable/Credit";
 const PaymentRequest = forwardRef(() => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-
   const initialPage = parseInt(searchParams.get("page")) || 1;
-  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
-
+  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10; 
   const [perPage, setPerPage] = useState(initialPageSize);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [searchQuery, setSearchQuery] = useState("");
@@ -33,7 +31,7 @@ const PaymentRequest = forwardRef(() => {
   const {
     data: responseData,
     isLoading,
-    isFetching,
+    refetch,
   } = useGetPaymentRecordQuery({
     page: currentPage,
     pageSize: perPage,
@@ -41,95 +39,91 @@ const PaymentRequest = forwardRef(() => {
     status: status,
     tab: activeTab === 0 ? "instant" : "credit",
   });
+  // console.log(responseData?.data);
 
-  // Keep an accumulated list for infinite scroll
-  const [paginatedData, setPaginatedData] = useState([]);
-  const total = responseData?.meta?.total ?? responseData?.total ?? 0;
+  const [paginatedData, setPaginatedData] = useState(responseData?.data || []);
+  const total = responseData?.total || 0;
+  const count = responseData?.count || paginatedData.length;
 
-  // for header counter
-  const instantTotal = responseData?.instantTotal ?? 0;
-  const creditTotal = responseData?.creditTotal ?? 0;
-
-  // for the small "x–y of total" footer (optional)
-  const countThisPage =
-    responseData?.count ?? (responseData?.data?.length || 0);
-  const totalPages = Math.max(1, Math.ceil(total / perPage));
-  const startIndex = (currentPage - 1) * perPage + (countThisPage ? 1 : 0);
-  const endIndex = Math.min(startIndex + countThisPage - 1, total);
+  const totalPages = Math.ceil(total / perPage);
+  const startIndex = (currentPage - 1) * perPage + 1;
+  const endIndex = Math.min(startIndex + count - 1, total);
 
   const [user, setUser] = useState(null);
+
   useEffect(() => {
-    const userData = localStorage.getItem("userDetails");
-    setUser(userData ? JSON.parse(userData) : null);
+    const userData = getUserData();
+    setUser(userData);
   }, []);
 
-  // Keep URL in sync
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+
   useEffect(() => {
     const params = {};
+
     if (currentPage > 1) params.page = currentPage;
     if (perPage !== 10) params.pageSize = perPage;
     if (searchQuery) params.search = searchQuery;
     if (status) params.status = status;
     params.tab = activeTab === 0 ? "instant" : "credit";
+
     setSearchParams(params, { replace: true });
   }, [currentPage, perPage, searchQuery, status, activeTab, setSearchParams]);
 
-  // Append rows when page > 1; reset when filters/tab/pageSize change to page 1
-  const resetKey = `${activeTab}|${searchQuery}|${status}|${perPage}`;
-  const prevResetKey = useRef(resetKey);
-
   useEffect(() => {
-    // if the reset key changed and page is not 1 yet, push it to 1
-    if (prevResetKey.current !== resetKey && currentPage !== 1) {
-      setCurrentPage(1);
-    }
-    prevResetKey.current = resetKey;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resetKey]);
-
-  useEffect(() => {
-    const newRows = responseData?.data || [];
-    if (!newRows) {
+    if (responseData && responseData.data) {
+      setPaginatedData(responseData.data);
+    } else {
       setPaginatedData([]);
-      return;
     }
-    setPaginatedData((prev) =>
-      currentPage === 1 ? newRows : [...prev, ...newRows]
-    );
-  }, [responseData, currentPage]);
+  }, [responseData]);
 
   const handleSearch = (query) => {
     setSearchQuery(query);
-    setCurrentPage(1); // triggers fresh fetch; no manual refetch()
+    setCurrentPage(1);
+    refetch();
   };
 
-  const renderFilters = () => (
-    <Box
-      sx={{
-        position: "relative",
-        display: "flex",
-        alignItems: "center",
-        gap: 1.5,
-      }}
-    >
-      <FormControl size="sm" sx={{ minWidth: 80 }}>
-        <FormLabel>Select Status</FormLabel>
-        <Select
-          value={status || ""}
-          onChange={(_, newValue) => {
-            setStatus(newValue ?? "");
-            setCurrentPage(1);
-          }}
-          placeholder="All"
-        >
-          <Option value="">All</Option>
-          <Option value="Approved">Approved</Option>
-          <Option value="Pending">Pending</Option>
-          <Option value="Rejected">Rejected</Option>
-        </Select>
-      </FormControl>
-    </Box>
-  );
+  useEffect(() => {
+    const page = parseInt(searchParams.get("page")) || 1;
+    setCurrentPage(page);
+  }, [searchParams]);
+
+  const renderFilters = () => {
+    return (
+      <Box
+        sx={{
+          position: "relative",
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+        }}
+      >
+        <FormControl size="sm" sx={{ minWidth: 80 }}>
+          <FormLabel>Select Status</FormLabel>
+          <Select
+            value={status || ""}
+            onChange={(e, newValue) => {
+              setStatus(newValue);
+              setCurrentPage(1);
+            }}
+            placeholder="All"
+          >
+            <Option value="">All</Option>
+            <Option value="Approved">Approved</Option>
+            <Option value="Pending">Pending</Option>
+            <Option value="Rejected">Rejected</Option>
+          </Select>
+        </FormControl>
+      </Box>
+    );
+  };
 
   return (
     <>
@@ -163,6 +157,7 @@ const PaymentRequest = forwardRef(() => {
           }}
         >
           <Box sx={{ display: "flex", gap: 1 }}>
+            {" "}
             {(user?.name === "IT Team" ||
               user?.name === "Guddu Rani Dubey" ||
               user?.name === "Prachi Singh" ||
@@ -204,7 +199,7 @@ const PaymentRequest = forwardRef(() => {
         </Box>
       </Box>
 
-      {/* Table + controls */}
+      {/* Table */}
       <Box
         className="OrderTableContainer"
         variant="outlined"
@@ -228,18 +223,25 @@ const PaymentRequest = forwardRef(() => {
             gap: 2,
             px: 1,
             py: 1,
+            // bgcolor: "background.level1",
+            borderRadius: "md",
+            // mb: 2,
           }}
         >
-          {/* Tabs */}
+          {/* Horizontal Tabs like screenshot */}
           <Tabs
             value={activeTab}
             onChange={(_, value) => {
               setActiveTab(value);
               setCurrentPage(1);
-              // no manual refetch(); args change auto-refetch
+              refetch();
             }}
             variant="plain"
-            sx={{ borderRadius: "xl", p: 0.5, minHeight: "50px" }}
+            sx={{
+              borderRadius: "xl",
+              p: 0.5,
+              minHeight: "50px",
+            }}
           >
             <TabList
               disableUnderline
@@ -260,10 +262,13 @@ const PaymentRequest = forwardRef(() => {
                   fontWeight: 500,
                   transition: "all 0.2s",
                   minHeight: "36px",
-                  "&:hover": { backgroundColor: "neutral.softHoverBg" },
+                  "&:hover": {
+                    backgroundColor: "neutral.softHoverBg",
+                  },
+                  ...(activeTab === 0),
                 }}
               >
-                Instant ({instantTotal})
+                Instant ({responseData?.instantTotal || 0})
               </Tab>
               <Tab
                 variant={activeTab === 1 ? "soft" : "plain"}
@@ -273,19 +278,21 @@ const PaymentRequest = forwardRef(() => {
                   fontWeight: 500,
                   transition: "all 0.2s",
                   minHeight: "36px",
-                  "&:hover": { backgroundColor: "neutral.softHoverBg" },
+                  "&:hover": {
+                    backgroundColor: "neutral.softHoverBg",
+                  },
+                  ...(activeTab === 1),
                 }}
               >
-                Credit ({creditTotal})
+                Credit ({responseData?.creditTotal || 0})
               </Tab>
             </TabList>
           </Tabs>
-
-          {/* Search + filters */}
           <Box
             className="SearchAndFilters-tabletUp"
             sx={{
               borderRadius: "sm",
+              // py: 2,
               display: "flex",
               flexDirection: { xs: "column", md: "row" },
               flexWrap: "wrap",
@@ -303,32 +310,36 @@ const PaymentRequest = forwardRef(() => {
                 onChange={(e) => handleSearch(e.target.value)}
                 sx={{
                   width: 350,
+
                   borderColor: "neutral.outlinedBorder",
                   borderBottom: searchQuery
                     ? "2px solid #1976d2"
                     : "1px solid #ddd",
                   borderRadius: 5,
                   boxShadow: "none",
-                  "&:hover": { borderBottom: "2px solid #1976d2" },
-                  "&:focus-within": { borderBottom: "2px solid #1976d2" },
+                  "&:hover": {
+                    borderBottom: "2px solid #1976d2",
+                  },
+                  "&:focus-within": {
+                    borderBottom: "2px solid #1976d2",
+                  },
                 }}
               />
             </FormControl>
-            {/* status filter */}
             {renderFilters()}
           </Box>
         </Box>
-
-        {/* Bottom controls (optional; you can hide these if you want pure infinite) */}
+        {/* Pagination Controls */}
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "flex-end",
+            justifyContent:"flex-end",
             flexWrap: "wrap",
-            padding: "5px",
+            padding:"5px"
           }}
         >
+          {/* Rows per page */}
           <Box
             sx={{
               display: "flex",
@@ -357,10 +368,12 @@ const PaymentRequest = forwardRef(() => {
             </Select>
           </Box>
 
+          {/* Pagination info */}
           <Typography level="body-sm">
-            {total ? `${startIndex}-${endIndex} of ${total}` : "—"}
+            {`${startIndex}-${endIndex} of ${total}`}
           </Typography>
 
+          {/* Navigation buttons */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <IconButton
               size="sm"
@@ -400,24 +413,20 @@ const PaymentRequest = forwardRef(() => {
           {activeTab === 0 ? (
             <InstantRequest
               data={paginatedData}
-              isLoading={isLoading && currentPage === 1}
-              isFetching={isFetching}
+              isLoading={isLoading}
+              searchQuery={searchQuery}
               perPage={perPage}
               currentPage={currentPage}
               status={status}
-              totalFromParent={total}
-              onLoadMore={() => setCurrentPage((p) => p + 1)}
             />
           ) : (
             <CreditRequest
               data={paginatedData}
-              isLoading={isLoading && currentPage === 1}
-              isFetching={isFetching}
+              isLoading={isLoading}
+              searchQuery={searchQuery}
               perPage={perPage}
               currentPage={currentPage}
               status={status}
-              totalFromParent={total}
-              onLoadMore={() => setCurrentPage((p) => p + 1)}
             />
           )}
         </Box>
