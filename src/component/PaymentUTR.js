@@ -52,8 +52,6 @@ function UTRPayment() {
 
   const totalPages = Math.ceil(total / perPage);
 
-  // console.log(paginatedData);
-
   const startIndex = (currentPage - 1) * perPage + 1;
   const endIndex = Math.min(startIndex + count - 1, total);
 

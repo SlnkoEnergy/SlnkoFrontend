@@ -61,8 +61,10 @@ function PaymentRequest() {
   const [hasPrinted, setHasPrinted] = useState(false);
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
+  const days = searchParams.get("delaydays") || "";
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [perPage, setPerPage] = useState(initialPageSize);
+  const [delaydays, setDelaydays] = useState(days);
   const [activeTab, setActiveTab] = useState(() => {
     return searchParams.get("tab") || "payments";
   });
@@ -85,27 +87,29 @@ function PaymentRequest() {
     page: currentPage,
     pageSize: perPage,
     search: searchQuery,
+    delaydays: delaydays || undefined,
     ...(isAccount ? { tab: activeTab } : {}),
-  });
+  },
+    { refetchOnMountOrArgChange: true }
+  );
 
-  const [paginatedData, setPaginatedData] = useState([]);
-  // console.log("paginatedData :", paginatedData);
+  // console.log("rows :", rows);
 
   // console.log(count);
-  const total = responseData?.total || 0;
-  const count = responseData?.count || paginatedData.length;
+
   // const Approved = responseData?.toBeApprovedCount || 0;
 
   const startIndex = (currentPage - 1) * perPage + 1;
+
+
+
+
+  const rows = Array.isArray(responseData?.data) ? responseData.data : [];
+
+  const total = responseData?.meta?.total ?? rows.length;
+  const count = responseData?.meta?.count ?? rows.length;
   const endIndex = Math.min(startIndex + count - 1, total);
-
   const totalPages = Math.ceil(total / perPage);
-
-  useEffect(() => {
-    if (responseData?.data) {
-      setPaginatedData(responseData.data);
-    }
-  }, [responseData]);
 
   useEffect(() => {
     const params = {};
@@ -113,6 +117,7 @@ function PaymentRequest() {
     if (currentPage > 1) params.page = currentPage;
     if (perPage !== 10) params.pageSize = perPage;
     if (searchQuery) params.search = searchQuery;
+    if (delaydays && !Number.isNaN(Number(delaydays))) params.delaydays = String(delaydays);
 
     setSearchParams(params, { replace: true });
   }, [
@@ -121,9 +126,22 @@ function PaymentRequest() {
     currentPage,
     perPage,
     searchQuery,
+    delaydays,
 
     setSearchParams,
   ]);
+  // useEffect(() => {
+  //   setSearchParams((prev) => {
+  //     const updated = new URLSearchParams(prev);
+  //     if (!delaydays) {
+  //       updated.delete("delaydays");
+  //     } else {
+  //       updated.set("delaydays", delaydays);
+  //     }
+
+  //     return updated;
+  //   })
+  // }, [delaydays, setSearchParams])
 
   const handleStatusChange = async (_id, newStatus, remarks = "") => {
     // console.log("📌 handleStatusChange got:", { _id, newStatus, remarks, remarksType: typeof remarks });
@@ -161,7 +179,7 @@ function PaymentRequest() {
     }
 
     if (isInternalManager && newStatus === "Approved") {
-      if (!Array.isArray(paginatedData)) {
+      if (!Array.isArray(rows)) {
         toast.error("Payment data is not available yet.");
         return;
       }
@@ -171,7 +189,7 @@ function PaymentRequest() {
         return;
       }
 
-      const selectedPayments = paginatedData.filter((p) =>
+      const selectedPayments = rows.filter((p) =>
         selected.includes(String(p._id))
       );
 
@@ -367,6 +385,15 @@ function PaymentRequest() {
     return false;
   };
 
+  const DaysOptions = [
+    { value: "1", label: "1 Days" },
+    { value: "2", label: "2 Days" },
+    { value: "3", label: "3 Days" },
+    { value: "8", label: "8 Days" },
+    { value: "-1", label: "Over Due"},
+    { value: "clear", label: "Clear Filter" },
+  ]
+
   const RowMenu = ({ _id, onStatusChange, showApprove }) => {
     const [open, setOpen] = useState(false);
     const [remarks, setRemarks] = useState("");
@@ -462,7 +489,7 @@ function PaymentRequest() {
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelected(paginatedData.map((row) => String(row._id)));
+      setSelected(rows.map((row) => String(row._id)));
     } else {
       setSelected([]);
     }
@@ -513,7 +540,7 @@ function PaymentRequest() {
     const hasSelection = selected.length > 0;
 
     const handlePreviewClick = () => {
-      const selectedPayments = paginatedData.filter((p) =>
+      const selectedPayments = rows.filter((p) =>
         selected.includes(String(p._id))
       );
       handleMultiPDFDownload(selectedPayments);
@@ -553,7 +580,6 @@ function PaymentRequest() {
   };
 
   const handleSearch = (query) => {
-    setPaginatedData([]);
     setSearchQuery(query);
     setCurrentPage(1);
   };
@@ -1022,6 +1048,26 @@ function PaymentRequest() {
                       <RefreshRounded />
                     </IconButton>
                   </Tooltip>
+
+                  <Select
+                    size="m"
+                    placeholder="Days Filter"
+                    value={delaydays || null}
+                    onChange={(_, v) => {
+                      if (v === "clear") {
+                        setDelaydays(""); // reset to default
+                      } else {
+                        setDelaydays(v ?? "");
+                      }
+                    }}
+                    sx={{ width: 135, height: 35, padding: 1 }}
+                  >
+                    {DaysOptions.map((n) => (
+                      <Option key={n.value} value={n.value} sx={n.value === "clear" ? { color: "red" } : {}}>
+                        {n.label}
+                      </Option>
+                    ))}
+                  </Select>
                 </Box>
               </Box>
 
@@ -1141,22 +1187,24 @@ function PaymentRequest() {
             >
               {activeTab === "payments" && (
                 <CreditPayment
-                  data={paginatedData}
+                  data={rows}
                   isLoading={isLoading}
                   searchQuery={searchQuery}
                   perPage={perPage}
                   currentPage={currentPage}
+                  // delaydays = {delaydays}
                   sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
                 />
               )}
 
               {activeTab === "finalApprovalPayments" && (
                 <PaymentAccountApproval
-                  data={paginatedData}
+                  data={rows}
                   isLoading={isLoading}
                   searchQuery={searchQuery}
                   perPage={perPage}
                   currentPage={currentPage}
+                  delaydays = {delaydays}
                   sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
                 />
               )}
@@ -1345,9 +1393,9 @@ function PaymentRequest() {
                     <Checkbox
                       indeterminate={
                         selected.length > 0 &&
-                        selected.length < paginatedData.length
+                        selected.length < rows.length
                       }
-                      checked={selected.length === paginatedData.length}
+                      checked={selected.length === rows.length}
                       onChange={handleSelectAll}
                       color={selected.length > 0 ? "primary" : "neutral"}
                     />
@@ -1401,8 +1449,8 @@ function PaymentRequest() {
                       </Box>
                     </Box>
                   </Box>
-                ) : paginatedData.length > 0 ? (
-                  paginatedData.map((payment, index) => {
+                ) : rows.length > 0 ? (
+                  rows.map((payment, index) => {
                     return (
                       <Box
                         component="tr"
