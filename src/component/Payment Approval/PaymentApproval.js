@@ -1060,7 +1060,7 @@ function PaymentRequest() {
                     value={delaydays || null}
                     onChange={(_, v) => {
                       if (v === "clear") {
-                        setDelaydays(""); // reset to default
+                        setDelaydays("");
                       } else {
                         setDelaydays(v ?? "");
                       }

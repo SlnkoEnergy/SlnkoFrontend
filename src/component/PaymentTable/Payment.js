@@ -8,7 +8,7 @@ import Chip from "@mui/joy/Chip";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
-import { CircularProgress, Modal, Tooltip, Skeleton } from "@mui/joy"; // NEW: Skeleton
+import { CircularProgress, Modal, Tooltip, Skeleton } from "@mui/joy";
 import NoData from "../../assets/alert-bell.svg";
 import { PaymentProvider } from "../../store/Context/Payment_History";
 import PaymentHistory from "../PaymentHistory";
@@ -17,14 +17,7 @@ import dayjs from "dayjs";
 
 const InstantRequest = forwardRef(
   (
-    {
-      searchQuery,
-      perPage,
-      currentPage,
-      status,
-      onLoadMore,          // NEW: tell parent to increment page
-      totalFromParent,     // NEW (optional): if you know total count
-    },
+    { searchQuery, perPage, currentPage, status, onLoadMore, totalFromParent },
     ref
   ) => {
     dayjs.extend(duration);
@@ -32,7 +25,7 @@ const InstantRequest = forwardRef(
     const {
       data: responseData,
       isLoading,
-      isFetching, // NEW: RTK Query in-flight flag (includes refetch)
+      isFetching,
       error,
     } = useGetPaymentRecordQuery({
       tab: "instant",
@@ -44,10 +37,7 @@ const InstantRequest = forwardRef(
 
     const paginatedData = responseData?.data || [];
     const total =
-      totalFromParent ??
-      responseData?.meta?.total ??
-      responseData?.total ??
-      0;
+      totalFromParent ?? responseData?.meta?.total ?? responseData?.total ?? 0;
 
     // --- styles ---
     const headerStyle = {
@@ -87,7 +77,6 @@ const InstantRequest = forwardRef(
       color: "#34495E",
     };
 
-    // ===== Skeleton helpers (glass look) =====
     const glassSx = {
       width: "100%",
       height: 18,
@@ -110,34 +99,60 @@ const InstantRequest = forwardRef(
           <Box component="td" sx={{ ...cellStyle, minWidth: 280 }}>
             <Skeleton variant="rectangular" sx={glassSx} />
             <Box mt={1} display="flex" gap={1}>
-              <Skeleton variant="rectangular" sx={{ ...glassSx, height: 14, width: 120 }} />
-              <Skeleton variant="rectangular" sx={{ ...glassSx, height: 14, width: 90 }} />
+              <Skeleton
+                variant="rectangular"
+                sx={{ ...glassSx, height: 14, width: 120 }}
+              />
+              <Skeleton
+                variant="rectangular"
+                sx={{ ...glassSx, height: 14, width: 90 }}
+              />
             </Box>
           </Box>
           <Box component="td" sx={{ ...cellStyle, minWidth: 300 }}>
             <Skeleton variant="rectangular" sx={{ ...glassSx, height: 18 }} />
             <Box mt={1} display="flex" gap={1} flexWrap="wrap">
-              <Skeleton variant="rectangular" sx={{ ...glassSx, height: 14, width: 160 }} />
-              <Skeleton variant="rectangular" sx={{ ...glassSx, height: 14, width: 120 }} />
-              <Skeleton variant="rectangular" sx={{ ...glassSx, height: 14, width: 100 }} />
+              <Skeleton
+                variant="rectangular"
+                sx={{ ...glassSx, height: 14, width: 160 }}
+              />
+              <Skeleton
+                variant="rectangular"
+                sx={{ ...glassSx, height: 14, width: 120 }}
+              />
+              <Skeleton
+                variant="rectangular"
+                sx={{ ...glassSx, height: 14, width: 100 }}
+              />
             </Box>
           </Box>
           <Box component="td" sx={{ ...cellStyle, minWidth: 300 }}>
             <Box display="flex" gap={1} alignItems="center">
-              <Skeleton variant="rectangular" sx={{ ...glassSx, height: 22, width: 90 }} />
-              <Skeleton variant="rectangular" sx={{ ...glassSx, height: 22, width: 120 }} />
+              <Skeleton
+                variant="rectangular"
+                sx={{ ...glassSx, height: 22, width: 90 }}
+              />
+              <Skeleton
+                variant="rectangular"
+                sx={{ ...glassSx, height: 22, width: 120 }}
+              />
             </Box>
             <Box mt={1}>
-              <Skeleton variant="rectangular" sx={{ ...glassSx, height: 22, width: 140 }} />
+              <Skeleton
+                variant="rectangular"
+                sx={{ ...glassSx, height: 22, width: 140 }}
+              />
             </Box>
           </Box>
           <Box component="td" sx={{ ...cellStyle, fontSize: 15 }}>
-            <Skeleton variant="rectangular" sx={{ ...glassSx, height: 16, width: 120 }} />
+            <Skeleton
+              variant="rectangular"
+              sx={{ ...glassSx, height: 16, width: 120 }}
+            />
           </Box>
         </Box>
       ));
 
-    // ===== Bottom sentinel (infinite scroll) =====
     const scrollRef = useRef(null);
     const sentinelRef = useRef(null);
 
@@ -145,7 +160,7 @@ const InstantRequest = forwardRef(
     const hasMore = total > 0 ? loadedCount < total : true;
 
     useEffect(() => {
-      if (!onLoadMore) return; // parent controls pagination
+      if (!onLoadMore) return;
       const rootEl = scrollRef.current;
       const target = sentinelRef.current;
       if (!rootEl || !target) return;
@@ -154,22 +169,28 @@ const InstantRequest = forwardRef(
         (entries) => {
           const [entry] = entries;
           if (entry.isIntersecting && hasMore && !isFetching && !isLoading) {
-            onLoadMore(); // ask parent to increment page
+            onLoadMore();
           }
         },
         {
           root: rootEl,
-          rootMargin: "600px 0px 600px 0px", // prefetch early
+          rootMargin: "600px 0px 600px 0px",
           threshold: 0.01,
         }
       );
 
       io.observe(target);
       return () => io.disconnect();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [hasMore, isFetching, isLoading, onLoadMore, currentPage, perPage, total]);
+    }, [
+      hasMore,
+      isFetching,
+      isLoading,
+      onLoadMore,
+      currentPage,
+      perPage,
+      total,
+    ]);
 
-    // ===== Subcomponents (unchanged) =====
     const PaymentID = ({ pay_id, dbt_date }) => (
       <>
         {pay_id && (
@@ -339,7 +360,9 @@ const InstantRequest = forwardRef(
 
           <Box display="flex" alignItems="flex-start" gap={1}>
             <Typography sx={{ fontWeight: 500 }}>📑 Payment Status:</Typography>
-            {["Approved", "Pending", "Rejected", "Deleted"].includes(approved) ? (
+            {["Approved", "Pending", "Rejected", "Deleted"].includes(
+              approved
+            ) ? (
               <Chip
                 color={
                   {
@@ -381,7 +404,7 @@ const InstantRequest = forwardRef(
     return (
       <>
         <Box
-          ref={scrollRef} // NEW: scroll root for IntersectionObserver
+          ref={scrollRef}
           sx={{
             maxWidth: "100%",
             overflowY: "auto",
@@ -391,30 +414,46 @@ const InstantRequest = forwardRef(
             borderColor: "divider",
             bgcolor: "background.body",
             "&::-webkit-scrollbar": { width: "8px" },
-            "&::-webkit-scrollbar-track": { background: "#f0f0f0", borderRadius: "8px" },
-            "&::-webkit-scrollbar-thumb": { backgroundColor: "#1976d2", borderRadius: "8px" },
+            "&::-webkit-scrollbar-track": {
+              background: "#f0f0f0",
+              borderRadius: "8px",
+            },
+            "&::-webkit-scrollbar-thumb": {
+              backgroundColor: "#1976d2",
+              borderRadius: "8px",
+            },
           }}
         >
-          <Box component="table" sx={{ width: "100%", borderCollapse: "collapse" }}>
+          <Box
+            component="table"
+            sx={{ width: "100%", borderCollapse: "collapse" }}
+          >
             <Box component="thead">
               <Box component="tr">
-                {["Payment Id", "Paid_for", "Payment Status", "UTR"].map((header, index) => (
-                  <Box key={index} component="th" sx={headerStyle}>
-                    {header}
-                  </Box>
-                ))}
+                {["Payment Id", "Paid_for", "Payment Status", "UTR"].map(
+                  (header, index) => (
+                    <Box key={index} component="th" sx={headerStyle}>
+                      {header}
+                    </Box>
+                  )
+                )}
               </Box>
             </Box>
 
             <Box component="tbody">
               {error ? (
                 <Box component="tr">
-                  <Box component="td" colSpan={5} sx={{ py: 2, textAlign: "center" }}>
-                    <Typography color="danger">{String(error?.data?.message || error)}</Typography>
+                  <Box
+                    component="td"
+                    colSpan={5}
+                    sx={{ py: 2, textAlign: "center" }}
+                  >
+                    <Typography color="danger">
+                      {String(error?.data?.message || error)}
+                    </Typography>
                   </Box>
                 </Box>
               ) : isLoading && paginatedData.length === 0 ? (
-                // Initial load: show a full page of glass skeleton rows
                 renderGlassSkeletonRows(perPage || 10)
               ) : paginatedData.length > 0 ? (
                 <>
@@ -430,7 +469,14 @@ const InstantRequest = forwardRef(
                         "&:hover": { backgroundColor: "neutral.softHoverBg" },
                       }}
                     >
-                      <Box component="td" sx={{ ...cellStyle, minWidth: 280, padding: "12px 16px" }}>
+                      <Box
+                        component="td"
+                        sx={{
+                          ...cellStyle,
+                          minWidth: 280,
+                          padding: "12px 16px",
+                        }}
+                      >
                         <Tooltip title="View Summary" arrow>
                           <span>
                             <PaymentID
@@ -464,12 +510,16 @@ const InstantRequest = forwardRef(
                     </Box>
                   ))}
 
-                  {/* While fetching next page, append a few glass skeleton rows */}
-                  {isFetching && renderGlassSkeletonRows(Math.min(6, perPage || 10))}
+                  {isFetching &&
+                    renderGlassSkeletonRows(Math.min(6, perPage || 10))}
                 </>
               ) : (
                 <Box component="tr">
-                  <Box component="td" colSpan={6} sx={{ padding: "8px", textAlign: "center" }}>
+                  <Box
+                    component="td"
+                    colSpan={6}
+                    sx={{ padding: "8px", textAlign: "center" }}
+                  >
                     <Box
                       sx={{
                         fontStyle: "italic",
@@ -479,8 +529,14 @@ const InstantRequest = forwardRef(
                         justifyContent: "center",
                       }}
                     >
-                      <img src={NoData} alt="No data" style={{ width: 50, height: 50 }} />
-                      <Typography fontStyle="italic">No records available</Typography>
+                      <img
+                        src={NoData}
+                        alt="No data"
+                        style={{ width: 50, height: 50 }}
+                      />
+                      <Typography fontStyle="italic">
+                        No records available
+                      </Typography>
                     </Box>
                   </Box>
                 </Box>
@@ -488,10 +544,8 @@ const InstantRequest = forwardRef(
             </Box>
           </Box>
 
-          {/* Bottom sentinel inside the scrollable container */}
           <Box ref={sentinelRef} sx={{ height: 12 }} />
 
-          {/* Optional tiny loader line at very bottom when fetching */}
           {isFetching && paginatedData.length > 0 && (
             <Box sx={{ display: "flex", justifyContent: "center", py: 1 }}>
               <CircularProgress size="sm" />
