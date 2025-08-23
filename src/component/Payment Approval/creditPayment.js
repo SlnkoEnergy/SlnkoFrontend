@@ -522,15 +522,18 @@ const CreditPayment = forwardRef(
               </Typography>
             </Box>
           )}
-          <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
-            <Typography style={{ fontSize: 12, fontWeight: 600 }}>
+          <Box display="flex" alignItems="center" gap={1} mt={0.5}>
+            <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
               🏢 Vendor:
             </Typography>
-            <Typography
-              sx={{ fontSize: 12, fontWeight: 400, wordBreak: "break-word" }}
+            <Chip
+              color="danger"
+              size="sm"
+              variant="solid"
+              sx={{ fontSize: 12 }}
             >
               {vendor}
-            </Typography>
+            </Chip>
           </Box>
         </>
       );

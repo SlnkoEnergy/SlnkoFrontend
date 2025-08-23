@@ -670,16 +670,14 @@ const PaymentAccountApproval = forwardRef(
             </Box>
           )}
 
-          <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
-            <Typography style={{ fontSize: 12, fontWeight: 600 }}>
-              🏢 Vendor:
-            </Typography>
-            <Typography
-              sx={{ fontSize: 12, fontWeight: 400, wordBreak: "break-word" }}
-            >
-              {vendor}
-            </Typography>
-          </Box>
+          <Box display="flex" alignItems="center" gap={1} mt={0.5}>
+          <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
+            🏢 Vendor:
+          </Typography>
+          <Chip color="danger" size="sm" variant="solid" sx={{ fontSize: 12 }}>
+            {vendor}
+          </Chip>
+        </Box>
           {/* remainingDays display */}
           <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
             <Typography sx={labelStyle}>⏰</Typography>
