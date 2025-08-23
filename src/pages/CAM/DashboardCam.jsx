@@ -1,17 +1,11 @@
 import Box from "@mui/joy/Box";
 import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider } from "@mui/joy/styles";
-import React, { useEffect, useState } from "react";
-import Button from "@mui/joy/Button";
-// import Button from '@mui/joy/Button';
+import  { useEffect, useState } from "react";
 import Breadcrumbs from "@mui/joy/Breadcrumbs";
 import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
-// import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-// import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
-// import BuildRoundedIcon from "@mui/icons-material/BuildRounded";
-import { BriefcaseIcon } from "@heroicons/react/24/outline";
 import Sidebar from "../../component/Partials/Sidebar";
 
 import Header from "../../component/Partials/Header";
@@ -19,7 +13,6 @@ import { useNavigate } from "react-router-dom";
 import Dash_cam from "../../component/CamDashboard";
 
 function Dashboard() {
-  const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -72,14 +65,6 @@ function Dashboard() {
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
               sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
-              {/* <Link
-                underline="none"
-                color="neutral"
-                href="#some-link"
-                aria-label="Home"
-              >
-                <HomeRoundedIcon />
-              </Link> */}
               <Link
                 underline="none"
                 color="neutral"
@@ -110,32 +95,8 @@ function Dashboard() {
             <Typography level="h2" component="h1">
               CAM Dashboard
             </Typography>
-            <Box
-              sx={{
-                display: "flex",
-                mb: 1,
-                gap: 1,
-                flexDirection: { xs: "column", sm: "row" },
-                alignItems: { xs: "flex-start", sm: "center" },
-                flexWrap: "wrap",
-                justifyContent: "center",
-              }}
-            >
-              <Button
-                color="primary"
-                startDecorator={
-                  <BriefcaseIcon style={{ width: 18, height: 18 }} />
-                }
-                size="sm"
-                onClick={() => navigate("/all-project")}
-              >
-                All Project
-              </Button>
-            </Box>
           </Box>
           <Dash_cam />
-          {/* <OrderTable />
-          <OrderList /> */}
         </Box>
       </Box>
     </CssVarsProvider>

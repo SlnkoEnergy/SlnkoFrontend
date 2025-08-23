@@ -81,7 +81,7 @@ function Sidebar() {
   };
 
   const isSalesPage = location.pathname === "/sales";
-
+  const isEngineering = location.pathname === "/overview";
   return (
     <Sheet
       className="Sidebar"
@@ -1923,6 +1923,13 @@ function Sidebar() {
                       Daily Payment Request
                     </ListItemButton>
                   </ListItem>
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/payment-approval")}
+                    >
+                      Payment Approval
+                    </ListItemButton>
+                  </ListItem>
                 </List>
               </Toggler>
             </ListItem>
@@ -2583,11 +2590,11 @@ function Sidebar() {
                     <ListItem>
                       <ListItemButton
                         onClick={() => navigate("/expense_approval")}
-                        >
-                          Expense Approval
-                        </ListItemButton>
-                      </ListItem>
-                    )}
+                      >
+                        Expense Approval
+                      </ListItemButton>
+                    </ListItem>
+                  )}
                 </List>
               </Toggler>
             </ListItem>
