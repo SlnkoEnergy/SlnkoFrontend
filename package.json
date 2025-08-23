@@ -4,10 +4,11 @@
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@lottiefiles/react-lottie-player": "^3.6.0",
-    "@mui/icons-material": "^6.1.10",
+    "@mui/icons-material": "^6.5.0",
     "@mui/joy": "^5.0.0-beta.48",
+    "@mui/material": "^6.5.0",
     "@nivo/pie": "^0.99.0",
     "@novu/api": "^1.5.0",
     "@novu/notification-center": "^2.0.0",

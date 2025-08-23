@@ -36,6 +36,7 @@ import { NovuProvider, PopoverNotificationCenter } from "@novu/notification-cent
 import { Button } from "@mui/joy";
 import { Bell } from "lucide-react";
 import DatabaseIcon from '@mui/icons-material/Storage';
+import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 
 function Toggler({ defaultExpanded = false, renderToggle, children }) {
   const [open, setOpen] = useState(defaultExpanded);
@@ -190,17 +191,39 @@ function Sidebar() {
 
 
                 }}
-                
+
               >
                 {({ unseenCount }) => (
-                  <Button variant="ghost" className="relative">
-                    <Bell className="h-5 w-5" />
+                  <IconButton
+                    sx={{
+                      position: "relative",
+                      bgcolor: "transparent", // ghost-like
+                      "&:hover": { bgcolor: "action.hover" },
+                    }}
+                  >
+                    <NotificationsNoneIcon
+                      sx={{ width: 20, height: 20, color: "text.primary" }} // Bell equivalent
+                    />
+
                     {(unseenCount ?? 0) > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full px-1 text-xs">
+                      <Box
+                        component="span"
+                        sx={{
+                          position: "absolute",
+                          top: -4,
+                          right: -4,
+                          backgroundColor: "#ef4444", // red-500
+                          color: "white",
+                          borderRadius: "9999px",
+                          px: 0.5,
+                          fontSize: "0.75rem",
+                          lineHeight: "1rem",
+                        }}
+                      >
                         {unseenCount ?? 0}
-                      </span>
+                      </Box>
                     )}
-                  </Button>
+                  </IconButton>
                 )}
               </PopoverNotificationCenter>
             </Box>
@@ -516,7 +539,7 @@ function Sidebar() {
                   </ListItem>
                   <ListItem>
                     <ListItemButton onClick={() => navigate("/logistics")}>
-                      Logistics 
+                      Logistics
                     </ListItemButton>
                   </ListItem>
                 </List>
@@ -645,7 +668,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-             <ListItem nested>
+            <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
@@ -657,11 +680,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                              transform: "rotate(180deg)",
-                            }
+                            transform: "rotate(180deg)",
+                          }
                           : {
-                              transform: "none",
-                            },
+                            transform: "none",
+                          },
                       ]}
                     />
                   </ListItemButton>
@@ -670,13 +693,13 @@ function Sidebar() {
                 <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
                     <ListItemButton onClick={() => navigate("/products")}>
-                       Products
+                      Products
                     </ListItemButton>
                   </ListItem>
 
-                   <ListItem sx={{ mt: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
                     <ListItemButton onClick={() => navigate("/categories")}>
-                       Categories
+                      Categories
                     </ListItemButton>
                   </ListItem>
                 </List>
