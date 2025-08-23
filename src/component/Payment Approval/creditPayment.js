@@ -92,7 +92,9 @@ const CreditPayment = forwardRef(
       }
 
       const { department, role } = user;
-      const isInternalManager = department === "Internal" && role === "manager";
+      const isInternalManager =
+        (department === "Projects" || department === "Infra") &&
+        role === "visitor";
       const isSCMOrAccountsManager =
         ["SCM", "Accounts"].includes(department) && role === "manager";
 

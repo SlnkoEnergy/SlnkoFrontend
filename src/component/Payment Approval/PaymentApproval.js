@@ -83,13 +83,14 @@ function PaymentRequest() {
     isLoading,
     error,
     onRefresh,
-  } = useGetPaymentApprovalQuery({
-    page: currentPage,
-    pageSize: perPage,
-    search: searchQuery,
-    delaydays: delaydays || undefined,
-    ...(isAccount ? { tab: activeTab } : {}),
-  },
+  } = useGetPaymentApprovalQuery(
+    {
+      page: currentPage,
+      pageSize: perPage,
+      search: searchQuery,
+      delaydays: delaydays || undefined,
+      ...(isAccount ? { tab: activeTab } : {}),
+    },
     { refetchOnMountOrArgChange: true }
   );
 
@@ -100,9 +101,6 @@ function PaymentRequest() {
   // const Approved = responseData?.toBeApprovedCount || 0;
 
   const startIndex = (currentPage - 1) * perPage + 1;
-
-
-
 
   const rows = Array.isArray(responseData?.data) ? responseData.data : [];
 
@@ -117,7 +115,8 @@ function PaymentRequest() {
     if (currentPage > 1) params.page = currentPage;
     if (perPage !== 10) params.pageSize = perPage;
     if (searchQuery) params.search = searchQuery;
-    if (delaydays && !Number.isNaN(Number(delaydays))) params.delaydays = String(delaydays);
+    if (delaydays && !Number.isNaN(Number(delaydays)))
+      params.delaydays = String(delaydays);
 
     setSearchParams(params, { replace: true });
   }, [
@@ -152,7 +151,9 @@ function PaymentRequest() {
     }
 
     const { department, role } = user;
-    const isInternalManager = department === "Internal" && role === "manager";
+    const isInternalManager =
+      (department === "Projects" || department === "Infra") &&
+      role === "visitor";
     const isSCMOrAccountsManager =
       ["SCM", "Accounts"].includes(department) && role === "manager";
 
@@ -390,9 +391,9 @@ function PaymentRequest() {
     { value: "2", label: "2 Days" },
     { value: "3", label: "3 Days" },
     { value: "8", label: "8 Days" },
-    { value: "-1", label: "Over Due"},
+    { value: "-1", label: "Over Due" },
     { value: "clear", label: "Clear Filter" },
-  ]
+  ];
 
   const RowMenu = ({ _id, onStatusChange, showApprove }) => {
     const [open, setOpen] = useState(false);
@@ -925,18 +926,19 @@ function PaymentRequest() {
             </Typography>
           )}
 
-          {user?.department === "Internal" && user?.role === "manager" && (
-            <Typography level="h2" component="h1">
-              CAM Payment Approval
-            </Typography>
-          )}
+          {(user?.department === "Projects" || user?.department === "Infra") &&
+            user?.role === "visitor" && (
+              <Typography level="h2" component="h1">
+                CAM Payment Approval
+              </Typography>
+            )}
 
           {((user?.department === "Accounts" && user?.role === "manager") ||
             user?.department === "admin") && (
-              <Typography level="h2" component="h1">
-                Accounts Payment Approval
-              </Typography>
-            )}
+            <Typography level="h2" component="h1">
+              Accounts Payment Approval
+            </Typography>
+          )}
         </Box>
       </Box>
 
@@ -1022,7 +1024,11 @@ function PaymentRequest() {
                         <Chip
                           size="sm"
                           variant="solid"
-                           color={t.key === "finalApprovalPayments" ? "danger" : "primary"}
+                          color={
+                            t.key === "finalApprovalPayments"
+                              ? "danger"
+                              : "primary"
+                          }
                           sx={{
                             ml: 0.5,
                             fontWeight: 700,
@@ -1062,7 +1068,11 @@ function PaymentRequest() {
                     sx={{ width: 135, height: 35, padding: 1 }}
                   >
                     {DaysOptions.map((n) => (
-                      <Option key={n.value} value={n.value} sx={n.value === "clear" ? { color: "red" } : {}}>
+                      <Option
+                        key={n.value}
+                        value={n.value}
+                        sx={n.value === "clear" ? { color: "red" } : {}}
+                      >
                         {n.label}
                       </Option>
                     ))}
@@ -1203,7 +1213,7 @@ function PaymentRequest() {
                   searchQuery={searchQuery}
                   perPage={perPage}
                   currentPage={currentPage}
-                  delaydays = {delaydays}
+                  delaydays={delaydays}
                   sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
                 />
               )}
@@ -1240,7 +1250,8 @@ function PaymentRequest() {
                 justifyContent: "center",
               }}
             >
-              {user?.department === "Internal" &&
+              {(user?.department === "Projects" ||
+                user?.department === "Infra") &&
                 user?.role === "manager" &&
                 renderFilters?.()}
 
@@ -1391,8 +1402,7 @@ function PaymentRequest() {
                   <Box component="th" sx={headerStyle}>
                     <Checkbox
                       indeterminate={
-                        selected.length > 0 &&
-                        selected.length < rows.length
+                        selected.length > 0 && selected.length < rows.length
                       }
                       checked={selected.length === rows.length}
                       onChange={handleSelectAll}

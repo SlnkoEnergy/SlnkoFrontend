@@ -39,7 +39,7 @@ import { PaymentProvider } from "../../store/Context/Payment_History";
 import PaymentHistory from "../PaymentHistory";
 
 const PaymentAccountApproval = forwardRef(
-  ({ searchQuery, currentPage, perPage , delaydays}, ref) => {
+  ({ searchQuery, currentPage, perPage, delaydays }, ref) => {
     const [selected, setSelected] = useState([]);
 
     //   const isAccount = user?.department === "Accounts";
@@ -53,7 +53,7 @@ const PaymentAccountApproval = forwardRef(
       page: currentPage,
       pageSize: perPage,
       search: searchQuery,
-      delaydays: delaydays, 
+      delaydays: delaydays,
       tab: "finalApprovalPayments",
     });
 
@@ -76,15 +76,15 @@ const PaymentAccountApproval = forwardRef(
     };
 
     const handleStatusChange = async (_id, newStatus, remarks = "") => {
-      // console.log("📌 handleStatusChange got:", { _id, newStatus, remarks, remarksType: typeof remarks });
-
       if (!user) {
         toast.error("User not found");
         return;
       }
 
       const { department, role } = user;
-      const isInternalManager = department === "Internal" && role === "manager";
+      const isInternalManager =
+        (department === "Projects" || department === "Infra") &&
+        role === "visitor";
       const isSCMOrAccountsManager =
         ["SCM", "Accounts"].includes(department) && role === "manager";
 
@@ -220,7 +220,6 @@ const PaymentAccountApproval = forwardRef(
       const nearDue = isFiniteDays ? numDays <= 2 : false;
 
       const showApproveReject = !!showApprove && nearDue;
-
 
       const showExtensionUI = credit_extension === true && !nearDue;
       const showNoExtensionChip = credit_extension !== true || nearDue;
