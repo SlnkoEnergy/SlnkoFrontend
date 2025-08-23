@@ -57,7 +57,7 @@ export default function VendorBillForm({ poData, poLines, onClose }) {
     billDate: new Date().toISOString().slice(0, 10),
     description: "",
   });
-
+  
   const setHeader = (key, val) => setForm((p) => ({ ...p, [key]: val }));
 
   // lines from PO
@@ -158,7 +158,6 @@ export default function VendorBillForm({ poData, poLines, onClose }) {
           gst_percent: l.tax,
         })),
       };
-      console.log({payload})
       await addBill(payload).unwrap();
       toast.success("Bill created successfully!");
       onClose?.();
