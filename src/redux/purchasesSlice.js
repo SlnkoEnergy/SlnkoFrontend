@@ -109,7 +109,22 @@ export const purchasesApi = createApi({
       invalidatesTags: ["Purchase"],
     }),
     getLogistics: builder.query({
-      query: () => "logistic",
+      query: ({
+        page = 1,
+        pageSize = 50,
+        search = "",
+        status = "",
+        po_id = "",
+      } = {}) =>
+        `logistics/logistic?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&po_id=${encodeURIComponent(po_id)}`,
+      transformResponse: (response) => ({
+        data: response?.data || [],
+        total: response?.meta?.total || 0,
+        count:
+          response?.meta?.count || (response?.data ? response.data.length : 0),
+        page: response?.meta?.page || 1,
+        pageSize: response?.meta?.pageSize || 50,
+      }),
       providesTags: ["Logistic"],
     }),
 
