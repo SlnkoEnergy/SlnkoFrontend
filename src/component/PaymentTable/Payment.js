@@ -540,36 +540,6 @@ const InstantRequest = forwardRef(
           {/* Payment status + tooltip timeline */}
           <Box display="flex" alignItems="flex-start" gap={1}>
             <Typography sx={{ fontWeight: 500 }}>📑 Payment Status:</Typography>
-<<<<<<< HEAD
-            {["Approved", "Pending", "Rejected", "Deleted"].includes(
-              approved
-            ) ? (
-              <Chip
-                color={
-                  {
-                    Approved: "success",
-                    Pending: "neutral",
-                    Rejected: "danger",
-                    Deleted: "warning",
-                  }[approved]
-                }
-                variant="solid"
-                size="sm"
-                startDecorator={
-                  {
-                    Approved: <CheckIcon fontSize="small" />,
-                    Pending: <AutorenewIcon fontSize="small" />,
-                    Rejected: <BlockIcon fontSize="small" />,
-                    Deleted: <DeleteIcon fontSize="small" />,
-                  }[approved]
-                }
-              >
-                {approved}
-              </Chip>
-            ) : (
-              <Typography>{approved || "Not Found"}</Typography>
-            )}
-=======
             <Tooltip
               title={ranges.length ? tooltipContent : "No stage history"}
               variant="soft"
@@ -594,7 +564,6 @@ const InstantRequest = forwardRef(
                 )}
               </span>
             </Tooltip>
->>>>>>> accounts-work
           </Box>
 
           {/* Countdown */}
