@@ -23,16 +23,23 @@ export const billsApi = createApi({
       providesTags: ["Bill"],
     }),
 
-    getPaginatedBills: builder.query({
-      query: ({ page = 1, search = "", status, pageSize = 10, date }) =>
-        `get-paginated-bill?page=${page}&search=${search}&status=${status}&pageSize=${pageSize}&date=${date}`,
-      transformResponse: (response) => ({
-        data: response.data || [],
-        total: response.meta?.total || 0,
-        count: response.meta?.count || 0,
-      }),
-      providesTags: ["Bill"],
-    }),
+getAllBills: builder.query({
+  query: ({ page = 1, search = "", status = "", pageSize = 10, date = "", po_number }) => {
+    // decode status so %20 becomes space
+    const cleanStatus = status ? decodeURIComponent(status) : "";
+
+    return `bill?page=${page}&search=${search}&status=${cleanStatus}&pageSize=${pageSize}&date=${date}&po_number=${po_number}`;
+  },
+  transformResponse: (response) => ({
+    data: response.data || [],
+    total: response.total || 0,
+    totalPages: response.totalPages || 0,
+    page: response.page || 1,
+    pageSize: response.pageSize || 10,
+  }),
+  providesTags: ["Bill"],
+}),
+
 
     exportBills: builder.mutation({
       query: ({ from, to, exportAll }) => {
@@ -105,7 +112,7 @@ export const billsApi = createApi({
 
 export const {
   useGetBillsQuery,
-  useGetPaginatedBillsQuery,
+  useGetAllBillsQuery,
   useExportBillsMutation,
   useAddBillMutation,
   useUpdateBillMutation,

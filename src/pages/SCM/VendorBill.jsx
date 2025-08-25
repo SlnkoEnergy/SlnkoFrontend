@@ -1,25 +1,15 @@
-import React, { useRef } from 'react';
 import { CssVarsProvider } from '@mui/joy/styles';
 import CssBaseline from '@mui/joy/CssBaseline';
 import Box from '@mui/joy/Box';
-import Button from '@mui/joy/Button';
 import Breadcrumbs from '@mui/joy/Breadcrumbs';
 import Link from '@mui/joy/Link';
 import Typography from '@mui/joy/Typography';
-
-import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
-import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
-
 import Sidebar from '../../component/Partials/Sidebar';
-// import OrderTable from '../../component/OrderTable';
-// import OrderList from '../../component/OrderList';
 import Header from '../../component/Partials/Header';
-// import BillHistory from '../../component/Bill_History';
 import VendorBill from "../../component/Vendor_Bill";
 
 function Bill_History() {
-     
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -58,14 +48,6 @@ function Bill_History() {
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
               sx={{ pl: 0 }}
             >
-              {/* <Link
-                underline="none"
-                color="neutral"
-                href="#some-link"
-                aria-label="Home"
-              >
-                <HomeRoundedIcon />
-              </Link> */}
               <Link
                 underline="hover"
                 color="neutral"
@@ -108,26 +90,9 @@ function Bill_History() {
                 justifyContent: "center",
               }}
             >
-              {/* <Button
-              color="primary"
-              
-              size="sm"
-            >
-              Add New Project +
-            </Button> */}
-              {/* <Button
-                color="primary"
-                startDecorator={<DownloadRoundedIcon />}
-                size="sm"
-                onClick={handleExportToCSV} 
-              >
-                Export to CSV
-              </Button> */}
             </Box>
           </Box>
           <VendorBill />
-          {/* <OrderTable /> */}
-          {/* <OrderList /> */}
         </Box>
       </Box>
     </CssVarsProvider>

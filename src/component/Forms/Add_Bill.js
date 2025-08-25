@@ -51,13 +51,13 @@ export default function VendorBillForm({ poData, poLines, onClose }) {
     po_value: toNum(poData?.po_value),
     total_billed: toNum(poData?.total_billed),
     createdAt: poData?.createdAt
-    ? new Date(poData.createdAt).toISOString().slice(0, 10) 
-    : "",
+      ? new Date(poData.createdAt).toISOString().slice(0, 10)
+      : "",
     po_date: poData?.date || "",
     billDate: new Date().toISOString().slice(0, 10),
     description: "",
   });
-  
+
   const setHeader = (key, val) => setForm((p) => ({ ...p, [key]: val }));
 
   // lines from PO
@@ -96,8 +96,8 @@ export default function VendorBillForm({ poData, poLines, onClose }) {
     const thisBill = toNum(totals.total);
     return poVal - (billed + thisBill);
   }, [form.po_value, form.total_billed, totals.total]);
-  
-  console.log({totals})
+
+  console.log({ totals });
 
   const overBilling = remainingAmount < 0;
 
@@ -145,11 +145,11 @@ export default function VendorBillForm({ poData, poLines, onClose }) {
         po_number: form.po_number,
         bill_number: form.billNo,
         bill_date: new Date(form.billDate).toISOString().slice(0, 10),
-        bill_value: totals.total, 
+        bill_value: totals.total,
         description: form.description,
 
         item: lines.map((l) => ({
-          category_id: l.category_id, 
+          category_id: l.category_id,
           product_name: l.product_name,
           product_make: l.product_make,
           uom: l.uom,
@@ -163,13 +163,11 @@ export default function VendorBillForm({ poData, poLines, onClose }) {
       onClose?.();
     } catch (err) {
       console.error(err);
-      toast.error(
-        err?.data?.message || err?.error || "Failed to create bill"
-      );
+      toast.error(err?.data?.message || err?.error || "Failed to create bill");
     }
   };
-  
-  console.log({lines})
+
+  console.log({ lines });
 
   const onSave = async () => {
     const payload = {
@@ -266,19 +264,19 @@ export default function VendorBillForm({ poData, poLines, onClose }) {
                 PO Date
               </Typography>
               <Input
-              disabled
+                disabled
                 type="date"
                 value={form.createdAt}
                 onChange={(e) => setHeader("po_date", e.target.value)}
               />
             </Grid>
-            
+
             <Grid xs={12} md={6}>
               <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 600 }}>
                 Vendor
               </Typography>
               <Input
-              disabled
+                disabled
                 value={form.vendor}
                 onChange={(e) => setHeader("vendor", e.target.value)}
               />
@@ -471,7 +469,10 @@ export default function VendorBillForm({ poData, poLines, onClose }) {
         <Box
           sx={{ display: "flex", justifyContent: "flex-end", mt: 2, gap: 2 }}
         >
-          <Sheet variant="soft" sx={{ borderRadius: "lg", p: 2, minWidth: 320 }}>
+          <Sheet
+            variant="soft"
+            sx={{ borderRadius: "lg", p: 2, minWidth: 320 }}
+          >
             <Box
               sx={{
                 display: "grid",
@@ -509,7 +510,10 @@ export default function VendorBillForm({ poData, poLines, onClose }) {
             </Box>
           </Sheet>
 
-          <Sheet variant="soft" sx={{ borderRadius: "lg", p: 2, minWidth: 320 }}>
+          <Sheet
+            variant="soft"
+            sx={{ borderRadius: "lg", p: 2, minWidth: 320 }}
+          >
             <Box
               sx={{
                 display: "grid",
@@ -543,7 +547,9 @@ export default function VendorBillForm({ poData, poLines, onClose }) {
       </Sheet>
 
       {/* Footer actions */}
-      <Box sx={{ display: "flex", gap: 1.5, mt: 2, justifyContent: "flex-end" }}>
+      <Box
+        sx={{ display: "flex", gap: 1.5, mt: 2, justifyContent: "flex-end" }}
+      >
         <Button
           startDecorator={<RestartAlt />}
           variant="outlined"
