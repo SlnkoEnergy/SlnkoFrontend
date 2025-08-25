@@ -16,6 +16,7 @@ import {
 import DeleteOutline from "@mui/icons-material/DeleteOutline";
 import { IconButton } from "@mui/joy";
 import CloudUpload from "@mui/icons-material/CloudUpload";
+import { useLocation, useSearchParams } from "react-router-dom";
 
 import { toast } from "react-toastify";
 import Select from "react-select";
@@ -23,6 +24,8 @@ import {
   useAddLogisticMutation,
   useGetPoBasicQuery,
   useLazyGetPoBasicQuery,
+  useGetLogisticByIdQuery,
+  useUpdateLogisticMutation, // <-- ensure this hook exists in your slice
 } from "../../redux/purchasesSlice";
 import SearchPickerModal from "../SearchPickerModal";
 import { CloseRounded, InsertDriveFile } from "@mui/icons-material";
@@ -46,6 +49,7 @@ const AddLogisticForm = () => {
       po_number: "",
       project_id: "",
       vendor: "",
+      received_qty: "",
       product_name: "",
       category_id: null,
       category_name: "",
@@ -64,6 +68,24 @@ const AddLogisticForm = () => {
   const fileInputRef = useRef(null);
   const [fileInputKey, setFileInputKey] = useState(0);
 
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+
+  const urlMode = (searchParams.get("mode") || "").toLowerCase();
+  const logisticId = searchParams.get("id") || null; // used for edit/view
+const pathDefaultMode =
+  location.pathname === "/logistics-form"
+    ? logisticId
+      ? "edit"
+      : "add"
+    : "add";
+
+const mode = (urlMode || pathDefaultMode).toLowerCase();
+const isAdd = mode === "add";
+const isEdit = mode === "edit";
+const isView = mode === "view";
+
+
   useEffect(() => {
     const sum = items.reduce(
       (acc, item) => acc + (parseFloat(item.ton) || 0),
@@ -80,6 +102,107 @@ const AddLogisticForm = () => {
   });
 
   const [addLogistic, { isLoading }] = useAddLogisticMutation();
+  const [updateLogistic, { isLoading: isUpdating }] =
+    useUpdateLogisticMutation();
+
+   const { data: byIdData } = useGetLogisticByIdQuery(
+   logisticId,
+   { skip: !logisticId || isAdd }
+ );
+
+useEffect(() => {
+   if (!byIdData?.data || !(isEdit || isView)) return;
+   const doc = byIdData.data;
+
+   // Base form fields
+   setFormData((prev) => ({
+     ...prev,
+     vehicle_number: doc.vehicle_number || "",
+     driver_number: doc.driver_number || "",
+     attachment_url: doc.attachment_url || "",
+     description: doc.description || "",
+     // keep these as numbers/strings as you already do
+     total_ton: doc.total_ton || "",
+     total_transport_po_value: Number(doc.total_transport_po_value || 0),
+   }));
+
+   // Transportation PO ids  labels
+   const poIds = Array.isArray(doc.po_id)
+     ? doc.po_id
+         .map((p) => (typeof p === "string" ? p : p?._id))
+         .filter(Boolean)
+     : [];
+   const idToName = {};
+   const pos = {};
+   (doc.po_id || []).forEach((p) => {
+     if (p && typeof p === "object" && p._id) {
+       idToName[p._id] = p.po_number || String(p._id);
+       pos[p._id] = p; // keep for value calc if needed
+     }
+   });
+   setTransportation(poIds);
+   setTransportationIdToName(idToName);
+   setTransportationPos((prev) => ({ ...prev, ...pos }));
+
+   // Items table rows
+   const mappedItems = Array.isArray(doc.items)
+     ? doc.items.map((it) => ({
+         po_id:
+           typeof it.material_po === "object"
+             ? it.material_po?._id || ""
+             : it.material_po || "",
+         po_number:
+           typeof it.material_po === "object"
+             ? it.material_po?.po_number || ""
+             : "",
+         project_id: "",           // not on logistic doc
+         vendor: "",               // not on logistic doc
+         product_name: it.product_name || "",
+         category_id:
+           typeof it.category_id === "object"
+             ? it.category_id?._id || null
+             : it.category_id ?? null,
+         category_name:
+           it?.category_name || it?.category_id?.name || "",
+         product_make: it.product_make || "",
+         uom: it.uom || "",        // logistic doc may not have uom
+         quantity_requested: it.quantity_requested || "",
+         quantity_po: it.quantity_po || "",
+         received_qty: it.received_qty || "",
+         ton: it.weight || "",
+       }))
+     : [];
+
+   setItems(
+     mappedItems.length
+       ? mappedItems
+       : [
+           {
+             po_id: "",
+             po_number: "",
+             project_id: "",
+             vendor: "",
+             received_qty: "",
+             product_name: "",
+             category_id: null,
+             category_name: "",
+             product_make: "",
+             uom: "",
+             quantity_requested: "",
+             quantity_po: "",
+             ton: "",
+           },
+         ]
+   );
+
+   // Show totals immediately in edit/view
+   setVehicleCost(Number(doc.total_transport_po_value || 0));
+   const sumWeight = mappedItems.reduce(
+     (acc, r) => acc + (parseFloat(r.ton) || 0),
+     0
+   );
+   setTotalWeight(sumWeight);
+ }, [byIdData, isEdit, isView]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -119,6 +242,7 @@ const AddLogisticForm = () => {
         uom: "",
         quantity_requested: "",
         quantity_po: "",
+        received_qty: "",
         ton: "",
       },
     ]);
@@ -137,8 +261,6 @@ const AddLogisticForm = () => {
   const [activeItemIndex, setActiveItemIndex] = useState(null);
   const [transportationPos, setTransportationPos] = useState({});
 
-  const [addLogisticTrigger] = useAddLogisticMutation(); // (not used directly, kept for completeness)
-
   const transportationColumns = [
     { key: "po_number", label: "PO Number", width: 200 },
     { key: "vendor", label: "Vendor", width: 250 },
@@ -146,7 +268,7 @@ const AddLogisticForm = () => {
   ];
 
   const onPickTransportation = (row) => {
-    if (!row?._id) return;
+    if (!row?._id || isView) return;
 
     setTransportation((prev) =>
       prev.includes(row._id) ? prev : [...prev, row._id]
@@ -231,6 +353,7 @@ const AddLogisticForm = () => {
         product_name: i.product_name,
         product_make: i.product_make,
         quantity_requested: String(i.quantity_requested || ""),
+        received_qty: String(i.received_qty || ""),
         quantity_po: String(i.quantity_po || ""),
         weight: String(i.ton || ""),
       }));
@@ -248,14 +371,24 @@ const AddLogisticForm = () => {
 
       clearFile();
 
-      console.log("Submitting Logistic Data:", payload);
+      console.log("Submitting Logistic Data:", mode, payload);
 
-      await addLogistic(payload).unwrap();
-      toast.success("Logistic entry created successfully");
+      if (isEdit && logisticId) {
+        // adjust arg shape to your RTKQ endpoint definition if needed
+        await updateLogistic({ id: logisticId, body: payload }).unwrap();
+
+        toast.success("Logistic updated successfully");
+      } else {
+        await addLogistic(payload).unwrap();
+        toast.success("Logistic entry created successfully");
+      }
+
       handleReset();
     } catch (err) {
       console.error("Failed to submit logistic:", err);
-      toast.error("Failed to create logistic entry");
+      toast.error(
+        isEdit ? "Failed to update logistic" : "Failed to create logistic"
+      );
     }
   };
 
@@ -284,6 +417,7 @@ const AddLogisticForm = () => {
         uom: "",
         quantity_requested: "",
         quantity_po: "",
+        received_qty: "",
         ton: "",
       },
     ]);
@@ -308,6 +442,13 @@ const AddLogisticForm = () => {
       <Typography level="h3" fontWeight="lg" mb={2}>
         Logistic Form
       </Typography>
+      <Chip
+        variant="soft"
+        color={isAdd ? "success" : isEdit ? "warning" : "neutral"}
+        sx={{ mb: 2 }}
+      >
+        {mode.toUpperCase()}
+      </Chip>
 
       <Card sx={{ p: 3 }}>
         <form onSubmit={handleSubmit}>
@@ -336,7 +477,10 @@ const AddLogisticForm = () => {
                   })}
                   isMulti
                   isLoading={poLoading}
+                  isDisabled={isView}
                   onChange={(selected) => {
+                    if (isView) return;
+
                     if (selected.some((s) => s.value === "__search_more__")) {
                       setTransportationModalOpen(true);
                       return;
@@ -394,6 +538,7 @@ const AddLogisticForm = () => {
                   onChange={handleChange}
                   placeholder="RJ14-AB-5678"
                   required
+                  disabled={isView}
                 />
               </FormControl>
             </Grid>
@@ -408,6 +553,7 @@ const AddLogisticForm = () => {
                   onChange={handleChange}
                   placeholder="9876543211"
                   required
+                  disabled={isView}
                 />
               </FormControl>
             </Grid>
@@ -422,6 +568,7 @@ const AddLogisticForm = () => {
                   variant="soft"
                   startDecorator={<CloudUpload />}
                   sx={{ width: "fit-content" }}
+                  disabled={isView}
                 >
                   Upload file
                   <input
@@ -441,6 +588,7 @@ const AddLogisticForm = () => {
                       }));
                     }}
                     accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                    disabled={isView}
                   />
                 </Button>
 
@@ -458,8 +606,10 @@ const AddLogisticForm = () => {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
+                          if (isView) return;
                           clearFile();
                         }}
+                        disabled={isView}
                       >
                         <CloseRounded />
                       </IconButton>
@@ -491,22 +641,22 @@ const AddLogisticForm = () => {
             </Box>
 
             <Box
-                 component="table"
-          sx={{
-            width: "100%",
-            tableLayout: "fixed",
-            borderCollapse: "separate",
-            borderSpacing: 0,
-            "& th, & td": {
-              borderBottom:
-                "1px solid var(--joy-palette-neutral-outlinedBorder)",
-              p: 1,
-              textAlign: "left",
-              verticalAlign: "top",
-            },
-            "& th": { fontWeight: 700, bgcolor: "background.level1" },
-          }}
-        >
+              component="table"
+              sx={{
+                width: "100%",
+                tableLayout: "fixed",
+                borderCollapse: "separate",
+                borderSpacing: 0,
+                "& th, & td": {
+                  borderBottom:
+                    "1px solid var(--joy-palette-neutral-outlinedBorder)",
+                  p: 1,
+                  textAlign: "left",
+                  verticalAlign: "top",
+                },
+                "& th": { fontWeight: 700, bgcolor: "background.level1" },
+              }}
+            >
               <thead>
                 <tr>
                   <th style={{ width: "20%" }}>PO Number</th>
@@ -516,6 +666,7 @@ const AddLogisticForm = () => {
                   <th style={{ width: "15%" }}>Product</th>
                   <th style={{ width: "10%" }}>Make</th>
                   <th style={{ width: "10%" }}>Qty</th>
+                  <th style={{ width: "12%" }}>Quantity Received</th>
                   <th style={{ width: "10%" }}>UoM</th>
                   <th style={{ width: "10%" }}>Weight (Ton)</th>
                   <th style={{ width: "60px", textAlign: "center" }}>Action</th>
@@ -527,9 +678,9 @@ const AddLogisticForm = () => {
                     {/* PO Number selection */}
                     <td>
                       <Select
-                      variant="plain"
-                      sx={{
-                          width: "100%", 
+                        variant="plain"
+                        sx={{
+                          width: "100%",
                           border: "none",
                           boxShadow: "none",
                           bgcolor: "transparent",
@@ -557,9 +708,11 @@ const AddLogisticForm = () => {
                               }
                             : null
                         }
+                        isDisabled={isView}
                         onChange={(selected) => {
-                          if (!selected) return;
+                          if (!selected || isView) return;
                           if (selected.value === "__search_more__") {
+                            if (isView) return;
                             setActiveItemIndex(idx);
                             setItemPoModalOpen(true);
                             return;
@@ -595,6 +748,7 @@ const AddLogisticForm = () => {
                                 product_make: prod?.make || "",
                                 quantity_requested: prod?.quantity || "",
                                 quantity_po: "",
+                                received_qty: "",
                                 ton: "", // user will enter
                               }))
                             );
@@ -610,25 +764,72 @@ const AddLogisticForm = () => {
                     </td>
 
                     <td>
-                      <Input variant="plain" placeholder="Project Id" value={item.project_id || ""} readOnly />
+                      <Input
+                        variant="plain"
+                        placeholder="Project Id"
+                        value={item.project_id || ""}
+                        readOnly
+                      />
                     </td>
                     <td>
-                      <Input variant="plain" placeholder="Vendor" value={item.vendor || ""} readOnly />
+                      <Input
+                        variant="plain"
+                        placeholder="Vendor"
+                        value={item.vendor || ""}
+                        readOnly
+                      />
                     </td>
                     <td>
-                      <Input variant="plain" placeholder="Category" value={item.category_name} readOnly />
+                      <Input
+                        variant="plain"
+                        placeholder="Category"
+                        value={item.category_name}
+                        readOnly
+                      />
                     </td>
                     <td>
-                      <Input variant="plain" placeholder="Product Name" value={item.product_name} readOnly />
+                      <Input
+                        variant="plain"
+                        placeholder="Product Name"
+                        value={item.product_name}
+                        readOnly
+                      />
                     </td>
                     <td>
-                      <Input variant="plain" placeholder="Make" value={item.product_make} readOnly />
+                      <Input
+                        variant="plain"
+                        placeholder="Make"
+                        value={item.product_make}
+                        readOnly
+                      />
                     </td>
                     <td>
-                      <Input  variant="plain" placeholder="Quantity" value={item.quantity_requested} readOnly />
+                      <Input
+                        variant="plain"
+                        placeholder="Quantity"
+                        value={item.quantity_requested}
+                        readOnly
+                      />
                     </td>
                     <td>
-                      <Input variant="plain" placeholder="UoM" value={item.uom} readOnly />
+                      <Input
+                        variant="plain"
+                        placeholder="Quantity Received"
+                        type="number"
+                        value={item.received_qty || ""}
+                        onChange={(e) =>
+                          handleItemChange(idx, "received_qty", e.target.value)
+                        }
+                        disabled={isView}
+                      />
+                    </td>
+                    <td>
+                      <Input
+                        variant="plain"
+                        placeholder="UoM"
+                        value={item.uom}
+                        readOnly
+                      />
                     </td>
                     <td>
                       <Input
@@ -639,13 +840,16 @@ const AddLogisticForm = () => {
                         onChange={(e) =>
                           handleItemChange(idx, "ton", e.target.value)
                         }
+                        disabled={isView}
                       />
                     </td>
                     <td>
                       <IconButton
                         size="sm"
                         color="danger"
+                        disabled={isView}
                         onClick={() => {
+                          if (isView) return;
                           if (
                             window.confirm(
                               "Are you sure you want to delete this row?"
@@ -667,9 +871,11 @@ const AddLogisticForm = () => {
             </Box>
 
             <Box sx={{ display: "flex", gap: 3, mt: 1 }}>
-              <Button size="sm" variant="plain" onClick={addItemRow}>
-                Add a Product
-              </Button>
+              {!isView && (
+                <Button size="sm" variant="plain" onClick={addItemRow}>
+                  Add a Product
+                </Button>
+              )}
             </Box>
 
             <Divider sx={{ my: 2 }} />
@@ -683,6 +889,7 @@ const AddLogisticForm = () => {
               value={formData.description}
               onChange={handleChange}
               placeholder="Write Description of Logistic"
+              disabled={isView}
             />
 
             {/* Summary */}
@@ -716,22 +923,32 @@ const AddLogisticForm = () => {
           <Divider sx={{ my: 3 }} />
 
           <Box display="flex" justifyContent="space-between">
-            <Button
-              type="button"
-              variant="outlined"
-              color="neutral"
-              onClick={handleReset}
-            >
-              Reset
-            </Button>
+            {!isView && (
+              <Button
+                type="button"
+                variant="outlined"
+                color="neutral"
+                onClick={handleReset}
+              >
+                Reset
+              </Button>
+            )}
 
             <Button
               type="submit"
               variant="solid"
               color="primary"
-              disabled={isLoading}
+              disabled={isLoading || isUpdating || isView}
             >
-              {isLoading ? "Submitting..." : "Submit Logistic"}
+              {isView
+                ? "View Only"
+                : isEdit
+                  ? isUpdating
+                    ? "Updating..."
+                    : "Update Logistic"
+                  : isLoading
+                    ? "Submitting..."
+                    : "Submit Logistic"}
             </Button>
           </Box>
         </form>
@@ -755,7 +972,7 @@ const AddLogisticForm = () => {
         open={itemPoModalOpen}
         onClose={() => setItemPoModalOpen(false)}
         onPick={(po) => {
-          if (!po?._id || activeItemIndex === null) return;
+          if (!po?._id || activeItemIndex === null || isView) return;
 
           const firstProduct = po.items?.[0] || {};
 
@@ -779,6 +996,7 @@ const AddLogisticForm = () => {
               product_make: firstProduct?.make || "",
               quantity_requested: firstProduct?.quantity || "",
               quantity_po: "",
+              received_qty: "",
             };
             return copy;
           });

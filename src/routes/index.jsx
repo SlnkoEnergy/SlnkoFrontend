@@ -313,7 +313,6 @@ function index() {
           </PrivateRoute>
         }
       />
-
       <Route
         path="/logistics-form"
         element={
@@ -969,20 +968,20 @@ function index() {
 
       {/* Databases */}
       <Route
-      path="/products"
-      element={
-        <PrivateRoute>
-          <Products />
-        </PrivateRoute>
-      }
+        path="/products"
+        element={
+          <PrivateRoute>
+            <Products />
+          </PrivateRoute>
+        }
       />
-       <Route
-      path="/categories"
-      element={
-        <PrivateRoute>
-          <Categories />
-        </PrivateRoute>
-      }
+      <Route
+        path="/categories"
+        element={
+          <PrivateRoute>
+            <Categories />
+          </PrivateRoute>
+        }
       />
 
       <Route

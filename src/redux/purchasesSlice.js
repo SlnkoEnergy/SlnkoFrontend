@@ -129,7 +129,7 @@ export const purchasesApi = createApi({
     }),
 
     getLogisticById: builder.query({
-      query: (id) => `logistic/${id}`,
+      query: (id) => `logistics/logistic/${id}`,
       providesTags: ["Logistic"],
     }),
 
@@ -142,11 +142,12 @@ export const purchasesApi = createApi({
       invalidatesTags: ["Logistic"],
     }),
 
+    // purchasesSlice.js (or wherever your API slice is)
     updateLogistic: builder.mutation({
-      query: ({ id, updatedData }) => ({
-        url: `logistic/${id}`,
+      query: ({ id, body }) => ({
+        url: `logistics/logistic/${id}`,
         method: "PUT",
-        body: updatedData,
+        body, // <- now uses 'body'
       }),
       invalidatesTags: ["Logistic"],
     }),
@@ -179,15 +180,14 @@ export const purchasesApi = createApi({
       providesTags: ["Purchase"],
     }),
 
- updateLogisticStatus: builder.mutation({
-  query: ({ id, status, remarks }) => ({
-    url: `logistics/logistic/${id}/status`,
-    method: "PUT",
-    body: { status, remarks },
-  }),
-  invalidatesTags: ["Logistic"],
-}),
-
+    updateLogisticStatus: builder.mutation({
+      query: ({ id, status, remarks }) => ({
+        url: `logistics/logistic/${id}/status`,
+        method: "PUT",
+        body: { status, remarks },
+      }),
+      invalidatesTags: ["Logistic"],
+    }),
   }),
 });
 

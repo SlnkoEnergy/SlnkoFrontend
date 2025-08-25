@@ -433,7 +433,11 @@ export default function LogisticsDashboard() {
                           <Link
                             underline="none"
                             sx={{ fontWeight: 600, cursor: "pointer" }}
-                            onClick={() => navigate(`/logistics/${row._id}`)}
+                            onClick={() =>
+                              navigate(
+                                `/logistics-form?mode=edit&id=${row._id}`
+                              )
+                            }
                           >
                             {safe(row.logistic_code)}
                           </Link>
@@ -448,7 +452,10 @@ export default function LogisticsDashboard() {
                         placement="top-start"
                         title={
                           <Box sx={{ p: 0.5 }}>
-                            <Typography level="body-xs" sx={{ mb: 0.5, fontWeight: 700 }}>
+                            <Typography
+                              level="body-xs"
+                              sx={{ mb: 0.5, fontWeight: 700 }}
+                            >
                               Transportation POs
                             </Typography>
                             {poNumbers.length ? (
@@ -463,7 +470,13 @@ export default function LogisticsDashboard() {
                           </Box>
                         }
                       >
-                        <Box sx={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
+                        <Box
+                          sx={{
+                            display: "inline-flex",
+                            gap: 8,
+                            alignItems: "center",
+                          }}
+                        >
                           <Chip size="sm" variant="soft">
                             {firstPO}
                           </Chip>
@@ -492,18 +505,29 @@ export default function LogisticsDashboard() {
                         placement="top-start"
                         title={
                           <Box sx={{ p: 0.5, maxWidth: 360 }}>
-                            <Typography level="body-xs" sx={{ mb: 0.5, fontWeight: 700 }}>
+                            <Typography
+                              level="body-xs"
+                              sx={{ mb: 0.5, fontWeight: 700 }}
+                            >
                               POs & Categories
                             </Typography>
                             {grouped.size ? (
                               Array.from(grouped.entries()).map(([po, arr]) => (
                                 <Box key={po} sx={{ mb: 0.5 }}>
-                                  <Typography level="body-xs" sx={{ fontWeight: 600 }}>
+                                  <Typography
+                                    level="body-xs"
+                                    sx={{ fontWeight: 600 }}
+                                  >
                                     {po}
                                   </Typography>
                                   {arr.map(({ category, count }, idx) => (
-                                    <Typography key={idx} level="body-xs" sx={{ pl: 1 }}>
-                                      • {category} {count > 1 ? `(${count})` : ""}
+                                    <Typography
+                                      key={idx}
+                                      level="body-xs"
+                                      sx={{ pl: 1 }}
+                                    >
+                                      • {category}{" "}
+                                      {count > 1 ? `(${count})` : ""}
                                     </Typography>
                                   ))}
                                 </Box>
@@ -514,8 +538,16 @@ export default function LogisticsDashboard() {
                           </Box>
                         }
                       >
-                        <Box sx={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
-                          <Typography level="body-sm">{safe(firstLabel)}</Typography>
+                        <Box
+                          sx={{
+                            display: "inline-flex",
+                            gap: 8,
+                            alignItems: "center",
+                          }}
+                        >
+                          <Typography level="body-sm">
+                            {safe(firstLabel)}
+                          </Typography>
                           {extraCount > 0 && (
                             <Typography
                               level="body-xs"
