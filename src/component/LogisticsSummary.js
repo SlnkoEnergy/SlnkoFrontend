@@ -24,7 +24,10 @@ import {
   Typography,
 } from "@mui/joy";
 
-import { useGetLogisticsQuery } from "../redux/purchasesSlice";
+import {
+  useGetLogisticsQuery,
+  useUpdateLogisticStatusMutation,
+} from "../redux/purchasesSlice";
 
 /* ---------------- helpers ---------------- */
 const formatINR = (v) =>
@@ -48,19 +51,10 @@ const getPoNumbers = (row) => {
   );
 };
 
-/** Build PO→Category summary from items.
- * Returns:
- * - pairs: [{ po, category, count }]
- * - grouped: Map(po -> [{category, count}])
- * - firstLabel: "PO/XXX — Category"
- * - extraCount: total unique (po,category) pairs - 1
- */
 function buildPoCategorySummary(itemsRaw) {
   const items = Array.isArray(itemsRaw) ? itemsRaw : [];
-
-  // Count unique (po, category) pairs
-  const pairCounts = new Map(); // key: `${po}|${category}` -> number
-  const grouped = new Map();    // po -> [{ category, count }]
+  const pairCounts = new Map();
+  const grouped = new Map();
 
   for (const it of items) {
     const po = it?.material_po?.po_number || "-";
@@ -69,7 +63,6 @@ function buildPoCategorySummary(itemsRaw) {
     pairCounts.set(key, (pairCounts.get(key) || 0) + 1);
   }
 
-  // Convert to arrays and grouped structure
   const pairs = [];
   for (const [key, count] of pairCounts.entries()) {
     const [po, category] = key.split("|");
@@ -78,8 +71,9 @@ function buildPoCategorySummary(itemsRaw) {
     grouped.get(po).push({ category, count });
   }
 
-  // Sort nicely (by PO then category)
-  pairs.sort((a, b) => (a.po > b.po ? 1 : a.po < b.po ? -1 : a.category.localeCompare(b.category)));
+  pairs.sort((a, b) =>
+    a.po === b.po ? a.category.localeCompare(b.category) : a.po.localeCompare(b.po)
+  );
   for (const [po, arr] of grouped.entries()) {
     arr.sort((a, b) => a.category.localeCompare(b.category));
   }
@@ -102,27 +96,139 @@ const pageNumbers = (current, total) => {
   return out;
 };
 
+const dd_mm_yyyy = (d) => {
+  if (!d) return "-";
+  const dt = new Date(d);
+  if (isNaN(dt)) return "-";
+  const dd = String(dt.getDate()).padStart(2, "0");
+  const mm = String(dt.getMonth() + 1).padStart(2, "0");
+  const yyyy = dt.getFullYear();
+  return `${dd} - ${mm} - ${yyyy}`;
+};
+
+// small helper to extract error text
+const errMsg = (e) =>
+  e?.data?.message || e?.error || e?.message || "Failed to update status";
+
+
+function StatusCard({ row, onUpdated }) {
+  const current = row?.current_status?.status || "ready_to_dispatch";
+  const [updateStatus, { isLoading }] = useUpdateLogisticStatusMutation();
+  const [errorText, setErrorText] = useState("");
+
+  const label =
+    current === "delivered"
+      ? "Delivered"
+      : current === "out_for_delivery"
+      ? "Out for Delivery"
+      : "Ready to Dispatch";
+
+  const color =
+    current === "delivered" ? "success" : current === "out_for_delivery" ? "warning" : "neutral";
+
+  const changeTo = current === "ready_to_dispatch" ? "out_for_delivery" : "delivered";
+  const changeButtonText =
+    current === "ready_to_dispatch" ? "Change Status to Out for Delivery" : "Mark as Delivered";
+
+  const handleChange = async () => {
+    setErrorText("");
+    try {
+      await updateStatus({ id: row._id, status: changeTo, remarks: "" }).unwrap();
+      onUpdated?.(); // refetch so dispatch_date / delivery_date update from backend
+    } catch (e) {
+      console.error("update status failed:", e);
+      setErrorText(e?.data?.message || e?.error || e?.message || "Failed to update status");
+    }
+  };
+
+  const dispatchDate = row?.dispatch_date ? dd_mm_yyyy(row.dispatch_date) : "dd - mm - yyyy";
+  const deliveryDate = row?.delivery_date ? dd_mm_yyyy(row.delivery_date) : "dd - mm - yyyy";
+
+  return (
+    <Box
+      sx={{
+        border: "1px solid",
+        borderColor: "neutral.outlinedBorder",
+        borderRadius: "sm",
+        p: 1,
+        bgcolor: "background.body",
+        minWidth: 320,
+      }}
+    >
+      {/* Header like your UI */}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          bgcolor: "neutral.softBg",
+          px: 1,
+          py: 0.75,
+          borderRadius: "sm",
+          mb: 1,
+        }}
+      >
+        <Typography level="title-sm">{label}</Typography>
+        <Chip size="sm" variant="soft" color={color}>
+          {label}
+        </Chip>
+      </Box>
+
+      {/* Always show BOTH dates */}
+      <Box sx={{ display: "grid", rowGap: 0.5, mb: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Typography level="body-sm" sx={{ minWidth: 130 }}>
+            Dispatch Date :
+          </Typography>
+          <Typography level="body-sm">{dispatchDate}</Typography>
+        </Box>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Typography level="body-sm" sx={{ minWidth: 130 }}>
+            Delivery Date :
+          </Typography>
+          <Typography level="body-sm">{deliveryDate}</Typography>
+        </Box>
+      </Box>
+
+      {!!errorText && (
+        <Typography level="body-xs" color="danger" sx={{ mb: 1 }}>
+          {errorText}
+        </Typography>
+      )}
+
+      {current !== "delivered" && (
+        <Button
+          size="sm"
+          variant="soft"
+          color={current === "ready_to_dispatch" ? "primary" : "success"}
+          onClick={handleChange}
+          disabled={isLoading}
+        >
+          {isLoading ? "Updating..." : changeButtonText}
+        </Button>
+      )}
+    </Box>
+  );
+}
+
+
 /* ---------------- component ---------------- */
 export default function LogisticsDashboard() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // URL-synced page
   const [currentPage, setCurrentPage] = useState(1);
   useEffect(() => {
     const p = parseInt(searchParams.get("page") || "1", 10);
     setCurrentPage(Number.isNaN(p) ? 1 : Math.max(1, p));
   }, [searchParams]);
 
-  // search + rows per page
   const [searchQuery, setSearchQuery] = useState("");
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  // selection
   const [selected, setSelected] = useState([]);
 
-  // fetch
-  const { data: resp = {}, isLoading } = useGetLogisticsQuery({
+  const { data: resp = {}, isLoading, refetch } = useGetLogisticsQuery({
     page: currentPage,
     pageSize: rowsPerPage,
     search: searchQuery,
@@ -130,7 +236,6 @@ export default function LogisticsDashboard() {
     po_id: "",
   });
 
-  // normalize
   const rows = useMemo(() => {
     if (Array.isArray(resp)) return resp;
     if (Array.isArray(resp?.data)) return resp.data;
@@ -146,7 +251,7 @@ export default function LogisticsDashboard() {
     if (p < 1 || p > totalPages) return;
     setSearchParams({ page: String(p) });
     setCurrentPage(p);
-    setSelected([]); // clear selection on page change
+    setSelected([]);
   };
 
   const handleSelectAll = (e) => {
@@ -156,6 +261,17 @@ export default function LogisticsDashboard() {
 
   const handleRowSelect = (id) =>
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  const COLS = [
+    "Logistics Code",
+    "Transportation PO",
+    "PO Number with Item",
+    "Vehicle No.",
+    "Transport PO Value",
+    "Total Weight",
+    "Status",
+  ];
+  const COL_COUNT = COLS.length + 1;
 
   return (
     <>
@@ -212,6 +328,7 @@ export default function LogisticsDashboard() {
 
       {/* Table */}
       <Sheet
+        className="OrderTableContainer"
         variant="outlined"
         sx={{
           display: { xs: "none", sm: "initial" },
@@ -224,10 +341,35 @@ export default function LogisticsDashboard() {
           maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
-        <Box component="table" sx={{ width: "100%", borderCollapse: "collapse" }}>
+        <Box
+          component="table"
+          sx={{
+            width: "100%",
+            borderCollapse: "collapse",
+            fontSize: "14px",
+            "& thead th": {
+              position: "sticky",
+              top: 0,
+              background: "#e0e0e0",
+              zIndex: 2,
+              borderBottom: "1px solid #ddd",
+              padding: "8px",
+              textAlign: "left",
+              fontWeight: "bold",
+            },
+            "& tbody td": {
+              borderBottom: "1px solid #ddd",
+              padding: "8px",
+              textAlign: "left",
+            },
+            "& tbody tr:hover": {
+              backgroundColor: "var(--joy-palette-neutral-plainHoverBg)",
+            },
+          }}
+        >
           <thead>
             <tr>
-              <th style={{ borderBottom: "1px solid #ddd", padding: 8, textAlign: "center" }}>
+              <th>
                 <Checkbox
                   size="sm"
                   checked={rows.length > 0 && selected.length === rows.length}
@@ -235,27 +377,8 @@ export default function LogisticsDashboard() {
                   onChange={handleSelectAll}
                 />
               </th>
-
-              {[
-                "Logistics Code",
-                "Transportation PO",
-                "PO Number with Item", // ← renamed
-                "Vehicle No.",
-                "Transport PO Value",
-                "Total Weight",
-                "Status",
-              ].map((h, i) => (
-                <th
-                  key={i}
-                  style={{
-                    borderBottom: "1px solid #ddd",
-                    padding: 8,
-                    textAlign: "center",
-                    fontWeight: "bold",
-                  }}
-                >
-                  {h}
-                </th>
+              {COLS.map((header) => (
+                <th key={header}>{header}</th>
               ))}
             </tr>
           </thead>
@@ -263,21 +386,27 @@ export default function LogisticsDashboard() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={8} style={{ padding: 16, textAlign: "center" }}>
-                  <CircularProgress size="sm" />
-                  <Typography level="body-sm" sx={{ mt: 1, fontStyle: "italic" }}>
-                    Loading…
-                  </Typography>
+                <td colSpan={COL_COUNT} style={{ padding: "8px", textAlign: "center" }}>
+                  <Box
+                    sx={{
+                      fontStyle: "italic",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <CircularProgress size="sm" sx={{ mb: 1 }} />
+                    <Typography fontStyle="italic">Loading...</Typography>
+                  </Box>
                 </td>
               </tr>
             ) : rows.length ? (
               rows.map((row) => {
-                // Transportation PO (from top-level po_id)
                 const poNumbers = getPoNumbers(row);
                 const firstPO = poNumbers[0] || "-";
                 const extraPO = Math.max(0, poNumbers.length - 1);
 
-                // Build "PO Number with Item" summary from items[*].material_po.po_number + category_name
                 const { grouped, firstLabel, extraCount } = buildPoCategorySummary(row.items);
 
                 const totalWeight =
@@ -289,7 +418,7 @@ export default function LogisticsDashboard() {
                 return (
                   <tr key={row._id}>
                     {/* checkbox */}
-                    <td style={{ borderBottom: "1px solid #ddd", padding: 8, textAlign: "center" }}>
+                    <td>
                       <Checkbox
                         size="sm"
                         checked={selected.includes(row._id)}
@@ -297,19 +426,23 @@ export default function LogisticsDashboard() {
                       />
                     </td>
 
-                    {/* Logistics Code (clickable) */}
-                    <td style={{ borderBottom: "1px solid #ddd", padding: 8, textAlign: "center" }}>
-                      <Link
-                        underline="none"
-                        sx={{ fontWeight: 600, cursor: "pointer" }}
-                        onClick={() => navigate(`/logistics/${row._id}`)}
-                      >
-                        {safe(row.logistic_code)}
-                      </Link>
+                    {/* Logistics Code */}
+                    <td>
+                      <Tooltip title="View Logistics Detail" arrow>
+                        <span>
+                          <Link
+                            underline="none"
+                            sx={{ fontWeight: 600, cursor: "pointer" }}
+                            onClick={() => navigate(`/logistics/${row._id}`)}
+                          >
+                            {safe(row.logistic_code)}
+                          </Link>
+                        </span>
+                      </Tooltip>
                     </td>
 
-                    {/* Transportation PO (first +N with tooltip full list) */}
-                    <td style={{ borderBottom: "1px solid #ddd", padding: 8, textAlign: "center" }}>
+                    {/* Transportation PO */}
+                    <td>
                       <Tooltip
                         variant="soft"
                         placement="top-start"
@@ -335,16 +468,25 @@ export default function LogisticsDashboard() {
                             {firstPO}
                           </Chip>
                           {extraPO > 0 && (
-                            <Chip size="sm" variant="outlined">
-                              +{extraPO}
-                            </Chip>
+                            <Typography
+                              level="body-xs"
+                              sx={{
+                                px: 0.75,
+                                py: 0.25,
+                                border: "1px solid",
+                                borderColor: "neutral.outlinedBorder",
+                                borderRadius: "sm",
+                              }}
+                            >
+                              +{extraPO} more
+                            </Typography>
                           )}
                         </Box>
                       </Tooltip>
                     </td>
 
-                    {/* PO Number with Item (from items: po_number + category_name, grouped) */}
-                    <td style={{ borderBottom: "1px solid #ddd", padding: 8, textAlign: "center" }}>
+                    {/* PO Number with Item */}
+                    <td>
                       <Tooltip
                         variant="soft"
                         placement="top-start"
@@ -375,44 +517,43 @@ export default function LogisticsDashboard() {
                         <Box sx={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
                           <Typography level="body-sm">{safe(firstLabel)}</Typography>
                           {extraCount > 0 && (
-                            <Chip size="sm" variant="outlined">
-                              +{extraCount}
-                            </Chip>
+                            <Typography
+                              level="body-xs"
+                              sx={{
+                                px: 0.75,
+                                py: 0.25,
+                                border: "1px solid",
+                                borderColor: "neutral.outlinedBorder",
+                                borderRadius: "sm",
+                              }}
+                            >
+                              +{extraCount} more
+                            </Typography>
                           )}
                         </Box>
                       </Tooltip>
                     </td>
 
                     {/* Vehicle No. */}
-                    <td style={{ borderBottom: "1px solid #ddd", padding: 8, textAlign: "center" }}>
-                      {safe(row.vehicle_number)}
-                    </td>
+                    <td>{safe(row.vehicle_number)}</td>
 
                     {/* Transport PO Value */}
-                    <td style={{ borderBottom: "1px solid #ddd", padding: 8, textAlign: "center" }}>
-                      {formatINR(row.total_transport_po_value)}
-                    </td>
+                    <td>{formatINR(row.total_transport_po_value)}</td>
 
                     {/* Total Weight */}
-                    <td style={{ borderBottom: "1px solid #ddd", padding: 8, textAlign: "center" }}>
-                      {safe(totalWeight)}
-                    </td>
+                    <td>{safe(totalWeight)}</td>
 
                     {/* Status */}
-                    <td style={{ borderBottom: "1px solid #ddd", padding: 8, textAlign: "center" }}>
-                      <Chip size="sm" variant="soft">
-                        {safe(row.status)}
-                      </Chip>
+                    <td>
+                      <StatusCard row={row} onUpdated={refetch} />
                     </td>
                   </tr>
                 );
               })
             ) : (
               <tr>
-                <td colSpan={8} style={{ padding: 16, textAlign: "center" }}>
-                  <Typography level="body-sm" sx={{ fontStyle: "italic" }}>
-                    No Logistics Found
-                  </Typography>
+                <td colSpan={COL_COUNT} style={{ padding: "8px", textAlign: "center" }}>
+                  <Typography fontStyle="italic">No Logistics Found</Typography>
                 </td>
               </tr>
             )}

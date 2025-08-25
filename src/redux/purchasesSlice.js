@@ -178,6 +178,16 @@ export const purchasesApi = createApi({
       }),
       providesTags: ["Purchase"],
     }),
+
+ updateLogisticStatus: builder.mutation({
+  query: ({ id, status, remarks }) => ({
+    url: `logistics/logistic/${id}/status`,
+    method: "PUT",
+    body: { status, remarks },
+  }),
+  invalidatesTags: ["Logistic"],
+}),
+
   }),
 });
 
@@ -197,4 +207,5 @@ export const {
   useDeleteLogisticMutation,
   useGetPoBasicQuery,
   useLazyGetPoBasicQuery,
+  useUpdateLogisticStatusMutation,
 } = purchasesApi;
