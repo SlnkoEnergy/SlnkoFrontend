@@ -1250,7 +1250,7 @@ function PaymentRequest() {
             >
               {(user?.department === "Projects" ||
                 user?.department === "Infra") &&
-                user?.role === "manager" &&
+                user?.role === "visitor" &&
                 renderFilters?.()}
 
               <Box
