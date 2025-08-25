@@ -76,7 +76,10 @@ function PaymentRequest() {
     if (userData) setUser(JSON.parse(userData));
   }, []);
 
-  const isAccount = user?.department === "Accounts";
+  const isAccount =
+    user?.department === "Accounts" ||
+    user?.department === "admin" ||
+    user?.department === "superadmin";
 
   const {
     data: responseData,
@@ -155,7 +158,9 @@ function PaymentRequest() {
       (department === "Projects" || department === "Infra") &&
       role === "visitor";
     const isSCMOrAccountsManager =
-      ["SCM", "Accounts"].includes(department) && role === "manager";
+      (["SCM", "Accounts"].includes(department) && role === "manager") ||
+      user?.department === "admin" ||
+      user?.department === "superadmin";
 
     if (newStatus === "Rejected") {
       if (!_id) {
@@ -400,12 +405,6 @@ function PaymentRequest() {
     const [remarks, setRemarks] = useState("");
 
     const handleRejectSubmit = () => {
-      // console.log(
-      //   "📌 RowMenu → handleRejectSubmit remarks:",
-      //   remarks,
-      //   "type:",
-      //   typeof remarks
-      // );
       onStatusChange(_id, "Rejected", remarks);
       setOpen(false);
       setRemarks("");
@@ -932,7 +931,8 @@ function PaymentRequest() {
             )}
 
           {((user?.department === "Accounts" && user?.role === "manager") ||
-            user?.department === "admin") && (
+            user?.department === "admin" ||
+            user?.department === "superadmin") && (
             <Typography level="h2" component="h1">
               Accounts Payment Approval
             </Typography>
@@ -1544,9 +1544,11 @@ function PaymentRequest() {
                         <Box component="td" sx={{ ...cellStyle }}>
                           <RowMenu
                             _id={payment._id}
-                            showApprove={["SCM", "Accounts"].includes(
-                              user?.department
-                            )}
+                            showApprove={
+                              ["SCM", "Accounts"].includes(user?.department) ||
+                              user?.department === "admin" ||
+                              user?.department === "superadmin"
+                            }
                             onStatusChange={(id, status, remarks) =>
                               handleStatusChange(id, status, remarks)
                             }
