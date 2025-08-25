@@ -28,15 +28,71 @@ export const AccountsApi = createApi({
       }),
       providesTags: ["Accounts"],
     }),
+    getPaymentRecord: builder.query({
+      query: ({
+        page = 1,
+        search = "",
+        status = "",
+        pageSize = 10,
+        tab = "",
+      }) =>
+        `get-pay-sumrY-IT?page=${page}&search=${search}&status=${status}&pageSize=${pageSize}&tab=${tab}`,
+
+      transformResponse: (response, meta, arg) => {
+        return {
+          data: Array.isArray(response.data) ? response.data : [],
+          total: response.meta?.total ?? 0,
+          count: response.meta?.count ?? 0,
+          page: response.meta?.page ?? 1,
+          instantTotal: response.meta?.instantTotal ?? 0,
+          creditTotal: response.meta?.creditTotal ?? 0,
+        };
+      },
+      providesTags: ["Accounts"],
+    }),
+
+    getTrashRecord: builder.query({
+      query: ({
+        page = 1,
+        search = "",
+        status = "",
+        pageSize = 10,
+        tab = "",
+      }) => ({
+        url: "hold-pay-summary-IT",
+        params: { page, search, status, pageSize, tab },
+      }),
+      transformResponse: (res) => ({
+        data: Array.isArray(res.data) ? res.data : [],
+        total: res.meta?.total ?? 0,
+        count: res.meta?.count ?? 0,
+        page: res.meta?.page ?? 1,
+        instantTotal: res.meta?.instantTotal ?? 0,
+        creditTotal: res.meta?.creditTotal ?? 0,
+      }),
+      providesTags: [{ type: "Accounts", id: "TRASH" }],
+      keepUnusedDataFor: 10,
+    }),
 
     getPaymentApproval: builder.query({
-      query: ({ page = 1, search = "", pageSize = 10 }) =>
-        `accounting/payment-approval?page=${page}&search=${search}&pageSize=${pageSize}`,
-      transformResponse: (response) => ({
-        data: response.data || [],
-        total: response.meta?.total || 0,
-        count: response.meta?.count || 0,
-      }),
+      query: ({ page = 1, search = "", pageSize = 10, tab = "", delaydays }) =>
+        `accounting/payment-approval?page=${page}&search=${search}&pageSize=${pageSize}&tab=${tab}&delaydays=${delaydays ?? ""}`,
+
+      transformResponse: (response) => {
+        return {
+          data: response?.data || [],
+          total: response.meta?.total || 0,
+          count: response.meta?.count || 0,
+          page: response.meta?.page || 1,
+          pageSize: response.meta?.pageSize || 10,
+          delaydays: response.meta?.delaydays || undefined,
+          finalApprovalPaymentsCount:
+            response.meta?.finalApprovalPaymentsCount || 0,
+          paymentsCount: response.meta?.paymentsCount || 0,
+          tab: response.meta?.tab || "",
+        };
+      },
+
       providesTags: ["Accounts"],
     }),
 
@@ -83,7 +139,7 @@ export const AccountsApi = createApi({
       providesTags: ["Accounts"],
     }),
 
-    getExportPaymentHistory: builder.query({
+     getExportPaymentHistory: builder.query({
       async queryFn({ po_number }, _queryApi, _extraOptions, fetchWithBQ) {
         const result = await fetchWithBQ({
           url: `accounting/debithistorycsv?po_number=${po_number}`,
@@ -140,6 +196,31 @@ export const AccountsApi = createApi({
         },
       }),
     }),
+
+    updateCreditExtension: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/credit-extension-by-id/${id}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["Accounts"],
+    }),
+    updateRequestExtension: builder.mutation({
+      query: ({ id, credit_remarks }) => ({
+        url: `/request-extension-by-id/${id}`,
+        method: "PUT",
+        body: { credit_remarks },
+      }),
+      invalidatesTags: ["Accounts"],
+    }),
+    updateRestoreTrash: builder.mutation({
+      query: ({ id, remarks }) => ({
+        url: `/restore-pay-request/${id}`,
+        method: "PUT",
+        body: { remarks },
+      }),
+      invalidatesTags: ["Accounts"],
+    }),
   }),
 });
 
@@ -147,9 +228,13 @@ export const {
   useGetProjectBalanceQuery,
   useGetPaymentApprovalQuery,
   useGetPaymentHistoryQuery,
-  useGetExportPaymentHistoryQuery,
   useGetCustomerSummaryQuery,
   useGetPaymentApprovedQuery,
   useGetUtrSubmissionQuery,
   useGetExportProjectBalanceMutation,
+  useGetPaymentRecordQuery,
+  useGetTrashRecordQuery,
+  useUpdateCreditExtensionMutation,
+  useUpdateRequestExtensionMutation,
+  useUpdateRestoreTrashMutation,
 } = AccountsApi;

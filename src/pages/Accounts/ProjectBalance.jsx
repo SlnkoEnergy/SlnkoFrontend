@@ -203,7 +203,8 @@ function ProjectBalance() {
                 user?.name === "Sujan Maharjan" ||
                 user?.department === "admin" ||
                 user?.name === "Prachi Singh" ||
-                user?.name === "IT Team") && (
+                user?.name === "IT Team" ||
+                user?.name === "Ajay Singh") && (
                 <Button
                   color="primary"
                   onClick={() => navigate("/eng_dash")}

@@ -1,672 +1,632 @@
-import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
+/* TrashRequest.jsx */
+import { forwardRef, useEffect, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+
+import KeyboardDoubleArrowLeft from "@mui/icons-material/KeyboardDoubleArrowLeft";
+import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
+import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
+import KeyboardDoubleArrowRight from "@mui/icons-material/KeyboardDoubleArrowRight";
+import CheckIcon from "@mui/icons-material/Check";
+import AutorenewIcon from "@mui/icons-material/Autorenew";
+import BlockIcon from "@mui/icons-material/Block";
 import DeleteIcon from "@mui/icons-material/Delete";
-import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
-import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import SearchIcon from "@mui/icons-material/Search";
+import RestoreFromTrashIcon from "@mui/icons-material/RestoreFromTrash";
+import CloseRounded from "@mui/icons-material/CloseRounded";
+
 import Box from "@mui/joy/Box";
-import Button from "@mui/joy/Button";
-import Checkbox from "@mui/joy/Checkbox";
-import Divider from "@mui/joy/Divider";
-import Dropdown from "@mui/joy/Dropdown";
+import Chip from "@mui/joy/Chip";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
-import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
+import IconButton from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
-import Menu from "@mui/joy/Menu";
-import MenuButton from "@mui/joy/MenuButton";
-import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import Axios from "../utils/Axios";
+import { CircularProgress, Modal, Option, Select, Tooltip, Button, Textarea } from "@mui/joy";
 
-const StandByRequest = () => {
+import { toast } from "react-toastify"; // ✅ snackbar
+import NoData from "../assets/alert-bell.svg";
+import { PaymentProvider } from "../store/Context/Payment_History";
+import PaymentHistory from "./PaymentHistory";
+import { useGetTrashRecordQuery, useUpdateRestoreTrashMutation } from "../redux/Accounts";
+
+dayjs.extend(duration);
+
+const TrashRequest = forwardRef(() => {
   const navigate = useNavigate();
-  const [payments, setPayments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  // const [states, setStates] = useState([]);
-  // const [customers, setCustomers] = useState([]);
-  // const [stateFilter, setStateFilter] = useState("");
-  // const [customerFilter, setCustomerFilter] = useState("");
-  const [open, setOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [selected, setSelected] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [mergedData, setMergedData] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
 
+  /* ----------------------------- paging / filters ---------------------------- */
+  const initialPage = Number.parseInt(searchParams.get("page") || "1", 10);
+  const initialPageSize = Number.parseInt(searchParams.get("pageSize") || "10", 10);
+
+  const [perPage, setPerPage] = useState(initialPageSize);
+  const [currentPage, setCurrentPage] = useState(initialPage);
+  const [rawSearch, setRawSearch] = useState(searchParams.get("search") || "");
+  const [status] = useState(""); // reserved for future use
+
+  // Debounced search (300ms)
+  const [searchQuery, setSearchQuery] = useState(rawSearch);
   useEffect(() => {
-    const fetchTableData = async () => {
-      try {
-        const token = localStorage.getItem("authToken");
-        const config = { headers: { "x-auth-token": token } };
+    const t = setTimeout(() => setSearchQuery(rawSearch.trim().toLowerCase()), 300);
+    return () => clearTimeout(t);
+  }, [rawSearch]);
 
-        const [paymentResponse, projectResponse] = await Promise.all([
-          Axios.get("/hold-pay-summary-IT", config),
-          Axios.get("/get-all-projecT-IT", config),
-        ]);
-
-        setPayments(paymentResponse.data.data);
-        console.log("Payment Data are:", paymentResponse.data.data);
-
-        setProjects(projectResponse.data.data);
-        console.log("Project Data are:", projectResponse.data.data);
-
-        // const uniqueStates = [
-        //   ...new Set(paymentsData.map((payment) => payment.state)),
-        // ].filter(Boolean);
-
-        // const uniqueCustomers = [
-        //   ...new Set(paymentsData.map((payment) => payment.customer)),
-        // ].filter(Boolean);
-
-        // setStates(uniqueStates);
-        // setCustomers(uniqueCustomers);
-      } catch (err) {
-        console.error("API Error:", err);
-        setError("Failed to fetch table data.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTableData();
-  }, []);
-
+  // ✅ When search changes, go back to the first page
   useEffect(() => {
-    if (payments.length > 0 && projects.length > 0) {
-      const merged = payments.map((payment) => {
-        const matchingProject = projects.find(
-          (project) => Number(project.p_id) === Number(payment.p_id)
-        );
-        return {
-          ...payment,
-          // projectCode: matchingProject?.code || "-",
-          // projectName: matchingProject?.name || "-",
-          projectCustomer: matchingProject?.customer || "-",
-          // projectGroup: matchingProject?.p_group || "-",
-        };
-      });
-      setMergedData(merged);
-    }
-  }, [payments, projects]);
+    setCurrentPage(1);
+  }, [searchQuery]);
 
-  // const renderFilters = () => (
-  //   <>
-  //     <FormControl size="sm">
-  //       <FormLabel>State</FormLabel>
-  //       <Select
-  //         size="sm"
-  //         placeholder="Filter by state"
-  //         // value={stateFilter}
-  //         // onChange={(e) => setStateFilter(e.target.value)}
-  //       >
-  //         <Option value="">All</Option>
-  //         {/* {states.map((state, index) => (
-  //           <Option key={index} value={state}>
-  //             {state}
-  //           </Option>
-  //         ))} */}
-  //       </Select>
-  //     </FormControl>
-  //     <FormControl size="sm">
-  //       <FormLabel>Customer</FormLabel>
-  //       <Select
-  //         size="sm"
-  //         placeholder="Filter by customer"
-  //         // value={customerFilter}
-  //         // onChange={(e) => setCustomerFilter(e.target.value)}
-  //       >
-  //         <Option value="">All</Option>
-  //         {/* {customers.map((customer, index) => (
-  //           <Option key={index} value={customer}>
-  //             {customer}
-  //           </Option>
-  //         ))} */}
-  //       </Select>
-  //     </FormControl>
-  //   </>
-  // );
-  const handleSelectAll = (event) => {
-    if (event.target.checked) {
-      setSelected(paginatedPayments.map((row) => row.id));
-    } else {
-      setSelected([]);
-    }
-  };
-
-  const handleRowSelect = (id, isSelected) => {
-    // console.log("currentPage:", currentPage, "pay_id:", pay_id, "p_id:", p_id);
-    setSelected((prevSelected) =>
-      isSelected
-        ? [...prevSelected, id]
-        : prevSelected.filter((item) => item !== id)
-    );
-  };
-
-  const RowMenu = ({ currentPage, pay_id, p_id }) => {
-    return (
-      <Dropdown>
-        <MenuButton
-          slots={{ root: IconButton }}
-          slotProps={{
-            root: { variant: "plain", color: "neutral", size: "sm" },
-          }}
-        >
-          <MoreHorizRoundedIcon />
-        </MenuButton>
-        <Menu size="sm" sx={{ minWidth: 140 }}>
-          <MenuItem
-            color="primary"
-            onClick={() => {
-              const page = currentPage;
-              const payId = String(pay_id);
-              const projectID = Number(p_id);
-              localStorage.setItem("standby_summary", payId);
-              localStorage.setItem("p_id", projectID);
-              navigate(`/standby_Request?page=${page}&pay_id=${payId}`);
-            }}
-          >
-            <ContentPasteGoIcon />
-            <Typography>StandBy summary</Typography>
-          </MenuItem>
-          <Divider sx={{ backgroundColor: "lightblue" }} />
-          <MenuItem color="danger">
-            <DeleteIcon />
-            <Typography>Delete</Typography>
-          </MenuItem>
-        </Menu>
-      </Dropdown>
-    );
-  };
-
-  const handleSearch = (query) => {
-    setSearchQuery(query.toLowerCase());
-  };
-  const filteredAndSortedData = mergedData
-    .filter((payment) => {
-      const matchesSearchQuery = [
-        "pay_id",
-        "vendor",
-        "approved",
-        "projectCustomer",
-        "paid_for",
-      ].some((key) => payment[key]?.toLowerCase().includes(searchQuery));
-
-      // const matchesDateFilter =
-      //   !dateFilter ||
-      //   new Date(payment.date).toLocaleDateString() ===
-      //     new Date(dateFilter).toLocaleDateString();
-
-      // const matchesStatusFilter =
-      //   !statusFilter || payment.approved === statusFilter;
-      // console.log("MatchVendors are: ", matchesStatusFilter);
-
-      // const matchesVendorFilter =
-      //   !vendorFilter || payment.vendor === vendorFilter;
-      // console.log("MatchVendors are: ", matchesVendorFilter);
-
-      return matchesSearchQuery;
-    })
-    .sort((a, b) => {
-      if (a.pay_id?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.pay_id?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.paid_for?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.paid_for?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.projectCustomer?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.projectCustomer?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.vendor?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.vendor?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.approved?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.approved?.toLowerCase().includes(searchQuery)) return 1;
-      return 0;
-    });
-
-  const generatePageNumbers = (currentPage, totalPages) => {
-    const pages = [];
-
-    if (currentPage > 2) {
-      pages.push(1);
-    }
-
-    if (currentPage > 3) {
-      pages.push("...");
-    }
-
-    for (
-      let i = Math.max(1, currentPage - 1);
-      i <= Math.min(totalPages, currentPage + 1);
-      i++
-    ) {
-      pages.push(i);
-    }
-
-    if (currentPage < totalPages - 2) {
-      pages.push("...");
-    }
-
-    if (currentPage < totalPages - 1) {
-      pages.push(totalPages);
-    }
-
-    return pages;
-  };
-
+  // Reflect state to URL
   useEffect(() => {
-    const page = parseInt(searchParams.get("page")) || 1;
-    setCurrentPage(page);
-  }, [searchParams]);
+    const sp = new URLSearchParams(searchParams);
+    sp.set("page", String(currentPage));
+    sp.set("pageSize", String(perPage));
+    if (searchQuery) sp.set("search", searchQuery);
+    else sp.delete("search");
+    setSearchParams(sp, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, perPage, searchQuery]);
 
-  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
-
-  const formatDate = (dateString) => {
-    if (!dateString) {
-      return "-";
+  /* ---------------------------------- data ---------------------------------- */
+  const {
+    data: responseData,
+    isLoading,
+    isFetching,
+    error,
+    refetch, // ✅ we’ll use this after restore
+  } = useGetTrashRecordQuery(
+    {
+      page: currentPage,
+      pageSize: perPage,
+      search: searchQuery,
+      status,
+    },
+    {
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+      refetchOnMountOrArgChange: true,
     }
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-      console.warn(`Invalid date value: "${dateString}"`);
-      return "-";
-    }
-    const options = { day: "2-digit", month: "short", year: "numeric" };
-    return new Intl.DateTimeFormat("en-GB", options)
-      .format(date)
-      .replace(/ /g, "/");
-  };
-
-  const paginatedPayments = filteredAndSortedData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
   );
 
-  const paymentsWithFormattedDate = paginatedPayments.map((payment) => ({
-    ...payment,
-    formattedDate: formatDate(payment.dbt_date),
-  }));
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
+  const paginatedData = responseData?.data ?? [];
+  const total = responseData?.total ?? 0;
+  const count = responseData?.count ?? paginatedData.length;
+
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  const startIndex = total === 0 ? 0 : (currentPage - 1) * perPage + 1;
+  const endIndex = total === 0 ? 0 : Math.min(startIndex + count - 1, total);
+
+  // ✅ If current page becomes larger than the available pages after a reload, clamp it
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [totalPages, currentPage]);
+
+  /* ---------------------------- restore mutation ----------------------------- */
+  const [restoreMutation, { isLoading: isRestoring }] = useUpdateRestoreTrashMutation();
+  const [remarksOpen, setRemarksOpen] = useState(false);
+  const [remarks, setRemarks] = useState("");
+  const pendingRestoreRef = useRef(null); // holds { id }
+
+  const openRemarks = (id) => {
+    pendingRestoreRef.current = { id };
+    setRemarks("");
+    setRemarksOpen(true);
+  };
+
+  const closeRemarks = () => {
+    pendingRestoreRef.current = null;
+    setRemarksOpen(false);
+  };
+
+  const handleConfirmRestore = async () => {
+    const id = pendingRestoreRef.current?.id;
+    if (!id) return;
+
+    try {
+      await restoreMutation({
+        id,
+        remarks: remarks || "Restored from Trash to Draft",
+      }).unwrap();
+
+      // ✅ Snackbar + auto reload
+      toast.success("Request restored to Draft");
+      setRemarksOpen(false);
+      refetch();
+    } catch (e) {
+      toast.error(e?.data?.message || "Restore failed");
+      // keep dialog open so the user can retry or edit remarks
     }
   };
 
-  // if (loading) {
-  //   return <Typography>Loading...</Typography>;
-  // }
+  /* --------------------------------- styles --------------------------------- */
+  const headerStyle = {
+    position: "sticky",
+    top: 0,
+    zIndex: 2,
+    bgcolor: "primary.softBg",
+    fontSize: 14,
+    fontWeight: 700,
+    p: "12px 16px",
+    textAlign: "left",
+    color: "text.primary",
+    borderBottom: "1px solid",
+    borderColor: "primary.softBorder",
+  };
 
-  // if (error) {
-  //   return <Typography color="danger">{error}</Typography>;
-  // }
+  const cellStyle = {
+    p: "12px 16px",
+    verticalAlign: "top",
+    fontSize: 13,
+    fontWeight: 400,
+    borderBottom: "1px solid",
+    borderColor: "divider",
+  };
 
+  const labelStyle = {
+    fontSize: 12,
+    fontWeight: 600,
+    fontFamily: "Inter, Roboto, sans-serif",
+    color: "#2C3E50",
+  };
+
+  const valueStyle = {
+    fontSize: 13,
+    fontWeight: 400,
+    fontFamily: "Inter, Roboto, sans-serif",
+    color: "#34495E",
+  };
+
+  /* ------------------------------- subcomponents ------------------------------ */
+  const PaymentID = ({ pay_id, dbt_date }) => (
+    <>
+      {pay_id && (
+        <Box>
+          <Chip
+            variant="solid"
+            color="primary"
+            size="sm"
+            sx={{
+              fontWeight: 600,
+              fontFamily: "Inter, Roboto, sans-serif",
+              fontSize: 13,
+              color: "#fff",
+              "&:hover": { boxShadow: "md", opacity: 0.95 },
+            }}
+          >
+            {pay_id}
+          </Chip>
+        </Box>
+      )}
+      {dbt_date && (
+        <Box display="flex" alignItems="center" mt={0.75} gap={0.8}>
+          <Typography sx={labelStyle}>📅 Created:</Typography>
+          <Typography sx={valueStyle}>{dayjs(dbt_date).format("DD-MM-YYYY")}</Typography>
+        </Box>
+      )}
+    </>
+  );
+
+  const ItemFetch = ({ paid_for, po_number, vendor }) => {
+    const [open, setOpen] = useState(false);
+    return (
+      <>
+        {paid_for && (
+          <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+            <Typography sx={{ ...labelStyle, minWidth: 110 }}>📦 Requested For:</Typography>
+            <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>{paid_for}</Typography>
+          </Box>
+        )}
+        {po_number && (
+          <Box
+            display="flex"
+            alignItems="flex-start"
+            gap={1}
+            mt={0.5}
+            sx={{ cursor: "pointer" }}
+            onClick={() => setOpen(true)}
+          >
+            <Typography sx={{ ...labelStyle, minWidth: 110 }}>🧾 PO Number:</Typography>
+            <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>{po_number}</Typography>
+          </Box>
+        )}
+        <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+          <Typography sx={{ ...labelStyle, minWidth: 110 }}>🏢 Vendor:</Typography>
+          <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>{vendor || "—"}</Typography>
+        </Box>
+
+        <Modal open={open} onClose={() => setOpen(false)}>
+          <Sheet
+            variant="outlined"
+            sx={{
+              mx: "auto",
+              mt: "8vh",
+              width: { xs: "95%", sm: 600 },
+              borderRadius: "12px",
+              p: 3,
+              boxShadow: "lg",
+              maxHeight: "80vh",
+              overflow: "auto",
+              bgcolor: "#fff",
+              minWidth: 950,
+            }}
+          >
+            <PaymentProvider po_number={po_number}>
+              <PaymentHistory />
+            </PaymentProvider>
+          </Sheet>
+        </Modal>
+      </>
+    );
+  };
+
+  const MatchRow = ({ approved, timers, amount_paid }) => {
+    const [timeLeft, setTimeLeft] = useState("N/A");
+
+    useEffect(() => {
+      if (!timers?.trash_started_at) {
+        setTimeLeft("N/A");
+        return;
+      }
+
+      const isFinal =
+        ["Approved", "Rejected", "Deleted"].includes(approved) || !!timers?.draft_frozen_at;
+
+      if (isFinal) {
+        setTimeLeft("Finalized");
+        return;
+      }
+
+      const tick = () => {
+        const now = dayjs();
+        const trashStartedAt = dayjs(timers.trash_started_at);
+        const deadline = trashStartedAt.add(15, "day");
+        const diffMs = deadline.diff(now);
+
+        if (diffMs <= 0) {
+          setTimeLeft("⏱ Expired");
+          return;
+        }
+        const daysLeft = Math.ceil(dayjs.duration(diffMs).asDays());
+        setTimeLeft(`${daysLeft} day${daysLeft > 1 ? "s" : ""} remaining`);
+      };
+
+      tick();
+      const interval = setInterval(tick, 1000);
+      return () => clearInterval(interval);
+    }, [timers?.trash_started_at, timers?.draft_frozen_at, approved]);
+
+    const chipColor =
+      timeLeft === "Finalized"
+        ? "success"
+        : timeLeft === "⏱ Expired"
+        ? "danger"
+        : timeLeft === "N/A"
+        ? "neutral"
+        : "primary";
+
+    return (
+      <Box mt={1}>
+        <Box display="flex" alignItems="flex-start" gap={1} mb={0.5}>
+          <Typography sx={labelStyle}>💰 Amount:</Typography>
+          <Typography sx={{ ...valueStyle, wordBreak: "break-word", fontSize: 14 }}>
+            {amount_paid ?? "—"}
+          </Typography>
+        </Box>
+
+        <Box display="flex" alignItems="center" gap={1}>
+          <Typography sx={labelStyle}>📑 Payment Status:</Typography>
+          {["Approved", "Pending", "Rejected", "Deleted"].includes(approved) ? (
+            <Chip
+              color={
+                {
+                  Approved: "success",
+                  Pending: "neutral",
+                  Rejected: "danger",
+                  Deleted: "warning",
+                }[approved]
+              }
+              variant="solid"
+              size="sm"
+              startDecorator={
+                {
+                  Approved: <CheckIcon fontSize="small" />,
+                  Pending: <AutorenewIcon fontSize="small" />,
+                  Rejected: <BlockIcon fontSize="small" />,
+                  Deleted: <DeleteIcon fontSize="small" />,
+                }[approved]
+              }
+            >
+              {approved}
+            </Chip>
+          ) : (
+            <Typography sx={valueStyle}>{approved || "Not Found"}</Typography>
+          )}
+        </Box>
+
+        <Box display="flex" alignItems="center" gap={1} mt={0.75}>
+          <Typography sx={labelStyle}>⏰</Typography>
+          <Chip size="sm" variant="soft" color={chipColor}>
+            {timeLeft}
+          </Chip>
+        </Box>
+      </Box>
+    );
+  };
+
+  /* --------------------------------- render --------------------------------- */
   return (
     <>
-      {/* Mobile Filters */}
-      {/* <Sheet
-        className="SearchAndFilters-mobile"
-        sx={{ display: { xs: "flex", sm: "none" }, my: 1, gap: 1 }}
-      >
-        <Input
-          size="sm"
-          placeholder="Search"
-          startDecorator={<SearchIcon />}
-          sx={{ flexGrow: 1 }}
-        />
-        <IconButton
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          onClick={() => setOpen(true)}
-        >
-          <FilterAltIcon />
-        </IconButton>
-        <Modal open={open} onClose={() => setOpen(false)}>
-          <ModalDialog aria-labelledby="filter-modal" layout="fullscreen">
-            <ModalClose />
-            <Typography id="filter-modal" level="h2">
-              Filters
-            </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Sheet sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {renderFilters()}
-              <Button color="primary" onClick={() => setOpen(false)}>
-                Submit
-              </Button>
-            </Sheet>
-          </ModalDialog>
-        </Modal>
-      </Sheet> */}
-
-      {/* Tablet and Up Filters */}
+      {/* Controls */}
       <Box
-        className="SearchAndFilters-tabletUp"
         sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 2,
-          // display: { xs: "none", sm: "flex" },
           display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
           flexWrap: "wrap",
-          gap: 1.5,
-          "& > *": {
-            minWidth: { xs: "120px", md: "160px" },
-          },
+          gap: 2,
+          px: 1,
+          py: 1,
+          ml: { xl: "15%", lg: "18%", sm: 0 },
+          maxWidth: { lg: "85%", sm: "100%" },
+          borderRadius: "md",
+          mb: 2,
         }}
       >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search here</FormLabel>
-          <Input
-            size="sm"
-            startDecorator={<SearchIcon />}
-            placeholder="Search by Project ID, Customer, or Name"
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </FormControl>
-        {/* {renderFilters()} */}
+        <Box
+          sx={{
+            display: "flex",
+            mb: 1,
+            gap: 1,
+            flexDirection: { xs: "column", sm: "row" },
+            alignItems: { xs: "stretch", sm: "center" },
+            flexWrap: "wrap",
+            justifyContent: "center",
+          }}
+        >
+          <Box
+            className="SearchAndFilters-tabletUp"
+            sx={{
+              borderRadius: "sm",
+              py: 2,
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
+              flexWrap: "wrap",
+              gap: 1.5,
+            }}
+          >
+            <FormControl sx={{ flex: 1 }} size="sm">
+              <FormLabel>Search</FormLabel>
+              <Input
+                size="sm"
+                placeholder="Search by Pay ID, Item, Client or Vendor"
+                startDecorator={<SearchIcon />}
+                value={rawSearch}
+                onChange={(e) => setRawSearch(e.target.value)}
+                sx={{
+                  width: 350,
+                  borderColor: "neutral.outlinedBorder",
+                  borderBottom: rawSearch ? "2px solid #1976d2" : "1px solid #ddd",
+                  borderRadius: 5,
+                  boxShadow: "none",
+                  "&:hover": { borderBottom: "2px solid #1976d2" },
+                  "&:focus-within": { borderBottom: "2px solid #1976d2" },
+                }}
+              />
+            </FormControl>
+          </Box>
+        </Box>
+
+        <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1.5 }}>
+          {/* Rows per page */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography level="body-sm">Rows per page:</Typography>
+            <Select
+              size="sm"
+              value={perPage}
+              onChange={(_, value) => {
+                if (!value) return;
+                setPerPage(Number(value));
+                setCurrentPage(1); // ✅ reset to first page on size change
+              }}
+              sx={{ minWidth: 72 }}
+            >
+              {[10, 25, 50, 100].map((value) => (
+                <Option key={value} value={value}>
+                  {value}
+                </Option>
+              ))}
+            </Select>
+          </Box>
+
+          {/* Pagination info */}
+          <Typography level="body-sm">{`${startIndex}-${endIndex} of ${total}`}</Typography>
+
+          {/* Navigation */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <IconButton size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage(1)}>
+              <KeyboardDoubleArrowLeft />
+            </IconButton>
+            <IconButton
+              size="sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+            >
+              <KeyboardArrowLeft />
+            </IconButton>
+            <IconButton
+              size="sm"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+            >
+              <KeyboardArrowRight />
+            </IconButton>
+            <IconButton size="sm" disabled={currentPage === totalPages} onClick={() => setCurrentPage(totalPages)}>
+              <KeyboardDoubleArrowRight />
+            </IconButton>
+          </Box>
+        </Box>
       </Box>
 
       {/* Table */}
-      <Sheet
-        className="OrderTableContainer"
-        variant="outlined"
+      <Box
         sx={{
-          display: { xs: "none", sm: "initial" },
-          width: "100%",
-          borderRadius: "sm",
-          flexShrink: 1,
-          overflow: "auto",
-          minHeight: 0,
-          marginLeft: { xl: "15%", lg: "18%" },
+          overflowY: "auto",
+          maxHeight: 600,
+          borderRadius: "12px",
+          border: "1px solid",
+          borderColor: "divider",
+          ml: { xl: "15%", lg: "18%" },
           maxWidth: { lg: "85%", sm: "100%" },
+          bgcolor: "background.body",
+          "&::-webkit-scrollbar": { width: 8 },
+          "&::-webkit-scrollbar-track": { background: "#f0f0f0", borderRadius: 8 },
+          "&::-webkit-scrollbar-thumb": { backgroundColor: "#1976d2", borderRadius: 8 },
         }}
       >
-        {error ? (
-          <Typography color="danger" textAlign="center">
-            {error}
-          </Typography>
-        ) : loading ? (
-          <Typography textAlign="center">Loading...</Typography>
-        ) : (
-          <Box
-            component="table"
-            sx={{ width: "100%", borderCollapse: "collapse" }}
-          >
-            <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
-              <Box component="tr">
-                <Box
-                  component="th"
-                  sx={{
-                    borderBottom: "1px solid #ddd",
-                    padding: "8px",
-                    textAlign: "center",
-                  }}
-                >
-                  <Checkbox
-                    size="sm"
-                    checked={
-                      selected.length === paymentsWithFormattedDate.length
-                    }
-                    onChange={(event) =>
-                      handleRowSelect("all", event.target.checked)
-                    }
-                    indeterminate={
-                      selected.length > 0 &&
-                      selected.length < paymentsWithFormattedDate.length
-                    }
-                  />
+        <Box component="table" sx={{ width: "100%", borderCollapse: "collapse" }}>
+          <Box component="thead">
+            <Box component="tr">
+              {["Payment Id", "Paid For / PO / Vendor", "Payment Status", "Actions"].map((h, i) => (
+                <Box key={i} component="th" sx={headerStyle}>
+                  {h}
                 </Box>
-                {[
-                  "Payment Id",
-                  "Request Date",
-                  "Paid To",
-                  "Client Name",
-                  "Amount (₹)",
-                  // "Payment Status",
-                  "UTR",
-                  "",
-                ].map((header, index) => (
-                  <Box
-                    component="th"
-                    key={index}
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "center",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {header}
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-            <Box component="tbody">
-              {paymentsWithFormattedDate.length > 0 ? (
-                paymentsWithFormattedDate.map((payment, index) => (
-                  <Box
-                    component="tr"
-                    key={index}
-                    sx={{
-                      "&:hover": { backgroundColor: "neutral.plainHoverBg" },
-                    }}
-                  >
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <Checkbox
-                        size="sm"
-                        checked={selected.includes(payment.pay_id)}
-                        onChange={(event) =>
-                          handleRowSelect(payment.pay_id, event.target.checked)
-                        }
-                      />
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.pay_id}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.formattedDate}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.vendor}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.projectCustomer || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.amt_for_customer}
-                    </Box>
-                    {/* <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <Chip
-                        variant="soft"
-                        size="sm"
-                        startDecorator={
-                          {
-                            Approved: <CheckRoundedIcon />,
-                            Pending: <AutorenewRoundedIcon />,
-                            Rejected: <BlockIcon />,
-                          }[payment.approved]
-                        }
-                        color={
-                          {
-                            Approved: "success",
-                            Pending: "neutral",
-                            Rejected: "danger",
-                          }[payment.approved]
-                        }
-                      >
-                        {payment.approved}
-                      </Chip>
-                    </Box> */}
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {payment.utr || "-"}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <RowMenu
-                        currentPage={currentPage}
-                        pay_id={payment.pay_id}
-                        p_id={payment.p_id}
-                      />
-                    </Box>
-                  </Box>
-                ))
-              ) : (
-                <Box component="tr">
-                  <Box
-                    component="td"
-                    colSpan={9}
-                    sx={{
-                      padding: "8px",
-                      textAlign: "center",
-                      fontStyle: "italic",
-                    }}
-                  >
-                    No data available
-                  </Box>
-                </Box>
-              )}
+              ))}
             </Box>
           </Box>
-        )}
-      </Sheet>
 
-      {/* Pagination */}
-      <Box
-        className="Pagination-laptopUp"
-        sx={{
-          pt: 2,
-          gap: 1,
-          [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
-          // display: { xs: "none", md: "flex" },
-          display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
-          alignItems: "center",
-          marginLeft: { xl: "15%", lg: "18%" },
-        }}
-      >
-        <Button
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          startDecorator={<KeyboardArrowLeftIcon />}
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-        >
-          Previous
-        </Button>
+          <Box component="tbody">
+            {error ? (
+              <Box component="tr">
+                <Box component="td" colSpan={4} sx={{ py: 2, textAlign: "center" }}>
+                  <Typography color="danger">
+                    Failed to load: {String(error?.data?.message || error?.error || "Error")}
+                  </Typography>
+                </Box>
+              </Box>
+            ) : isLoading || isFetching ? (
+              <Box component="tr">
+                <Box component="td" colSpan={4} sx={{ py: 3, textAlign: "center" }}>
+                  <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+                    <CircularProgress size="sm" />
+                    <Typography fontStyle="italic">Loading trash requests…</Typography>
+                  </Box>
+                </Box>
+              </Box>
+            ) : paginatedData.length > 0 ? (
+              paginatedData.map((payment, idx) => (
+                <Box
+                  component="tr"
+                  key={payment._id || payment.pay_id || idx}
+                  sx={{
+                    backgroundColor: "background.surface",
+                    transition: "all 0.2s",
+                    "&:hover": { backgroundColor: "neutral.softHoverBg" },
+                  }}
+                >
+                  <Box component="td" sx={{ ...cellStyle, minWidth: 260 }}>
+                    <Tooltip title="View summary" arrow>
+                      <span>
+                        <PaymentID pay_id={payment.pay_id} dbt_date={payment.dbt_date} />
+                      </span>
+                    </Tooltip>
+                  </Box>
 
-        <Box
-          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
-        >
-          {generatePageNumbers(currentPage, totalPages).map((page, index) =>
-            typeof page === "number" ? (
-              <IconButton
-                key={index}
-                size="sm"
-                variant={page === currentPage ? "contained" : "outlined"}
-                color="neutral"
-                onClick={() => handlePageChange(page)}
-              >
-                {page}
-              </IconButton>
+                  <Box component="td" sx={{ ...cellStyle, minWidth: 320 }}>
+                    <ItemFetch paid_for={payment.paid_for} po_number={payment.po_number} vendor={payment.vendor} />
+                  </Box>
+
+                  <Box component="td" sx={{ ...cellStyle, minWidth: 280 }}>
+                    <MatchRow
+                      approved={payment.approved}
+                      timers={payment.timers}
+                      amount_paid={payment.amount_paid}
+                    />
+                  </Box>
+
+                  <Box component="td" sx={{ ...cellStyle, minWidth: 120 }}>
+                    <Tooltip title="Restore to Draft" arrow>
+                      <span>
+                        <IconButton
+                          size="sm"
+                          variant="soft"
+                          color="primary"
+                          onClick={() => openRemarks(payment._id)}
+                          disabled={isRestoring}
+                        >
+                          <RestoreFromTrashIcon fontSize="small" />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  </Box>
+                </Box>
+              ))
             ) : (
-              <Typography key={index} sx={{ px: 1, alignSelf: "center" }}>
-                {page}
-              </Typography>
-            )
-          )}
+              <Box component="tr">
+                <Box component="td" colSpan={4} sx={{ p: 3, textAlign: "center" }}>
+                  <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+                    <img src={NoData} alt="No data" style={{ width: 56, height: 56 }} />
+                    <Typography fontStyle="italic">No trashes available</Typography>
+                  </Box>
+                </Box>
+              </Box>
+            )}
+          </Box>
         </Box>
-        {/* <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
-    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-      <IconButton
-        key={page}
-        size="sm"
-        variant={page === currentPage ? "contained" : "outlined"}
-        color="neutral"
-        onClick={() => handlePageChange(page)}
-      >
-        {page}
-      </IconButton>
-    ))}
-  </Box> */}
-
-        <Button
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          endDecorator={<KeyboardArrowRightIcon />}
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-        >
-          Next
-        </Button>
       </Box>
+
+      {/* Remarks dialog */}
+      <Modal open={remarksOpen} onClose={closeRemarks}>
+        <Sheet
+          variant="outlined"
+          sx={{
+            mx: "auto",
+            mt: "12vh",
+            width: { xs: "92%", sm: 520 },
+            borderRadius: "12px",
+            p: 2.5,
+            boxShadow: "lg",
+            bgcolor: "background.body",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+            <Typography level="title-lg">Restore to Draft</Typography>
+            <IconButton variant="plain" size="sm" onClick={closeRemarks}>
+              <CloseRounded />
+            </IconButton>
+          </Box>
+
+          <Typography level="body-sm" sx={{ mb: 1 }}>
+            Please add a short remark for restoring this request to <b>Draft</b>.
+          </Typography>
+
+          <Textarea
+            minRows={3}
+            value={remarks}
+            onChange={(e) => setRemarks(e.target.value)}
+            placeholder="e.g., Wrongly trashed, moving back to Draft for corrections."
+          />
+
+          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5, mt: 2 }}>
+            <Button variant="plain" color="neutral" onClick={closeRemarks}>
+              Cancel
+            </Button>
+            <Button
+              variant="solid"
+              color="primary"
+              loading={isRestoring}
+              onClick={handleConfirmRestore}
+              disabled={!remarks.trim()}
+            >
+              Restore
+            </Button>
+          </Box>
+        </Sheet>
+      </Modal>
     </>
   );
-};
-export default StandByRequest;
+});
+
+export default TrashRequest;

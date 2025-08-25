@@ -1,11 +1,6 @@
-import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
-import DashboardCustomizeIcon from "@mui/icons-material/DashboardCustomize";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
-import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import SearchIcon from "@mui/icons-material/Search";
-import TrackChangesIcon from "@mui/icons-material/TrackChanges";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
@@ -15,52 +10,51 @@ import FormLabel from "@mui/joy/FormLabel";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
-import Menu from "@mui/joy/Menu";
-import MenuButton from "@mui/joy/MenuButton";
-import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Tooltip from "@mui/joy/Tooltip";
 import Typography from "@mui/joy/Typography";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-
-import { CircularProgress } from "@mui/joy";
+import { CircularProgress, Option, Select, Tab, TabList, Tabs } from "@mui/joy";
 import NoData from "../assets/alert-bell.svg";
 import { useGetHandOverQuery } from "../redux/camsSlice";
-
 import { useTheme } from "@emotion/react";
 
 function Dash_eng() {
   const navigate = useNavigate();
   const theme = useTheme();
-  const [payments, setPayments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  // const [error, setError] = useState(null);
-  const [vendors, setVendors] = useState([]);
-  const [vendorFilter, setVendorFilter] = useState("");
-  const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
-  // const [projects, setProjects] = useState([]);
-  const [bdRateData, setBdRateData] = useState([]);
-  const [mergedData, setMergedData] = useState([]);
-  const [accountNumber, setAccountNumber] = useState([]);
-  const [ifscCode, setIfscCode] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isUtrSubmitted, setIsUtrSubmitted] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [user, setUser] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0);
-
+  const options = [1, 5, 10, 20, 50, 100];
+  const [selectedTab, setSelectedTab] = useState(
+    () => searchParams.get("tab") || "All"
+  );
+  const [rowsPerPage, setRowsPerPage] = useState(
+    () => Number(searchParams.get("pageSize")) || 10
+  );
+  const getStatusFilter = (tab) => {
+    switch (tab) {
+      case "Scope Pending":
+        return "scopepending";
+      default:
+        return "Approved";
+    }
+  };
+  const statusFilter = useMemo(
+    () => getStatusFilter(selectedTab),
+    [selectedTab]
+  );
   const {
     data: getHandOverSheet = {},
     isLoading,
     refetch,
   } = useGetHandOverQuery({
     page: currentPage,
+    status: statusFilter,
     search: searchQuery,
-    status: "Approved",
+    limit: rowsPerPage,
   });
 
   const HandOverSheet = Array.isArray(getHandOverSheet?.data)
@@ -83,48 +77,7 @@ function Dash_eng() {
       })
     : [];
 
-  const RowMenu = ({ currentPage, p_id, _id }) => {
-
-    const [user, setUser] = useState(null);
-
-    useEffect(() => {
-      const userData = getUserData();
-      setUser(userData);
-    }, []);
-
-    const getUserData = () => {
-      const userData = localStorage.getItem("userDetails");
-      if (userData) {
-        return JSON.parse(userData);
-      }
-      return null;
-    };
-
-    return (
-      <>
-        <Dropdown>
-          <MenuButton
-            slots={{ root: IconButton }}
-            slotProps={{
-              root: { variant: "plain", color: "neutral", size: "sm" },
-            }}
-          >
-            <MoreHorizRoundedIcon />
-          </MenuButton>
-
-          {(user?.name === "IT Team" ||
-            user?.name === "admin".includes(user?.name)) && (
-            <Menu size="sm" sx={{ minWidth: 200, p: 1 }}>
-            </Menu>
-          )}
-        </Dropdown>
-      </>
-    );
-  };
-
   const ViewHandOver = ({ currentPage, p_id, code }) => {
- 
-
     return (
       <>
         <IconButton
@@ -143,23 +96,15 @@ function Dash_eng() {
   };
 
   const ProjectOverView = ({ currentPage, project_id, code }) => {
-
     return (
       <>
         <span
           style={{
             cursor: "pointer",
             color: theme.vars.palette.text.primary,
-            fontSize: "1 rem",
-            fontWeight: 400,
-            textDecoration: "none",
-            transition: "color 0.2s ease-in-out",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = "red";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = theme.vars.palette.text.primary;
+            textDecoration: "underline",
+            textDecorationStyle: "dotted",
+            fontSize: "14px",
           }}
           onClick={() => {
             const page = currentPage;
@@ -171,8 +116,6 @@ function Dash_eng() {
       </>
     );
   };
-
-
 
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
@@ -206,35 +149,6 @@ function Dash_eng() {
       prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
     );
   };
-  // const generatePageNumbers = (currentPage, totalPages) => {
-  //   const pages = [];
-
-  //   if (currentPage > 2) {
-  //     pages.push(1);
-  //   }
-
-  //   if (currentPage > 3) {
-  //     pages.push("...");
-  //   }
-
-  //   for (
-  //     let i = Math.max(1, currentPage - 1);
-  //     i <= Math.min(totalPages, currentPage + 1);
-  //     i++
-  //   ) {
-  //     pages.push(i);
-  //   }
-
-  //   if (currentPage < totalPages - 2) {
-  //     pages.push("...");
-  //   }
-
-  //   if (currentPage < totalPages - 1) {
-  //     pages.push(totalPages);
-  //   }
-
-  //   return pages;
-  // };
 
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
@@ -243,69 +157,26 @@ function Dash_eng() {
 
   const paginatedPayments = filteredAndSortedData;
 
-  // const paginatedPayments = filteredAndSortedData.slice(
-  //   (currentPage - 1) * itemsPerPage,
-  //   currentPage * itemsPerPage
-  // );
-  // console.log(paginatedPayments);
-  // console.log("Filtered and Sorted Data:", filteredAndSortedData);
-
+  const draftPayments = paginatedPayments;
+  const total = Number(getHandOverSheet?.total || 0);
+  const pageSize = Number(rowsPerPage || 1);
+  const totalPages = Math.ceil(total / pageSize);
   const handlePageChange = (page) => {
-    if (page >= 1) {
+    if (page >= 1 && page <= totalPages) {
       setSearchParams({ page });
       setCurrentPage(page);
     }
   };
 
-  const draftPayments = paginatedPayments;
-
   return (
     <>
-      {/* Mobile Filters */}
-      {/* <Sheet
-        className="SearchAndFilters-mobile"
-        sx={{ display: { xs: "", sm: "none" }, my: 1, gap: 1 }}
-      >
-        <Input
-          size="sm"
-          placeholder="Search"
-          startDecorator={<SearchIcon />}
-          sx={{ flexGrow: 1 }}
-        />
-        <IconButton
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          onClick={() => setOpen(true)}
-        >
-          <FilterAltIcon />
-        </IconButton>
-        <Modal open={open} onClose={() => setOpen(false)}>
-          <ModalDialog aria-labelledby="filter-modal" layout="fullscreen">
-            <ModalClose />
-            <Typography id="filter-modal" level="h2">
-              Filters
-            </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Sheet sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {renderFilters()}
-              <Button color="primary" onClick={() => setOpen(false)}>
-                Submit
-              </Button>
-            </Sheet>
-          </ModalDialog>
-        </Modal>
-      </Sheet> */}
-      {/* Tablet and Up Filters */}
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
           marginLeft: { xl: "15%", lg: "18%" },
           borderRadius: "sm",
           py: 2,
-          // display: { xs: "none", sm: "flex" },
           display: "flex",
-          // flexDirection:{xs: "none", sm: "flex"}
           flexWrap: "wrap",
           gap: 1.5,
           "& > *": {
@@ -317,14 +188,98 @@ function Dash_eng() {
           <FormLabel>Search here</FormLabel>
           <Input
             size="sm"
-            placeholder="Search by ProjectId , Customer , Type , or , State"
+            placeholder="Search by ProjectId, Customer, Type, or State"
             startDecorator={<SearchIcon />}
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {/* {renderFilters()} */}
       </Box>
+      <Box
+        display={"flex"}
+        sx={{ marginLeft: { xl: "15%", lg: "18%" } }}
+        justifyContent={"space-between"}
+        width={"full"}
+        alignItems={"center"}
+      >
+        <Box>
+          <Tabs
+            value={selectedTab}
+            onChange={(event, newValue) => {
+              setSelectedTab(newValue);
+              setSearchParams((prev) => {
+                const newParams = new URLSearchParams(prev);
+                newParams.set("tab", newValue);
+                newParams.set("page", 1);
+                return newParams;
+              });
+            }}
+            indicatorPlacement="none"
+            sx={{
+              bgcolor: "background.level1",
+              borderRadius: "md",
+              boxShadow: "sm",
+              width: "fit-content",
+            }}
+          >
+            <TabList sx={{ gap: 1 }}>
+              {["All", "Scope Pending"].map((label, index) => (
+                <Tab
+                  key={index}
+                  value={label}
+                  disableIndicator
+                  sx={{
+                    borderRadius: "xl",
+                    fontWeight: "md",
+                    "&.Mui-selected": {
+                      bgcolor: "background.surface",
+                      boxShadow: "sm",
+                    },
+                  }}
+                >
+                  {label}
+                </Tab>
+              ))}
+            </TabList>
+          </Tabs>
+        </Box>
+
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={1}
+          sx={{ padding: "8px 16px" }}
+        >
+          <Typography level="body-sm">Rows Per Page:</Typography>
+          <Select
+            value={rowsPerPage}
+            onChange={(e, newValue) => {
+              if (newValue !== null) {
+                setRowsPerPage(newValue);
+                setSearchParams((prev) => {
+                  const params = new URLSearchParams(prev);
+                  params.set("pageSize", newValue);
+                  return params;
+                });
+              }
+            }}
+            size="sm"
+            variant="outlined"
+            sx={{
+              minWidth: 80,
+              borderRadius: "md",
+              boxShadow: "sm",
+            }}
+          >
+            {options.map((value) => (
+              <Option key={value} value={value}>
+                {value}
+              </Option>
+            ))}
+          </Select>
+        </Box>
+      </Box>
+
       {/* Table */}
       <Sheet
         className="OrderTableContainer"
@@ -348,9 +303,14 @@ function Dash_eng() {
             <tr style={{ backgroundColor: "neutral.softBg" }}>
               <th
                 style={{
+                  position: "sticky",
+                  top: 0,
+                  background: "#e0e0e0",
+                  zIndex: 2,
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
                   textAlign: "left",
+                  fontWeight: "bold",
                 }}
               >
                 <Checkbox
@@ -371,12 +331,15 @@ function Dash_eng() {
                 "Mobile",
                 "State",
                 "Capacity(AC/DC)",
-                // "Progress",
                 "Status",
               ].map((header, index) => (
                 <th
                   key={index}
                   style={{
+                    position: "sticky",
+                    top: 0,
+                    background: "#e0e0e0",
+                    zIndex: 2,
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
                     textAlign: "left",
@@ -441,15 +404,6 @@ function Dash_eng() {
                       p_id={project.p_id}
                     />
                   </td>
-                  {/* <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    {project.code || "-"}
-                  </td> */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -514,21 +468,6 @@ function Dash_eng() {
                       ? `${project.project_kwp} AC / ${project.proposed_dc_capacity} DC`
                       : "-"}
                   </td>
-                  {/* <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                      color:
-                        project.progress === "100%"
-                          ? "#4caf50"
-                          : project.progress === "0%"
-                            ? "#f44336"
-                            : "#ff9800",
-                    }}
-                  >
-                    {project.progress || "80%"}
-                  </td> */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -536,7 +475,6 @@ function Dash_eng() {
                       textAlign: "left",
                     }}
                   >
-                    {/* <RowMenu currentPage={currentPage} p_id={project.p_id} /> */}
                     Not defined
                   </td>
                 </tr>
@@ -585,7 +523,6 @@ function Dash_eng() {
           marginLeft: { lg: "18%", xl: "15%" },
         }}
       >
-        {/* Previous Button */}
         <Button
           size="sm"
           variant="outlined"
@@ -597,10 +534,8 @@ function Dash_eng() {
           Previous
         </Button>
 
-        {/* Showing X Results (no total because backend paginates) */}
         <Box>Showing {draftPayments.length} results</Box>
 
-        {/* Page Numbers: Only show current, prev, next for backend-driven pagination */}
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
@@ -618,9 +553,7 @@ function Dash_eng() {
           <IconButton size="sm" variant="contained" color="neutral">
             {currentPage}
           </IconButton>
-
-          {/* Show next page button if current page has any data (not empty) */}
-          {draftPayments.length > 0 && (
+          {currentPage + 1 <= totalPages && (
             <IconButton
               size="sm"
               variant="outlined"
@@ -639,7 +572,7 @@ function Dash_eng() {
           color="neutral"
           endDecorator={<KeyboardArrowRightIcon />}
           onClick={() => handlePageChange(currentPage + 1)}
-          disabled={draftPayments.length === 0} // disable next if no data at all on this page
+          disabled={currentPage >= totalPages}
         >
           Next
         </Button>

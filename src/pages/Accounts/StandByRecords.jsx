@@ -13,7 +13,8 @@ import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import { useNavigate } from "react-router-dom";
 import Header from "../../component/Partials/Header";
 import Sidebar from "../../component/Partials/Sidebar";
-import StandByRequest from "../../component/StandBySummary";
+import TrashRequest from "../../component/StandBySummary";
+
 
 function ProjectBalance() {
   const navigate = useNavigate();
@@ -74,7 +75,7 @@ function ProjectBalance() {
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                StandBy Records
+                Trash Records
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -91,7 +92,7 @@ function ProjectBalance() {
             }}
           >
             <Typography level="h2" component="h1">
-              StandBy Records
+              Trash Records
             </Typography>
             <Box
               sx={{
@@ -120,7 +121,7 @@ function ProjectBalance() {
               </Button> */}
             </Box>
           </Box>
-          <StandByRequest />
+          <TrashRequest />
           {/* <OrderTable />
           <OrderList /> */}
         </Box>
