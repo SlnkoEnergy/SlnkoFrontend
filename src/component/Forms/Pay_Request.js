@@ -410,10 +410,10 @@ function PaymentRequestForm() {
 
   return (
     <CssBaseline>
-      <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
         <Grid container spacing={2}>
           {/* Left: Form */}
-          <Grid xs={12} lg={8}>
+          <Grid xs={12} lg={7}>
             <Sheet
               sx={{
                 p: { xs: 2, sm: 3 },
@@ -919,7 +919,7 @@ function PaymentRequestForm() {
           </Grid>
 
           {/* Right: Summary */}
-          <Grid xs={12} lg={4}>
+          <Grid xs={12} lg={5}>
             <Sheet
               sx={{
                 position: { lg: "sticky" },

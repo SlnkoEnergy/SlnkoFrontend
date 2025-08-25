@@ -400,12 +400,6 @@ function PaymentRequest() {
     const [remarks, setRemarks] = useState("");
 
     const handleRejectSubmit = () => {
-      // console.log(
-      //   "📌 RowMenu → handleRejectSubmit remarks:",
-      //   remarks,
-      //   "type:",
-      //   typeof remarks
-      // );
       onStatusChange(_id, "Rejected", remarks);
       setOpen(false);
       setRemarks("");
@@ -934,7 +928,7 @@ function PaymentRequest() {
             )}
 
           {((user?.department === "Accounts" && user?.role === "manager") ||
-            user?.department === "admin") && (
+            user?.department === "admin" || user?.department === "superadmin") && (
             <Typography level="h2" component="h1">
               Accounts Payment Approval
             </Typography>
