@@ -7,6 +7,7 @@ import Checkbox from "@mui/joy/Checkbox";
 import Chip from "@mui/joy/Chip";
 import LinearProgress from "@mui/joy/LinearProgress";
 import FormControl from "@mui/joy/FormControl";
+import CloseIcon from "@mui/icons-material/Close";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
@@ -16,13 +17,14 @@ import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import CheckIcon from "@mui/icons-material/Check";
 import { useSnackbar } from "notistack";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
 import Axios from "../utils/Axios";
 import { useGetUtrSubmissionQuery } from "../redux/Accounts";
 import dayjs from "dayjs";
 import { CircularProgress } from "@mui/joy";
+import { EditIcon } from "lucide-react";
 
 function UTRPayment() {
   const [selected, setSelected] = useState([]);
@@ -50,8 +52,6 @@ function UTRPayment() {
 
   const totalPages = Math.ceil(total / perPage);
 
-  // console.log(paginatedData);
-
   const startIndex = (currentPage - 1) * perPage + 1;
   const endIndex = Math.min(startIndex + count - 1, total);
 
@@ -77,49 +77,91 @@ function UTRPayment() {
     return pages;
   };
 
-  const UTRRow = ({ paymentId, onSuccess }) => {
-    const [utr, setUtr] = useState("");
-    const [submitted, setSubmitted] = useState(false);
-    const [progressVisible, setProgressVisible] = useState(false);
+  const UTRRow = ({ payId, crId, initialUTR = "", onSuccess }) => {
     const { enqueueSnackbar } = useSnackbar();
+
+    // Prefer CR flow if CR id is present (so overwrite is allowed)
+    const preferCr = useMemo(() => Boolean(crId), [crId]);
+
+    const [utr, setUtr] = useState(initialUTR ?? "");
+    const [submitted, setSubmitted] = useState(Boolean(initialUTR));
+    const [isEditing, setIsEditing] = useState(preferCr && Boolean(initialUTR)); // allow editing by default for CR rows
+    const [progressVisible, setProgressVisible] = useState(false);
+
+    const hasPay = Boolean(payId);
+    const hasCr = Boolean(crId);
+
+    const callApi = async (useCr, value) => {
+      const token = localStorage.getItem("authToken");
+      const payload = useCr
+        ? { cr_id: crId, utr: value }
+        : { pay_id: payId, utr: value };
+      return Axios.put("/utr-update", payload, {
+        headers: { "x-auth-token": token },
+      });
+    };
 
     const handleSubmit = async (e) => {
       e.preventDefault();
-      if (!utr.trim())
-        return enqueueSnackbar("Please enter a UTR.", { variant: "warning" });
 
+      if (!hasPay && !hasCr) {
+        enqueueSnackbar("Missing pay_id or cr_id.", { variant: "error" });
+        return;
+      }
+
+      const trimmed = (utr || "").trim();
+      if (!trimmed) {
+        enqueueSnackbar("Please enter a valid UTR.", { variant: "warning" });
+        return;
+      }
+
+      setProgressVisible(true);
       try {
-        setProgressVisible(true);
-        const token = localStorage.getItem("authToken");
-        const user = JSON.parse(localStorage.getItem("userDetails"));
+        // 1) try with preferred path (CR first if available)
+        const firstTryIsCr = preferCr;
+        let resp;
 
-        const response = await Axios.put(
-          "/utr-update",
-          {
-            pay_id: paymentId,
-            utr,
-            utr_submitted_by: user?.name || "Unknown",
-          },
-          { headers: { "x-auth-token": token } }
-        );
+        try {
+          resp = await callApi(firstTryIsCr, trimmed);
+        } catch (err1) {
+          const msg1 = err1?.response?.data?.message?.toLowerCase?.() || "";
+          const canFallback =
+            ((firstTryIsCr && hasPay) || (!firstTryIsCr && hasCr)) &&
+            /already|exists/.test(msg1); // generic check to fallback when "already present"
 
-        if (response.status === 200) {
-          enqueueSnackbar("UTR submitted successfully!", {
-            variant: "success",
-          });
+          if (canFallback) {
+            // 2) fallback to the other id (e.g., if we hit pay path and got "already present", retry with CR)
+            resp = await callApi(!firstTryIsCr, trimmed);
+          } else {
+            throw err1;
+          }
+        }
+
+        if (resp?.status === 200) {
+          enqueueSnackbar(
+            resp?.data?.message || "UTR submitted successfully!",
+            { variant: "success" }
+          );
           setSubmitted(true);
-          onSuccess?.(utr);
+          setIsEditing(false);
+          setUtr(trimmed);
+          onSuccess?.(trimmed, resp?.data);
         } else {
           enqueueSnackbar("Submission failed!", { variant: "error" });
         }
-      } catch (error) {
-        enqueueSnackbar("Network error or server not reachable.", {
-          variant: "error",
-        });
+      } catch (err) {
+        const msg =
+          err?.response?.data?.message ||
+          "Network error or server not reachable.";
+        enqueueSnackbar(msg, { variant: "error" });
       } finally {
         setProgressVisible(false);
       }
     };
+
+    const canEdit =
+      submitted &&
+      (preferCr || true); /* set false if you never want payId edits */
 
     return (
       <Sheet
@@ -128,11 +170,11 @@ function UTRPayment() {
           p: 2,
           borderRadius: "md",
           boxShadow: "sm",
-          width: 240,
+          width: 300,
           textAlign: "center",
         }}
       >
-        {!submitted ? (
+        {!submitted || isEditing ? (
           <form onSubmit={handleSubmit}>
             <Input
               placeholder="Enter UTR"
@@ -141,7 +183,8 @@ function UTRPayment() {
               sx={{ mt: 1 }}
               required
             />
-            <Box mt={1}>
+
+            <Box mt={1} display="flex" gap={1}>
               <Button
                 type="submit"
                 fullWidth
@@ -149,9 +192,29 @@ function UTRPayment() {
                 color="primary"
                 disabled={progressVisible}
               >
-                {progressVisible ? "Submitting..." : "Submit UTR"}
+                {progressVisible
+                  ? "Submitting..."
+                  : submitted
+                    ? "Update UTR"
+                    : "Submit UTR"}
               </Button>
+
+              {submitted && (
+                <Button
+                  type="button"
+                  variant="outlined"
+                  color="neutral"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setUtr(initialUTR || "");
+                  }}
+                  startDecorator={<CloseIcon fontSize="small" />}
+                >
+                  Cancel
+                </Button>
+              )}
             </Box>
+
             {progressVisible && (
               <LinearProgress
                 variant="plain"
@@ -164,13 +227,30 @@ function UTRPayment() {
             <Typography level="body-sm" mb={1}>
               UTR: <b>{utr}</b>
             </Typography>
-            <Chip
-              color="success"
-              variant="solid"
-              startDecorator={<CheckIcon fontSize="small" />}
+            <Box
+              display="flex"
+              gap={1}
+              justifyContent="center"
+              alignItems="center"
             >
-              Submitted
-            </Chip>
+              <Chip
+                color="success"
+                variant="solid"
+                startDecorator={<CheckIcon fontSize="small" />}
+              >
+                Submitted
+              </Chip>
+              {canEdit && (
+                <IconButton
+                  size="sm"
+                  variant="outlined"
+                  onClick={() => setIsEditing(true)}
+                  title="Edit UTR"
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              )}
+            </Box>
           </Box>
         )}
       </Sheet>
@@ -280,9 +360,9 @@ function UTRPayment() {
     color: "#34495E",
   };
 
-  const PaymentID = ({ pay_id, createdAt }) => (
+  const PaymentID = ({ pay_id, cr_id, createdAt }) => (
     <>
-      {pay_id && (
+      {(cr_id || pay_id) && (
         <Box>
           <Chip
             variant="solid"
@@ -299,7 +379,7 @@ function UTRPayment() {
               },
             }}
           >
-            {pay_id || "N/A"}
+            {cr_id || pay_id}
           </Chip>
         </Box>
       )}
@@ -540,6 +620,7 @@ function UTRPayment() {
                   >
                     <PaymentID
                       pay_id={payment.pay_id}
+                      cr_id={payment.cr_id}
                       createdAt={payment.createdAt}
                     />
                   </Box>
@@ -572,7 +653,15 @@ function UTRPayment() {
                   </Box>
 
                   <Box component="td" sx={cellStyle}>
-                    <UTRRow paymentId={payment.pay_id} />
+                    <UTRRow
+                      key={`${payment?.pay_id ?? ""}-${payment?.cr_id ?? ""}-${payment?.utr ?? ""}`} // ensures remount when data changes
+                      payId={payment?.pay_id || undefined}
+                      crId={payment?.cr_id || undefined} // ← always pass if available
+                      initialUTR={payment?.utr || ""}
+                      onSuccess={(newUtr, resp) => {
+                        refetch?.();
+                      }}
+                    />
                   </Box>
                 </Box>
               ))

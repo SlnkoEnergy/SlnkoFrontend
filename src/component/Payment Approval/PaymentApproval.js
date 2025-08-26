@@ -16,7 +16,7 @@ import Input from "@mui/joy/Input";
 import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Typography from "@mui/joy/Typography";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import NoData from "../../assets/alert-bell.svg";
@@ -24,6 +24,7 @@ import Axios from "../../utils/Axios";
 import { useGetPaymentApprovalQuery } from "../../redux/Accounts";
 import {
   CircularProgress,
+  Divider,
   Modal,
   ModalDialog,
   Sheet,
@@ -33,13 +34,18 @@ import {
   TabPanel,
   Tabs,
   Textarea,
+  Tooltip,
 } from "@mui/joy";
-import { Calendar, CircleUser, FileText, Receipt, UsersRound } from "lucide-react";
+import {
+  Calendar,
+  CircleUser,
+  FileText,
+  Receipt,
+  UsersRound,
+} from "lucide-react";
 import PaymentAccountApproval from "./PaymentAccountApproval";
 import CreditPayment from "./creditPayment";
-import ApprovalPayment from "./ToBeApproved";
-import OverDue from "./Overdue";
-import { Money } from "@mui/icons-material";
+import { InfoOutlined, Money, RefreshRounded } from "@mui/icons-material";
 import { PaymentProvider } from "../../store/Context/Payment_History";
 import PaymentHistory from "../PaymentHistory";
 
@@ -55,10 +61,12 @@ function PaymentRequest() {
   const [hasPrinted, setHasPrinted] = useState(false);
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
+  const days = searchParams.get("delaydays") || "";
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [perPage, setPerPage] = useState(initialPageSize);
+  const [delaydays, setDelaydays] = useState(days);
   const [activeTab, setActiveTab] = useState(() => {
-    return searchParams.get("tab") || "instant";
+    return searchParams.get("tab") || "payments";
   });
 
   const [user, setUser] = useState(null);
@@ -74,31 +82,34 @@ function PaymentRequest() {
     data: responseData,
     isLoading,
     error,
+    onRefresh,
   } = useGetPaymentApprovalQuery({
     page: currentPage,
     pageSize: perPage,
     search: searchQuery,
+    delaydays: delaydays || undefined,
     ...(isAccount ? { tab: activeTab } : {}),
-  });
+  },
+    { refetchOnMountOrArgChange: true }
+  );
 
-  const [paginatedData, setPaginatedData] = useState([]);
-  // console.log("paginatedData :", paginatedData);
+  // console.log("rows :", rows);
 
   // console.log(count);
-  const total = responseData?.total || 0;
-  const count = responseData?.count || paginatedData.length;
+
   // const Approved = responseData?.toBeApprovedCount || 0;
 
   const startIndex = (currentPage - 1) * perPage + 1;
+
+
+
+
+  const rows = Array.isArray(responseData?.data) ? responseData.data : [];
+
+  const total = responseData?.meta?.total ?? rows.length;
+  const count = responseData?.meta?.count ?? rows.length;
   const endIndex = Math.min(startIndex + count - 1, total);
-
   const totalPages = Math.ceil(total / perPage);
-
-  useEffect(() => {
-    if (responseData?.data) {
-      setPaginatedData(responseData.data);
-    }
-  }, [responseData]);
 
   useEffect(() => {
     const params = {};
@@ -106,6 +117,7 @@ function PaymentRequest() {
     if (currentPage > 1) params.page = currentPage;
     if (perPage !== 10) params.pageSize = perPage;
     if (searchQuery) params.search = searchQuery;
+    if (delaydays && !Number.isNaN(Number(delaydays))) params.delaydays = String(delaydays);
 
     setSearchParams(params, { replace: true });
   }, [
@@ -114,9 +126,22 @@ function PaymentRequest() {
     currentPage,
     perPage,
     searchQuery,
+    delaydays,
 
     setSearchParams,
   ]);
+  // useEffect(() => {
+  //   setSearchParams((prev) => {
+  //     const updated = new URLSearchParams(prev);
+  //     if (!delaydays) {
+  //       updated.delete("delaydays");
+  //     } else {
+  //       updated.set("delaydays", delaydays);
+  //     }
+
+  //     return updated;
+  //   })
+  // }, [delaydays, setSearchParams])
 
   const handleStatusChange = async (_id, newStatus, remarks = "") => {
     // console.log("📌 handleStatusChange got:", { _id, newStatus, remarks, remarksType: typeof remarks });
@@ -154,7 +179,7 @@ function PaymentRequest() {
     }
 
     if (isInternalManager && newStatus === "Approved") {
-      if (!Array.isArray(paginatedData)) {
+      if (!Array.isArray(rows)) {
         toast.error("Payment data is not available yet.");
         return;
       }
@@ -164,7 +189,7 @@ function PaymentRequest() {
         return;
       }
 
-      const selectedPayments = paginatedData.filter((p) =>
+      const selectedPayments = rows.filter((p) =>
         selected.includes(String(p._id))
       );
 
@@ -360,17 +385,26 @@ function PaymentRequest() {
     return false;
   };
 
+  const DaysOptions = [
+    { value: "1", label: "1 Days" },
+    { value: "2", label: "2 Days" },
+    { value: "3", label: "3 Days" },
+    { value: "8", label: "8 Days" },
+    { value: "-1", label: "Over Due"},
+    { value: "clear", label: "Clear Filter" },
+  ]
+
   const RowMenu = ({ _id, onStatusChange, showApprove }) => {
     const [open, setOpen] = useState(false);
     const [remarks, setRemarks] = useState("");
 
     const handleRejectSubmit = () => {
-      console.log(
-        "📌 RowMenu → handleRejectSubmit remarks:",
-        remarks,
-        "type:",
-        typeof remarks
-      );
+      // console.log(
+      //   "📌 RowMenu → handleRejectSubmit remarks:",
+      //   remarks,
+      //   "type:",
+      //   typeof remarks
+      // );
       onStatusChange(_id, "Rejected", remarks);
       setOpen(false);
       setRemarks("");
@@ -455,7 +489,7 @@ function PaymentRequest() {
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelected(paginatedData.map((row) => String(row._id)));
+      setSelected(rows.map((row) => String(row._id)));
     } else {
       setSelected([]);
     }
@@ -467,20 +501,20 @@ function PaymentRequest() {
       checked ? [...prev, idStr] : prev.filter((item) => item !== idStr)
     );
   };
-const handlePrint = () => {
-  if (!blobUrl) return;
+  const handlePrint = () => {
+    if (!blobUrl) return;
 
-  const printWindow = window.open(blobUrl);
-  if (printWindow) {
-    printWindow.focus();
-    printWindow.onload = () => {
-      printWindow.print();
-      setHasPrinted(true);
-    };
-  } else {
-    toast.error("Unable to open print window");
-  }
-};
+    const printWindow = window.open(blobUrl);
+    if (printWindow) {
+      printWindow.focus();
+      printWindow.onload = () => {
+        printWindow.print();
+        setHasPrinted(true);
+      };
+    } else {
+      toast.error("Unable to open print window");
+    }
+  };
 
   useEffect(() => {
     if (pdfBlob) {
@@ -490,11 +524,10 @@ const handlePrint = () => {
     }
   }, [pdfBlob]);
   useEffect(() => {
-  if (isPdfModalOpen) {
-    setHasPrinted(false);
-  }
-}, [isPdfModalOpen]);
-
+    if (isPdfModalOpen) {
+      setHasPrinted(false);
+    }
+  }, [isPdfModalOpen]);
 
   const handleClosePdfModal = () => {
     if (blobUrl) URL.revokeObjectURL(blobUrl);
@@ -507,7 +540,7 @@ const handlePrint = () => {
     const hasSelection = selected.length > 0;
 
     const handlePreviewClick = () => {
-      const selectedPayments = paginatedData.filter((p) =>
+      const selectedPayments = rows.filter((p) =>
         selected.includes(String(p._id))
       );
       handleMultiPDFDownload(selectedPayments);
@@ -547,7 +580,6 @@ const handlePrint = () => {
   };
 
   const handleSearch = (query) => {
-    setPaginatedData([]);
     setSearchQuery(query);
     setCurrentPage(1);
   };
@@ -580,12 +612,18 @@ const handlePrint = () => {
     borderColor: "divider",
   };
 
-
   const PaymentID = ({ pay_id, cr_id, request_date, approved }) => {
-    const maskId = (id) => {
-      if (!id) return "N/A";
-      return approved === "Approved" ? id : id.replace(/(\d{2})$/, "XX");
-    };
+    // const maskId = (id) => {
+    //   if (!id) return "N/A";
+    //   const parts = id.split("/");
+    //   const lastIndex = parts.length - 2;
+
+    //   if (!isNaN(parts[lastIndex])) {
+    //     parts[lastIndex] = parts[lastIndex].replace(/\d{2}$/, "XX");
+    //   }
+
+    //   return parts.join("/");
+    // };
 
     const idToShow = pay_id || cr_id;
 
@@ -608,7 +646,7 @@ const handlePrint = () => {
                 },
               }}
             >
-              {maskId(idToShow)}
+              {idToShow}
             </Chip>
           </Box>
         )}
@@ -667,9 +705,13 @@ const handlePrint = () => {
     );
   };
 
-  const RequestedData = ({ request_for, payment_description , po_number, vendor}) => {
-
-      const [open, setOpen] = useState(false);
+  const RequestedData = ({
+    request_for,
+    payment_description,
+    po_number,
+    vendor,
+  }) => {
+    const [open, setOpen] = useState(false);
 
     const handleOpen = () => setOpen(true);
     const handleClose = () => setOpen(false);
@@ -683,7 +725,7 @@ const handlePrint = () => {
             </span>
           </Box>
         )}
-         {po_number && (
+        {po_number && (
           <Box
             display="flex"
             alignItems="center"
@@ -723,7 +765,7 @@ const handlePrint = () => {
           </Sheet>
         </Modal>
 
-         <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+        <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
           <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
             🏢 Vendor:
           </Typography>
@@ -733,7 +775,6 @@ const handlePrint = () => {
             {vendor}
           </Typography>
         </Box>
-
 
         {payment_description && (
           <Box display="flex" alignItems="center" mt={0.5}>
@@ -746,7 +787,6 @@ const handlePrint = () => {
             </Typography>
           </Box>
         )}
-        
       </>
     );
   };
@@ -806,6 +846,63 @@ const handlePrint = () => {
     );
   };
 
+  const useDebounced = (fn, delay = 350) => {
+    const t = useRef();
+    return useCallback(
+      (...args) => {
+        clearTimeout(t.current);
+        t.current = setTimeout(() => fn(...args), delay);
+      },
+      [fn, delay]
+    );
+  };
+  const [scrolled, setScrolled] = useState(false);
+
+  const paymentsCount = responseData?.paymentsCount ?? 0;
+  const finalCount = responseData?.finalApprovalPaymentsCount ?? 0;
+
+  const handleTabChange = (_e, val) => {
+    setActiveTab(val);
+    setSearchParams((prev) => ({
+      ...Object.fromEntries(prev.entries()),
+      tab: val,
+      page: 1,
+    }));
+    setCurrentPage(1);
+  };
+
+  const handleScroll = (e) => setScrolled(e.currentTarget.scrollTop > 0);
+
+  const debouncedSearch = useDebounced((val) => {
+    setSearchParams((prev) => ({
+      ...Object.fromEntries(prev.entries()),
+      page: 1,
+      search: val || "",
+    }));
+    setCurrentPage(1);
+  }, 350);
+
+  const onSearchChange = (e) => {
+    setSearchQuery?.(e.target.value);
+    debouncedSearch(e.target.value);
+  };
+
+  const tabDefs = useMemo(
+    () => [
+      {
+        key: "payments",
+        label: "Aggregate Payments",
+        count: paymentsCount,
+      },
+      {
+        key: "finalApprovalPayments",
+        label: "Final Approval Payments",
+        count: finalCount,
+      },
+    ],
+    [paymentsCount, finalCount]
+  );
+
   return (
     <>
       {/* Tablet and Up Filters */}
@@ -834,12 +931,13 @@ const handlePrint = () => {
             </Typography>
           )}
 
-          {((user?.department === "Accounts" && user?.role === "manager") ||
-            user?.department === "admin") && (
-            <Typography level="h2" component="h1">
-              Accounts Payment Approval
-            </Typography>
-          )}
+          {(user?.department === "Accounts" && user?.role === "manager") ||
+            user?.department === "admin" ||
+            (user?.department === "superadmin" && (
+              <Typography level="h2" component="h1">
+                Accounts Payment Approval
+              </Typography>
+            ))}
         </Box>
       </Box>
 
@@ -847,154 +945,10 @@ const handlePrint = () => {
         // ---------------- Accounts View with Tabs ----------------
         <>
           <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: 2,
-              px: 1,
-              py: 1,
-              ml: { xl: "15%", lg: "18%", sm: 0 },
-              maxWidth: { lg: "85%", sm: "100%" },
-              borderRadius: "md",
-              mb: 2,
-            }}
-          >
-            {/* Left Side - Filters + Search */}
-            <Box
-              sx={{
-                display: "flex",
-                mb: 1,
-                gap: 1,
-                flexDirection: { xs: "column", sm: "row" },
-                alignItems: { xs: "none", sm: "center" },
-                flexWrap: "wrap",
-                justifyContent: "center",
-              }}
-            >
-              {user?.department === "Internal" &&
-                user?.role === "manager" &&
-                renderFilters?.()}
-
-              <Box
-                className="SearchAndFilters-tabletUp"
-                sx={{
-                  borderRadius: "sm",
-                  py: 2,
-                  display: "flex",
-                  flexDirection: { xs: "column", md: "row" },
-                  flexWrap: "wrap",
-                  gap: 1.5,
-                }}
-              >
-                <FormControl sx={{ flex: 1 }} size="sm">
-                  <FormLabel>Search here</FormLabel>
-                  <Input
-                    size="sm"
-                    placeholder="Search by Pay ID, Items, Clients Name or Vendor"
-                    startDecorator={<SearchIcon />}
-                    value={searchQuery}
-                    onChange={(e) => handleSearch(e.target.value)}
-                    sx={{
-                      width: 350,
-                      borderColor: "neutral.outlinedBorder",
-                      borderBottom: searchQuery
-                        ? "2px solid #1976d2"
-                        : "1px solid #ddd",
-                      borderRadius: 5,
-                      boxShadow: "none",
-                      "&:hover": {
-                        borderBottom: "2px solid #1976d2",
-                      },
-                      "&:focus-within": {
-                        borderBottom: "2px solid #1976d2",
-                      },
-                    }}
-                  />
-                </FormControl>
-              </Box>
-            </Box>
-
-            {/* Right Side - Rows per page + Pagination */}
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: 1.5,
-              }}
-            >
-              {/* Rows per page */}
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Typography level="body-sm">Rows per page:</Typography>
-                <Select
-                  size="sm"
-                  value={perPage}
-                  onChange={(_, value) => {
-                    if (value) {
-                      setPerPage(Number(value));
-                      setCurrentPage(1);
-                    }
-                  }}
-                  sx={{ minWidth: 64 }}
-                >
-                  {[10, 25, 50, 100].map((value) => (
-                    <Option key={value} value={value}>
-                      {value}
-                    </Option>
-                  ))}
-                </Select>
-              </Box>
-
-              {/* Pagination info */}
-              <Typography level="body-sm">
-                {`${startIndex}-${endIndex} of ${total}`}
-              </Typography>
-
-              {/* Navigation buttons */}
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <IconButton
-                  size="sm"
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(1)}
-                >
-                  <KeyboardDoubleArrowLeft />
-                </IconButton>
-                <IconButton
-                  size="sm"
-                  disabled={currentPage === 1}
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                >
-                  <KeyboardArrowLeft />
-                </IconButton>
-                <IconButton
-                  size="sm"
-                  disabled={currentPage === totalPages}
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                >
-                  <KeyboardArrowRight />
-                </IconButton>
-                <IconButton
-                  size="sm"
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(totalPages)}
-                >
-                  <KeyboardDoubleArrowRight />
-                </IconButton>
-              </Box>
-            </Box>
-          </Box>
-
-          <Box
             className="OrderTableContainer"
             sx={{
               width: "100%",
-              borderRadius: "sm",
+              borderRadius: "md",
               overflow: "hidden",
               minHeight: 0,
               ml: { xl: "15%", lg: "18%", sm: 0 },
@@ -1003,82 +957,219 @@ const handlePrint = () => {
               border: "1px solid",
               borderColor: "neutral.outlinedBorder",
               bgcolor: "background.body",
-              boxShadow: 1,
+              boxShadow: "sm",
             }}
           >
-            <Box
+            <Sheet
+              variant="plain"
               sx={{
                 position: "sticky",
                 top: 0,
                 zIndex: 10,
-                // width:"fit-content",
                 backgroundColor: "background.body",
                 borderBottom: "1px solid",
                 borderColor: "neutral.outlinedBorder",
                 px: 2,
                 py: 1,
+
+                boxShadow: scrolled ? "sm" : "none",
+                transition: "box-shadow .2s ease",
               }}
             >
-              <Tabs
-                value={activeTab}
-                onChange={(e, val) => {
-                  setActiveTab(val);
-                  setSearchParams((prev) => ({
-                    ...Object.fromEntries(prev.entries()),
-                    tab: val,
-                    page: 1,
-                  }));
-                  setCurrentPage(1);
-                }}
-                variant="plain"
+              <Box
                 sx={{
-                  borderRadius: "xl",
-                  p: 0.5,
-                  minHeight: "50px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  flexWrap: "wrap",
+                  justifyContent: "space-between",
                 }}
               >
-                <TabList
-                  disableUnderline
-                  sx={{
-                    borderRadius: "xl",
-                    overflow: "hidden",
-                    minHeight: "36px",
-                    backgroundColor: "background.level1",
-                    border: "1px solid",
-                    borderColor: "neutral.outlinedBorder",
-                  }}
+                <Tabs
+                  aria-label="Payments view tabs"
+                  value={activeTab}
+                  onChange={handleTabChange}
+                  variant="plain"
+                  sx={{ borderRadius: "xl", p: 0.5, minHeight: 50 }}
                 >
-                  {["instant", "toBeApproved", "overdue", "credit"].map(
-                    (tab) => (
+                  <TabList
+                    disableUnderline
+                    sx={{
+                      borderRadius: "xl",
+                      overflow: "hidden",
+                      minHeight: 36,
+                      backgroundColor: "background.level1",
+                      border: "1px solid",
+                      borderColor: "neutral.outlinedBorder",
+                    }}
+                  >
+                    {tabDefs.map((t) => (
                       <Tab
-                        key={tab}
+                        key={t.key}
+                        value={t.key}
                         variant="soft"
                         color="neutral"
                         disableIndicator
-                        value={tab}
                         sx={{
-                          fontWeight: 500,
+                          gap: 0.5,
+                          fontWeight: 600,
                           transition: "all 0.2s",
-                          minHeight: "36px",
+                          minHeight: 36,
+                          px: 1.25,
                           "&:hover": { backgroundColor: "neutral.softHoverBg" },
                         }}
                       >
-                        {tab === "instant"
-                          ? `Instant Payments (${responseData?.instantCount || 0})`
-                          : tab === "toBeApproved"
-                            ? `To Be Approved (${responseData?.toBeApprovedCount || 0})`
-                            : tab === "overdue"
-                              ? `Overdue (${responseData?.overdueCount || 0})`
-                              : `Credit Payments (${responseData?.creditCount || 0})`}
+                        {t.label}
+                        <Chip
+                          size="sm"
+                          variant="solid"
+                           color={t.key === "finalApprovalPayments" ? "danger" : "primary"}
+                          sx={{
+                            ml: 0.5,
+                            fontWeight: 700,
+                          }}
+                        >
+                          {t.count}
+                        </Chip>
                       </Tab>
-                    )
-                  )}
-                </TabList>
-              </Tabs>
-            </Box>
+                    ))}
+                  </TabList>
+                </Tabs>
+
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Tooltip placement="top" title="Refresh">
+                    <IconButton
+                      size="sm"
+                      variant="soft"
+                      color="neutral"
+                      onClick={onRefresh}
+                      disabled={isLoading}
+                    >
+                      <RefreshRounded />
+                    </IconButton>
+                  </Tooltip>
+
+                  <Select
+                    size="m"
+                    placeholder="Days Filter"
+                    value={delaydays || null}
+                    onChange={(_, v) => {
+                      if (v === "clear") {
+                        setDelaydays(""); // reset to default
+                      } else {
+                        setDelaydays(v ?? "");
+                      }
+                    }}
+                    sx={{ width: 135, height: 35, padding: 1 }}
+                  >
+                    {DaysOptions.map((n) => (
+                      <Option key={n.value} value={n.value} sx={n.value === "clear" ? { color: "red" } : {}}>
+                        {n.label}
+                      </Option>
+                    ))}
+                  </Select>
+                </Box>
+              </Box>
+
+              {/* Toolbar Row */}
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mt: 1,
+                  flexWrap: "wrap",
+                }}
+              >
+                <Input
+                  size="sm"
+                  value={searchQuery ?? ""}
+                  onChange={onSearchChange}
+                  placeholder="Search by code, pay_id, cr_id, name, group, PO…"
+                  startDecorator={<SearchIcon />}
+                  sx={{
+                    flex: 1,
+                    minWidth: 240,
+                  }}
+                  aria-label="Search payments"
+                />
+
+                <Divider orientation="vertical" sx={{ height: 28 }} />
+
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                  <Box
+                    component="span"
+                    sx={{ fontSize: 12, color: "text.tertiary" }}
+                  >
+                    Rows per page
+                  </Box>
+                  <Select
+                    size="sm"
+                    value={perPage ?? 50}
+                    onChange={(_, v) => {
+                      const next = Number(v) || 50;
+                      setPerPage?.(next);
+                      setCurrentPage(1);
+                      setSearchParams((prev) => ({
+                        ...Object.fromEntries(prev.entries()),
+                        page: "1",
+                        pageSize: String(next),
+                      }));
+                    }}
+                    sx={{ width: 96 }}
+                  >
+                    {[50, 250, 500, 1000].map((n) => (
+                      <Option key={n} value={n}>
+                        {n}
+                      </Option>
+                    ))}
+                  </Select>
+                  <Typography level="body-sm">
+                    {`${startIndex}-${endIndex} of ${total}`}
+                  </Typography>
+
+                  {/* Navigation buttons */}
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <IconButton
+                      size="sm"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(1)}
+                    >
+                      <KeyboardDoubleArrowLeft />
+                    </IconButton>
+                    <IconButton
+                      size="sm"
+                      disabled={currentPage === 1}
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                      }
+                    >
+                      <KeyboardArrowLeft />
+                    </IconButton>
+                    <IconButton
+                      size="sm"
+                      disabled={currentPage === totalPages}
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                      }
+                    >
+                      <KeyboardArrowRight />
+                    </IconButton>
+                    <IconButton
+                      size="sm"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(totalPages)}
+                    >
+                      <KeyboardDoubleArrowRight />
+                    </IconButton>
+                  </Box>
+                </Box>
+              </Box>
+            </Sheet>
 
             {/* Table Content */}
             <Box
+              onScroll={handleScroll}
               sx={{
                 maxHeight: 600,
                 overflow: "auto",
@@ -1089,49 +1180,31 @@ const handlePrint = () => {
                   zIndex: 5,
                 },
                 "&:hover": {
-                  boxShadow: 3,
+                  boxShadow: "md",
                   transition: "0.3s all",
                 },
               }}
             >
-              {activeTab === "instant" && (
-                <PaymentAccountApproval
-                  data={paginatedData}
+              {activeTab === "payments" && (
+                <CreditPayment
+                  data={rows}
                   isLoading={isLoading}
                   searchQuery={searchQuery}
                   perPage={perPage}
                   currentPage={currentPage}
+                  // delaydays = {delaydays}
                   sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
                 />
               )}
 
-              {activeTab === "toBeApproved" && (
-                <ApprovalPayment
-                  data={paginatedData}
+              {activeTab === "finalApprovalPayments" && (
+                <PaymentAccountApproval
+                  data={rows}
                   isLoading={isLoading}
                   searchQuery={searchQuery}
                   perPage={perPage}
                   currentPage={currentPage}
-                  sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
-                />
-              )}
-              {activeTab === "overdue" && (
-                <OverDue
-                  data={paginatedData}
-                  isLoading={isLoading}
-                  searchQuery={searchQuery}
-                  perPage={perPage}
-                  currentPage={currentPage}
-                  sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
-                />
-              )}
-              {activeTab === "credit" && (
-                <CreditPayment
-                  data={paginatedData}
-                  isLoading={isLoading}
-                  searchQuery={searchQuery}
-                  perPage={perPage}
-                  currentPage={currentPage}
+                  delaydays = {delaydays}
                   sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
                 />
               )}
@@ -1320,9 +1393,9 @@ const handlePrint = () => {
                     <Checkbox
                       indeterminate={
                         selected.length > 0 &&
-                        selected.length < paginatedData.length
+                        selected.length < rows.length
                       }
-                      checked={selected.length === paginatedData.length}
+                      checked={selected.length === rows.length}
                       onChange={handleSelectAll}
                       color={selected.length > 0 ? "primary" : "neutral"}
                     />
@@ -1376,8 +1449,8 @@ const handlePrint = () => {
                       </Box>
                     </Box>
                   </Box>
-                ) : paginatedData.length > 0 ? (
-                  paginatedData.map((payment, index) => {
+                ) : rows.length > 0 ? (
+                  rows.map((payment, index) => {
                     return (
                       <Box
                         component="tr"

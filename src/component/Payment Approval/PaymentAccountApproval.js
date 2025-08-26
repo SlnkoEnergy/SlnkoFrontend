@@ -9,27 +9,37 @@ import { forwardRef, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import NoData from "../../assets/alert-bell.svg";
 import Axios from "../../utils/Axios";
-import { useGetPaymentApprovalQuery } from "../../redux/Accounts";
+import {
+  useGetPaymentApprovalQuery,
+  useUpdateCreditExtensionMutation,
+} from "../../redux/Accounts";
 import {
   CircularProgress,
+  IconButton,
+  Input,
   Modal,
   ModalDialog,
   Sheet,
   Textarea,
+  Tooltip,
 } from "@mui/joy";
 import {
   Calendar,
+  CheckCircle,
   CircleUser,
   FileText,
+  Info,
+  PenLine,
   Receipt,
   UsersRound,
+  XCircle,
 } from "lucide-react";
-import { Money } from "@mui/icons-material";
+import { CreditCard, Money } from "@mui/icons-material";
 import { PaymentProvider } from "../../store/Context/Payment_History";
 import PaymentHistory from "../PaymentHistory";
 
 const PaymentAccountApproval = forwardRef(
-  ({ searchQuery, currentPage, perPage }, ref) => {
+  ({ searchQuery, currentPage, perPage , delaydays}, ref) => {
     const [selected, setSelected] = useState([]);
 
     //   const isAccount = user?.department === "Accounts";
@@ -38,11 +48,13 @@ const PaymentAccountApproval = forwardRef(
       data: responseData,
       isLoading,
       error,
+      refetch,
     } = useGetPaymentApprovalQuery({
       page: currentPage,
       pageSize: perPage,
       search: searchQuery,
-      tab: "instant",
+      delaydays: delaydays, 
+      tab: "finalApprovalPayments",
     });
 
     const paginatedData = responseData?.data || [];
@@ -191,71 +203,161 @@ const PaymentAccountApproval = forwardRef(
       return false;
     };
 
-    const RowMenu = ({ _id, onStatusChange, showApprove }) => {
-      const [open, setOpen] = useState(false);
+    const [updateCreditExtension] = useUpdateCreditExtensionMutation();
+
+    const RowMenu = ({
+      _id,
+      credit_extension,
+      credit_remarks,
+      credit_user_name,
+      remainingDays,
+      onStatusChange,
+      showApprove,
+    }) => {
+      const numDays = Number(remainingDays);
+      const isFiniteDays = Number.isFinite(numDays);
+
+      const nearDue = isFiniteDays ? numDays <= 2 : false;
+
+      const showApproveReject = !!showApprove && nearDue;
+
+
+      const showExtensionUI = credit_extension === true && !nearDue;
+      const showNoExtensionChip = credit_extension !== true || nearDue;
+
+      const [openReject, setOpenReject] = useState(false);
+      const [openExtend, setOpenExtend] = useState(false);
+
       const [remarks, setRemarks] = useState("");
 
+      const [formData, setFormData] = useState({
+        credit_deadline: "",
+        credit_remarks: "",
+      });
+
       const handleRejectSubmit = () => {
-        console.log(
-          "📌 RowMenu → handleRejectSubmit remarks:",
-          remarks,
-          "type:",
-          typeof remarks
-        );
-        onStatusChange(_id, "Rejected", remarks);
-        setOpen(false);
+        const trimmed = (remarks || "").trim();
+        onStatusChange?.(_id, "Rejected", trimmed);
+        setOpenReject(false);
         setRemarks("");
+      };
+
+      const handleOpenExtend = () => setOpenExtend(true);
+      const handleCloseExtend = () => setOpenExtend(false);
+      const handleOpenReject = () => setOpenReject(true);
+      const handleCloseReject = () => setOpenReject(false);
+
+      const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({ ...prev, [name]: value }));
+      };
+
+      const handleSubmit = async () => {
+        try {
+          await updateCreditExtension({ id: _id, ...formData }).unwrap();
+          toast.success("Credit days extended successfully!", {
+            icon: <CheckCircle size={20} color="#FFFFFF" />,
+            style: {
+              backgroundColor: "#2E7D32",
+              color: "#FFFFFF",
+              fontWeight: 500,
+              fontSize: "15px",
+              padding: "12px 20px",
+              borderRadius: "8px",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+            },
+          });
+          refetch?.();
+          handleCloseExtend();
+        } catch (err) {
+          toast.error("Failed to extend credit days", {
+            icon: <XCircle size={20} color="#FFFFFF" />,
+            style: {
+              backgroundColor: "#D32F2F",
+              color: "#FFFFFF",
+              fontWeight: 500,
+              fontSize: "15px",
+              padding: "12px 20px",
+              borderRadius: "8px",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+            },
+          });
+        }
       };
 
       return (
         <>
-          <Box sx={{ display: "flex", justifyContent: "left", gap: 1 }}>
-            {showApprove && (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "left",
+              alignItems: "center",
+              gap: 1,
+              flexWrap: "wrap",
+            }}
+          >
+            {showApproveReject && (
+              <>
+                <Chip
+                  component="div"
+                  variant="solid"
+                  color="success"
+                  onClick={() => onStatusChange?.(_id, "Approved")}
+                  sx={{
+                    textTransform: "none",
+                    fontSize: "0.875rem",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                  }}
+                  startDecorator={<CheckRoundedIcon />}
+                >
+                  Approve
+                </Chip>
+
+                <Chip
+                  component="div"
+                  variant="outlined"
+                  color="danger"
+                  onClick={handleOpenReject}
+                  sx={{
+                    textTransform: "none",
+                    fontSize: "0.875rem",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                  }}
+                  startDecorator={<BlockIcon />}
+                >
+                  Reject
+                </Chip>
+              </>
+            )}
+
+            {/* Show "No extension required" chip also when near due (so it appears together) */}
+            {showNoExtensionChip && (
               <Chip
                 component="div"
-                variant="solid"
-                color="success"
-                onClick={() => onStatusChange(_id, "Approved")}
+                variant="soft"
+                color="neutral"
                 sx={{
                   textTransform: "none",
-                  fontSize: "0.875rem",
+                  fontSize: "0.8rem",
                   fontWeight: 500,
-                  cursor: "pointer",
                 }}
-                startDecorator={<CheckRoundedIcon />}
               >
-                Approve
+                No extension required
               </Chip>
             )}
-            <Chip
-              component="div"
-              variant="outlined"
-              color="danger"
-              onClick={() => setOpen(true)}
-              sx={{
-                textTransform: "none",
-                fontSize: "0.875rem",
-                fontWeight: 500,
-                cursor: "pointer",
-              }}
-              startDecorator={<BlockIcon />}
-            >
-              Reject
-            </Chip>
           </Box>
 
-          <Modal open={open} onClose={() => setOpen(false)}>
+          {/* Reject Modal */}
+          <Modal open={openReject} onClose={handleCloseReject}>
             <ModalDialog>
               <Typography level="h5">Rejection Remarks</Typography>
               <Textarea
                 minRows={3}
                 placeholder="Enter remarks..."
                 value={remarks}
-                onChange={(e) => {
-                  const value = e.target.value ?? "";
-                  // console.log("Textarea onChange value:", value, "type:", typeof value);
-                  setRemarks(value);
-                }}
+                onChange={(e) => setRemarks(e.target.value ?? "")}
               />
 
               <Box
@@ -266,16 +368,99 @@ const PaymentAccountApproval = forwardRef(
                   mt: 2,
                 }}
               >
-                <Button variant="plain" onClick={() => setOpen(false)}>
+                <Button variant="plain" onClick={handleCloseReject}>
                   Cancel
                 </Button>
                 <Button
                   variant="solid"
                   color="danger"
                   onClick={handleRejectSubmit}
-                  disabled={!remarks}
+                  disabled={!remarks?.trim()}
                 >
                   Submit
+                </Button>
+              </Box>
+            </ModalDialog>
+          </Modal>
+
+          {/* Extension edit affordance only when not near due */}
+          {showExtensionUI ? (
+            <Box display="flex" alignItems="center" gap={1} mt={5}>
+              <Tooltip title="Edit Credit Extension" placement="top" arrow>
+                <IconButton
+                  size="sm"
+                  variant="soft"
+                  color="primary"
+                  onClick={handleOpenExtend}
+                  sx={{
+                    borderRadius: "50%",
+                    p: 0.7,
+                    minWidth: "32px",
+                    minHeight: "32px",
+                    "&:hover": {
+                      backgroundColor: "primary.softHoverBg",
+                      transform: "scale(1.05)",
+                      transition: "all 0.2s ease-in-out",
+                    },
+                  }}
+                >
+                  <PenLine size={16} strokeWidth={2} />
+                </IconButton>
+              </Tooltip>
+
+              {credit_remarks && credit_remarks.length > 0 && (
+                <Tooltip
+                  placement="top"
+                  arrow
+                  title={
+                    <Box>
+                      <ul style={{ margin: 0, paddingLeft: "18px" }}>
+                        <li>Extension Remarks: {credit_remarks}</li>
+                        <li>Requested by: {credit_user_name || "Unknown"}</li>
+                      </ul>
+                    </Box>
+                  }
+                >
+                  <Info
+                    size={18}
+                    strokeWidth={2}
+                    style={{ cursor: "pointer" }}
+                  />
+                </Tooltip>
+              )}
+            </Box>
+          ) : null}
+
+          {/* Extend Credit Modal */}
+          <Modal open={openExtend} onClose={handleCloseExtend}>
+            <ModalDialog>
+              <Typography level="h5" mb={1}>
+                Extend Credit
+              </Typography>
+
+              <Input
+                type="date"
+                name="credit_deadline"
+                value={formData.credit_deadline}
+                onChange={handleChange}
+                placeholder="New Credit Deadline"
+              />
+
+              <Input
+                type="text"
+                name="credit_remarks"
+                value={formData.credit_remarks}
+                onChange={handleChange}
+                placeholder="Credit Remarks"
+                sx={{ mt: 1 }}
+              />
+
+              <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
+                <Button variant="plain" onClick={handleCloseExtend}>
+                  Cancel
+                </Button>
+                <Button variant="solid" onClick={handleSubmit}>
+                  Extend
                 </Button>
               </Box>
             </ModalDialog>
@@ -322,10 +507,17 @@ const PaymentAccountApproval = forwardRef(
       borderColor: "divider",
     };
 
-    const PaymentID = ({ pay_id, request_date }) => {
+    const labelStyle = {
+      fontSize: 13,
+      fontWeight: 600,
+      fontFamily: "Inter, Roboto, sans-serif",
+      color: "#2C3E50",
+    };
+
+    const PaymentID = ({ pay_id, cr_id, request_date }) => {
       return (
         <>
-          {pay_id && (
+          {cr_id && (
             <Box>
               <Chip
                 variant="solid"
@@ -342,7 +534,7 @@ const PaymentAccountApproval = forwardRef(
                   },
                 }}
               >
-                {pay_id || "N/A"}
+                {cr_id}
               </Chip>
             </Box>
           )}
@@ -408,6 +600,7 @@ const PaymentAccountApproval = forwardRef(
     const RequestedData = ({
       request_for,
       payment_description,
+      remainingDays,
       vendor,
       po_number,
     }) => {
@@ -424,6 +617,7 @@ const PaymentAccountApproval = forwardRef(
               </span>
             </Box>
           )}
+
           {po_number && (
             <Box
               display="flex"
@@ -476,6 +670,7 @@ const PaymentAccountApproval = forwardRef(
               </Typography>
             </Box>
           )}
+
           <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
             <Typography style={{ fontSize: 12, fontWeight: 600 }}>
               🏢 Vendor:
@@ -486,62 +681,169 @@ const PaymentAccountApproval = forwardRef(
               {vendor}
             </Typography>
           </Box>
+          {/* remainingDays display */}
+          <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+            <Typography sx={labelStyle}>⏰</Typography>
+            {(() => {
+              const d = Number(remainingDays);
+              const isNil =
+                remainingDays === null ||
+                remainingDays === undefined ||
+                Number.isNaN(d);
+
+              if (isNil) {
+                return (
+                  <Chip size="sm" variant="soft" color="neutral">
+                    No deadline
+                  </Chip>
+                );
+              }
+
+              if (d < 0) {
+                return (
+                  <Chip size="sm" variant="soft" color="danger">
+                    Overdue by {Math.abs(d)} day{Math.abs(d) === 1 ? "" : "s"}
+                  </Chip>
+                );
+              }
+
+              if (d === 0) {
+                return (
+                  <Chip size="sm" variant="soft" color="warning">
+                    Due today
+                  </Chip>
+                );
+              }
+
+              if (d <= 2) {
+                return (
+                  <Chip size="sm" variant="soft" color="warning">
+                    {d} day{d === 1 ? "" : "s"} remaining
+                  </Chip>
+                );
+              }
+
+              return (
+                <Chip size="sm" variant="soft" color="success">
+                  {d} days remaining
+                </Chip>
+              );
+            })()}
+          </Box>
         </>
       );
     };
 
     const BalanceData = ({
       amount_requested,
-      ClientBalance,
-      groupBalance,
+      ClientBalance = 0,
+      groupBalance = 0,
+      creditBalance = 0,
+      totalCredited = 0,
+      totalPaid = 0,
       po_value,
     }) => {
+      const inr = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 });
+
+      const fmt = (v, dashIfEmpty = false) => {
+        if (v === null || v === undefined || v === "") {
+          return dashIfEmpty ? "—" : "0";
+        }
+        const num = Number(v);
+        return Number.isFinite(num) ? inr.format(num) : dashIfEmpty ? "—" : "0";
+      };
+
+      const chipColor =
+        Number(creditBalance) > 0
+          ? "success"
+          : Number(creditBalance) < 0
+            ? "danger"
+            : "neutral";
+
       return (
         <>
-          {amount_requested && (
-            <Box display="flex" alignItems="center" mb={0.5}>
-              <Money size={16} />
-              <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
-                Requested Amount:{" "}
-              </span>
-              <Typography sx={{ fontSize: 13, fontWeight: 400, ml: 0.5 }}>
-                {amount_requested || "-"}
-              </Typography>
-            </Box>
-          )}
+          {amount_requested !== undefined &&
+            amount_requested !== null &&
+            amount_requested !== "" && (
+              <Box display="flex" alignItems="center" mb={0.5}>
+                <Money size={16} />
+                <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+                  Requested Amount:&nbsp;
+                </span>
+                <Typography sx={{ fontSize: 13, fontWeight: 400 }}>
+                  ₹ {fmt(amount_requested, true)}
+                </Typography>
+              </Box>
+            )}
 
           <Box display="flex" alignItems="center" mb={0.5}>
             <Receipt size={16} />
             <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
-              Total PO (incl. GST):{" "}
+              Total PO (incl. GST):&nbsp;
             </span>
-            <Typography sx={{ fontSize: 12, fontWeight: 400, ml: 0.5 }}>
-              {po_value || "-"}
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              {po_value == null || po_value === "" ? "—" : `₹ ${fmt(po_value)}`}
             </Typography>
           </Box>
 
           <Box display="flex" alignItems="center" mt={0.5}>
             <CircleUser size={12} />
-            &nbsp;
-            <span style={{ fontSize: 12, fontWeight: 600 }}>
-              Client Balance:{" "}
+            <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+              Client Balance:&nbsp;
             </span>
-            &nbsp;
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              {ClientBalance || "0"}
+              ₹ {fmt(ClientBalance)}
             </Typography>
           </Box>
 
           <Box display="flex" alignItems="center" mt={0.5}>
             <UsersRound size={12} />
-            &nbsp;
-            <span style={{ fontSize: 12, fontWeight: 600 }}>
-              Group Balance:{" "}
+            <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+              Group Balance:&nbsp;
             </span>
-            &nbsp;
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              {groupBalance || "0"}
+              ₹ {fmt(groupBalance)}
             </Typography>
+          </Box>
+
+          <Box display="flex" alignItems="center" mt={0.5}>
+            <CreditCard size={14} />
+            <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
+              Credit Balance:&nbsp;
+            </span>
+
+            <Tooltip
+              arrow
+              placement="top"
+              title={
+                <Box>
+                  <Typography
+                    level="body-xs"
+                    sx={{ fontSize: 11, fontWeight: 600, color: "#fff" }}
+                  >
+                    Total Credited − Total Amount Paid
+                  </Typography>
+                  <Typography
+                    level="body-xs"
+                    sx={{ fontSize: 11, color: "#fff" }}
+                  >
+                    ₹ {fmt(totalCredited)} − ₹ {fmt(totalPaid)} = ₹{" "}
+                    {fmt(
+                      (Number(totalCredited) || 0) - (Number(totalPaid) || 0)
+                    )}
+                  </Typography>
+                </Box>
+              }
+            >
+              <Chip
+                size="sm"
+                variant="soft"
+                color={chipColor}
+                sx={{ fontSize: 12, fontWeight: 500, ml: 0.5 }}
+              >
+                ₹ {fmt(creditBalance)}
+              </Chip>
+            </Tooltip>
           </Box>
         </>
       );
@@ -600,7 +902,7 @@ const PaymentAccountApproval = forwardRef(
                   />
                 </Box>
                 {[
-                  "Payment Id",
+                  "Credit Id",
                   "Project Id",
                   "Request For",
                   "Amount Requested",
@@ -683,7 +985,7 @@ const PaymentAccountApproval = forwardRef(
                         }}
                       >
                         <PaymentID
-                          pay_id={payment?.pay_id}
+                          cr_id={payment?.cr_id}
                           request_date={payment?.request_date}
                         />
                       </Box>
@@ -714,6 +1016,7 @@ const PaymentAccountApproval = forwardRef(
                           payment_description={payment?.payment_description}
                           vendor={payment?.vendor}
                           po_number={payment?.po_number}
+                          remainingDays={payment?.remainingDays}
                         />
                       </Box>
                       <Box
@@ -729,18 +1032,24 @@ const PaymentAccountApproval = forwardRef(
                           ClientBalance={payment?.ClientBalance}
                           po_value={payment?.po_value}
                           groupBalance={payment?.groupBalance}
+                          creditBalance={payment?.creditBalance}
+                          totalCredited={payment?.totalCredited}
+                          totalPaid={payment?.totalPaid}
                         />
                       </Box>
 
                       <Box component="td" sx={{ ...cellStyle }}>
                         <RowMenu
                           _id={payment._id}
+                          remainingDays={Number(payment?.remainingDays)}
                           showApprove={["SCM", "Accounts"].includes(
                             user?.department
                           )}
-                          onStatusChange={(id, status, remarks) =>
-                            handleStatusChange(id, status, remarks)
-                          }
+                          onStatusChange={handleStatusChange}
+                          credit_extension={Boolean(payment?.credit_extension)}
+                          credit_remarks={payment?.credit_remarks || ""}
+                          credit_user_name={payment?.credit_user_name || ""}
+                          refetch={refetch}
                         />
                       </Box>
                     </Box>

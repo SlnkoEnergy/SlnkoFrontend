@@ -277,7 +277,7 @@ function PaymentRequestForm() {
 
     if (!data.benificiary) e.benificiary = "Beneficiary name is required.";
     if (!data.acc_number) e.acc_number = "Account number is required.";
-    if (!data.ifsc) e.ifsc = "IFSC is required.";
+    // if (!data.ifsc) e.ifsc = "IFSC is required.";
     if (!data.branch) e.branch = "Bank name is required.";
 
     if (data.credit?.credit_status) {
