@@ -268,7 +268,7 @@ export default function LogisticsDashboard() {
     "PO Number with Item",
     "Vehicle No.",
     "Transport PO Value",
-    "Total Weight",
+    "Total Weight (Ton)",
     "Status",
   ];
   const COL_COUNT = COLS.length + 1;

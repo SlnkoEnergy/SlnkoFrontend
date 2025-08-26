@@ -136,8 +136,16 @@ function POSummary() {
                   justifyContent: "center",
                 }}
               >
+                <><Button
+                      color="primary"
+                      size="sm"
+                      onClick={() => navigate("/logistics-form")}
+                    >
+                      Add Logistics Form +
+                    </Button></>
                 {user?.name !== "Gagan Tayal" && (
                   <>
+                  
                     <Button
                       color="primary"
                       size="sm"

@@ -25,7 +25,7 @@ import {
   useGetPoBasicQuery,
   useLazyGetPoBasicQuery,
   useGetLogisticByIdQuery,
-  useUpdateLogisticMutation, // <-- ensure this hook exists in your slice
+  useUpdateLogisticMutation,
 } from "../../redux/purchasesSlice";
 import SearchPickerModal from "../SearchPickerModal";
 import { CloseRounded, InsertDriveFile } from "@mui/icons-material";
@@ -46,6 +46,7 @@ const AddLogisticForm = () => {
   const [items, setItems] = useState([
     {
       po_id: "",
+      po_item_id: null,
       po_number: "",
       project_id: "",
       vendor: "",
@@ -72,19 +73,18 @@ const AddLogisticForm = () => {
   const [searchParams] = useSearchParams();
 
   const urlMode = (searchParams.get("mode") || "").toLowerCase();
-  const logisticId = searchParams.get("id") || null; // used for edit/view
-const pathDefaultMode =
-  location.pathname === "/logistics-form"
-    ? logisticId
-      ? "edit"
-      : "add"
-    : "add";
+  const logisticId = searchParams.get("id") || null;
+  const pathDefaultMode =
+    location.pathname === "/logistics-form"
+      ? logisticId
+        ? "edit"
+        : "add"
+      : "add";
 
-const mode = (urlMode || pathDefaultMode).toLowerCase();
-const isAdd = mode === "add";
-const isEdit = mode === "edit";
-const isView = mode === "view";
-
+  const mode = (urlMode || pathDefaultMode).toLowerCase();
+  const isAdd = mode === "add";
+  const isEdit = mode === "edit";
+  const isView = mode === "view";
 
   useEffect(() => {
     const sum = items.reduce(
@@ -94,7 +94,6 @@ const isView = mode === "view";
     setTotalWeight(sum);
   }, [items]);
 
-  // ✅ fetch PO list
   const { data: poData, isLoading: poLoading } = useGetPoBasicQuery({
     page: 1,
     pageSize: 7,
@@ -105,104 +104,100 @@ const isView = mode === "view";
   const [updateLogistic, { isLoading: isUpdating }] =
     useUpdateLogisticMutation();
 
-   const { data: byIdData } = useGetLogisticByIdQuery(
-   logisticId,
-   { skip: !logisticId || isAdd }
- );
+  const { data: byIdData } = useGetLogisticByIdQuery(logisticId, {
+    skip: !logisticId || isAdd,
+  });
 
-useEffect(() => {
-   if (!byIdData?.data || !(isEdit || isView)) return;
-   const doc = byIdData.data;
+  useEffect(() => {
+    if (!byIdData?.data || !(isEdit || isView)) return;
+    const doc = byIdData.data;
 
-   // Base form fields
-   setFormData((prev) => ({
-     ...prev,
-     vehicle_number: doc.vehicle_number || "",
-     driver_number: doc.driver_number || "",
-     attachment_url: doc.attachment_url || "",
-     description: doc.description || "",
-     // keep these as numbers/strings as you already do
-     total_ton: doc.total_ton || "",
-     total_transport_po_value: Number(doc.total_transport_po_value || 0),
-   }));
+    setFormData((prev) => ({
+      ...prev,
+      vehicle_number: doc.vehicle_number || "",
+      vendor: doc.vendor || prev.vendor || "",
+      driver_number: doc.driver_number || "",
+      attachment_url: doc.attachment_url || "",
+      description: doc.description || "",
+      total_ton: doc.total_ton || "",
+      total_transport_po_value: Number(doc.total_transport_po_value || 0),
+    }));
 
-   // Transportation PO ids  labels
-   const poIds = Array.isArray(doc.po_id)
-     ? doc.po_id
-         .map((p) => (typeof p === "string" ? p : p?._id))
-         .filter(Boolean)
-     : [];
-   const idToName = {};
-   const pos = {};
-   (doc.po_id || []).forEach((p) => {
-     if (p && typeof p === "object" && p._id) {
-       idToName[p._id] = p.po_number || String(p._id);
-       pos[p._id] = p; // keep for value calc if needed
-     }
-   });
-   setTransportation(poIds);
-   setTransportationIdToName(idToName);
-   setTransportationPos((prev) => ({ ...prev, ...pos }));
+    const poIds = Array.isArray(doc.po_id)
+      ? doc.po_id
+          .map((p) => (typeof p === "string" ? p : p?._id))
+          .filter(Boolean)
+      : [];
+    const idToName = {};
+    const pos = {};
+    (doc.po_id || []).forEach((p) => {
+      if (p && typeof p === "object" && p._id) {
+        idToName[p._id] = p.po_number || String(p._id);
+        pos[p._id] = p;
+      }
+    });
+    setTransportation(poIds);
+    setTransportationIdToName(idToName);
+    setTransportationPos((prev) => ({ ...prev, ...pos }));
 
-   // Items table rows
-   const mappedItems = Array.isArray(doc.items)
-     ? doc.items.map((it) => ({
-         po_id:
-           typeof it.material_po === "object"
-             ? it.material_po?._id || ""
-             : it.material_po || "",
-         po_number:
-           typeof it.material_po === "object"
-             ? it.material_po?.po_number || ""
-             : "",
-         project_id: "",           // not on logistic doc
-         vendor: "",               // not on logistic doc
-         product_name: it.product_name || "",
-         category_id:
-           typeof it.category_id === "object"
-             ? it.category_id?._id || null
-             : it.category_id ?? null,
-         category_name:
-           it?.category_name || it?.category_id?.name || "",
-         product_make: it.product_make || "",
-         uom: it.uom || "",        // logistic doc may not have uom
-         quantity_requested: it.quantity_requested || "",
-         quantity_po: it.quantity_po || "",
-         received_qty: it.received_qty || "",
-         ton: it.weight || "",
-       }))
-     : [];
+    // Items table rows
+    const mappedItems = Array.isArray(doc.items)
+      ? doc.items.map((it) => ({
+          po_id:
+            typeof it.material_po === "object"
+              ? it.material_po?._id || ""
+              : it.material_po || "",
+          po_item_id: it.po_item_id || null,
+          po_number:
+            typeof it.material_po === "object"
+              ? it.material_po?.po_number || ""
+              : "",
+          project_id: "",
+          vendor: "",
+          product_name: it.product_name || "",
+          category_id:
+            typeof it.category_id === "object"
+              ? it.category_id?._id || null
+              : (it.category_id ?? null),
+          category_name: it?.category_name || it?.category_id?.name || "",
+          product_make: it.product_make || "",
+          uom: it.uom || "",
+          quantity_requested: it.quantity_requested || "",
+          quantity_po: it.quantity_po || "",
+          received_qty: it.received_qty || "",
+          ton: it.weight || "",
+        }))
+      : [];
 
-   setItems(
-     mappedItems.length
-       ? mappedItems
-       : [
-           {
-             po_id: "",
-             po_number: "",
-             project_id: "",
-             vendor: "",
-             received_qty: "",
-             product_name: "",
-             category_id: null,
-             category_name: "",
-             product_make: "",
-             uom: "",
-             quantity_requested: "",
-             quantity_po: "",
-             ton: "",
-           },
-         ]
-   );
+    setItems(
+      mappedItems.length
+        ? mappedItems
+        : [
+            {
+              po_id: "",
+              po_number: "",
+              project_id: "",
+              vendor: "",
+              received_qty: "",
+              product_name: "",
+              category_id: null,
+              category_name: "",
+              product_make: "",
+              uom: "",
+              quantity_requested: "",
+              quantity_po: "",
+              ton: "",
+            },
+          ]
+    );
 
-   // Show totals immediately in edit/view
-   setVehicleCost(Number(doc.total_transport_po_value || 0));
-   const sumWeight = mappedItems.reduce(
-     (acc, r) => acc + (parseFloat(r.ton) || 0),
-     0
-   );
-   setTotalWeight(sumWeight);
- }, [byIdData, isEdit, isView]); // eslint-disable-line react-hooks/exhaustive-deps
+    setVehicleCost(Number(doc.total_transport_po_value || 0));
+    const sumWeight = mappedItems.reduce(
+      (acc, r) => acc + (parseFloat(r.ton) || 0),
+      0
+    );
+    setTotalWeight(sumWeight);
+  }, [byIdData, isEdit, isView]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -253,7 +248,7 @@ useEffect(() => {
     setItems(newItems);
   };
 
-  // 🚚 Transportation PO Number state
+  // Transportation PO Number state
   const [transportationModalOpen, setTransportationModalOpen] = useState(false);
   const [transportation, setTransportation] = useState([]); // array of transport PO ids (top-level po_id)
   const [transportationIdToName, setTransportationIdToName] = useState({});
@@ -279,13 +274,11 @@ useEffect(() => {
       [row._id]: row.po_number || String(row._id),
     }));
 
-    // keep full PO details for value calculation
     setTransportationPos((prev) => ({
       ...prev,
       [row._id]: row,
     }));
 
-    // update vendor display (optional)
     setFormData((prev) => ({
       ...prev,
       vendor: row.vendor || prev.vendor,
@@ -330,7 +323,6 @@ useEffect(() => {
     };
   };
 
-  // ✅ Vehicle cost only from transportation POs (sum of po_value)
   useEffect(() => {
     if (transportation.length === 0) {
       setVehicleCost(0);
@@ -349,9 +341,11 @@ useEffect(() => {
     try {
       const normalizedItems = items.map((i) => ({
         material_po: i.po_id,
+        po_item_id: i.po_item_id || null,
         category_id: i.category_id ?? null,
         product_name: i.product_name,
         product_make: i.product_make,
+        uom: i.uom || "",
         quantity_requested: String(i.quantity_requested || ""),
         received_qty: String(i.received_qty || ""),
         quantity_po: String(i.quantity_po || ""),
@@ -374,7 +368,6 @@ useEffect(() => {
       console.log("Submitting Logistic Data:", mode, payload);
 
       if (isEdit && logisticId) {
-        // adjust arg shape to your RTKQ endpoint definition if needed
         await updateLogistic({ id: logisticId, body: payload }).unwrap();
 
         toast.success("Logistic updated successfully");
@@ -407,6 +400,7 @@ useEffect(() => {
     setItems([
       {
         po_id: "",
+        po_item_id: null,
         po_number: "",
         project_id: "",
         vendor: "",
@@ -426,7 +420,7 @@ useEffect(() => {
     setTotalWeight(0);
     setVehicleCost(0);
     setSelectedFile(null);
-    setFileInputKey((k) => k + 1); // ensures the <input> is fresh
+    setFileInputKey((k) => k + 1);
   };
 
   return (
@@ -438,7 +432,6 @@ useEffect(() => {
         boxShadow: "md",
       }}
     >
-      {/* Title */}
       <Typography level="h3" fontWeight="lg" mb={2}>
         Logistic Form
       </Typography>
@@ -453,7 +446,6 @@ useEffect(() => {
       <Card sx={{ p: 3 }}>
         <form onSubmit={handleSubmit}>
           <Grid container spacing={2}>
-            {/* Transportation PO Number */}
             <Grid xs={12} sm={6}>
               <FormControl>
                 <FormLabel>Transportation PO Number</FormLabel>
@@ -497,7 +489,6 @@ useEffect(() => {
                       return map;
                     });
 
-                    // ✅ also update vendor if first PO selected
                     if (selected.length > 0) {
                       const firstPo = poData?.data?.find(
                         (p) => p._id === selected[0].value
@@ -514,7 +505,6 @@ useEffect(() => {
               </FormControl>
             </Grid>
 
-            {/* Vendor */}
             <Grid xs={12} sm={6}>
               <FormControl>
                 <FormLabel>Vendor</FormLabel>
@@ -528,7 +518,6 @@ useEffect(() => {
               </FormControl>
             </Grid>
 
-            {/* Vehicle Number */}
             <Grid xs={12} sm={6}>
               <FormControl>
                 <FormLabel>Vehicle Number</FormLabel>
@@ -543,7 +532,6 @@ useEffect(() => {
               </FormControl>
             </Grid>
 
-            {/* Driver Number */}
             <Grid xs={12} sm={6}>
               <FormControl>
                 <FormLabel>Driver Number</FormLabel>
@@ -558,7 +546,6 @@ useEffect(() => {
               </FormControl>
             </Grid>
 
-            {/* Attachment */}
             <Grid xs={12} sm={6}>
               <FormControl>
                 <FormLabel>Attachment</FormLabel>
@@ -572,13 +559,13 @@ useEffect(() => {
                 >
                   Upload file
                   <input
-                    key={fileInputKey} // <- forces remount after clear
+                    key={fileInputKey}
                     hidden
                     ref={fileInputRef}
                     type="file"
                     onClick={(e) => {
                       e.target.value = "";
-                    }} // allow re-selecting same file
+                    }}
                     onChange={(e) => {
                       const f = e.target?.files?.[0] ?? null;
                       setSelectedFile(f);
@@ -631,7 +618,6 @@ useEffect(() => {
             </Grid>
           </Grid>
 
-          {/* Items Table */}
           <Divider sx={{ my: 3 }} />
           <Sheet variant="outlined" sx={{ p: 2, borderRadius: "xl" }}>
             <Box sx={{ display: "flex", gap: 2, mb: 1 }}>
@@ -675,7 +661,6 @@ useEffect(() => {
               <tbody>
                 {items.map((item, idx) => (
                   <tr key={idx}>
-                    {/* PO Number selection */}
                     <td>
                       <Select
                         variant="plain"
@@ -721,35 +706,34 @@ useEffect(() => {
                           const { po } = selected;
                           if (!po) return;
 
-                          // ✅ Expand PO.items into rows
                           const productItems =
                             Array.isArray(po.items) && po.items.length > 0
                               ? po.items
-                              : [{}]; // fallback
+                              : [{}];
 
                           setItems((prev) => {
                             const copy = [...prev];
-                            // remove the current row (idx) and insert expanded rows
+
                             copy.splice(
                               idx,
                               1,
                               ...productItems.map((prod) => ({
-                                // base ids for backend
-                                po_id: po._id, // later → material_po
-                                category_id: prod?.category?._id || null, // backend id
-                                // UI/Display extras
+                                po_id: po._id,
+                                po_item_id: prod?._id || null,
+                                category_id: prod?.category?._id || null,
+
                                 po_number: po.po_number,
                                 project_id: po.p_id,
                                 vendor: po.vendor || "",
                                 category_name: prod?.category?.name || "",
                                 uom: prod?.uom || "",
-                                // product fields
+
                                 product_name: prod?.product_name || "",
                                 product_make: prod?.make || "",
                                 quantity_requested: prod?.quantity || "",
                                 quantity_po: "",
                                 received_qty: "",
-                                ton: "", // user will enter
+                                ton: "",
                               }))
                             );
                             return copy;
@@ -807,8 +791,18 @@ useEffect(() => {
                       <Input
                         variant="plain"
                         placeholder="Quantity"
-                        value={item.quantity_requested}
-                        readOnly
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={item.quantity_requested ?? ""}
+                        onChange={(e) =>
+                          handleItemChange(
+                            idx,
+                            "quantity_requested",
+                            e.target.value
+                          )
+                        }
+                        disabled={isView}
                       />
                     </td>
                     <td>
@@ -892,7 +886,6 @@ useEffect(() => {
               disabled={isView}
             />
 
-            {/* Summary */}
             <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
               <Sheet
                 variant="soft"
@@ -954,7 +947,6 @@ useEffect(() => {
         </form>
       </Card>
 
-      {/* Modals */}
       <SearchPickerModal
         open={transportationModalOpen}
         onClose={() => setTransportationModalOpen(false)}
@@ -980,18 +972,17 @@ useEffect(() => {
             const copy = [...prev];
             copy[activeItemIndex] = {
               ...copy[activeItemIndex],
-              // ids for backend
+
               po_id: po._id,
+              po_item_id: firstProduct?._id || null,
               category_id: firstProduct?.category?._id || null,
 
-              // UI
               po_number: po.po_number,
               project_id: po.p_id,
               vendor: po.vendor || "",
               category_name: firstProduct?.category?.name || "",
               uom: firstProduct?.uom || "",
 
-              // product fields
               product_name: firstProduct?.product_name || "",
               product_make: firstProduct?.make || "",
               quantity_requested: firstProduct?.quantity || "",
