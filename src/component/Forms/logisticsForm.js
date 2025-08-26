@@ -65,7 +65,7 @@ const AddLogisticForm = () => {
   const [totalWeight, setTotalWeight] = useState(0);
   const [vehicleCost, setVehicleCost] = useState(0);
 
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const fileInputRef = useRef(null);
   const [fileInputKey, setFileInputKey] = useState(0);
 
@@ -85,6 +85,22 @@ const AddLogisticForm = () => {
   const isAdd = mode === "add";
   const isEdit = mode === "edit";
   const isView = mode === "view";
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+  const canShow =
+    user?.department === "Logistic" || user?.role === "superadmin";
 
   useEffect(() => {
     const sum = items.reduce(
@@ -204,16 +220,25 @@ const AddLogisticForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // ⬇️ replace your onFileInput with:
   const onFileInput = (e) => {
-    const f = e.target?.files?.[0] ?? null;
-    setSelectedFile(f);
-    setFormData((p) => ({ ...p, attachment_url: f ? f.name : "" }));
+    const files = Array.from(e.target?.files || []);
+    setSelectedFiles(files);
+    setFormData((p) => ({
+      ...p,
+      attachment_url: files.length ? `${files.length} file(s) selected` : "",
+    }));
   };
 
-  const clearFile = () => {
-    setSelectedFile(null);
+  // new helpers
+  const clearAllFiles = () => {
+    setSelectedFiles([]);
     setFormData((p) => ({ ...p, attachment_url: "" }));
-    setFileInputKey((k) => k + 1);
+    setFileInputKey((k) => k + 1); // reset the <input>
+  };
+
+  const removeOneFile = (idx) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const handleItemChange = (index, field, value) => {
@@ -335,6 +360,12 @@ const AddLogisticForm = () => {
     }, 0);
     setVehicleCost(total);
   }, [transportation, poData, transportationPos]);
+  const buildUpdateFormData = (payload, files) => {
+    const fd = new FormData();
+    fd.append("data", JSON.stringify(payload)); // backend parses req.body.data
+    for (const f of files || []) if (f) fd.append("files", f); // repeat 'files'
+    return fd;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -363,14 +394,19 @@ const AddLogisticForm = () => {
         items: normalizedItems,
       };
 
-      clearFile();
-
       console.log("Submitting Logistic Data:", mode, payload);
 
       if (isEdit && logisticId) {
-        await updateLogistic({ id: logisticId, body: payload }).unwrap();
+        // Do NOT send attachment_url; server manages it
+        const { attachment_url, ...rest } = payload;
+
+        const fd = buildUpdateFormData(rest, selectedFiles); // <-- files array
+        await updateLogistic({ id: logisticId, body: fd }).unwrap();
 
         toast.success("Logistic updated successfully");
+        // optional: clear local file UI
+        // setSelectedFiles([]);
+        // setFileInputKey((k) => k + 1);
       } else {
         await addLogistic(payload).unwrap();
         toast.success("Logistic entry created successfully");
@@ -419,7 +455,7 @@ const AddLogisticForm = () => {
     setTransportationIdToName({});
     setTotalWeight(0);
     setVehicleCost(0);
-    setSelectedFile(null);
+    setSelectedFiles([]);
     setFileInputKey((k) => k + 1);
   };
 
@@ -546,76 +582,94 @@ const AddLogisticForm = () => {
               </FormControl>
             </Grid>
 
-            <Grid xs={12} sm={6}>
-              <FormControl>
-                <FormLabel>Attachment</FormLabel>
+            {canShow && (
+              <Grid xs={12} sm={6}>
+                <FormControl>
+                  <FormLabel>Attachment(s)</FormLabel>
 
-                <Button
-                  component="label"
-                  variant="soft"
-                  startDecorator={<CloudUpload />}
-                  sx={{ width: "fit-content" }}
-                  disabled={isView}
-                >
-                  Upload file
-                  <input
-                    key={fileInputKey}
-                    hidden
-                    ref={fileInputRef}
-                    type="file"
-                    onClick={(e) => {
-                      e.target.value = "";
-                    }}
-                    onChange={(e) => {
-                      const f = e.target?.files?.[0] ?? null;
-                      setSelectedFile(f);
-                      setFormData((p) => ({
-                        ...p,
-                        attachment_url: f ? f.name : "",
-                      }));
-                    }}
-                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
-                    disabled={isView}
-                  />
-                </Button>
-
-                {selectedFile ? (
-                  <Chip
+                  <Button
+                    component="label"
                     variant="soft"
-                    startDecorator={<InsertDriveFile />}
-                    endDecorator={
-                      <IconButton
-                        type="button"
-                        variant="plain"
+                    startDecorator={<CloudUpload />}
+                    sx={{ width: "fit-content" }}
+                    disabled={isView}
+                  >
+                    Upload files
+                    <input
+                      key={fileInputKey}
+                      hidden
+                      ref={fileInputRef}
+                      type="file"
+                      multiple // 👈 allow multiple
+                      accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp"
+                      onClick={(e) => {
+                        // allow reselecting same files
+                        e.target.value = "";
+                      }}
+                      onChange={onFileInput}
+                      disabled={isView}
+                    />
+                  </Button>
+
+                  {selectedFiles.length > 0 ? (
+                    <Box
+                      sx={{
+                        mt: 1,
+                        display: "flex",
+                        gap: 0.75,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      {selectedFiles.map((f, idx) => (
+                        <Chip
+                          key={idx}
+                          variant="soft"
+                          startDecorator={<InsertDriveFile />}
+                          endDecorator={
+                            <IconButton
+                              type="button"
+                              variant="plain"
+                              size="sm"
+                              aria-label="Remove file"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (isView) return;
+                                removeOneFile(idx);
+                              }}
+                              disabled={isView}
+                            >
+                              <CloseRounded />
+                            </IconButton>
+                          }
+                          sx={{ mt: 1, maxWidth: "100%" }}
+                          title={f.name}
+                        >
+                          {f.name}
+                        </Chip>
+                      ))}
+                      <Button
                         size="sm"
-                        aria-label="Remove file"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (isView) return;
-                          clearFile();
-                        }}
+                        variant="plain"
+                        color="danger"
+                        onClick={clearAllFiles}
                         disabled={isView}
                       >
-                        <CloseRounded />
-                      </IconButton>
-                    }
-                    sx={{ mt: 1, maxWidth: "100%" }}
-                    title={selectedFile.name}
-                  >
-                    {selectedFile.name}
-                  </Chip>
-                ) : (
-                  <Typography
-                    level="body-xs"
-                    sx={{ mt: 0.75, color: "neutral.plainColor" }}
-                  >
-                    Supported: PDF, DOCX, PNG, JPG (max ~25MB)
-                  </Typography>
-                )}
-              </FormControl>
-            </Grid>
+                        Clear all
+                      </Button>
+                    </Box>
+                  ) : (
+                    <Typography
+                      level="body-xs"
+                      sx={{ mt: 0.75, color: "neutral.plainColor" }}
+                    >
+                      Supported: PDF, DOCX, PNG, JPG, WEBP (max ~25MB each)
+                    </Typography>
+                  )}
+                </FormControl>
+              </Grid>
+            )}
           </Grid>
 
           <Divider sx={{ my: 3 }} />
@@ -652,7 +706,9 @@ const AddLogisticForm = () => {
                   <th style={{ width: "15%" }}>Product</th>
                   <th style={{ width: "10%" }}>Make</th>
                   <th style={{ width: "10%" }}>Qty</th>
-                  <th style={{ width: "12%" }}>Quantity Received</th>
+                  {canShow && (
+                    <th style={{ width: "12%" }}>Quantity Received</th>
+                  )}
                   <th style={{ width: "10%" }}>UoM</th>
                   <th style={{ width: "10%" }}>Weight (Ton)</th>
                   <th style={{ width: "60px", textAlign: "center" }}>Action</th>
@@ -805,18 +861,25 @@ const AddLogisticForm = () => {
                         disabled={isView}
                       />
                     </td>
-                    <td>
-                      <Input
-                        variant="plain"
-                        placeholder="Quantity Received"
-                        type="number"
-                        value={item.received_qty || ""}
-                        onChange={(e) =>
-                          handleItemChange(idx, "received_qty", e.target.value)
-                        }
-                        disabled={isView}
-                      />
-                    </td>
+                    {canShow && (
+                      <td>
+                        <Input
+                          variant="plain"
+                          placeholder="Quantity Received"
+                          type="number"
+                          value={item.received_qty || ""}
+                          onChange={(e) =>
+                            handleItemChange(
+                              idx,
+                              "received_qty",
+                              e.target.value
+                            )
+                          }
+                          disabled={isView}
+                        />
+                      </td>
+                    )}
+
                     <td>
                       <Input
                         variant="plain"
