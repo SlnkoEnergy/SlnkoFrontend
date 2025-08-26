@@ -43,18 +43,33 @@ function getField(rows, name) {
   return r?.values?.[0]?.input_values ?? "";
 }
 
-const ProductForm = () => {
+function normalizeCreatedProduct(res) {
+  let p = res;
+  if (p?.data?.data && (p?.data?.category || p?.data?.category?._id)) p = p.data;
+  if (p?.newProduct) p = p.newProduct;
+  if (p?.newMaterial) p = p.newMaterial;
+  if (p?.product) p = p.product;
+  if (p?.material) p = p.material;
+  return p;
+}
+
+const ProductForm = ({
+  embedded = false,
+  initialForm = null,
+  onCreated = null,
+  onClose = null,
+}) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const urlMode = (searchParams.get("mode") || "create").toLowerCase();
   const productId = searchParams.get("id") || null;
 
-  const [mode, setMode] = useState(urlMode);
+  const [mode, setMode] = useState(embedded ? "create" : urlMode);
   const isCreate = mode === "create";
   const isView = mode === "view";
   const isEdit = mode === "edit";
-  const isReadOnly = isView;
+  const isReadOnly = embedded ? false : isView;
 
   const [form, setForm] = useState(INITIAL_FORM);
   const [preview, setPreview] = useState(null);
@@ -67,20 +82,20 @@ const ProductForm = () => {
   const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation();
   const [triggerGetProductById] = useLazyGetProductByIdQuery();
 
-  const buildMaterialData = (form) => {
+  const buildMaterialData = (f) => {
     const rows = [];
     const push = (name, value) => {
       const v = value == null ? "" : String(value).trim();
       if (v) rows.push({ name, values: [{ input_values: v }] });
     };
 
-    push("Product Name", form.name);
-    push("Product Type", form.productType);
-    push("Cost", form.cost);
-    push("UoM", form.unitOfMeasure);
-    push("GST", form.gst);
-    push("Make", form.make);
-    push("Description", form.Description);
+    push("Product Name", f.name);
+    push("Product Type", f.productType);
+    push("Cost", f.cost);
+    push("UoM", f.unitOfMeasure);
+    push("GST", f.gst);
+    push("Make", f.make);
+    push("Description", f.Description);
 
     return rows;
   };
@@ -107,11 +122,21 @@ const ProductForm = () => {
 
     try {
       if (isCreate) {
-        await createProduct(payload).unwrap();
+        const res = await createProduct(payload).unwrap();
         toast.success("Product created successfully");
-        setForm(INITIAL_FORM);
-        setPreview(null);
-        setImageFile(null);
+        const createdDoc = normalizeCreatedProduct(res);
+
+        if (embedded && typeof onCreated === "function") {
+          onCreated(createdDoc);
+        }
+
+        if (embedded) {
+          onClose?.();
+        } else {
+          setForm(INITIAL_FORM);
+          setPreview(null);
+          setImageFile(null);
+        }
       } else if (isEdit && productId) {
         await updateProduct({
           productId,
@@ -191,6 +216,8 @@ const ProductForm = () => {
 
   // ---------- Load existing product in view/edit ----------
   useEffect(() => {
+    if (embedded) return; // ignore URL mode in embedded
+
     let active = true;
 
     const load = async () => {
@@ -222,24 +249,36 @@ const ProductForm = () => {
       }
     };
 
-    if (isView || isEdit) load();
+    if (mode === "view" || mode === "edit") load();
     return () => {
       active = false;
     };
-  }, [productId, isView, isEdit]);
+  }, [productId, mode, embedded, triggerGetProductById]);
+
+  // ---------- Prefill when embedded ----------
+  useEffect(() => {
+    if (!embedded) return;
+    const merged = { ...INITIAL_FORM, ...(initialForm || {}) };
+    setForm(merged);
+    setPreview(merged.imageUrl || null);
+    setMode("create");
+  }, [embedded, initialForm]);
 
   // ---------- Header actions ----------
   const goToView = () => {
+    if (embedded) return;
     if (!productId) return;
     setMode("view");
     navigate(`?mode=view&id=${productId}`, { replace: true });
   };
   const goToEdit = () => {
+    if (embedded) return;
     if (!productId) return;
     setMode("edit");
     navigate(`?mode=edit&id=${productId}`, { replace: true });
   };
   const goToCreate = () => {
+    if (embedded) return;
     setMode("create");
     navigate(`?mode=create`, { replace: true });
     setForm(INITIAL_FORM);
@@ -256,9 +295,13 @@ const ProductForm = () => {
         border: "1px solid #ddd",
         borderRadius: "lg",
         bgcolor: "background.body",
-        mt: { xs: "0%", lg: "5%" },
-        ml: { xs: "3%", lg: "25%", xl: "28%" },
-        mr: { xs: "3%", lg: "0%" },
+        ...(embedded
+          ? { m: 0, border: "none", borderRadius: 0, p: 0 }
+          : {
+              mt: { xs: "0%", lg: "5%" },
+              ml: { xs: "3%", lg: "25%", xl: "28%" },
+              mr: { xs: "3%", lg: "0%" },
+            }),
       }}
     >
       {/* Header */}
@@ -277,12 +320,14 @@ const ProductForm = () => {
           <Typography level="h4" mb={3} fontWeight="lg">
             {isCreate ? "Add New Product" : form.name || "Product"}
           </Typography>
-          <Chip
-            color={isCreate ? "success" : isView ? "neutral" : "primary"}
-            size="sm"
-          >
-            {mode.toUpperCase()}
-          </Chip>
+          {!embedded && (
+            <Chip
+              color={isCreate ? "success" : isView ? "neutral" : "primary"}
+              size="sm"
+            >
+              {mode.toUpperCase()}
+            </Chip>
+          )}
         </Box>
 
         <Box
@@ -337,8 +382,8 @@ const ProductForm = () => {
         </Box>
       </Box>
 
-      {/* Mode actions (right under header) */}
-      {!isCreate && (
+      {/* Mode actions (hidden in embedded) */}
+      {!embedded && !isCreate && (
         <Box display="flex" gap={1} mb={2}>
           {isView && (
             <Button variant="solid" color="primary" onClick={goToEdit}>
@@ -357,10 +402,10 @@ const ProductForm = () => {
       )}
 
       <form onSubmit={handleSubmit}>
-        {/* Product Name (contentEditable kept, but locked in View) */}
+        {/* Product Name */}
         <Box sx={{ mb: 3 }}>
           <Typography level="body-sm" fontWeight="md" mb={0.5}>
-            Product Name {isCreate && <span style={{ color: "red" }}>*</span>}
+            Product Name <span style={{ color: "red" }}>*</span>
           </Typography>
           <Box
             role="textbox"
@@ -383,8 +428,7 @@ const ProductForm = () => {
               handleChange("name", txt);
             }}
             sx={{
-              fontSize: "1.5rem",
-              fontWeight: "lg",
+              fontSize: "1.2rem",
               lineHeight: 1.4,
               minHeight: 40,
               px: 0,
@@ -400,9 +444,6 @@ const ProductForm = () => {
               },
               "&:focus": { borderColor: "neutral.plainColor" },
               "&:focus-visible": { outline: "none" },
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
               ...(isReadOnly && {
                 pointerEvents: "none",
                 opacity: 0.95,
@@ -569,12 +610,18 @@ const ProductForm = () => {
                   ? "Saving…"
                   : "Save Product"
                 : isUpdating
-                  ? "Updating…"
-                  : "Save Changes"}
+                ? "Updating…"
+                : "Save Changes"}
             </Button>
           )}
 
-          {isEdit && (
+          {embedded && (
+            <Button variant="outlined" color="neutral" onClick={onClose}>
+              Cancel
+            </Button>
+          )}
+
+          {!embedded && isEdit && (
             <Button variant="outlined" color="neutral" onClick={goToView}>
               Cancel
             </Button>
@@ -587,7 +634,10 @@ const ProductForm = () => {
         onClose={() => setCatModalOpen(false)}
         onPick={onPickCategory}
         title="Search: Category"
-        columns={categoryColumns}
+        columns={[
+          { key: "name", label: "Name", width: "100%" },
+          { key: "description", label: "Description", width: "100%" },
+        ]}
         fetchPage={fetchCategoriesPage}
         searchKey="name"
         pageSize={7}

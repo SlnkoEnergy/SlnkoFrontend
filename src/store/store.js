@@ -25,6 +25,7 @@ import { GlobalTaskApi } from "../redux/globalTaskSlice";
 import { AccountsApi } from "../redux/Accounts";
 import { productsApi } from "../redux/productsSlice";
 import { vendorsApi } from "../redux/vendorSlice";
+import { poHistoryApi } from "../redux/poHistory";
 
 export const store = configureStore({
   reducer: {
@@ -53,7 +54,8 @@ export const store = configureStore({
     [GlobalTaskApi.reducerPath]:GlobalTaskApi.reducer,
     [AccountsApi.reducerPath]:AccountsApi.reducer,
     [productsApi.reducerPath]: productsApi.reducer,
-    [vendorsApi.reducerPath]: vendorsApi.reducer
+    [vendorsApi.reducerPath]: vendorsApi.reducer,
+    [poHistoryApi.reducerPath]: poHistoryApi.reducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -82,6 +84,7 @@ export const store = configureStore({
       GlobalTaskApi.middleware,
       AccountsApi.middleware,
       productsApi.middleware,
-      vendorsApi.middleware
+      vendorsApi.middleware,
+      poHistoryApi.middleware
     ),
 });
