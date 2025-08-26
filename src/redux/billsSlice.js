@@ -23,23 +23,29 @@ export const billsApi = createApi({
       providesTags: ["Bill"],
     }),
 
-getAllBills: builder.query({
-  query: ({ page = 1, search = "", status = "", pageSize = 10, date = "", po_number }) => {
-    // decode status so %20 becomes space
-    const cleanStatus = status ? decodeURIComponent(status) : "";
+    getAllBills: builder.query({
+      query: ({
+        page = 1,
+        search = "",
+        status = "",
+        pageSize = 10,
+        date = "",
+        po_number,
+      }) => {
+        // decode status so %20 becomes space
+        const cleanStatus = status ? decodeURIComponent(status) : "";
 
-    return `bill?page=${page}&search=${search}&status=${cleanStatus}&pageSize=${pageSize}&date=${date}&po_number=${po_number}`;
-  },
-  transformResponse: (response) => ({
-    data: response.data || [],
-    total: response.total || 0,
-    totalPages: response.totalPages || 0,
-    page: response.page || 1,
-    pageSize: response.pageSize || 10,
-  }),
-  providesTags: ["Bill"],
-}),
-
+        return `bill?page=${page}&search=${search}&status=${cleanStatus}&pageSize=${pageSize}&date=${date}&po_number=${po_number}`;
+      },
+      transformResponse: (response) => ({
+        data: response.data || [],
+        total: response.total || 0,
+        totalPages: response.totalPages || 0,
+        page: response.page || 1,
+        pageSize: response.pageSize || 10,
+      }),
+      providesTags: ["Bill"],
+    }),
 
     exportBills: builder.mutation({
       query: ({ from, to, exportAll }) => {
@@ -107,6 +113,37 @@ getAllBills: builder.query({
       }),
       invalidatesTags: ["Bill"],
     }),
+    getBillById: builder.query({
+      query: ({ po_number, _id }) => {
+        const params = new URLSearchParams();
+        if (po_number) params.append("po_number", po_number);
+        if (_id) params.append("_id", _id);
+
+        return {
+          url: `get-bill-by-id?${params.toString()}`,
+          method: "GET",
+        };
+      },
+    }),
+    getBillHistory: builder.query({
+      query: ({ subject_type, subject_id }) => {
+        const params = new URLSearchParams({
+          subject_type,
+          subject_id,
+        });
+
+        return `/bill/billHistory?${params.toString()}`;
+      },
+      providesTags: ["Bill"],
+    }),
+    addBillHistory: builder.mutation({
+      query: (newHistory) => ({
+        url: "/bill/billHistory",
+        method: "POST",
+        body: newHistory,
+      }),
+      invalidatesTags: ["Pohistory"],
+    }),
   }),
 });
 
@@ -119,4 +156,7 @@ export const {
   useDeleteBillMutation,
   useDeleteCreditMutation,
   useApproveBillMutation,
+  useGetBillByIdQuery,
+ useLazyGetBillHistoryQuery,
+ useAddBillHistoryMutation
 } = billsApi;

@@ -15,28 +15,6 @@ import CheckCircleOutline from "@mui/icons-material/CheckCircleOutline";
 import LocalMallOutlined from "@mui/icons-material/LocalMallOutlined";
 import ChangeCircleOutlined from "@mui/icons-material/ChangeCircleOutlined";
 
-/**
- * POUpdateFeed
- * Props:
- * - items: Array<{
- *     id: string,
- *     ts: string|Date,
- *     kind: 'amount_change'|'status'|'created'|'note'|'bill'|'other',
- *     user: { name: string, avatarUrl?: string },
- *     title?: string,
- *     // amount_change:
- *     field?: 'untaxed'|'tax'|'total'|string,
- *     currency?: 'INR'|string,
- *     from?: number, to?: number,
- *     // status:
- *     statusFrom?: string, statusTo?: string,
- *     // note:
- *     note?: string,
- *   }>
- * - onAddNote: (text: string) => Promise|void
- * - compact?: boolean
- */
-
 function initials(name = "") {
   return String(name)
     .trim()
@@ -44,6 +22,13 @@ function initials(name = "") {
     .slice(0, 2)
     .map((s) => s[0]?.toUpperCase())
     .join("");
+}
+
+function formatStatusLabel(str = "") {
+  return String(str)
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 }
 
 function formatINR(n) {
@@ -61,7 +46,7 @@ function formatMoney(n, currency) {
   try {
     return val.toLocaleString(undefined, {
       style: "currency",
-      currency: currency,
+      currency,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
@@ -103,55 +88,139 @@ function ItemIcon({ kind }) {
       return <EditNoteOutlined fontSize="small" color="neutral" />;
   }
 }
-function AmountChangeRow({ from, to, currency = "INR", field = "Amount" }) {
+
+function AmountChangeRow({ from, to, currency = "INR", label, field }) {
+  const caption =
+    label ||
+    (field === "untaxed"
+      ? "Untaxed"
+      : field === "gst"
+        ? "GST"
+        : field === "po_value"
+          ? "Total"
+          : field || "Amount");
   return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+    <Box
+      sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}
+    >
+      <Typography level="body-sm" sx={{ color: "text.tertiary", minWidth: 72 }}>
+        {caption}:
+      </Typography>
       <Typography level="body-sm">{formatMoney(from, currency)}</Typography>
       <Typography level="body-sm" sx={{ color: "success.700" }}>
         ⟶ {formatMoney(to, currency)}
       </Typography>
-      <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
-        ({field === "untaxed" ? "Untaxed Amount" : field})
-      </Typography>
     </Box>
   );
 }
-function StatusRow({ from, to }) {
+
+function StatusRow({ from, to, remark }) {
+  const isRejected = String(to) === "approval_rejected";
   return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-      <Typography level="body-sm">Status:</Typography>
-      <Chip size="sm" variant="soft">{from || "—"}</Chip>
-      <Typography level="body-sm">⟶</Typography>
-      <Chip size="sm" variant="solid" color="primary">{to}</Chip>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+      <Box
+        sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}
+      >
+        <Typography level="body-sm">Status:</Typography>
+        <Chip size="sm" variant="soft">
+          {from ? formatStatusLabel(from) : "—"}
+        </Chip>
+        <Typography level="body-sm">⟶</Typography>
+        <Chip
+          size="sm"
+          variant="solid"
+          color={isRejected ? "danger" : "primary"}
+        >
+          {formatStatusLabel(to)}
+        </Chip>
+      </Box>
+
+      {isRejected && remark ? (
+        <Typography level="body-sm" sx={{ color: "danger.700" }}>
+          Remarks: {remark}
+        </Typography>
+      ) : null}
     </Box>
   );
 }
+
 function FeedItem({ item }) {
   const t = new Date(item.ts).toLocaleTimeString(undefined, {
     hour: "2-digit",
     minute: "2-digit",
   });
+
+  const isAmount = item.kind === "amount_change";
+  const hasList =
+    isAmount && Array.isArray(item.changes) && item.changes.length > 0;
+
   return (
     <Box sx={{ display: "grid", gridTemplateColumns: "36px 1fr", gap: 1.25 }}>
-      <Avatar size="sm" src={item?.user?.avatarUrl} sx={{ bgcolor: "neutral.softBg", fontSize: 12 }}>
+      <Avatar
+        size="sm"
+        src={item?.user?.avatarUrl}
+        sx={{ bgcolor: "neutral.softBg", fontSize: 12 }}
+      >
         {initials(item?.user?.name || "U")}
       </Avatar>
 
       <Box>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            flexWrap: "wrap",
+          }}
+        >
           <Typography level="body-sm" fontWeight="lg">
             {item?.user?.name || "User"}
           </Typography>
-          <Typography level="body-xs" sx={{ color: "text.tertiary" }}>{t}</Typography>
+          <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
+            {t}
+          </Typography>
         </Box>
 
-        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1, mt: 0.25 }}>
+        <Box
+          sx={{ display: "flex", alignItems: "flex-start", gap: 1, mt: 0.25 }}
+        >
           <ItemIcon kind={item.kind} />
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            {item.kind === "amount_change" ? (
-              <AmountChangeRow from={item.from} to={item.to} field={item.field} currency={item.currency} />
+            {isAmount ? (
+              <>
+                {item.title && (
+                  <Typography level="body-sm" sx={{ mb: 0.25 }}>
+                    {item.title}
+                  </Typography>
+                )}
+                {hasList ? (
+                  <Box sx={{ display: "grid", gap: 0.25 }}>
+                    {item.changes.map((c, i) => (
+                      <AmountChangeRow
+                        key={i}
+                        from={c.from}
+                        to={c.to}
+                        currency={item.currency}
+                        label={c.label}
+                        field={c.path || c.field}
+                      />
+                    ))}
+                  </Box>
+                ) : (
+                  <AmountChangeRow
+                    from={item.from}
+                    to={item.to}
+                    currency={item.currency}
+                    field={item.field}
+                  />
+                )}
+              </>
             ) : item.kind === "status" ? (
-              <StatusRow from={item.statusFrom} to={item.statusTo} />
+              <StatusRow
+                from={item.statusFrom}
+                to={item.statusTo}
+                remark={item.title}
+              />
             ) : item.kind === "note" ? (
               <Typography level="body-sm" sx={{ whiteSpace: "pre-wrap" }}>
                 {item.note || item.title}
@@ -180,7 +249,8 @@ export default function POUpdateFeed({
     const out = [];
     for (const it of sorted) {
       const last = out[out.length - 1];
-      if (!last || !sameDay(last.date, it.ts)) out.push({ date: it.ts, rows: [it] });
+      if (!last || !sameDay(last.date, it.ts))
+        out.push({ date: it.ts, rows: [it] });
       else last.rows.push(it);
     }
     return out;
@@ -197,10 +267,17 @@ export default function POUpdateFeed({
       setSending(false);
     }
   };
-
   return (
-    <Sheet variant="outlined" sx={{ mt: 2, borderRadius: "lg", overflow: "hidden", bgcolor: "background.surface" }}>
-      {/* Header bar with Chip */}
+    <Sheet
+      variant="outlined"
+      sx={{
+        mt: 2,
+        borderRadius: "lg",
+        overflow: "hidden",
+        bgcolor: "background.surface",
+      }}
+    >
+      {/* Header */}
       <Box
         sx={{
           px: 1.25,
@@ -224,9 +301,13 @@ export default function POUpdateFeed({
         </Chip>
       </Box>
 
-      {/* Note editor */}
       {noteOpen && (
-        <Box sx={{ p: 1.25, borderBottom: "1px solid var(--joy-palette-neutral-outlinedBorder)" }}>
+        <Box
+          sx={{
+            p: 1.25,
+            borderBottom: "1px solid var(--joy-palette-neutral-outlinedBorder)",
+          }}
+        >
           <Sheet variant="soft" sx={{ p: 1.25, borderRadius: "md" }}>
             <Textarea
               minRows={2}
@@ -234,7 +315,14 @@ export default function POUpdateFeed({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               endDecorator={
-                <Box sx={{ display: "flex", gap: 0.5, justifyContent: "flex-end", width: "100%" }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: 0.5,
+                    justifyContent: "flex-end",
+                    width: "100%",
+                  }}
+                >
                   <Button
                     size="sm"
                     variant="outlined"
@@ -265,7 +353,20 @@ export default function POUpdateFeed({
       )}
 
       {/* Feed */}
-      <Box sx={{ p: compact ? 1 : 2 }}>
+      <Box
+        sx={{
+          p: compact ? 1 : 2,
+          maxHeight: 400,
+          overflowY: "auto",
+          "&::-webkit-scrollbar": {
+            width: "6px",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "rgba(0,0,0,0.3)",
+            borderRadius: "3px",
+          },
+        }}
+      >
         {grouped.length === 0 ? (
           <Typography level="body-sm" sx={{ color: "text.tertiary", px: 0.5 }}>
             No updates yet.
@@ -273,7 +374,10 @@ export default function POUpdateFeed({
         ) : (
           grouped.map((g, gi) => (
             <Box key={gi} sx={{ mb: 2.5 }}>
-              <Typography level="body-xs" sx={{ color: "text.tertiary", mb: 1 }}>
+              <Typography
+                level="body-xs"
+                sx={{ color: "text.tertiary", mb: 1 }}
+              >
                 {dayLabel(g.date)}
               </Typography>
 

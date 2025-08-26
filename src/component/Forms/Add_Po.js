@@ -42,7 +42,16 @@ import {
   useLazyGetProductsQuery,
 } from "../../redux/productsSlice";
 import ProductForm from "./Product_Form";
-import POUpdateFeed from "../PoUpdateForm"; // <-- file from above
+import POUpdateFeed from "../PoUpdateForm";
+import {
+  useAddPoHistoryMutation,
+  useLazyGetPoHistoryQuery,
+} from "../../redux/poHistory";
+
+const VENDOR_LIMIT = 7;
+const SEARCH_MORE_VENDOR = "__SEARCH_MORE_VENDOR__";
+const SEARCH_MORE_MAKE = "__SEARCH_MORE_MAKE__";
+const CREATE_PRODUCT_INLINE = "__CREATE_PRODUCT_INLINE__";
 
 const makeEmptyLine = () => ({
   id: crypto.randomUUID(),
@@ -97,10 +106,12 @@ const mkKey = (catId, prodName) =>
     .trim()
     .toLowerCase()}`;
 
-const VENDOR_LIMIT = 7;
-const SEARCH_MORE_VENDOR = "__SEARCH_MORE_VENDOR__";
-const SEARCH_MORE_MAKE = "__SEARCH_MORE_MAKE__";
-const CREATE_PRODUCT_INLINE = "__CREATE_PRODUCT_INLINE__";
+/* ----- LABEL MAPS FOR FEED ----- */
+const AMOUNT_LABELS_BY_PATH = {
+  po_basic: "Untaxed",
+  gst: "GST",
+  po_value: "Total",
+};
 
 const AddPurchaseOrder = ({
   onSuccess,
@@ -124,10 +135,13 @@ const AddPurchaseOrder = ({
   const viewMode = effectiveMode === "view";
   const [openRefuse, setOpenRefuse] = useState(false);
   const [remarks, setRemarks] = useState("");
+
+  /* Vendors */
   const [vendorSearch, setVendorSearch] = useState("");
   const [vendorPage, setVendorPage] = useState(1);
   const [vendorModalOpen, setVendorModalOpen] = useState(false);
   const [billModalOpen, setBillModalOpen] = useState(false);
+
   const { data: vendorsResp, isFetching: vendorsLoading } =
     useGetVendorsNameSearchQuery({
       search: vendorSearch,
@@ -135,8 +149,8 @@ const AddPurchaseOrder = ({
       limit: VENDOR_LIMIT,
     });
 
-  const vendorRows = vendorsResp?.data || [];
   const [triggerVendorSearch] = useLazyGetVendorsNameSearchQuery();
+  const vendorRows = vendorsResp?.data || [];
 
   const vendorColumns = [
     { key: "name", label: "Vendor Name", width: 320 },
@@ -167,7 +181,7 @@ const AddPurchaseOrder = ({
     setVendorModalOpen(false);
   };
 
-  // -------- form state --------
+  /* -------- form state -------- */
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [manualEdit, setManualEdit] = useState(false);
 
@@ -209,7 +223,7 @@ const AddPurchaseOrder = ({
       prev.map((l) => (l.id === id ? { ...l, [field]: value } : l))
     );
 
-  // -------- totals --------
+  /* -------- totals -------- */
   const amounts = useMemo(() => {
     const untaxed = lines.reduce((sum, l) => {
       const q = Number(l.quantity || 0);
@@ -234,7 +248,7 @@ const AddPurchaseOrder = ({
     }));
   }, [amounts]);
 
-  // -------- auth helper --------
+  /* -------- auth helper -------- */
   const getUserData = () => {
     const raw = localStorage.getItem("userDetails");
     try {
@@ -251,7 +265,7 @@ const AddPurchaseOrder = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // -------- map PO -> lines --------
+  /* -------- map PO -> lines -------- */
   const mapPOtoLines = (po) => {
     const arr = Array.isArray(po?.items)
       ? po.items
@@ -279,7 +293,7 @@ const AddPurchaseOrder = ({
       : [makeEmptyLine()];
   };
 
-  // -------- fetch PO (edit/view) --------
+  /* -------- fetch PO (edit/view) -------- */
   const [poLoading, setPoLoading] = useState(false);
   const [fetchedPoStatus, setFetchedPoStatus] = useState(poStatus || "draft");
   const _id = searchParams.get("_id") || "";
@@ -291,7 +305,9 @@ const AddPurchaseOrder = ({
       try {
         setPoLoading(true);
         const { data: resp } = await Axios.get(
-          `/get-po-by-po_number?po_number=${encodeURIComponent(poNumberQ)}&_id=${_id}`,
+          `/get-po-by-po_number?po_number=${encodeURIComponent(
+            poNumberQ
+          )}&_id=${_id}`,
           { headers: { "x-auth-token": token } }
         );
         const po = Array.isArray(resp?.data)
@@ -447,7 +463,7 @@ const AddPurchaseOrder = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lines.map((l) => `${l.productCategoryId}::${l.productName}`).join("|")]);
 
-  // ---------- Make modal ----------
+  /* ---------- Make modal ---------- */
   const [makeModalOpen, setMakeModalOpen] = useState(false);
   const fetchMakesPage = async ({ search = "", page = 1, pageSize = 7 }) => {
     const row = lines.find((r) => r.id === activeLineId);
@@ -574,7 +590,6 @@ const AddPurchaseOrder = ({
     );
   }, [makesCache]);
 
-  // >>> HISTORY: state + helpers
   const [historyItems, setHistoryItems] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [serverTotals, setServerTotals] = useState({
@@ -583,35 +598,58 @@ const AddPurchaseOrder = ({
     po_value: 0,
   });
 
+  const [addPoHistory] = useAddPoHistoryMutation();
+  const [triggerGetPoHistory] = useLazyGetPoHistoryQuery();
+
   const mapDocToFeedItem = (doc) => {
     const base = {
       id: String(doc._id || crypto.randomUUID()),
       ts: doc.createdAt || doc.updatedAt || new Date().toISOString(),
       user: { name: doc?.createdBy?.name || doc?.createdBy || "System" },
     };
-    if (doc.event_type === "amount_change") {
-      const c0 = Array.isArray(doc?.changes) ? doc.changes[0] : null;
+
+    if (doc.event_type === "amount_change" || doc.event_type === "update") {
+      const changes = (Array.isArray(doc?.changes) ? doc.changes : [])
+        .filter(
+          (c) => typeof c?.from !== "undefined" && typeof c?.to !== "undefined"
+        )
+        .map((c, idx) => {
+          const label =
+            c.label ||
+            (c.path ? AMOUNT_LABELS_BY_PATH[c.path] || c.path : "") ||
+            `field_${idx + 1}`;
+          return {
+            label,
+            path: c.path || undefined,
+            from: Number(c.from ?? 0),
+            to: Number(c.to ?? 0),
+          };
+        });
+
       return {
         ...base,
         kind: "amount_change",
-        from: Number(c0?.from ?? 0),
-        to: Number(c0?.to ?? 0),
-        field: String(c0?.field || "untaxed").toLowerCase(),
+        title: doc.message || "Amounts updated",
         currency: "INR",
+        changes,
       };
     }
-    if (doc.event_type === "status") {
+
+    if (doc.event_type === "status_change") {
       const c0 = Array.isArray(doc?.changes) ? doc.changes[0] : null;
       return {
         ...base,
         kind: "status",
         statusFrom: c0?.from || "",
         statusTo: c0?.to || "",
-        title: doc.message || "",
+        title: doc.message || "Status changed",
       };
     }
-    if (doc.event_type === "note")
+
+    if (doc.event_type === "note") {
       return { ...base, kind: "note", note: doc.message || "" };
+    }
+
     return { ...base, kind: "other", title: doc.message || doc.event_type };
   };
 
@@ -619,15 +657,12 @@ const AddPurchaseOrder = ({
     if (!formData?._id) return;
     try {
       setHistoryLoading(true);
-      const token = localStorage.getItem("authToken");
-      const { data } = await Axios.get(
-        `/history/Pohistory?subject_type=purchase_order&subject_id=${formData._id}&page=1&pageSize=100&sort=-createdAt`,
-        { headers: { "x-auth-token": token } }
-      );
+      const data = await triggerGetPoHistory({
+        subject_type: "purchase_order",
+        subject_id: formData._id,
+      }).unwrap();
       const rows = Array.isArray(data?.data) ? data.data : [];
       setHistoryItems(rows.map(mapDocToFeedItem));
-
-      // update baseline
       setServerTotals({
         po_basic: Number(formData.po_basic || 0),
         gst: Number(formData.gst || 0),
@@ -648,10 +683,8 @@ const AddPurchaseOrder = ({
     ) {
       fetchPoHistory();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData._id]);
 
-  // ===== New: feed ref + helpers for optimistic update & scroll =====
   const feedRef = useRef(null);
   const scrollToFeed = () => {
     if (feedRef.current) {
@@ -660,8 +693,8 @@ const AddPurchaseOrder = ({
   };
 
   const pushHistoryItem = (itemShape) => {
-    // itemShape: { kind: "note" | "status" | "amount_change", ... }
-    const userName = getUserData()?.name || "User";
+    const user = getUserData();
+    const userName = user?.name || "User";
     const base = {
       id: crypto.randomUUID(),
       ts: new Date().toISOString(),
@@ -680,13 +713,28 @@ const AddPurchaseOrder = ({
         title: itemShape.title || "",
       };
     } else if (itemShape.kind === "amount_change") {
+      const changes = Array.isArray(itemShape.changes)
+        ? itemShape.changes.map((c, idx) => ({
+            label: c.label || c.path || `field_${idx + 1}`,
+            path: c.path,
+            from: Number(c.from ?? 0),
+            to: Number(c.to ?? 0),
+          }))
+        : [
+            {
+              label: itemShape.label || itemShape.field || "amount",
+              path: itemShape.path,
+              from: Number(itemShape.from || 0),
+              to: Number(itemShape.to || 0),
+            },
+          ];
+
       normalized = {
         ...base,
         kind: "amount_change",
-        field: itemShape.field || "untaxed",
-        from: Number(itemShape.from || 0),
-        to: Number(itemShape.to || 0),
+        title: itemShape.title || "Amounts updated",
         currency: "INR",
+        changes,
       };
     } else {
       normalized = { ...base, kind: "other", title: itemShape.title || "" };
@@ -695,37 +743,35 @@ const AddPurchaseOrder = ({
     setHistoryItems((prev) => [normalized, ...prev]);
     scrollToFeed();
   };
-  // ===== End helpers =====
+  /* ===== End helpers ===== */
 
   const handleAddHistoryNote = async (text) => {
     if (!formData?._id) return toast.error("PO id missing.");
 
-    // Optimistic push to feed only
+    // Optimistic feed
     pushHistoryItem({ kind: "note", note: text });
 
     try {
-      const token = localStorage.getItem("authToken");
-      await Axios.post(
-        "/history/PoHistory",
-        {
-          subject_type: "purchase_order",
-          subject_id: formData._id,
-          event_type: "note",
-          message: text,
-          createdBy: getUserData()?.name || "User",
-          changes: [],
-          attachments: [],
+      const user = getUserData();
+      await addPoHistory({
+        subject_type: "purchase_order",
+        subject_id: formData._id,
+        event_type: "note",
+        message: text,
+        createdBy: {
+          name: user?.name || "User",
+          user_id: user?._id,
         },
-        { headers: { "x-auth-token": token } }
-      );
+        changes: [],
+        attachments: [],
+      }).unwrap();
+
       toast.success("Note added");
-      // No full refetch; feed already updated & scrolled
     } catch (e) {
       console.error(e);
       toast.error("Failed to add note");
     }
   };
-  // <<< HISTORY
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -759,6 +805,7 @@ const AddPurchaseOrder = ({
     const hasValidLine =
       item.length > 0 && item.some((it) => Number(it.quantity) > 0);
 
+    /* ---------- EDIT SAVE ---------- */
     if (action === "edit_save" && !fromModal) {
       if (!formData?._id) return toast.error("PO id missing.");
       if (!isApprovalPending)
@@ -788,55 +835,56 @@ const AddPurchaseOrder = ({
         setManualEdit(false);
         onSuccess?.({ created: false, updated: true, status: statusNow });
 
-        // >>> HISTORY: record amount deltas (optimistic per-field)
         const newTotals = {
           po_basic: Number(amounts.untaxed || 0),
           gst: Number(amounts.tax || 0),
           po_value: Number(amounts.total || 0),
         };
-        const fields = [
-          ["po_basic", "untaxed"],
-          ["gst", "tax"],
-          ["po_value", "total"],
-        ];
-        const diffs = [];
-        fields.forEach(([key, field]) => {
-          const from = Number(serverTotals[key] || 0);
-          const to = Number(newTotals[key] || 0);
-          if (from !== to) diffs.push({ field, from, to });
-        });
 
-        // Optimistically push to feed and scroll
-        diffs.forEach((d) =>
+        const FIELDS = [
+          { path: "po_basic", label: "Untaxed", pick: "po_basic" },
+          { path: "gst", label: "GST", pick: "gst" },
+          { path: "po_value", label: "Total", pick: "po_value" },
+        ];
+
+        const diffs = FIELDS.reduce((arr, f) => {
+          const from = Number(serverTotals[f.pick] || 0);
+          const to = Number(newTotals[f.pick] || 0);
+          if (from !== to) arr.push({ path: f.path, label: f.label, from, to });
+          return arr;
+        }, []);
+
+        if (diffs.length) {
           pushHistoryItem({
             kind: "amount_change",
-            field: d.field,
-            from: d.from,
-            to: d.to,
-          })
-        );
+            title: "Amounts updated",
+            changes: diffs.map((d) => ({
+              path: d.path,
+              label: d.label,
+              from: d.from,
+              to: d.to,
+            })),
+          });
 
-        // Fire-and-forget server history (no refetch)
-        if (diffs.length) {
+          const user = getUserData();
           try {
-            await Axios.post(
-              "/history/PoHistory",
-              {
-                subject_type: "purchase_order",
-                subject_id: formData._id,
-                event_type: "amount_change",
-                message: "Amounts updated",
-                createdBy: getUserData()?.name || "User",
-                changes: diffs,
+            await addPoHistory({
+              subject_type: "purchase_order",
+              subject_id: formData._id,
+              event_type: "amount_change",
+              message: "Amounts updated",
+              createdBy: {
+                name: user?.name || "User",
+                user_id: user?._id,
               },
-              { headers: { "x-auth-token": token } }
-            );
+              changes: diffs,
+            }).unwrap();
           } catch (err) {
             console.error("Failed to record amount change history", err);
           }
         }
+
         setServerTotals(newTotals);
-        // <<< HISTORY
         return;
       } catch (err) {
         console.error(err);
@@ -868,7 +916,7 @@ const AddPurchaseOrder = ({
         toast.success("PO confirmed.");
         onSuccess?.({ created: false, updated: true, status: "po_created" });
 
-        // >>> HISTORY (optimistic + scroll)
+        // >>> HISTORY (optimistic + server)
         pushHistoryItem({
           kind: "status",
           statusFrom: statusNow,
@@ -876,19 +924,25 @@ const AddPurchaseOrder = ({
           title: `PO confirmed (${formData.po_number})`,
         });
 
-        // Server write (no refetch)
-        await Axios.post(
-          "/history/PoHistory",
-          {
-            subject_type: "purchase_order",
-            subject_id: _id,
-            event_type: "status",
-            message: `PO confirmed (${formData.po_number})`,
-            createdBy: getUserData()?.name || "User",
-            changes: [{ field: "status", from: statusNow, to: "po_created" }],
+        const user = getUserData();
+        await addPoHistory({
+          subject_type: "purchase_order",
+          subject_id: _id,
+          event_type: "status_change",
+          message: `PO confirmed (${formData.po_number})`,
+          createdBy: {
+            name: user?.name || "User",
+            user_id: user?._id,
           },
-          { headers: { "x-auth-token": token } }
-        );
+          changes: [
+            {
+              path: "status",
+              label: "Status",
+              from: statusNow,
+              to: "po_created",
+            },
+          ],
+        }).unwrap();
 
         return onClose ? onClose() : navigate("/purchase-order");
       } catch (err) {
@@ -900,6 +954,7 @@ const AddPurchaseOrder = ({
       return;
     }
 
+    /* ---------- SEND APPROVAL ---------- */
     if (effectiveMode === "edit" && action === "send_approval") {
       const token = localStorage.getItem("authToken");
       setIsSubmitting(true);
@@ -922,11 +977,9 @@ const AddPurchaseOrder = ({
             item,
             initial_status: "approval_pending",
           };
-          const resp = await Axios.post("/Add-purchase-ordeR-IT", dataToPost, {
+          await Axios.post("/Add-purchase-ordeR-IT", dataToPost, {
             headers: { "x-auth-token": token },
           });
-          const createdId = resp?.data?.newPO?._id;
-          if (createdId) localStorage.setItem("lastPOApprovalId", createdId);
           toast.success("PO sent for approval.");
           onSuccess?.({
             created: true,
@@ -968,7 +1021,7 @@ const AddPurchaseOrder = ({
       return;
     }
 
-    // ---------- CREATE ----------
+    /* ---------- CREATE ---------- */
     if (effectiveMode === "create" || fromModal) {
       if (!formData.name) return toast.error("Vendor is required.");
       if (!formData.date) return toast.error("PO Date is required.");
@@ -1000,11 +1053,11 @@ const AddPurchaseOrder = ({
           item,
           initial_status,
         };
-        const resp = await Axios.post("/Add-purchase-ordeR-IT", dataToPost, {
+
+        await Axios.post("/Add-purchase-ordeR-IT", dataToPost, {
           headers: { "x-auth-token": token },
         });
-        const createdId = resp?.data?.newPO?._id;
-        if (createdId) localStorage.setItem("lastPOApprovalId", createdId);
+
         toast.success(
           action === "send_approval" ? "PO sent for approval." : "PO created."
         );
@@ -1032,14 +1085,16 @@ const AddPurchaseOrder = ({
   const handleApprove = async () => {
     try {
       const token = localStorage.getItem("authToken");
+
       await Axios.put(
         "/updateStatusPO",
         { id: _id, status: "approval_done", remarks: "Approved by CAM" },
         { headers: { "x-auth-token": token } }
       );
+
       toast.success("PO Approved");
 
-      // >>> HISTORY (optimistic + scroll)
+      // Optimistic status
       pushHistoryItem({
         kind: "status",
         statusFrom: statusNow,
@@ -1047,19 +1102,26 @@ const AddPurchaseOrder = ({
         title: "PO approved",
       });
 
-      // Server write (no refetch)
-      await Axios.post(
-        "/history/PoHistory",
-        {
-          subject_type: "purchase_order",
-          subject_id: _id,
-          event_type: "status",
-          message: "PO approved",
-          createdBy: getUserData()?.name || "User",
-          changes: [{ field: "status", from: statusNow, to: "approval_done" }],
+      // Persist history via RTK Query
+      const user = getUserData();
+      await addPoHistory({
+        subject_type: "purchase_order",
+        subject_id: _id,
+        event_type: "status_change",
+        message: "PO approved",
+        createdBy: {
+          name: user?.name || "User",
+          user_id: user?._id,
         },
-        { headers: { "x-auth-token": token } }
-      );
+        changes: [
+          {
+            path: "status",
+            label: "Status",
+            from: statusNow,
+            to: "approval_done",
+          },
+        ],
+      }).unwrap();
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to approve");
     }
@@ -1068,16 +1130,17 @@ const AddPurchaseOrder = ({
   const handleRefuse = async () => {
     try {
       const token = localStorage.getItem("authToken");
+
       await Axios.put(
         "/updateStatusPO",
         { id: _id || poNumberQ, status: "approval_rejected", remarks },
         { headers: { "x-auth-token": token } }
       );
+
       toast.success("PO Refused");
       setOpenRefuse(false);
       setRemarks("");
 
-      // >>> HISTORY (optimistic + scroll)
       pushHistoryItem({
         kind: "status",
         statusFrom: statusNow,
@@ -1085,21 +1148,25 @@ const AddPurchaseOrder = ({
         title: remarks || "PO refused",
       });
 
-      // Server write (no refetch)
-      await Axios.post(
-        "/history/PoHistory",
-        {
-          subject_type: "purchase_order",
-          subject_id: _id || poNumberQ,
-          event_type: "status",
-          message: remarks || "PO refused",
-          createdBy: getUserData()?.name || "User",
-          changes: [
-            { field: "status", from: statusNow, to: "approval_rejected" },
-          ],
+      const user = getUserData();
+      await addPoHistory({
+        subject_type: "purchase_order",
+        subject_id: _id,
+        event_type: "status_change",
+        message: remarks || "PO refused",
+        createdBy: {
+          name: user?.name || "User",
+          user_id: user?._id,
         },
-        { headers: { "x-auth-token": token } }
-      );
+        changes: [
+          {
+            path: "status",
+            label: "Status",
+            from: statusNow,
+            to: "approval_rejected",
+          },
+        ],
+      }).unwrap();
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to refuse");
     }
@@ -1107,7 +1174,7 @@ const AddPurchaseOrder = ({
 
   const user = getUserData();
 
-  // -------- vendor options --------
+  /* -------- vendor options -------- */
   const vendorOptions = [
     ...(formData.name && !vendorRows.some((v) => v.name === formData.name)
       ? [{ value: formData.name, label: formData.name }]
@@ -1316,6 +1383,7 @@ const AddPurchaseOrder = ({
                 />
               </Box>
             )}
+
           <Box
             sx={{
               display: "flex",
@@ -1349,7 +1417,7 @@ const AddPurchaseOrder = ({
                   variant="solid"
                   sx={{ fontWeight: 700 }}
                 >
-                  {"—"}
+                  {formData?.po_number || "—"}
                 </Chip>
               </Box>
               <Divider orientation="vertical" />
@@ -1363,10 +1431,11 @@ const AddPurchaseOrder = ({
                   size="sm"
                   sx={{ fontWeight: 700, pl: 0.5, pr: 1 }}
                 >
-                  Siddharth
+                  {formData?.submitted_By || "-"}
                 </Chip>
               </Box>
             </Sheet>
+
             <Box
               display={"flex"}
               gap={2}
@@ -1941,7 +2010,7 @@ const AddPurchaseOrder = ({
           backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
         />
 
-        {/* Product picker (optional) */}
+        {/* Product picker */}
         <SearchPickerModal
           open={productModalOpen}
           onClose={() => {
@@ -2057,13 +2126,13 @@ const AddPurchaseOrder = ({
                 poData={formData}
                 poLines={lines}
                 onClose={() => setBillModalOpen(false)}
+                fromModal
               />
             </Box>
           </ModalDialog>
         </Modal>
       </Box>
 
-      {/* >>> HISTORY FEED */}
       <Box ref={feedRef}>
         <POUpdateFeed
           items={historyItems}
@@ -2071,7 +2140,6 @@ const AddPurchaseOrder = ({
           compact
         />
       </Box>
-      {/* <<< HISTORY FEED */}
     </Box>
   );
 };

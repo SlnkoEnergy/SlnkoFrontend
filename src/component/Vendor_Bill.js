@@ -17,7 +17,7 @@ import Input from "@mui/joy/Input";
 import Typography from "@mui/joy/Typography";
 import { useSnackbar } from "notistack";
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   useExportBillsMutation,
   useGetAllBillsQuery,
@@ -57,11 +57,10 @@ function VendorBillSummary() {
     status: selectedbill,
     search: searchQuery,
     date: date,
-    po_number:po_number
+    po_number: po_number,
   });
 
   const [exportBills, { isLoading: isExporting }] = useExportBillsMutation();
-
   const {
     data: getBillData = [],
     total = 0,
@@ -397,22 +396,7 @@ function VendorBillSummary() {
           textAlign: "left",
         }}
       >
-        <Tooltip title={cell} arrow placement="bottom">
-          <Chip
-            variant="solid"
-            color="primary"
-            size="md"
-            sx={{
-              fontWeight: 600,
-              fontSize: 13,
-              borderRadius: "20px",
-              cursor: "pointer",
-              maxWidth: 200,
-            }}
-          >
-            {cell}
-          </Chip>
-        </Tooltip>
+        {cell}
       </Box>
     );
   };
@@ -426,6 +410,8 @@ function VendorBillSummary() {
       date: date,
     });
   };
+
+  const navigate = useNavigate();
   return (
     <>
       <Box
@@ -485,15 +471,15 @@ function VendorBillSummary() {
           >
             <Box component="tr">
               {[
-                "Project ID",
-                "PO NO.",
-                "Vendor",
-                "Category",
                 "Bill No.",
                 "Bill Date",
                 "Bill Value",
-                "PO Value",
                 "Total Billed",
+                "Category",
+                "Project ID",
+                "PO NO.",
+                "Vendor",
+                "PO Value",
                 "PO Status",
                 "Received",
                 "Created On",
@@ -556,17 +542,24 @@ function VendorBillSummary() {
                     textAlign: "left",
                   }}
                 >
-                  <RenderTableCell cell={bill.project_id} />
-
                   <Box
                     component="td"
                     sx={{
                       borderBottom: "1px solid #ddd",
-                      padding: "12px",
+                      padding: "8px",
                       textAlign: "left",
                     }}
                   >
-                    {bill.po_no}
+                    <Chip
+                      variant="outlined"
+                      color="primary"
+                      sx={{ cursor: "pointer" }}
+                      onClick={() =>
+                        navigate(`/add_bill?mode=edit&_id=${bill._id}`)
+                      }
+                    >
+                      {bill.bill_no}
+                    </Chip>
                   </Box>
 
                   <Box
@@ -577,8 +570,31 @@ function VendorBillSummary() {
                       textAlign: "left",
                     }}
                   >
-                    {bill.vendor}
+                    {dayjs(bill.bill_date).format("DD/MM/YYYY")}
                   </Box>
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                    }}
+                  >
+                    ₹{bill.bill_value}
+                  </Box>
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                    }}
+                  >
+                    ₹{bill.total_billed}
+                  </Box>
+
                   <Box
                     component="td"
                     sx={{
@@ -634,15 +650,17 @@ function VendorBillSummary() {
                       : bill.item?.category_name || "-"}
                   </Box>
 
+                  <RenderTableCell cell={bill.project_id} />
+
                   <Box
                     component="td"
                     sx={{
                       borderBottom: "1px solid #ddd",
-                      padding: "8px",
+                      padding: "12px",
                       textAlign: "left",
                     }}
                   >
-                    {bill.bill_no}
+                    {bill.po_no}
                   </Box>
 
                   <Box
@@ -653,18 +671,7 @@ function VendorBillSummary() {
                       textAlign: "left",
                     }}
                   >
-                    {dayjs(bill.bill_date).format("DD/MM/YYYY")}
-                  </Box>
-
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    ₹{bill.bill_value}
+                    {bill.vendor}
                   </Box>
 
                   <Box
@@ -676,17 +683,6 @@ function VendorBillSummary() {
                     }}
                   >
                     ₹{bill.po_value}
-                  </Box>
-
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    ₹{bill.total_billed}
                   </Box>
 
                   <Box
@@ -798,7 +794,6 @@ function VendorBillSummary() {
         </Box>
 
         <FormControl size="sm" sx={{ minWidth: 120 }}>
-          {/* <FormLabel>Per Page</FormLabel> */}
           <Select
             value={perPage}
             onChange={(e, newValue) => handlePerPageChange(newValue)}
