@@ -72,9 +72,8 @@ export default function VendorBillForm({
   const [historyItems, setHistoryItems] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
-  // ---- server baseline (for change detection) ----
   const [serverTotals, setServerTotals] = useState({
-    bill_value: 0, // untaxed
+    bill_value: 0, 
     gst: 0,
     bill_date: new Date(),
   });
@@ -824,7 +823,7 @@ export default function VendorBillForm({
                         onChange={(e) =>
                           updateLine(l.id, "product_name", e.target.value)
                         }
-                        disabled={loading || isEdit}
+                        disabled
                       />
                     </td>
                     <td>
@@ -836,7 +835,7 @@ export default function VendorBillForm({
                         onChange={(e) =>
                           updateLine(l.id, "product_make", e.target.value)
                         }
-                        disabled={loading || isEdit}
+                        disabled
                       />
                     </td>
                     <td>
@@ -848,7 +847,7 @@ export default function VendorBillForm({
                         onChange={(e) =>
                           updateLine(l.id, "uom", e.target.value)
                         }
-                        disabled={loading || isEdit}
+                        disabled
                       />
                     </td>
                     <td>

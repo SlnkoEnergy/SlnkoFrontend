@@ -174,8 +174,7 @@ function VendorBillSummary() {
         const response = await Axios.put(
           "/accepted-by",
           {
-            bill_number: billNumber,
-            approved_by: user?.name,
+            bill_number: billNumber
           },
           {
             headers: {
@@ -261,13 +260,13 @@ function VendorBillSummary() {
     str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 
   const BillingStatusChip = ({ status, balance }) => {
-    const isFullyBilled = status === "fully billed" && balance === 0;
+    const isFullyBilled = status === "fully billed";
     const isPending = status === "waiting bills";
 
     const rawLabel = isFullyBilled
       ? "Fully Billed"
       : isPending
-        ? `${balance} - Pending`
+        ? `${balance} - Waiting Bills`
         : status;
 
     const label = capitalize(rawLabel);
@@ -693,10 +692,10 @@ function VendorBillSummary() {
                       textAlign: "left",
                     }}
                   >
-                    <BillingStatusChip
-                      status={bill.po_status}
-                      balance={bill.po_value - bill.total_billed}
-                    />
+                   <BillingStatusChip
+  status={bill.po_status}
+  balance={(bill.po_value - bill.total_billed).toFixed(2)}
+/>
                   </Box>
 
                   <Box
@@ -709,7 +708,7 @@ function VendorBillSummary() {
                   >
                     <BillAcceptance
                       billNumber={bill.bill_no}
-                      approvedBy={bill.approved_by}
+                      approvedBy={bill.approved_by_name}
                     />
                   </Box>
 

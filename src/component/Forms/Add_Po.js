@@ -460,7 +460,6 @@ const AddPurchaseOrder = ({
         await fetchUniqueMakes(cat, name);
       }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lines.map((l) => `${l.productCategoryId}::${l.productName}`).join("|")]);
 
   /* ---------- Make modal ---------- */
@@ -1313,7 +1312,7 @@ const AddPurchaseOrder = ({
                   </Box>
                 )}
 
-              {((effectiveMode === "edit" && isApprovalPending) ||
+              {((effectiveMode === "edit" && user?.department === "SCM" || user?.department === "superadmin" || user?.department === "admin") ||
                 approvalRejected) && (
                 <Box display="flex" gap={2}>
                   {(user?.department === "SCM" ||
@@ -1384,7 +1383,8 @@ const AddPurchaseOrder = ({
               </Box>
             )}
 
-          <Box
+          {!fromModal && poNumberQ && (
+            <Box
             sx={{
               display: "flex",
               flexWrap: "wrap",
@@ -1495,6 +1495,7 @@ const AddPurchaseOrder = ({
               </Box>
             </Box>
           </Box>
+          )}
 
           {/* Form */}
           <form id="po-form" onSubmit={handleSubmit}>
