@@ -29,12 +29,8 @@ import Typography from "@mui/joy/Typography";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Main_Logo from "../../assets/protrac_logo.png";
-import Main_Logo2 from "../../assets/white_logo.png";
 import { closeSidebar } from "../../utils/utils";
-import ColorSchemeToggle from "./ColorSchemeToggle";
 import { NovuProvider, PopoverNotificationCenter } from "@novu/notification-center";
-import { Button } from "@mui/joy";
-import { Bell } from "lucide-react";
 import DatabaseIcon from '@mui/icons-material/Storage';
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 
@@ -72,7 +68,7 @@ function Sidebar() {
     setSubscribeId(userData.userID);
     setUser(userData);
   }, []);
-
+  
   const getUserData = () => {
     const userData = localStorage.getItem("userDetails");
 
@@ -163,10 +159,10 @@ function Sidebar() {
           </IconButton>
 
         </Box>
-        <Box sx={{ zIndex: 200000, position: "relative" }}>
+        <Box sx={{ zIndex: 200000, position: "relative", display:{ xs: "none",sm: "none", md: "none",lg: "block"}}}>
           <NovuProvider
             subscriberId={subscribeId}
-            applicationIdentifier = {import.meta.env.VITE_NOVU_IDENTIFIER}
+            applicationIdentifier={process.env.REACT_APP_NOVU_IDENTIFIER}
           >
             <Box
               sx={{
