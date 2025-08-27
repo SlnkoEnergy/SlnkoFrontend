@@ -14,8 +14,11 @@ import {
   Modal,
   ModalDialog,
   Textarea,
+  Checkbox,
+  Tooltip,
 } from "@mui/joy";
 import DeleteOutline from "@mui/icons-material/DeleteOutline";
+import CloudUpload from "@mui/icons-material/CloudUpload";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import ReactSelect from "react-select";
 import Axios from "../../utils/Axios";
@@ -47,6 +50,8 @@ import {
   useAddPoHistoryMutation,
   useLazyGetPoHistoryQuery,
 } from "../../redux/poHistory";
+import InspectionForm from "../../component/Forms/Inspection_Form";
+import { useAddInspectionMutation } from "../../redux/inspectionSlice";
 
 const VENDOR_LIMIT = 7;
 const SEARCH_MORE_VENDOR = "__SEARCH_MORE_VENDOR__";
@@ -270,17 +275,17 @@ const AddPurchaseOrder = ({
     const arr = Array.isArray(po?.items)
       ? po.items
       : Array.isArray(po?.item)
-        ? po.item
-        : [];
+      ? po.item
+      : [];
     return arr.length
       ? arr.map((it) => ({
           ...makeEmptyLine(),
           productCategoryId:
             typeof it?.category === "object"
-              ? (it?.category?._id ?? "")
-              : (it?.category ?? ""),
+              ? it?.category?._id ?? ""
+              : it?.category ?? "",
           productCategoryName:
-            typeof it?.category === "object" ? (it?.category?.name ?? "") : "",
+            typeof it?.category === "object" ? it?.category?.name ?? "" : "",
           productName: it?.product_name ?? "",
           make: isValidMake(it?.product_make) ? it.product_make : "",
           makeQ: isValidMake(it?.product_make) ? it.product_make : "",
@@ -312,7 +317,7 @@ const AddPurchaseOrder = ({
         );
         const po = Array.isArray(resp?.data)
           ? resp.data[0]
-          : (resp?.data ?? resp);
+          : resp?.data ?? resp;
         if (!po) {
           toast.error("PO not found.");
           return;
@@ -460,7 +465,7 @@ const AddPurchaseOrder = ({
         await fetchUniqueMakes(cat, name);
       }
     });
-  }, [lines.map((l) => `${l.productCategoryId}::${l.productName}`).join("|")]);
+  }, [lines.map((l) => `${l.productCategoryId}::${l.productName}`).join("|")]); // eslint-disable-line
 
   /* ---------- Make modal ---------- */
   const [makeModalOpen, setMakeModalOpen] = useState(false);
@@ -587,7 +592,7 @@ const AddPurchaseOrder = ({
         return ok ? l : { ...l, make: "" };
       })
     );
-  }, [makesCache]);
+  }, [makesCache]); // eslint-disable-line
 
   const [historyItems, setHistoryItems] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -600,57 +605,68 @@ const AddPurchaseOrder = ({
   const [addPoHistory] = useAddPoHistoryMutation();
   const [triggerGetPoHistory] = useLazyGetPoHistoryQuery();
 
-  const mapDocToFeedItem = (doc) => {
-    const base = {
-      id: String(doc._id || crypto.randomUUID()),
-      ts: doc.createdAt || doc.updatedAt || new Date().toISOString(),
-      user: { name: doc?.createdBy?.name || doc?.createdBy || "System" },
-    };
-
-    if (doc.event_type === "amount_change" || doc.event_type === "update") {
-      const changes = (Array.isArray(doc?.changes) ? doc.changes : [])
-        .filter(
-          (c) => typeof c?.from !== "undefined" && typeof c?.to !== "undefined"
-        )
-        .map((c, idx) => {
-          const label =
-            c.label ||
-            (c.path ? AMOUNT_LABELS_BY_PATH[c.path] || c.path : "") ||
-            `field_${idx + 1}`;
-          return {
-            label,
-            path: c.path || undefined,
-            from: Number(c.from ?? 0),
-            to: Number(c.to ?? 0),
-          };
-        });
-
-      return {
-        ...base,
-        kind: "amount_change",
-        title: doc.message || "Amounts updated",
-        currency: "INR",
-        changes,
-      };
-    }
-
-    if (doc.event_type === "status_change") {
-      const c0 = Array.isArray(doc?.changes) ? doc.changes[0] : null;
-      return {
-        ...base,
-        kind: "status",
-        statusFrom: c0?.from || "",
-        statusTo: c0?.to || "",
-        title: doc.message || "Status changed",
-      };
-    }
-
-    if (doc.event_type === "note") {
-      return { ...base, kind: "note", note: doc.message || "" };
-    }
-
-    return { ...base, kind: "other", title: doc.message || doc.event_type };
+ const mapDocToFeedItem = (doc) => {
+  const base = {
+    id: String(doc._id || crypto.randomUUID()),
+    ts: doc.createdAt || doc.updatedAt || new Date().toISOString(),
+    user: { name: doc?.createdBy?.name || doc?.createdBy || "System" },
   };
+
+  if (doc.event_type === "amount_change" || doc.event_type === "update") {
+    const changes = (Array.isArray(doc?.changes) ? doc.changes : [])
+      .filter(
+        (c) => typeof c?.from !== "undefined" && typeof c?.to !== "undefined"
+      )
+      .map((c, idx) => {
+        const label =
+          c.label ||
+          (c.path ? AMOUNT_LABELS_BY_PATH[c.path] || c.path : "") ||
+          `field_${idx + 1}`;
+        return {
+          label,
+          path: c.path || undefined,
+          from: Number(c.from ?? 0),
+          to: Number(c.to ?? 0),
+        };
+      });
+
+    return {
+      ...base,
+      kind: "amount_change",
+      title: doc.message || "Amounts updated",
+      currency: "INR",
+      changes,
+    };
+  }
+
+  if (doc.event_type === "status_change") {
+    const c0 = Array.isArray(doc?.changes) ? doc.changes[0] : null;
+    return {
+      ...base,
+      kind: "status",
+      statusFrom: c0?.from || "",
+      statusTo: c0?.to || "",
+      title: doc.message || "Status changed",
+    };
+  }
+
+  if (doc.event_type === "note") {
+    return {
+      ...base,
+      kind: "note",
+      note: doc.message || "",
+      attachments: Array.isArray(doc?.attachments)
+        ? doc.attachments.map((a) => ({
+            name: a?.name || a?.attachment_name,
+            url: a?.url || a?.attachment_url,
+          }))
+        : [],
+    };
+  }
+
+  return { ...base, kind: "other", title: doc.message || doc.event_type };
+};
+
 
   const fetchPoHistory = async () => {
     if (!formData?._id) return;
@@ -682,7 +698,7 @@ const AddPurchaseOrder = ({
     ) {
       fetchPoHistory();
     }
-  }, [formData._id]);
+  }, [formData._id]); // eslint-disable-line
 
   const feedRef = useRef(null);
   const scrollToFeed = () => {
@@ -742,7 +758,6 @@ const AddPurchaseOrder = ({
     setHistoryItems((prev) => [normalized, ...prev]);
     scrollToFeed();
   };
-  /* ===== End helpers ===== */
 
   const handleAddHistoryNote = async (text) => {
     if (!formData?._id) return toast.error("PO id missing.");
@@ -787,8 +802,8 @@ const AddPurchaseOrder = ({
           typeof l.productCategoryId === "object" && l.productCategoryId?._id
             ? String(l.productCategoryId._id)
             : l.productCategoryId != null
-              ? String(l.productCategoryId)
-              : "";
+            ? String(l.productCategoryId)
+            : "";
         return {
           category: String(categoryId),
           product_name: String(l.productName || ""),
@@ -817,7 +832,7 @@ const AddPurchaseOrder = ({
       try {
         const body = {
           po_number: formData.po_number,
-          vendor: formData.name,
+          vendor: formData?.name,
           date: formData.date,
           partial_billing: formData.partial_billing || "",
           submitted_By: formData.submitted_By,
@@ -964,7 +979,7 @@ const AddPurchaseOrder = ({
           const dataToPost = {
             p_id: formData.project_code,
             po_number: undefined,
-            vendor: formData.name,
+            vendor: formData?.name,
             date: formData.date,
             partial_billing: formData.partial_billing || "",
             submitted_By: user.name,
@@ -1191,6 +1206,158 @@ const AddPurchaseOrder = ({
     navigate(`/vendor_bill?${params.toString()}`);
   };
 
+  // ====== INSPECTION STATE ======
+  const [inspectionEnabled, setInspectionEnabled] = useState(false);
+  const [inspectionModalOpen, setInspectionModalOpen] = useState(false);
+  const [selectedForInspection, setSelectedForInspection] = useState({});
+  const toggleSelectLine = (lineId) =>
+    setSelectedForInspection((prev) => ({ ...prev, [lineId]: !prev[lineId] }));
+  const clearInspectionSelection = () => setSelectedForInspection({});
+  const selectedItems = useMemo(() => {
+    const ids = new Set(
+      Object.keys(selectedForInspection).filter((k) => selectedForInspection[k])
+    );
+    return (lines || []).filter((l) => ids.has(l.id));
+  }, [selectedForInspection, lines]);
+
+  const [addInspection, { isLoading: isSubmittingInspection }] =
+    useAddInspectionMutation();
+
+  const mapInspectionPayload = (payload) => {
+    const { vendor, project_code, items = [], inspection = {} } = payload;
+
+    return {
+      project_code: project_code || undefined,
+      vendor,
+      vendor_contact: inspection.contact_person || "",
+      vendor_mobile: inspection.contact_mobile || "",
+      mode: inspection.mode,
+      location: inspection.mode === "offline" ? inspection.location || "" : "",
+      description: inspection.notes || "",
+      date: inspection.datetime || null,
+      item: items.map((it) => ({
+        category_id: it.category_id || it.productCategoryName || null,
+        product_name: it.product_name || it.productName || "",
+        description: it.description || it.briefDescription || "",
+        product_make: it.makeQ || it.make || "",
+        uom: it.uom || "",
+        quantity: String(it.quantity ?? 0),
+      })),
+    };
+  };
+
+  /* =========================
+     === Attachments state ===
+     ========================= */
+  const [attName, setAttName] = useState("");
+  const [attFile, setAttFile] = useState(null);
+  const [attDragging, setAttDragging] = useState(false);
+  const [attUploading, setAttUploading] = useState(false);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+
+  const onDragOverAttachment = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setAttDragging(true);
+  };
+  const onDragLeaveAttachment = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setAttDragging(false);
+  };
+  const onDropAttachment = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setAttDragging(false);
+    const file = e.dataTransfer?.files?.[0];
+    if (file) setAttFile(file);
+  };
+  const onPickAttachment = (e) => {
+    const file = e.target.files?.[0];
+    if (file) setAttFile(file);
+  };
+  const getExtFromName = (name) => {
+    const dot = String(name || "").lastIndexOf(".");
+    return dot >= 0 ? name.slice(dot) : "";
+  };
+
+  const handleUploadAttachment = async () => {
+    if (!formData?._id) return toast.error("PO id missing.");
+    if (!attFile) return toast.error("Please choose a file.");
+    if (!attName.trim()) return toast.error("Please enter a document name.");
+
+    try {
+      setAttUploading(true);
+      const token = localStorage.getItem("authToken");
+
+      const hasExt = /\.[A-Za-z0-9]+$/.test(attName.trim());
+      const ext = hasExt ? "" : getExtFromName(attFile.name) || "";
+      const finalFilename = `${attName.trim()}${ext}`; // becomes attachment_name
+
+      const fd = new FormData();
+      fd.append("file", attFile, finalFilename);
+
+      const resp = await Axios.put(`/edit-pO-IT/${formData._id}`, fd, {
+        headers: {
+          "x-auth-token": token,
+          "Content-Type": "multipart/form-data",
+        },
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
+      });
+
+      const updated = resp?.data?.data || {};
+      const last =
+        Array.isArray(updated.attachments) && updated.attachments.length
+          ? updated.attachments[updated.attachments.length - 1]
+          : null;
+
+      const niceName = last?.attachment_name || finalFilename;
+
+      // Optimistic feed
+      pushHistoryItem({
+        kind: "note",
+        note: `Attachment added: ${niceName}`,
+      });
+
+      // Persist to history collection
+      const u = getUserData();
+      try {
+        await addPoHistory({
+  subject_type: "purchase_order",
+  subject_id: formData._id,
+  event_type: "note",
+  message: `Attachment added: ${niceName}`,
+  createdBy: {
+    name: u?.name || "User",
+    user_id: u?._id,
+  },
+ attachments: last
+  ? [
+      {
+        name: last.attachment_name,
+        url: last.attachment_url,
+      },
+    ]
+  : [],
+}).unwrap();
+
+      } catch (e) {
+        console.warn("Failed to save history for attachment:", e);
+      }
+
+      toast.success("Attachment uploaded.");
+      setAttName("");
+      setAttFile(null);
+      setUploadModalOpen(false);
+    } catch (e) {
+      console.error(e);
+      toast.error(e?.response?.data?.msg || "Failed to upload attachment");
+    } finally {
+      setAttUploading(false);
+    }
+  };
+
   return (
     <Box
       display={"flex"}
@@ -1230,7 +1397,28 @@ const AddPurchaseOrder = ({
             <Typography level="h3" sx={{ fontWeight: 700 }}>
               Purchase Order
             </Typography>
-            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+            <Box
+              sx={{
+                display: "flex",
+                gap: 1,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
+              {/* Upload icon -> opens modal */}
+              {effectiveMode !== "create" && formData?._id && (
+                <Tooltip title="Upload document">
+                  <IconButton
+                    variant="soft"
+                    color="primary"
+                    onClick={() => setUploadModalOpen(true)}
+                  >
+                    <CloudUpload />
+                  </IconButton>
+                </Tooltip>
+              )}
+
+              {/* Existing action buttons */}
               {!viewMode && (
                 <>
                   {((effectiveMode === "edit" &&
@@ -1312,7 +1500,9 @@ const AddPurchaseOrder = ({
                   </Box>
                 )}
 
-              {((effectiveMode === "edit" && user?.department === "SCM" || user?.department === "superadmin" || user?.department === "admin") ||
+              {((effectiveMode === "edit" && user?.department === "SCM") ||
+                user?.department === "superadmin" ||
+                user?.department === "admin" ||
                 approvalRejected) && (
                 <Box display="flex" gap={2}>
                   {(user?.department === "SCM" ||
@@ -1385,116 +1575,151 @@ const AddPurchaseOrder = ({
 
           {!fromModal && poNumberQ && (
             <Box
-            sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 1.5,
-              alignItems: "center",
-              justifyContent: "space-between",
-              mb: 2,
-              mt: 1,
-            }}
-          >
-            <Sheet
-              variant="outlined"
               sx={{
                 display: "flex",
+                flexWrap: "wrap",
+                gap: 1.5,
                 alignItems: "center",
-                gap: 2,
-                borderRadius: "lg",
-                px: 1.5,
-                py: 1,
+                justifyContent: "space-between",
+                mb: 2,
+                mt: 1,
               }}
             >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-                <DescriptionOutlinedIcon fontSize="small" color="primary" />
-                <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-                  PO Number
-                </Typography>
-                <Chip
-                  color="primary"
-                  size="sm"
-                  variant="solid"
-                  sx={{ fontWeight: 700 }}
-                >
-                  {formData?.po_number || "—"}
-                </Chip>
-              </Box>
-              <Divider orientation="vertical" />
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-                <PersonOutlineOutlinedIcon fontSize="small" color="primary" />
-                <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-                  Created By
-                </Typography>
-                <Chip
-                  variant="soft"
-                  size="sm"
-                  sx={{ fontWeight: 700, pl: 0.5, pr: 1 }}
-                >
-                  {formData?.submitted_By || "-"}
-                </Chip>
-              </Box>
-            </Sheet>
+              <Sheet
+                variant="outlined"
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                  borderRadius: "lg",
+                  px: 1.5,
+                  py: 1,
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+                  <DescriptionOutlinedIcon fontSize="small" color="primary" />
+                  <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+                    PO Number
+                  </Typography>
+                  <Chip
+                    color="primary"
+                    size="sm"
+                    variant="solid"
+                    sx={{ fontWeight: 700 }}
+                  >
+                    {formData?.po_number || "—"}
+                  </Chip>
+                </Box>
+                <Divider orientation="vertical" />
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+                  <PersonOutlineOutlinedIcon fontSize="small" color="primary" />
+                  <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+                    Created By
+                  </Typography>
+                  <Chip
+                    variant="soft"
+                    size="sm"
+                    sx={{ fontWeight: 700, pl: 0.5, pr: 1 }}
+                  >
+                    {formData?.submitted_By || "-"}
+                  </Chip>
+                </Box>
+              </Sheet>
 
-            <Box
-              display={"flex"}
-              gap={2}
-              alignItems={"center"}
-              justifyContent={"center"}
-            >
-              <Box display={"flex"} gap={2}>
-                <Sheet
-                  variant="outlined"
-                  sx={{
-                    display: "flex",
-                    alignItems: "stretch",
-                    borderRadius: "lg",
-                    overflow: "hidden",
-                  }}
-                >
-                  <Box
+              <Box
+                display={"flex"}
+                gap={2}
+                alignItems={"center"}
+                justifyContent={"center"}
+              >
+                <Box display={"flex"} gap={2}>
+                  <Sheet
+                    variant="outlined"
                     sx={{
                       display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                      px: 1.25,
-                      py: 0.75,
-                      cursor: "pointer",
-                      "&:hover": { bgcolor: "neutral.softHoverBg" },
+                      alignItems: "stretch",
+                      borderRadius: "lg",
+                      overflow: "hidden",
                     }}
-                    onClick={goToVendorList}
-                    role="button"
-                    tabIndex={0}
                   >
-                    <LocalMallOutlinedIcon fontSize="small" color="primary" />
-                    <Box sx={{ lineHeight: 1.1 }}>
-                      <Typography level="body-sm" sx={{ fontWeight: 600 }}>
-                        Vendor Bills
-                      </Typography>
-                      <Typography
-                        level="body-xs"
-                        sx={{ color: "text.secondary" }}
-                      >
-                        {formData.total_bills}
-                      </Typography>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        px: 1.25,
+                        py: 0.75,
+                        cursor: "pointer",
+                        "&:hover": { bgcolor: "neutral.softHoverBg" },
+                      }}
+                      onClick={goToVendorList}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <LocalMallOutlinedIcon fontSize="small" color="primary" />
+                      <Box sx={{ lineHeight: 1.1 }}>
+                        <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+                          Vendor Bills
+                        </Typography>
+                        <Typography
+                          level="body-xs"
+                          sx={{ color: "text.secondary" }}
+                        >
+                          {formData.total_bills}
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
-                </Sheet>
-              </Box>
+                  </Sheet>
+                </Box>
 
-              <Box>
-                <Button
-                  color="primary"
-                  size="sm"
-                  variant="solid"
-                  startDecorator={<Add />}
-                  onClick={() => setBillModalOpen(true)}
-                >
-                  Add Bill
-                </Button>
+                <Box>
+                  <Button
+                    color="primary"
+                    size="sm"
+                    variant="solid"
+                    startDecorator={<Add />}
+                    onClick={() => setBillModalOpen(true)}
+                  >
+                    Add Bill
+                  </Button>
+                </Box>
+
+                {poNumberQ && (
+                  <Box
+                    display={"flex"}
+                    gap={2}
+                    justifyContent={"center"}
+                    alignItems={"center"}
+                  >
+                    <Checkbox
+                      size="sm"
+                      label={
+                        inspectionEnabled
+                          ? "Disable Inspection Request"
+                          : "Enable Inspection Request"
+                      }
+                      checked={inspectionEnabled}
+                      onChange={(e) => {
+                        setInspectionEnabled(e.target.checked);
+                        if (!e.target.checked) clearInspectionSelection();
+                      }}
+                    />
+                    {inspectionEnabled && (
+                      <Button
+                        size="sm"
+                        variant="outlined"
+                        disabled={
+                          !inspectionEnabled || selectedItems.length === 0
+                        }
+                        onClick={() => setInspectionModalOpen(true)}
+                      >
+                        Request Inspection
+                      </Button>
+                    )}
+                  </Box>
+                )}
               </Box>
             </Box>
-          </Box>
           )}
 
           {/* Form */}
@@ -1585,8 +1810,8 @@ const AddPurchaseOrder = ({
                               formData.delivery_type === "afor"
                                 ? "Afor"
                                 : formData.delivery_type === "slnko"
-                                  ? "Slnko"
-                                  : "",
+                                ? "Slnko"
+                                : "",
                           }
                         : null
                     }
@@ -1612,6 +1837,15 @@ const AddPurchaseOrder = ({
                 <Chip color="primary" variant="soft" size="sm">
                   Products
                 </Chip>
+                {inspectionEnabled && (
+                  <Chip size="sm" variant="soft" color="neutral">
+                    {
+                      Object.values(selectedForInspection).filter(Boolean)
+                        .length
+                    }{" "}
+                    selected for inspection
+                  </Chip>
+                )}
               </Box>
 
               <Box
@@ -1638,6 +1872,7 @@ const AddPurchaseOrder = ({
               >
                 <thead>
                   <tr>
+                    {inspectionEnabled && <th style={{ width: 44 }}>Pick</th>}
                     <th style={{ width: "12%" }}>Category</th>
                     <th style={{ width: "12%" }}>Product</th>
                     <th style={{ width: "12%" }}>Brief Description</th>
@@ -1669,6 +1904,16 @@ const AddPurchaseOrder = ({
 
                     return (
                       <tr key={l.id}>
+                        {inspectionEnabled && (
+                          <td>
+                            <Checkbox
+                              size="sm"
+                              checked={!!selectedForInspection[l.id]}
+                              onChange={() => toggleSelectLine(l.id)}
+                            />
+                          </td>
+                        )}
+
                         <td>
                           <Input
                             size="sm"
@@ -1714,7 +1959,6 @@ const AddPurchaseOrder = ({
                           />
                         </td>
 
-                        {/* Make dropdown */}
                         <td>
                           {!manualEdit && !fromModal ? (
                             <Typography
@@ -1867,7 +2111,13 @@ const AddPurchaseOrder = ({
                         <td>
                           <Typography level="body-sm" fontWeight="lg">
                             ₹{" "}
-                            {gross.toLocaleString(undefined, {
+                            {(
+                              Number(l.quantity || 0) * Number(l.unitPrice || 0) +
+                              ((Number(l.quantity || 0) *
+                                Number(l.unitPrice || 0) *
+                                Number(l.taxPercent || 0)) /
+                                100 || 0)
+                            ).toLocaleString(undefined, {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
                             })}
@@ -1922,7 +2172,7 @@ const AddPurchaseOrder = ({
                     </Typography>
                     <Typography level="body-sm" fontWeight="lg">
                       ₹{" "}
-                      {amounts.untaxed.toLocaleString(undefined, {
+                      {Number(amounts.untaxed || 0).toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}
@@ -1930,7 +2180,7 @@ const AddPurchaseOrder = ({
 
                     <Typography level="body-sm">Tax:</Typography>
                     <Typography level="body-sm" fontWeight={700}>
-                      ₹ {amounts.tax.toFixed(2)}
+                      ₹ {Number(amounts.tax || 0).toFixed(2)}
                     </Typography>
 
                     <Typography level="title-md" sx={{ mt: 0.5 }}>
@@ -1942,7 +2192,7 @@ const AddPurchaseOrder = ({
                       sx={{ mt: 0.5 }}
                     >
                       ₹{" "}
-                      {amounts.total.toLocaleString(undefined, {
+                      {Number(amounts.total || 0).toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}
@@ -2010,7 +2260,6 @@ const AddPurchaseOrder = ({
           pageSize={VENDOR_LIMIT}
           backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
         />
-
         {/* Product picker */}
         <SearchPickerModal
           open={productModalOpen}
@@ -2132,6 +2381,129 @@ const AddPurchaseOrder = ({
             </Box>
           </ModalDialog>
         </Modal>
+
+        {/* INSPECTION Modal */}
+        <Modal
+          open={inspectionModalOpen}
+          onClose={() => setInspectionModalOpen(false)}
+        >
+          <ModalDialog
+            sx={{ maxWidth: 1100, width: "95vw", p: 0, overflow: "auto" }}
+          >
+            <InspectionForm
+              open
+              vendorName={formData?.name || ""}
+              projectCode={formData?.project_code || ""}
+              items={selectedItems}
+              onClose={() => setInspectionModalOpen(false)}
+              onSubmit={async (payload) => {
+                try {
+                  const body = mapInspectionPayload(payload);
+                  console.log("Final inspection payload:", body);
+                  await addInspection(body).unwrap();
+                  toast.success("Inspection request submitted.");
+                  setInspectionModalOpen(false);
+                  clearInspectionSelection();
+                } catch (e) {
+                  console.error(e);
+                  toast.error(
+                    e?.data?.message ||
+                      e?.error ||
+                      "Failed to submit inspection request"
+                  );
+                }
+              }}
+            />
+          </ModalDialog>
+        </Modal>
+
+        {/* ===== Upload Modal ===== */}
+<Modal open={uploadModalOpen} onClose={() => setUploadModalOpen(false)}>
+  <ModalDialog
+    sx={{ maxWidth: 500, width: "95vw", p: 2, borderRadius: "md" }}
+  >
+    <Typography level="h5" fontWeight="lg" mb={2}>
+      Upload Document
+    </Typography>
+
+    <Box
+      component="form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleUploadAttachment();
+      }}
+    >
+      {/* Document Name */}
+      <Box mb={2}>
+        <Typography level="body-sm" fontWeight="md">
+          Document Name
+        </Typography>
+        <Input
+          placeholder="Enter document name"
+          value={attName}
+          onChange={(e) => setAttName(e.target.value)}
+        />
+      </Box>
+
+      {/* File Drop Area */}
+      <Box
+        sx={{
+          border: "2px dashed",
+          borderColor: attDragging ? "primary.solidBg" : "neutral.outlinedBorder",
+          borderRadius: "md",
+          p: 3,
+          textAlign: "center",
+          cursor: "pointer",
+          bgcolor: attDragging ? "primary.softBg" : "transparent",
+        }}
+        onDragOver={onDragOverAttachment}
+        onDragLeave={onDragLeaveAttachment}
+        onDrop={onDropAttachment}
+        onClick={() => document.getElementById("file-input-hidden").click()}
+      >
+        {attFile ? (
+          <Typography level="body-sm" sx={{ fontWeight: 500 }}>
+            {attFile.name}
+          </Typography>
+        ) : (
+          <Typography level="body-sm" color="neutral">
+            Drag & drop a file here, or click to browse
+          </Typography>
+        )}
+        <input
+          type="file"
+          id="file-input-hidden"
+          style={{ display: "none" }}
+          onChange={onPickAttachment}
+        />
+      </Box>
+
+      {/* Actions */}
+      <Box
+        mt={3}
+        display="flex"
+        justifyContent="flex-end"
+        gap={1}
+      >
+        <Button
+          variant="plain"
+          color="neutral"
+          onClick={() => setUploadModalOpen(false)}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          loading={attUploading}
+          disabled={!attFile || !attName.trim()}
+        >
+          Upload
+        </Button>
+      </Box>
+    </Box>
+  </ModalDialog>
+</Modal>
+
       </Box>
 
       <Box ref={feedRef}>

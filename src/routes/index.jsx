@@ -108,6 +108,8 @@ import Categories from "../pages/Databases/Categories";
 import Product_Form from "../pages/Databases/Product_Form";
 import PurchaseRequestForm from "../pages/CAM/PurchaseRequestForm";
 import LogisticsForm from "../pages/SCM/LogisticsForm";
+import Inspection from "../pages/Eng/Inspection";
+import Inspection_Form from "../pages/Eng/Inspection_Form";
 
 function index() {
   return (
@@ -387,6 +389,22 @@ function index() {
         element={
           <PrivateRoute>
             <DashboardENG />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/inspection"
+        element={
+          <PrivateRoute>
+            <Inspection />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/inspection_form"
+        element={
+          <PrivateRoute>
+            <Inspection_Form />
           </PrivateRoute>
         }
       />
