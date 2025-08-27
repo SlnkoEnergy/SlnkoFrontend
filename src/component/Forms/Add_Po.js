@@ -17,6 +17,7 @@ import {
   Checkbox,
   Tooltip,
 } from "@mui/joy";
+import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
 import DeleteOutline from "@mui/icons-material/DeleteOutline";
 import CloudUpload from "@mui/icons-material/CloudUpload";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -39,6 +40,7 @@ import {
   useGetVendorsNameSearchQuery,
   useLazyGetVendorsNameSearchQuery,
 } from "../../redux/vendorSlice";
+import { useGetLogisticsQuery } from "../../redux/purchasesSlice";
 import { Check } from "lucide-react";
 import {
   useGetProductsQuery,
@@ -207,6 +209,20 @@ const AddPurchaseOrder = ({
     total_bills: 0,
     createdAt: "",
   });
+  const poNum = (formData.po_number || poNumberQ || "").trim();
+
+  const { data: logResp, isFetching: isLogFetching } = useGetLogisticsQuery(
+    {
+      page: 1,
+      pageSize: 1,
+      search: "",
+      status: "",
+      po_id: "",
+      po_number: poNum,
+    },
+    { skip: !poNum }
+  );
+  const logisticsCount = logResp?.total ?? 0;
 
   const [lines, setLines] = useState(() =>
     Array.isArray(initialLines) && initialLines.length
@@ -275,17 +291,17 @@ const AddPurchaseOrder = ({
     const arr = Array.isArray(po?.items)
       ? po.items
       : Array.isArray(po?.item)
-      ? po.item
-      : [];
+        ? po.item
+        : [];
     return arr.length
       ? arr.map((it) => ({
           ...makeEmptyLine(),
           productCategoryId:
             typeof it?.category === "object"
-              ? it?.category?._id ?? ""
-              : it?.category ?? "",
+              ? (it?.category?._id ?? "")
+              : (it?.category ?? ""),
           productCategoryName:
-            typeof it?.category === "object" ? it?.category?.name ?? "" : "",
+            typeof it?.category === "object" ? (it?.category?.name ?? "") : "",
           productName: it?.product_name ?? "",
           make: isValidMake(it?.product_make) ? it.product_make : "",
           makeQ: isValidMake(it?.product_make) ? it.product_make : "",
@@ -317,7 +333,7 @@ const AddPurchaseOrder = ({
         );
         const po = Array.isArray(resp?.data)
           ? resp.data[0]
-          : resp?.data ?? resp;
+          : (resp?.data ?? resp);
         if (!po) {
           toast.error("PO not found.");
           return;
@@ -605,68 +621,67 @@ const AddPurchaseOrder = ({
   const [addPoHistory] = useAddPoHistoryMutation();
   const [triggerGetPoHistory] = useLazyGetPoHistoryQuery();
 
- const mapDocToFeedItem = (doc) => {
-  const base = {
-    id: String(doc._id || crypto.randomUUID()),
-    ts: doc.createdAt || doc.updatedAt || new Date().toISOString(),
-    user: { name: doc?.createdBy?.name || doc?.createdBy || "System" },
+  const mapDocToFeedItem = (doc) => {
+    const base = {
+      id: String(doc._id || crypto.randomUUID()),
+      ts: doc.createdAt || doc.updatedAt || new Date().toISOString(),
+      user: { name: doc?.createdBy?.name || doc?.createdBy || "System" },
+    };
+
+    if (doc.event_type === "amount_change" || doc.event_type === "update") {
+      const changes = (Array.isArray(doc?.changes) ? doc.changes : [])
+        .filter(
+          (c) => typeof c?.from !== "undefined" && typeof c?.to !== "undefined"
+        )
+        .map((c, idx) => {
+          const label =
+            c.label ||
+            (c.path ? AMOUNT_LABELS_BY_PATH[c.path] || c.path : "") ||
+            `field_${idx + 1}`;
+          return {
+            label,
+            path: c.path || undefined,
+            from: Number(c.from ?? 0),
+            to: Number(c.to ?? 0),
+          };
+        });
+
+      return {
+        ...base,
+        kind: "amount_change",
+        title: doc.message || "Amounts updated",
+        currency: "INR",
+        changes,
+      };
+    }
+
+    if (doc.event_type === "status_change") {
+      const c0 = Array.isArray(doc?.changes) ? doc.changes[0] : null;
+      return {
+        ...base,
+        kind: "status",
+        statusFrom: c0?.from || "",
+        statusTo: c0?.to || "",
+        title: doc.message || "Status changed",
+      };
+    }
+
+    if (doc.event_type === "note") {
+      return {
+        ...base,
+        kind: "note",
+        note: doc.message || "",
+        attachments: Array.isArray(doc?.attachments)
+          ? doc.attachments.map((a) => ({
+              name: a?.name || a?.attachment_name,
+              url: a?.url || a?.attachment_url,
+            }))
+          : [],
+      };
+    }
+
+    return { ...base, kind: "other", title: doc.message || doc.event_type };
   };
-
-  if (doc.event_type === "amount_change" || doc.event_type === "update") {
-    const changes = (Array.isArray(doc?.changes) ? doc.changes : [])
-      .filter(
-        (c) => typeof c?.from !== "undefined" && typeof c?.to !== "undefined"
-      )
-      .map((c, idx) => {
-        const label =
-          c.label ||
-          (c.path ? AMOUNT_LABELS_BY_PATH[c.path] || c.path : "") ||
-          `field_${idx + 1}`;
-        return {
-          label,
-          path: c.path || undefined,
-          from: Number(c.from ?? 0),
-          to: Number(c.to ?? 0),
-        };
-      });
-
-    return {
-      ...base,
-      kind: "amount_change",
-      title: doc.message || "Amounts updated",
-      currency: "INR",
-      changes,
-    };
-  }
-
-  if (doc.event_type === "status_change") {
-    const c0 = Array.isArray(doc?.changes) ? doc.changes[0] : null;
-    return {
-      ...base,
-      kind: "status",
-      statusFrom: c0?.from || "",
-      statusTo: c0?.to || "",
-      title: doc.message || "Status changed",
-    };
-  }
-
-  if (doc.event_type === "note") {
-    return {
-      ...base,
-      kind: "note",
-      note: doc.message || "",
-      attachments: Array.isArray(doc?.attachments)
-        ? doc.attachments.map((a) => ({
-            name: a?.name || a?.attachment_name,
-            url: a?.url || a?.attachment_url,
-          }))
-        : [],
-    };
-  }
-
-  return { ...base, kind: "other", title: doc.message || doc.event_type };
-};
-
 
   const fetchPoHistory = async () => {
     if (!formData?._id) return;
@@ -802,8 +817,8 @@ const AddPurchaseOrder = ({
           typeof l.productCategoryId === "object" && l.productCategoryId?._id
             ? String(l.productCategoryId._id)
             : l.productCategoryId != null
-            ? String(l.productCategoryId)
-            : "";
+              ? String(l.productCategoryId)
+              : "";
         return {
           category: String(categoryId),
           product_name: String(l.productName || ""),
@@ -822,8 +837,6 @@ const AddPurchaseOrder = ({
     /* ---------- EDIT SAVE ---------- */
     if (action === "edit_save" && !fromModal) {
       if (!formData?._id) return toast.error("PO id missing.");
-      if (!isApprovalPending)
-        return toast.error("Editing allowed only during approval pending.");
       if (!hasValidLine)
         return toast.error("Add at least one valid product row.");
 
@@ -1108,7 +1121,6 @@ const AddPurchaseOrder = ({
 
       toast.success("PO Approved");
 
-      // Optimistic status
       pushHistoryItem({
         kind: "status",
         statusFrom: statusNow,
@@ -1116,7 +1128,6 @@ const AddPurchaseOrder = ({
         title: "PO approved",
       });
 
-      // Persist history via RTK Query
       const user = getUserData();
       await addPoHistory({
         subject_type: "purchase_order",
@@ -1136,6 +1147,7 @@ const AddPurchaseOrder = ({
           },
         ],
       }).unwrap();
+      window.location.reload();
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to approve");
     }
@@ -1181,6 +1193,7 @@ const AddPurchaseOrder = ({
           },
         ],
       }).unwrap();
+      window.location.reload();
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to refuse");
     }
@@ -1204,6 +1217,13 @@ const AddPurchaseOrder = ({
     if (mode) params.set("mode", "edit");
     params.set("returnTo", location.pathname + location.search);
     navigate(`/vendor_bill?${params.toString()}`);
+  };
+  const goToLogisticsList = () => {
+    const num = formData.po_number || poNumberQ;
+    if (!num) return;
+    const params = new URLSearchParams();
+    params.set("po_number", num);
+    navigate(`/logistics?${params.toString()}`); // where LogisticsDashboard reads po_number
   };
 
   // ====== INSPECTION STATE ======
@@ -1324,24 +1344,23 @@ const AddPurchaseOrder = ({
       const u = getUserData();
       try {
         await addPoHistory({
-  subject_type: "purchase_order",
-  subject_id: formData._id,
-  event_type: "note",
-  message: `Attachment added: ${niceName}`,
-  createdBy: {
-    name: u?.name || "User",
-    user_id: u?._id,
-  },
- attachments: last
-  ? [
-      {
-        name: last.attachment_name,
-        url: last.attachment_url,
-      },
-    ]
-  : [],
-}).unwrap();
-
+          subject_type: "purchase_order",
+          subject_id: formData._id,
+          event_type: "note",
+          message: `Attachment added: ${niceName}`,
+          createdBy: {
+            name: u?.name || "User",
+            user_id: u?._id,
+          },
+          attachments: last
+            ? [
+                {
+                  name: last.attachment_name,
+                  url: last.attachment_url,
+                },
+              ]
+            : [],
+        }).unwrap();
       } catch (e) {
         console.warn("Failed to save history for attachment:", e);
       }
@@ -1503,24 +1522,25 @@ const AddPurchaseOrder = ({
               {((effectiveMode === "edit" && user?.department === "SCM") ||
                 user?.department === "superadmin" ||
                 user?.department === "admin" ||
-                approvalRejected) && (
-                <Box display="flex" gap={2}>
-                  {(user?.department === "SCM" ||
-                    user?.name === "Guddu Rani Dubey" ||
-                    user?.name === "IT Team") && (
-                    <Box>
-                      <Button
-                        variant={manualEdit ? "outlined" : "solid"}
-                        color={manualEdit ? "neutral" : "primary"}
-                        onClick={() => setManualEdit((s) => !s)}
-                        sx={{ width: "fit-content" }}
-                      >
-                        {manualEdit ? "Cancel Edit" : "Edit"}
-                      </Button>
-                    </Box>
-                  )}
-                </Box>
-              )}
+                approvalRejected) &&
+                !fromModal && (
+                  <Box display="flex" gap={2}>
+                    {(user?.department === "SCM" ||
+                      user?.name === "Guddu Rani Dubey" ||
+                      user?.name === "IT Team") && (
+                      <Box>
+                        <Button
+                          variant={manualEdit ? "outlined" : "solid"}
+                          color={manualEdit ? "neutral" : "primary"}
+                          onClick={() => setManualEdit((s) => !s)}
+                          sx={{ width: "fit-content" }}
+                        >
+                          {manualEdit ? "Cancel Edit" : "Edit"}
+                        </Button>
+                      </Box>
+                    )}
+                  </Box>
+                )}
             </Box>
           </Box>
 
@@ -1535,7 +1555,6 @@ const AddPurchaseOrder = ({
             </Box>
           )}
 
-          {/* PO Number entry for confirm stage */}
           {effectiveMode === "edit" &&
             statusNow === "approval_done" &&
             (user?.department === "SCM" || user?.name === "IT Team") &&
@@ -1666,6 +1685,41 @@ const AddPurchaseOrder = ({
                           sx={{ color: "text.secondary" }}
                         >
                           {formData.total_bills}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Divider orientation="vertical" />
+
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        px: 1.25,
+                        py: 0.75,
+                        cursor: poNum ? "pointer" : "not-allowed",
+                        opacity: poNum ? 1 : 0.6,
+                        "&:hover": poNum
+                          ? { bgcolor: "neutral.softHoverBg" }
+                          : undefined,
+                      }}
+                      onClick={poNum ? goToLogisticsList : undefined}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <LocalShippingOutlinedIcon
+                        fontSize="small"
+                        color="primary"
+                      />
+                      <Box sx={{ lineHeight: 1.1 }}>
+                        <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+                          Logistics
+                        </Typography>
+                        <Typography
+                          level="body-xs"
+                          sx={{ color: "text.secondary" }}
+                        >
+                          {isLogFetching ? "…" : logisticsCount}
                         </Typography>
                       </Box>
                     </Box>
@@ -1810,8 +1864,8 @@ const AddPurchaseOrder = ({
                               formData.delivery_type === "afor"
                                 ? "Afor"
                                 : formData.delivery_type === "slnko"
-                                ? "Slnko"
-                                : "",
+                                  ? "Slnko"
+                                  : "",
                           }
                         : null
                     }
@@ -2112,7 +2166,8 @@ const AddPurchaseOrder = ({
                           <Typography level="body-sm" fontWeight="lg">
                             ₹{" "}
                             {(
-                              Number(l.quantity || 0) * Number(l.unitPrice || 0) +
+                              Number(l.quantity || 0) *
+                                Number(l.unitPrice || 0) +
                               ((Number(l.quantity || 0) *
                                 Number(l.unitPrice || 0) *
                                 Number(l.taxPercent || 0)) /
@@ -2212,7 +2267,7 @@ const AddPurchaseOrder = ({
                 mt: 2,
               }}
             >
-              {isApprovalPending && manualEdit && (
+              {manualEdit && (
                 <Button
                   component="button"
                   type="submit"
@@ -2418,101 +2473,101 @@ const AddPurchaseOrder = ({
         </Modal>
 
         {/* ===== Upload Modal ===== */}
-<Modal open={uploadModalOpen} onClose={() => setUploadModalOpen(false)}>
-  <ModalDialog
-    sx={{ maxWidth: 500, width: "95vw", p: 2, borderRadius: "md" }}
-  >
-    <Typography level="h5" fontWeight="lg" mb={2}>
-      Upload Document
-    </Typography>
+        <Modal open={uploadModalOpen} onClose={() => setUploadModalOpen(false)}>
+          <ModalDialog
+            sx={{ maxWidth: 500, width: "95vw", p: 2, borderRadius: "md" }}
+          >
+            <Typography level="h5" fontWeight="lg" mb={2}>
+              Upload Document
+            </Typography>
 
-    <Box
-      component="form"
-      onSubmit={(e) => {
-        e.preventDefault();
-        handleUploadAttachment();
-      }}
-    >
-      {/* Document Name */}
-      <Box mb={2}>
-        <Typography level="body-sm" fontWeight="md">
-          Document Name
-        </Typography>
-        <Input
-          placeholder="Enter document name"
-          value={attName}
-          onChange={(e) => setAttName(e.target.value)}
-        />
+            <Box
+              component="form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleUploadAttachment();
+              }}
+            >
+              {/* Document Name */}
+              <Box mb={2}>
+                <Typography level="body-sm" fontWeight="md">
+                  Document Name
+                </Typography>
+                <Input
+                  placeholder="Enter document name"
+                  value={attName}
+                  onChange={(e) => setAttName(e.target.value)}
+                />
+              </Box>
+
+              {/* File Drop Area */}
+              <Box
+                sx={{
+                  border: "2px dashed",
+                  borderColor: attDragging
+                    ? "primary.solidBg"
+                    : "neutral.outlinedBorder",
+                  borderRadius: "md",
+                  p: 3,
+                  textAlign: "center",
+                  cursor: "pointer",
+                  bgcolor: attDragging ? "primary.softBg" : "transparent",
+                }}
+                onDragOver={onDragOverAttachment}
+                onDragLeave={onDragLeaveAttachment}
+                onDrop={onDropAttachment}
+                onClick={() =>
+                  document.getElementById("file-input-hidden").click()
+                }
+              >
+                {attFile ? (
+                  <Typography level="body-sm" sx={{ fontWeight: 500 }}>
+                    {attFile.name}
+                  </Typography>
+                ) : (
+                  <Typography level="body-sm" color="neutral">
+                    Drag & drop a file here, or click to browse
+                  </Typography>
+                )}
+                <input
+                  type="file"
+                  id="file-input-hidden"
+                  style={{ display: "none" }}
+                  onChange={onPickAttachment}
+                />
+              </Box>
+
+              {/* Actions */}
+              <Box mt={3} display="flex" justifyContent="flex-end" gap={1}>
+                <Button
+                  variant="plain"
+                  color="neutral"
+                  onClick={() => setUploadModalOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  loading={attUploading}
+                  disabled={!attFile || !attName.trim()}
+                >
+                  Upload
+                </Button>
+              </Box>
+            </Box>
+          </ModalDialog>
+        </Modal>
       </Box>
 
-      {/* File Drop Area */}
-      <Box
-        sx={{
-          border: "2px dashed",
-          borderColor: attDragging ? "primary.solidBg" : "neutral.outlinedBorder",
-          borderRadius: "md",
-          p: 3,
-          textAlign: "center",
-          cursor: "pointer",
-          bgcolor: attDragging ? "primary.softBg" : "transparent",
-        }}
-        onDragOver={onDragOverAttachment}
-        onDragLeave={onDragLeaveAttachment}
-        onDrop={onDropAttachment}
-        onClick={() => document.getElementById("file-input-hidden").click()}
-      >
-        {attFile ? (
-          <Typography level="body-sm" sx={{ fontWeight: 500 }}>
-            {attFile.name}
-          </Typography>
-        ) : (
-          <Typography level="body-sm" color="neutral">
-            Drag & drop a file here, or click to browse
-          </Typography>
-        )}
-        <input
-          type="file"
-          id="file-input-hidden"
-          style={{ display: "none" }}
-          onChange={onPickAttachment}
-        />
-      </Box>
-
-      {/* Actions */}
-      <Box
-        mt={3}
-        display="flex"
-        justifyContent="flex-end"
-        gap={1}
-      >
-        <Button
-          variant="plain"
-          color="neutral"
-          onClick={() => setUploadModalOpen(false)}
-        >
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          loading={attUploading}
-          disabled={!attFile || !attName.trim()}
-        >
-          Upload
-        </Button>
-      </Box>
-    </Box>
-  </ModalDialog>
-</Modal>
-
-      </Box>
-
-      <Box ref={feedRef}>
-        <POUpdateFeed
-          items={historyItems}
-          onAddNote={handleAddHistoryNote}
-          compact
-        />
-      </Box>
+      {!fromModal && (
+        <Box ref={feedRef}>
+          <POUpdateFeed
+            items={historyItems}
+            onAddNote={handleAddHistoryNote}
+            compact
+          />
+        </Box>
+      )}
     </Box>
   );
 };

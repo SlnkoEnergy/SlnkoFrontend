@@ -115,8 +115,13 @@ export const purchasesApi = createApi({
         search = "",
         status = "",
         po_id = "",
+        po_number = "",
       } = {}) =>
-        `logistics/logistic?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&po_id=${encodeURIComponent(po_id)}`,
+        `logistics/logistic?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(
+          search
+        )}&status=${encodeURIComponent(status)}&po_id=${encodeURIComponent(
+          po_id
+        )}&po_number=${encodeURIComponent(po_number)}`, // ← add this
       transformResponse: (response) => ({
         data: response?.data || [],
         total: response?.meta?.total || 0,
