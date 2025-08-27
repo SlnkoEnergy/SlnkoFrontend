@@ -26,6 +26,7 @@ import { AccountsApi } from "../redux/Accounts";
 import { productsApi } from "../redux/productsSlice";
 import { vendorsApi } from "../redux/vendorSlice";
 import { poHistoryApi } from "../redux/poHistory";
+import { inspectionApi } from "../redux/inspectionSlice";
 
 export const store = configureStore({
   reducer: {
@@ -55,7 +56,8 @@ export const store = configureStore({
     [AccountsApi.reducerPath]:AccountsApi.reducer,
     [productsApi.reducerPath]: productsApi.reducer,
     [vendorsApi.reducerPath]: vendorsApi.reducer,
-    [poHistoryApi.reducerPath]: poHistoryApi.reducer
+    [poHistoryApi.reducerPath]: poHistoryApi.reducer,
+    [inspectionApi.reducerPath]: inspectionApi.reducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -85,6 +87,7 @@ export const store = configureStore({
       AccountsApi.middleware,
       productsApi.middleware,
       vendorsApi.middleware,
-      poHistoryApi.middleware
+      poHistoryApi.middleware,
+      inspectionApi.middleware
     ),
 });

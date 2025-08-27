@@ -15,8 +15,10 @@ import {
   ModalDialog,
   Textarea,
   Checkbox,
+  Tooltip,
 } from "@mui/joy";
 import DeleteOutline from "@mui/icons-material/DeleteOutline";
+import CloudUpload from "@mui/icons-material/CloudUpload";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import ReactSelect from "react-select";
 import Axios from "../../utils/Axios";
@@ -463,7 +465,7 @@ const AddPurchaseOrder = ({
         await fetchUniqueMakes(cat, name);
       }
     });
-  }, [lines.map((l) => `${l.productCategoryId}::${l.productName}`).join("|")]);
+  }, [lines.map((l) => `${l.productCategoryId}::${l.productName}`).join("|")]); // eslint-disable-line
 
   /* ---------- Make modal ---------- */
   const [makeModalOpen, setMakeModalOpen] = useState(false);
@@ -590,7 +592,7 @@ const AddPurchaseOrder = ({
         return ok ? l : { ...l, make: "" };
       })
     );
-  }, [makesCache]);
+  }, [makesCache]); // eslint-disable-line
 
   const [historyItems, setHistoryItems] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -603,57 +605,68 @@ const AddPurchaseOrder = ({
   const [addPoHistory] = useAddPoHistoryMutation();
   const [triggerGetPoHistory] = useLazyGetPoHistoryQuery();
 
-  const mapDocToFeedItem = (doc) => {
-    const base = {
-      id: String(doc._id || crypto.randomUUID()),
-      ts: doc.createdAt || doc.updatedAt || new Date().toISOString(),
-      user: { name: doc?.createdBy?.name || doc?.createdBy || "System" },
-    };
-
-    if (doc.event_type === "amount_change" || doc.event_type === "update") {
-      const changes = (Array.isArray(doc?.changes) ? doc.changes : [])
-        .filter(
-          (c) => typeof c?.from !== "undefined" && typeof c?.to !== "undefined"
-        )
-        .map((c, idx) => {
-          const label =
-            c.label ||
-            (c.path ? AMOUNT_LABELS_BY_PATH[c.path] || c.path : "") ||
-            `field_${idx + 1}`;
-          return {
-            label,
-            path: c.path || undefined,
-            from: Number(c.from ?? 0),
-            to: Number(c.to ?? 0),
-          };
-        });
-
-      return {
-        ...base,
-        kind: "amount_change",
-        title: doc.message || "Amounts updated",
-        currency: "INR",
-        changes,
-      };
-    }
-
-    if (doc.event_type === "status_change") {
-      const c0 = Array.isArray(doc?.changes) ? doc.changes[0] : null;
-      return {
-        ...base,
-        kind: "status",
-        statusFrom: c0?.from || "",
-        statusTo: c0?.to || "",
-        title: doc.message || "Status changed",
-      };
-    }
-
-    if (doc.event_type === "note") {
-      return { ...base, kind: "note", note: doc.message || "" };
-    }
-
-    return { ...base, kind: "other", title: doc.message || doc.event_type };
+ const mapDocToFeedItem = (doc) => {
+  const base = {
+    id: String(doc._id || crypto.randomUUID()),
+    ts: doc.createdAt || doc.updatedAt || new Date().toISOString(),
+    user: { name: doc?.createdBy?.name || doc?.createdBy || "System" },
   };
+
+  if (doc.event_type === "amount_change" || doc.event_type === "update") {
+    const changes = (Array.isArray(doc?.changes) ? doc.changes : [])
+      .filter(
+        (c) => typeof c?.from !== "undefined" && typeof c?.to !== "undefined"
+      )
+      .map((c, idx) => {
+        const label =
+          c.label ||
+          (c.path ? AMOUNT_LABELS_BY_PATH[c.path] || c.path : "") ||
+          `field_${idx + 1}`;
+        return {
+          label,
+          path: c.path || undefined,
+          from: Number(c.from ?? 0),
+          to: Number(c.to ?? 0),
+        };
+      });
+
+    return {
+      ...base,
+      kind: "amount_change",
+      title: doc.message || "Amounts updated",
+      currency: "INR",
+      changes,
+    };
+  }
+
+  if (doc.event_type === "status_change") {
+    const c0 = Array.isArray(doc?.changes) ? doc.changes[0] : null;
+    return {
+      ...base,
+      kind: "status",
+      statusFrom: c0?.from || "",
+      statusTo: c0?.to || "",
+      title: doc.message || "Status changed",
+    };
+  }
+
+  if (doc.event_type === "note") {
+    return {
+      ...base,
+      kind: "note",
+      note: doc.message || "",
+      attachments: Array.isArray(doc?.attachments)
+        ? doc.attachments.map((a) => ({
+            name: a?.name || a?.attachment_name,
+            url: a?.url || a?.attachment_url,
+          }))
+        : [],
+    };
+  }
+
+  return { ...base, kind: "other", title: doc.message || doc.event_type };
+};
+
 
   const fetchPoHistory = async () => {
     if (!formData?._id) return;
@@ -685,7 +698,7 @@ const AddPurchaseOrder = ({
     ) {
       fetchPoHistory();
     }
-  }, [formData._id]);
+  }, [formData._id]); // eslint-disable-line
 
   const feedRef = useRef(null);
   const scrollToFeed = () => {
@@ -786,8 +799,7 @@ const AddPurchaseOrder = ({
       .filter((l) => l?.productName || l?.productCategoryName)
       .map((l) => {
         const categoryId =
-          typeof l.productCategoryId === "object" &&
-          l.productCategoryId?._id
+          typeof l.productCategoryId === "object" && l.productCategoryId?._id
             ? String(l.productCategoryId._id)
             : l.productCategoryId != null
             ? String(l.productCategoryId)
@@ -820,7 +832,7 @@ const AddPurchaseOrder = ({
       try {
         const body = {
           po_number: formData.po_number,
-          vendor: formData.name,
+          vendor: formData?.name,
           date: formData.date,
           partial_billing: formData.partial_billing || "",
           submitted_By: formData.submitted_By,
@@ -899,9 +911,7 @@ const AddPurchaseOrder = ({
 
     if (action === "confirm_order" && !fromModal) {
       if (!canConfirm)
-        return toast.error(
-          "Confirm is available only after approval is done."
-        );
+        return toast.error("Confirm is available only after approval is done.");
       if (!formData.po_number)
         return toast.error("PO Number is required to confirm this PO.");
       const token = localStorage.getItem("authToken");
@@ -969,7 +979,7 @@ const AddPurchaseOrder = ({
           const dataToPost = {
             p_id: formData.project_code,
             po_number: undefined,
-            vendor: formData.name,
+            vendor: formData?.name,
             date: formData.date,
             partial_billing: formData.partial_billing || "",
             submitted_By: user.name,
@@ -1199,7 +1209,7 @@ const AddPurchaseOrder = ({
   // ====== INSPECTION STATE ======
   const [inspectionEnabled, setInspectionEnabled] = useState(false);
   const [inspectionModalOpen, setInspectionModalOpen] = useState(false);
-  const [selectedForInspection, setSelectedForInspection] = useState({}); // { lineId: true }
+  const [selectedForInspection, setSelectedForInspection] = useState({});
   const toggleSelectLine = (lineId) =>
     setSelectedForInspection((prev) => ({ ...prev, [lineId]: !prev[lineId] }));
   const clearInspectionSelection = () => setSelectedForInspection({});
@@ -1210,33 +1220,143 @@ const AddPurchaseOrder = ({
     return (lines || []).filter((l) => ids.has(l.id));
   }, [selectedForInspection, lines]);
 
+  const [addInspection, { isLoading: isSubmittingInspection }] =
+    useAddInspectionMutation();
 
-// inside your component
-const [addInspection, { isLoading: isSubmittingInspection }] = useAddInspectionMutation();
+  const mapInspectionPayload = (payload) => {
+    const { vendor, project_code, items = [], inspection = {} } = payload;
 
-// helper to map InspectionForm payload -> API body matching your schema
-const mapInspectionPayload = (payload) => {
-  const { vendor, project_code, items = [], inspection = {} } = payload;
-
-  return {
-    project_code: project_code || undefined,    
-    vendor,
-    vendor_contact: inspection.contact_person || "",
-    vendor_mobile: inspection.contact_mobile || "",
-    mode: inspection.mode,                    
-    location: inspection.mode === "offline" ? inspection.location || "" : "",
-    description: inspection.notes || "",
-    date: inspection.datetime || null,        
-    item: items.map((it) => ({
-      category_id: it.productCategoryId || undefined,
-      product_name: it.productName || "",
-      description: it.briefDescription || "",
-      product_make: it.make || "",
-      quantity: String(it.quantity ?? 0),
-    })),
+    return {
+      project_code: project_code || undefined,
+      vendor,
+      vendor_contact: inspection.contact_person || "",
+      vendor_mobile: inspection.contact_mobile || "",
+      mode: inspection.mode,
+      location: inspection.mode === "offline" ? inspection.location || "" : "",
+      description: inspection.notes || "",
+      date: inspection.datetime || null,
+      item: items.map((it) => ({
+        category_id: it.category_id || it.productCategoryName || null,
+        product_name: it.product_name || it.productName || "",
+        description: it.description || it.briefDescription || "",
+        product_make: it.makeQ || it.make || "",
+        uom: it.uom || "",
+        quantity: String(it.quantity ?? 0),
+      })),
+    };
   };
-};
 
+  /* =========================
+     === Attachments state ===
+     ========================= */
+  const [attName, setAttName] = useState("");
+  const [attFile, setAttFile] = useState(null);
+  const [attDragging, setAttDragging] = useState(false);
+  const [attUploading, setAttUploading] = useState(false);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+
+  const onDragOverAttachment = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setAttDragging(true);
+  };
+  const onDragLeaveAttachment = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setAttDragging(false);
+  };
+  const onDropAttachment = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setAttDragging(false);
+    const file = e.dataTransfer?.files?.[0];
+    if (file) setAttFile(file);
+  };
+  const onPickAttachment = (e) => {
+    const file = e.target.files?.[0];
+    if (file) setAttFile(file);
+  };
+  const getExtFromName = (name) => {
+    const dot = String(name || "").lastIndexOf(".");
+    return dot >= 0 ? name.slice(dot) : "";
+  };
+
+  const handleUploadAttachment = async () => {
+    if (!formData?._id) return toast.error("PO id missing.");
+    if (!attFile) return toast.error("Please choose a file.");
+    if (!attName.trim()) return toast.error("Please enter a document name.");
+
+    try {
+      setAttUploading(true);
+      const token = localStorage.getItem("authToken");
+
+      const hasExt = /\.[A-Za-z0-9]+$/.test(attName.trim());
+      const ext = hasExt ? "" : getExtFromName(attFile.name) || "";
+      const finalFilename = `${attName.trim()}${ext}`; // becomes attachment_name
+
+      const fd = new FormData();
+      fd.append("file", attFile, finalFilename);
+
+      const resp = await Axios.put(`/edit-pO-IT/${formData._id}`, fd, {
+        headers: {
+          "x-auth-token": token,
+          "Content-Type": "multipart/form-data",
+        },
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
+      });
+
+      const updated = resp?.data?.data || {};
+      const last =
+        Array.isArray(updated.attachments) && updated.attachments.length
+          ? updated.attachments[updated.attachments.length - 1]
+          : null;
+
+      const niceName = last?.attachment_name || finalFilename;
+
+      // Optimistic feed
+      pushHistoryItem({
+        kind: "note",
+        note: `Attachment added: ${niceName}`,
+      });
+
+      // Persist to history collection
+      const u = getUserData();
+      try {
+        await addPoHistory({
+  subject_type: "purchase_order",
+  subject_id: formData._id,
+  event_type: "note",
+  message: `Attachment added: ${niceName}`,
+  createdBy: {
+    name: u?.name || "User",
+    user_id: u?._id,
+  },
+ attachments: last
+  ? [
+      {
+        name: last.attachment_name,
+        url: last.attachment_url,
+      },
+    ]
+  : [],
+}).unwrap();
+
+      } catch (e) {
+        console.warn("Failed to save history for attachment:", e);
+      }
+
+      toast.success("Attachment uploaded.");
+      setAttName("");
+      setAttFile(null);
+      setUploadModalOpen(false);
+    } catch (e) {
+      console.error(e);
+      toast.error(e?.response?.data?.msg || "Failed to upload attachment");
+    } finally {
+      setAttUploading(false);
+    }
+  };
 
   return (
     <Box
@@ -1278,35 +1398,27 @@ const mapInspectionPayload = (payload) => {
               Purchase Order
             </Typography>
             <Box
-              sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}
+              sx={{
+                display: "flex",
+                gap: 1,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
             >
-              {/* Inspection enable + button */}
-    {poNumberQ && (
-<Box display={'flex'} gap={2} justifyContent={'center'} alignItems={'center'}>
-                <Checkbox
-                  size="sm"
-                    label={inspectionEnabled ? "Disable Inspection Request" : "Enable Inspection Request"}
-                  checked={inspectionEnabled}
-                  onChange={(e) => {
-                    setInspectionEnabled(e.target.checked);
-                    if (!e.target.checked) clearInspectionSelection();
-                  }}
-                />
-                {inspectionEnabled && (
+              {/* Upload icon -> opens modal */}
+              {effectiveMode !== "create" && formData?._id && (
+                <Tooltip title="Upload document">
+                  <IconButton
+                    variant="soft"
+                    color="primary"
+                    onClick={() => setUploadModalOpen(true)}
+                  >
+                    <CloudUpload />
+                  </IconButton>
+                </Tooltip>
+              )}
 
-                <Button
-                  size="sm"
-                  variant="outlined"
-                  disabled={!inspectionEnabled || selectedItems.length === 0}
-                  onClick={() => setInspectionModalOpen(true)}
-                >
-                  Request Inspection
-                </Button>
-                )}
-                </Box>
-    )}
-             
-
+              {/* Existing action buttons */}
               {!viewMode && (
                 <>
                   {((effectiveMode === "edit" &&
@@ -1388,9 +1500,9 @@ const mapInspectionPayload = (payload) => {
                   </Box>
                 )}
 
-              {(((effectiveMode === "edit" && user?.department === "SCM") ||
+              {((effectiveMode === "edit" && user?.department === "SCM") ||
                 user?.department === "superadmin" ||
-                user?.department === "admin") ||
+                user?.department === "admin" ||
                 approvalRejected) && (
                 <Box display="flex" gap={2}>
                   {(user?.department === "SCM" ||
@@ -1571,13 +1683,51 @@ const mapInspectionPayload = (payload) => {
                     Add Bill
                   </Button>
                 </Box>
+
+                {poNumberQ && (
+                  <Box
+                    display={"flex"}
+                    gap={2}
+                    justifyContent={"center"}
+                    alignItems={"center"}
+                  >
+                    <Checkbox
+                      size="sm"
+                      label={
+                        inspectionEnabled
+                          ? "Disable Inspection Request"
+                          : "Enable Inspection Request"
+                      }
+                      checked={inspectionEnabled}
+                      onChange={(e) => {
+                        setInspectionEnabled(e.target.checked);
+                        if (!e.target.checked) clearInspectionSelection();
+                      }}
+                    />
+                    {inspectionEnabled && (
+                      <Button
+                        size="sm"
+                        variant="outlined"
+                        disabled={
+                          !inspectionEnabled || selectedItems.length === 0
+                        }
+                        onClick={() => setInspectionModalOpen(true)}
+                      >
+                        Request Inspection
+                      </Button>
+                    )}
+                  </Box>
+                )}
               </Box>
             </Box>
           )}
 
           {/* Form */}
           <form id="po-form" onSubmit={handleSubmit}>
-            <Sheet variant="outlined" sx={{ p: 2, borderRadius: "lg", mb: 1.5 }}>
+            <Sheet
+              variant="outlined"
+              sx={{ p: 2, borderRadius: "lg", mb: 1.5 }}
+            >
               <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid xs={12} md={4}>
                   <Typography level="body1" fontWeight="bold" mb={0.5}>
@@ -1738,8 +1888,7 @@ const mapInspectionPayload = (payload) => {
                   {lines.map((l) => {
                     const base =
                       Number(l.quantity || 0) * Number(l.unitPrice || 0);
-                    const taxAmt =
-                      (base * Number(l.taxPercent || 0)) / 100;
+                    const taxAmt = (base * Number(l.taxPercent || 0)) / 100;
                     const gross = base + taxAmt;
 
                     const key = mkKey(l.productCategoryId, l.productName);
@@ -1900,12 +2049,18 @@ const mapInspectionPayload = (payload) => {
                                   </Option>
                                 ))}
                                 {l.productCategoryId && l.productName && (
-                                  <Option value={SEARCH_MORE_MAKE} color="neutral">
+                                  <Option
+                                    value={SEARCH_MORE_MAKE}
+                                    color="neutral"
+                                  >
                                     Search more…
                                   </Option>
                                 )}
                                 {l.productCategoryId && l.productName && (
-                                  <Option value={CREATE_PRODUCT_INLINE} color="primary">
+                                  <Option
+                                    value={CREATE_PRODUCT_INLINE}
+                                    color="primary"
+                                  >
                                     + Create Product…
                                   </Option>
                                 )}
@@ -1956,7 +2111,13 @@ const mapInspectionPayload = (payload) => {
                         <td>
                           <Typography level="body-sm" fontWeight="lg">
                             ₹{" "}
-                            {gross.toLocaleString(undefined, {
+                            {(
+                              Number(l.quantity || 0) * Number(l.unitPrice || 0) +
+                              ((Number(l.quantity || 0) *
+                                Number(l.unitPrice || 0) *
+                                Number(l.taxPercent || 0)) /
+                                100 || 0)
+                            ).toLocaleString(undefined, {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
                             })}
@@ -2011,7 +2172,7 @@ const mapInspectionPayload = (payload) => {
                     </Typography>
                     <Typography level="body-sm" fontWeight="lg">
                       ₹{" "}
-                      {amounts.untaxed.toLocaleString(undefined, {
+                      {Number(amounts.untaxed || 0).toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}
@@ -2019,7 +2180,7 @@ const mapInspectionPayload = (payload) => {
 
                     <Typography level="body-sm">Tax:</Typography>
                     <Typography level="body-sm" fontWeight={700}>
-                      ₹ {amounts.tax.toFixed(2)}
+                      ₹ {Number(amounts.tax || 0).toFixed(2)}
                     </Typography>
 
                     <Typography level="title-md" sx={{ mt: 0.5 }}>
@@ -2031,7 +2192,7 @@ const mapInspectionPayload = (payload) => {
                       sx={{ mt: 0.5 }}
                     >
                       ₹{" "}
-                      {amounts.total.toLocaleString(undefined, {
+                      {Number(amounts.total || 0).toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}
@@ -2099,7 +2260,6 @@ const mapInspectionPayload = (payload) => {
           pageSize={VENDOR_LIMIT}
           backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
         />
-
         {/* Product picker */}
         <SearchPickerModal
           open={productModalOpen}
@@ -2231,31 +2391,119 @@ const mapInspectionPayload = (payload) => {
             sx={{ maxWidth: 1100, width: "95vw", p: 0, overflow: "auto" }}
           >
             <InspectionForm
-  open
-  vendorName={formData?.name || ""}
-  projectCode={formData?.project_code || ""}
-  items={selectedItems}
-  onClose={() => setInspectionModalOpen(false)}
-  onSubmit={async (payload) => {
-    try {
-      const body = mapInspectionPayload(payload);
-      // RTK Query call
-      await addInspection(body).unwrap();
-
-      toast.success("Inspection request submitted.");
-      setInspectionModalOpen(false);
-      clearInspectionSelection();
-    } catch (e) {
-      console.error(e);
-      toast.error(
-        e?.data?.message || e?.error || "Failed to submit inspection request"
-      );
-    }
-  }}
-/>
-
+              open
+              vendorName={formData?.name || ""}
+              projectCode={formData?.project_code || ""}
+              items={selectedItems}
+              onClose={() => setInspectionModalOpen(false)}
+              onSubmit={async (payload) => {
+                try {
+                  const body = mapInspectionPayload(payload);
+                  console.log("Final inspection payload:", body);
+                  await addInspection(body).unwrap();
+                  toast.success("Inspection request submitted.");
+                  setInspectionModalOpen(false);
+                  clearInspectionSelection();
+                } catch (e) {
+                  console.error(e);
+                  toast.error(
+                    e?.data?.message ||
+                      e?.error ||
+                      "Failed to submit inspection request"
+                  );
+                }
+              }}
+            />
           </ModalDialog>
         </Modal>
+
+        {/* ===== Upload Modal ===== */}
+<Modal open={uploadModalOpen} onClose={() => setUploadModalOpen(false)}>
+  <ModalDialog
+    sx={{ maxWidth: 500, width: "95vw", p: 2, borderRadius: "md" }}
+  >
+    <Typography level="h5" fontWeight="lg" mb={2}>
+      Upload Document
+    </Typography>
+
+    <Box
+      component="form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleUploadAttachment();
+      }}
+    >
+      {/* Document Name */}
+      <Box mb={2}>
+        <Typography level="body-sm" fontWeight="md">
+          Document Name
+        </Typography>
+        <Input
+          placeholder="Enter document name"
+          value={attName}
+          onChange={(e) => setAttName(e.target.value)}
+        />
+      </Box>
+
+      {/* File Drop Area */}
+      <Box
+        sx={{
+          border: "2px dashed",
+          borderColor: attDragging ? "primary.solidBg" : "neutral.outlinedBorder",
+          borderRadius: "md",
+          p: 3,
+          textAlign: "center",
+          cursor: "pointer",
+          bgcolor: attDragging ? "primary.softBg" : "transparent",
+        }}
+        onDragOver={onDragOverAttachment}
+        onDragLeave={onDragLeaveAttachment}
+        onDrop={onDropAttachment}
+        onClick={() => document.getElementById("file-input-hidden").click()}
+      >
+        {attFile ? (
+          <Typography level="body-sm" sx={{ fontWeight: 500 }}>
+            {attFile.name}
+          </Typography>
+        ) : (
+          <Typography level="body-sm" color="neutral">
+            Drag & drop a file here, or click to browse
+          </Typography>
+        )}
+        <input
+          type="file"
+          id="file-input-hidden"
+          style={{ display: "none" }}
+          onChange={onPickAttachment}
+        />
+      </Box>
+
+      {/* Actions */}
+      <Box
+        mt={3}
+        display="flex"
+        justifyContent="flex-end"
+        gap={1}
+      >
+        <Button
+          variant="plain"
+          color="neutral"
+          onClick={() => setUploadModalOpen(false)}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          loading={attUploading}
+          disabled={!attFile || !attName.trim()}
+        >
+          Upload
+        </Button>
+      </Box>
+    </Box>
+  </ModalDialog>
+</Modal>
+
       </Box>
 
       <Box ref={feedRef}>

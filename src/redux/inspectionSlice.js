@@ -18,11 +18,21 @@ export const inspectionApi = createApi({
   tagTypes: ["Inspection"],
   endpoints: (builder) => ({
     getInspections: builder.query({
-      query: ({page, limit, search}) => `inspection/page=${page}&limit=${limit}&search=${search}`,
+      query: ({ page, limit, search, startDate, endDate }) => {
+        const params = new URLSearchParams();
+        params.set("page", String(page));
+        params.set("limit", String(limit));
+        params.set("search", search ?? "");
+
+        if (startDate) params.set("startDate", startDate);
+        if (endDate) params.set("endDate", endDate);
+
+        return `inspection?${params.toString()}`;
+      },
       providesTags: ["Inspection"],
     }),
     getInspectionById: builder.query({
-      query: ({id}) => `inspection/${id}`,
+      query: ({ id }) => `inspection/${id}`,
       providesTags: ["Inspection"],
     }),
     addInspection: builder.mutation({
@@ -34,7 +44,7 @@ export const inspectionApi = createApi({
       invalidatesTags: ["Inspection"],
     }),
     updateInspection: builder.mutation({
-      query: ({data, id}) => ({
+      query: ({ data, id }) => ({
         url: `inspection/${id}`,
         method: "PUT",
         body: data,
@@ -42,10 +52,25 @@ export const inspectionApi = createApi({
       invalidatesTags: ["Inspection"],
     }),
     deleteInspection: builder.mutation({
-      query: ({id}) => ({
+      query: ({ id }) => ({
         url: `inspection/${id}`,
         method: "Delete",
       }),
+      invalidatesTags: ["Inspection"],
+    }),
+    updateStatusInspection: builder.mutation({
+      query: ({ id, status, remarks, files }) => {
+        const form = new FormData();
+        form.append("status", status ?? "");
+        form.append("remarks", remarks ?? "");
+        (files || []).forEach((file) => form.append("files", file));
+
+        return {
+          url: `/${id}/updateStatus`,
+          method: "PUT",
+          body: form,
+        };
+      },
       invalidatesTags: ["Inspection"],
     }),
   }),
@@ -57,4 +82,5 @@ export const {
   useAddInspectionMutation,
   useUpdateInspectionMutation,
   useDeleteInspectionMutation,
+  useUpdateStatusInspectionMutation,
 } = inspectionApi;
