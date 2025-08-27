@@ -58,7 +58,7 @@ function buildPoCategorySummary(itemsRaw) {
 
   for (const it of items) {
     const po = it?.material_po?.po_number || "-";
-    const category = it?.category_name || "-";
+    const category = it?.category_name || "-"; // <-- fixed
     const key = `${po}|${category}`;
     pairCounts.set(key, (pairCounts.get(key) || 0) + 1);
   }
@@ -72,7 +72,9 @@ function buildPoCategorySummary(itemsRaw) {
   }
 
   pairs.sort((a, b) =>
-    a.po === b.po ? a.category.localeCompare(b.category) : a.po.localeCompare(b.po)
+    a.po === b.po
+      ? a.category.localeCompare(b.category)
+      : a.po.localeCompare(b.po)
   );
   for (const [po, arr] of grouped.entries()) {
     arr.sort((a, b) => a.category.localeCompare(b.category));
@@ -110,9 +112,17 @@ const dd_mm_yyyy = (d) => {
 const errMsg = (e) =>
   e?.data?.message || e?.error || e?.message || "Failed to update status";
 
-
 function StatusCard({ row, onUpdated }) {
-  const current = row?.current_status?.status || "ready_to_dispatch";
+  // Prefer current_status; otherwise fall back to last status_history entry.
+  const raw =
+    row?.current_status?.status ??
+    (Array.isArray(row?.status_history) && row.status_history.length
+      ? row.status_history[row.status_history.length - 1]?.status
+      : undefined);
+
+  // Default to "ready_to_dispatch" when nothing present
+  const current = raw || "ready_to_dispatch";
+
   const [updateStatus, { isLoading }] = useUpdateLogisticStatusMutation();
   const [errorText, setErrorText] = useState("");
 
@@ -124,25 +134,52 @@ function StatusCard({ row, onUpdated }) {
       : "Ready to Dispatch";
 
   const color =
-    current === "delivered" ? "success" : current === "out_for_delivery" ? "warning" : "neutral";
+    current === "delivered"
+      ? "success"
+      : current === "out_for_delivery"
+      ? "warning"
+      : "neutral";
 
-  const changeTo = current === "ready_to_dispatch" ? "out_for_delivery" : "delivered";
+  const nextStatus =
+    current === "ready_to_dispatch"
+      ? "out_for_delivery"
+      : current === "out_for_delivery"
+      ? "delivered"
+      : null;
+
   const changeButtonText =
-    current === "ready_to_dispatch" ? "Change Status to Out for Delivery" : "Mark as Delivered";
+    current === "ready_to_dispatch"
+      ? "Change Status to Out for Delivery"
+      : current === "out_for_delivery"
+      ? "Mark as Delivered"
+      : "";
 
   const handleChange = async () => {
     setErrorText("");
     try {
-      await updateStatus({ id: row._id, status: changeTo, remarks: "" }).unwrap();
-      onUpdated?.(); // refetch so dispatch_date / delivery_date update from backend
+      if (!nextStatus) return;
+      await updateStatus({
+        id: row._id,
+        status: nextStatus,
+        remarks: "",
+      }).unwrap();
+
+      // ensure we wait for new data before rendering
+      await onUpdated?.();
     } catch (e) {
       console.error("update status failed:", e);
-      setErrorText(e?.data?.message || e?.error || e?.message || "Failed to update status");
+      setErrorText(errMsg(e));
     }
   };
 
-  const dispatchDate = row?.dispatch_date ? dd_mm_yyyy(row.dispatch_date) : "dd - mm - yyyy";
-  const deliveryDate = row?.delivery_date ? dd_mm_yyyy(row.delivery_date) : "dd - mm - yyyy";
+  const dispatchDate = row?.dispatch_date
+    ? dd_mm_yyyy(row.dispatch_date)
+    : "dd - mm - yyyy";
+  const deliveryDate = row?.delivery_date
+    ? dd_mm_yyyy(row.delivery_date)
+    : "dd - mm - yyyy";
+
+   
 
   return (
     <Box
@@ -155,7 +192,7 @@ function StatusCard({ row, onUpdated }) {
         minWidth: 320,
       }}
     >
-      {/* Header like your UI */}
+      {/* Header */}
       <Box
         sx={{
           display: "flex",
@@ -174,7 +211,7 @@ function StatusCard({ row, onUpdated }) {
         </Chip>
       </Box>
 
-      {/* Always show BOTH dates */}
+      {/* Dates */}
       <Box sx={{ display: "grid", rowGap: 0.5, mb: 1 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Typography level="body-sm" sx={{ minWidth: 130 }}>
@@ -196,7 +233,7 @@ function StatusCard({ row, onUpdated }) {
         </Typography>
       )}
 
-      {current !== "delivered" && (
+      {nextStatus && (
         <Button
           size="sm"
           variant="soft"
@@ -211,12 +248,11 @@ function StatusCard({ row, onUpdated }) {
   );
 }
 
-
 /* ---------------- component ---------------- */
 export default function LogisticsDashboard() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-
+    const po_number = useState(searchParams.get("po_number") || "");
   const [currentPage, setCurrentPage] = useState(1);
   useEffect(() => {
     const p = parseInt(searchParams.get("page") || "1", 10);
@@ -228,13 +264,24 @@ export default function LogisticsDashboard() {
 
   const [selected, setSelected] = useState([]);
 
-  const { data: resp = {}, isLoading, refetch } = useGetLogisticsQuery({
-    page: currentPage,
-    pageSize: rowsPerPage,
-    search: searchQuery,
-    status: "",
-    po_id: "",
-  });
+  const {
+    data: resp = {},
+    isLoading,
+    refetch,
+  } = useGetLogisticsQuery(
+    {
+      page: currentPage,
+      pageSize: rowsPerPage,
+      search: searchQuery,
+      status: "",
+      po_id: "",
+      po_number:searchParams.get("po_number") || "",
+    },
+    {
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    }
+  );
 
   const rows = useMemo(() => {
     if (Array.isArray(resp)) return resp;
@@ -243,7 +290,9 @@ export default function LogisticsDashboard() {
   }, [resp]);
 
   const totalCount =
-    resp?.total ?? resp?.meta?.total ?? (Array.isArray(resp?.data) ? resp.data.length : 0);
+    resp?.total ??
+    resp?.meta?.total ??
+    (Array.isArray(resp?.data) ? resp.data.length : 0);
 
   const totalPages = Math.max(1, Math.ceil((totalCount || 0) / rowsPerPage));
 
@@ -260,7 +309,9 @@ export default function LogisticsDashboard() {
   };
 
   const handleRowSelect = (id) =>
-    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
 
   const COLS = [
     "Logistics Code",
@@ -303,7 +354,9 @@ export default function LogisticsDashboard() {
         </FormControl>
 
         {/* Rows Per Page (right side) */}
-        <Box sx={{ ml: "auto", display: "flex", alignItems: "flex-end", gap: 1 }}>
+        <Box
+          sx={{ ml: "auto", display: "flex", alignItems: "flex-end", gap: 1 }}
+        >
           <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
             Rows Per Page:
           </Typography>
@@ -373,7 +426,9 @@ export default function LogisticsDashboard() {
                 <Checkbox
                   size="sm"
                   checked={rows.length > 0 && selected.length === rows.length}
-                  indeterminate={selected.length > 0 && selected.length < rows.length}
+                  indeterminate={
+                    selected.length > 0 && selected.length < rows.length
+                  }
                   onChange={handleSelectAll}
                 />
               </th>
@@ -386,7 +441,10 @@ export default function LogisticsDashboard() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={COL_COUNT} style={{ padding: "8px", textAlign: "center" }}>
+                <td
+                  colSpan={COL_COUNT}
+                  style={{ padding: "8px", textAlign: "center" }}
+                >
                   <Box
                     sx={{
                       fontStyle: "italic",
@@ -407,12 +465,16 @@ export default function LogisticsDashboard() {
                 const firstPO = poNumbers[0] || "-";
                 const extraPO = Math.max(0, poNumbers.length - 1);
 
-                const { grouped, firstLabel, extraCount } = buildPoCategorySummary(row.items);
+                const { grouped, firstLabel, extraCount } =
+                  buildPoCategorySummary(row.items);
 
                 const totalWeight =
                   row?.total_ton ??
                   (Array.isArray(row.items)
-                    ? row.items.reduce((sum, it) => sum + (Number(it.weight) || 0), 0)
+                    ? row.items.reduce(
+                        (sum, it) => sum + (Number(it.weight) || 0),
+                        0
+                      )
                     : "-");
 
                 return (
@@ -584,7 +646,10 @@ export default function LogisticsDashboard() {
               })
             ) : (
               <tr>
-                <td colSpan={COL_COUNT} style={{ padding: "8px", textAlign: "center" }}>
+                <td
+                  colSpan={COL_COUNT}
+                  style={{ padding: "8px", textAlign: "center" }}
+                >
                   <Typography fontStyle="italic">No Logistics Found</Typography>
                 </td>
               </tr>
@@ -617,7 +682,9 @@ export default function LogisticsDashboard() {
 
         <Box>Showing {rows.length} results</Box>
 
-        <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
+        <Box
+          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
+        >
           {pageNumbers(currentPage, totalPages).map((v, idx) =>
             v === "…" ? (
               <Typography key={`dots-${idx}`} level="body-sm" sx={{ px: 1 }}>

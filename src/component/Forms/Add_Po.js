@@ -15,6 +15,7 @@ import {
   ModalDialog,
   Textarea,
 } from "@mui/joy";
+import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
 import DeleteOutline from "@mui/icons-material/DeleteOutline";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import ReactSelect from "react-select";
@@ -36,6 +37,7 @@ import {
   useGetVendorsNameSearchQuery,
   useLazyGetVendorsNameSearchQuery,
 } from "../../redux/vendorSlice";
+import { useGetLogisticsQuery } from "../../redux/purchasesSlice";
 import { Check } from "lucide-react";
 import {
   useGetProductsQuery,
@@ -202,6 +204,20 @@ const AddPurchaseOrder = ({
     total_bills: 0,
     createdAt: "",
   });
+  const poNum = (formData.po_number || poNumberQ || "").trim();
+
+  const { data: logResp, isFetching: isLogFetching } = useGetLogisticsQuery(
+    {
+      page: 1,
+      pageSize: 1,
+      search: "",
+      status: "",
+      po_id: "",
+      po_number: poNum,
+    },
+    { skip: !poNum }
+  );
+  const logisticsCount = logResp?.total ?? 0;
 
   const [lines, setLines] = useState(() =>
     Array.isArray(initialLines) && initialLines.length
@@ -1190,6 +1206,13 @@ const AddPurchaseOrder = ({
     params.set("returnTo", location.pathname + location.search);
     navigate(`/vendor_bill?${params.toString()}`);
   };
+  const goToLogisticsList = () => {
+    const num = formData.po_number || poNumberQ;
+    if (!num) return;
+    const params = new URLSearchParams();
+    params.set("po_number", num);
+    navigate(`/logistics?${params.toString()}`); // where LogisticsDashboard reads po_number
+  };
 
   return (
     <Box
@@ -1312,7 +1335,9 @@ const AddPurchaseOrder = ({
                   </Box>
                 )}
 
-              {((effectiveMode === "edit" && user?.department === "SCM" || user?.department === "superadmin" || user?.department === "admin") ||
+              {((effectiveMode === "edit" && user?.department === "SCM") ||
+                user?.department === "superadmin" ||
+                user?.department === "admin" ||
                 approvalRejected) && (
                 <Box display="flex" gap={2}>
                   {(user?.department === "SCM" ||
@@ -1383,118 +1408,153 @@ const AddPurchaseOrder = ({
               </Box>
             )}
 
-          {!fromModal && poNumberQ && (
+         {!fromModal && (formData.po_number || poNumberQ) && (
             <Box
-            sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 1.5,
-              alignItems: "center",
-              justifyContent: "space-between",
-              mb: 2,
-              mt: 1,
-            }}
-          >
-            <Sheet
-              variant="outlined"
               sx={{
                 display: "flex",
+                flexWrap: "wrap",
+                gap: 1.5,
                 alignItems: "center",
-                gap: 2,
-                borderRadius: "lg",
-                px: 1.5,
-                py: 1,
+                justifyContent: "space-between",
+                mb: 2,
+                mt: 1,
               }}
             >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-                <DescriptionOutlinedIcon fontSize="small" color="primary" />
-                <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-                  PO Number
-                </Typography>
-                <Chip
-                  color="primary"
-                  size="sm"
-                  variant="solid"
-                  sx={{ fontWeight: 700 }}
-                >
-                  {formData?.po_number || "—"}
-                </Chip>
-              </Box>
-              <Divider orientation="vertical" />
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-                <PersonOutlineOutlinedIcon fontSize="small" color="primary" />
-                <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-                  Created By
-                </Typography>
-                <Chip
-                  variant="soft"
-                  size="sm"
-                  sx={{ fontWeight: 700, pl: 0.5, pr: 1 }}
-                >
-                  {formData?.submitted_By || "-"}
-                </Chip>
-              </Box>
-            </Sheet>
+              <Sheet
+                variant="outlined"
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                  borderRadius: "lg",
+                  px: 1.5,
+                  py: 1,
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+                  <DescriptionOutlinedIcon fontSize="small" color="primary" />
+                  <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+                    PO Number
+                  </Typography>
+                  <Chip
+                    color="primary"
+                    size="sm"
+                    variant="solid"
+                    sx={{ fontWeight: 700 }}
+                  >
+                    {formData?.po_number || "—"}
+                  </Chip>
+                </Box>
+                <Divider orientation="vertical" />
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+                  <PersonOutlineOutlinedIcon fontSize="small" color="primary" />
+                  <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+                    Created By
+                  </Typography>
+                  <Chip
+                    variant="soft"
+                    size="sm"
+                    sx={{ fontWeight: 700, pl: 0.5, pr: 1 }}
+                  >
+                    {formData?.submitted_By || "-"}
+                  </Chip>
+                </Box>
+              </Sheet>
 
-            <Box
-              display={"flex"}
-              gap={2}
-              alignItems={"center"}
-              justifyContent={"center"}
-            >
-              <Box display={"flex"} gap={2}>
-                <Sheet
-                  variant="outlined"
-                  sx={{
-                    display: "flex",
-                    alignItems: "stretch",
-                    borderRadius: "lg",
-                    overflow: "hidden",
-                  }}
-                >
-                  <Box
+              <Box
+                display={"flex"}
+                gap={2}
+                alignItems={"center"}
+                justifyContent={"center"}
+              >
+                <Box display={"flex"} gap={2}>
+                  <Sheet
+                    variant="outlined"
                     sx={{
                       display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                      px: 1.25,
-                      py: 0.75,
-                      cursor: "pointer",
-                      "&:hover": { bgcolor: "neutral.softHoverBg" },
+                      alignItems: "stretch",
+                      borderRadius: "lg",
+                      overflow: "hidden",
                     }}
-                    onClick={goToVendorList}
-                    role="button"
-                    tabIndex={0}
                   >
-                    <LocalMallOutlinedIcon fontSize="small" color="primary" />
-                    <Box sx={{ lineHeight: 1.1 }}>
-                      <Typography level="body-sm" sx={{ fontWeight: 600 }}>
-                        Vendor Bills
-                      </Typography>
-                      <Typography
-                        level="body-xs"
-                        sx={{ color: "text.secondary" }}
-                      >
-                        {formData.total_bills}
-                      </Typography>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        px: 1.25,
+                        py: 0.75,
+                        cursor: "pointer",
+                        "&:hover": { bgcolor: "neutral.softHoverBg" },
+                      }}
+                      onClick={goToVendorList}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <LocalMallOutlinedIcon fontSize="small" color="primary" />
+                      <Box sx={{ lineHeight: 1.1 }}>
+                        <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+                          Vendor Bills
+                        </Typography>
+                        <Typography
+                          level="body-xs"
+                          sx={{ color: "text.secondary" }}
+                        >
+                          {formData.total_bills}
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
-                </Sheet>
-              </Box>
+                    <Divider orientation="vertical" />
 
-              <Box>
-                <Button
-                  color="primary"
-                  size="sm"
-                  variant="solid"
-                  startDecorator={<Add />}
-                  onClick={() => setBillModalOpen(true)}
-                >
-                  Add Bill
-                </Button>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        px: 1.25,
+                        py: 0.75,
+                        cursor: poNum ? "pointer" : "not-allowed",
+                        opacity: poNum ? 1 : 0.6,
+                        "&:hover": poNum
+                          ? { bgcolor: "neutral.softHoverBg" }
+                          : undefined,
+                      }}
+                      onClick={poNum ? goToLogisticsList : undefined}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <LocalShippingOutlinedIcon
+                        fontSize="small"
+                        color="primary"
+                      />
+                      <Box sx={{ lineHeight: 1.1 }}>
+                        <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+                          Logistics
+                        </Typography>
+                        <Typography
+                          level="body-xs"
+                          sx={{ color: "text.secondary" }}
+                        >
+                          {isLogFetching ? "…" : logisticsCount}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Sheet>
+                </Box>
+
+                <Box>
+                  <Button
+                    color="primary"
+                    size="sm"
+                    variant="solid"
+                    startDecorator={<Add />}
+                    onClick={() => setBillModalOpen(true)}
+                  >
+                    Add Bill
+                  </Button>
+                </Box>
               </Box>
             </Box>
-          </Box>
           )}
 
           {/* Form */}
