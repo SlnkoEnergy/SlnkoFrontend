@@ -771,7 +771,7 @@ function PurchaseReqSummary() {
                         textAlign: "left",
                       }}
                     >
-                      {row.po_value || "-"}
+                      ₹ {row.po_value || "0"}
                     </td>
                   </tr>
                 );

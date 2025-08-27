@@ -227,6 +227,7 @@ const CreditRequest = forwardRef(
         </>
       );
     };
+    
 
     const MatchRow = ({
       _id,
@@ -263,6 +264,7 @@ const CreditRequest = forwardRef(
           toast.error("Failed to request credit extension");
         }
       };
+      
 
       return (
         <Box mt={1}>
@@ -393,7 +395,7 @@ const CreditRequest = forwardRef(
       );
     };
 
-    const UtrCell = ({ payment, cellStyle, user }) => {
+    const UtrCell = ({ payment, user }) => {
       const department = user?.department;
       const role = user?.role;
 
@@ -405,15 +407,20 @@ const CreditRequest = forwardRef(
 
       const historyContent = payment?.utr_history?.length ? (
         <Box>
-          <Typography level="body-sm" fontWeight={600} mb={0.5}>
+          <Typography
+            level="body-sm"
+            fontWeight={600}
+            mb={0.5}
+            sx={{ color: "#fff" }}
+          >
             UTR History
           </Typography>
           <ul style={{ margin: 0, paddingLeft: "1rem" }}>
             {payment.utr_history.map((h, idx) => (
               <li key={idx}>
-                <Typography level="body-sm">
+                <Typography level="body-sm" sx={{ color: "#fff" }}>
                   {h.utr}{" "}
-                  <span style={{ color: "gray", fontSize: 12 }}>
+                  <span style={{ color: "gray", fontSize: 12, color: "#fff" }}>
                     ({h.status})
                   </span>
                 </Typography>
@@ -425,7 +432,9 @@ const CreditRequest = forwardRef(
         "No UTR history"
       );
 
-      const content = <span style={{ fontSize: 15, fontWeight:600 }}>{displayUtr}</span>;
+      const content = (
+        <span style={{ fontSize: 15, fontWeight: 600 }}>{displayUtr}</span>
+      );
 
       return (
         <Box>
@@ -595,10 +604,7 @@ const CreditRequest = forwardRef(
                     </Box>
 
                     <Box component="td" sx={{ ...cellStyle, fontSize: 15 }}>
-                      <UtrCell
-                        payment={payment}
-                        user={user}
-                      />
+                      <UtrCell payment={payment} user={user} />
                     </Box>
                   </Box>
                 ))

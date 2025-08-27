@@ -74,22 +74,26 @@ export const AccountsApi = createApi({
     }),
 
     getPaymentApproval: builder.query({
-      query: ({ page = 1, search = "", pageSize = 10, tab = "" }) =>
-        `accounting/payment-approval?page=${page}&search=${search}&pageSize=${pageSize}&tab=${tab}`,
+      query: ({ page = 1, search = "", pageSize = 10, tab = "", delaydays }) =>
+        `accounting/payment-approval?page=${page}&search=${search}&pageSize=${pageSize}&tab=${tab}&delaydays=${delaydays ?? ""}`,
 
-      transformResponse: (response) => ({
-        data: response?.data || [],
-        total: response.meta?.total || 0,
-        count: response.meta?.count || 0,
-        page: response.meta?.page || 1,
-        pageSize: response.meta?.pageSize || 10,
-        finalApprovalPaymentsCount: response.meta?.finalApprovalPaymentsCount || 0,
-        paymentsCount: response.meta?.paymentsCount || 0,
-        tab: response.meta?.tab || "",
-      }),
+      transformResponse: (response) => {
+        return {
+          data: response?.data || [],
+          total: response.meta?.total || 0,
+          count: response.meta?.count || 0,
+          page: response.meta?.page || 1,
+          pageSize: response.meta?.pageSize || 10,
+          delaydays: response.meta?.delaydays || undefined,
+          finalApprovalPaymentsCount: response.meta?.finalApprovalPaymentsCount || 0,
+          paymentsCount: response.meta?.paymentsCount || 0,
+          tab: response.meta?.tab || "",
+        };
+      },
 
       providesTags: ["Accounts"],
     }),
+
 
     getPaymentHistory: builder.query({
       query: ({ po_number }) =>

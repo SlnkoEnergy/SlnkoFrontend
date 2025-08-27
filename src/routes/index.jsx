@@ -102,10 +102,14 @@ import Add_Task from "../pages/AllTask/ADD_Task";
 import AllTask from "../pages/AllTask/AllTask";
 import View_Task from "../pages/AllTask/View_Task";
 import SalesIframe from "../component/Sales_Iframe";
+import Logistics from "../pages/SCM/Logistics";
 import Products from "../pages/Databases/Products";
 import Categories from "../pages/Databases/Categories";
 import Product_Form from "../pages/Databases/Product_Form";
 import PurchaseRequestForm from "../pages/CAM/PurchaseRequestForm";
+import LogisticsForm from "../pages/SCM/LogisticsForm";
+import Inspection from "../pages/Eng/Inspection";
+import Inspection_Form from "../pages/Eng/Inspection_Form";
 
 function index() {
   return (
@@ -303,6 +307,22 @@ function index() {
           </PrivateRoute>
         }
       />
+      <Route
+        path="/logistics"
+        element={
+          <PrivateRoute>
+            <Logistics />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/logistics-form"
+        element={
+          <PrivateRoute>
+            <LogisticsForm />
+          </PrivateRoute>
+        }
+      />
 
       {/*-------Project------- */}
       <Route
@@ -369,6 +389,22 @@ function index() {
         element={
           <PrivateRoute>
             <DashboardENG />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/inspection"
+        element={
+          <PrivateRoute>
+            <Inspection />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/inspection_form"
+        element={
+          <PrivateRoute>
+            <Inspection_Form />
           </PrivateRoute>
         }
       />
@@ -950,20 +986,20 @@ function index() {
 
       {/* Databases */}
       <Route
-      path="/products"
-      element={
-        <PrivateRoute>
-          <Products />
-        </PrivateRoute>
-      }
+        path="/products"
+        element={
+          <PrivateRoute>
+            <Products />
+          </PrivateRoute>
+        }
       />
-       <Route
-      path="/categories"
-      element={
-        <PrivateRoute>
-          <Categories />
-        </PrivateRoute>
-      }
+      <Route
+        path="/categories"
+        element={
+          <PrivateRoute>
+            <Categories />
+          </PrivateRoute>
+        }
       />
 
       <Route

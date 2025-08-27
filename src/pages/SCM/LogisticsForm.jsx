@@ -1,15 +1,17 @@
-import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import { CssVarsProvider } from "@mui/joy/styles";
+import CssBaseline from "@mui/joy/CssBaseline";
 import Box from "@mui/joy/Box";
 import Breadcrumbs from "@mui/joy/Breadcrumbs";
-import CssBaseline from "@mui/joy/CssBaseline";
 import Link from "@mui/joy/Link";
-import { CssVarsProvider } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
-import ADDBILL from "../../component/Forms/Add_Bill";
-import Header from "../../component/Partials/Header";
+import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import Sidebar from "../../component/Partials/Sidebar";
+import Header from "../../component/Partials/Header";
+import { useNavigate } from "react-router-dom";
+import AddLogisticForm from "../../component/Forms/logisticsForm";
 
-function Add_Bill() {
+const LogisticsForm = () => {
+  const navigate = useNavigate();
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -32,31 +34,47 @@ function Add_Bill() {
             sx={{
               display: "flex",
               alignItems: "center",
-              marginLeft: { xl: "16%", lg: "20%" },
+              marginLeft: {
+                xs: "3vw",
+                sm: "3vw",
+                md: "3vw",
+                lg: "22vw",
+                xl: "16vw",
+              },
+              marginTop: {
+                xs: "10vh",
+                sm: "8vh",
+                md: "4vh",
+                lg: "2vh",
+                xl: "0vh",
+              },
             }}
           >
             <Breadcrumbs
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: {md:"4%", lg:"0%"} }}
+              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
               <Link
                 underline="hover"
                 color="neutral"
                 href=""
                 sx={{ fontSize: 12, fontWeight: 500 }}
+                onClick={() => navigate("/cam_dash")}
               >
-                Purcahse Order Summary
+                CAM
               </Link>
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
+                onClick={() => navigate("/pr_form")}
               >
-                Add Bill
+                Logistics Form
               </Typography>
             </Breadcrumbs>
           </Box>
+
           <Box
             sx={{
               display: "flex",
@@ -66,14 +84,13 @@ function Add_Bill() {
               alignItems: { xs: "start", sm: "center" },
               flexWrap: "wrap",
               justifyContent: "space-between",
-              marginLeft: { xl: "12%", lg: "20%" },
             }}
           >
-            <ADDBILL />
+            <AddLogisticForm />
           </Box>
         </Box>
       </Box>
     </CssVarsProvider>
   );
-}
-export default Add_Bill;
+};
+export default LogisticsForm;

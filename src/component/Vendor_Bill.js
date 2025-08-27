@@ -6,7 +6,7 @@ import DownloadIcon from "@mui/icons-material/Download";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
-import { CircularProgress, Option, Select, Tooltip } from "@mui/joy";
+import { CircularProgress, Option, Select, Sheet, Tooltip } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Chip from "@mui/joy/Chip";
@@ -17,21 +17,19 @@ import Input from "@mui/joy/Input";
 import Typography from "@mui/joy/Typography";
 import { useSnackbar } from "notistack";
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   useExportBillsMutation,
-  useGetPaginatedBillsQuery,
+  useGetAllBillsQuery,
 } from "../redux/billsSlice";
 import Axios from "../utils/Axios";
 import dayjs from "dayjs";
-import { CalendarSearch } from "lucide-react";
 
 function VendorBillSummary() {
-  // const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
-  const [selectedbill, setSelectedbill] = useState("");
+  const selectedbill = searchParams.get("status") || "";
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
   const [from, setFrom] = useState("");
@@ -39,7 +37,7 @@ function VendorBillSummary() {
   const [to, setTo] = useState("");
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [perPage, setPerPage] = useState(initialPageSize);
-
+  const po_number = searchParams.get("po_number");
   useEffect(() => {
     const userData = getUserData();
     setUser(userData);
@@ -53,21 +51,27 @@ function VendorBillSummary() {
     return null;
   };
 
-  const { data: getBill = [], isLoading } = useGetPaginatedBillsQuery({
+  const { data: getBill = {}, isLoading } = useGetAllBillsQuery({
     page: currentPage,
     pageSize: perPage,
     status: selectedbill,
     search: searchQuery,
     date: date,
+    po_number: po_number,
   });
 
   const [exportBills, { isLoading: isExporting }] = useExportBillsMutation();
+  const {
+    data: getBillData = [],
+    total = 0,
+    count = 0,
+    page = 0,
+    pageSize = 0,
+    totalPages = 0,
+  } = getBill;
 
-  const { data: getBillData = [], total = 0, count = 0 } = getBill;
-  const totalPages = Math.ceil(total / perPage);
-
-  const startIndex = (currentPage - 1) * perPage + 1;
-  const endIndex = Math.min(startIndex + count - 1, total);
+  const startIndex = (page - 1) * pageSize + 1;
+  const endIndex = Math.min(page * pageSize, total);
 
   const getPaginationRange = () => {
     const siblings = 1;
@@ -99,8 +103,6 @@ function VendorBillSummary() {
     () => (Array.isArray(getBill?.data) ? getBill.data : []),
     [getBill]
   );
-
-  const paginatedPayments = bills;
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -172,8 +174,7 @@ function VendorBillSummary() {
         const response = await Axios.put(
           "/accepted-by",
           {
-            bill_number: billNumber,
-            approved_by: user?.name,
+            bill_number: billNumber
           },
           {
             headers: {
@@ -255,15 +256,20 @@ function VendorBillSummary() {
     );
   };
 
-  const BillingStatusChip = ({ status, balance }) => {
-    const isFullyBilled = status === "Fully Billed" && balance === 0;
-    const isPending = status === "Bill Pending";
+  const capitalize = (str = "") =>
+    str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 
-    const label = isFullyBilled
+  const BillingStatusChip = ({ status, balance }) => {
+    const isFullyBilled = status === "fully billed";
+    const isPending = status === "waiting bills";
+
+    const rawLabel = isFullyBilled
       ? "Fully Billed"
       : isPending
-        ? `${balance} - Pending`
+        ? `${balance} - Waiting Bills`
         : status;
+
+    const label = capitalize(rawLabel);
 
     const icon = isFullyBilled ? (
       <CheckRoundedIcon />
@@ -280,8 +286,16 @@ function VendorBillSummary() {
     );
   };
 
+  const handleStatusChange = (newValue) => {
+    setSearchParams({
+      page: 1,
+      pageSize: perPage,
+      status: newValue,
+    });
+  };
+
   const renderFilters = () => {
-    const bill_status = ["Fully Billed ", "Bill Pending"];
+    const bill_status = ["fully billed ", "waiting bills"];
 
     return (
       <Box
@@ -297,12 +311,9 @@ function VendorBillSummary() {
           <FormLabel>Bill Status</FormLabel>
           <Select
             value={selectedbill}
-            onChange={(e, newValue) => {
-              setSelectedbill(newValue);
-              setCurrentPage(1);
-            }}
+            onChange={(e, newValue) => handleStatusChange(newValue)}
             size="sm"
-            placeholder="Select Department"
+            placeholder="Select Bill Status"
           >
             <Option value="">All status</Option>
             {bill_status.map((status) => (
@@ -376,12 +387,30 @@ function VendorBillSummary() {
   };
   const RenderTableCell = ({ cell }) => {
     return (
-      <Box component="td" sx={{ padding: 2, fontSize: 14, fontWeight: 600 }}>
+      <Box
+        component="td"
+        sx={{
+          borderBottom: "1px solid #ddd",
+          padding: "8px",
+          textAlign: "left",
+        }}
+      >
         {cell}
       </Box>
     );
   };
+  const handlePerPageChange = (newValue) => {
+    setPerPage(newValue);
+    setSearchParams({
+      page: 1,
+      pageSize: newValue,
+      status: selectedbill,
+      search: searchQuery,
+      date: date,
+    });
+  };
 
+  const navigate = useNavigate();
   return (
     <>
       <Box
@@ -390,7 +419,6 @@ function VendorBillSummary() {
           marginLeft: { xl: "15%", lg: "18%" },
           borderRadius: "sm",
           py: 2,
-          // display: { xs: "none", sm: "flex" },
           display: "flex",
           flexWrap: "wrap",
           gap: 1.5,
@@ -412,13 +440,18 @@ function VendorBillSummary() {
         {renderFilters()}
       </Box>
 
-      <Box
+      <Sheet
+        className="OrderTableContainer"
+        variant="outlined"
         sx={{
-          padding: 3,
-          maxWidth: "100%",
+          display: { xs: "none", sm: "initial" },
+          width: "100%",
+          borderRadius: "sm",
+          flexShrink: 1,
           overflow: "auto",
-          marginLeft: { xl: "15%", lg: "18%", sm: "0%" },
-          minHeight: { xs: "100%", md: "0%" },
+          minHeight: 0,
+          marginLeft: { lg: "18%", xl: "15%" },
+          maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
         <Box
@@ -426,43 +459,42 @@ function VendorBillSummary() {
           sx={{
             width: "100%",
             borderCollapse: "collapse",
-            borderRadius: "md",
-            overflow: "hidden",
-            boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
+            fontSize: "14px",
           }}
         >
           <Box
             component="thead"
             sx={{
-              backgroundColor: "neutral.300",
-              color: "neutral.900",
+              backgroundColor: "neutral.softBg",
             }}
           >
             <Box component="tr">
               {[
-                "Project ID",
-                "PO NO.",
-                "Vendor",
-                "Item",
                 "Bill No.",
                 "Bill Date",
                 "Bill Value",
-                "PO Value",
                 "Total Billed",
+                "Category",
+                "Project ID",
+                "PO NO.",
+                "Vendor",
+                "PO Value",
                 "PO Status",
-                // "PO Balance",
                 "Received",
-                // "Approved By",
                 "Created On",
-              ].map((header, index) => (
+              ]?.map((header, index) => (
                 <Box
                   component="th"
                   key={index}
                   sx={{
-                    padding: 2,
+                    position: "sticky",
+                    top: 0,
+                    background: "#e0e0e0",
+                    zIndex: 2,
+                    borderBottom: "1px solid #ddd",
+                    padding: "8px",
                     textAlign: "left",
                     fontWeight: "bold",
-                    fontSize: "14px",
                   }}
                 >
                   {header}
@@ -484,11 +516,11 @@ function VendorBillSummary() {
                 >
                   <Box
                     sx={{
-                      display: "inline-flex",
+                      fontStyle: "italic",
+                      display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
                       justifyContent: "center",
-                      gap: 1,
                     }}
                   >
                     <CircularProgress size="sm" sx={{ color: "primary.500" }} />
@@ -498,84 +530,200 @@ function VendorBillSummary() {
                   </Box>
                 </Box>
               </Box>
-            ) : paginatedPayments.length > 0 ? (
-              paginatedPayments.map((row, index) =>
-                row.bills.map((bill, billIndex) => (
+            ) : bills.length > 0 ? (
+              bills.map((bill, index) => (
+                <Box
+                  component="tr"
+                  key={bill.bill_no || index}
+                  sx={{
+                    borderBottom: "1px solid #ddd",
+                    padding: "8px",
+                    textAlign: "left",
+                  }}
+                >
                   <Box
-                    component="tr"
-                    key={`${index}-${billIndex}`}
+                    component="td"
                     sx={{
-                      backgroundColor:
-                        index % 2 === 0 ? "neutral.100" : "neutral.50",
-                      "&:hover": {
-                        backgroundColor: "neutral.200",
-                      },
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
                     }}
                   >
-                    <RenderTableCell cell={row?.p_id} />
-                    <Box
-                      component="td"
-                      sx={{ padding: 2, fontSize: 14, minWidth: 200 }}
+                    <Chip
+                      variant="outlined"
+                      color="primary"
+                      sx={{ cursor: "pointer" }}
+                      onClick={() =>
+                        navigate(`/add_bill?mode=edit&_id=${bill._id}`)
+                      }
                     >
-                      {row.po_number}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{ padding: 2, fontSize: 14, minWidth: 250 }}
-                    >
-                      {row.vendor}
-                    </Box>
-                    <Box component="td" sx={{ padding: 2, fontSize: 14 }}>
-                      {row.item}
-                    </Box>
-                    <Box component="td" sx={{ padding: 2, fontSize: 14 }}>
-                      {bill.bill_number}
-                    </Box>
-                    <Box component="td" sx={{ padding: 2, fontSize: 14 }}>
-                      {new Date(bill.bill_date).toLocaleDateString()}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{ padding: 2, fontSize: 14, minWidth: 100 }}
-                    >
-                      ₹{bill.bill_value}
-                    </Box>
-                    <Box component="td" sx={{ padding: 2, fontSize: 14 }}>
-                      ₹{row.po_value}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{ padding: 2, fontSize: 14, minWidth: 110 }}
-                    >
-                      ₹{row.total_billed}
-                    </Box>
-                    <Box component="td" sx={{ padding: 2, fontSize: 14 }}>
-                      <BillingStatusChip
-                        status={row.po_status}
-                        balance={row.po_balance}
-                      />
-                    </Box>
-                    {/* <Box component="td" sx={{ padding: 2 }}>
-                      {row.po_balance}
-                    </Box> */}
-                    <Box component="td" sx={{ padding: 2 }}>
-                      <BillAcceptance
-                        billNumber={bill.bill_number}
-                        approvedBy={bill.approved_by}
-                      />
-                    </Box>
-                    {/* <Box component="td" sx={{ padding: 2 }}>
-                      {bill.approved_by}
-                    </Box> */}
-                    <Box
-                      component="td"
-                      sx={{ padding: 2, minWidth: 120, fontSize: 14 }}
-                    >
-                      {dayjs(bill.created_on).format("DD/MM/YYYY")}
-                    </Box>
+                      {bill.bill_no}
+                    </Chip>
                   </Box>
-                ))
-              )
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                    }}
+                  >
+                    {dayjs(bill.bill_date).format("DD/MM/YYYY")}
+                  </Box>
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                    }}
+                  >
+                    ₹{bill.bill_value}
+                  </Box>
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                    }}
+                  >
+                    ₹{bill.total_billed}
+                  </Box>
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                    }}
+                  >
+                    {Array.isArray(bill.item) && bill.item.length > 0
+                      ? (() => {
+                          const uniqueNames = [
+                            ...new Set(
+                              bill.item
+                                .map((it) => it?.category_name)
+                                .filter(Boolean)
+                            ),
+                          ];
+
+                          const first = uniqueNames[0];
+                          const remaining = uniqueNames.slice(1);
+
+                          return (
+                            <>
+                              {first}
+                              {remaining.length > 0 && (
+                                <Tooltip title={remaining.join(", ")} arrow>
+                                  <Box
+                                    component="span"
+                                    sx={{
+                                      ml: 1,
+                                      px: 1,
+                                      borderRadius: "50%",
+                                      backgroundColor: "primary.solidBg",
+                                      color: "white",
+                                      fontSize: "12px",
+                                      fontWeight: 500,
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      minWidth: "22px",
+                                      height: "22px",
+                                      lineHeight: 1,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    +{remaining.length}
+                                  </Box>
+                                </Tooltip>
+                              )}
+                            </>
+                          );
+                        })()
+                      : bill.item?.category_name || "-"}
+                  </Box>
+
+                  <RenderTableCell cell={bill.project_id} />
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "12px",
+                      textAlign: "left",
+                    }}
+                  >
+                    {bill.po_no}
+                  </Box>
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                    }}
+                  >
+                    {bill.vendor}
+                  </Box>
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                    }}
+                  >
+                    ₹{bill.po_value}
+                  </Box>
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                    }}
+                  >
+                   <BillingStatusChip
+  status={bill.po_status}
+  balance={(bill.po_value - bill.total_billed).toFixed(2)}
+/>
+                  </Box>
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                    }}
+                  >
+                    <BillAcceptance
+                      billNumber={bill.bill_no}
+                      approvedBy={bill.approved_by_name}
+                    />
+                  </Box>
+
+                  <Box
+                    component="td"
+                    sx={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                    }}
+                  >
+                    {dayjs(bill.created_on).format("DD/MM/YYYY")}
+                  </Box>
+                </Box>
+              ))
             ) : (
               <Box component="tr">
                 <Box
@@ -589,7 +737,7 @@ function VendorBillSummary() {
             )}
           </Box>
         </Box>
-      </Box>
+      </Sheet>
 
       {/* Pagination */}
       <Box
@@ -625,7 +773,7 @@ function VendorBillSummary() {
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
-          {getPaginationRange().map((page, idx) =>
+          {getPaginationRange()?.map((page, idx) =>
             page === "..." ? (
               <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
                 ...
@@ -645,17 +793,13 @@ function VendorBillSummary() {
         </Box>
 
         <FormControl size="sm" sx={{ minWidth: 120 }}>
-          {/* <FormLabel>Per Page</FormLabel> */}
           <Select
             value={perPage}
-            onChange={(e, newValue) => {
-              setPerPage(newValue);
-              setCurrentPage(1);
-            }}
+            onChange={(e, newValue) => handlePerPageChange(newValue)}
           >
             {[10, 30, 60, 100].map((num) => (
               <Option key={num} value={num}>
-                {num} perPage
+                {num}
               </Option>
             ))}
           </Select>

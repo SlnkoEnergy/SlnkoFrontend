@@ -1,19 +1,20 @@
 import Box from "@mui/joy/Box";
-import Breadcrumbs from "@mui/joy/Breadcrumbs";
-import Button from "@mui/joy/Button";
 import CssBaseline from "@mui/joy/CssBaseline";
-import Link from "@mui/joy/Link";
 import { CssVarsProvider } from "@mui/joy/styles";
-import Typography from "@mui/joy/Typography";
-import { useRef } from "react";
-import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import Sidebar from "../../component/Partials/Sidebar";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import Button from "@mui/joy/Button";
+import Breadcrumbs from "@mui/joy/Breadcrumbs";
+import Link from "@mui/joy/Link";
+import Typography from "@mui/joy/Typography";
+import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import ViewModuleRoundedIcon from "@mui/icons-material/ViewModuleRounded";
+import Sidebar from "../../component/Partials/Sidebar";
 import Header from "../../component/Partials/Header";
-import PurchaseOrder from "../../component/PurchaseOrderSummary";
+import { useNavigate } from "react-router-dom";
+import Dash_eng from "../../component/EngDashboard";
+import LogisticsTable from "../../component/LogisticsSummary";
 
-function POSummary() {
+function Logistics() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
@@ -29,30 +30,6 @@ function POSummary() {
     }
     return null;
   };
-
-  const poSummaryRef = useRef();
-
-  const handleExportToCSV = () => {
-    if (poSummaryRef.current) {
-      poSummaryRef.current.exportToCSV();
-    }
-  };
-
-  const allowedUsers = [
-    "IT Team",
-    "Guddu Rani Dubey",
-    "Prachi Singh",
-    "Ajay Singh",
-    "Aryan Maheshwari",
-    "Sarthak Sharma",
-    "Naresh Kumar",
-    "Shubham Gupta",
-    "Gagan Tayal",
-  ];
-
-  const isAllowed =
-    allowedUsers.includes(user?.name) || user?.department === "admin";
-
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -91,19 +68,22 @@ function POSummary() {
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
               sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
-              <Link
-                underline="hover"
-                color="neutral"
-                href=""
-                sx={{ fontSize: 12, fontWeight: 500 }}
-              >
-                SCM
-              </Link>
+              {user?.department !== "Accounts" && (
+                <Link
+                  underline="none"
+                  color="neutral"
+                  sx={{ fontSize: 12, fontWeight: 500 }}
+                >
+                  Logistics
+                </Link>
+              )}
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Purchase Order Summary
+                {user?.department === "Accounts"
+                  ? "Handover Dashboard"
+                  : "Logistics"}
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -121,47 +101,31 @@ function POSummary() {
             }}
           >
             <Typography level="h2" component="h1">
-              Purchase Order Summary
+              {user?.department === "Accounts"
+                ? "Logistics"
+                : "Logistics"}
             </Typography>
-
-            {isAllowed && (
+            {user?.department !== "Accounts" && (
               <Box
                 sx={{
                   display: "flex",
-                  mb: 1,
-                  gap: 1,
                   flexDirection: { xs: "column", sm: "row" },
-                  alignItems: { xs: "start", sm: "center" },
-                  flexWrap: "wrap",
+                  alignItems: "center",
                   justifyContent: "center",
+                  flexWrap: "wrap",
+                  bgcolor: "background.level1",
+                  borderRadius: "lg",
+                  boxShadow: "sm",
                 }}
               >
-                <><Button
-                      color="primary"
-                      size="sm"
-                      onClick={() => navigate("/logistics-form")}
-                    >
-                      Add Logistics Form +
-                    </Button></>
-                {user?.name !== "Gagan Tayal" && (
-                  <>
-                  
-                    <Button
-                      color="primary"
-                      size="sm"
-                      onClick={() => navigate("/add_vendor")}
-                    >
-                      Add Vendor +
-                    </Button>
-                  </>
-                )}
+                
               </Box>
             )}
           </Box>
-          <PurchaseOrder ref={poSummaryRef} />
+          <LogisticsTable />
         </Box>
       </Box>
     </CssVarsProvider>
   );
 }
-export default POSummary;
+export default Logistics;

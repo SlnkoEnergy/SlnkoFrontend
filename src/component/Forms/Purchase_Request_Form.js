@@ -16,9 +16,6 @@ import {
   Modal,
   ModalDialog,
   ModalClose,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Tooltip,
 } from "@mui/joy";
 import DeleteOutline from "@mui/icons-material/DeleteOutline";
@@ -29,34 +26,39 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import LocalMallOutlinedIcon from "@mui/icons-material/LocalMallOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
+
 import {
   useGetProjectByIdQuery,
   useGetProjectSearchDropdownQuery,
   useLazyGetProjectSearchDropdownQuery,
 } from "../../redux/projectsSlice";
+
 import {
   useGetPurchaseRequestByIdQuery,
   useCreatePurchaseRequestMutation,
   useEditPurchaseRequestMutation,
   useLazyFetchFromBOMQuery,
 } from "../../redux/camsSlice";
+
 import {
   useGetCategoriesNameSearchQuery,
   useLazyGetCategoriesNameSearchQuery,
   useGetProductsQuery,
   useLazyGetProductsQuery,
 } from "../../redux/productsSlice";
+
 import SearchPickerModal from "../SearchPickerModal";
 import AddPurchaseOrder from "./Add_Po";
 import { toast } from "react-toastify";
 
 const EMPTY_LINE = () => ({
   id: crypto.randomUUID(),
-  _selected: false, 
+  _selected: false,
   productId: "",
   productName: "",
   productCategoryId: "",
   productCategoryName: "",
+  briefDescription: "",
   make: "",
   uom: "",
   quantity: 1,
@@ -97,13 +99,14 @@ export function mapBoqRowToLine(row, idx = 0) {
   const make = firstBrand(makeFull);
   const sno = pick(row, "S. NO.", "S.NO.", "S.NO", "SNO", "S No.");
 
-
-  const productLabel = [rating, itemName].filter(Boolean).join(" – ");
+  const productLabel = rating;
+  const description = itemName;
 
   return {
     id: crypto?.randomUUID?.() ?? `boq-${Date.now()}-${idx}`,
     productId: `boq:${sno || idx + 1}`,
     productName: productLabel,
+    briefDescription: description,
     productCategoryId: "",
     productCategoryName: category || "",
     make,
@@ -149,7 +152,6 @@ export default function Purchase_Request_Form() {
   const [pId, setPId] = useState(0);
   const [projectLocation, setProjectLocation] = useState("");
   const [projectName, setProjectName] = useState("");
-  const [askConfirmation, setAskConfirmation] = useState(false);
   const [deliverTo, setDeliverTo] = useState("");
   const [category, setCategory] = useState([]);
   const [categoryIdToName, setCategoryIdToName] = useState({});
@@ -157,22 +159,27 @@ export default function Purchase_Request_Form() {
   const [poCount, setPoCount] = useState(0);
   const [createdBy, setCreatedBy] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const canFetchFromBOM = !isView && Array.isArray(category) && category.length > 0;
+
   // Lines
   const [lines, setLines] = useState([EMPTY_LINE()]);
 
-  // Modal for PO
+  // Per-line, lazily-fetched product results keyed by lineId
+  const [lineProducts, setLineProducts] = useState({});
+
+  // PO modal
   const [poModalOpen, setPoModalOpen] = useState(false);
   const [poSeed, setPoSeed] = useState(null);
 
-  // Seed code from query (optional)
+  // NEW: per-category BOM toggle + loader
+  const [bomFetchByCat, setBomFetchByCat] = useState({});
+  const [bomFetching, setBomFetching] = useState({});
+
   useEffect(() => {
     if (isCreate && projectId && !projectCode) {
       setProjectCode(projectId);
     }
   }, [isCreate, projectId, projectCode]);
 
-  // ---------- Project picker (inline + modal) ----------
   const [projectSearch, setProjectSearch] = useState("");
   const [page, setPage] = useState(1);
   const limit = 7;
@@ -185,13 +192,6 @@ export default function Purchase_Request_Form() {
 
   const projectRows = getProjectSearchDropdown?.data || [];
   const [triggerProjectSearch] = useLazyGetProjectSearchDropdownQuery();
-  
-  useEffect(() => {
-  if (!canFetchFromBOM) {
-    setAskConfirmation(false);
-    setConfirmFetchOpen(false);
-  }
-}, [canFetchFromBOM]);
 
   const fetchProjectsPage = async ({ search = "", page = 1, pageSize = 7 }) => {
     const res = await triggerProjectSearch(
@@ -300,7 +300,6 @@ export default function Purchase_Request_Form() {
     }));
   };
 
-  // Map selected IDs->names when that page is visible
   useEffect(() => {
     if (!Array.isArray(category) || category.length === 0) return;
     if (!Array.isArray(categoryRows) || categoryRows.length === 0) return;
@@ -315,15 +314,12 @@ export default function Purchase_Request_Form() {
     });
   }, [categoryRows, category]);
 
-  // ---------- PRODUCTS (filtered by selected category IDs) ----------
+  // ---------- PRODUCTS (legacy global fetch; kept for fallback) ----------
   const [productSearch, setProductSearch] = useState("");
   const [productPage, setProductPage] = useState(1);
   const productLimit = 7;
 
-  // comma-separated for query param
   const categoryParam = category?.length ? category.join(",") : "";
-
-  // Inline fetch for current page (optional)
   const { data: productsResp, isFetching: productsLoading } =
     useGetProductsQuery(
       {
@@ -334,8 +330,7 @@ export default function Purchase_Request_Form() {
       },
       { skip: !categoryParam }
     );
-
-  const productRows = productsResp?.data || [];
+  const productRowsGlobal = productsResp?.data || [];
   const [triggerGetProducts] = useLazyGetProductsQuery();
 
   // Product modal (per line)
@@ -359,10 +354,15 @@ export default function Purchase_Request_Form() {
     },
   ];
 
-  // Modal fetch (backend returns meta)
+  // Modal fetch — now respecting the active row's category
   const fetchProductsPage = async ({ search = "", page = 1, pageSize = 7 }) => {
+    const actLine = lines.find((x) => x.id === activeLineId);
+    const catForModal = actLine?.productCategoryId
+      ? String(actLine.productCategoryId)
+      : categoryParam;
+
     const res = await triggerGetProducts(
-      { search, page, limit: pageSize, category: categoryParam },
+      { search, page, limit: pageSize, category: catForModal },
       true
     );
     const d = res?.data;
@@ -382,6 +382,7 @@ export default function Purchase_Request_Form() {
     const pickedCost = Number(getProdField(row, "Cost") || 0);
     const pickedGST = Number(getProdField(row, "GST") || 0);
     const pickedMake = getProdField(row, "Make" || "");
+    const pickedDescription = getProdField(row, "Description" || "");
     const pickedUOM = getProdField(row, "UOM" || "");
     const catId = row?.category?._id || "";
     const catName = row?.category?.name || "";
@@ -393,8 +394,9 @@ export default function Purchase_Request_Form() {
               ...l,
               productId: row._id || "",
               productName: pickedName,
-              productCategoryId: catId,
-              productCategoryName: catName,
+              briefDescription: pickedDescription,
+              productCategoryId: catId || l.productCategoryId,
+              productCategoryName: catName || l.productCategoryName,
               unitPrice: pickedCost,
               taxPercent: pickedGST,
               make: pickedMake,
@@ -436,62 +438,27 @@ export default function Purchase_Request_Form() {
     setPoCount(d?.overall_total_number_of_po || 0);
     setDescription(d?.description || "");
 
-    if (Array.isArray(d?.category)) setCategory(d.category);
-
-    // *** CHANGED: correctly derive category from product for each line
     const incomingItems = Array.isArray(d?.items) ? d.items : [];
-    setLines(
-      incomingItems.length
-        ? incomingItems.map((l) => {
-            const productDoc = l?.item_id || {};
-            const catDoc = productDoc?.category || l?.category || {};
-            const catId = catDoc?._id || catDoc || "";
-            const catName = catDoc?.name || "";
 
-            return {
-              id: crypto.randomUUID(),
-              _selected: false,
-              productId: productDoc?._id || "",
-              productName: l.product_name || "",
-              productCategoryId: catId,
-              productCategoryName: catName,
-              make: l.product_make || "",
-              uom: l.uom || "",
-              quantity: Number(l.quantity || 0),
-              unitPrice: Number(l.cost ?? 0),
-              taxPercent: Number(l.gst ?? 0),
-              note: l.note || "",
-            };
-          })
-        : [EMPTY_LINE()]
+    const catsFromItems = Array.from(
+      new Set(incomingItems.map((it) => it?.item_id?._id).filter(Boolean))
     );
-  }, [prDataResp]);
 
-  useEffect(() => {
-    if (!prDataResp) return;
-    const d = prDataResp?.data || prDataResp;
+    if (Array.isArray(d?.category) && d.category.length) {
+      setCategory(d.category);
+    } else {
+      setCategory(catsFromItems);
+    }
 
-    setCreatedBy(d?.created_by?.name || "");
-    setProjectCode(d?.project_id?.code || "");
-    setPrNo(d?.pr_no || "");
-    setProjectLocation(
-      typeof d?.project_id?.site_address === "string"
-        ? d.project_id.site_address
-        : `${d?.project_id?.site_address?.village_name || ""}${
-            d?.project_id?.site_address?.village_name &&
-            d?.project_id?.site_address?.district_name
-              ? ", "
-              : ""
-          }${d?.project_id?.site_address?.district_name || ""}`
-    );
-    setProjectName(d?.project_id?.name || "");
-    setDeliverTo(d?.delivery_address || "");
-    setPoCount(d?.overall_total_number_of_po || 0);
-    setDescription(d?.description || "");
-
-    if (Array.isArray(d?.category)) setCategory(d.category);
-
-    const incomingItems = Array.isArray(d?.items) ? d.items : [];
+    setCategoryIdToName((prev) => {
+      const next = { ...prev };
+      incomingItems.forEach((it) => {
+        const id = it?.item_id?._id;
+        const nm = it?.item_id?.name;
+        if (id && nm) next[id] = nm;
+      });
+      return next;
+    });
 
     setLines(
       incomingItems.length
@@ -505,6 +472,7 @@ export default function Purchase_Request_Form() {
               _selected: false,
               productId: productDoc?._id || "",
               productName: l.product_name || "",
+              briefDescription: l.description || "",
               productCategoryId: catId,
               productCategoryName: catName,
               make: l.product_make || "",
@@ -519,14 +487,15 @@ export default function Purchase_Request_Form() {
     );
   }, [prDataResp]);
 
-  // Filter lines whenever category changes (already in your code)
+  // prune lines + bom toggle map when categories change
   useEffect(() => {
     if (!Array.isArray(category) || category.length === 0) return;
     if (!Array.isArray(lines) || lines.length === 0) return;
+
     setLines((prev) => {
       const selectedSet = new Set(category || []);
       const filtered = prev.filter((l) => {
-        if (!l.productId) return true;
+        if (!l.productId && !l.productCategoryId) return true;
         if (l.productCategoryId) {
           return selectedSet.has(l.productCategoryId);
         }
@@ -534,7 +503,16 @@ export default function Purchase_Request_Form() {
       });
       return filtered.length ? filtered : [EMPTY_LINE()];
     });
-  }, [category]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Drop BOM toggle state for removed categories
+    setBomFetchByCat((prev) => {
+      const next = { ...prev };
+      Object.keys(next).forEach((cid) => {
+        if (!category.includes(cid)) delete next[cid];
+      });
+      return next;
+    });
+  }, [category]);
 
   // ---------- Amounts ----------
   const amounts = useMemo(() => {
@@ -590,12 +568,14 @@ export default function Purchase_Request_Form() {
     setProjectCode(isCreate ? projectId || "" : "");
     setProjectLocation("");
     setProjectName("");
-    setAskConfirmation(false);
     setDeliverTo("");
     setCategory([]);
     setCategoryIdToName({});
     setDescription("");
     setLines([EMPTY_LINE()]);
+    setLineProducts({});
+    setBomFetchByCat({});
+    setBomFetching({});
   };
 
   // ---------- Mutations ----------
@@ -630,6 +610,7 @@ export default function Purchase_Request_Form() {
           item_id: l.productCategoryId || null,
           product_name: l.productName || "",
           product_make: l.make || "",
+          description: l.briefDescription || "",
           uom: String(l.uom ?? ""),
           quantity: String(l.quantity ?? ""),
           cost: String(l.unitPrice ?? ""),
@@ -668,6 +649,7 @@ export default function Purchase_Request_Form() {
     const initialLines = source.map((l) => ({
       productId: l.productId || "",
       productName: l.productName || "",
+      briefDescription: l.briefDescription || "",
       productCategoryId: l.productCategoryId || "",
       productCategoryName: l.productCategoryName || "",
       make: l.make || "",
@@ -691,20 +673,6 @@ export default function Purchase_Request_Form() {
     setPoModalOpen(true);
   };
 
-  // ---------- Shared styles/flags ----------
-  const borderlessFieldSx = {
-    border: "none",
-    boxShadow: "none",
-    bgcolor: "transparent",
-    "--Input-radius": "0px",
-    "--Select-radius": "0px",
-    "--Input-paddingInline": "0px",
-    "--Select-minHeight": "32px",
-    "--Input-minHeight": "32px",
-    "&:hover": { boxShadow: "none", bgcolor: "transparent" },
-    "&:focus-within": { boxShadow: "none", outline: "none" },
-  };
-
   const commonDisable = isView ? { disabled: true } : {};
   const selectedCode = (projectCode || "").trim();
   const rowsP = projectRows || [];
@@ -722,110 +690,130 @@ export default function Purchase_Request_Form() {
     navigate(`/purchase-order?${params.toString()}`);
   };
 
-  const handlePoSubmitted = ({ created, updated, status, newPO }) => {
+  const handlePoSubmitted = ({ created }) => {
     if (created) setPoCount((c) => c + 1);
     setPoModalOpen(false);
   };
 
-  const [confirmFetchOpen, setConfirmFetchOpen] = useState(false);
-  const [isFetchingBOM, setIsFetchingBOM] = useState(false);
+  const [triggerFetchFromBOM] = useLazyFetchFromBOMQuery();
 
-  // Helpers: turn selected category IDs into display names (fallback to ID if missing)
-  const selectedCategoryNames = (category || []).map(
-    (id) => categoryIdToName?.[id] ?? String(id)
-  );
-
-  const [triggerFetchFromBOM, { isFetching: isFetchingBOMRTK }] =
-    useLazyFetchFromBOMQuery();
-
-const norm = (s) => (s == null ? "" : String(s).trim().toLowerCase());
-
-const handleConfirmFetchFromBOM = async () => {
-  try {
-    setIsFetchingBOM(true);
-
-    const selectedCategoryNames = (category || []).map(
-      (catId) => categoryIdToName?.[catId] ?? String(catId)
-    );
-    const categoryParam = selectedCategoryNames.join(",");
-
-    const args = {
-      project_id: projectId,
-      category_mode: "exact",
-      category_logic: "or",
-      sheet: 1,
-      category: categoryParam,
-    };
-
-    const res = await triggerFetchFromBOM(args).unwrap();
-    const rows = Array.isArray(res?.data) ? res.data : [];
-
-    let mapped = rows.map((r, i) => mapBoqRowToLine(r, i));
-
-    const selectedNameToId = {};
-    (category || []).forEach((catId) => {
-      const name = categoryIdToName?.[catId];
-      if (name) selectedNameToId[norm(name)] = catId;
-    });
-
-    mapped = mapped.map((m) => {
-      const cid = selectedNameToId[norm(m.productCategoryName)];
-      if (cid) {
-        return {
-          ...m,
-          productCategoryId: cid,
-          productCategoryName: categoryIdToName[cid] || m.productCategoryName,
-        };
-      }
-      return m;
-    });
-
-    // 🧩 Fill first empty lines, then append leftovers
+  // ---------- Per-category BOM fetch helpers ----------
+  const clearBOMForCategory = (catId) => {
     setLines((prev) => {
-      const next = [...prev];
-
-      const isEmptyLine = (line) => !line?.productId && !line?.productName;
-      let mi = 0;
-
-      // 1) Fill existing empty rows first
-      for (let i = 0; i < next.length && mi < mapped.length; i++) {
-        if (isEmptyLine(next[i])) {
-          const m = mapped[mi++];
-          next[i] = {
-            ...next[i],
-            productId: m.productId,
-            productName: m.productName,
-            productCategoryId: m.productCategoryId,
-            productCategoryName: m.productCategoryName,
-            make: m.make,
-            uom: m.uom,
-            quantity: m.quantity,
-            unitPrice: m.unitPrice,
-            taxPercent: m.taxPercent,
-          };
-        }
-      }
-
-      // 2) Append any remaining mapped rows
-      while (mi < mapped.length) {
-        const m = mapped[mi++];
-        next.push({
-          id: m.id ?? crypto?.randomUUID?.() ?? `row-${Date.now()}-${mi}`,
-          ...m,
-        });
-      }
-
-      return next;
+      const toRemoveIds = new Set(
+        prev
+          .filter((l) => l.fromBOM && l.bomCategoryId === catId)
+          .map((l) => l.id)
+      );
+      // Clear any cached product options for removed lines
+      setLineProducts((old) => {
+        const next = { ...old };
+        toRemoveIds.forEach((lid) => delete next[lid]);
+        return next;
+      });
+      return prev.filter((l) => !(l.fromBOM && l.bomCategoryId === catId));
     });
+  };
 
-    setConfirmFetchOpen(false);
-  } catch (err) {
-    console.error("Fetch from BOM failed:", err);
-  } finally {
-    setIsFetchingBOM(false);
-  }
-};
+  const fetchFromBOMForCategory = async (catId) => {
+    const catName =
+      categoryIdToName[catId] ||
+      (categoryRows || []).find((r) => r._id === catId)?.name ||
+      "";
 
+    if (!projectId || !catName) {
+      toast.error("Project and category are required to fetch BOM.");
+      return;
+    }
+
+    try {
+      setBomFetching((prev) => ({ ...prev, [catId]: true }));
+
+      // fetch only for this category name
+      const args = {
+        project_id: projectId,
+        category_mode: "exact",
+        category_logic: "or",
+        category: catName,
+      };
+
+      const res = await triggerFetchFromBOM(args).unwrap();
+      const rows = Array.isArray(res?.data) ? res.data : [];
+
+      let mapped = rows.map((r, i) => mapBoqRowToLine(r, i));
+
+      // force-map to this category id/name, tag as BOM
+      const batchId = Date.now();
+      mapped = mapped.map((m, idx) => ({
+        id: m.id ?? crypto?.randomUUID?.() ?? `row-${batchId}-${idx + 1}`,
+        ...m,
+        productCategoryId: catId,
+        productCategoryName: catName,
+        fromBOM: true,
+        bomBatchId: batchId,
+        bomCategoryId: catId,
+      }));
+
+      // remove prior BOM rows for this category, then merge:
+      setLines((prev) => {
+        const keep = prev.filter(
+          (l) => !(l.fromBOM && l.bomCategoryId === catId)
+        );
+        const next = [...keep];
+
+        const isEmptyLine = (line) => !line?.productId && !line?.productName;
+
+        let mi = 0;
+        for (let i = 0; i < next.length && mi < mapped.length; i++) {
+          if (isEmptyLine(next[i])) {
+            next[i] = {
+              ...next[i],
+              ...mapped[mi++],
+              fromBOM: true,
+              bomCategoryId: catId,
+            };
+          }
+        }
+        while (mi < mapped.length) next.push(mapped[mi++]);
+
+        return next;
+      });
+
+      setBomFetchByCat((prev) => ({ ...prev, [catId]: true }));
+      toast.success(`Fetched BOM items for "${catName}".`);
+    } catch (e) {
+      console.error("Fetch BOM failed:", e);
+      toast.error("Failed to fetch BOM for this category.");
+      // rollback toggle
+      setBomFetchByCat((prev) => ({ ...prev, [catId]: false }));
+    } finally {
+      setBomFetching((prev) => ({ ...prev, [catId]: false }));
+    }
+  };
+
+  // Helper to fetch products for ONE category and stash for ONE line
+  const fetchProductsForLineCategory = async (lineId, categoryId) => {
+    try {
+      const res = await triggerGetProducts(
+        {
+          search: "",
+          page: 1,
+          limit: productLimit,
+          category: String(categoryId),
+        },
+        true
+      );
+      const rows = res?.data?.data || [];
+      setLineProducts((prev) => ({ ...prev, [lineId]: rows }));
+    } catch (e) {
+      console.error(
+        "Failed to load products for category",
+        { lineId, categoryId },
+        e
+      );
+      setLineProducts((prev) => ({ ...prev, [lineId]: [] }));
+    }
+  };
 
   return (
     <Box
@@ -836,7 +824,7 @@ const handleConfirmFetchFromBOM = async () => {
         boxShadow: "md",
       }}
     >
-      <Typography level="h3" sx={{ fontWeight: 700, mb: 1 }}>
+      <Typography level="h3" sx={{ fontWeight: 600, mb: 1 }}>
         Purchase Request
       </Typography>
 
@@ -895,7 +883,6 @@ const handleConfirmFetchFromBOM = async () => {
             </Box>
           </Sheet>
 
-          {/* Right side: Purchase Orders + Create PO */}
           <Box display={"flex"} gap={2}>
             <Sheet
               variant="outlined"
@@ -963,7 +950,7 @@ const handleConfirmFetchFromBOM = async () => {
         <Grid container spacing={2}>
           {/* Project Code */}
           <Grid xs={12} md={6}>
-            <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 700 }}>
+            <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 600 }}>
               Project Code
             </Typography>
 
@@ -1010,7 +997,7 @@ const handleConfirmFetchFromBOM = async () => {
 
           {/* Project Name */}
           <Grid xs={12} md={6}>
-            <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 700 }}>
+            <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 600 }}>
               Project Name
             </Typography>
             <Input
@@ -1022,7 +1009,7 @@ const handleConfirmFetchFromBOM = async () => {
 
           {/* Project Location */}
           <Grid xs={12} md={6}>
-            <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 700 }}>
+            <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 600 }}>
               Project Location
             </Typography>
             <Input
@@ -1033,144 +1020,216 @@ const handleConfirmFetchFromBOM = async () => {
           </Grid>
 
           {/* Category (multi) */}
-         {!isView && (
-  <Grid xs={12} md={6}>
-    <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 700 }}>
-      Category
-    </Typography>
+          {!isView && (
+            <Grid xs={12} md={6}>
+              <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 600 }}>
+                Category
+              </Typography>
 
-    <Select
-      multiple
-      value={category}
-      onChange={(_, v) => {
-        // open search modal sentinel
-        if (Array.isArray(v) && v.includes("__SEARCH_MORE_CAT__")) {
-          setCategoryModalOpen(true);
-          return;
-        }
+              <Select
+                multiple
+                value={category}
+                onChange={(_, v) => {
+                  if (Array.isArray(v) && v.includes("__SEARCH_MORE_CAT__")) {
+                    setCategoryModalOpen(true);
+                    return;
+                  }
 
-        const nextIds = Array.isArray(v) ? v : [];
-        const prevIds = Array.isArray(category) ? category : [];
+                  const nextIds = Array.isArray(v) ? v : [];
+                  const prevIds = Array.isArray(category) ? category : [];
 
-        // figure out which category IDs were removed
-        const removedIds = prevIds.filter((catId) => !nextIds.includes(catId));
+                  const removedIds = prevIds.filter(
+                    (catId) => !nextIds.includes(catId)
+                  );
 
-        if (removedIds.length) {
-          // derive removed names (fallback to current page if not in map)
-          const removedNamesNorm = removedIds
-            .map(
-              (catId) =>
-                categoryIdToName[catId] ||
-                (categoryRows || []).find((r) => r._id === catId)?.name
-            )
-            .filter(Boolean)
-            .map(norm);
+                  if (removedIds.length) {
+                    const removedNamesNorm = removedIds
+                      .map(
+                        (catId) =>
+                          categoryIdToName[catId] ||
+                          (categoryRows || []).find((r) => r._id === catId)
+                            ?.name
+                      )
+                      .filter(Boolean)
+                      .map((s) => s.toLowerCase().trim());
 
-          // prune lines matching removed category id OR name
-          setLines((prev) =>
-            prev.filter((l) => {
-              const idHit =
-                !!l.productCategoryId && removedIds.includes(l.productCategoryId);
-              const nameHit = removedNamesNorm.includes(
-                norm(l.productCategoryName)
-              );
-              return !(idHit || nameHit);
-            })
-          );
-        }
+                    // prune lines for removed categories
+                    setLines((prev) =>
+                      prev.filter((l) => {
+                        const idHit =
+                          !!l.productCategoryId &&
+                          removedIds.includes(l.productCategoryId);
+                        const nameHit = removedNamesNorm.includes(
+                          String(l.productCategoryName || "")
+                            .toLowerCase()
+                            .trim()
+                        );
+                        return !(idHit || nameHit);
+                      })
+                    );
 
-        // update selection
-        setCategory(nextIds);
+                    // also drop cached products for lines that no longer match
+                    setLineProducts((prev) => {
+                      const next = { ...prev };
+                      for (const line of lines) {
+                        if (
+                          removedIds.includes(line.productCategoryId) ||
+                          removedNamesNorm.includes(
+                            String(line.productCategoryName || "")
+                              .toLowerCase()
+                              .trim()
+                          )
+                        ) {
+                          delete next[line.id];
+                        }
+                      }
+                      return next;
+                    });
 
-        // update id->name map; drop removed to keep it tidy
-        setCategoryIdToName((prev) => {
-          const nextMap = { ...prev };
+                    // drop BOM toggle state for removed categories
+                    setBomFetchByCat((prev) => {
+                      const next = { ...prev };
+                      removedIds.forEach((id) => delete next[id]);
+                      return next;
+                    });
+                    setBomFetching((prev) => {
+                      const next = { ...prev };
+                      removedIds.forEach((id) => delete next[id]);
+                      return next;
+                    });
+                  }
 
-          // add/ensure names for currently selected ids
-          nextIds.forEach((catId) => {
-            if (!nextMap[catId]) {
-              nextMap[catId] =
-                prev[catId] ||
-                categoryIdToName[catId] ||
-                (categoryRows || []).find((r) => r._id === catId)?.name ||
-                String(catId);
-            }
-          });
+                  // update selection
+                  setCategory(nextIds);
 
-          // optionally remove mappings for deselected ids
-          removedIds.forEach((catId) => {
-            delete nextMap[catId];
-          });
+                  // update id->name map
+                  setCategoryIdToName((prev) => {
+                    const nextMap = { ...prev };
+                    nextIds.forEach((catId) => {
+                      if (!nextMap[catId]) {
+                        nextMap[catId] =
+                          prev[catId] ||
+                          categoryIdToName[catId] ||
+                          (categoryRows || []).find((r) => r._id === catId)
+                            ?.name ||
+                          String(catId);
+                      }
+                    });
+                    removedIds.forEach((catId) => {
+                      delete nextMap[catId];
+                    });
+                    return nextMap;
+                  });
+                }}
+                placeholder={
+                  catLoading ? "Loading..." : "Search or pick categories"
+                }
+                renderValue={(selectedOptions) =>
+                  selectedOptions?.length ? (
+                    <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+                      {selectedOptions.map((opt) => (
+                        <Chip key={String(opt.value)} size="sm">
+                          {typeof opt.label === "string"
+                            ? opt.label
+                            : (categoryIdToName[opt.value] ??
+                              String(opt.value))}
+                        </Chip>
+                      ))}
+                    </Box>
+                  ) : (
+                    "Search or pick categories"
+                  )
+                }
+                {...commonDisable}
+              >
+                {missingSelected?.map((catId) => (
+                  <Option key={`selected-${catId}`} value={catId}>
+                    {categoryIdToName[catId] || String(catId)}
+                  </Option>
+                ))}
 
-          return nextMap;
-        });
-      }}
-      placeholder={catLoading ? "Loading..." : "Search or pick categories"}
-      renderValue={(selectedOptions) =>
-        selectedOptions?.length ? (
-          <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
-            {selectedOptions.map((opt) => (
-              <Chip key={String(opt.value)} size="sm">
-                {typeof opt.label === "string"
-                  ? opt.label
-                  : categoryIdToName[opt.value] ?? String(opt.value)}
-              </Chip>
-            ))}
-          </Box>
-        ) : (
-          "Search or pick categories"
-        )
-      }
-      {...commonDisable}
-    >
-      {/* keep already-selected values visible even if not in current page */}
-      {missingSelected?.map((catId) => (
-        <Option key={`selected-${catId}`} value={catId}>
-          {categoryIdToName[catId] || String(catId)}
-        </Option>
-      ))}
+                {(categoryRows || []).map((r) => (
+                  <Option key={r._id} value={r._id}>
+                    {r.name}
+                  </Option>
+                ))}
 
-      {(categoryRows || []).map((r) => (
-        <Option key={r._id} value={r._id}>
-          {r.name}
-        </Option>
-      ))}
+                <Option value="__SEARCH_MORE_CAT__" color="primary">
+                  Search more…
+                </Option>
+              </Select>
+            </Grid>
+          )}
 
-      <Option value="__SEARCH_MORE_CAT__" color="primary">
-        Search more…
-      </Option>
-    </Select>
-  </Grid>
-)}
-
-    
-{!isView && (
-  <Grid xs={12} md={6} sx={{ display: "flex", alignItems: "center" }}>
-    <Tooltip
-      title={!canFetchFromBOM ? "Select at least one category" : ""}
-      placement="top"
-    >
-      <span>
-        <Checkbox
-          checked={askConfirmation}
-          onChange={(e) => {
-            if (!canFetchFromBOM) return;        
-            const checked = e.target.checked;
-            setAskConfirmation(checked);
-            if (checked) setConfirmFetchOpen(true);
-          }}
-          label="Fetch From BOM"
-          disabled={!canFetchFromBOM}
-        />
-      </span>
-    </Tooltip>
-  </Grid>
-)}
-
+          {/* NEW: Per-category "Fetch from BOM" toggles */}
+          {!isView && category.length > 0 && (
+            <Grid xs={12}>
+              <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 600 }}>
+                Fetch from BOM (per category)
+              </Typography>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                  gap: 1,
+                }}
+              >
+                {category.map((catId) => {
+                  const name = categoryIdToName[catId] || String(catId);
+                  const checked = !!bomFetchByCat[catId];
+                  const loading = !!bomFetching[catId];
+                  return (
+                    <Sheet
+                      key={catId}
+                      variant="outlined"
+                      sx={{
+                        px: 1.25,
+                        py: 0.75,
+                        borderRadius: "md",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 1,
+                      }}
+                    >
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <Chip size="sm" variant="soft">
+                          {name}
+                        </Chip>
+                      </Box>
+                      <Tooltip title="Fetch BOM items for this category">
+                        <span>
+                          <Checkbox
+                            label="Fetch from BOM"
+                            checked={checked}
+                            disabled={loading}
+                            onChange={async (e) => {
+                              const on = e.target.checked;
+                              if (on) {
+                                await fetchFromBOMForCategory(catId);
+                              } else {
+                                clearBOMForCategory(catId);
+                                setBomFetchByCat((prev) => ({
+                                  ...prev,
+                                  [catId]: false,
+                                }));
+                              }
+                            }}
+                          />
+                        </span>
+                      </Tooltip>
+                    </Sheet>
+                  );
+                })}
+              </Box>
+            </Grid>
+          )}
 
           {/* Deliver To */}
           <Grid xs={12} md={6}>
-            <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 700 }}>
+            <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 600 }}>
               Deliver To
             </Typography>
             <Input
@@ -1194,7 +1253,7 @@ const handleConfirmFetchFromBOM = async () => {
           component="table"
           sx={{
             width: "100%",
-            tableLayout: "fixed", // ⬅️ important
+            tableLayout: "fixed",
             borderCollapse: "separate",
             borderSpacing: 0,
             "& th, & td": {
@@ -1202,11 +1261,10 @@ const handleConfirmFetchFromBOM = async () => {
                 "1px solid var(--joy-palette-neutral-outlinedBorder)",
               p: 1,
               textAlign: "left",
-              verticalAlign: "top", // ⬅️ top-align multi-line cells
+              verticalAlign: "top",
             },
             "& th": { fontWeight: 700, bgcolor: "background.level1" },
-            "& td:nth-of-type(1)": {
-              // ⬅️ product column wraps
+            "& td:nth-of-type(2)": {
               whiteSpace: "normal",
               overflowWrap: "anywhere",
               wordBreak: "break-word",
@@ -1215,10 +1273,13 @@ const handleConfirmFetchFromBOM = async () => {
         >
           <thead>
             <tr>
-              <th style={{ width: "26%", fontWeight: 700 }}>Product</th>
               <th style={{ width: "16%", fontWeight: 700 }}>Category</th>
+              <th style={{ width: "18%", fontWeight: 700 }}>Product</th>
+              <th style={{ width: "18%", fontWeight: 700 }}>
+                Brief Description
+              </th>
               <th style={{ width: "10%", fontWeight: 700 }}>Make</th>
-              <th style={{ width: "8%", fontWeight: 700 }}>Qty</th>
+              <th style={{ width: "12%", fontWeight: 700 }}>Qty</th>
               <th style={{ width: "8%", fontWeight: 700 }}>UoM</th>
               <th style={{ width: "12%", fontWeight: 700 }}>Unit Price</th>
               <th style={{ width: "10%", fontWeight: 700 }}>Tax %</th>
@@ -1231,13 +1292,72 @@ const handleConfirmFetchFromBOM = async () => {
               const base = Number(l.quantity || 0) * Number(l.unitPrice || 0);
               const taxAmt = (base * Number(l.taxPercent || 0)) / 100;
               const gross = base + taxAmt;
-              const selectedId = l.productId;
+
+              const rowProductRows = lineProducts[l.id] ?? [];
+
+              const selectedProdId = l.productId;
               const inlineHasSelected =
-                !!selectedId &&
-                (productRows || []).some((p) => p._id === selectedId);
+                !!selectedProdId &&
+                (rowProductRows || []).some((p) => p._id === selectedProdId);
 
               return (
                 <tr key={l.id}>
+                  <td>
+                    <Select
+                      variant="plain"
+                      size="sm"
+                      value={l.productCategoryId || ""}
+                      onChange={async (_, catId) => {
+                        const pickedId = catId || "";
+                        const pickedName =
+                          categoryIdToName[pickedId] ||
+                          (categoryRows || []).find((r) => r._id === pickedId)
+                            ?.name ||
+                          "";
+                        updateLine(l.id, "productCategoryId", pickedId);
+                        updateLine(l.id, "productCategoryName", pickedName);
+                        updateLine(l.id, "productId", "");
+                        updateLine(l.id, "productName", "");
+                        updateLine(l.id, "briefDescription", "");
+                        updateLine(l.id, "uom", "");
+                        updateLine(l.id, "make", "");
+                        updateLine(l.id, "unitPrice", 0);
+                        updateLine(l.id, "taxPercent", 0);
+
+                        if (pickedId) {
+                          await fetchProductsForLineCategory(l.id, pickedId);
+                        } else {
+                          setLineProducts((prev) => ({ ...prev, [l.id]: [] }));
+                        }
+                      }}
+                      placeholder={
+                        category.length === 0
+                          ? "Pick categories above first"
+                          : "Select category"
+                      }
+                      disabled={isView || category.length === 0}
+                      renderValue={() =>
+                        l.productCategoryName || "Select category"
+                      }
+                      slotProps={{
+                        listbox: {
+                          sx: {
+                            "& li": {
+                              whiteSpace: "normal",
+                              overflowWrap: "anywhere",
+                              wordBreak: "break-word",
+                            },
+                          },
+                        },
+                      }}
+                    >
+                      {(category || []).map((catId) => (
+                        <Option key={catId} value={catId}>
+                          {categoryIdToName[catId] || String(catId)}
+                        </Option>
+                      ))}
+                    </Select>
+                  </td>
                   <td>
                     <Box sx={{ maxWidth: "100%" }}>
                       <Select
@@ -1245,7 +1365,7 @@ const handleConfirmFetchFromBOM = async () => {
                         size="sm"
                         value={l.productId || ""}
                         sx={{
-                          width: "100%", 
+                          width: "100%",
                           border: "none",
                           boxShadow: "none",
                           bgcolor: "transparent",
@@ -1254,7 +1374,7 @@ const handleConfirmFetchFromBOM = async () => {
                         slotProps={{
                           button: {
                             sx: {
-                              whiteSpace: "normal", 
+                              whiteSpace: "normal",
                               textAlign: "left",
                               overflowWrap: "anywhere",
                               alignItems: "flex-start",
@@ -1277,24 +1397,32 @@ const handleConfirmFetchFromBOM = async () => {
                             setProductModalOpen(true);
                             return;
                           }
-                          const prod = (productRows || []).find(
+                          const prod = (rowProductRows || []).find(
                             (p) => p._id === v
                           );
                           if (prod) {
                             const name =
-                              getProdField(prod, "Product Name") ||
-                              prod?.sku_code ||
-                              "";
+                              getProdField(prod, "Product Name") || "";
+                            const description = getProdField(
+                              prod,
+                              "Description"
+                            );
                             const cost = Number(
                               getProdField(prod, "Cost") || 0
                             );
                             const gst = Number(getProdField(prod, "GST") || 0);
                             const make = getProdField(prod, "Make") || "";
                             const uom = getProdField(prod, "UOM") || "";
-                            const catId = prod?.category?._id || "";
-                            const catName = prod?.category?.name || "";
+                            const catId =
+                              prod?.category?._id || l.productCategoryId || "";
+                            const catName =
+                              prod?.category?.name ||
+                              l.productCategoryName ||
+                              "";
+
                             updateLine(l.id, "productId", prod._id);
                             updateLine(l.id, "productName", name);
+                            updateLine(l.id, "briefDescription", description);
                             updateLine(l.id, "productCategoryId", catId);
                             updateLine(l.id, "productCategoryName", catName);
                             updateLine(l.id, "unitPrice", cost);
@@ -1302,18 +1430,30 @@ const handleConfirmFetchFromBOM = async () => {
                             updateLine(l.id, "make", make);
                             updateLine(l.id, "uom", uom);
                           } else {
+                            // clear if user cleared selection
                             updateLine(l.id, "productId", v || "");
                             updateLine(l.id, "productName", "");
-                            updateLine(l.id, "productCategoryId", "");
-                            updateLine(l.id, "productCategoryName", "");
+                            updateLine(l.id, "briefDescription", "");
+                            updateLine(
+                              l.id,
+                              "productCategoryId",
+                              l.productCategoryId
+                            );
+                            updateLine(
+                              l.id,
+                              "productCategoryName",
+                              l.productCategoryName
+                            );
                           }
                         }}
                         placeholder={
-                          category.length === 0
-                            ? "Pick category first"
-                            : "Select product"
+                          !l.productCategoryId
+                            ? "Pick row category first"
+                            : rowProductRows.length
+                              ? "Select product"
+                              : "No products — search more…"
                         }
-                        disabled={isView || category.length === 0}
+                        disabled={isView || !l.productCategoryId}
                         renderValue={() => (
                           <Typography
                             level="body-sm"
@@ -1331,20 +1471,21 @@ const handleConfirmFetchFromBOM = async () => {
                           </Typography>
                         )}
                       >
-                        {!inlineHasSelected && selectedId && (
+                        {/* keep selected if it's not in the current options */}
+                        {!inlineHasSelected && selectedProdId && (
                           <Option
-                            key={`sel-${selectedId}`}
-                            value={selectedId}
+                            key={`sel-${selectedProdId}`}
+                            value={selectedProdId}
                             sx={{
                               whiteSpace: "normal",
                               overflowWrap: "anywhere",
                             }}
                           >
-                            {l.productName || selectedId}
+                            {l.productName || selectedProdId}
                           </Option>
                         )}
 
-                        {(productRows || []).map((p) => {
+                        {(rowProductRows || []).map((p) => {
                           const name =
                             getProdField(p, "Product Name") ||
                             p?.sku_code ||
@@ -1367,6 +1508,7 @@ const handleConfirmFetchFromBOM = async () => {
                           );
                         })}
 
+                        {/* allow searching with modal (filters to row's category) */}
                         <Option value="__SEARCH_MORE_PROD__" color="primary">
                           Search more…
                         </Option>
@@ -1374,7 +1516,7 @@ const handleConfirmFetchFromBOM = async () => {
                     </Box>
                   </td>
 
-                  <td>{l.productCategoryName || "—"}</td>
+                  <td>{l.briefDescription}</td>
 
                   <td>
                     <Input
@@ -1400,14 +1542,12 @@ const handleConfirmFetchFromBOM = async () => {
                     />
                   </td>
 
-                   <td>
+                  <td>
                     <Input
                       variant="plain"
                       size="sm"
                       value={l.uom}
-                      onChange={(e) =>
-                        updateLine(l.id, "uom", e.target.value)
-                      }
+                      onChange={(e) => updateLine(l.id, "uom", e.target.value)}
                       slotProps={{ input: { min: 0, step: "1" } }}
                       disabled={isView}
                     />
@@ -1442,7 +1582,7 @@ const handleConfirmFetchFromBOM = async () => {
                   </td>
 
                   <td>
-                    <Chip variant="soft">₹ {(base + taxAmt).toFixed(2)}</Chip>
+                    <Chip variant="soft">₹ {gross.toFixed(2)}</Chip>
                   </td>
 
                   {!isView && (
@@ -1450,7 +1590,14 @@ const handleConfirmFetchFromBOM = async () => {
                       <IconButton
                         variant="plain"
                         color="danger"
-                        onClick={() => removeLine(l.id)}
+                        onClick={() => {
+                          setLineProducts((prev) => {
+                            const next = { ...prev };
+                            delete next[l.id];
+                            return next;
+                          });
+                          removeLine(l.id);
+                        }}
                         disabled={isView}
                       >
                         <DeleteOutline />
@@ -1553,7 +1700,7 @@ const handleConfirmFetchFromBOM = async () => {
             color="primary"
             startDecorator={<Send />}
             loading={submitting || prLoading}
-            onClick={() => handleSubmit("submit")}
+            onClick={() => handleSubmit()}
           >
             {isEdit ? "Update PR" : "Submit PR"}
           </Button>
@@ -1587,7 +1734,7 @@ const handleConfirmFetchFromBOM = async () => {
         backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
       />
 
-      {/* Product Search More Modal */}
+      {/* Product Search More Modal — filtered by ACTIVE ROW's category */}
       <SearchPickerModal
         open={productModalOpen}
         onClose={() => {
@@ -1608,8 +1755,8 @@ const handleConfirmFetchFromBOM = async () => {
         <ModalDialog
           size="lg"
           sx={{
-            width: "full",
-            maxWidth: "98vw",
+            width: 1400,
+            maxWidth: "100vw",
             p: 0,
             overflow: "auto",
             ml: { xs: "12%", lg: "5%" },
@@ -1627,59 +1774,11 @@ const handleConfirmFetchFromBOM = async () => {
               categories={poSeed.categories}
               categoryNames={poSeed.categoryNames}
               initialLines={poSeed.initialLines}
+              briefDescription={poSeed.briefDescription}
               mode="create"
               fromModal
             />
           )}
-        </ModalDialog>
-      </Modal>
-
-      <Modal
-        open={confirmFetchOpen}
-        onClose={() => {
-          setConfirmFetchOpen(false);
-          setAskConfirmation(false); // uncheck if user closes without confirming
-        }}
-      >
-        <ModalDialog>
-          <DialogTitle>Confirm Fetch</DialogTitle>
-          <DialogContent>
-            <Typography level="body-md" sx={{ mb: 1 }}>
-              Are you sure you want to fetch from BOM for the following
-              categories?
-            </Typography>
-
-            {selectedCategoryNames.length ? (
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                {selectedCategoryNames.map((name) => (
-                  <Chip key={name} size="sm">
-                    {name}
-                  </Chip>
-                ))}
-              </Box>
-            ) : (
-              <Typography level="body-sm" color="neutral">
-                No categories selected. This will fetch all rows (no category
-                filter).
-              </Typography>
-            )}
-          </DialogContent>
-
-          <DialogActions>
-            <Button
-              variant="plain"
-              color="neutral"
-              onClick={() => {
-                setConfirmFetchOpen(false);
-                setAskConfirmation(false); 
-              }}
-            >
-              Cancel
-            </Button>
-            <Button loading={isFetchingBOM} onClick={handleConfirmFetchFromBOM}>
-              Yes, Fetch
-            </Button>
-          </DialogActions>
         </ModalDialog>
       </Modal>
     </Box>

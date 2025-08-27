@@ -1,15 +1,32 @@
-import { CssVarsProvider } from '@mui/joy/styles';
-import CssBaseline from '@mui/joy/CssBaseline';
-import Box from '@mui/joy/Box';
-import Breadcrumbs from '@mui/joy/Breadcrumbs';
-import Link from '@mui/joy/Link';
-import Typography from '@mui/joy/Typography';
-import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
-import Sidebar from '../../component/Partials/Sidebar';
-import Header from '../../component/Partials/Header';
-import VendorBill from "../../component/Vendor_Bill";
+import Box from "@mui/joy/Box";
+import CssBaseline from "@mui/joy/CssBaseline";
+import { CssVarsProvider } from "@mui/joy/styles";
+import { useEffect, useState } from "react";
+import Button from "@mui/joy/Button";
+import Breadcrumbs from "@mui/joy/Breadcrumbs";
+import Link from "@mui/joy/Link";
+import Typography from "@mui/joy/Typography";
+import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import Sidebar from "../../component/Partials/Sidebar";
+import Header from "../../component/Partials/Header";
+import { useNavigate } from "react-router-dom";
+import Eng_Inspection from "../../component/Eng_Inspection";
 
-function Bill_History() {
+function Inspection() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -39,31 +56,33 @@ function Bill_History() {
             sx={{
               display: "flex",
               alignItems: "center",
-              marginLeft: { xl: "15%", lg: "18%", },
+              marginLeft: { xl: "15%", lg: "18%" },
             }}
           >
             <Breadcrumbs
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0 }}
+              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
-              <Link
-                underline="hover"
-                color="neutral"
-                href=""
-                sx={{ fontSize: 12, fontWeight: 500 }}
-              >
-                SCM
-              </Link>
+              {user?.department !== "Accounts" && (
+                <Link
+                  underline="none"
+                  color="neutral"
+                  sx={{ fontSize: 12, fontWeight: 500 }}
+                >
+                  Engineering
+                </Link>
+              )}
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Vendor Bill
+                Inspection
               </Typography>
             </Breadcrumbs>
           </Box>
+
           <Box
             sx={{
               display: "flex",
@@ -77,25 +96,13 @@ function Bill_History() {
             }}
           >
             <Typography level="h2" component="h1">
-              Vendor Bill
+              Inspection
             </Typography>
-            <Box
-              sx={{
-                display: "flex",
-                mb: 1,
-                gap: 1,
-                flexDirection: { xs: "column", sm: "row" },
-                alignItems: { xs: "start", sm: "center" },
-                flexWrap: "wrap",
-                justifyContent: "center",
-              }}
-            >
-            </Box>
           </Box>
-          <VendorBill />
+          <Eng_Inspection />
         </Box>
       </Box>
     </CssVarsProvider>
   );
 }
-export default Bill_History;
+export default Inspection;

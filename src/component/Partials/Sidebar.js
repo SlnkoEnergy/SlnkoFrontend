@@ -91,7 +91,6 @@ function Sidebar() {
 
 
   const isSalesPage = location.pathname === "/sales";
-  const isEngineering = location.pathname === "/overview"
   return (
     <Sheet
       className="Sidebar"
@@ -498,6 +497,11 @@ function Sidebar() {
                   <ListItem sx={{ mt: 0.5 }}>
                     <ListItemButton onClick={() => navigate("/eng_dash")}>
                       Dashboard
+                    </ListItemButton>
+                  </ListItem>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/inspection")}>
+                      Inspection
                     </ListItemButton>
                   </ListItem>
                 </List>
