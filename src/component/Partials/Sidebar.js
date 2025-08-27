@@ -153,7 +153,7 @@ function Sidebar() {
         onClick={() => closeSidebar()}
       />
 
-      <Box sx={{ display: "flex", alignItems: "center", position: "relative" }}>
+      <Box sx={{ display: "flex", alignItems: "center", position: "relative", gap: 10 }}>
         <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
           <IconButton variant="soft" color="primary" size="sm">
             <img
@@ -167,7 +167,7 @@ function Sidebar() {
         <Box sx={{ zIndex: 200000, position: "relative" }}>
           <NovuProvider
             subscriberId={subscribeId}
-            applicationIdentifier="vHKf6fc5ojnD"
+            applicationIdentifier = {import.meta.env.VITE_NOVU_IDENTIFIER}
           >
             <Box
               sx={{
