@@ -496,7 +496,16 @@ function Dash_task({ selected, setSelected }) {
                       Created By: {task.createdBy?.name || "-"}
                     </Typography>
                     <Typography level="body-sm" startDecorator="📆">
-                      Created At: {task.createdAt?.split("T")[0] || "-"}
+                      Created At:{" "}
+                      {task.createdAt
+                        ? new Date(task.createdAt).toLocaleString("en-IN", {
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "-"}
                     </Typography>
                   </td>
 
@@ -571,16 +580,84 @@ function Dash_task({ selected, setSelected }) {
                     </Typography>
                     {task.deadline &&
                       (() => {
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
+                        const msPerDay = 1000 * 60 * 60 * 24;
 
-                        const deadlineDate = new Date(task.deadline);
-                        deadlineDate.setHours(0, 0, 0, 0);
+                        const toMidnight = (d) => {
+                          const x = new Date(d);
+                          x.setHours(0, 0, 0, 0);
+                          return x;
+                        };
 
-                        if (deadlineDate < today) {
-                          const diffInDays = Math.floor(
-                            (today - deadlineDate) / (1000 * 60 * 60 * 24)
+                        const daysBetween = (a, b) => {
+                          const A = toMidnight(a).getTime();
+                          const B = toMidnight(b).getTime();
+                          return Math.floor((A - B) / msPerDay);
+                        };
+
+                        const today = toMidnight(new Date());
+                        const deadline = toMidnight(task.deadline);
+
+                        // Derive start date (createdAt or first status update)
+                        const startDate =
+                          task?.createdAt ??
+                          task?.status_history?.[0]?.updatedAt ??
+                          today; // fallback to avoid NaN if missing
+
+                        // Find a completion record
+                        const completedFromHistory = task?.status_history
+                          ?.slice() // don’t mutate original
+                          .reverse()
+                          .find((s) => s?.status === "completed");
+
+                        const currentIsCompleted =
+                          task?.current_status?.status === "completed";
+                        const completionDate =
+                          completedFromHistory?.updatedAt ??
+                          (currentIsCompleted
+                            ? task?.current_status?.updatedAt
+                            : undefined);
+
+                        if (completionDate) {
+                          // Task completed: show duration and late/ontime vs deadline
+                          const elapsedDays = daysBetween(
+                            completionDate,
+                            startDate
                           );
+                          const lateBy = daysBetween(completionDate, deadline);
+
+                          if (toMidnight(completionDate) <= deadline) {
+                            return (
+                              <Typography
+                                level="body-sm"
+                                color="success"
+                                startDecorator="✅"
+                              >
+                                Completed in {elapsedDays}{" "}
+                                {elapsedDays === 1 ? "day" : "days"} (on time)
+                              </Typography>
+                            );
+                          } else {
+                            return (
+                              <Typography
+                                level="body-sm"
+                                color="danger"
+                                startDecorator="⏰"
+                              >
+                                Completed late by {lateBy}{" "}
+                                {lateBy === 1 ? "day" : "days"} &middot; took{" "}
+                                {elapsedDays}{" "}
+                                {elapsedDays === 1 ? "day" : "days"}
+                              </Typography>
+                            );
+                          }
+                        }
+
+                        // Not completed yet: show delay if past deadline, else on time
+                        if (
+                          deadline < today &&
+                          task?.current_status?.status !== "completed"
+                        ) {
+                          const diffInDays = daysBetween(today, deadline);
                           return (
                             <Typography
                               level="body-sm"
@@ -591,17 +668,17 @@ function Dash_task({ selected, setSelected }) {
                               {diffInDays === 1 ? "day" : "days"}
                             </Typography>
                           );
-                        } else {
-                          return (
-                            <Typography
-                              level="body-sm"
-                              color="success"
-                              startDecorator="✅"
-                            >
-                              On Time
-                            </Typography>
-                          );
                         }
+
+                        return (
+                          <Typography
+                            level="body-sm"
+                            color="success"
+                            startDecorator="✅"
+                          >
+                            On Time
+                          </Typography>
+                        );
                       })()}
                   </td>
 
