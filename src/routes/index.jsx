@@ -108,6 +108,7 @@ import Categories from "../pages/Databases/Categories";
 import Product_Form from "../pages/Databases/Product_Form";
 import PurchaseRequestForm from "../pages/CAM/PurchaseRequestForm";
 import LogisticsForm from "../pages/SCM/LogisticsForm";
+import Inspection from "../pages/Eng/Inspection";
 
 function index() {
   return (
@@ -387,6 +388,14 @@ function index() {
         element={
           <PrivateRoute>
             <DashboardENG />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/inspection"
+        element={
+          <PrivateRoute>
+            <Inspection />
           </PrivateRoute>
         }
       />

@@ -14,6 +14,7 @@ import {
   Modal,
   ModalDialog,
   Textarea,
+  Checkbox,
 } from "@mui/joy";
 import DeleteOutline from "@mui/icons-material/DeleteOutline";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -47,6 +48,8 @@ import {
   useAddPoHistoryMutation,
   useLazyGetPoHistoryQuery,
 } from "../../redux/poHistory";
+import InspectionForm from "../../component/Forms/Inspection_Form";
+import { useAddInspectionMutation } from "../../redux/inspectionSlice";
 
 const VENDOR_LIMIT = 7;
 const SEARCH_MORE_VENDOR = "__SEARCH_MORE_VENDOR__";
@@ -270,17 +273,17 @@ const AddPurchaseOrder = ({
     const arr = Array.isArray(po?.items)
       ? po.items
       : Array.isArray(po?.item)
-        ? po.item
-        : [];
+      ? po.item
+      : [];
     return arr.length
       ? arr.map((it) => ({
           ...makeEmptyLine(),
           productCategoryId:
             typeof it?.category === "object"
-              ? (it?.category?._id ?? "")
-              : (it?.category ?? ""),
+              ? it?.category?._id ?? ""
+              : it?.category ?? "",
           productCategoryName:
-            typeof it?.category === "object" ? (it?.category?.name ?? "") : "",
+            typeof it?.category === "object" ? it?.category?.name ?? "" : "",
           productName: it?.product_name ?? "",
           make: isValidMake(it?.product_make) ? it.product_make : "",
           makeQ: isValidMake(it?.product_make) ? it.product_make : "",
@@ -312,7 +315,7 @@ const AddPurchaseOrder = ({
         );
         const po = Array.isArray(resp?.data)
           ? resp.data[0]
-          : (resp?.data ?? resp);
+          : resp?.data ?? resp;
         if (!po) {
           toast.error("PO not found.");
           return;
@@ -742,7 +745,6 @@ const AddPurchaseOrder = ({
     setHistoryItems((prev) => [normalized, ...prev]);
     scrollToFeed();
   };
-  /* ===== End helpers ===== */
 
   const handleAddHistoryNote = async (text) => {
     if (!formData?._id) return toast.error("PO id missing.");
@@ -784,11 +786,12 @@ const AddPurchaseOrder = ({
       .filter((l) => l?.productName || l?.productCategoryName)
       .map((l) => {
         const categoryId =
-          typeof l.productCategoryId === "object" && l.productCategoryId?._id
+          typeof l.productCategoryId === "object" &&
+          l.productCategoryId?._id
             ? String(l.productCategoryId._id)
             : l.productCategoryId != null
-              ? String(l.productCategoryId)
-              : "";
+            ? String(l.productCategoryId)
+            : "";
         return {
           category: String(categoryId),
           product_name: String(l.productName || ""),
@@ -896,7 +899,9 @@ const AddPurchaseOrder = ({
 
     if (action === "confirm_order" && !fromModal) {
       if (!canConfirm)
-        return toast.error("Confirm is available only after approval is done.");
+        return toast.error(
+          "Confirm is available only after approval is done."
+        );
       if (!formData.po_number)
         return toast.error("PO Number is required to confirm this PO.");
       const token = localStorage.getItem("authToken");
@@ -1191,6 +1196,48 @@ const AddPurchaseOrder = ({
     navigate(`/vendor_bill?${params.toString()}`);
   };
 
+  // ====== INSPECTION STATE ======
+  const [inspectionEnabled, setInspectionEnabled] = useState(false);
+  const [inspectionModalOpen, setInspectionModalOpen] = useState(false);
+  const [selectedForInspection, setSelectedForInspection] = useState({}); // { lineId: true }
+  const toggleSelectLine = (lineId) =>
+    setSelectedForInspection((prev) => ({ ...prev, [lineId]: !prev[lineId] }));
+  const clearInspectionSelection = () => setSelectedForInspection({});
+  const selectedItems = useMemo(() => {
+    const ids = new Set(
+      Object.keys(selectedForInspection).filter((k) => selectedForInspection[k])
+    );
+    return (lines || []).filter((l) => ids.has(l.id));
+  }, [selectedForInspection, lines]);
+
+
+// inside your component
+const [addInspection, { isLoading: isSubmittingInspection }] = useAddInspectionMutation();
+
+// helper to map InspectionForm payload -> API body matching your schema
+const mapInspectionPayload = (payload) => {
+  const { vendor, project_code, items = [], inspection = {} } = payload;
+
+  return {
+    project_code: project_code || undefined,    
+    vendor,
+    vendor_contact: inspection.contact_person || "",
+    vendor_mobile: inspection.contact_mobile || "",
+    mode: inspection.mode,                    
+    location: inspection.mode === "offline" ? inspection.location || "" : "",
+    description: inspection.notes || "",
+    date: inspection.datetime || null,        
+    item: items.map((it) => ({
+      category_id: it.productCategoryId || undefined,
+      product_name: it.productName || "",
+      description: it.briefDescription || "",
+      product_make: it.make || "",
+      quantity: String(it.quantity ?? 0),
+    })),
+  };
+};
+
+
   return (
     <Box
       display={"flex"}
@@ -1230,7 +1277,36 @@ const AddPurchaseOrder = ({
             <Typography level="h3" sx={{ fontWeight: 700 }}>
               Purchase Order
             </Typography>
-            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+            <Box
+              sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}
+            >
+              {/* Inspection enable + button */}
+    {poNumberQ && (
+<Box display={'flex'} gap={2} justifyContent={'center'} alignItems={'center'}>
+                <Checkbox
+                  size="sm"
+                    label={inspectionEnabled ? "Disable Inspection Request" : "Enable Inspection Request"}
+                  checked={inspectionEnabled}
+                  onChange={(e) => {
+                    setInspectionEnabled(e.target.checked);
+                    if (!e.target.checked) clearInspectionSelection();
+                  }}
+                />
+                {inspectionEnabled && (
+
+                <Button
+                  size="sm"
+                  variant="outlined"
+                  disabled={!inspectionEnabled || selectedItems.length === 0}
+                  onClick={() => setInspectionModalOpen(true)}
+                >
+                  Request Inspection
+                </Button>
+                )}
+                </Box>
+    )}
+             
+
               {!viewMode && (
                 <>
                   {((effectiveMode === "edit" &&
@@ -1312,7 +1388,9 @@ const AddPurchaseOrder = ({
                   </Box>
                 )}
 
-              {((effectiveMode === "edit" && user?.department === "SCM" || user?.department === "superadmin" || user?.department === "admin") ||
+              {(((effectiveMode === "edit" && user?.department === "SCM") ||
+                user?.department === "superadmin" ||
+                user?.department === "admin") ||
                 approvalRejected) && (
                 <Box display="flex" gap={2}>
                   {(user?.department === "SCM" ||
@@ -1385,124 +1463,121 @@ const AddPurchaseOrder = ({
 
           {!fromModal && poNumberQ && (
             <Box
-            sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 1.5,
-              alignItems: "center",
-              justifyContent: "space-between",
-              mb: 2,
-              mt: 1,
-            }}
-          >
-            <Sheet
-              variant="outlined"
               sx={{
                 display: "flex",
+                flexWrap: "wrap",
+                gap: 1.5,
                 alignItems: "center",
-                gap: 2,
-                borderRadius: "lg",
-                px: 1.5,
-                py: 1,
+                justifyContent: "space-between",
+                mb: 2,
+                mt: 1,
               }}
             >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-                <DescriptionOutlinedIcon fontSize="small" color="primary" />
-                <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-                  PO Number
-                </Typography>
-                <Chip
-                  color="primary"
-                  size="sm"
-                  variant="solid"
-                  sx={{ fontWeight: 700 }}
-                >
-                  {formData?.po_number || "—"}
-                </Chip>
-              </Box>
-              <Divider orientation="vertical" />
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-                <PersonOutlineOutlinedIcon fontSize="small" color="primary" />
-                <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-                  Created By
-                </Typography>
-                <Chip
-                  variant="soft"
-                  size="sm"
-                  sx={{ fontWeight: 700, pl: 0.5, pr: 1 }}
-                >
-                  {formData?.submitted_By || "-"}
-                </Chip>
-              </Box>
-            </Sheet>
+              <Sheet
+                variant="outlined"
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                  borderRadius: "lg",
+                  px: 1.5,
+                  py: 1,
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+                  <DescriptionOutlinedIcon fontSize="small" color="primary" />
+                  <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+                    PO Number
+                  </Typography>
+                  <Chip
+                    color="primary"
+                    size="sm"
+                    variant="solid"
+                    sx={{ fontWeight: 700 }}
+                  >
+                    {formData?.po_number || "—"}
+                  </Chip>
+                </Box>
+                <Divider orientation="vertical" />
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+                  <PersonOutlineOutlinedIcon fontSize="small" color="primary" />
+                  <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+                    Created By
+                  </Typography>
+                  <Chip
+                    variant="soft"
+                    size="sm"
+                    sx={{ fontWeight: 700, pl: 0.5, pr: 1 }}
+                  >
+                    {formData?.submitted_By || "-"}
+                  </Chip>
+                </Box>
+              </Sheet>
 
-            <Box
-              display={"flex"}
-              gap={2}
-              alignItems={"center"}
-              justifyContent={"center"}
-            >
-              <Box display={"flex"} gap={2}>
-                <Sheet
-                  variant="outlined"
-                  sx={{
-                    display: "flex",
-                    alignItems: "stretch",
-                    borderRadius: "lg",
-                    overflow: "hidden",
-                  }}
-                >
-                  <Box
+              <Box
+                display={"flex"}
+                gap={2}
+                alignItems={"center"}
+                justifyContent={"center"}
+              >
+                <Box display={"flex"} gap={2}>
+                  <Sheet
+                    variant="outlined"
                     sx={{
                       display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                      px: 1.25,
-                      py: 0.75,
-                      cursor: "pointer",
-                      "&:hover": { bgcolor: "neutral.softHoverBg" },
+                      alignItems: "stretch",
+                      borderRadius: "lg",
+                      overflow: "hidden",
                     }}
-                    onClick={goToVendorList}
-                    role="button"
-                    tabIndex={0}
                   >
-                    <LocalMallOutlinedIcon fontSize="small" color="primary" />
-                    <Box sx={{ lineHeight: 1.1 }}>
-                      <Typography level="body-sm" sx={{ fontWeight: 600 }}>
-                        Vendor Bills
-                      </Typography>
-                      <Typography
-                        level="body-xs"
-                        sx={{ color: "text.secondary" }}
-                      >
-                        {formData.total_bills}
-                      </Typography>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        px: 1.25,
+                        py: 0.75,
+                        cursor: "pointer",
+                        "&:hover": { bgcolor: "neutral.softHoverBg" },
+                      }}
+                      onClick={goToVendorList}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <LocalMallOutlinedIcon fontSize="small" color="primary" />
+                      <Box sx={{ lineHeight: 1.1 }}>
+                        <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+                          Vendor Bills
+                        </Typography>
+                        <Typography
+                          level="body-xs"
+                          sx={{ color: "text.secondary" }}
+                        >
+                          {formData.total_bills}
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
-                </Sheet>
-              </Box>
+                  </Sheet>
+                </Box>
 
-              <Box>
-                <Button
-                  color="primary"
-                  size="sm"
-                  variant="solid"
-                  startDecorator={<Add />}
-                  onClick={() => setBillModalOpen(true)}
-                >
-                  Add Bill
-                </Button>
+                <Box>
+                  <Button
+                    color="primary"
+                    size="sm"
+                    variant="solid"
+                    startDecorator={<Add />}
+                    onClick={() => setBillModalOpen(true)}
+                  >
+                    Add Bill
+                  </Button>
+                </Box>
               </Box>
             </Box>
-          </Box>
           )}
 
           {/* Form */}
           <form id="po-form" onSubmit={handleSubmit}>
-            <Sheet
-              variant="outlined"
-              sx={{ p: 2, borderRadius: "lg", mb: 1.5 }}
-            >
+            <Sheet variant="outlined" sx={{ p: 2, borderRadius: "lg", mb: 1.5 }}>
               <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid xs={12} md={4}>
                   <Typography level="body1" fontWeight="bold" mb={0.5}>
@@ -1585,8 +1660,8 @@ const AddPurchaseOrder = ({
                               formData.delivery_type === "afor"
                                 ? "Afor"
                                 : formData.delivery_type === "slnko"
-                                  ? "Slnko"
-                                  : "",
+                                ? "Slnko"
+                                : "",
                           }
                         : null
                     }
@@ -1612,6 +1687,15 @@ const AddPurchaseOrder = ({
                 <Chip color="primary" variant="soft" size="sm">
                   Products
                 </Chip>
+                {inspectionEnabled && (
+                  <Chip size="sm" variant="soft" color="neutral">
+                    {
+                      Object.values(selectedForInspection).filter(Boolean)
+                        .length
+                    }{" "}
+                    selected for inspection
+                  </Chip>
+                )}
               </Box>
 
               <Box
@@ -1638,6 +1722,7 @@ const AddPurchaseOrder = ({
               >
                 <thead>
                   <tr>
+                    {inspectionEnabled && <th style={{ width: 44 }}>Pick</th>}
                     <th style={{ width: "12%" }}>Category</th>
                     <th style={{ width: "12%" }}>Product</th>
                     <th style={{ width: "12%" }}>Brief Description</th>
@@ -1653,7 +1738,8 @@ const AddPurchaseOrder = ({
                   {lines.map((l) => {
                     const base =
                       Number(l.quantity || 0) * Number(l.unitPrice || 0);
-                    const taxAmt = (base * Number(l.taxPercent || 0)) / 100;
+                    const taxAmt =
+                      (base * Number(l.taxPercent || 0)) / 100;
                     const gross = base + taxAmt;
 
                     const key = mkKey(l.productCategoryId, l.productName);
@@ -1669,6 +1755,16 @@ const AddPurchaseOrder = ({
 
                     return (
                       <tr key={l.id}>
+                        {inspectionEnabled && (
+                          <td>
+                            <Checkbox
+                              size="sm"
+                              checked={!!selectedForInspection[l.id]}
+                              onChange={() => toggleSelectLine(l.id)}
+                            />
+                          </td>
+                        )}
+
                         <td>
                           <Input
                             size="sm"
@@ -1714,7 +1810,6 @@ const AddPurchaseOrder = ({
                           />
                         </td>
 
-                        {/* Make dropdown */}
                         <td>
                           {!manualEdit && !fromModal ? (
                             <Typography
@@ -1805,18 +1900,12 @@ const AddPurchaseOrder = ({
                                   </Option>
                                 ))}
                                 {l.productCategoryId && l.productName && (
-                                  <Option
-                                    value={SEARCH_MORE_MAKE}
-                                    color="neutral"
-                                  >
+                                  <Option value={SEARCH_MORE_MAKE} color="neutral">
                                     Search more…
                                   </Option>
                                 )}
                                 {l.productCategoryId && l.productName && (
-                                  <Option
-                                    value={CREATE_PRODUCT_INLINE}
-                                    color="primary"
-                                  >
+                                  <Option value={CREATE_PRODUCT_INLINE} color="primary">
                                     + Create Product…
                                   </Option>
                                 )}
@@ -2130,6 +2219,41 @@ const AddPurchaseOrder = ({
                 fromModal
               />
             </Box>
+          </ModalDialog>
+        </Modal>
+
+        {/* INSPECTION Modal */}
+        <Modal
+          open={inspectionModalOpen}
+          onClose={() => setInspectionModalOpen(false)}
+        >
+          <ModalDialog
+            sx={{ maxWidth: 1100, width: "95vw", p: 0, overflow: "auto" }}
+          >
+            <InspectionForm
+  open
+  vendorName={formData?.name || ""}
+  projectCode={formData?.project_code || ""}
+  items={selectedItems}
+  onClose={() => setInspectionModalOpen(false)}
+  onSubmit={async (payload) => {
+    try {
+      const body = mapInspectionPayload(payload);
+      // RTK Query call
+      await addInspection(body).unwrap();
+
+      toast.success("Inspection request submitted.");
+      setInspectionModalOpen(false);
+      clearInspectionSelection();
+    } catch (e) {
+      console.error(e);
+      toast.error(
+        e?.data?.message || e?.error || "Failed to submit inspection request"
+      );
+    }
+  }}
+/>
+
           </ModalDialog>
         </Modal>
       </Box>
