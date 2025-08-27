@@ -947,6 +947,7 @@ const AddLogisticForm = () => {
               onChange={handleChange}
               placeholder="Write Description of Logistic"
               disabled={isView}
+              readOnly
             />
 
             <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>

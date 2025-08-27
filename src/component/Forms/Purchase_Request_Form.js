@@ -633,6 +633,7 @@ export default function Purchase_Request_Form() {
       } else {
         await createPurchaseRequest(purchaseRequestData).unwrap();
         toast.success("Purchase Request created successfully.");
+        resetForm();
       }
     } catch (err) {
       toast.error("Failed to save. Check console for details.");
@@ -815,6 +816,21 @@ export default function Purchase_Request_Form() {
     }
   };
 
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+
   return (
     <Box
       sx={{
@@ -922,26 +938,28 @@ export default function Purchase_Request_Form() {
               </Box>
             </Sheet>
 
-            {isAnyProductChecked && (
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  px: 1.25,
-                  py: 0.75,
-                }}
-              >
-                <Button
-                  color="primary"
-                  size="sm"
-                  variant="solid"
-                  startDecorator={<Add />}
-                  onClick={openCreatePOModal}
+            {isAnyProductChecked &&
+              user?.department !== "CAM" &&
+              user?.department !== "Projects" && (
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    px: 1.25,
+                    py: 0.75,
+                  }}
                 >
-                  Create PO
-                </Button>
-              </Box>
-            )}
+                  <Button
+                    color="primary"
+                    size="sm"
+                    variant="solid"
+                    startDecorator={<Add />}
+                    onClick={openCreatePOModal}
+                  >
+                    Create PO
+                  </Button>
+                </Box>
+              )}
           </Box>
         </Box>
       )}

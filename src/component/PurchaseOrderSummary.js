@@ -494,7 +494,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
                   if (
                     etd &&
-                    (current_status?.status?.toLowerCase() === "etd done" ||
+                    (current_status?.status?.toLowerCase() === "po_created" ||
                       current_status?.status?.toLowerCase() === "draft")
                   ) {
                     setNextStatus("material_ready");
@@ -955,7 +955,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             ₹ {formattedAmount}
           </Typography>
         )}
-        
       </Box>
     );
   };
@@ -1272,11 +1271,19 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         minWidth: 150,
                       }}
                     >
-                      ₹
-                      {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 2,
-                      }).format(po.amount_paid) || "0"}
+                      {po.po_number ? (
+                        <Typography level="body-sm">
+                          ₹{" "}
+                          {new Intl.NumberFormat("en-IN", {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 2,
+                          }).format(po.amount_paid ?? 0)}
+                        </Typography>
+                      ) : (
+                        <Chip size="sm" variant="soft" color="neutral">
+                          PO No Pending
+                        </Chip>
+                      )}
                     </Box>
                     {!isLogisticsPage && (
                       <Box

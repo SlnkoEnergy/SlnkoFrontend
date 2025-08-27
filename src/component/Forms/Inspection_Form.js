@@ -448,7 +448,11 @@ export default function InspectionForm({
                 rows.map((r, idx) => (
                   <tr key={idx}>
                     <td>{idx + 1}</td>
-                    <td>{isView ? r.category_id?.name: r.productCategoryName || "-"}</td>
+                    <td>
+                      {isView
+                        ? r.category_id?.name
+                        : r.productCategoryName || "-"}
+                    </td>
                     <td>{r.product_name || r.productName || "-"}</td>
                     <td>{r.description || r.briefDescription || "-"}</td>
                     <td>{r.product_make || r.makeQ || r.make || "-"}</td>
@@ -544,7 +548,7 @@ export default function InspectionForm({
                     </ListItemDecorator>
                     <ListItemContent>
                       <Typography level="body-sm" fontWeight="lg">
-                        {humanName(h.by) || humanName(h.updated_by) || "System"}
+                        {humanName(h.user_id?.name) || "System"}
                       </Typography>
                       <Typography
                         level="body-xs"
@@ -784,8 +788,7 @@ function statusColor(status) {
   if (!status) return "neutral";
   const s = String(status).toLowerCase();
   if (["requested"].includes(s)) return "primary";
-  if (["approved"].includes(s))
-    return "success";
+  if (["approved"].includes(s)) return "success";
   if (["failed"].includes(s)) return "danger";
   return "neutral";
 }

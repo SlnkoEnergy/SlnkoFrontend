@@ -86,7 +86,7 @@ function buildPoCategorySummary(itemsRaw) {
 
   return { pairs, grouped, firstLabel, extraCount };
 }
-
+  
 const pageNumbers = (current, total) => {
   const out = [];
   if (current > 2) out.push(1);
@@ -113,18 +113,34 @@ const errMsg = (e) =>
   e?.data?.message || e?.error || e?.message || "Failed to update status";
 
 function StatusCard({ row, onUpdated }) {
-  // Prefer current_status; otherwise fall back to last status_history entry.
   const raw =
     row?.current_status?.status ??
     (Array.isArray(row?.status_history) && row.status_history.length
       ? row.status_history[row.status_history.length - 1]?.status
       : undefined);
 
-  // Default to "ready_to_dispatch" when nothing present
   const current = raw || "ready_to_dispatch";
 
   const [updateStatus, { isLoading }] = useUpdateLogisticStatusMutation();
   const [errorText, setErrorText] = useState("");
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) setUser(JSON.parse(userData));
+  }, []);
+
+  const isLogistic = user?.department === "Logistic";
+  const isSuperadmin = user?.role === "superadmin";
+
+  // === VISIBILITY RULES ===
+  // Ready → Out for Delivery: Logistic OR Superadmin can do it
+  const showChangeToOfd =
+    current === "ready_to_dispatch" && (isLogistic || isSuperadmin);
+
+  // Out for Delivery → Delivered: ONLY Logistic OR Superadmin can see/do it
+  const showMarkDelivered =
+    current === "out_for_delivery" && (isLogistic || isSuperadmin);
 
   const label =
     current === "delivered"
@@ -140,46 +156,27 @@ function StatusCard({ row, onUpdated }) {
       ? "warning"
       : "neutral";
 
-  const nextStatus =
-    current === "ready_to_dispatch"
-      ? "out_for_delivery"
-      : current === "out_for_delivery"
-      ? "delivered"
-      : null;
-
-  const changeButtonText =
-    current === "ready_to_dispatch"
-      ? "Change Status to Out for Delivery"
-      : current === "out_for_delivery"
-      ? "Mark as Delivered"
-      : "";
-
-  const handleChange = async () => {
-    setErrorText("");
-    try {
-      if (!nextStatus) return;
-      await updateStatus({
-        id: row._id,
-        status: nextStatus,
-        remarks: "",
-      }).unwrap();
-
-      // ensure we wait for new data before rendering
-      await onUpdated?.();
-    } catch (e) {
-      console.error("update status failed:", e);
-      setErrorText(errMsg(e));
-    }
+  const dd_mm_yyyy = (d) => {
+    if (!d) return "dd - mm - yyyy";
+    const dt = new Date(d);
+    if (isNaN(dt)) return "dd - mm - yyyy";
+    const dd = String(dt.getDate()).padStart(2, "0");
+    const mm = String(dt.getMonth() + 1).padStart(2, "0");
+    const yyyy = dt.getFullYear();
+    return `${dd} - ${mm} - ${yyyy}`;
   };
 
-  const dispatchDate = row?.dispatch_date
-    ? dd_mm_yyyy(row.dispatch_date)
-    : "dd - mm - yyyy";
-  const deliveryDate = row?.delivery_date
-    ? dd_mm_yyyy(row.delivery_date)
-    : "dd - mm - yyyy";
-
-   
+  const handleUpdate = async (targetStatus) => {
+    setErrorText("");
+    try {
+      await updateStatus({ id: row._id, status: targetStatus, remarks: "" }).unwrap();
+      await onUpdated?.();
+    } catch (e) {
+      setErrorText(
+        e?.data?.message || e?.error || e?.message || "Failed to update status"
+      );
+    }
+  };
 
   return (
     <Box
@@ -217,13 +214,13 @@ function StatusCard({ row, onUpdated }) {
           <Typography level="body-sm" sx={{ minWidth: 130 }}>
             Dispatch Date :
           </Typography>
-          <Typography level="body-sm">{dispatchDate}</Typography>
+          <Typography level="body-sm">{dd_mm_yyyy(row?.dispatch_date)}</Typography>
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Typography level="body-sm" sx={{ minWidth: 130 }}>
             Delivery Date :
           </Typography>
-          <Typography level="body-sm">{deliveryDate}</Typography>
+          <Typography level="body-sm">{dd_mm_yyyy(row?.delivery_date)}</Typography>
         </Box>
       </Box>
 
@@ -233,20 +230,35 @@ function StatusCard({ row, onUpdated }) {
         </Typography>
       )}
 
-      {nextStatus && (
+      {/* Actions */}
+      {showChangeToOfd && (
         <Button
           size="sm"
           variant="soft"
-          color={current === "ready_to_dispatch" ? "primary" : "success"}
-          onClick={handleChange}
+          color="primary"
+          onClick={() => handleUpdate("out_for_delivery")}
+          disabled={isLoading}
+          sx={{ mr: 1 }}
+        >
+          {isLoading ? "Updating..." : "Change Status to Out for Delivery"}
+        </Button>
+      )}
+
+      {showMarkDelivered && (
+        <Button
+          size="sm"
+          variant="solid"
+          color="success"
+          onClick={() => handleUpdate("delivered")}
           disabled={isLoading}
         >
-          {isLoading ? "Updating..." : changeButtonText}
+          {isLoading ? "Updating..." : "Mark as Delivered"}
         </Button>
       )}
     </Box>
   );
 }
+
 
 /* ---------------- component ---------------- */
 export default function LogisticsDashboard() {
