@@ -95,10 +95,10 @@ function AmountChangeRow({ from, to, currency = "INR", label, field }) {
     (field === "untaxed"
       ? "Untaxed"
       : field === "gst"
-        ? "GST"
-        : field === "po_value"
-          ? "Total"
-          : field || "Amount");
+      ? "GST"
+      : field === "po_value"
+      ? "Total"
+      : field || "Amount");
   return (
     <Box
       sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}
@@ -222,11 +222,46 @@ function FeedItem({ item }) {
                 remark={item.title}
               />
             ) : item.kind === "note" ? (
-              <Typography level="body-sm" sx={{ whiteSpace: "pre-wrap" }}>
-                {item.note || item.title}
-              </Typography>
+              <Box>
+                {item.note && (
+                  <Typography level="body-sm" sx={{ whiteSpace: "pre-wrap" }}>
+                    {item.note}
+                  </Typography>
+                )}
+                {Array.isArray(item.attachments) &&
+                  item.attachments.length > 0 && (
+                    <Box
+                      sx={{
+                        mt: 0.5,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 0.5,
+                      }}
+                    >
+                      {item.attachments.map((att, idx) =>
+                        att?.url ? (
+                          <a
+                            key={idx}
+                            href={att.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              color: "#214b7b",
+                              fontWeight: 500,
+                              display: "block",
+                            }}
+                          >
+                            📎 {att.name}
+                          </a>
+                        ) : null
+                      )}
+                    </Box>
+                  )}
+              </Box>
             ) : (
-              <Typography level="body-sm">{item.title || "Updated"}</Typography>
+              <Typography level="body-sm">
+                {item.title || "Updated"}
+              </Typography>
             )}
           </Box>
         </Box>
