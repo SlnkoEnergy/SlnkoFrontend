@@ -208,6 +208,7 @@ const AddPurchaseOrder = ({
     total_billed: "",
     total_bills: 0,
     createdAt: "",
+    inspectionCount: 0,
   });
   const poNum = (formData.po_number || poNumberQ || "").trim();
 
@@ -347,6 +348,7 @@ const AddPurchaseOrder = ({
           po_number: po?.po_number ?? prev.po_number ?? "",
           total_billed: po?.total_billed ?? prev.total_billed ?? "",
           total_bills: po?.total_bills ?? prev.total_bills ?? "",
+          inspectionCount: po?.inspectionCount ?? prev.inspectionCount ?? "",
           createdAt: po?.createdAt ?? prev.createdAt ?? "",
           name: po?.vendor ?? "",
           date: po?.date ?? "",
@@ -1223,7 +1225,13 @@ const AddPurchaseOrder = ({
     if (!num) return;
     const params = new URLSearchParams();
     params.set("po_number", num);
-    navigate(`/logistics?${params.toString()}`); // where LogisticsDashboard reads po_number
+    navigate(`/logistics?${params.toString()}`);
+  };
+  const goToInspectionList = () => {
+    const params = new URLSearchParams();
+    if (poNumberQ) params.set("po_number", poNumberQ);
+    params.set("returnTo", location.pathname + location.search);
+    navigate(`/inspection?${params.toString()}`);
   };
 
   // ====== INSPECTION STATE ======
@@ -1244,12 +1252,19 @@ const AddPurchaseOrder = ({
     useAddInspectionMutation();
 
   const mapInspectionPayload = (payload) => {
-    const { vendor, project_code, items = [], inspection = {} } = payload;
+    const {
+      vendor,
+      project_code,
+      items = [],
+      inspection = {},
+      po_number,
+    } = payload;
 
     return {
       project_code: project_code || undefined,
       vendor,
       vendor_contact: inspection.contact_person || "",
+      po_number: po_number,
       vendor_mobile: inspection.contact_mobile || "",
       mode: inspection.mode,
       location: inspection.mode === "offline" ? inspection.location || "" : "",
@@ -1266,9 +1281,6 @@ const AddPurchaseOrder = ({
     };
   };
 
-  /* =========================
-     === Attachments state ===
-     ========================= */
   const [attName, setAttName] = useState("");
   const [attFile, setAttFile] = useState(null);
   const [attDragging, setAttDragging] = useState(false);
@@ -1312,7 +1324,7 @@ const AddPurchaseOrder = ({
 
       const hasExt = /\.[A-Za-z0-9]+$/.test(attName.trim());
       const ext = hasExt ? "" : getExtFromName(attFile.name) || "";
-      const finalFilename = `${attName.trim()}${ext}`; // becomes attachment_name
+      const finalFilename = `${attName.trim()}${ext}`;
 
       const fd = new FormData();
       fd.append("file", attFile, finalFilename);
@@ -1723,6 +1735,35 @@ const AddPurchaseOrder = ({
                         </Typography>
                       </Box>
                     </Box>
+
+                    <Divider orientation="vertical" />
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        px: 1.25,
+                        py: 0.75,
+                        cursor: "pointer",
+                        "&:hover": { bgcolor: "neutral.softHoverBg" },
+                      }}
+                      onClick={goToInspectionList}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <LocalMallOutlinedIcon fontSize="small" color="primary" />
+                      <Box sx={{ lineHeight: 1.1 }}>
+                        <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+                          Inspections
+                        </Typography>
+                        <Typography
+                          level="body-xs"
+                          sx={{ color: "text.secondary" }}
+                        >
+                          {formData.inspectionCount}
+                        </Typography>
+                      </Box>
+                    </Box>
                   </Sheet>
                 </Box>
 
@@ -1928,7 +1969,7 @@ const AddPurchaseOrder = ({
                   <tr>
                     {inspectionEnabled && <th style={{ width: 44 }}>Pick</th>}
                     <th style={{ width: "12%" }}>Category</th>
-                    <th style={{ width: "12%" }}>Product</th>
+                    <th style={{ width: "16%" }}>Product</th>
                     <th style={{ width: "12%" }}>Brief Description</th>
                     <th style={{ width: "14%" }}>Make</th>
                     <th style={{ width: "10%" }}>Qty</th>
@@ -1967,9 +2008,9 @@ const AddPurchaseOrder = ({
                             />
                           </td>
                         )}
-
                         <td>
-                          <Input
+                          <Textarea
+                            minRows={1}
                             size="sm"
                             variant="plain"
                             placeholder="Category"
@@ -1982,10 +2023,16 @@ const AddPurchaseOrder = ({
                               )
                             }
                             disabled
+                            sx={{
+                              whiteSpace: "normal",
+                              wordBreak: "break-word",
+                            }}
                           />
                         </td>
+
                         <td>
-                          <Input
+                          <Textarea
+                            minRows={1}
                             size="sm"
                             variant="plain"
                             placeholder="Product name"
@@ -1994,10 +2041,16 @@ const AddPurchaseOrder = ({
                               updateLine(l.id, "productName", e.target.value)
                             }
                             disabled
+                            sx={{
+                              whiteSpace: "normal",
+                              wordBreak: "break-word",
+                            }}
                           />
                         </td>
+
                         <td>
-                          <Input
+                          <Textarea
+                            minRows={1}
                             size="sm"
                             variant="plain"
                             placeholder="Brief Description"
@@ -2010,6 +2063,10 @@ const AddPurchaseOrder = ({
                               )
                             }
                             disabled
+                            sx={{
+                              whiteSpace: "normal",
+                              wordBreak: "break-word",
+                            }}
                           />
                         </td>
 
@@ -2449,6 +2506,7 @@ const AddPurchaseOrder = ({
               open
               vendorName={formData?.name || ""}
               projectCode={formData?.project_code || ""}
+              po_number={poNumberQ}
               items={selectedItems}
               onClose={() => setInspectionModalOpen(false)}
               onSubmit={async (payload) => {

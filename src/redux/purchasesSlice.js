@@ -36,7 +36,7 @@ export const purchasesApi = createApi({
         deliveryFrom,
         deliveryTo,
         filter,
-        itemSearch
+        itemSearch,
       }) =>
         `get-paginated-po?page=${page}&search=${search}&status=${status}&pageSize=${pageSize}&type=${type}&project_id=${project_id}&pr_id=${pr_id}&item_id=${item_id}&etdFrom=${etdFrom}&etdTo=${etdTo}&deliveryFrom=${deliveryFrom}&deliveryTo=${deliveryTo}&filter=${filter}&itemSearch=${itemSearch}`,
       transformResponse: (response) => ({
@@ -122,7 +122,7 @@ export const purchasesApi = createApi({
           search
         )}&status=${encodeURIComponent(status)}&po_id=${encodeURIComponent(
           po_id
-        )}&po_number=${encodeURIComponent(po_number)}`, 
+        )}&po_number=${encodeURIComponent(po_number)}`,
       transformResponse: (response) => ({
         data: response?.data || [],
         total: response?.meta?.total || 0,
@@ -194,6 +194,28 @@ export const purchasesApi = createApi({
       }),
       invalidatesTags: ["Logistic"],
     }),
+
+    // Logistics History
+    getLogisticsHistory: builder.query({
+      query: ({ subject_type, subject_id }) => {
+        const params = new URLSearchParams({
+          subject_type,
+          subject_id,
+        });
+
+        return `/logistics/logistichistory?${params.toString()}`;
+      },
+      providesTags: ["Logistic"],
+    }),
+
+    addLogisticHistory: builder.mutation({
+      query: (newHistory) => ({
+        url: "/logistics/logistichistory",
+        method: "POST",
+        body: newHistory,
+      }),
+      invalidatesTags: ["Logistic"],
+    }),
   }),
 });
 
@@ -214,4 +236,6 @@ export const {
   useGetPoBasicQuery,
   useLazyGetPoBasicQuery,
   useUpdateLogisticStatusMutation,
+  useLazyGetLogisticsHistoryQuery,
+  useAddLogisticHistoryMutation
 } = purchasesApi;

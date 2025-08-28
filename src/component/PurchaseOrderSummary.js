@@ -22,7 +22,7 @@ import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import { Clock, CheckCircle2, AlarmClockMinusIcon } from "lucide-react";
 import CloseIcon from "@mui/icons-material/Close";
-import { forwardRef, useCallback, useEffect, useMemo, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
 import { ClickAwayListener } from "@mui/base";
@@ -61,7 +61,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const [po, setPO] = useState("");
   const [selectedpo, setSelectedpo] = useState("");
   const [selectedtype, setSelectedtype] = useState("");
-  const [selected, setSelected] = useState([]);
+  const [selected, setSelected] = useState([]); // <-- IDs of checked rows
   const [selectedPoNumber, setSelectedPoNumber] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -487,8 +487,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                 {activeDateFilter === "etd"
                   ? "ETD Date Range"
                   : activeDateFilter === "po"
-                    ? "PO Date Range"
-                    : "Delivery Date Range"}
+                  ? "PO Date Range"
+                  : "Delivery Date Range"}
               </Typography>
 
               <Box display="flex" gap={1}>
@@ -500,8 +500,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       activeDateFilter === "etd"
                         ? etdFrom
                         : activeDateFilter === "po"
-                          ? poFrom
-                          : deliveryFrom
+                        ? poFrom
+                        : deliveryFrom
                     }
                     onChange={(e) => {
                       if (activeDateFilter === "etd")
@@ -522,8 +522,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       activeDateFilter === "etd"
                         ? etdTo
                         : activeDateFilter === "po"
-                          ? poTo
-                          : deliveryTo
+                        ? poTo
+                        : deliveryTo
                     }
                     onChange={(e) => {
                       if (activeDateFilter === "etd") setEtdTo(e.target.value);
@@ -693,6 +693,32 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     setCurrentPage(page);
   }, [searchParams]);
 
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getSelectedPOSeed: () => {
+        // build a light-weight seed for the logistics form
+        const pos = selected.map((id) => {
+          const r = paginatedPo.find((x) => x._id === id);
+          return {
+            _id: id,
+            po_number: r?.po_number || "",
+            p_id: r?.p_id || "",
+            project_id: r?.project_id?._id ?? r?.project_id ?? "",
+            vendor: r?.vendor ?? "",
+            pr_id: r?.pr?._id ?? r?.pr_id ?? "",
+          };
+        });
+        return { pos };
+      },
+      clearSelection: () => setSelected([]),
+      // optional: keep your CSV export callable via ref if you still need it
+      exportToCSV: () => handleExport(true),
+    }),
+    [selected, paginatedPo] // keep fresh
+  );
+
   const BillingStatusChip = ({ status }) => {
     const isFullyBilled = status === "Fully Billed";
     const isPending = status === "Bill Pending";
@@ -700,8 +726,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const label = isFullyBilled
       ? "Fully Billed"
       : isPending
-        ? "Pending"
-        : status;
+      ? "Pending"
+      : status;
 
     const icon = isFullyBilled ? (
       <CheckRoundedIcon />
@@ -721,6 +747,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const BillingTypeChip = ({ type }) => {
     const isFullyBilled = type === "Final";
     const isPending = type === "Partial";
+
     const label = isFullyBilled ? "Final" : isPending ? "Partial" : type;
     const color = isFullyBilled ? "primary" : isPending ? "danger" : "neutral";
     return (
@@ -1056,6 +1083,10 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const RenderTotalBilled = ({ total_billed = 0, po_value = 0, po_number }) => {
     const billed = Number(total_billed);
     const value = Number(po_value);
+
+    const showAddBilling = billed < value;
+    const showBillingHistory = billed > 0;
+
     const formattedAmount =
       billed > 0
         ? new Intl.NumberFormat("en-IN", {
@@ -1192,7 +1223,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                   indeterminate={
                     selected.length > 0 && selected.length < paginatedPo.length
                   }
-                  checked={selected.length === paginatedPo.length}
+                  checked={selected.length === paginatedPo.length && paginatedPo.length > 0}
                   onChange={handleSelectAll}
                   color={selected.length > 0 ? "primary" : "neutral"}
                 />
