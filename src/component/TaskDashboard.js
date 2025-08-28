@@ -61,6 +61,10 @@ function Dash_task({ selected, setSelected }) {
     searchParams.get("department") || ""
   );
 
+  const [deadlineDateFilter, setDeadlineDateFilter] = useState(
+    searchParams.get("deadline") || ""
+  )
+
   const [prioritySortOrder, setPrioritySortOrder] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(
     Number(searchParams.get("limit")) || 100
@@ -72,6 +76,7 @@ function Dash_task({ selected, setSelected }) {
     search: searchQuery,
     status: statusFilter,
     createdAt: dateFilter,
+    deadline: deadlineDateFilter,
     department: departmentFilter,
     limit: itemsPerPage,
     hide_completed: hideCompleted,
@@ -87,6 +92,7 @@ function Dash_task({ selected, setSelected }) {
     if (searchQuery) params.search = searchQuery;
     if (statusFilter) params.status = statusFilter;
     if (dateFilter) params.createdAt = dateFilter;
+    if (deadlineDateFilter) params.deadline = deadlineDateFilter;
     if (departmentFilter) params.department = departmentFilter;
     if (currentPage) params.page = currentPage;
     if (itemsPerPage) params.limit = itemsPerPage;
@@ -96,6 +102,7 @@ function Dash_task({ selected, setSelected }) {
     searchQuery,
     statusFilter,
     dateFilter,
+    deadlineDateFilter,
     departmentFilter,
     currentPage,
     itemsPerPage,
@@ -257,6 +264,15 @@ function Dash_task({ selected, setSelected }) {
             type="date"
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
+          />
+        </FormControl>
+        <FormControl size="sm">
+          <FormLabel>Filter By Deadline</FormLabel>
+          <Input
+            size="sm"
+            type="date"
+            value={deadlineDateFilter}
+            onChange={(e) => setDeadlineDateFilter(e.target.value)}
           />
         </FormControl>
         <FormControl size="sm">
