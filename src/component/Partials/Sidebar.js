@@ -458,13 +458,13 @@ function Sidebar() {
                     </ListItemButton>
                   </ListItem>
                   <ListItem>
-                    <ListItemButton onClick={() => navigate("/vendor_bill")}>
-                      Vendor Bill
+                    <ListItemButton onClick={() => navigate("/logistics")}>
+                      Logistics 
                     </ListItemButton>
                   </ListItem>
                   <ListItem>
-                    <ListItemButton onClick={() => navigate("/logistics")}>
-                      Logistics 
+                    <ListItemButton onClick={() => navigate("/vendor_bill")}>
+                      Vendor Bill
                     </ListItemButton>
                   </ListItem>
                 </List>
@@ -1315,11 +1315,11 @@ function Sidebar() {
                       Purchase Order
                     </ListItemButton>
                   </ListItem>
-                  {/* <ListItem>
-                <ListItemButton onClick={() => navigate("#")}>
-                  Material Status
-                </ListItemButton>
-              </ListItem> */}
+                   <ListItem>
+                    <ListItemButton onClick={() => navigate("/logistics")}>
+                      Logistics 
+                    </ListItemButton>
+                  </ListItem>
                   <ListItem>
                     <ListItemButton onClick={() => navigate("/vendor_bill")}>
                       Vendor Bill
@@ -1602,11 +1602,11 @@ function Sidebar() {
                       Purchase Order
                     </ListItemButton>
                   </ListItem>
-                  {/* <ListItem>
-                <ListItemButton onClick={() => navigate("#")}>
-                  Material Status
-                </ListItemButton>
-              </ListItem> */}
+                   <ListItem>
+                    <ListItemButton onClick={() => navigate("/logistics")}>
+                      Logistics 
+                    </ListItemButton>
+                  </ListItem>
                   <ListItem>
                     <ListItemButton onClick={() => navigate("/vendor_bill")}>
                       Vendor Bill
@@ -1794,16 +1794,16 @@ function Sidebar() {
                       Purchase Order
                     </ListItemButton>
                   </ListItem>
-                  {/* <ListItem>
-                <ListItemButton onClick={() => navigate("#")}>
-                  Material Status
-                </ListItemButton>
-              </ListItem>
+                   <ListItem>
+                    <ListItemButton onClick={() => navigate("/logistics")}>
+                      Logistics 
+                    </ListItemButton>
+                  </ListItem>
               <ListItem>
-                <ListItemButton onClick={() => navigate("#")}>
+                <ListItemButton onClick={() => navigate("/vendor_bill")}>
                   Vendor Bill
                 </ListItemButton>
-              </ListItem> */}
+              </ListItem>
                 </List>
               </Toggler>
             </ListItem>
@@ -2358,6 +2358,11 @@ function Sidebar() {
                       Dashboard
                     </ListItemButton>
                   </ListItem>
+                   <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/inspection")}>
+                      Inspection
+                    </ListItemButton>
+                  </ListItem>
                 </List>
               </Toggler>
             </ListItem>
@@ -2706,6 +2711,11 @@ function Sidebar() {
                   <ListItem>
                     <ListItemButton onClick={() => navigate("/eng_dash")}>
                       Dashboard
+                    </ListItemButton>
+                  </ListItem>
+                   <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/inspection")}>
+                      Inspection
                     </ListItemButton>
                   </ListItem>
                 </List>

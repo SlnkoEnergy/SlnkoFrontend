@@ -203,8 +203,6 @@ const handleUomChange = (index, value) => {
             <tr>
               <th>Categories</th>
               <th style={{ textAlign: "left" }}>Scope</th>
-              <th style={{ textAlign: "left" }}>Tentative Quantity</th>
-              <th>UoM</th>
             </tr>
           </thead>
           <tbody>
@@ -225,34 +223,6 @@ const handleUomChange = (index, value) => {
                           handleCheckboxChange(indexInAll, e.target.checked)
                         }
                       />
-                    </td>
-                    <td style={{ textAlign: "center" }}>
-                      <Input
-                        size="sm"
-                        type="number"
-                        placeholder="0"
-                        value={item.quantity || ""}
-                        disabled={!isOpen}
-                        onChange={(e) =>
-                          handleQuantityChange(indexInAll, e.target.value)
-                        }
-                        sx={{ maxWidth: 80 }}
-                      />
-                    </td>
-                    <td>
-                      <Select
-                        size="sm"
-                        placeholder="Select UoM"
-                        value={item.uom || ""}
-                        disabled={!isOpen}
-                        onChange={(e, val) => handleUomChange(indexInAll, val)}
-                      >
-                        {uomOptions.map((u, i) => (
-                          <Option key={i} value={u}>
-                            {u}
-                          </Option>
-                        ))}
-                      </Select>
                     </td>
                   </tr>
                 );

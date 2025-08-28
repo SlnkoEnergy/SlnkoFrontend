@@ -257,7 +257,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                   } else {
                     updated.delete("poStatus");
                   }
-                  updated.set("page", "1"); // Reset to first page when filter changes
+                  updated.set("page", "1"); 
                   return updated;
                 });
               }}
@@ -285,7 +285,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                 } else {
                   updated.delete("status");
                 }
-                updated.set("page", "1"); // reset to first page on filter change
+                updated.set("page", "1"); 
                 return updated;
               });
             }}
@@ -1062,9 +1062,13 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
               <Box
                 component="th"
                 sx={{
-                  padding: 1,
+                   position: "sticky",
+                  top: 0,
+                  background: "#e0e0e0",
+                  zIndex: 2,
+                  borderBottom: "1px solid #ddd",
+                  padding: "8px",
                   textAlign: "left",
-                  borderBottom: "1px solid",
                   fontWeight: "bold",
                 }}
               >
@@ -1098,10 +1102,14 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                     component="th"
                     key={index}
                     sx={{
-                      padding: 1,
-                      textAlign: "left",
-                      borderBottom: "1px solid",
-                      fontWeight: "bold",
+                      position: "sticky",
+                  top: 0,
+                  background: "#e0e0e0",
+                  zIndex: 2,
+                  borderBottom: "1px solid #ddd",
+                  padding: "8px",
+                  textAlign: "left",
+                  fontWeight: "bold",
                     }}
                   >
                     {header}
