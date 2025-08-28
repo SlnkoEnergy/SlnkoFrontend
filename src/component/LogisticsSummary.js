@@ -22,6 +22,9 @@ import {
   Sheet,
   Tooltip,
   Typography,
+  Tabs,
+  TabList,
+  Tab,
 } from "@mui/joy";
 
 import {
@@ -58,7 +61,7 @@ function buildPoCategorySummary(itemsRaw) {
 
   for (const it of items) {
     const po = it?.material_po?.po_number || "-";
-    const category = it?.category_name || "-"; // <-- fixed
+    const category = it?.category_name || "-";
     const key = `${po}|${category}`;
     pairCounts.set(key, (pairCounts.get(key) || 0) + 1);
   }
@@ -86,7 +89,7 @@ function buildPoCategorySummary(itemsRaw) {
 
   return { pairs, grouped, firstLabel, extraCount };
 }
-  
+
 const pageNumbers = (current, total) => {
   const out = [];
   if (current > 2) out.push(1);
@@ -96,16 +99,6 @@ const pageNumbers = (current, total) => {
   if (current < total - 2) out.push("…");
   if (current < total - 1) out.push(total);
   return out;
-};
-
-const dd_mm_yyyy = (d) => {
-  if (!d) return "-";
-  const dt = new Date(d);
-  if (isNaN(dt)) return "-";
-  const dd = String(dt.getDate()).padStart(2, "0");
-  const mm = String(dt.getMonth() + 1).padStart(2, "0");
-  const yyyy = dt.getFullYear();
-  return `${dd} - ${mm} - ${yyyy}`;
 };
 
 // small helper to extract error text
@@ -133,12 +126,11 @@ function StatusCard({ row, onUpdated }) {
   const isLogistic = user?.department === "Logistic";
   const isSuperadmin = user?.role === "superadmin";
 
-  // === VISIBILITY RULES ===
-  // Ready → Out for Delivery: Logistic OR Superadmin can do it
+  // Ready → Out for Delivery: Logistic OR Superadmin
   const showChangeToOfd =
     current === "ready_to_dispatch" && (isLogistic || isSuperadmin);
 
-  // Out for Delivery → Delivered: ONLY Logistic OR Superadmin can see/do it
+  // Out for Delivery → Delivered: Logistic OR Superadmin
   const showMarkDelivered =
     current === "out_for_delivery" && (isLogistic || isSuperadmin);
 
@@ -156,7 +148,7 @@ function StatusCard({ row, onUpdated }) {
       ? "warning"
       : "neutral";
 
-  const dd_mm_yyyy = (d) => {
+  const ddmmyyyy = (d) => {
     if (!d) return "dd - mm - yyyy";
     const dt = new Date(d);
     if (isNaN(dt)) return "dd - mm - yyyy";
@@ -172,9 +164,7 @@ function StatusCard({ row, onUpdated }) {
       await updateStatus({ id: row._id, status: targetStatus, remarks: "" }).unwrap();
       await onUpdated?.();
     } catch (e) {
-      setErrorText(
-        e?.data?.message || e?.error || e?.message || "Failed to update status"
-      );
+      setErrorText(errMsg(e));
     }
   };
 
@@ -214,13 +204,13 @@ function StatusCard({ row, onUpdated }) {
           <Typography level="body-sm" sx={{ minWidth: 130 }}>
             Dispatch Date :
           </Typography>
-          <Typography level="body-sm">{dd_mm_yyyy(row?.dispatch_date)}</Typography>
+          <Typography level="body-sm">{ddmmyyyy(row?.dispatch_date)}</Typography>
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Typography level="body-sm" sx={{ minWidth: 130 }}>
             Delivery Date :
           </Typography>
-          <Typography level="body-sm">{dd_mm_yyyy(row?.delivery_date)}</Typography>
+          <Typography level="body-sm">{ddmmyyyy(row?.delivery_date)}</Typography>
         </Box>
       </Box>
 
@@ -230,7 +220,6 @@ function StatusCard({ row, onUpdated }) {
         </Typography>
       )}
 
-      {/* Actions */}
       {showChangeToOfd && (
         <Button
           size="sm"
@@ -259,41 +248,69 @@ function StatusCard({ row, onUpdated }) {
   );
 }
 
-
 /* ---------------- component ---------------- */
 export default function LogisticsDashboard() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-    const po_number = useState(searchParams.get("po_number") || "");
+
+  // -------- Tabs --------
+  const TAB_LABELS = ["All", "Out for delivery", "Delivered"];
+  const [selectedTab, setSelectedTab] = useState(
+    () => searchParams.get("tab") || "All"
+  );
+
+  // read status from URL so the request query string mirrors it
+  const urlStatus = (searchParams.get("status") || "").trim();
+
+  const mapTabToStatus = (tab) => {
+    switch (tab) {
+      case "Out for delivery":
+      case "Out for Delivery":
+        return "out_for_delivery";
+      case "Delivered":
+        return "delivered";
+      case "All":
+      default:
+        return ""; // no status param for All
+    }
+  };
+
+  // -------- Pagination --------
   const [currentPage, setCurrentPage] = useState(1);
   useEffect(() => {
     const p = parseInt(searchParams.get("page") || "1", 10);
     setCurrentPage(Number.isNaN(p) ? 1 : Math.max(1, p));
   }, [searchParams]);
 
+  // -------- Search & Page Size --------
   const [searchQuery, setSearchQuery] = useState("");
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(
+    () => Number(searchParams.get("pageSize")) || 10
+  );
 
   const [selected, setSelected] = useState([]);
+
+  // Build query args. Only include "status" when it exists in URL.
+  const queryArgs = useMemo(() => {
+    const base = {
+      page: currentPage,
+      pageSize: rowsPerPage,
+      search: searchQuery,
+      po_id: "",
+      po_number: searchParams.get("po_number") || "",
+    };
+    return urlStatus ? { ...base, status: urlStatus } : base;
+  }, [currentPage, rowsPerPage, searchQuery, searchParams, urlStatus]);
 
   const {
     data: resp = {},
     isLoading,
     refetch,
-  } = useGetLogisticsQuery(
-    {
-      page: currentPage,
-      pageSize: rowsPerPage,
-      search: searchQuery,
-      status: "",
-      po_id: "",
-      po_number:searchParams.get("po_number") || "",
-    },
-    {
-      refetchOnFocus: true,
-      refetchOnReconnect: true,
-    }
-  );
+  } = useGetLogisticsQuery(queryArgs, {
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+    refetchOnMountOrArgChange: true, // ensure fetch on arg (status) change
+  });
 
   const rows = useMemo(() => {
     if (Array.isArray(resp)) return resp;
@@ -301,16 +318,15 @@ export default function LogisticsDashboard() {
     return [];
   }, [resp]);
 
-  const totalCount =
-    resp?.total ??
-    resp?.meta?.total ??
-    (Array.isArray(resp?.data) ? resp.data.length : 0);
-
+  const meta = resp?.meta || {};
+  const totalCount = meta.total ?? (Array.isArray(resp?.data) ? resp.data.length : 0);
   const totalPages = Math.max(1, Math.ceil((totalCount || 0) / rowsPerPage));
 
   const handlePageChange = (p) => {
     if (p < 1 || p > totalPages) return;
-    setSearchParams({ page: String(p) });
+    const params = new URLSearchParams(searchParams);
+    params.set("page", String(p));
+    setSearchParams(params);
     setCurrentPage(p);
     setSelected([]);
   };
@@ -325,20 +341,9 @@ export default function LogisticsDashboard() {
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
 
-  const COLS = [
-    "Logistics Code",
-    "Transportation PO",
-    "PO Number with Item",
-    "Vehicle No.",
-    "Transport PO Value",
-    "Total Weight (Ton)",
-    "Status",
-  ];
-  const COL_COUNT = COLS.length + 1;
-
   return (
     <>
-      {/* Search / top controls */}
+      {/* Search */}
       <Box
         sx={{
           marginLeft: { xl: "15%", lg: "18%" },
@@ -359,34 +364,97 @@ export default function LogisticsDashboard() {
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
-              setSearchParams({ page: "1" });
+              const params = new URLSearchParams(searchParams);
+              params.set("page", "1");
+              setSearchParams(params);
               setCurrentPage(1);
             }}
           />
         </FormControl>
+      </Box>
 
-        {/* Rows Per Page (right side) */}
-        <Box
-          sx={{ ml: "auto", display: "flex", alignItems: "flex-end", gap: 1 }}
-        >
-          <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
-            Rows Per Page:
-          </Typography>
-          <Select
-            size="sm"
-            value={String(rowsPerPage)}
-            onChange={(_, v) => {
-              if (!v) return;
-              setRowsPerPage(Number(v));
-              setSearchParams({ page: "1" });
+      {/* Tabs + Rows per page */}
+      <Box
+        display={"flex"}
+        sx={{ marginLeft: { xl: "15%", lg: "18%" } }}
+        justifyContent={"space-between"}
+        width={"full"}
+        alignItems={"center"}
+      >
+        <Box>
+          <Tabs
+            value={selectedTab}
+            onChange={(_, newValue) => {
+              setSelectedTab(newValue);
+
+              const params = new URLSearchParams(searchParams);
+              params.set("tab", newValue);
+              params.set("page", "1");
+
+              const statusValue = mapTabToStatus(newValue);
+              if (statusValue) {
+                // write status for Out for delivery / Delivered
+                params.set("status", statusValue);
+              } else {
+                // remove status for All
+                params.delete("status");
+              }
+
+              setSearchParams(params);
               setCurrentPage(1);
             }}
-            sx={{ minWidth: 80 }}
+            indicatorPlacement="none"
+            sx={{
+              bgcolor: "background.level1",
+              borderRadius: "md",
+              boxShadow: "sm",
+              width: "fit-content",
+            }}
           >
-            <Option value="10">10</Option>
-            <Option value="25">25</Option>
-            <Option value="50">50</Option>
-            <Option value="100">100</Option>
+            <TabList sx={{ gap: 1 }}>
+              {TAB_LABELS.map((label) => (
+                <Tab
+                  key={label}
+                  value={label}
+                  disableIndicator
+                  sx={{
+                    borderRadius: "xl",
+                    fontWeight: "md",
+                    "&.Mui-selected": {
+                      bgcolor: "background.surface",
+                      boxShadow: "sm",
+                    },
+                  }}
+                >
+                  {label}
+                </Tab>
+              ))}
+            </TabList>
+          </Tabs>
+        </Box>
+
+        <Box display="flex" alignItems="center" gap={1} sx={{ padding: "8px 16px" }}>
+          <Typography level="body-sm">Rows Per Page:</Typography>
+          <Select
+            value={rowsPerPage}
+            onChange={(_, newValue) => {
+              if (newValue == null) return;
+              setRowsPerPage(newValue);
+              const params = new URLSearchParams(searchParams);
+              params.set("pageSize", String(newValue));
+              params.set("page", "1");
+              setSearchParams(params);
+              setCurrentPage(1);
+            }}
+            size="sm"
+            variant="outlined"
+            sx={{ minWidth: 80, borderRadius: "md", boxShadow: "sm" }}
+          >
+            {[10, 25, 50, 100].map((v) => (
+              <Option key={v} value={v}>
+                {v}
+              </Option>
+            ))}
           </Select>
         </Box>
       </Box>
@@ -444,7 +512,15 @@ export default function LogisticsDashboard() {
                   onChange={handleSelectAll}
                 />
               </th>
-              {COLS.map((header) => (
+              {[
+                "Logistics Code",
+                "Transportation PO",
+                "PO Number with Item",
+                "Vehicle No.",
+                "Transport PO Value",
+                "Total Weight (Ton)",
+                "Status",
+              ].map((header) => (
                 <th key={header}>{header}</th>
               ))}
             </tr>
@@ -453,10 +529,7 @@ export default function LogisticsDashboard() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td
-                  colSpan={COL_COUNT}
-                  style={{ padding: "8px", textAlign: "center" }}
-                >
+                <td colSpan={8} style={{ padding: "8px", textAlign: "center" }}>
                   <Box
                     sx={{
                       fontStyle: "italic",
@@ -508,9 +581,7 @@ export default function LogisticsDashboard() {
                             underline="none"
                             sx={{ fontWeight: 600, cursor: "pointer" }}
                             onClick={() =>
-                              navigate(
-                                `/logistics-form?mode=edit&id=${row._id}`
-                              )
+                              navigate(`/logistics-form?mode=edit&id=${row._id}`)
                             }
                           >
                             {safe(row.logistic_code)}
@@ -600,8 +671,7 @@ export default function LogisticsDashboard() {
                                       level="body-xs"
                                       sx={{ pl: 1 }}
                                     >
-                                      • {category}{" "}
-                                      {count > 1 ? `(${count})` : ""}
+                                      • {category} {count > 1 ? `(${count})` : ""}
                                     </Typography>
                                   ))}
                                 </Box>
@@ -658,10 +728,7 @@ export default function LogisticsDashboard() {
               })
             ) : (
               <tr>
-                <td
-                  colSpan={COL_COUNT}
-                  style={{ padding: "8px", textAlign: "center" }}
-                >
+                <td colSpan={8} style={{ padding: "8px", textAlign: "center" }}>
                   <Typography fontStyle="italic">No Logistics Found</Typography>
                 </td>
               </tr>
@@ -692,7 +759,9 @@ export default function LogisticsDashboard() {
           Previous
         </Button>
 
-        <Box>Showing {rows.length} results</Box>
+        <Box>
+          Showing {meta?.count ?? rows.length} of {meta?.total ?? rows.length} results
+        </Box>
 
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
