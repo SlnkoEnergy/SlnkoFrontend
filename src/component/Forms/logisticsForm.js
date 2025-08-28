@@ -442,51 +442,55 @@ const AddLogisticForm = () => {
     return fd;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const normalizedItems = items.map((i) => ({
-        material_po: i.po_id,
-        po_item_id: i.po_item_id || null,
-        category_id: i.category_id ?? null,
-        product_name: i.product_name,
-        product_make: i.product_make,
-        uom: i.uom || "",
-        quantity_requested: String(i.quantity_requested || ""),
-        received_qty: String(i.received_qty || ""),
-        quantity_po: String(i.quantity_po || ""),
-        weight: String(i.ton || ""),
-      }));
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const normalizedItems = items.map((i) => ({
+      material_po: i.po_id,
+      po_item_id: i.po_item_id || null,
+      category_id: i.category_id ?? null,
+      product_name: i.product_name,
+      product_make: i.product_make,
+      uom: i.uom || "",
+      quantity_requested: String(i.quantity_requested || ""),
+      received_qty: String(i.received_qty || ""),
+      quantity_po: String(i.quantity_po || ""),
+      weight: String(i.ton || ""),
+    }));
 
-      const payload = {
-        po_id: transportation,
-        vehicle_number: formData.vehicle_number,
-        driver_number: formData.driver_number,
-        total_ton: String(totalWeight),
-        total_transport_po_value: String(vehicleCost),
-        attachment_url: formData.attachment_url, // server ignores/controls this
-        description: formData.description,
-        items: normalizedItems,
-      };
+    const payload = {
+      po_id: transportation,
+      vehicle_number: formData.vehicle_number,
+      driver_number: formData.driver_number,
+      total_ton: String(totalWeight),
+      total_transport_po_value: String(vehicleCost),
+      description: formData.description,
+      items: normalizedItems,
+      // note: attachment_url is controlled by the server; don't send it here
+    };
 
-      if (isEdit && logisticId) {
-        const { attachment_url, ...rest } = payload;
-        const fd = buildUpdateFormData(rest, selectedFiles);
+    if (isEdit && logisticId) {
+      if (selectedFiles.length > 0) {
+        // send multipart only if you actually have new files
+        const fd = buildUpdateFormData(payload, selectedFiles);
         await updateLogistic({ id: logisticId, body: fd }).unwrap();
-        toast.success("Logistic updated successfully");
       } else {
-        await addLogistic(payload).unwrap();
-        toast.success("Logistic entry created successfully");
+        // no files -> send plain JSON so req.body is your payload object
+        await updateLogistic({ id: logisticId, body: payload }).unwrap();
       }
-
-      handleReset();
-    } catch (err) {
-      console.error("Failed to submit logistic:", err);
-      toast.error(
-        isEdit ? "Failed to update logistic" : "Failed to create logistic"
-      );
+      toast.success("Logistic updated successfully");
+    } else {
+      await addLogistic(payload).unwrap();
+      toast.success("Logistic entry created successfully");
     }
-  };
+
+    handleReset();
+  } catch (err) {
+    console.error("Failed to submit logistic:", err);
+    toast.error(isEdit ? "Failed to update logistic" : "Failed to create logistic");
+  }
+};
+
 
   const handleReset = () => {
     setFormData({

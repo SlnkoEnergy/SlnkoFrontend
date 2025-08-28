@@ -23,7 +23,7 @@ import DownloadIcon from "@mui/icons-material/Download";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { Clock, CheckCircle2, AlarmClockMinusIcon } from "lucide-react";
+import { Clock, CheckCircle2, AlarmClockMinusIcon, AlertTriangle } from "lucide-react";
 import CloseIcon from "@mui/icons-material/Close";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -221,6 +221,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     "Ready to Dispatch",
     "Out for Delivery",
     "Partially Delivered",
+    "Short Quantity",
     "Delivered",
   ];
 
@@ -415,7 +416,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         material_ready: "ready_to_dispatch",
         ready_to_dispatch: "out_for_delivery",
         out_for_delivery: "delivered",
-        partially_delivered: "delivered",
+        short_quantity: "delivered",
         delivered: "ready_to_dispatch",
       };
 
@@ -986,7 +987,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       case "out_for_delivery":
         return <Truck size={18} style={{ marginRight: 6 }} />;
       case "partially_delivered":
-        return <Handshake size={18} style={{ marginRight: 6 }} />;
+     return <PackageCheck size={18} style={{ marginRight: 6 }} />; // or any "half" metaphor you like
+   case "short_quantity":
+     return <AlertTriangle size={18} style={{ marginRight: 6 }} />;
       case "delivered":
         return <Handshake size={18} style={{ marginRight: 6 }} />;
       case "etd pending":
@@ -1011,7 +1014,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       case "out_for_delivery":
         return "orange";
       case "partially_delivered":
-        return "#2E7D32";
+     return "#f59e0b"; // amber
+   case "short_quantity":
+     return "#b45309"; // darker amber
       case "delivered":
         return "green";
       case "etd pending":

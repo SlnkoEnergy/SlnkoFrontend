@@ -1,6 +1,7 @@
 // src/components/LogisticsDashboard.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
 
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
@@ -126,11 +127,9 @@ function StatusCard({ row, onUpdated }) {
   const isLogistic = user?.department === "Logistic";
   const isSuperadmin = user?.role === "superadmin";
 
-  // Ready → Out for Delivery: Logistic OR Superadmin
   const showChangeToOfd =
     current === "ready_to_dispatch" && (isLogistic || isSuperadmin);
 
-  // Out for Delivery → Delivered: Logistic OR Superadmin
   const showMarkDelivered =
     current === "out_for_delivery" && (isLogistic || isSuperadmin);
 
@@ -158,13 +157,33 @@ function StatusCard({ row, onUpdated }) {
     return `${dd} - ${mm} - ${yyyy}`;
   };
 
+  // helper: is any received_qty blank?
+  const hasBlankReceivedQty = (r) => {
+    const items = Array.isArray(r?.items) ? r.items : [];
+    return items.some(
+      (it) =>
+        it == null ||
+        it.received_qty == null ||
+        String(it.received_qty).trim() === ""
+    );
+  };
+
   const handleUpdate = async (targetStatus) => {
     setErrorText("");
+
+    // Block Delivered if any received_qty is blank and toast a message
+    if (targetStatus === "delivered" && hasBlankReceivedQty(row)) {
+      toast.error(
+        "Cannot mark as Delivered. One or more items have blank 'Quantity Received'."
+      );
+      return;
+    }
+
     try {
       await updateStatus({ id: row._id, status: targetStatus, remarks: "" }).unwrap();
       await onUpdated?.();
     } catch (e) {
-      setErrorText(errMsg(e));
+      setErrorText(e?.data?.message || e?.error || e?.message || "Failed to update status");
     }
   };
 
@@ -247,6 +266,7 @@ function StatusCard({ row, onUpdated }) {
     </Box>
   );
 }
+
 
 /* ---------------- component ---------------- */
 export default function LogisticsDashboard() {
