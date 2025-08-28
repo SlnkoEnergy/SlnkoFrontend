@@ -424,8 +424,8 @@ function PurchaseReqSummary() {
             onListboxOpenChange={(_e, open) => setCategorySelectOpen(open)} // closes on outside click
             onChange={(_e, newValue) => {
               if (newValue === "__more__") {
-                setCategorySelectOpen(false); // close dropdown
-                setCategoryModalOpen(true); // open modal
+                setCategorySelectOpen(false); 
+                setCategoryModalOpen(true); 
                 return;
               }
               setSelecteditem(newValue || "");
