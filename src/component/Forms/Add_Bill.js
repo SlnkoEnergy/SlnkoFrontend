@@ -73,7 +73,7 @@ export default function VendorBillForm({
   const [historyLoading, setHistoryLoading] = useState(false);
 
   const [serverTotals, setServerTotals] = useState({
-    bill_value: 0, 
+    bill_value: 0,
     gst: 0,
     bill_date: new Date(),
   });
@@ -168,8 +168,6 @@ export default function VendorBillForm({
     setServerDesc(doc.description || "");
     setServerBillNo(doc.billNo || "");
   }, [isEdit, billFetch]);
-  
- 
 
   // totals for THIS bill
   const totals = useMemo(() => {
@@ -411,7 +409,6 @@ export default function VendorBillForm({
         to: nextGst,
       });
     }
-   
 
     if (prevTotal !== nextTotal) {
       numericChanges.push({
@@ -429,7 +426,7 @@ export default function VendorBillForm({
     const prevDesc = (serverDesc || "").trim();
     const nextDesc = (form.description || "").trim();
     const descChanged = prevDesc !== nextDesc;
-    
+
     const prevBillNo = (serverBillNo || "").trim();
     const nextBillNo = (form.billNo || "").trim();
     const billChanged = prevBillNo !== nextBillNo;
@@ -446,7 +443,7 @@ export default function VendorBillForm({
       billChanged,
     };
   }
-  
+
   const onSubmit = async () => {
     if (!form.billNo?.trim()) {
       toast.error("Bill Number is required.");
@@ -494,7 +491,7 @@ export default function VendorBillForm({
           descTo,
           billChanged,
           billFrom,
-          billTo
+          billTo,
         } = buildLogChanges(serverTotals, nextForCompare);
 
         await updateBill({ _id: billId, updatedData: payload }).unwrap();
@@ -802,42 +799,60 @@ export default function VendorBillForm({
                 const { total } = calcLine(l);
                 return (
                   <tr key={l.id}>
-                    <td>
-                      <Input
-                        disabled
-                        variant="plain"
+                    <td style={{ verticalAlign: "top" }}>
+                      <Textarea
+                        minRows={1}
                         size="sm"
+                        variant="plain"
                         placeholder="Category"
                         value={l.Category}
                         onChange={(e) =>
                           updateLine(l.id, "Category", e.target.value)
                         }
+                        disabled
+                        sx={{
+                          whiteSpace: "normal",
+                          wordBreak: "break-word",
+                        }}
                       />
                     </td>
-                    <td>
-                      <Input
-                        variant="plain"
+
+                    <td style={{ verticalAlign: "top" }}>
+                      <Textarea
+                        minRows={1}
                         size="sm"
+                        variant="plain"
                         placeholder="Product Name"
                         value={l.product_name}
                         onChange={(e) =>
                           updateLine(l.id, "product_name", e.target.value)
                         }
                         disabled
+                        sx={{
+                          whiteSpace: "normal",
+                          wordBreak: "break-word",
+                        }}
                       />
                     </td>
-                    <td>
-                      <Input
-                        variant="plain"
+
+                    <td style={{ verticalAlign: "top" }}>
+                      <Textarea
+                        minRows={1}
                         size="sm"
+                        variant="plain"
                         placeholder="Product Make"
                         value={l.product_make}
                         onChange={(e) =>
                           updateLine(l.id, "product_make", e.target.value)
                         }
                         disabled
+                        sx={{
+                          whiteSpace: "normal",
+                          wordBreak: "break-word",
+                        }}
                       />
                     </td>
+
                     <td>
                       <Input
                         variant="plain"
@@ -938,7 +953,10 @@ export default function VendorBillForm({
           <Box
             sx={{ display: "flex", justifyContent: "flex-end", mt: 2, gap: 2 }}
           >
-            <Sheet variant="soft" sx={{ borderRadius: "lg", p: 2, minWidth: 320 }}>
+            <Sheet
+              variant="soft"
+              sx={{ borderRadius: "lg", p: 2, minWidth: 320 }}
+            >
               <Box
                 sx={{
                   display: "grid",
@@ -976,7 +994,10 @@ export default function VendorBillForm({
               </Box>
             </Sheet>
 
-            <Sheet variant="soft" sx={{ borderRadius: "lg", p: 2, minWidth: 320 }}>
+            <Sheet
+              variant="soft"
+              sx={{ borderRadius: "lg", p: 2, minWidth: 320 }}
+            >
               <Box
                 sx={{
                   display: "grid",
@@ -1033,7 +1054,11 @@ export default function VendorBillForm({
       </Box>
 
       <Box ref={feedRef}>
-        <POUpdateFeed items={historyItems} onAddNote={handleAddHistoryNote} compact />
+        <POUpdateFeed
+          items={historyItems}
+          onAddNote={handleAddHistoryNote}
+          compact
+        />
       </Box>
     </Box>
   );

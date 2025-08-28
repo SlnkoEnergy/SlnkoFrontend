@@ -95,8 +95,7 @@ function Eng_Inspection() {
   const [startDate, setStartDate] = useState(initialStartDate);
   const [endDate, setEndDate] = useState(initialEndDate);
   const [dateError, setDateError] = useState("");
-
-  const options = [10, 20, 50, 100];
+  const po_number = searchParams.get("po_number")
 
   // Modal state for status update
   const [openModal, setOpenModal] = useState(false);
@@ -208,7 +207,6 @@ function Eng_Inspection() {
     else params.delete("endDate");
 
     setSearchParams(params, { replace: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, rowsPerPage, debouncedSearch, startDate, endDate]);
 
   // Refetch with filters
@@ -219,6 +217,7 @@ function Eng_Inspection() {
       search: debouncedSearch,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
+      po_number: po_number
     });
 
   // Match API shape
@@ -309,7 +308,7 @@ function Eng_Inspection() {
           <FormLabel>Search here</FormLabel>
           <Input
             size="sm"
-            placeholder="Search by Project Id, Vendor, Category..."
+            placeholder="Search by Inspection Code, Project Id, Vendor, Category, PO Number..."
             startDecorator={<SearchIcon />}
             value={searchQuery}
             onChange={(e) => {
@@ -440,13 +439,14 @@ function Eng_Inspection() {
                 />
               </th>
               {[
+                "Inspection Code",
                 "Project Id",
                 "Item Category",
                 "Item Make",
+                "PO Number",
                 "Vendor",
                 "Inspection Date",
                 "Status",
-                "Action",
               ].map((header, index) => (
                 <th
                   key={index}
@@ -506,7 +506,7 @@ function Eng_Inspection() {
                   const id = row?._id;
                   const projectCode =
                     row?.project_code || row?.projectId || "-";
-
+                  const inspectionCode = row?.inspection_code || "-";
                   const items = Array.isArray(row?.item) ? row.item : [];
 
                   const uniqueCategories = uniqueInOrder(
@@ -544,6 +544,33 @@ function Eng_Inspection() {
                           onChange={() => handleRowSelect(id)}
                           disabled={!id}
                         />
+                      </td>
+
+                      <td
+                        style={{
+                          borderBottom: "1px solid #ddd",
+                          padding: 8,
+                          textAlign: "left",
+                        }}
+                      >
+                        <Chip
+                          variant="outlined"
+                          color="primary"
+                          size="md"
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: 13,
+                            borderRadius: "20px",
+                            cursor: "pointer",
+                          }}
+                          onClick={() =>
+                            navigate(`/inspection_form?mode=view&id=${id}`, {
+                              state: { id, inspectionCode },
+                            })
+                          }
+                        >
+                          {inspectionCode}
+                        </Chip>
                       </td>
 
                       {/* Project Id */}
@@ -604,6 +631,15 @@ function Eng_Inspection() {
                           />
                         </Box>
                       </td>
+                      <td
+                        style={{
+                          borderBottom: "1px solid #ddd",
+                          padding: 8,
+                          textAlign: "left",
+                        }}
+                      >
+                        {row?.po_number}
+                      </td>
 
                       {/* Vendor */}
                       <td
@@ -655,29 +691,6 @@ function Eng_Inspection() {
                         >
                           {status || "-"}
                         </Chip>
-                      </td>
-
-                      {/* Action */}
-                      <td
-                        style={{
-                          borderBottom: "1px solid #ddd",
-                          padding: 8,
-                          textAlign: "left",
-                        }}
-                      >
-                        <Tooltip title="View Inspection" arrow>
-                          <IconButton
-                            size="sm"
-                            variant="soft"
-                            onClick={() =>
-                              navigate(`/inspection_form?mode=view&id=${id}`, {
-                                state: { id, projectCode },
-                              })
-                            }
-                          >
-                            <VisibilityIcon fontSize="sm" />
-                          </IconButton>
-                        </Tooltip>
                       </td>
                     </tr>
                   );
