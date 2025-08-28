@@ -390,6 +390,7 @@ const AddLogisticForm = () => {
       page: d?.pagination?.page || page,
       pageSize: d?.pagination?.pageSize || pageSize,
     };
+    // eslint-disable-next-line
   };
 
   const fetchTransportationPage = async ({
@@ -589,6 +590,100 @@ const AddLogisticForm = () => {
       setFileError(err?.data?.message || "Failed to upload documents");
     }
   };
+
+  /* -------------------------------------------------------------------- */
+  /*  AUTO-FILL Products table when navigated from PurchaseOrderSummary   */
+  /*  (Transportation PO selection remains manual as requested)           */
+  /* -------------------------------------------------------------------- */
+  const seedAppliedRef = useRef(false);
+
+  useEffect(() => {
+    // Only apply once and only in Add mode
+    if (seedAppliedRef.current || !isAdd) return;
+
+    const seed = location.state?.logisticSeed;
+    const pos = Array.isArray(seed?.pos) ? seed.pos : [];
+    if (!pos.length) return;
+
+    seedAppliedRef.current = true;
+
+    (async () => {
+      const rows = [];
+
+      // helper: try to resolve a PO using cache first, then lazy search
+      const findPo = async (s) => {
+        // 1) from already-fetched page
+        let found =
+          (poData?.data || []).find(
+            (p) => p._id === s._id || p.po_number === s.po_number
+          ) || null;
+        if (found) return found;
+
+        // 2) search by po_number
+        if (s.po_number) {
+          const res = await triggerItemPoSearch(
+            { search: s.po_number, page: 1, pageSize: 5 },
+            true
+          );
+          const arr = res?.data?.data || [];
+          found = arr.find((p) => p.po_number === s.po_number) || arr[0] || null;
+          if (found) return found;
+        }
+
+        // 3) search by _id as fallback
+        if (s._id) {
+          const res = await triggerItemPoSearch(
+            { search: s._id, page: 1, pageSize: 5 },
+            true
+          );
+          const arr = res?.data?.data || [];
+          found = arr.find((p) => p._id === s._id) || arr[0] || null;
+        }
+        return found;
+      };
+
+      // build rows exactly like your in-form PO select does
+      for (const s of pos) {
+        const po = await findPo(s);
+        if (!po) continue;
+
+        const productItems =
+          Array.isArray(po.items) && po.items.length > 0 ? po.items : [{}];
+
+        productItems.forEach((prod) => {
+          rows.push({
+            po_id: po._id,
+            po_item_id: prod?._id || null,
+            category_id: prod?.category?._id || null,
+
+            po_number: po.po_number,
+            project_id: po.p_id,
+            vendor: po.vendor || "",
+            category_name: prod?.category?.name || "",
+            uom: prod?.uom || "",
+
+            product_name: prod?.product_name || "",
+            product_make: prod?.make || "",
+            quantity_requested: prod?.quantity || "",
+            quantity_po: "",
+            received_qty: "",
+            ton: "",
+          });
+        });
+      }
+
+      if (rows.length) {
+        setItems(rows); // auto-fill only the Products table
+        setFormData((prev) => ({
+          ...prev,
+          project_code: rows[0]?.project_id || prev.project_code,
+        }));
+      }
+      // NOTE: We intentionally do NOT set "transportation" here.
+      // User will pick Transportation PO manually (as requested).
+    })();
+  }, [isAdd, location.state, poData, triggerItemPoSearch]);
+  /* -------------------------------------------------------------------- */
 
   return (
     <Box
