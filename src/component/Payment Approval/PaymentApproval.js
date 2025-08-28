@@ -155,7 +155,7 @@ function PaymentRequest() {
 
     const { department, role } = user;
     const isInternalManager =
-      (department === "Projects" || department === "Infra") &&
+      department === "Projects" &&
       role === "visitor";
     const isSCMOrAccountsManager =
       (["SCM", "Accounts"].includes(department) && role === "manager") ||
@@ -765,15 +765,13 @@ function PaymentRequest() {
           </Sheet>
         </Modal>
 
-        <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+         <Box display="flex" alignItems="center" gap={1} mt={0.5}>
           <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
             🏢 Vendor:
           </Typography>
-          <Typography
-            sx={{ fontSize: 12, fontWeight: 400, wordBreak: "break-word" }}
-          >
+          <Chip color="danger" size="sm" variant="solid" sx={{ fontSize: 12 }}>
             {vendor}
-          </Typography>
+          </Chip>
         </Box>
 
         {payment_description && (
@@ -925,7 +923,7 @@ function PaymentRequest() {
             </Typography>
           )}
 
-          {(user?.department === "Projects" || user?.department === "Infra") &&
+          {user?.department === "Projects" &&
             user?.role === "visitor" && (
               <Typography level="h2" component="h1">
                 CAM Payment Approval
@@ -1060,7 +1058,7 @@ function PaymentRequest() {
                     value={delaydays || null}
                     onChange={(_, v) => {
                       if (v === "clear") {
-                        setDelaydays(""); // reset to default
+                        setDelaydays("");
                       } else {
                         setDelaydays(v ?? "");
                       }
@@ -1250,8 +1248,7 @@ function PaymentRequest() {
                 justifyContent: "center",
               }}
             >
-              {(user?.department === "Projects" ||
-                user?.department === "Infra") &&
+              {user?.department === "Projects" &&
                 user?.role === "visitor" &&
                 renderFilters?.()}
 
