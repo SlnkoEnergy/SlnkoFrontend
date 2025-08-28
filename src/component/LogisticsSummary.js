@@ -102,6 +102,26 @@ const pageNumbers = (current, total) => {
   return out;
 };
 
+// Compact round "+N" pill (used in two table cells)
+const MorePill = ({ n }) =>
+  n > 0 ? (
+    <Chip
+      size="sm"
+      variant="solid"
+      color="neutral"
+      sx={{
+        px: 0.6,
+        py: 0,
+        lineHeight: 1,
+        borderRadius: "999px",
+        fontWeight: 700,
+        fontSize: "11px",
+      }}
+    >
+      +{n}
+    </Chip>
+  ) : null;
+
 // small helper to extract error text
 const errMsg = (e) =>
   e?.data?.message || e?.error || e?.message || "Failed to update status";
@@ -638,27 +658,14 @@ export default function LogisticsDashboard() {
                         <Box
                           sx={{
                             display: "inline-flex",
-                            gap: 8,
                             alignItems: "center",
+                            gap: 0.5,
                           }}
                         >
-                          <Chip size="sm" variant="soft">
+                          <Typography level="body-sm" fontWeight="md">
                             {firstPO}
-                          </Chip>
-                          {extraPO > 0 && (
-                            <Typography
-                              level="body-xs"
-                              sx={{
-                                px: 0.75,
-                                py: 0.25,
-                                border: "1px solid",
-                                borderColor: "neutral.outlinedBorder",
-                                borderRadius: "sm",
-                              }}
-                            >
-                              +{extraPO} more
-                            </Typography>
-                          )}
+                          </Typography>
+                          <MorePill n={extraPO} />
                         </Box>
                       </Tooltip>
                     </td>
@@ -705,27 +712,14 @@ export default function LogisticsDashboard() {
                         <Box
                           sx={{
                             display: "inline-flex",
-                            gap: 8,
                             alignItems: "center",
+                            gap: 0.5,
                           }}
                         >
                           <Typography level="body-sm">
                             {safe(firstLabel)}
                           </Typography>
-                          {extraCount > 0 && (
-                            <Typography
-                              level="body-xs"
-                              sx={{
-                                px: 0.75,
-                                py: 0.25,
-                                border: "1px solid",
-                                borderColor: "neutral.outlinedBorder",
-                                borderRadius: "sm",
-                              }}
-                            >
-                              +{extraCount} more
-                            </Typography>
-                          )}
+                          <MorePill n={extraCount} />
                         </Box>
                       </Tooltip>
                     </td>
