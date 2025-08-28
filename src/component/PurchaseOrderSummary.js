@@ -22,7 +22,7 @@ import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import { Clock, CheckCircle2, AlarmClockMinusIcon } from "lucide-react";
 import CloseIcon from "@mui/icons-material/Close";
-import { forwardRef, useCallback, useEffect, useMemo, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
 import { ClickAwayListener } from "@mui/base";
@@ -693,8 +693,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     setCurrentPage(page);
   }, [searchParams]);
 
-  // ---------- EXPOSE DATA TO PARENT (POSummary) ----------
-  // This is the key addition so Add Logistics Form can auto-fill its Products table.
+
   useImperativeHandle(
     ref,
     () => ({
