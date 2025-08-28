@@ -13,6 +13,24 @@ const AnimatedNumber = ({ value, duration = 1.2, formattingFn, prefix = "", suff
     }
   }, [value]);
 
+  // const formatNumber = (num) => {
+  //   if (format === "inr") {
+  //     return num.toLocaleString("en-IN", {
+  //       style: "currency",
+  //       currency: "INR",
+  //       minimumFractionDigits: isInteger ? 0 : 2,
+  //       maximumFractionDigits: 2,
+  //     });
+  //   }
+  //   if (format === "number") {
+  //     return num.toLocaleString("en-IN", {
+  //       minimumFractionDigits: isInteger ? 0 : 2,
+  //       maximumFractionDigits: 2,
+  //     });
+  //   }
+  //   return num;
+  // };
+
   return (
     <CountUp
       start={prevValueRef.current}

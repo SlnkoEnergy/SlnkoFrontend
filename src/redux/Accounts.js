@@ -139,6 +139,26 @@ export const AccountsApi = createApi({
       providesTags: ["Accounts"],
     }),
 
+     getExportPaymentHistory: builder.query({
+      async queryFn({ po_number }, _queryApi, _extraOptions, fetchWithBQ) {
+        const result = await fetchWithBQ({
+          url: `accounting/debithistorycsv?po_number=${po_number}`,
+          method: "GET",
+          responseHandler: (response) => response.blob(),
+        });
+
+        if (result.error) return { error: result.error };
+
+        const blob = result.data;
+        const filename =
+          result.meta?.response?.headers
+            ?.get("Content-Disposition")
+            ?.split("filename=")[1] || "payment-history.csv";
+
+        return { data: { blob, filename } };
+      },
+    }),
+
     getPaymentApproved: builder.query({
       query: ({ page = 1, search = "", pageSize = 10 }) =>
         `accounting/approved-payment?page=${page}&search=${search}&pageSize=${pageSize}`,

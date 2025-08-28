@@ -123,7 +123,7 @@ const ProjectBalances = forwardRef((props, ref) => {
       const token = localStorage.getItem("authToken");
 
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}accounting/export-project-balance`,
+        `${process.env.REACT_APP_API_URL}/accounting/export-project-balance`,
         { selectedIds, selectAll },
         {
           responseType: "blob",
@@ -679,11 +679,13 @@ const ProjectBalances = forwardRef((props, ref) => {
                 label: "Total Credit",
                 icon: <IndianRupee size={16} />,
                 key: "totalCreditSum",
+                format: "inr",
               },
               {
                 label: "Total Debit",
                 icon: <ArrowDownUp size={16} />,
                 key: "totalDebitSum",
+                format: "inr",
               },
             ],
             [
@@ -691,11 +693,13 @@ const ProjectBalances = forwardRef((props, ref) => {
                 label: "Total Adjustment",
                 icon: <Scale size={16} />,
                 key: "totalAdjustmentSum",
+                format: "inr",
               },
               {
                 label: "Available Amount (Old)",
                 icon: <Wallet size={16} />,
                 key: "totalAvailableAmount",
+                format: "inr",
               },
             ],
             [
@@ -703,16 +707,19 @@ const ProjectBalances = forwardRef((props, ref) => {
                 label: "Balance with Slnko",
                 icon: <Banknote size={16} />,
                 key: "totalBalanceSlnko",
+                format: "inr",
               },
               {
                 label: "Balance Payable to Vendors",
                 icon: <ShieldCheck size={16} />,
                 key: "totalBalancePayable",
+                format: "inr",
               },
               {
                 label: "Balance Required",
                 icon: <AlertTriangle size={16} />,
                 key: "totalBalanceRequired",
+                format: "inr",
               },
             ],
           ].map((section, sectionIndex) => (
@@ -729,7 +736,7 @@ const ProjectBalances = forwardRef((props, ref) => {
             >
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <tbody>
-                  {section.map(({ label, icon, key, format }, i) => {
+                  {section.map(({ label, icon, key, format, unit }, i) => {
                     const value = paginatedDataTotals?.[key] || 0;
                     const money = isMoneyKey(key);
 

@@ -83,7 +83,7 @@ const PaymentAccountApproval = forwardRef(
 
       const { department, role } = user;
       const isInternalManager =
-        (department === "Projects" || department === "Infra") &&
+        department === "Projects" &&
         role === "visitor";
       const isSCMOrAccountsManager =
         ["SCM", "Accounts"].includes(department) && role === "manager";
