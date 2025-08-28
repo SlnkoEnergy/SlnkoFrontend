@@ -155,7 +155,7 @@ function PaymentRequest() {
 
     const { department, role } = user;
     const isInternalManager =
-      (department === "Projects" || department === "Infra") &&
+      department === "Projects" &&
       role === "visitor";
     const isSCMOrAccountsManager =
       (["SCM", "Accounts"].includes(department) && role === "manager") ||
@@ -923,7 +923,7 @@ function PaymentRequest() {
             </Typography>
           )}
 
-          {(user?.department === "Projects" || user?.department === "Infra") &&
+          {user?.department === "Projects" &&
             user?.role === "visitor" && (
               <Typography level="h2" component="h1">
                 CAM Payment Approval
@@ -1248,8 +1248,7 @@ function PaymentRequest() {
                 justifyContent: "center",
               }}
             >
-              {(user?.department === "Projects" ||
-                user?.department === "Infra") &&
+              {user?.department === "Projects" &&
                 user?.role === "visitor" &&
                 renderFilters?.()}
 
