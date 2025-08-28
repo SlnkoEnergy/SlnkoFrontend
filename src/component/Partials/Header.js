@@ -101,7 +101,6 @@ function Header() {
                     onNotificationClick={(notification) => {
                       const link = notification?.payload?.link;
                       if (link) {
-                        console.log("hello", notification.payload.link);
                         navigate(notification.payload.link);
                       }
 
