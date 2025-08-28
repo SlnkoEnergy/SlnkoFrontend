@@ -61,14 +61,15 @@ const LogisticsForm = () => {
                 color="neutral"
                 href=""
                 sx={{ fontSize: 12, fontWeight: 500 }}
-                onClick={() => navigate("/cam_dash")}
+                onClick={() => navigate("/purchase-order")}
               >
-                CAM
+                SCM
               </Link>
               <Typography
                 color="primary"
+                underline="hover"
                 sx={{ fontWeight: 500, fontSize: 12 }}
-                onClick={() => navigate("/pr_form")}
+                onClick={() => navigate("/purchase-order")}
               >
                 Logistics Form
               </Typography>

@@ -5,13 +5,13 @@ import CssBaseline from "@mui/joy/CssBaseline";
 import Link from "@mui/joy/Link";
 import { CssVarsProvider } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
-import { useRef } from "react";
+import { useRef, useEffect, useState } from "react";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import Sidebar from "../../component/Partials/Sidebar";
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../../component/Partials/Header";
 import PurchaseOrder from "../../component/PurchaseOrderSummary";
+import { toast } from "react-toastify";
 
 function POSummary() {
   const navigate = useNavigate();
@@ -36,6 +36,23 @@ function POSummary() {
     if (poSummaryRef.current) {
       poSummaryRef.current.exportToCSV();
     }
+  };
+
+  // NEW: open logistics with selected PO(s)
+  const handleOpenLogisticsWithSeed = () => {
+    // expects PurchaseOrderSummary to expose getSelectedPOSeed() via useImperativeHandle
+    const seed = poSummaryRef.current?.getSelectedPOSeed?.();
+    const list = seed?.pos || [];
+
+    if (!list.length) {
+      toast.info("Please select at least one PO from the table.");
+      return;
+    }
+
+    // Navigate with seed so AddLogisticForm can auto-fill the Products table
+    navigate("/logistics-form?mode=add", {
+      state: { logisticSeed: seed }, // shape: { pos: [{ _id, po_number }, ...] }
+    });
   };
 
   const allowedUsers = [
@@ -99,10 +116,7 @@ function POSummary() {
               >
                 SCM
               </Link>
-              <Typography
-                color="primary"
-                sx={{ fontWeight: 500, fontSize: 12 }}
-              >
+              <Typography color="primary" sx={{ fontWeight: 500, fontSize: 12 }}>
                 Purchase Order Summary
               </Typography>
             </Breadcrumbs>
@@ -136,28 +150,18 @@ function POSummary() {
                   justifyContent: "center",
                 }}
               >
-                <><Button
-                      color="primary"
-                      size="sm"
-                      onClick={() => navigate("/logistics-form")}
-                    >
-                      Add Logistics Form +
-                    </Button></>
+                <Button color="primary" size="sm" onClick={handleOpenLogisticsWithSeed}>
+                  Add Logistics Form +
+                </Button>
                 {user?.name !== "Gagan Tayal" && (
-                  <>
-                  
-                    <Button
-                      color="primary"
-                      size="sm"
-                      onClick={() => navigate("/add_vendor")}
-                    >
-                      Add Vendor +
-                    </Button>
-                  </>
+                  <Button color="primary" size="sm" onClick={() => navigate("/add_vendor")}>
+                    Add Vendor +
+                  </Button>
                 )}
               </Box>
             )}
           </Box>
+
           <PurchaseOrder ref={poSummaryRef} />
         </Box>
       </Box>

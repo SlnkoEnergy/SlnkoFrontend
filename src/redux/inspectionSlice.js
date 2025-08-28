@@ -18,14 +18,16 @@ export const inspectionApi = createApi({
   tagTypes: ["Inspection"],
   endpoints: (builder) => ({
     getInspections: builder.query({
-      query: ({ page, limit, search, startDate, endDate }) => {
+      query: ({ page, limit, search, startDate, endDate, po_number }) => {
         const params = new URLSearchParams();
         params.set("page", String(page));
         params.set("limit", String(limit));
         params.set("search", search ?? "");
+        params.set("po_number", String(po_number))
 
         if (startDate) params.set("startDate", startDate);
         if (endDate) params.set("endDate", endDate);
+        
 
         return `inspection?${params.toString()}`;
       },

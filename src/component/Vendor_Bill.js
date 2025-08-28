@@ -174,7 +174,7 @@ function VendorBillSummary() {
         const response = await Axios.put(
           "/accepted-by",
           {
-            bill_number: billNumber
+            bill_number: billNumber,
           },
           {
             headers: {
@@ -580,7 +580,7 @@ function VendorBillSummary() {
                       textAlign: "left",
                     }}
                   >
-                    ₹{bill.bill_value}
+                    ₹{Number(bill.bill_value).toFixed(2)}
                   </Box>
 
                   <Box
@@ -591,7 +591,7 @@ function VendorBillSummary() {
                       textAlign: "left",
                     }}
                   >
-                    ₹{bill.total_billed}
+                    ₹{Number(bill.total_billed).toFixed(2)}
                   </Box>
 
                   <Box
@@ -692,10 +692,10 @@ function VendorBillSummary() {
                       textAlign: "left",
                     }}
                   >
-                   <BillingStatusChip
-  status={bill.po_status}
-  balance={(bill.po_value - bill.total_billed).toFixed(2)}
-/>
+                    <BillingStatusChip
+                      status={bill.po_status}
+                      balance={(bill.po_value - bill.total_billed).toFixed(2)}
+                    />
                   </Box>
 
                   <Box

@@ -8,6 +8,9 @@ import {
   Option,
   Select,
   Tooltip,
+  Tabs,
+  TabList,
+  Tab,
 } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
@@ -18,24 +21,19 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import {
-  Calendar,
-  Handshake,
-  PackageCheck,
-  Truck,
-  TruckIcon,
-  User,
-} from "lucide-react";
+import { Calendar, TruckIcon, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-
 import "react-toastify/dist/ReactToastify.css";
 
+import { useGetAllPurchaseRequestQuery } from "../redux/camsSlice";
 import {
-  useGetAllPurchaseRequestQuery,
-  useGetMaterialCategoryQuery,
-} from "../redux/camsSlice";
+  useGetCategoriesNameSearchQuery,
+  useLazyGetCategoriesNameSearchQuery,
+} from "../redux/productsSlice";
 import { Money } from "@mui/icons-material";
+
+import SearchPickerModal from "../component/SearchPickerModal";
 
 function PurchaseReqSummary() {
   const [selected, setSelected] = useState([]);
@@ -45,30 +43,80 @@ function PurchaseReqSummary() {
   const [selectedstatus, setSelectedstatus] = useState("");
   const [selectedpovalue, setSelectedpovalue] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const page = parseInt(searchParams.get("page")) || 1;
+
+  // URL params
+  const page = parseInt(searchParams.get("page") || "1", 10) || 1;
   const search = searchParams.get("search") || "";
   const itemSearch = searchParams.get("itemSearch") || "";
   const poValueSearch = searchParams.get("poValueSearch") || "";
   const statusSearch = searchParams.get("statusSearch") || "";
-  const [createdDateRange, setCreatedDateRange] = useState([null, null]); // [from, to]
-  const [etdDateRange, setEtdDateRange] = useState([null, null]); // [from, to]
-  const formatDate = (date) => {
-    return date ? new Date(date).toISOString().split("T")[0] : "";
+  const createdFromParam = searchParams.get("createdFrom") || "";
+  const createdToParam = searchParams.get("createdTo") || "";
+  const etdFromParam = searchParams.get("etdFrom") || "";
+  const etdToParam = searchParams.get("etdTo") || "";
+  const tab = searchParams.get("tab") || "all"; // "all" | "open"
+  const openPR = tab === "open";
+  const limit = parseInt(searchParams.get("limit") || "10", 10) || 10;
+  const projectId = searchParams.get("projectId") || "";
+
+  const [createdDateRange, setCreatedDateRange] = useState([
+    createdFromParam || null,
+    createdToParam || null,
+  ]);
+  const [etdDateRange, setEtdDateRange] = useState([
+    etdFromParam || null,
+    etdToParam || null,
+  ]);
+
+  // Category UI state
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [categorySelectOpen, setCategorySelectOpen] = useState(false);
+
+  const updateParams = (patch) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      Object.entries(patch).forEach(([k, v]) => {
+        if (v === "" || v == null) next.delete(k);
+        else next.set(k, String(v));
+      });
+      return next;
+    });
   };
 
-  const navigate = useNavigate();
+  // Main PR list query
+  const { data, isLoading } = useGetAllPurchaseRequestQuery(
+    {
+      page,
+      search,
+      itemSearch,
+      poValueSearch,
+      statusSearch,
+      etdFrom: etdDateRange ? etdDateRange[0] || "" : "",
+      etdTo: etdDateRange ? etdDateRange[1] || "" : "",
+      createdFrom: createdDateRange[0] || "",
+      createdTo: createdDateRange[1] || "",
+      open_pr: tab === "open",
+      limit,
+    },
+    {
+      refetchOnMountOrArgChange: true, // <—
+      refetchOnFocus: false,
+      refetchOnReconnect: false,
+    }
+  );
 
-  const { data, isLoading } = useGetAllPurchaseRequestQuery({
-    page,
-    search,
-    itemSearch,
-    poValueSearch,
-    statusSearch,
-    etdFrom: etdDateRange[0] || "",
-    etdTo: etdDateRange[1] || "",
-    createdFrom: createdDateRange[0] || "",
-    createdTo: createdDateRange[1] || "",
-  });
+  // Initial 7 categories (for the Select)
+  const { data: catInitialData, isFetching: isCatInitFetching } =
+    useGetCategoriesNameSearchQuery({
+      page: 1,
+      search: "",
+      limit: 7,
+      pr: openPR,
+      projectId: projectId || "",
+    });
+
+  // Lazy search for categories (modal paging & searching)
+  const [triggerCategorySearch] = useLazyGetCategoriesNameSearchQuery();
 
   useEffect(() => {
     setCurrentPage(page);
@@ -89,17 +137,16 @@ function PurchaseReqSummary() {
 
   const handleSearch = (query) => {
     setSearchQuery(query);
-    setSearchParams({ page: 1, search: query });
+    updateParams({ page: 1, search: query });
   };
 
-  const allItemIds = purchaseRequests?.data?.item;
+  // Select all item ids (guard)
+  const allItemIds =
+    (purchaseRequests || []).map((r) => r?.item?._id).filter(Boolean) || [];
 
   const handleSelectAll = (event) => {
-    if (event.target.checked) {
-      setSelected(allItemIds);
-    } else {
-      setSelected([]);
-    }
+    if (event.target.checked) setSelected(allItemIds);
+    else setSelected([]);
   };
 
   const handleRowSelect = (itemId) => {
@@ -112,205 +159,78 @@ function PurchaseReqSummary() {
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
-      setSearchParams({ page: newPage, search: searchQuery });
+      updateParams({ page: newPage, search: searchQuery, limit });
     }
   };
 
   const getPaginationRange = () => {
     const siblings = 1;
     const pages = [];
-
     if (totalPages <= 5 + siblings * 2) {
       for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else {
       const left = Math.max(currentPage - siblings, 2);
       const right = Math.min(currentPage + siblings, totalPages - 1);
-
       pages.push(1);
       if (left > 2) pages.push("...");
-
       for (let i = left; i <= right; i++) pages.push(i);
-
       if (right < totalPages - 1) pages.push("...");
       pages.push(totalPages);
     }
-
     return pages;
   };
 
-  const { data: materialCategories, isLoading: isMaterialLoading } =
-    useGetMaterialCategoryQuery();
+  const topCategories = (() => {
+    const rows = catInitialData?.data || catInitialData?.rows || [];
+    return rows.map((r) => ({
+      ...r,
+      name: r?.name ?? r?.category ?? r?.make ?? "",
+    }));
+  })();
 
-  const renderFilters = () => {
-    const pr_status = [
-      { value: "ready_to_dispatch", label: "Ready to Dispatch" },
-      { value: "out_for_delivery", label: "Out For Delivery" },
-      { value: "delivered", label: "Delivered" },
-    ];
+  const fetchCategoriesPage = async ({ page, search }) => {
+    try {
+      const res = await triggerCategorySearch(
+        {
+          page: page || 1,
+          search: search || "",
+          limit: 7,
+          pr: openPR,
+          projectId: projectId || "",
+        },
+        true
+      ).unwrap();
 
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 2,
-          alignItems: "center",
-          mb: 2,
-        }}
-      >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>PR Status</FormLabel>
-          <Select
-            value={selectedstatus}
-            onChange={(e, newValue) => {
-              setSelectedstatus(newValue);
-              setCurrentPage(1);
-              setSearchParams({
-                page: 1,
-                search: searchQuery,
-                statusSearch: newValue || "",
-                itemSearch: selecteditem,
-                poValueSearch: selectedpovalue,
-              });
-            }}
-            size="sm"
-            placeholder="Select Status"
-          >
-            <Option value="">All status</Option>
-            {pr_status.map((status) => (
-              <Option key={status.value} value={status.value}>
-                {status.label}
-              </Option>
-            ))}
-          </Select>
-        </FormControl>
+      const rows = (res?.data || []).map((r) => ({
+        ...r,
+        name: r?.name ?? r?.category ?? r?.make ?? "",
+      }));
 
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Item Queue</FormLabel>
-          <Select
-            value={selecteditem}
-            onChange={(e, newValue) => {
-              setSelecteditem(newValue);
-              setCurrentPage(1);
-              setSearchParams({
-                page: 1,
-                search: searchQuery,
-                itemSearch: newValue || "",
-                statusSearch: selectedstatus,
-                poValueSearch: selectedpovalue,
-              });
-            }}
-            size="sm"
-            placeholder="Select Item"
-          >
-            <Option value="">All Items</Option>
-            {materialCategories?.data?.map((item) => (
-              <Option key={item.name} value={item.name}>
-                {item.name}
-              </Option>
-            ))}
-          </Select>
-        </FormControl>
+      const total =
+        res?.pagination?.total ?? res?.total ?? res?.totalCount ?? rows.length;
 
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Created At</FormLabel>
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Input
-              type="date"
-              size="sm"
-              value={createdDateRange[0] || ""}
-              onChange={(e) => {
-                const from = e.target.value;
-                const to = createdDateRange[1];
-                setCreatedDateRange([from, to]);
-                setSearchParams({
-                  page: 1,
-                  search: searchQuery,
-                  itemSearch: selecteditem,
-                  statusSearch: selectedstatus,
-                  poValueSearch: selectedpovalue,
-                  createdFrom: from,
-                  createdTo: to,
-                });
-              }}
-            />
-            <Input
-              type="date"
-              size="sm"
-              value={createdDateRange[1] || ""}
-              onChange={(e) => {
-                const from = createdDateRange[0];
-                const to = e.target.value;
-                setCreatedDateRange([from, to]);
-                setSearchParams({
-                  page: 1,
-                  search: searchQuery,
-                  itemSearch: selecteditem,
-                  statusSearch: selectedstatus,
-                  poValueSearch: selectedpovalue,
-                  createdFrom: from,
-                  createdTo: to,
-                });
-              }}
-            />
-          </Box>
-        </FormControl>
-
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>ETD Date</FormLabel>
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Input
-              type="date"
-              size="sm"
-              value={etdDateRange[0] || ""}
-              onChange={(e) => {
-                const from = e.target.value;
-                const to = etdDateRange[1];
-                setEtdDateRange([from, to]);
-                setSearchParams({
-                  page: 1,
-                  search: searchQuery,
-                  itemSearch: selecteditem,
-                  statusSearch: selectedstatus,
-                  poValueSearch: selectedpovalue,
-                  etdFrom: from,
-                  etdTo: to,
-                });
-              }}
-            />
-            <Input
-              type="date"
-              size="sm"
-              value={etdDateRange[1] || ""}
-              onChange={(e) => {
-                const from = etdDateRange[0];
-                const to = e.target.value;
-                setEtdDateRange([from, to]);
-                setSearchParams({
-                  page: 1,
-                  search: searchQuery,
-                  itemSearch: selecteditem,
-                  statusSearch: selectedstatus,
-                  poValueSearch: selectedpovalue,
-                  etdFrom: from,
-                  etdTo: to,
-                });
-              }}
-            />
-          </Box>
-        </FormControl>
-      </Box>
-    );
+      return { rows, total };
+    } catch (e) {
+      return { rows: [], total: 0 };
+    }
   };
 
-  const RenderPRNo = ({
-    pr_no,
-    createdAt,
-    createdBy,
-    project_id,
-    item_id,
-    pr_id,
-  }) => {
+  const onPickCategory = (row) => {
+    const pickedName = row?.name ?? row?.category ?? row?.make ?? "";
+    setSelecteditem(pickedName);
+    setCurrentPage(1);
+    updateParams({
+      page: 1,
+      search: searchQuery,
+      itemSearch: pickedName || "",
+      statusSearch: selectedstatus,
+      poValueSearch: selectedpovalue,
+    });
+    setCategoryModalOpen(false);
+  };
+
+  // ---------- Render helpers ----------
+  const RenderPRNo = ({ pr_no, createdAt, createdBy, pr_id }) => {
     const navigate = useNavigate();
 
     const formattedDate = createdAt
@@ -350,10 +270,10 @@ function PurchaseReqSummary() {
                 }
               }}
               sx={{
-                "--Chip-radius": "9999px", // full pill
-                "--Chip-borderWidth": 0, // no border
-                "--Chip-paddingInline": "10px", // tighter pill
-                "--Chip-minHeight": "22px", // slim height like the image
+                "--Chip-radius": "9999px",
+                "--Chip-borderWidth": 0,
+                "--Chip-paddingInline": "10px",
+                "--Chip-minHeight": "22px",
                 fontWeight: 700,
                 whiteSpace: "nowrap",
                 cursor: isClickable ? "pointer" : "default",
@@ -389,28 +309,21 @@ function PurchaseReqSummary() {
     );
   };
 
-  // helper: pick a stable key
-  // helper: pick a stable display name
   const getItemName = (it) =>
     it?.item_id?.name || it?.other_item_name || it?.name || "(Unnamed item)";
-
-  // normalize for uniqueness (case-insensitive, trimmed)
   const norm = (s) => (s == null ? "" : String(s).trim().toLowerCase());
-
-  // keep only first occurrence of each unique name
   const uniqueByName = (items) => {
     const seen = new Set();
     const out = [];
     const arr = Array.isArray(items)
       ? items.filter(Boolean)
       : [items].filter(Boolean);
-
     for (const it of arr) {
       const name = getItemName(it);
       const key = norm(name);
       if (!seen.has(key)) {
         seen.add(key);
-        out.push({ item: it, name }); // keep both to render later
+        out.push({ item: it, name });
       }
     }
     return out;
@@ -443,11 +356,9 @@ function PurchaseReqSummary() {
   };
 
   const ItemsCell = ({ items }) => {
-    const uniq = uniqueByName(items); // [{ item, name }, ...]
-
+    const uniq = uniqueByName(items);
     if (uniq.length === 0) return <span>-</span>;
     if (uniq.length === 1) return <>{RenderItemCell(uniq[0].item)}</>;
-
     const tooltipContent = (
       <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, py: 0.5 }}>
         {uniq.slice(1).map(({ name }, i) => (
@@ -457,7 +368,6 @@ function PurchaseReqSummary() {
         ))}
       </Box>
     );
-
     return (
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
         <span>{RenderItemCell(uniq[0].item)}</span>
@@ -479,59 +389,265 @@ function PurchaseReqSummary() {
     );
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "ready_to_dispatch":
-        return <PackageCheck size={18} style={{ marginRight: 6 }} />;
-      case "out_for_delivery":
-        return <Truck size={18} style={{ marginRight: 6 }} />;
-      case "delivered":
-        return <Handshake size={18} style={{ marginRight: 6 }} />;
-      default:
-        return null;
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "ready_to_dispatch":
-        return "red";
-      case "out_for_delivery":
-        return "orange";
-      case "delivered":
-        return "green";
-      default:
-        return "error";
-    }
-  };
-
   return (
     <>
-      {/* Search Bar */}
+      {/* SEARCH + ALL FILTERS IN ONE ROW */}
       <Box
         sx={{
           marginLeft: { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 2,
+          maxWidth: { lg: "85%", sm: "100%" },
           display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          "& > *": {
-            minWidth: { xs: "120px", md: "160px" },
-          },
+          alignItems: "flex-end",
+          gap: 2,
+          flexWrap: { xs: "wrap", md: "nowrap" }, // single line on md+, wraps on small
         }}
       >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search</FormLabel>
+        {/* Search */}
+        <FormControl sx={{ flex: 1, minWidth: 300 }} size="sm">
+          <FormLabel>Search here</FormLabel>
           <Input
             size="sm"
-            placeholder="Search by Project Code, Project Name, PR No., Status"
+            placeholder="Search by ProjectId, Customer, Type, or State"
             startDecorator={<SearchIcon />}
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-        {renderFilters()}
+
+        {/* Category (first 7 + Browse all…) */}
+        <FormControl sx={{ minWidth: 240 }} size="sm">
+          <FormLabel>Category Queue</FormLabel>
+          <Select
+            value={selecteditem}
+            placeholder={isCatInitFetching ? "Loading…" : "Select Category"}
+            listboxOpen={categorySelectOpen}
+            onListboxOpenChange={(_e, open) => setCategorySelectOpen(open)} // closes on outside click
+            onChange={(_e, newValue) => {
+              if (newValue === "__more__") {
+                setCategorySelectOpen(false); 
+                setCategoryModalOpen(true); 
+                return;
+              }
+              setSelecteditem(newValue || "");
+              setCurrentPage(1);
+              updateParams({
+                page: 1,
+                search: searchQuery,
+                itemSearch: newValue || "",
+                statusSearch: selectedstatus,
+                poValueSearch: selectedpovalue,
+              });
+            }}
+            size="sm"
+          >
+            <Option value="">All Categories</Option>
+
+            {topCategories.slice(0, 7).map((cat) => (
+              <Option key={cat._id} value={cat.name}>
+                {cat.name}
+              </Option>
+            ))}
+
+            {/* ensure picked value from modal (page 2+) appears in Select */}
+            {selecteditem &&
+              !topCategories
+                .slice(0, 7)
+                .some((c) => c.name === selecteditem) && (
+                <Option key={`picked-${selecteditem}`} value={selecteditem}>
+                  {selecteditem}
+                </Option>
+              )}
+
+            <Option
+              value="__more__"
+              sx={{
+                color: "primary.plainColor",
+                fontWeight: 600,
+                "&:hover": {
+                  bgcolor: "primary.softBg",
+                  color: "primary.solidColor",
+                },
+              }}
+            >
+              Browse all…
+            </Option>
+          </Select>
+        </FormControl>
+
+        {/* Created At */}
+        <FormControl sx={{ minWidth: 260 }} size="sm">
+          <FormLabel>Created At</FormLabel>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Input
+              type="date"
+              size="sm"
+              value={createdDateRange[0] || ""}
+              onChange={(e) => {
+                const from = e.target.value;
+                const to = createdDateRange[1];
+                setCreatedDateRange([from || null, to]);
+                updateParams({
+                  page: 1,
+                  search: searchQuery,
+                  itemSearch: selecteditem,
+                  statusSearch: selectedstatus,
+                  poValueSearch: selectedpovalue,
+                  createdFrom: from || "",
+                  createdTo: to || "",
+                  limit,
+                });
+              }}
+            />
+            <Input
+              type="date"
+              size="sm"
+              value={createdDateRange[1] || ""}
+              onChange={(e) => {
+                const from = createdDateRange[0];
+                const to = e.target.value;
+                setCreatedDateRange([from, to || null]);
+                updateParams({
+                  page: 1,
+                  search: searchQuery,
+                  itemSearch: selecteditem,
+                  statusSearch: selectedstatus,
+                  poValueSearch: selectedpovalue,
+                  createdFrom: from || "",
+                  createdTo: to || "",
+                  limit,
+                });
+              }}
+            />
+          </Box>
+        </FormControl>
+
+        {/* ETD Date */}
+        <FormControl sx={{ minWidth: 260 }} size="sm">
+          <FormLabel>ETD Date</FormLabel>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Input
+              type="date"
+              size="sm"
+              value={etdDateRange[0] || ""}
+              onChange={(e) => {
+                const from = e.target.value;
+                const to = etdDateRange[1];
+                setEtdDateRange([from || null, to]);
+                updateParams({
+                  page: 1,
+                  search: searchQuery,
+                  itemSearch: selecteditem,
+                  statusSearch: selectedstatus,
+                  poValueSearch: selectedpovalue,
+                  etdFrom: from || "",
+                  etdTo: to || "",
+                  limit,
+                });
+              }}
+            />
+            <Input
+              type="date"
+              size="sm"
+              value={etdDateRange[1] || ""}
+              onChange={(e) => {
+                const from = etdDateRange[0];
+                const to = e.target.value;
+                setEtdDateRange([from, to || null]);
+                updateParams({
+                  page: 1,
+                  search: searchQuery,
+                  itemSearch: selecteditem,
+                  statusSearch: selectedstatus,
+                  poValueSearch: selectedpovalue,
+                  etdFrom: from || "",
+                  etdTo: to || "",
+                  limit,
+                });
+              }}
+            />
+          </Box>
+        </FormControl>
+      </Box>
+
+      {/* Tabs + Rows-per-page */}
+      <Box
+        sx={{
+          marginLeft: { xl: "15%", lg: "18%" },
+          maxWidth: { lg: "85%", sm: "100%" },
+          mb: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 2,
+        }}
+      >
+        {/* Tabs */}
+        <Tabs
+          value={tab}
+          onChange={(_e, newValue) => {
+            updateParams({ tab: newValue, page: 1, limit });
+          }}
+          sx={{ width: "fit-content" }}
+        >
+          <TabList
+            sx={{
+              gap: 1,
+              p: 0.5,
+              bgcolor: "background.level1",
+              borderRadius: "xl",
+              width: "fit-content",
+            }}
+          >
+            <Tab
+              value="all"
+              variant={tab === "all" ? "solid" : "soft"}
+              color={tab === "all" ? "primary" : "neutral"}
+              sx={{ borderRadius: "xl", fontWeight: 600, px: 1.5 }}
+            >
+              All
+            </Tab>
+            <Tab
+              value="open"
+              variant={tab === "open" ? "solid" : "soft"}
+              color={tab === "open" ? "primary" : "neutral"}
+              sx={{ borderRadius: "xl", fontWeight: 600, px: 1.5 }}
+            >
+              Open PR
+            </Tab>
+          </TabList>
+        </Tabs>
+
+        {/* Rows per page */}
+        <FormControl size="sm" sx={{ minWidth: 140 }}>
+          <FormLabel>Rows per page</FormLabel>
+          <Select
+            value={String(limit)}
+            onChange={(_e, newValue) => {
+              const newLimit = parseInt(newValue || "10", 10) || 10;
+              updateParams({
+                limit: String(newLimit),
+                page: 1,
+                tab,
+                search: searchQuery || undefined,
+                itemSearch: selecteditem || undefined,
+                statusSearch: selectedstatus || undefined,
+                poValueSearch: selectedpovalue || undefined,
+                createdFrom: createdDateRange[0] || undefined,
+                createdTo: createdDateRange[1] || undefined,
+                etdFrom: etdDateRange[0] || undefined,
+                etdTo: etdDateRange[1] || undefined,
+              });
+            }}
+            size="sm"
+            placeholder="Rows"
+          >
+            {[5, 10, 20, 50, 100].map((n) => (
+              <Option key={n} value={String(n)}>
+                {n}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
       </Box>
 
       {/* Table */}
@@ -556,19 +672,26 @@ function PurchaseReqSummary() {
             <tr>
               <th
                 style={{
+                  position: "sticky",
+                  top: 0,
+                  background: "#e0e0e0",
+                  zIndex: 2,
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
                   textAlign: "left",
+                  fontWeight: "bold",
                 }}
               >
                 <Checkbox
                   size="sm"
                   checked={
-                    selected.length > 0 && selected.length === allItemIds.length
+                    selected?.length > 0 &&
+                    selected.length === allItemIds?.length
                   }
                   onChange={handleSelectAll}
                   indeterminate={
-                    selected.length > 0 && selected.length < allItemIds.length
+                    selected?.length > 0 &&
+                    selected?.length < (allItemIds?.length || 0)
                   }
                 />
               </th>
@@ -576,13 +699,16 @@ function PurchaseReqSummary() {
                 "PR No.",
                 "Project Code",
                 "Category Name",
-                "Status",
                 "PO Number",
                 "PO Value",
               ].map((header, index) => (
                 <th
                   key={index}
                   style={{
+                    position: "sticky",
+                    top: 0,
+                    background: "#e0e0e0",
+                    zIndex: 2,
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
                     textAlign: "left",
@@ -607,7 +733,6 @@ function PurchaseReqSummary() {
             ) : purchaseRequests.length > 0 ? (
               purchaseRequests.map((row) => {
                 const item = row.item;
-
                 return (
                   <tr key={item?._id}>
                     <td
@@ -634,8 +759,6 @@ function PurchaseReqSummary() {
                       <RenderPRNo
                         pr_no={row.pr_no}
                         createdAt={row.createdAt}
-                        project_id={row?.project_id?._id}
-                        item_id={item?.item_id?._id}
                         pr_id={row?._id}
                         createdBy={row?.created_by?.name}
                       />
@@ -676,92 +799,110 @@ function PurchaseReqSummary() {
                         textAlign: "left",
                       }}
                     >
-                      <Box
-                        sx={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          py: 0.5,
-                          borderRadius: "16px",
-                          color: getStatusColor(row?.item?.status),
-                          fontWeight: 600,
-                          fontSize: "1rem",
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        {getStatusIcon(row?.item?.status)}
-                        {row?.item?.status?.replace(/_/g, " ")}
-                      </Box>
-                    </td>
-
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      {row.po_numbers?.length > 0 ? (
-                        <Tooltip
-                          arrow
-                          placement="top"
-                          title={
-                            <Box
-                              sx={{
-                                bgcolor: "primary.softBg",
-                                color: "primary.solidColor",
-                                p: 1,
-                                borderRadius: "sm",
-                                minWidth: "150px",
-                              }}
-                            >
-                              <Typography level="body-sm" fontWeight="md">
-                                PO Numbers:
-                              </Typography>
-                              {row.po_numbers.map((po, idx) => (
-                                <Typography key={idx} level="body-xs">
-                                  • {po}
-                                </Typography>
-                              ))}
-                            </Box>
+                      {Array.isArray(row.po_numbers) &&
+                      row.po_numbers.length > 0 ? (
+                        (() => {
+                          const cleaned = row.po_numbers.map((s) =>
+                            (s ?? "").trim()
+                          );
+                          const allEmpty = cleaned.every((s) => s === "");
+                          if (allEmpty) {
+                            return (
+                              <Chip
+                                size="sm"
+                                variant="soft"
+                                color="warning"
+                                sx={{ fontWeight: 600 }}
+                              >
+                                Coming Soon
+                              </Chip>
+                            );
                           }
-                        >
-                          <Box>
-                            <Chip
-                              size="sm"
-                              variant="soft"
-                              sx={{
-                                position: "relative",
-                                display: "inline-flex",
-                                alignItems: "center",
-                                paddingRight:
-                                  row.po_numbers.length > 1 ? "24px" : "12px",
-                                maxWidth: "200px",
-                                cursor: "pointer",
-                              }}
-                            >
-                              {row.po_numbers[0]}
-                              {row.po_numbers.length > 1 && (
-                                <Avatar
-                                  size="xs"
-                                  variant="solid"
-                                  color="primary"
+                          const numbers = cleaned.filter(Boolean);
+                          if (numbers.length === 0) {
+                            return (
+                              <Chip
+                                size="sm"
+                                variant="soft"
+                                color="warning"
+                                sx={{ fontWeight: 600 }}
+                              >
+                                Coming Soon
+                              </Chip>
+                            );
+                          }
+                          return (
+                            <Tooltip
+                              arrow
+                              placement="top"
+                              title={
+                                <Box
                                   sx={{
-                                    position: "absolute",
-                                    right: 2,
-                                    top: -2,
-                                    fontSize: "10px",
-                                    height: 18,
-                                    width: 20,
-                                    zIndex: 1,
+                                    bgcolor: "primary.softBg",
+                                    color: "primary.solidColor",
+                                    p: 1,
+                                    borderRadius: "sm",
+                                    minWidth: "150px",
                                   }}
                                 >
-                                  +{row.po_numbers.length - 1}
-                                </Avatar>
-                              )}
-                            </Chip>
-                          </Box>
-                        </Tooltip>
+                                  <Typography level="body-sm" fontWeight="md">
+                                    PO Numbers:
+                                  </Typography>
+                                  {numbers.map((po, idx) => (
+                                    <Typography key={idx} level="body-xs">
+                                      • {po}
+                                    </Typography>
+                                  ))}
+                                </Box>
+                              }
+                            >
+                              <Box>
+                                <Chip
+                                  size="sm"
+                                  variant="soft"
+                                  color="primary"
+                                  sx={{
+                                    position: "relative",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    paddingRight:
+                                      numbers.length > 1 ? "24px" : "12px",
+                                    maxWidth: "200px",
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  {numbers[0]}
+                                  {numbers.length > 1 && (
+                                    <Avatar
+                                      size="xs"
+                                      variant="solid"
+                                      color="primary"
+                                      sx={{
+                                        position: "absolute",
+                                        right: 2,
+                                        top: -2,
+                                        fontSize: "10px",
+                                        height: 18,
+                                        width: 20,
+                                      }}
+                                    >
+                                      +{numbers.length - 1}
+                                    </Avatar>
+                                  )}
+                                </Chip>
+                              </Box>
+                            </Tooltip>
+                          );
+                        })()
                       ) : (
-                        "-"
+                        <Chip
+                          size="sm"
+                          variant="soft"
+                          color="neutral"
+                          sx={{ fontWeight: 600 }}
+                        >
+                          PO yet to be raised
+                        </Chip>
                       )}
                     </td>
 
@@ -821,20 +962,20 @@ function PurchaseReqSummary() {
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
-          {getPaginationRange().map((page, idx) =>
-            page === "..." ? (
+          {getPaginationRange().map((p, idx) =>
+            p === "..." ? (
               <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
                 ...
               </Box>
             ) : (
               <IconButton
-                key={page}
+                key={p}
                 size="sm"
-                variant={page === currentPage ? "contained" : "outlined"}
+                variant={p === currentPage ? "contained" : "outlined"}
                 color="neutral"
-                onClick={() => handlePageChange(page)}
+                onClick={() => handlePageChange(p)}
               >
-                {page}
+                {p}
               </IconButton>
             )
           )}
@@ -851,6 +992,19 @@ function PurchaseReqSummary() {
           Next
         </Button>
       </Box>
+
+      {/* Category Search Modal */}
+      <SearchPickerModal
+        open={categoryModalOpen}
+        onClose={() => setCategoryModalOpen(false)}
+        onPick={onPickCategory}
+        title="Select Category"
+        columns={[{ key: "name", label: "Category", width: 320 }]}
+        fetchPage={fetchCategoriesPage}
+        searchKey="name"
+        pageSize={7}
+        backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
+      />
     </>
   );
 }

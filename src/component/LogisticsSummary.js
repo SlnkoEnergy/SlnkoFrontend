@@ -22,6 +22,9 @@ import {
   Sheet,
   Tooltip,
   Typography,
+  Tabs,
+  TabList,
+  Tab,
 } from "@mui/joy";
 
 import {
@@ -72,7 +75,9 @@ function buildPoCategorySummary(itemsRaw) {
   }
 
   pairs.sort((a, b) =>
-    a.po === b.po ? a.category.localeCompare(b.category) : a.po.localeCompare(b.po)
+    a.po === b.po
+      ? a.category.localeCompare(b.category)
+      : a.po.localeCompare(b.po)
   );
   for (const [po, arr] of grouped.entries()) {
     arr.sort((a, b) => a.category.localeCompare(b.category));
@@ -96,25 +101,38 @@ const pageNumbers = (current, total) => {
   return out;
 };
 
-const dd_mm_yyyy = (d) => {
-  if (!d) return "-";
-  const dt = new Date(d);
-  if (isNaN(dt)) return "-";
-  const dd = String(dt.getDate()).padStart(2, "0");
-  const mm = String(dt.getMonth() + 1).padStart(2, "0");
-  const yyyy = dt.getFullYear();
-  return `${dd} - ${mm} - ${yyyy}`;
-};
-
 // small helper to extract error text
 const errMsg = (e) =>
   e?.data?.message || e?.error || e?.message || "Failed to update status";
 
-
 function StatusCard({ row, onUpdated }) {
-  const current = row?.current_status?.status || "ready_to_dispatch";
+  const raw =
+    row?.current_status?.status ??
+    (Array.isArray(row?.status_history) && row.status_history.length
+      ? row.status_history[row.status_history.length - 1]?.status
+      : undefined);
+
+  const current = raw || "ready_to_dispatch";
+
   const [updateStatus, { isLoading }] = useUpdateLogisticStatusMutation();
   const [errorText, setErrorText] = useState("");
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) setUser(JSON.parse(userData));
+  }, []);
+
+  const isLogistic = user?.department === "Logistic";
+  const isSuperadmin = user?.role === "superadmin";
+
+  // Ready → Out for Delivery: Logistic OR Superadmin
+  const showChangeToOfd =
+    current === "ready_to_dispatch" && (isLogistic || isSuperadmin);
+
+  // Out for Delivery → Delivered: Logistic OR Superadmin
+  const showMarkDelivered =
+    current === "out_for_delivery" && (isLogistic || isSuperadmin);
 
   const label =
     current === "delivered"
@@ -124,25 +142,31 @@ function StatusCard({ row, onUpdated }) {
       : "Ready to Dispatch";
 
   const color =
-    current === "delivered" ? "success" : current === "out_for_delivery" ? "warning" : "neutral";
+    current === "delivered"
+      ? "success"
+      : current === "out_for_delivery"
+      ? "warning"
+      : "neutral";
 
-  const changeTo = current === "ready_to_dispatch" ? "out_for_delivery" : "delivered";
-  const changeButtonText =
-    current === "ready_to_dispatch" ? "Change Status to Out for Delivery" : "Mark as Delivered";
-
-  const handleChange = async () => {
-    setErrorText("");
-    try {
-      await updateStatus({ id: row._id, status: changeTo, remarks: "" }).unwrap();
-      onUpdated?.(); // refetch so dispatch_date / delivery_date update from backend
-    } catch (e) {
-      console.error("update status failed:", e);
-      setErrorText(e?.data?.message || e?.error || e?.message || "Failed to update status");
-    }
+  const ddmmyyyy = (d) => {
+    if (!d) return "dd - mm - yyyy";
+    const dt = new Date(d);
+    if (isNaN(dt)) return "dd - mm - yyyy";
+    const dd = String(dt.getDate()).padStart(2, "0");
+    const mm = String(dt.getMonth() + 1).padStart(2, "0");
+    const yyyy = dt.getFullYear();
+    return `${dd} - ${mm} - ${yyyy}`;
   };
 
-  const dispatchDate = row?.dispatch_date ? dd_mm_yyyy(row.dispatch_date) : "dd - mm - yyyy";
-  const deliveryDate = row?.delivery_date ? dd_mm_yyyy(row.delivery_date) : "dd - mm - yyyy";
+  const handleUpdate = async (targetStatus) => {
+    setErrorText("");
+    try {
+      await updateStatus({ id: row._id, status: targetStatus, remarks: "" }).unwrap();
+      await onUpdated?.();
+    } catch (e) {
+      setErrorText(errMsg(e));
+    }
+  };
 
   return (
     <Box
@@ -155,7 +179,7 @@ function StatusCard({ row, onUpdated }) {
         minWidth: 320,
       }}
     >
-      {/* Header like your UI */}
+      {/* Header */}
       <Box
         sx={{
           display: "flex",
@@ -174,19 +198,19 @@ function StatusCard({ row, onUpdated }) {
         </Chip>
       </Box>
 
-      {/* Always show BOTH dates */}
+      {/* Dates */}
       <Box sx={{ display: "grid", rowGap: 0.5, mb: 1 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Typography level="body-sm" sx={{ minWidth: 130 }}>
             Dispatch Date :
           </Typography>
-          <Typography level="body-sm">{dispatchDate}</Typography>
+          <Typography level="body-sm">{ddmmyyyy(row?.dispatch_date)}</Typography>
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Typography level="body-sm" sx={{ minWidth: 130 }}>
             Delivery Date :
           </Typography>
-          <Typography level="body-sm">{deliveryDate}</Typography>
+          <Typography level="body-sm">{ddmmyyyy(row?.delivery_date)}</Typography>
         </Box>
       </Box>
 
@@ -196,44 +220,96 @@ function StatusCard({ row, onUpdated }) {
         </Typography>
       )}
 
-      {current !== "delivered" && (
+      {showChangeToOfd && (
         <Button
           size="sm"
           variant="soft"
-          color={current === "ready_to_dispatch" ? "primary" : "success"}
-          onClick={handleChange}
+          color="primary"
+          onClick={() => handleUpdate("out_for_delivery")}
+          disabled={isLoading}
+          sx={{ mr: 1 }}
+        >
+          {isLoading ? "Updating..." : "Change Status to Out for Delivery"}
+        </Button>
+      )}
+
+      {showMarkDelivered && (
+        <Button
+          size="sm"
+          variant="solid"
+          color="success"
+          onClick={() => handleUpdate("delivered")}
           disabled={isLoading}
         >
-          {isLoading ? "Updating..." : changeButtonText}
+          {isLoading ? "Updating..." : "Mark as Delivered"}
         </Button>
       )}
     </Box>
   );
 }
 
-
 /* ---------------- component ---------------- */
 export default function LogisticsDashboard() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // -------- Tabs --------
+  const TAB_LABELS = ["All", "Out for delivery", "Delivered"];
+  const [selectedTab, setSelectedTab] = useState(
+    () => searchParams.get("tab") || "All"
+  );
+
+  // read status from URL so the request query string mirrors it
+  const urlStatus = (searchParams.get("status") || "").trim();
+
+  const mapTabToStatus = (tab) => {
+    switch (tab) {
+      case "Out for delivery":
+      case "Out for Delivery":
+        return "out_for_delivery";
+      case "Delivered":
+        return "delivered";
+      case "All":
+      default:
+        return ""; // no status param for All
+    }
+  };
+
+  // -------- Pagination --------
   const [currentPage, setCurrentPage] = useState(1);
   useEffect(() => {
     const p = parseInt(searchParams.get("page") || "1", 10);
     setCurrentPage(Number.isNaN(p) ? 1 : Math.max(1, p));
   }, [searchParams]);
 
+  // -------- Search & Page Size --------
   const [searchQuery, setSearchQuery] = useState("");
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(
+    () => Number(searchParams.get("pageSize")) || 10
+  );
 
   const [selected, setSelected] = useState([]);
 
-  const { data: resp = {}, isLoading, refetch } = useGetLogisticsQuery({
-    page: currentPage,
-    pageSize: rowsPerPage,
-    search: searchQuery,
-    status: "",
-    po_id: "",
+  // Build query args. Only include "status" when it exists in URL.
+  const queryArgs = useMemo(() => {
+    const base = {
+      page: currentPage,
+      pageSize: rowsPerPage,
+      search: searchQuery,
+      po_id: "",
+      po_number: searchParams.get("po_number") || "",
+    };
+    return urlStatus ? { ...base, status: urlStatus } : base;
+  }, [currentPage, rowsPerPage, searchQuery, searchParams, urlStatus]);
+
+  const {
+    data: resp = {},
+    isLoading,
+    refetch,
+  } = useGetLogisticsQuery(queryArgs, {
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+    refetchOnMountOrArgChange: true, // ensure fetch on arg (status) change
   });
 
   const rows = useMemo(() => {
@@ -242,14 +318,15 @@ export default function LogisticsDashboard() {
     return [];
   }, [resp]);
 
-  const totalCount =
-    resp?.total ?? resp?.meta?.total ?? (Array.isArray(resp?.data) ? resp.data.length : 0);
-
+  const meta = resp?.meta || {};
+  const totalCount = meta.total ?? (Array.isArray(resp?.data) ? resp.data.length : 0);
   const totalPages = Math.max(1, Math.ceil((totalCount || 0) / rowsPerPage));
 
   const handlePageChange = (p) => {
     if (p < 1 || p > totalPages) return;
-    setSearchParams({ page: String(p) });
+    const params = new URLSearchParams(searchParams);
+    params.set("page", String(p));
+    setSearchParams(params);
     setCurrentPage(p);
     setSelected([]);
   };
@@ -260,22 +337,13 @@ export default function LogisticsDashboard() {
   };
 
   const handleRowSelect = (id) =>
-    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-
-  const COLS = [
-    "Logistics Code",
-    "Transportation PO",
-    "PO Number with Item",
-    "Vehicle No.",
-    "Transport PO Value",
-    "Total Weight (Ton)",
-    "Status",
-  ];
-  const COL_COUNT = COLS.length + 1;
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
 
   return (
     <>
-      {/* Search / top controls */}
+      {/* Search */}
       <Box
         sx={{
           marginLeft: { xl: "15%", lg: "18%" },
@@ -296,32 +364,97 @@ export default function LogisticsDashboard() {
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
-              setSearchParams({ page: "1" });
+              const params = new URLSearchParams(searchParams);
+              params.set("page", "1");
+              setSearchParams(params);
               setCurrentPage(1);
             }}
           />
         </FormControl>
+      </Box>
 
-        {/* Rows Per Page (right side) */}
-        <Box sx={{ ml: "auto", display: "flex", alignItems: "flex-end", gap: 1 }}>
-          <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
-            Rows Per Page:
-          </Typography>
-          <Select
-            size="sm"
-            value={String(rowsPerPage)}
-            onChange={(_, v) => {
-              if (!v) return;
-              setRowsPerPage(Number(v));
-              setSearchParams({ page: "1" });
+      {/* Tabs + Rows per page */}
+      <Box
+        display={"flex"}
+        sx={{ marginLeft: { xl: "15%", lg: "18%" } }}
+        justifyContent={"space-between"}
+        width={"full"}
+        alignItems={"center"}
+      >
+        <Box>
+          <Tabs
+            value={selectedTab}
+            onChange={(_, newValue) => {
+              setSelectedTab(newValue);
+
+              const params = new URLSearchParams(searchParams);
+              params.set("tab", newValue);
+              params.set("page", "1");
+
+              const statusValue = mapTabToStatus(newValue);
+              if (statusValue) {
+                // write status for Out for delivery / Delivered
+                params.set("status", statusValue);
+              } else {
+                // remove status for All
+                params.delete("status");
+              }
+
+              setSearchParams(params);
               setCurrentPage(1);
             }}
-            sx={{ minWidth: 80 }}
+            indicatorPlacement="none"
+            sx={{
+              bgcolor: "background.level1",
+              borderRadius: "md",
+              boxShadow: "sm",
+              width: "fit-content",
+            }}
           >
-            <Option value="10">10</Option>
-            <Option value="25">25</Option>
-            <Option value="50">50</Option>
-            <Option value="100">100</Option>
+            <TabList sx={{ gap: 1 }}>
+              {TAB_LABELS.map((label) => (
+                <Tab
+                  key={label}
+                  value={label}
+                  disableIndicator
+                  sx={{
+                    borderRadius: "xl",
+                    fontWeight: "md",
+                    "&.Mui-selected": {
+                      bgcolor: "background.surface",
+                      boxShadow: "sm",
+                    },
+                  }}
+                >
+                  {label}
+                </Tab>
+              ))}
+            </TabList>
+          </Tabs>
+        </Box>
+
+        <Box display="flex" alignItems="center" gap={1} sx={{ padding: "8px 16px" }}>
+          <Typography level="body-sm">Rows Per Page:</Typography>
+          <Select
+            value={rowsPerPage}
+            onChange={(_, newValue) => {
+              if (newValue == null) return;
+              setRowsPerPage(newValue);
+              const params = new URLSearchParams(searchParams);
+              params.set("pageSize", String(newValue));
+              params.set("page", "1");
+              setSearchParams(params);
+              setCurrentPage(1);
+            }}
+            size="sm"
+            variant="outlined"
+            sx={{ minWidth: 80, borderRadius: "md", boxShadow: "sm" }}
+          >
+            {[10, 25, 50, 100].map((v) => (
+              <Option key={v} value={v}>
+                {v}
+              </Option>
+            ))}
           </Select>
         </Box>
       </Box>
@@ -373,11 +506,21 @@ export default function LogisticsDashboard() {
                 <Checkbox
                   size="sm"
                   checked={rows.length > 0 && selected.length === rows.length}
-                  indeterminate={selected.length > 0 && selected.length < rows.length}
+                  indeterminate={
+                    selected.length > 0 && selected.length < rows.length
+                  }
                   onChange={handleSelectAll}
                 />
               </th>
-              {COLS.map((header) => (
+              {[
+                "Logistics Code",
+                "Transportation PO",
+                "PO Number with Item",
+                "Vehicle No.",
+                "Transport PO Value",
+                "Total Weight (Ton)",
+                "Status",
+              ].map((header) => (
                 <th key={header}>{header}</th>
               ))}
             </tr>
@@ -386,7 +529,7 @@ export default function LogisticsDashboard() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={COL_COUNT} style={{ padding: "8px", textAlign: "center" }}>
+                <td colSpan={8} style={{ padding: "8px", textAlign: "center" }}>
                   <Box
                     sx={{
                       fontStyle: "italic",
@@ -407,12 +550,16 @@ export default function LogisticsDashboard() {
                 const firstPO = poNumbers[0] || "-";
                 const extraPO = Math.max(0, poNumbers.length - 1);
 
-                const { grouped, firstLabel, extraCount } = buildPoCategorySummary(row.items);
+                const { grouped, firstLabel, extraCount } =
+                  buildPoCategorySummary(row.items);
 
                 const totalWeight =
                   row?.total_ton ??
                   (Array.isArray(row.items)
-                    ? row.items.reduce((sum, it) => sum + (Number(it.weight) || 0), 0)
+                    ? row.items.reduce(
+                        (sum, it) => sum + (Number(it.weight) || 0),
+                        0
+                      )
                     : "-");
 
                 return (
@@ -434,9 +581,7 @@ export default function LogisticsDashboard() {
                             underline="none"
                             sx={{ fontWeight: 600, cursor: "pointer" }}
                             onClick={() =>
-                              navigate(
-                                `/logistics-form?mode=edit&id=${row._id}`
-                              )
+                              navigate(`/logistics-form?mode=edit&id=${row._id}`)
                             }
                           >
                             {safe(row.logistic_code)}
@@ -526,8 +671,7 @@ export default function LogisticsDashboard() {
                                       level="body-xs"
                                       sx={{ pl: 1 }}
                                     >
-                                      • {category}{" "}
-                                      {count > 1 ? `(${count})` : ""}
+                                      • {category} {count > 1 ? `(${count})` : ""}
                                     </Typography>
                                   ))}
                                 </Box>
@@ -584,7 +728,7 @@ export default function LogisticsDashboard() {
               })
             ) : (
               <tr>
-                <td colSpan={COL_COUNT} style={{ padding: "8px", textAlign: "center" }}>
+                <td colSpan={8} style={{ padding: "8px", textAlign: "center" }}>
                   <Typography fontStyle="italic">No Logistics Found</Typography>
                 </td>
               </tr>
@@ -615,9 +759,13 @@ export default function LogisticsDashboard() {
           Previous
         </Button>
 
-        <Box>Showing {rows.length} results</Box>
+        <Box>
+          Showing {meta?.count ?? rows.length} of {meta?.total ?? rows.length} results
+        </Box>
 
-        <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
+        <Box
+          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
+        >
           {pageNumbers(currentPage, totalPages).map((v, idx) =>
             v === "…" ? (
               <Typography key={`dots-${idx}`} level="body-sm" sx={{ px: 1 }}>

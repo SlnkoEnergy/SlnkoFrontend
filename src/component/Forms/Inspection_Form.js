@@ -51,6 +51,7 @@ export default function InspectionForm({
   onClose,
   vendorName = "",
   projectCode = "",
+  po_number = "",
   items = [],
   onSubmit,
   defaultMode = "online",
@@ -212,6 +213,7 @@ export default function InspectionForm({
     setFileError("");
     setOpenModal(true);
   };
+  
 
   const handleSubmit = async () => {
     if (!datetime) return alert("Inspection date & time is required.");
@@ -223,6 +225,7 @@ export default function InspectionForm({
     const payload = {
       vendor: vendorName || "",
       project_code: projectCode || "",
+      po_number: po_number || "",
       items: createItems.map((it, idx) => ({
         sl: idx + 1,
         category_id: it.productCategoryId || null,
@@ -234,7 +237,7 @@ export default function InspectionForm({
       })),
       totals: { lines: createItems.length, total_qty: totalQty },
       inspection: {
-        datetime, // yyyy-MM-ddTHH:mm (local)
+        datetime, 
         mode,
         location: mode === "offline" ? locationText : "",
         contact_person: contactPerson,
@@ -448,7 +451,11 @@ export default function InspectionForm({
                 rows.map((r, idx) => (
                   <tr key={idx}>
                     <td>{idx + 1}</td>
-                    <td>{isView ? r.category_id?.name: r.productCategoryName || "-"}</td>
+                    <td>
+                      {isView
+                        ? r.category_id?.name
+                        : r.productCategoryName || "-"}
+                    </td>
                     <td>{r.product_name || r.productName || "-"}</td>
                     <td>{r.description || r.briefDescription || "-"}</td>
                     <td>{r.product_make || r.makeQ || r.make || "-"}</td>
@@ -544,7 +551,7 @@ export default function InspectionForm({
                     </ListItemDecorator>
                     <ListItemContent>
                       <Typography level="body-sm" fontWeight="lg">
-                        {humanName(h.by) || humanName(h.updated_by) || "System"}
+                        {humanName(h.user_id?.name) || "System"}
                       </Typography>
                       <Typography
                         level="body-xs"
@@ -784,8 +791,7 @@ function statusColor(status) {
   if (!status) return "neutral";
   const s = String(status).toLowerCase();
   if (["requested"].includes(s)) return "primary";
-  if (["approved"].includes(s))
-    return "success";
+  if (["approved"].includes(s)) return "success";
   if (["failed"].includes(s)) return "danger";
   return "neutral";
 }

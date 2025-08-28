@@ -8,7 +8,6 @@ import Typography from "@mui/joy/Typography";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import Sidebar from "../../component/Partials/Sidebar";
 import Header from "../../component/Partials/Header";
-import { useNavigate } from "react-router-dom";
 import PurchaseReqSummary from "../../component/PurchaseReqSummary";
 
 function PurchaseRequestSheet() {
@@ -92,7 +91,7 @@ function PurchaseRequestSheet() {
             }}
           >
             <Typography level="h2" component="h1">
-              Purchase Request Dashboard
+              Purchase Request
             </Typography>
             <Box
               sx={{

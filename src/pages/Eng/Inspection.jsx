@@ -78,7 +78,7 @@ function Inspection() {
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Inspection
+                Material Inspection
               </Typography>
             </Breadcrumbs>
           </Box>
@@ -96,7 +96,7 @@ function Inspection() {
             }}
           >
             <Typography level="h2" component="h1">
-              Inspection
+              Material Inspection
             </Typography>
           </Box>
           <Eng_Inspection />
