@@ -47,63 +47,63 @@ const ScopeDetail = ({ project_id, project_code }) => {
     }
   }, [getScope]);
 
-const handleCheckboxChange = (index, checked) => {
-  const item = itemsState[index];
-  if (!item) return;
+  const handleCheckboxChange = (index, checked) => {
+    const item = itemsState[index];
+    if (!item) return;
 
-  if (item.pr_status && !checked) {
-    toast.error("Purchase request has been made for this Item");
-    return;
-  }
+    if (item.pr_status && !checked) {
+      toast.error("Purchase request has been made for this Item");
+      return;
+    }
 
-  const updatedScope = checked ? "slnko" : "client";
-  const idKey = item.item_id; // ✅ use item_id as the unique identifier
+    const updatedScope = checked ? "slnko" : "client";
+    const idKey = item.item_id; // ✅ use item_id as the unique identifier
 
-  setItemsState((prev) =>
-    prev.map((it) =>
-      it.item_id === idKey ? { ...it, scope: updatedScope } : it
-    )
-  );
-};
+    setItemsState((prev) =>
+      prev.map((it) =>
+        it.item_id === idKey ? { ...it, scope: updatedScope } : it
+      )
+    );
+  };
 
-const handleQuantityChange = (index, value) => {
-  const nameKey = itemsState[index]?.name; // ✅ use name
-  setItemsState((prev) =>
-    prev.map((item) =>
-      item.name === nameKey ? { ...item, quantity: value } : item
-    )
-  );
-};
+  const handleQuantityChange = (index, value) => {
+    const nameKey = itemsState[index]?.name; // ✅ use name
+    setItemsState((prev) =>
+      prev.map((item) =>
+        item.name === nameKey ? { ...item, quantity: value } : item
+      )
+    );
+  };
 
-const handleUomChange = (index, value) => {
-  const nameKey = itemsState[index]?.name; // ✅ use name
-  setItemsState((prev) =>
-    prev.map((item) => (item.name === nameKey ? { ...item, uom: value } : item))
-  );
-};
-
+  const handleUomChange = (index, value) => {
+    const nameKey = itemsState[index]?.name; // ✅ use name
+    setItemsState((prev) =>
+      prev.map((item) =>
+        item.name === nameKey ? { ...item, uom: value } : item
+      )
+    );
+  };
 
   const handleSubmit = async () => {
-  try {
-    const payload = {
-      items: itemsState.map((item) => ({
-        item_id: item.item_id,
-        name: item.name,
-        type: item.type,
-       category: item.category,
-        scope: item.scope || "client",
-        quantity: item.quantity || "",
-        uom: item.uom || "",
-      })),
-    };
-    await updateScope({ project_id, payload }).unwrap();
-    toast.success("Scope updated successfully");
-    refetch();
-  } catch (err) {
-    toast.error("Failed to update scope");
-  }
-};
-
+    try {
+      const payload = {
+        items: itemsState.map((item) => ({
+          item_id: item.item_id,
+          name: item.name,
+          type: item.type,
+          category: item.category,
+          scope: item.scope || "client",
+          quantity: item.quantity || "",
+          uom: item.uom || "",
+        })),
+      };
+      await updateScope({ project_id, payload }).unwrap();
+      toast.success("Scope updated successfully");
+      refetch();
+    } catch (err) {
+      toast.error("Failed to update scope");
+    }
+  };
 
   const handleChipClick = (event) => {
     if (!isOpen) {
@@ -156,15 +156,14 @@ const handleUomChange = (index, value) => {
   const supplyItems = itemsState.filter((item) => item.type === "supply");
   const executionItems = itemsState.filter((item) => item.type === "execution");
 
- const groupedItems = itemsState.reduce(
-   (acc, item) => {
-     if (item.type === "supply") acc.supply.push(item);
-     else if (item.type === "execution") acc.execution.push(item);
-     return acc;
-   },
-   { supply: [], execution: [] }
- );
-
+  const groupedItems = itemsState.reduce(
+    (acc, item) => {
+      if (item.type === "supply") acc.supply.push(item);
+      else if (item.type === "execution") acc.execution.push(item);
+      return acc;
+    },
+    { supply: [], execution: [] }
+  );
 
   const renderTable = (title, items) => (
     <Box sx={{ mb: 4 }}>
@@ -203,8 +202,6 @@ const handleUomChange = (index, value) => {
             <tr>
               <th>Categories</th>
               <th style={{ textAlign: "left" }}>Scope</th>
-              <th style={{ textAlign: "left" }}>Tentative Quantity</th>
-              <th>UoM</th>
             </tr>
           </thead>
           <tbody>
@@ -226,41 +223,13 @@ const handleUomChange = (index, value) => {
                         }
                       />
                     </td>
-                    <td style={{ textAlign: "center" }}>
-                      <Input
-                        size="sm"
-                        type="number"
-                        placeholder="0"
-                        value={item.quantity || ""}
-                        disabled={!isOpen}
-                        onChange={(e) =>
-                          handleQuantityChange(indexInAll, e.target.value)
-                        }
-                        sx={{ maxWidth: 80 }}
-                      />
-                    </td>
-                    <td>
-                      <Select
-                        size="sm"
-                        placeholder="Select UoM"
-                        value={item.uom || ""}
-                        disabled={!isOpen}
-                        onChange={(e, val) => handleUomChange(indexInAll, val)}
-                      >
-                        {uomOptions.map((u, i) => (
-                          <Option key={i} value={u}>
-                            {u}
-                          </Option>
-                        ))}
-                      </Select>
-                    </td>
                   </tr>
                 );
               })
             ) : (
               <tr>
                 <td
-                  colSpan={4}
+                  colSpan={2}
                   style={{ textAlign: "center", padding: "10px" }}
                 >
                   No items found

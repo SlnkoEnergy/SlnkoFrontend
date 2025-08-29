@@ -24,7 +24,6 @@ import CloudUpload from "@mui/icons-material/CloudUpload";
 import UploadFile from "@mui/icons-material/UploadFile";
 import InsertDriveFile from "@mui/icons-material/InsertDriveFile";
 import OpenInNew from "@mui/icons-material/OpenInNew";
-import HistoryIcon from "@mui/icons-material/History";
 
 import { useLocation, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -36,10 +35,12 @@ import {
   useLazyGetPoBasicQuery,
   useGetLogisticByIdQuery,
   useUpdateLogisticMutation,
+  useLazyGetLogisticsHistoryQuery,
+  useAddLogisticHistoryMutation,
 } from "../../redux/purchasesSlice";
 import SearchPickerModal from "../SearchPickerModal";
+import POUpdateFeed from "../PoUpdateForm";
 
-/* ---------------- constants (match Inspection UX) ---------------- */
 const ATTACH_ACCEPT = [
   "image/png",
   "image/jpeg",
@@ -69,6 +70,11 @@ function formatDateTime(value) {
   if (Number.isNaN(d.getTime())) return "—";
   return d.toLocaleString();
 }
+
+const rid = () =>
+  typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `id_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
 const AddLogisticForm = () => {
   const [formData, setFormData] = useState({
@@ -105,7 +111,6 @@ const AddLogisticForm = () => {
   const [totalWeight, setTotalWeight] = useState(0);
   const [vehicleCost, setVehicleCost] = useState(0);
 
-  // old file chips for "create" flow (kept for add mode submit)
   const [selectedFiles, setSelectedFiles] = useState([]);
   const fileInputRef = useRef(null);
   const [fileInputKey, setFileInputKey] = useState(0);
@@ -116,7 +121,7 @@ const AddLogisticForm = () => {
   const [uploadFiles, setUploadFiles] = useState([]);
   const [fileError, setFileError] = useState("");
   const [dragging, setDragging] = useState(false);
-  const [hasUploadedOnce, setHasUploadedOnce] = useState(false); // disable after one upload
+  const [hasUploadedOnce, setHasUploadedOnce] = useState(false);
 
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -141,7 +146,8 @@ const AddLogisticForm = () => {
     setUser(userData ? JSON.parse(userData) : null);
   }, []);
 
-  const canShow = user?.department === "Logistic" || user?.role === "superadmin";
+  const canShow =
+    user?.department === "Logistic" || user?.role === "superadmin";
 
   useEffect(() => {
     const sum = items.reduce(
@@ -161,12 +167,12 @@ const AddLogisticForm = () => {
   const [updateLogistic, { isLoading: isUpdating }] =
     useUpdateLogisticMutation();
 
-  const {
-    data: byIdData,
-    refetch: refetchLogistic,
-  } = useGetLogisticByIdQuery(logisticId, {
-    skip: !logisticId || isAdd,
-  });
+  const { data: byIdData, refetch: refetchLogistic } = useGetLogisticByIdQuery(
+    logisticId,
+    {
+      skip: !logisticId || isAdd,
+    }
+  );
 
   // existing attachments + optional history (if backend sends it)
   const existingAttachments = useMemo(() => {
@@ -184,6 +190,25 @@ const AddLogisticForm = () => {
   const disableUpload =
     isView || hasUploadedOnce || existingAttachments.length > 0;
 
+  /* -------------------- NEW: History feed states -------------------- */
+  const [historyItems, setHistoryItems] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [triggerGetLogisticsHistory] = useLazyGetLogisticsHistoryQuery();
+  const [addLogisticHistory] = useAddLogisticHistoryMutation();
+  const feedRef = useRef(null);
+  const scrollToFeed = () => {
+    if (feedRef.current) {
+      feedRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  // Baseline to detect changes (amounts/description)
+  const [serverBaseline, setServerBaseline] = useState({
+    total_ton: 0,
+    total_transport_po_value: 0,
+    description: "",
+  });
+
   // Prefill in edit/view
   useEffect(() => {
     if (!byIdData?.data || !(isEdit || isView)) return;
@@ -199,6 +224,13 @@ const AddLogisticForm = () => {
       total_ton: doc.total_ton || "",
       total_transport_po_value: Number(doc.total_transport_po_value || 0),
     }));
+
+    // Baseline for change logs
+    setServerBaseline({
+      total_ton: Number(doc.total_ton || 0),
+      total_transport_po_value: Number(doc.total_transport_po_value || 0),
+      description: doc.description || "",
+    });
 
     const poIds = Array.isArray(doc.po_id)
       ? doc.po_id
@@ -236,7 +268,7 @@ const AddLogisticForm = () => {
           category_id:
             typeof it.category_id === "object"
               ? it.category_id?._id || null
-              : it.category_id ?? null,
+              : (it.category_id ?? null),
           category_name: it?.category_name || it?.category_id?.name || "",
           product_make: it.product_make || "",
           uom: it.uom || "",
@@ -277,6 +309,53 @@ const AddLogisticForm = () => {
     );
     setTotalWeight(sumWeight);
   }, [byIdData, isEdit, isView]);
+
+  // Fetch history in edit/view
+  const mapDocToFeedItem = (doc) => {
+    const base = {
+      id: String(doc._id || rid()),
+      ts: doc.createdAt || doc.updatedAt || new Date().toISOString(),
+      user: { name: doc?.createdBy?.name || doc?.createdBy || "System" },
+    };
+
+    if (doc.event_type === "note") {
+      return { ...base, kind: "note", note: doc.message || "" };
+    }
+
+    if (doc.event_type === "status") {
+      return {
+        ...base,
+        kind: "status",
+        statusFrom: doc?.from || doc?.statusFrom || "",
+        statusTo: doc?.to || doc?.statusTo || "",
+        title: doc.message || "Status updated",
+      };
+    }
+    return { ...base, kind: "other", title: doc.message || "" };
+  };
+
+  const fetchLogisticsHistory = async () => {
+    if (!logisticId) return;
+    try {
+      setHistoryLoading(true);
+      const data = await triggerGetLogisticsHistory({
+        subject_type: "logistic",
+        subject_id: logisticId,
+      }).unwrap();
+      const rows = Array.isArray(data?.data) ? data.data : [];
+      setHistoryItems(rows.map(mapDocToFeedItem));
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to load logistics history");
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isEdit || isView) fetchLogisticsHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [logisticId, isEdit, isView]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -437,12 +516,52 @@ const AddLogisticForm = () => {
     const fd = new FormData();
     for (const f of files || []) if (f) fd.append("files", f);
     fd.append("meta", JSON.stringify(meta)); // e.g. { upload_remarks: "..." }
-    // Optionally include an action hint if your backend wants it:
     // fd.append("action", "append_attachments");
     return fd;
   };
 
- const handleSubmit = async (e) => {
+  // Build change logs for amount-like fields and description
+  function buildLogChanges(prev, next) {
+    const numericChanges = [];
+
+    const prevTon = Number(prev.total_ton ?? 0);
+    const prevTransportVal = Number(prev.total_transport_po_value ?? 0);
+
+    const nextTon = Number(next.total_ton ?? 0);
+    const nextTransportVal = Number(next.total_transport_po_value ?? 0);
+
+    if (prevTon !== nextTon) {
+      numericChanges.push({
+        path: "total_ton",
+        label: "Total Weight (Ton)",
+        from: prevTon,
+        to: nextTon,
+      });
+    }
+
+    if (prevTransportVal !== nextTransportVal) {
+      numericChanges.push({
+        path: "total_transport_po_value",
+        label: "Transport PO Total",
+        from: prevTransportVal,
+        to: nextTransportVal,
+      });
+    }
+
+    const prevDesc = (prev.description || "").trim();
+    const nextDesc = (next.description || "").trim();
+    const descChanged = prevDesc !== nextDesc;
+
+    return {
+      numericChanges,
+      descChanged,
+      descFrom: prevDesc,
+      descTo: nextDesc,
+    };
+  }
+
+// REPLACE your current handleSubmit with this
+const handleSubmit = async (e) => {
   e.preventDefault();
   try {
     const normalizedItems = items.map((i) => ({
@@ -464,23 +583,79 @@ const AddLogisticForm = () => {
       driver_number: formData.driver_number,
       total_ton: String(totalWeight),
       total_transport_po_value: String(vehicleCost),
+      attachment_url: formData.attachment_url,
       description: formData.description,
       items: normalizedItems,
-      // note: attachment_url is controlled by the server; don't send it here
     };
 
     if (isEdit && logisticId) {
+      // UPDATE
       if (selectedFiles.length > 0) {
-        // send multipart only if you actually have new files
         const fd = buildUpdateFormData(payload, selectedFiles);
         await updateLogistic({ id: logisticId, body: fd }).unwrap();
       } else {
-        // no files -> send plain JSON so req.body is your payload object
         await updateLogistic({ id: logisticId, body: payload }).unwrap();
       }
+
+      // Optional: write an update entry to history
+      try {
+        const { numericChanges, descChanged, descFrom, descTo } = buildLogChanges(
+          serverBaseline,
+          {
+            total_ton: Number(totalWeight),
+            total_transport_po_value: Number(vehicleCost),
+            description: formData.description,
+          }
+        );
+
+        if (numericChanges.length || descChanged) {
+          const userData = localStorage.getItem("userDetails");
+          const userObj = userData ? JSON.parse(userData) : null;
+          await addLogisticHistory({
+            subject_type: "logistic",
+            subject_id: logisticId,
+            event_type: "update",
+            message: "Logistic updated",
+            createdBy: { name: userObj?.name || "User", user_id: userObj?._id },
+            changes: [
+              ...numericChanges,
+              ...(descChanged
+                ? [{ path: "description", label: "Description", from: descFrom, to: descTo }]
+                : []),
+            ],
+            attachments: [],
+          }).unwrap();
+        }
+      } catch {
+        /* non-blocking */
+      }
+
       toast.success("Logistic updated successfully");
+      await refetchLogistic();
     } else {
-      await addLogistic(payload).unwrap();
+      // CREATE
+      const res = await addLogistic(payload).unwrap();
+      const createdId = res?.data?._id || res?._id || res?.id || res?.data?.id || null;
+
+      // Optional: write a creation note to history
+      if (createdId) {
+        try {
+          const userData = localStorage.getItem("userDetails");
+          const userObj = userData ? JSON.parse(userData) : null;
+          await addLogisticHistory({
+            subject_type: "logistic",
+            subject_id: createdId,
+            event_type: "note",
+            message: "Logistic entry created",
+            createdBy: { name: userObj?.name || "User", user_id: userObj?._id },
+            changes: [],
+            attachments: [],
+          }).unwrap();
+        } catch {
+          /* non-blocking */
+        }
+      }
+
       toast.success("Logistic entry created successfully");
     }
 
@@ -490,6 +665,7 @@ const AddLogisticForm = () => {
     toast.error(isEdit ? "Failed to update logistic" : "Failed to create logistic");
   }
 };
+
 
 
   const handleReset = () => {
@@ -582,7 +758,7 @@ const AddLogisticForm = () => {
       });
       await updateLogistic({ id: logisticId, body: fd }).unwrap();
 
-      setHasUploadedOnce(true); // disable further uploads (per requirement)
+      setHasUploadedOnce(true);
       setUploadOpen(false);
       setUploadFiles([]);
       setUploadRemarks("");
@@ -595,10 +771,6 @@ const AddLogisticForm = () => {
     }
   };
 
-  /* -------------------------------------------------------------------- */
-  /*  AUTO-FILL Products table when navigated from PurchaseOrderSummary   */
-  /*  (Transportation PO selection remains manual as requested)           */
-  /* -------------------------------------------------------------------- */
   const seedAppliedRef = useRef(false);
 
   useEffect(() => {
@@ -630,7 +802,8 @@ const AddLogisticForm = () => {
             true
           );
           const arr = res?.data?.data || [];
-          found = arr.find((p) => p.po_number === s.po_number) || arr[0] || null;
+          found =
+            arr.find((p) => p.po_number === s.po_number) || arr[0] || null;
           if (found) return found;
         }
 
@@ -689,12 +862,54 @@ const AddLogisticForm = () => {
   }, [isAdd, location.state, poData, triggerItemPoSearch]);
   /* -------------------------------------------------------------------- */
 
+  // Add a free-text Note into Logistics History (optimistic + persist)
+  const handleAddHistoryNote = async (text) => {
+    if (!logisticId) {
+      toast.error("Save or open a logistic first to add notes.");
+      return;
+    }
+    const userData = localStorage.getItem("userDetails");
+    const userObj = userData ? JSON.parse(userData) : null;
+
+    // Optimistic UI
+    setHistoryItems((prev) => [
+      {
+        id: rid(),
+        ts: new Date().toISOString(),
+        user: { name: userObj?.name || "User" },
+        kind: "note",
+        note: text,
+      },
+      ...prev,
+    ]);
+    scrollToFeed();
+
+    try {
+      await addLogisticHistory({
+        subject_type: "logistic",
+        subject_id: logisticId,
+        event_type: "note",
+        message: text,
+        createdBy: {
+          name: userObj?.name || "User",
+          user_id: userObj?._id,
+        },
+        changes: [],
+        attachments: [],
+      }).unwrap();
+      toast.success("Note added");
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to add note");
+    }
+  };
+
   return (
     <Box
       sx={{
         p: 2,
-        maxWidth: 1200,
-        ml: { xs: "0%", lg: "22%" },
+        maxWidth: 1400,
+        ml: { xs: "0%", lg: "12%", xl: "20%" },
         boxShadow: "md",
       }}
     >
@@ -825,7 +1040,11 @@ const AddLogisticForm = () => {
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Chip variant="soft" size="sm" startDecorator={<InsertDriveFile />}>
+                    <Chip
+                      variant="soft"
+                      size="sm"
+                      startDecorator={<InsertDriveFile />}
+                    >
                       Attachments
                     </Chip>
                     <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
@@ -872,9 +1091,14 @@ const AddLogisticForm = () => {
                           href={url}
                           target="_blank"
                           rel="noreferrer"
-                          sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}
+                          sx={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                          }}
                         >
-                          {url.split("/").pop() || `Attachment ${i + 1}`} <OpenInNew />
+                          {url.split("/").pop() || `Attachment ${i + 1}`}{" "}
+                          <OpenInNew />
                         </Typography>
                       </Box>
                     ))}
@@ -915,14 +1139,16 @@ const AddLogisticForm = () => {
             >
               <thead>
                 <tr>
-                  <th style={{ width: "20%" }}>PO Number</th>
+                  <th style={{ width: "18%" }}>PO Number</th>
                   <th style={{ width: "12%" }}>Project ID</th>
                   <th style={{ width: "10%" }}>Vendor</th>
                   <th style={{ width: "15%" }}>Category</th>
-                  <th style={{ width: "15%" }}>Product</th>
+                  <th style={{ width: "18%" }}>Product</th>
                   <th style={{ width: "10%" }}>Make</th>
                   <th style={{ width: "10%" }}>Qty</th>
-                  {canShow && <th style={{ width: "12%" }}>Quantity Received</th>}
+                  {canShow && (
+                    <th style={{ width: "12%" }}>Quantity Received</th>
+                  )}
                   <th style={{ width: "10%" }}>UoM</th>
                   <th style={{ width: "10%" }}>Weight (Ton)</th>
                   <th style={{ width: "60px", textAlign: "center" }}>Action</th>
@@ -933,15 +1159,41 @@ const AddLogisticForm = () => {
                   <tr key={idx}>
                     <td>
                       <Select
-                        variant="plain"
-                        sx={{
-                          width: "100%",
-                          border: "none",
-                          boxShadow: "none",
-                          bgcolor: "transparent",
-                          p: 0,
-                        }}
                         placeholder="Select PO"
+                        classNamePrefix="react-select"
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            minHeight: "32px",
+                          }),
+                          valueContainer: (base) => ({
+                            ...base,
+                            whiteSpace: "normal",
+                            wordBreak: "break-word",
+                            display: "flex",
+                            flexWrap: "wrap",
+                            lineHeight: "1.3",
+                          }),
+                          singleValue: (base) => ({
+                            ...base,
+                            whiteSpace: "normal",
+                            wordBreak: "break-word",
+                            overflow: "visible",
+                            textOverflow: "clip",
+                            lineHeight: "1.3",
+                          }),
+                          option: (base) => ({
+                            ...base,
+                            whiteSpace: "normal",
+                            wordBreak: "break-word",
+                            lineHeight: "1.3",
+                          }),
+                          menu: (base) => ({
+                            ...base,
+                            whiteSpace: "normal",
+                            wordBreak: "break-word",
+                          }),
+                        }}
                         options={[
                           ...(poData?.data || []).map((po) => ({
                             label: po.po_number || "(No PO)",
@@ -955,8 +1207,11 @@ const AddLogisticForm = () => {
                             ? {
                                 value: item.po_id,
                                 label:
-                                  poData?.data?.find((po) => po._id === item.po_id)
-                                    ?.po_number || item.po_number || "(No PO)",
+                                  poData?.data?.find(
+                                    (po) => po._id === item.po_id
+                                  )?.po_number ||
+                                  item.po_number ||
+                                  "(No PO)",
                               }
                             : null
                         }
@@ -979,7 +1234,6 @@ const AddLogisticForm = () => {
 
                           setItems((prev) => {
                             const copy = [...prev];
-
                             copy.splice(
                               idx,
                               1,
@@ -1014,20 +1268,56 @@ const AddLogisticForm = () => {
                     </td>
 
                     <td>
-                      <Input variant="plain" placeholder="Project Id" value={item.project_id || ""} readOnly />
+                      <Textarea
+                        variant="plain"
+                        minRows={1}
+                        placeholder="Project Id"
+                        value={item.project_id || ""}
+                        readOnly
+                        sx={{ resize: "none" }}
+                      />
                     </td>
                     <td>
-                      <Input variant="plain" placeholder="Vendor" value={item.vendor || ""} readOnly />
+                      <Textarea
+                        variant="plain"
+                        minRows={1}
+                        placeholder="Vendor"
+                        value={item.vendor || ""}
+                        readOnly
+                        sx={{ resize: "none" }}
+                      />
                     </td>
                     <td>
-                      <Input variant="plain" placeholder="Category" value={item.category_name} readOnly />
+                      <Textarea
+                        variant="plain"
+                        minRows={1}
+                        placeholder="Category"
+                        value={item.category_name}
+                        readOnly
+                        sx={{ resize: "none" }}
+                      />
                     </td>
                     <td>
-                      <Input variant="plain" placeholder="Product Name" value={item.product_name} readOnly />
+                      <Textarea
+                        variant="plain"
+                        minRows={1}
+                        placeholder="Product Name"
+                        value={item.product_name}
+                        readOnly
+                        sx={{ resize: "none" }}
+                      />
                     </td>
                     <td>
-                      <Input variant="plain" placeholder="Make" value={item.product_make} readOnly />
+                      <Textarea
+                        variant="plain"
+                        minRows={1}
+                        placeholder="Make"
+                        value={item.product_make}
+                        readOnly
+                        sx={{ resize: "none" }}
+                      />
                     </td>
+
                     <td>
                       <Input
                         variant="plain"
@@ -1037,7 +1327,11 @@ const AddLogisticForm = () => {
                         step="any"
                         value={item.quantity_requested ?? ""}
                         onChange={(e) =>
-                          handleItemChange(idx, "quantity_requested", e.target.value)
+                          handleItemChange(
+                            idx,
+                            "quantity_requested",
+                            e.target.value
+                          )
                         }
                         disabled={isView}
                       />
@@ -1050,14 +1344,23 @@ const AddLogisticForm = () => {
                           type="number"
                           value={item.received_qty || ""}
                           onChange={(e) =>
-                            handleItemChange(idx, "received_qty", e.target.value)
+                            handleItemChange(
+                              idx,
+                              "received_qty",
+                              e.target.value
+                            )
                           }
                           disabled={isView}
                         />
                       </td>
                     )}
                     <td>
-                      <Input variant="plain" placeholder="UoM" value={item.uom} readOnly />
+                      <Input
+                        variant="plain"
+                        placeholder="UoM"
+                        value={item.uom}
+                        readOnly
+                      />
                     </td>
                     <td>
                       <Input
@@ -1065,7 +1368,9 @@ const AddLogisticForm = () => {
                         variant="plain"
                         type="number"
                         placeholder="Ton"
-                        onChange={(e) => handleItemChange(idx, "ton", e.target.value)}
+                        onChange={(e) =>
+                          handleItemChange(idx, "ton", e.target.value)
+                        }
                         disabled={isView}
                       />
                     </td>
@@ -1076,7 +1381,11 @@ const AddLogisticForm = () => {
                         disabled={isView}
                         onClick={() => {
                           if (isView) return;
-                          if (window.confirm("Are you sure you want to delete this row?")) {
+                          if (
+                            window.confirm(
+                              "Are you sure you want to delete this row?"
+                            )
+                          ) {
                             removeItemRow(idx);
                             toast.success("Row deleted successfully");
                           } else {
@@ -1116,7 +1425,10 @@ const AddLogisticForm = () => {
             />
 
             <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
-              <Sheet variant="soft" sx={{ borderRadius: "lg", p: 2, minWidth: 280 }}>
+              <Sheet
+                variant="soft"
+                sx={{ borderRadius: "lg", p: 2, minWidth: 280 }}
+              >
                 <Box
                   sx={{
                     display: "grid",
@@ -1146,7 +1458,12 @@ const AddLogisticForm = () => {
             <Box sx={{ mb: 2 }}>
               <FormControl>
                 <FormLabel>Attachment(s) (Create only)</FormLabel>
-                <Button component="label" variant="soft" startDecorator={<CloudUpload />} sx={{ width: "fit-content" }}>
+                <Button
+                  component="label"
+                  variant="soft"
+                  startDecorator={<CloudUpload />}
+                  sx={{ width: "fit-content" }}
+                >
                   Upload files
                   <input
                     key={fileInputKey}
@@ -1155,14 +1472,18 @@ const AddLogisticForm = () => {
                     type="file"
                     multiple
                     accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp"
-                    onClick={(e) => { e.target.value = ""; }}
+                    onClick={(e) => {
+                      e.target.value = "";
+                    }}
                     onChange={onFileInput}
                     disabled={isView}
                   />
                 </Button>
 
                 {selectedFiles.length > 0 ? (
-                  <Box sx={{ mt: 1, display: "flex", gap: 0.75, flexWrap: "wrap" }}>
+                  <Box
+                    sx={{ mt: 1, display: "flex", gap: 0.75, flexWrap: "wrap" }}
+                  >
                     {selectedFiles.map((f, idx) => (
                       <Chip
                         key={idx}
@@ -1192,12 +1513,21 @@ const AddLogisticForm = () => {
                         {f.name}
                       </Chip>
                     ))}
-                    <Button size="sm" variant="plain" color="danger" onClick={clearAllFiles} disabled={isView}>
+                    <Button
+                      size="sm"
+                      variant="plain"
+                      color="danger"
+                      onClick={clearAllFiles}
+                      disabled={isView}
+                    >
                       Clear all
                     </Button>
                   </Box>
                 ) : (
-                  <Typography level="body-xs" sx={{ mt: 0.75, color: "neutral.plainColor" }}>
+                  <Typography
+                    level="body-xs"
+                    sx={{ mt: 0.75, color: "neutral.plainColor" }}
+                  >
                     Supported: PDF, DOCX, PNG, JPG, WEBP (max ~25MB each)
                   </Typography>
                 )}
@@ -1207,21 +1537,31 @@ const AddLogisticForm = () => {
 
           <Box display="flex" justifyContent="space-between">
             {!isView && (
-              <Button type="button" variant="outlined" color="neutral" onClick={handleReset}>
+              <Button
+                type="button"
+                variant="outlined"
+                color="neutral"
+                onClick={handleReset}
+              >
                 Reset
               </Button>
             )}
 
-            <Button type="submit" variant="solid" color="primary" disabled={isLoading || isUpdating || isView}>
+            <Button
+              type="submit"
+              variant="solid"
+              color="primary"
+              disabled={isLoading || isUpdating || isView}
+            >
               {isView
                 ? "View Only"
                 : isEdit
-                ? isUpdating
-                  ? "Updating..."
-                  : "Update Logistic"
-                : isLoading
-                ? "Submitting..."
-                : "Submit Logistic"}
+                  ? isUpdating
+                    ? "Updating..."
+                    : "Update Logistic"
+                  : isLoading
+                    ? "Submitting..."
+                    : "Submit Logistic"}
             </Button>
           </Box>
         </form>
@@ -1254,17 +1594,14 @@ const AddLogisticForm = () => {
             const copy = [...prev];
             copy[activeItemIndex] = {
               ...copy[activeItemIndex],
-
               po_id: po._id,
               po_item_id: firstProduct?._id || null,
               category_id: firstProduct?.category?._id || null,
-
               po_number: po.po_number,
               project_id: po.p_id,
               vendor: po.vendor || "",
               category_name: firstProduct?.category?.name || "",
               uom: firstProduct?.uom || "",
-
               product_name: firstProduct?.product_name || "",
               product_make: firstProduct?.make || "",
               quantity_requested: firstProduct?.quantity || "",
@@ -1343,7 +1680,8 @@ const AddLogisticForm = () => {
               </Typography>
             </Box>
             <Typography level="body-xs" sx={{ mt: 0.5 }} color="neutral">
-              Allowed: PNG, JPG, WEBP, PDF, DOC, DOCX • Max {MAX_FILE_MB} MB each
+              Allowed: PNG, JPG, WEBP, PDF, DOC, DOCX • Max {MAX_FILE_MB} MB
+              each
             </Typography>
           </FormControl>
 
@@ -1411,6 +1749,16 @@ const AddLogisticForm = () => {
           </Button>
         </ModalDialog>
       </Modal>
+
+      {(isEdit || isView) && (
+        <Box ref={feedRef} sx={{ mt: 3 }}>
+          <POUpdateFeed
+            items={historyItems}
+            onAddNote={handleAddHistoryNote}
+            compact
+          />
+        </Box>
+      )}
     </Box>
   );
 };

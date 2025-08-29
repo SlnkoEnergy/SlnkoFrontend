@@ -1,7 +1,5 @@
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import HistoryIcon from "@mui/icons-material/History";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
@@ -17,7 +15,6 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
-import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import EditNoteIcon from "@mui/icons-material/EditNote";
 import DownloadIcon from "@mui/icons-material/Download";
 import MenuItem from "@mui/joy/MenuItem";
@@ -25,12 +22,8 @@ import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import { Clock, CheckCircle2, AlarmClockMinusIcon, AlertTriangle } from "lucide-react";
 import CloseIcon from "@mui/icons-material/Close";
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import UpdatePurchaseOrder from "../component/Forms/Edit_Po";
-import PoHistoryTable from "../component/PO_History";
-import AddBillForm from "../component/Forms/Add_Bill";
-import BillHistoryTable from "../component/Bill_History";
 import NoData from "../assets/alert-bell.svg";
 import { ClickAwayListener } from "@mui/base";
 import {
@@ -39,26 +32,14 @@ import {
   useUpdateEtdOrDeliveryDateMutation,
   useUpdatePurchasesStatusMutation,
 } from "../redux/purchasesSlice";
-import {
-  CircularProgress,
-  Divider,
-  Option,
-  Select,
-  Textarea,
-  Tooltip,
-} from "@mui/joy";
-import { useMemo } from "react";
+import { CircularProgress, Option, Select, Textarea, Tooltip } from "@mui/joy";
 import {
   Calendar,
   CalendarSearch,
-  CirclePlus,
-  FileCheck,
   Handshake,
   History,
   PackageCheck,
-  Store,
   Truck,
-  TruckIcon,
 } from "lucide-react";
 import {
   Modal,
@@ -69,6 +50,11 @@ import {
 } from "@mui/joy";
 import { toast } from "react-toastify";
 import { Money } from "@mui/icons-material";
+import {
+  useGetCategoriesNameSearchQuery,
+  useLazyGetCategoriesNameSearchQuery,
+} from "../redux/productsSlice";
+import SearchPickerModal from "../component/SearchPickerModal"; // <-- use your universal modal
 
 const PurchaseOrderSummary = forwardRef((props, ref) => {
   const { project_code } = props;
@@ -91,6 +77,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const [deliveryFrom, setDeliveryFrom] = useState("");
   const [deliveryTo, setDeliveryTo] = useState("");
   const [activeDateFilter, setActiveDateFilter] = useState("");
+
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
   const [currentPage, setCurrentPage] = useState(initialPage);
@@ -99,6 +86,46 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const [remarks, setRemarks] = useState("");
   const [perPage, setPerPage] = useState(initialPageSize);
   const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
+
+  // ===== Category Select + Browse-all modal state =====
+  const initialItemSearch = searchParams.get("itemSearch") || "";
+  const [selecteditem, setSelecteditem] = useState(initialItemSearch);
+  const [categorySelectOpen, setCategorySelectOpen] = useState(false);
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+
+  // ===== Data fetching hooks (TOP LEVEL — OK for hooks rules) =====
+  const projectId = project_code || "";
+
+  // Top 7 categories for the compact Select
+  const { data: catInitialData, isFetching: isCatInitFetching } =
+    useGetCategoriesNameSearchQuery({
+      page: 1,
+      search: "",
+      limit: 7,
+      projectId,
+    });
+
+  // Lazy fetcher for SearchPickerModal
+  const [triggerCatSearch] = useLazyGetCategoriesNameSearchQuery();
+
+  const topCategories = useMemo(() => {
+    const rows = catInitialData?.data || catInitialData?.rows || [];
+    return rows
+      .map((r) => ({
+        _id: r?._id,
+        name: r?.name ?? r?.category ?? r?.make ?? "",
+      }))
+      .filter((x) => x.name);
+  }, [catInitialData]);
+
+  const totalCats =
+    catInitialData?.total ??
+    catInitialData?.count ??
+    catInitialData?.totalCount ??
+    topCategories.length;
+
+  const hasMoreThan7 = Number(totalCats) > 7;
+
   const { search, state } = useLocation();
   const [sp] = useSearchParams();
   const navigate = useNavigate();
@@ -129,6 +156,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     project_id: project_code ? project_code : "",
     pr_id: pr_id ? pr_id.toString() : "",
     item_id: item_id ? item_id.toString() : "",
+    itemSearch: selecteditem || "",
   });
 
   const handleOpen = (po_number, action) => {
@@ -153,22 +181,17 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const getPaginationRange = () => {
     const siblings = 1;
     const pages = [];
-
     if (totalPages <= 5 + siblings * 2) {
       for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else {
       const left = Math.max(currentPage - siblings, 2);
       const right = Math.min(currentPage + siblings, totalPages - 1);
-
       pages.push(1);
       if (left > 2) pages.push("...");
-
       for (let i = left; i <= right; i++) pages.push(i);
-
       if (right < totalPages - 1) pages.push("...");
       pages.push(totalPages);
     }
-
     return pages;
   };
 
@@ -204,6 +227,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     setActiveDateFilter((prev) => (prev === type ? null : type));
     setOpenFilter(false);
   };
+
   const formatStatus = (status, etd) => {
     if (status?.toLowerCase() === "draft") {
       if (!etd) return "ETD Pending";
@@ -228,11 +252,56 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   useEffect(() => {
     const status = searchParams.get("status") || "";
     const po = searchParams.get("poStatus") || "";
-
+    const itemSearch = searchParams.get("itemSearch") || "";
     setSelectedStatusFilter(status);
     setSelectedpo(po);
+    setSelecteditem(itemSearch);
   }, [searchParams]);
 
+  const applyCategory = (value) => {
+    setSelecteditem(value || "");
+    setCurrentPage(1);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value) next.set("itemSearch", value);
+      else next.delete("itemSearch");
+      next.set("page", "1");
+      return next;
+    });
+  };
+
+  const fetchCategoriesPage = useCallback(
+    async ({ page, pageSize, search }) => {
+      const resp = await triggerCatSearch({
+        page: page ?? 1,
+        limit: pageSize ?? 7,
+        search: search ?? "",
+        projectId,
+      }).unwrap();
+
+      const rows = (resp?.data ?? resp?.rows ?? []).map((r) => ({
+        id: r?._id,
+        name: r?.name ?? r?.category ?? r?.make ?? "",
+      }));
+
+      const total =
+        resp?.pagination?.total ??
+        resp?.total ??
+        resp?.count ??
+        resp?.totalCount ??
+        rows.length;
+
+      return { rows, total };
+    },
+    [triggerCatSearch, projectId]
+  );
+
+  const onPickCategory = (row) => {
+    applyCategory(row?.name || "");
+    setCategoryModalOpen(false);
+  };
+
+  // ===== Filters bar (uses only values computed from top-level hooks) =====
   const renderFilters = () => {
     const po_status = ["Fully Billed", "Bill Pending"];
 
@@ -243,8 +312,63 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           display: "flex",
           alignItems: "center",
           gap: 1.5,
+          flexWrap: "wrap",
         }}
       >
+        {/* Category Queue — like screenshot */}
+        <FormControl sx={{ minWidth: 240 }} size="sm">
+          <FormLabel>Category Queue</FormLabel>
+          <Select
+            value={selecteditem}
+            placeholder={isCatInitFetching ? "Loading…" : "All Categories"}
+            listboxOpen={categorySelectOpen}
+            onListboxOpenChange={(_e, open) => setCategorySelectOpen(open)}
+            onChange={(_e, newValue) => {
+              if (newValue === "__more__") {
+                setCategorySelectOpen(false);
+                setCategoryModalOpen(true);
+                return;
+              }
+              applyCategory(newValue || "");
+            }}
+            size="sm"
+          >
+            <Option value="">All Categories</Option>
+
+            {topCategories.slice(0, 7).map((cat) => (
+              <Option key={cat._id} value={cat.name}>
+                {cat.name}
+              </Option>
+            ))}
+
+            {/* Keep selected visible if not in top 7 */}
+            {selecteditem &&
+              !topCategories
+                .slice(0, 7)
+                .some((c) => c.name === selecteditem) && (
+                <Option key={`picked-${selecteditem}`} value={selecteditem}>
+                  {selecteditem}
+                </Option>
+              )}
+
+            {
+              <Option
+                value="__more__"
+                sx={{
+                  color: "primary.plainColor",
+                  fontWeight: 600,
+                  "&:hover": {
+                    bgcolor: "primary.softBg",
+                    color: "primary.solidColor",
+                  },
+                }}
+              >
+                Browse all…
+              </Option>
+            }
+          </Select>
+        </FormControl>
+
         {!isLogisticsPage && (
           <FormControl sx={{ flex: 1 }} size="sm">
             <FormLabel>Bill Status</FormLabel>
@@ -253,12 +377,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
               onChange={(_, newValue) => {
                 setSearchParams((prev) => {
                   const updated = new URLSearchParams(prev);
-                  if (newValue) {
-                    updated.set("poStatus", newValue);
-                  } else {
-                    updated.delete("poStatus");
-                  }
-                  updated.set("page", "1"); // Reset to first page when filter changes
+                  if (newValue) updated.set("poStatus", newValue);
+                  else updated.delete("poStatus");
+                  updated.set("page", "1");
                   return updated;
                 });
               }}
@@ -266,7 +387,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
               placeholder="Select Status"
             >
               <Option value="">All status</Option>
-              {po_status.map((status) => (
+              {["Fully Billed", "Bill Pending"].map((status) => (
                 <Option key={status} value={status}>
                   {status}
                 </Option>
@@ -274,6 +395,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             </Select>
           </FormControl>
         )}
+
         <FormControl sx={{ flex: 1 }} size="sm">
           <FormLabel>Status Filter</FormLabel>
           <Select
@@ -291,13 +413,24 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             placeholder="Select Status"
           >
             <Option value="">All Status</Option>
-            {statusOptions.map((status) => (
+            {[
+              "Approval Pending",
+              "Approval Done",
+              "ETD Pending",
+              "ETD Done",
+              "Material Ready",
+              "Ready to Dispatch",
+              "Out for Delivery",
+              "Partially Delivered",
+              "Delivered",
+            ].map((status) => (
               <Option key={status} value={status}>
                 {status}
               </Option>
             ))}
           </Select>
         </FormControl>
+
         {!isLogisticsPage && (
           <Box mt={3} sx={{ display: "flex", gap: 1 }}>
             <Button
@@ -312,6 +445,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             </Button>
           </Box>
         )}
+
         {!isLogisticsPage && (
           <Dropdown>
             <MenuButton
@@ -333,6 +467,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             </Menu>
           </Dropdown>
         )}
+
         {activeDateFilter && (
           <ClickAwayListener onClickAway={() => setActiveDateFilter(null)}>
             <Sheet
@@ -559,8 +694,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     setCurrentPage(page);
   }, [searchParams]);
 
-  // ---------- EXPOSE DATA TO PARENT (POSummary) ----------
-  // This is the key addition so Add Logistics Form can auto-fill its Products table.
+
   useImperativeHandle(
     ref,
     () => ({
@@ -613,18 +747,17 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
   const BillingTypeChip = ({ type }) => {
     const isFullyBilled = type === "Final";
-       const isPending = type === "Partial";
+    const isPending = type === "Partial";
 
     const label = isFullyBilled ? "Final" : isPending ? "Partial" : type;
-
     const color = isFullyBilled ? "primary" : isPending ? "danger" : "neutral";
-
     return (
       <Chip variant="soft" size="sm" color={color}>
         {label}
       </Chip>
     );
   };
+
   const RenderPid = ({ p_id }) => {
     return (
       <Box>
@@ -650,11 +783,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             variant="soft"
             color="neutral"
             size="md"
-            sx={{
-              fontWeight: 500,
-              fontSize: 13,
-              borderRadius: "20px",
-            }}
+            sx={{ fontWeight: 500, fontSize: 13, borderRadius: "20px" }}
           >
             -
           </Chip>
@@ -662,6 +791,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       </Box>
     );
   };
+
   const RenderPONumber = ({ po_number, date, po_id, pr_no }) => {
     const formatDate = (dateStr) => {
       if (!dateStr) return "-";
@@ -676,7 +806,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
     return (
       <>
-        {/* PO Number */}
         {po_number ? (
           <Box
             onClick={() => navigate(`/add_po?mode=edit&po_number=${po_number}`)}
@@ -707,7 +836,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           </Typography>
         </Box>
 
-        {/* PO Date */}
         {date ? (
           <Box
             display="flex"
@@ -737,6 +865,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       </>
     );
   };
+
   const RenderStatusDates = ({
     etd,
     rtd,
@@ -782,7 +911,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
     return (
       <>
-        {/* ETD Date */}
         <Box display="flex" alignItems="center" mt={0.5}>
           <Calendar size={12} />
           <span style={{ fontSize: 12, fontWeight: 600 }}>ETD Date : </span>
@@ -810,7 +938,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           )}
         </Box>
 
-        {/* Material Ready Date */}
         <Box display="flex" alignItems="center" mt={0.5}>
           <Calendar size={12} />
           <span style={{ fontSize: 12, fontWeight: 600 }}>MR Date : </span>
@@ -841,7 +968,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           )}
         </Box>
 
-        {/* Delivery Date - Only if status is delivered */}
         {current_status?.toLowerCase() === "delivered" && (
           <Box display="flex" alignItems="center" mt={0.5}>
             <Calendar size={12} />
@@ -872,7 +998,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             )}
           </Box>
         )}
-        {/* Confirmation Modal */}
+
         <Modal
           open={openConfirmDialog}
           onClose={() => setOpenConfirmDialog(false)}
@@ -959,6 +1085,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const billed = Number(total_billed);
     const value = Number(po_value);
 
+    const showAddBilling = billed < value;
+    const showBillingHistory = billed > 0;
+
     const formattedAmount =
       billed > 0
         ? new Intl.NumberFormat("en-IN", {
@@ -1030,12 +1159,11 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
   return (
     <>
-      {/* Tablet and Up Filters */}
+      {/* Search + Filters */}
       <Box
         className="SearchAndFilters-tabletUp"
         sx={{
           marginLeft: isFromCAM || isFromPR ? 0 : { xl: "15%", lg: "18%" },
-
           borderRadius: "sm",
           py: 2,
           display: "flex",
@@ -1046,7 +1174,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           },
         }}
       >
-        <FormControl sx={{ flex: 1 }} size="sm">
+        <FormControl sx={{ flex: 2, minWidth: 280 }} size="sm">
           <FormLabel>Search here</FormLabel>
           <Input
             size="sm"
@@ -1056,6 +1184,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
+
         {renderFilters()}
       </Box>
 
@@ -1085,9 +1214,13 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
               <Box
                 component="th"
                 sx={{
-                  padding: 1,
+                  position: "sticky",
+                  top: 0,
+                  background: "#e0e0e0",
+                  zIndex: 2,
+                  borderBottom: "1px solid #ddd",
+                  padding: "8px",
                   textAlign: "left",
-                  borderBottom: "1px solid",
                   fontWeight: "bold",
                 }}
               >
@@ -1101,7 +1234,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                 />
               </Box>
 
-              {/* Dynamic headers */}
               {(!isLogisticsPage
                 ? ["Project ID", "PO Number"]
                 : ["Project ID", "PO Number"]
@@ -1121,9 +1253,13 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                     component="th"
                     key={index}
                     sx={{
-                      padding: 1,
+                      position: "sticky",
+                      top: 0,
+                      background: "#e0e0e0",
+                      zIndex: 2,
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
                       textAlign: "left",
-                      borderBottom: "1px solid",
                       fontWeight: "bold",
                     }}
                   >
@@ -1172,7 +1308,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
                 if (po.etd) {
                   etd = new Date(po.etd);
-
                   if (dispatch_date) {
                     const timeDiff = dispatch_date - etd;
                     delay = Math.max(
@@ -1308,6 +1443,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         </Chip>
                       )}
                     </Box>
+
                     {!isLogisticsPage && (
                       <Box
                         component="td"
@@ -1322,6 +1458,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         <BillingStatusChip status={po.partial_billing} />
                       </Box>
                     )}
+
                     {!isLogisticsPage && (
                       <Box
                         component="td"
@@ -1339,6 +1476,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         />
                       </Box>
                     )}
+
                     <Box
                       component="td"
                       sx={{
@@ -1371,7 +1509,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         </Box>
                       </Tooltip>
 
-                      {/* Render PO Number Info Below the Status */}
                       <RenderStatusDates
                         rtd={po?.dispatch_date}
                         mrd={po?.material_ready_date}
@@ -1447,11 +1584,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                 <Box
                   component="td"
                   colSpan={13}
-                  sx={{
-                    padding: 2,
-                    textAlign: "center",
-                    fontStyle: "italic",
-                  }}
+                  sx={{ padding: 2, textAlign: "center", fontStyle: "italic" }}
                 >
                   <Box
                     sx={{
@@ -1557,6 +1690,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           Next
         </Button>
 
+        {/* Status Change Modal (unchanged) */}
         <Modal open={openModal} onClose={() => setOpenModal(false)}>
           <Sheet
             variant="outlined"
@@ -1606,49 +1740,22 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             </div>
           </Sheet>
         </Modal>
+
+        {/* Browse-all Categories — universal SearchPickerModal */}
+        <SearchPickerModal
+          open={categoryModalOpen}
+          onClose={() => setCategoryModalOpen(false)}
+          onPick={onPickCategory}
+          title="Select Category"
+          columns={[{ key: "name", label: "Category", width: 320 }]}
+          fetchPage={fetchCategoriesPage}
+          searchKey="name"
+          pageSize={7}
+          backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
+        />
       </Box>
-
-      <Modal open={open} onClose={handleClose}>
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            bgcolor: "background.paper",
-            boxShadow: 24,
-            p: 2,
-            borderRadius: 2,
-            minWidth: 500,
-          }}
-        >
-          <IconButton
-            onClick={handleClose}
-            sx={{
-              position: "absolute",
-              top: 20,
-              right: 15,
-              color: "grey.500",
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
-
-          {modalAction === "edit" && (
-            <UpdatePurchaseOrder po_number={selectedPoNumber} />
-          )}
-          {modalAction === "view" && (
-            <PoHistoryTable po_number={selectedPoNumber} />
-          )}
-          {modalAction === "add_bill" && (
-            <AddBillForm po_number={selectedPoNumber} />
-          )}
-          {modalAction === "view_bill" && (
-            <BillHistoryTable po_number={selectedPoNumber} />
-          )}
-        </Box>
-      </Modal>
     </>
   );
 });
+
 export default PurchaseOrderSummary;

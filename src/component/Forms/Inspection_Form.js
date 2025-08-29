@@ -51,6 +51,7 @@ export default function InspectionForm({
   onClose,
   vendorName = "",
   projectCode = "",
+  po_number = "",
   items = [],
   onSubmit,
   defaultMode = "online",
@@ -212,6 +213,7 @@ export default function InspectionForm({
     setFileError("");
     setOpenModal(true);
   };
+  
 
   const handleSubmit = async () => {
     if (!datetime) return alert("Inspection date & time is required.");
@@ -223,6 +225,7 @@ export default function InspectionForm({
     const payload = {
       vendor: vendorName || "",
       project_code: projectCode || "",
+      po_number: po_number || "",
       items: createItems.map((it, idx) => ({
         sl: idx + 1,
         category_id: it.productCategoryId || null,
@@ -234,7 +237,7 @@ export default function InspectionForm({
       })),
       totals: { lines: createItems.length, total_qty: totalQty },
       inspection: {
-        datetime, // yyyy-MM-ddTHH:mm (local)
+        datetime, 
         mode,
         location: mode === "offline" ? locationText : "",
         contact_person: contactPerson,
