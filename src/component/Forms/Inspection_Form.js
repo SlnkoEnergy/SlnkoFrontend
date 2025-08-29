@@ -213,7 +213,6 @@ export default function InspectionForm({
     setFileError("");
     setOpenModal(true);
   };
-  
 
   const handleSubmit = async () => {
     if (!datetime) return alert("Inspection date & time is required.");
@@ -237,7 +236,7 @@ export default function InspectionForm({
       })),
       totals: { lines: createItems.length, total_qty: totalQty },
       inspection: {
-        datetime, 
+        datetime,
         mode,
         location: mode === "offline" ? locationText : "",
         contact_person: contactPerson,
@@ -268,15 +267,14 @@ export default function InspectionForm({
     <Box
       sx={{
         p: 0,
-        width: isView ? 1400 : "100%",
-        ml: isView ? { xs: 0, lg: "12%", xl: "18%" } : 0,
+        width: isView ? { xs: "100%", lg: 1100, xl: 1340 } : "100%",
+        ml: isView ? { xs: 0, lg: "18%", xl: "18%" } : 0,
       }}
     >
       {/* Header */}
       <Box
         sx={{
           p: 2,
-          borderBottom: "1px solid var(--joy-palette-neutral-outlinedBorder)",
           display: "flex",
           alignItems: "center",
           gap: 1,

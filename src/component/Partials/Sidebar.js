@@ -24,14 +24,11 @@ import ListItemButton, { listItemButtonClasses } from "@mui/joy/ListItemButton";
 import ListItemContent from "@mui/joy/ListItemContent";
 import Sheet from "@mui/joy/Sheet";
 import Stack from "@mui/joy/Stack";
-import { useColorScheme } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Main_Logo from "../../assets/protrac_logo.png";
-import Main_Logo2 from "../../assets/white_logo.png";
 import { closeSidebar } from "../../utils/utils";
-import ColorSchemeToggle from "./ColorSchemeToggle";
 import DatabaseIcon from "@mui/icons-material/Storage";
 
 function Toggler({ defaultExpanded = false, renderToggle, children }) {

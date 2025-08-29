@@ -292,17 +292,17 @@ const AddPurchaseOrder = ({
     const arr = Array.isArray(po?.items)
       ? po.items
       : Array.isArray(po?.item)
-        ? po.item
-        : [];
+      ? po.item
+      : [];
     return arr.length
       ? arr.map((it) => ({
           ...makeEmptyLine(),
           productCategoryId:
             typeof it?.category === "object"
-              ? (it?.category?._id ?? "")
-              : (it?.category ?? ""),
+              ? it?.category?._id ?? ""
+              : it?.category ?? "",
           productCategoryName:
-            typeof it?.category === "object" ? (it?.category?.name ?? "") : "",
+            typeof it?.category === "object" ? it?.category?.name ?? "" : "",
           productName: it?.product_name ?? "",
           make: isValidMake(it?.product_make) ? it.product_make : "",
           makeQ: isValidMake(it?.product_make) ? it.product_make : "",
@@ -334,7 +334,7 @@ const AddPurchaseOrder = ({
         );
         const po = Array.isArray(resp?.data)
           ? resp.data[0]
-          : (resp?.data ?? resp);
+          : resp?.data ?? resp;
         if (!po) {
           toast.error("PO not found.");
           return;
@@ -819,8 +819,8 @@ const AddPurchaseOrder = ({
           typeof l.productCategoryId === "object" && l.productCategoryId?._id
             ? String(l.productCategoryId._id)
             : l.productCategoryId != null
-              ? String(l.productCategoryId)
-              : "";
+            ? String(l.productCategoryId)
+            : "";
         return {
           category: String(categoryId),
           product_name: String(l.productName || ""),
@@ -1905,8 +1905,8 @@ const AddPurchaseOrder = ({
                               formData.delivery_type === "afor"
                                 ? "Afor"
                                 : formData.delivery_type === "slnko"
-                                  ? "Slnko"
-                                  : "",
+                                ? "Slnko"
+                                : "",
                           }
                         : null
                     }
@@ -2022,7 +2022,7 @@ const AddPurchaseOrder = ({
                                 e.target.value
                               )
                             }
-                            disabled
+                            
                             sx={{
                               whiteSpace: "normal",
                               wordBreak: "break-word",
@@ -2040,7 +2040,7 @@ const AddPurchaseOrder = ({
                             onChange={(e) =>
                               updateLine(l.id, "productName", e.target.value)
                             }
-                            disabled
+                            
                             sx={{
                               whiteSpace: "normal",
                               wordBreak: "break-word",
@@ -2062,7 +2062,7 @@ const AddPurchaseOrder = ({
                                 e.target.value
                               )
                             }
-                            disabled
+                            
                             sx={{
                               whiteSpace: "normal",
                               wordBreak: "break-word",
