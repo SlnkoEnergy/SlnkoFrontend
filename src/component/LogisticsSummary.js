@@ -1,6 +1,7 @@
 // src/components/LogisticsDashboard.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
 
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
@@ -101,6 +102,26 @@ const pageNumbers = (current, total) => {
   return out;
 };
 
+// Compact round "+N" pill (used in two table cells)
+const MorePill = ({ n }) =>
+  n > 0 ? (
+    <Chip
+      size="sm"
+      variant="solid"
+      color="neutral"
+      sx={{
+        px: 0.6,
+        py: 0,
+        lineHeight: 1,
+        borderRadius: "999px",
+        fontWeight: 700,
+        fontSize: "11px",
+      }}
+    >
+      +{n}
+    </Chip>
+  ) : null;
+
 // small helper to extract error text
 const errMsg = (e) =>
   e?.data?.message || e?.error || e?.message || "Failed to update status";
@@ -126,11 +147,9 @@ function StatusCard({ row, onUpdated }) {
   const isLogistic = user?.department === "Logistic";
   const isSuperadmin = user?.role === "superadmin";
 
-  // Ready → Out for Delivery: Logistic OR Superadmin
   const showChangeToOfd =
     current === "ready_to_dispatch" && (isLogistic || isSuperadmin);
 
-  // Out for Delivery → Delivered: Logistic OR Superadmin
   const showMarkDelivered =
     current === "out_for_delivery" && (isLogistic || isSuperadmin);
 
@@ -158,13 +177,33 @@ function StatusCard({ row, onUpdated }) {
     return `${dd} - ${mm} - ${yyyy}`;
   };
 
+  // helper: is any received_qty blank?
+  const hasBlankReceivedQty = (r) => {
+    const items = Array.isArray(r?.items) ? r.items : [];
+    return items.some(
+      (it) =>
+        it == null ||
+        it.received_qty == null ||
+        String(it.received_qty).trim() === ""
+    );
+  };
+
   const handleUpdate = async (targetStatus) => {
     setErrorText("");
+
+    // Block Delivered if any received_qty is blank and toast a message
+    if (targetStatus === "delivered" && hasBlankReceivedQty(row)) {
+      toast.error(
+        "Cannot mark as Delivered. One or more items have blank 'Quantity Received'."
+      );
+      return;
+    }
+
     try {
       await updateStatus({ id: row._id, status: targetStatus, remarks: "" }).unwrap();
       await onUpdated?.();
     } catch (e) {
-      setErrorText(errMsg(e));
+      setErrorText(e?.data?.message || e?.error || e?.message || "Failed to update status");
     }
   };
 
@@ -247,6 +286,7 @@ function StatusCard({ row, onUpdated }) {
     </Box>
   );
 }
+
 
 /* ---------------- component ---------------- */
 export default function LogisticsDashboard() {
@@ -618,27 +658,14 @@ export default function LogisticsDashboard() {
                         <Box
                           sx={{
                             display: "inline-flex",
-                            gap: 8,
                             alignItems: "center",
+                            gap: 0.5,
                           }}
                         >
-                          <Chip size="sm" variant="soft">
+                          <Typography level="body-sm" fontWeight="md">
                             {firstPO}
-                          </Chip>
-                          {extraPO > 0 && (
-                            <Typography
-                              level="body-xs"
-                              sx={{
-                                px: 0.75,
-                                py: 0.25,
-                                border: "1px solid",
-                                borderColor: "neutral.outlinedBorder",
-                                borderRadius: "sm",
-                              }}
-                            >
-                              +{extraPO} more
-                            </Typography>
-                          )}
+                          </Typography>
+                          <MorePill n={extraPO} />
                         </Box>
                       </Tooltip>
                     </td>
@@ -685,27 +712,14 @@ export default function LogisticsDashboard() {
                         <Box
                           sx={{
                             display: "inline-flex",
-                            gap: 8,
                             alignItems: "center",
+                            gap: 0.5,
                           }}
                         >
                           <Typography level="body-sm">
                             {safe(firstLabel)}
                           </Typography>
-                          {extraCount > 0 && (
-                            <Typography
-                              level="body-xs"
-                              sx={{
-                                px: 0.75,
-                                py: 0.25,
-                                border: "1px solid",
-                                borderColor: "neutral.outlinedBorder",
-                                borderRadius: "sm",
-                              }}
-                            >
-                              +{extraCount} more
-                            </Typography>
-                          )}
+                          <MorePill n={extraCount} />
                         </Box>
                       </Tooltip>
                     </td>
