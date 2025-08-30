@@ -358,18 +358,52 @@ export default function LogisticsDashboard() {
     return [];
   }, [resp]);
 
-  const meta = resp?.meta || {};
-  const totalCount = meta.total ?? (Array.isArray(resp?.data) ? resp.data.length : 0);
-  const totalPages = Math.max(1, Math.ceil((totalCount || 0) / rowsPerPage));
+// API-aware meta + range with robust fallbacks
+const meta = resp?.meta || {};
+const total = Number(
+  meta?.total ??
+  meta?.totalCount ??
+  meta?.total_count ??
+  resp?.total ??
+  0
+);
+const count = Number(
+  meta?.count ??
+  meta?.pageCount ??
+  meta?.per_page_count ??
+  rows.length
+);
+const apiPage = Number(
+  meta?.page ??
+  meta?.currentPage ??
+  meta?.current_page ??
+  currentPage
+);
+const apiPageSize = Number(
+  meta?.pageSize ??
+  meta?.perPage ??
+  meta?.per_page ??
+  rowsPerPage
+);
 
-  const handlePageChange = (p) => {
-    if (p < 1 || p > totalPages) return;
-    const params = new URLSearchParams(searchParams);
-    params.set("page", String(p));
-    setSearchParams(params);
-    setCurrentPage(p);
-    setSelected([]);
-  };
+const totalPages = Math.max(1, Math.ceil((total || 0) / apiPageSize));
+
+// For "Showing X–Y of Z"
+const startIndex = total ? (apiPage - 1) * apiPageSize + 1 : 0;
+const endIndex = total ? Math.min(startIndex + count - 1, total) : 0;
+
+
+
+const handlePageChange = (p) => {
+  if (p < 1 || p > totalPages) return;
+  const params = new URLSearchParams(searchParams);
+  params.set("page", String(p));
+  setSearchParams(params);
+  setCurrentPage(p);
+  setSelected([]);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
 
   const handleSelectAll = (e) => {
     if (e.target.checked) setSelected(rows.map((r) => r._id));
@@ -767,20 +801,25 @@ export default function LogisticsDashboard() {
           variant="outlined"
           color="neutral"
           startDecorator={<KeyboardArrowLeftIcon />}
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage <= 1 || isLoading}
+          onClick={() => handlePageChange(apiPage - 1)}
+disabled={apiPage <= 1 || isLoading}
+
+
         >
           Previous
         </Button>
+<Box>
+  {total
+    ? <>Showing {startIndex}–{endIndex} of {total} results</>
+    : <>Showing 0 of 0 results</>}
+</Box>
 
-        <Box>
-          Showing {meta?.count ?? rows.length} of {meta?.total ?? rows.length} results
-        </Box>
+
 
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
-          {pageNumbers(currentPage, totalPages).map((v, idx) =>
+          {pageNumbers(apiPage, totalPages).map((v, idx) =>
             v === "…" ? (
               <Typography key={`dots-${idx}`} level="body-sm" sx={{ px: 1 }}>
                 …
@@ -789,7 +828,8 @@ export default function LogisticsDashboard() {
               <IconButton
                 key={v}
                 size="sm"
-                variant={v === currentPage ? "solid" : "outlined"}
+                variant={v === apiPage ? "solid" : "outlined"}
+
                 color="neutral"
                 onClick={() => handlePageChange(v)}
                 disabled={isLoading}
@@ -805,8 +845,10 @@ export default function LogisticsDashboard() {
           variant="outlined"
           color="neutral"
           endDecorator={<KeyboardArrowRightIcon />}
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage >= totalPages || isLoading}
+          onClick={() => handlePageChange(apiPage + 1)}
+disabled={apiPage >= totalPages || isLoading}
+
+
         >
           Next
         </Button>
