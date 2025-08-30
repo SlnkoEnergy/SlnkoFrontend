@@ -2586,7 +2586,7 @@ function Sidebar() {
                   </ListItem>
                   {((user?.department === "Projects" &&
                     user?.name === "Mayank Kumar") ||
-                    user?.name === "Vivek Pandey") && (
+                    user?.name === "Vivek Pandey" || user?.name === "Disha Sharma") && (
                     <ListItem>
                       <ListItemButton
                         onClick={() => navigate("/expense_approval")}

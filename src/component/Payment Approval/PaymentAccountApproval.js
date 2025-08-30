@@ -82,9 +82,7 @@ const PaymentAccountApproval = forwardRef(
       }
 
       const { department, role } = user;
-      const isInternalManager =
-        department === "Projects" &&
-        role === "visitor";
+      const isInternalManager = department === "Projects" && role === "visitor";
       const isSCMOrAccountsManager =
         ["SCM", "Accounts"].includes(department) && role === "manager";
 
@@ -671,13 +669,18 @@ const PaymentAccountApproval = forwardRef(
           )}
 
           <Box display="flex" alignItems="center" gap={1} mt={0.5}>
-          <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
-            🏢 Vendor:
-          </Typography>
-          <Chip color="danger" size="sm" variant="solid" sx={{ fontSize: 12 }}>
-            {vendor}
-          </Chip>
-        </Box>
+            <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
+              🏢 Vendor:
+            </Typography>
+            <Chip
+              color="danger"
+              size="sm"
+              variant="solid"
+              sx={{ fontSize: 12 }}
+            >
+              {vendor}
+            </Chip>
+          </Box>
           {/* remainingDays display */}
           <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
             <Typography sx={labelStyle}>⏰</Typography>
@@ -740,14 +743,20 @@ const PaymentAccountApproval = forwardRef(
       totalPaid = 0,
       po_value,
     }) => {
-      const inr = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 });
+      const inr = new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      });
 
       const fmt = (v, dashIfEmpty = false) => {
         if (v === null || v === undefined || v === "") {
-          return dashIfEmpty ? "—" : "0";
+          return dashIfEmpty ? "—" : inr.format(0);
         }
         const num = Number(v);
-        return Number.isFinite(num) ? inr.format(num) : dashIfEmpty ? "—" : "0";
+        if (!Number.isFinite(num)) return dashIfEmpty ? "—" : inr.format(0);
+        return inr.format(num);
       };
 
       const chipColor =
@@ -768,7 +777,7 @@ const PaymentAccountApproval = forwardRef(
                   Requested Amount:&nbsp;
                 </span>
                 <Typography sx={{ fontSize: 13, fontWeight: 400 }}>
-                  ₹ {fmt(amount_requested, true)}
+                  {fmt(amount_requested, true)}
                 </Typography>
               </Box>
             )}
@@ -779,7 +788,7 @@ const PaymentAccountApproval = forwardRef(
               Total PO (incl. GST):&nbsp;
             </span>
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              {po_value == null || po_value === "" ? "—" : `₹ ${fmt(po_value)}`}
+              {po_value == null || po_value === "" ? "—" : fmt(po_value)}
             </Typography>
           </Box>
 
@@ -789,7 +798,7 @@ const PaymentAccountApproval = forwardRef(
               Client Balance:&nbsp;
             </span>
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              ₹ {fmt(ClientBalance)}
+              {fmt(ClientBalance)}
             </Typography>
           </Box>
 
@@ -799,7 +808,7 @@ const PaymentAccountApproval = forwardRef(
               Group Balance:&nbsp;
             </span>
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              ₹ {fmt(groupBalance)}
+              {fmt(groupBalance)}
             </Typography>
           </Box>
 
@@ -824,7 +833,7 @@ const PaymentAccountApproval = forwardRef(
                     level="body-xs"
                     sx={{ fontSize: 11, color: "#fff" }}
                   >
-                    ₹ {fmt(totalCredited)} − ₹ {fmt(totalPaid)} = ₹{" "}
+                    {fmt(totalCredited)} − {fmt(totalPaid)} ={" "}
                     {fmt(
                       (Number(totalCredited) || 0) - (Number(totalPaid) || 0)
                     )}
@@ -838,7 +847,7 @@ const PaymentAccountApproval = forwardRef(
                 color={chipColor}
                 sx={{ fontSize: 12, fontWeight: 500, ml: 0.5 }}
               >
-                ₹ {fmt(creditBalance)}
+                {fmt(creditBalance)}
               </Chip>
             </Tooltip>
           </Box>

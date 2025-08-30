@@ -5,8 +5,6 @@ import Button from "@mui/joy/Button";
 import Chip from "@mui/joy/Chip";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import HourglassTopRoundedIcon from "@mui/icons-material/HourglassTopRounded";
-import IconButton from "@mui/joy/IconButton";
-import Input from "@mui/joy/Input";
 import durationPlugin from "dayjs/plugin/duration";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
@@ -22,7 +20,6 @@ import {
   Tooltip,
   useTheme,
 } from "@mui/joy";
-import { CheckCircle, PenLine, XCircle } from "lucide-react";
 import { PaymentProvider } from "../../store/Context/Payment_History";
 import PaymentHistory from "../PaymentHistory";
 import {
@@ -288,6 +285,17 @@ const CreditRequest = forwardRef(
       status_history = [],
       user,
     }) => {
+
+       const formatINR = (value) => {
+        if (value == null || value === "") return "—";
+        return new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        }).format(value);
+      };
+
       const currentStage = useMemo(() => {
         const last =
           Array.isArray(status_history) && status_history.length
@@ -441,9 +449,9 @@ const CreditRequest = forwardRef(
         <Box mt={1}>
           {/* Amount */}
           <Box display="flex" alignItems="flex-start" gap={1} mb={0.5}>
-            <Typography sx={labelStyle}>💰 Amount:</Typography>
-            <Typography sx={{ ...valueStyle, fontSize: "14px" }}>
-              {amount_paid || "—"}
+            <Typography sx={{ fontWeight: 500 }}>💰 Amount:</Typography>
+            <Typography sx={{ fontSize: "14px" }}>
+              {formatINR(amount_paid)}
             </Typography>
           </Box>
 

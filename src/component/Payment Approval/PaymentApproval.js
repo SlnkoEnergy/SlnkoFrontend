@@ -795,6 +795,15 @@ function PaymentRequest() {
     groupBalance,
     po_value,
   }) => {
+     const formatINR = (value) => {
+        if (value == null || value === "") return "0";
+        return new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        }).format(value);
+      };
     return (
       <>
         {amount_requested && (
@@ -804,7 +813,7 @@ function PaymentRequest() {
               Requested Amount:{" "}
             </span>
             <Typography sx={{ fontSize: 13, fontWeight: 400, ml: 0.5 }}>
-              {amount_requested || "-"}
+              {formatINR(amount_requested)}
             </Typography>
           </Box>
         )}
@@ -815,7 +824,7 @@ function PaymentRequest() {
             Total PO (incl. GST):{" "}
           </span>
           <Typography sx={{ fontSize: 12, fontWeight: 400, ml: 0.5 }}>
-            {po_value || "-"}
+            {formatINR(po_value)}
           </Typography>
         </Box>
 
@@ -827,7 +836,7 @@ function PaymentRequest() {
           </span>
           &nbsp;
           <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-            {ClientBalance || "0"}
+            {formatINR(ClientBalance )}
           </Typography>
         </Box>
 
@@ -837,7 +846,7 @@ function PaymentRequest() {
           <span style={{ fontSize: 12, fontWeight: 600 }}>Group Balance: </span>
           &nbsp;
           <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-            {groupBalance || "0"}
+            {formatINR(groupBalance)}
           </Typography>
         </Box>
       </>

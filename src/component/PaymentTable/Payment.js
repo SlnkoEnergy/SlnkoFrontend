@@ -356,6 +356,16 @@ const InstantRequest = forwardRef(
       const [timerColor, setTimerColor] = useState("neutral");
       const stage = approval_status?.stage;
 
+      const formatINR = (value) => {
+        if (value == null || value === "") return "—";
+        return new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        }).format(value);
+      };
+
       // ------- countdown logic (unchanged) -------
       useEffect(() => {
         if (!timers?.draft_started_at) {
@@ -441,7 +451,7 @@ const InstantRequest = forwardRef(
                 <Box
                   key={`${r.stage}-${i}`}
                   sx={{
-                    width: `${Math.max(2, widthPct)}%`, // ensure thin ranges still visible
+                    width: `${Math.max(2, widthPct)}%`,
                     background: active
                       ? "var(--joy-palette-primary-solidBg)"
                       : colorPool[i % colorPool.length],
@@ -533,7 +543,7 @@ const InstantRequest = forwardRef(
           <Box display="flex" alignItems="flex-start" gap={1} mb={0.5}>
             <Typography sx={{ fontWeight: 500 }}>💰 Amount:</Typography>
             <Typography sx={{ fontSize: "14px" }}>
-              {amount_paid || "—"}
+              {formatINR(amount_paid)}
             </Typography>
           </Box>
 
