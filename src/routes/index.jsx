@@ -110,6 +110,7 @@ import PurchaseRequestForm from "../pages/CAM/PurchaseRequestForm";
 import LogisticsForm from "../pages/SCM/LogisticsForm";
 import Inspection from "../pages/Eng/Inspection";
 import Inspection_Form from "../pages/Eng/Inspection_Form";
+import UserDashboard from "../pages/User-Control/User_Dashboard";
 
 function index() {
   return (
@@ -1007,6 +1008,14 @@ function index() {
         element={
           <PrivateRoute>
             <Product_Form />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/user-control"
+        element={
+          <PrivateRoute>
+            <UserDashboard/>
           </PrivateRoute>
         }
       />
