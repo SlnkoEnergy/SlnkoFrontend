@@ -45,7 +45,8 @@ function getField(rows, name) {
 
 function normalizeCreatedProduct(res) {
   let p = res;
-  if (p?.data?.data && (p?.data?.category || p?.data?.category?._id)) p = p.data;
+  if (p?.data?.data && (p?.data?.category || p?.data?.category?._id))
+    p = p.data;
   if (p?.newProduct) p = p.newProduct;
   if (p?.newMaterial) p = p.newMaterial;
   if (p?.product) p = p.product;
@@ -318,7 +319,7 @@ const ProductForm = ({
           gap={1}
         >
           <Typography level="h4" mb={3} fontWeight="lg">
-            {isCreate ? "Add New Product" : form.name || "Product"}
+            {isCreate ? "Add New Product" : "Product"}
           </Typography>
           {!embedded && (
             <Chip

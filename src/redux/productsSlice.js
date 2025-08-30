@@ -52,8 +52,41 @@ export const productsApi = createApi({
         body: { category, data, description, is_available },
       }),
     }),
+    getAllCategories: builder.query({
+      query: ({
+        page = 1,
+        pageSize = 10,
+        search = "",
+        type = "",
+        status = "",
+        sortBy = "createdAt",
+        sortOrder = "desc",
+      }) =>
+        `products/categories?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(
+          search
+        )}&type=${type}&status=${status}&sortBy=${sortBy}&sortOrder=${sortOrder}`,
+      providesTags: ["Products"],
+    }),
+    updateCategories: builder.mutation({
+      query: ({ categoryId, body }) => ({
+        url: `products/category/${categoryId}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["Products"],
+    }),
+   getMaterialCategoryById: builder.query({
+      query: (categoryId) => ({
+        url: `products/category-id?id=${categoryId}`, 
+        method: 'GET',
+        params: { id: categoryId },  
+      }),
+      providesTags: ['Products'],
+    }),
   }),
-});
+
+  });
+
 
 export const {
   useGetProductsQuery,
@@ -63,4 +96,7 @@ export const {
   useCreateProductMutation,
   useLazyGetProductByIdQuery,
   useUpdateProductMutation,
+  useGetAllCategoriesQuery,
+  useUpdateCategoriesMutation,
+  useGetMaterialCategoryByIdQuery
 } = productsApi;

@@ -11,40 +11,110 @@ import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Tooltip from "@mui/joy/Tooltip";
-import { useEffect, useMemo, useState, useCallback } from "react";
-import NoData from "../assets/alert-bell.svg";
-import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
-import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
-import { debounce } from "lodash";
-import { useSearchParams } from "react-router-dom";
 import Chip from "@mui/joy/Chip";
-import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
-import ApartmentIcon from "@mui/icons-material/Apartment";
-import BuildIcon from "@mui/icons-material/Build";
+import Select from "@mui/joy/Select";
+import Option from "@mui/joy/Option";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { debounce } from "lodash";
+import NoData from "../assets/alert-bell.svg";
 
-import {
-  useGetAllTasksQuery,
-  useGetAllDeptQuery,
-} from "../redux/globalTaskSlice";
-import { useNavigate } from "react-router-dom";
-import {
-  Badge,
-  Dropdown,
-  Menu,
-  MenuButton,
-  MenuItem,
-  Option,
-  Select,
-} from "@mui/joy";
-import FilterAltIcon from "@mui/icons-material/FilterAlt";
+// ⬇ import your RTKQ hook
+import { useGetAllCategoriesQuery } from "../redux/productsSlice";
 
 function Categories_Table() {
-  
-  const filteredData = [];
+  // ---------- local UI state ----------
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  const [type, setType] = useState("");
+  const [status, setStatus] = useState("");
+
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState("desc");
+
+  // debounce search input
+  const debouncer = useMemo(
+    () =>
+      debounce((v) => {
+        setDebouncedSearch(v);
+        setPage(1);
+      }, 400),
+    []
+  );
+  useEffect(() => {
+    debouncer(search);
+    return () => debouncer.cancel();
+  }, [search]);
+
+  // ---------- API call ----------
+  const { data, isLoading, isFetching, error } = useGetAllCategoriesQuery({
+    page,
+    pageSize,
+    search: debouncedSearch,
+    type,
+    status,
+    sortBy,
+    sortOrder,
+  });
+
+  const rows = data?.data || [];
+  const total = data?.meta?.total || 0;
+  const count = data?.meta?.count || 0;
+
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+
+  const handlePrev = () => setPage((p) => Math.max(1, p - 1));
+  const handleNext = () => setPage((p) => Math.min(pageCount, p + 1));
+
+  // ---------- helpers ----------
+  const renderNameCell = (name) => {
+    const text = typeof name === "string" ? name : "";
+    const truncated = text.length > 15 ? text.slice(0, 15) + "..." : text;
+
+    if (text.length <= 15) return <span>{text || "-"}</span>;
+
+    return (
+      <Tooltip
+        title={
+          <Box
+            sx={{
+              maxWidth: 320,
+              whiteSpace: "normal",
+              wordBreak: "break-word",
+            }}
+          >
+            <Typography sx={{ fontSize: 12, lineHeight: 1.5, color: "#fff" }}>
+              {text}
+            </Typography>
+          </Box>
+        }
+        arrow
+        placement="top-start"
+        slotProps={{
+          tooltip: {
+            sx: {
+              bgcolor: "#374151",
+              color: "#fff",
+              maxWidth: 320,
+              p: 1.2,
+              whiteSpace: "normal",
+              wordBreak: "break-word",
+            },
+          },
+          arrow: { sx: { color: "#374151" } },
+        }}
+      >
+        <span style={{ cursor: "default" }}>{truncated}</span>
+      </Tooltip>
+    );
+  };
 
   return (
     <>
-      {/* Search and Filters */}
+      {/* Search & Filters */}
       <Box
         sx={{
           marginLeft: { xl: "15%", lg: "18%" },
@@ -61,26 +131,86 @@ function Categories_Table() {
           <FormLabel>Search</FormLabel>
           <Input
             size="sm"
-            placeholder="Search by Product Name"
+            placeholder="Search by Name / Code / Description"
             startDecorator={<SearchIcon />}
-           
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </FormControl>
 
         <FormControl size="sm">
-          <FormLabel>Items per page</FormLabel>
-          {/* <Select
-            value={itemsPerPage}
-            onChange={(e, newValue) => {
-              setItemsPerPage(Number(newValue));
-              setCurrentPage(1);
+          <FormLabel>Type</FormLabel>
+          <Select
+            size="sm"
+            value={type}
+            onChange={(_, v) => {
+              setType(v || "");
+              setPage(1);
             }}
-            sx={{
-              height: "32px",
-              borderRadius: "6px",
-              padding: "0 8px",
-              borderColor: "#ccc",
-              backgroundColor: "#fff",
+          >
+            <Option value="">All</Option>
+            <Option value="supply">Supply</Option>
+            <Option value="execution">Execution</Option>
+          </Select>
+        </FormControl>
+
+        <FormControl size="sm">
+          <FormLabel>Status</FormLabel>
+          <Select
+            size="sm"
+            value={status}
+            onChange={(_, v) => {
+              setStatus(v || "");
+              setPage(1);
+            }}
+          >
+            <Option value="">All</Option>
+            <Option value="active">Active</Option>
+            <Option value="inactive">Inactive</Option>
+          </Select>
+        </FormControl>
+
+        <FormControl size="sm">
+          <FormLabel>Sort By</FormLabel>
+          <Select
+            size="sm"
+            value={sortBy}
+            onChange={(_, v) => {
+              setSortBy(v || "createdAt");
+              setPage(1);
+            }}
+          >
+            <Option value="createdAt">Created At</Option>
+            <Option value="name">Name</Option>
+            <Option value="category_code">Category Code</Option>
+            <Option value="updatedAt">Updated At</Option>
+          </Select>
+        </FormControl>
+
+        <FormControl size="sm">
+          <FormLabel>Order</FormLabel>
+          <Select
+            size="sm"
+            value={sortOrder}
+            onChange={(_, v) => {
+              setSortOrder(v || "desc");
+              setPage(1);
+            }}
+          >
+            <Option value="asc">Asc</Option>
+            <Option value="desc">Desc</Option>
+          </Select>
+        </FormControl>
+
+        <FormControl size="sm">
+          <FormLabel>Items per page</FormLabel>
+          <Select
+            size="sm"
+            value={pageSize}
+            onChange={(_, v) => {
+              const n = Number(v || 10);
+              setPageSize(n);
+              setPage(1);
             }}
           >
             {[5, 10, 20, 50, 100].map((n) => (
@@ -88,9 +218,8 @@ function Categories_Table() {
                 {n}
               </Option>
             ))}
-          </Select> */}
+          </Select>
         </FormControl>
-
       </Box>
 
       {/* Table */}
@@ -120,369 +249,96 @@ function Categories_Table() {
           >
             <tr>
               <th style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
-                <Checkbox
-                  size="sm"
-                //   checked={selected.length === filteredData.length}
-                //   onChange={handleSelectAll}
-                //   indeterminate={
-                //     selected.length > 0 && selected.length < filteredData.length
-                //   }
-                />
+                <Checkbox size="sm" />
               </th>
 
-              {/* The rest of the column headers */}
-              {["Category Code", "Category Name", "Product Count", "Type"].map(
-                (header, i) => (
-                  <th
-                    key={i}
-                    style={{
-                      padding: "8px",
-                      textAlign: "left",
-                      borderBottom: "1px solid #ddd",
-                    }}
-                  >
-                    {header}
-                  </th>
-                )
-              )}
+              {[
+                "Category Code",
+                "Category Name",
+                "Product Count",
+                "Type",
+                "Status",
+              ].map((header, i) => (
+                <th
+                  key={i}
+                  style={{
+                    padding: "8px",
+                    textAlign: "left",
+                    borderBottom: "1px solid #ddd",
+                  }}
+                >
+                  {header}
+                </th>
+              ))}
             </tr>
           </thead>
 
           <tbody>
-            {filteredData.length > 0 ? (
-              filteredData.map((task) => (
-                <tr key={task._id}>
+            {isLoading || isFetching ? (
+              <tr>
+                <td colSpan={6} style={{ textAlign: "center", padding: 16 }}>
+                  <Typography level="body-md">Loading…</Typography>
+                </td>
+              </tr>
+            ) : rows.length > 0 ? (
+              rows.map((cat) => (
+                <tr key={cat._id}>
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
-                    <Checkbox
-                      size="sm"
-                    //   checked={selected.includes(task._id)}
-                    //   onChange={() => handleRowSelect(task._id)}
-                    />
+                    <Checkbox size="sm" />
                   </td>
 
-                  {/* Task Info */}
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
-                    <Typography
-                      fontWeight="lg"
-                      sx={{ cursor: "pointer", color: "primary.700" }}
-                    //   onClick={() => navigate(`/view_task?task=${task._id}`)}
-                    >
-                      {task.taskCode}
-                    </Typography>
-                    <Box display="flex" alignItems="center" gap={0.5}>
-                      <Tooltip title="Priority">
-                        <Box display="flex">
-                          {[...Array(Number(task.priority || 0))].map(
-                            (_, i) => (
-                              <Typography key={i} level="body-sm">
-                                ⭐
-                              </Typography>
-                            )
-                          )}
-                        </Box>
-                      </Tooltip>
-                    </Box>
-
-                    <Typography level="body-sm" startDecorator="👤">
-                      Created By: {task.createdBy?.name || "-"}
-                    </Typography>
-                    <Typography level="body-sm" startDecorator="📆">
-                      Created At: {task.createdAt?.split("T")[0] || "-"}
+                    <Typography fontWeight="lg" sx={{ color: "primary.700" }}>
+                      {cat.category_code || "-"}
                     </Typography>
                   </td>
 
-                  {/* Title + Assigned To + Deadline */}
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
-                    <Typography fontWeight="lg">{task.title || "-"}</Typography>
+                    {renderNameCell(cat.name)}
+                  </td>
 
-                    {task.assigned_to?.length > 0 ? (
-                      <Tooltip
-                        title={
-                          <Box sx={{ px: 1, py: 0.5 }}>
-                            <Typography
-                              level="body-sm"
-                              fontWeight="md"
-                              mb={0.5}
-                            >
-                              Assigned To:
-                            </Typography>
-                            {task.assigned_to.map((a, i) => (
-                              <Typography key={i} level="body-sm">
-                                • {a.name}
-                              </Typography>
-                            ))}
-                          </Box>
-                        }
-                        variant="soft"
-                        placement="top"
-                      >
-                        <Box
-                          sx={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 0.5,
-                            cursor: "pointer",
-                            backgroundColor: "#f1f3f5",
-                            padding: "2px 6px",
-                            borderRadius: "12px",
-                            maxWidth: "100%",
-                          }}
-                        >
-                          <Typography level="body-sm" noWrap>
-                            {task.assigned_to[0].name}
-                          </Typography>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
+                  >
+                    <Typography level="body-sm">
+                      {typeof cat.product_count === "number"
+                        ? cat.product_count
+                        : "0"}
+                    </Typography>
+                  </td>
 
-                          {task.assigned_to.length > 1 && (
-                            <Box
-                              sx={{
-                                backgroundColor: "#007bff",
-                                color: "#fff",
-                                borderRadius: "8px",
-                                fontSize: "10px",
-                                fontWeight: 500,
-                                px: 0.8,
-                                lineHeight: 1.2,
-                              }}
-                            >
-                              +{task.assigned_to.length - 1}
-                            </Box>
-                          )}
-                        </Box>
-                      </Tooltip>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
+                  >
+                    {cat.type ? (
+                      <Chip variant="soft" color="primary" size="sm">
+                        {cat.type}
+                      </Chip>
                     ) : (
-                      <Typography level="body-sm" startDecorator="👥">
-                        -
-                      </Typography>
-                    )}
-
-                    <Typography level="body-sm" startDecorator="📅">
-                      Deadline: {task.deadline?.split("T")[0] || "-"}
-                    </Typography>
-                    {task.deadline &&
-                      (() => {
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-
-                        const deadlineDate = new Date(task.deadline);
-                        deadlineDate.setHours(0, 0, 0, 0);
-
-                        if (deadlineDate < today) {
-                          const diffInDays = Math.floor(
-                            (today - deadlineDate) / (1000 * 60 * 60 * 24)
-                          );
-                          return (
-                            <Typography
-                              level="body-sm"
-                              color="danger"
-                              startDecorator="⏰"
-                            >
-                              Delay: {diffInDays}{" "}
-                              {diffInDays === 1 ? "day" : "days"}
-                            </Typography>
-                          );
-                        } else {
-                          return (
-                            <Typography
-                              level="body-sm"
-                              color="success"
-                              startDecorator="✅"
-                            >
-                              On Time
-                            </Typography>
-                          );
-                        }
-                      })()}
-                  </td>
-
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
-                  >
-                    {task.type ? (
-                      <Box
-                        display="inline-flex"
-                        alignItems="center"
-                        gap={0.5}
-                        px={1}
-                        py={0.3}
-                        borderRadius="16px"
-                        border="1px solid #ccc"
-                        bgcolor="#f5f5f5"
-                      >
-
-                        <Typography variant="body2" fontWeight="medium">
-
-                        </Typography>
-                      </Box>
-                    ) : (
-                      <Typography fontWeight="lg">-</Typography>
+                      "-"
                     )}
                   </td>
 
-                  {/* Project Info */}
-
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
-                    {Array.isArray(task.project_details) &&
-                    task.project_details.length > 0 ? (
-                      task.project_details.length === 1 ? (
-                        <div>
-                          <Typography fontWeight="lg">
-                            {task.project_details[0].code || "-"}
-                          </Typography>
-                          <Typography level="body-sm" sx={{ color: "#666" }}>
-                            {task.project_details[0].name || "-"}
-                          </Typography>
-                        </div>
-                      ) : (
-                        <Tooltip
-                          title={
-                            <Box
-                              sx={{ maxHeight: 200, overflowY: "auto", pr: 1 }}
-                            >
-                              {task.project_details
-                                .slice(1)
-                                .map((project, index) => (
-                                  <Box key={project._id} sx={{ mb: 1 }}>
-                                    <Typography level="body-md" fontWeight="lg">
-                                      {project.code}
-                                    </Typography>
-                                    <Typography level="body-sm">
-                                      {project.name}
-                                    </Typography>
-                                    {index !==
-                                      task.project_details.length - 2 && (
-                                      <Box
-                                        sx={{
-                                          height: "1px",
-                                          backgroundColor: "#eee",
-                                          my: 1,
-                                        }}
-                                      />
-                                    )}
-                                  </Box>
-                                ))}
-                            </Box>
-                          }
-                          arrow
-                          placement="top-start"
-                          variant="soft"
-                        >
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1.2,
-                              cursor: "pointer",
-                              "&:hover .project-count-badge": {
-                                backgroundColor: "#0056d2",
-                              },
-                            }}
-                          >
-                            <Box>
-                              <Typography fontWeight="lg">
-                                {task.project_details[0].code || "-"}
-                              </Typography>
-                              <Typography level="body-sm">
-                                {task.project_details[0].name || "-"}
-                              </Typography>
-                            </Box>
-                            <Box
-                              className="project-count-badge"
-                              sx={{
-                                backgroundColor: "#007bff",
-                                color: "#fff",
-                                borderRadius: "12px",
-                                fontSize: "11px",
-                                fontWeight: 600,
-                                px: 1,
-                                py: 0.2,
-                                minWidth: 26,
-                                textAlign: "center",
-                                transition: "all 0.2s ease-in-out",
-                                boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
-                              }}
-                            >
-                              +{task.project_details.length - 1}
-                            </Box>
-                          </Box>
-                        </Tooltip>
-                      )
-                    ) : (
-                      <>
-                        <Typography fontWeight="lg">N/A</Typography>
-                      </>
-                    )}
-                  </td>
-
-                  {/* Description */}
-                  <td
-                    style={{
-                      padding: "8px",
-                      borderBottom: "1px solid #ddd",
-                      maxWidth: "200px",
-                    }}
-                  >
-                    <Tooltip
-                      title={
-                        <Typography
-                          sx={{ whiteSpace: "pre-line", maxWidth: "300px" }}
-                        >
-                          {task.description || ""}
-                        </Typography>
-                      }
-                      arrow
-                      placement="top-start"
-                      variant="soft"
-                      color="neutral"
-                    >
-                      <Typography
-                        noWrap
-                        sx={{
-                          maxWidth: "180px",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          cursor: "default",
-                        }}
-                      >
-                        {task.description || "-"}
-                      </Typography>
-                    </Tooltip>
-                  </td>
-
-                  {/* Status */}
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
-                  >
-                    <Tooltip title={task.current_status?.remarks || ""}>
+                    {cat.status ? (
                       <Chip
                         variant="soft"
-                        color={
-                          task.current_status?.status === "draft"
-                            ? "primary"
-                            : task.current_status?.status === "pending"
-                              ? "danger"
-                              : task.current_status?.status === "in progress"
-                                ? "warning"
-                                : task.current_status?.status === "completed"
-                                  ? "success"
-                                  : "neutral"
-                        }
+                        color={cat.status === "active" ? "success" : "neutral"}
                         size="sm"
                       >
-                        {task.current_status?.status
-                          ? task.current_status.status.charAt(0).toUpperCase() +
-                            task.current_status.status.slice(1)
-                          : "-"}
+                        {cat.status}
                       </Chip>
-                    </Tooltip>
+                    ) : (
+                      "-"
+                    )}
                   </td>
                 </tr>
               ))
@@ -504,7 +360,9 @@ function Categories_Table() {
                       alt="No data"
                       style={{ width: 50, marginBottom: 8 }}
                     />
-                    <Typography fontStyle="italic">No Tasks Found</Typography>
+                    <Typography fontStyle="italic">
+                      No Categories Found
+                    </Typography>
                   </Box>
                 </td>
               </tr>
@@ -522,7 +380,7 @@ function Categories_Table() {
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          justifyContent: "center",
+          justifyContent: "space-between",
           marginLeft: { lg: "18%", xl: "15%" },
           flexWrap: "wrap",
         }}
@@ -532,28 +390,16 @@ function Categories_Table() {
           variant="outlined"
           color="neutral"
           startDecorator={<KeyboardArrowLeftIcon />}
+          onClick={handlePrev}
+          disabled={page <= 1 || isFetching}
         >
           Previous
         </Button>
 
         <Box>
-         
-        </Box>
-
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <IconButton size="sm" variant="contained" color="neutral">
-      
-          </IconButton>
-    
-            <IconButton
-              size="sm"
-              variant="outlined"
-              color="neutral"
-   
-            >
-         
-            </IconButton>
-
+          <Typography level="body-sm">
+            Page {page} of {pageCount}
+          </Typography>
         </Box>
 
         <Button
@@ -561,7 +407,8 @@ function Categories_Table() {
           variant="outlined"
           color="neutral"
           endDecorator={<KeyboardArrowRightIcon />}
-
+          onClick={handleNext}
+          disabled={page >= pageCount || isFetching}
         >
           Next
         </Button>

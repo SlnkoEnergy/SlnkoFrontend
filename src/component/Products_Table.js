@@ -9,10 +9,10 @@ import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
-import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
+import  { iconButtonClasses } from "@mui/joy/IconButton";
 import NoData from "../assets/alert-bell.svg";
 import { useGetProductsQuery } from "../redux/productsSlice";
-import { Chip, Option, Select, Typography } from "@mui/joy";
+import { Chip, Option, Select, Tooltip, Typography } from "@mui/joy";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 function Products_Table() {
@@ -50,7 +50,7 @@ function Products_Table() {
       page: currentPage,
       limit: rowsPerPage,
       search: searchTerm,
-      category:"",
+      category: "",
     },
     {
       refetchOnMountOrArgChange: true,
@@ -74,6 +74,54 @@ function Products_Table() {
   const getValue = (product, fieldName) => {
     const field = product.data.find((f) => f.name === fieldName);
     return field?.values?.[0]?.input_values || "-";
+  };
+
+  const ProductNameCell = ({ text }) => {
+    const name = typeof text === "string" ? text : "";
+    const truncated = name.length > 15 ? name.slice(0, 15) + "..." : name;
+
+    const tooltipContent = (
+      <Box
+        sx={{
+          maxWidth: 320,
+          whiteSpace: "pre-line",
+          wordBreak: "break-word",
+        }}
+      >
+        <Typography sx={{ fontSize: 12, lineHeight: 1.5, color: "#fff" }}>
+          {name}
+        </Typography>
+      </Box>
+    );
+
+    return (
+      <>
+        {name.length > 15 ? (
+          <Tooltip
+            title={tooltipContent}
+            arrow
+            placement="top-start"
+            slotProps={{
+              tooltip: {
+                sx: {
+                  bgcolor: "#374151", 
+                  color: "#fff",
+                  maxWidth: 320,
+                  p: 1.2,
+                  whiteSpace: "normal",
+                  wordBreak: "break-word",
+                },
+              },
+              arrow: { sx: { color: "#374151" } },
+            }}
+          >
+            <span style={{ cursor: "default" }}>{truncated}</span>
+          </Tooltip>
+        ) : (
+          <span>{name}</span>
+        )}
+      </>
+    );
   };
 
   return (
@@ -220,7 +268,7 @@ function Products_Table() {
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
-                    {getValue(product, "Product Name")}
+                    <ProductNameCell text={getValue(product, "Product Name")} />
                   </td>
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}

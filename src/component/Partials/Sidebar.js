@@ -612,16 +612,15 @@ function Sidebar() {
                   </ListItemButton>
                 )}
               >
+                <ListItem sx={{ mt: 0.5 }}>
+                  <ListItemButton onClick={() => navigate("/categories")}>
+                    Categories
+                  </ListItemButton>
+                </ListItem>
                 <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
                     <ListItemButton onClick={() => navigate("/products")}>
                       Products
-                    </ListItemButton>
-                  </ListItem>
-
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/categories")}>
-                      Categories
                     </ListItemButton>
                   </ListItem>
                 </List>
