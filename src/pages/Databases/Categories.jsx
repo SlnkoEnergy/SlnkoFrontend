@@ -11,14 +11,11 @@ import ViewModuleRoundedIcon from "@mui/icons-material/ViewModuleRounded";
 import Sidebar from "../../component/Partials/Sidebar";
 import Header from "../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
-import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
-import { useExportTasksToCsvMutation } from "../../redux/globalTaskSlice";
 import Categories_Table from "../../component/Categories_Table";
 
 function Categories() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [selectedIds, setSelectedIds] = useState([]);
 
   useEffect(() => {
     const userData = getUserData();
@@ -31,33 +28,6 @@ function Categories() {
       return JSON.parse(userData);
     }
     return null;
-  };
-
-  const [exportTasksToCsv] = useExportTasksToCsvMutation();
-
-  const handleExport = async (selectedIds) => {
-    try {
-      if (!selectedIds || selectedIds.length === 0) {
-        alert("No tasks selected for export.");
-        return;
-      }
-      const response = await exportTasksToCsv(selectedIds).unwrap();
-
-      const blob = new Blob([response], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "tasks_export.csv";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Export failed:", error);
-      alert("Failed to export tasks to CSV.");
-    }
   };
 
   return (
@@ -145,19 +115,9 @@ function Categories() {
               <Button
                 variant="solid"
                 color="primary"
-                startDecorator={<DownloadRoundedIcon />}
-                size="md"
-                onClick={() => handleExport(selectedIds)}
-              >
-                Export to CSV
-              </Button>
-
-              <Button
-                variant="solid"
-                color="primary"
                 startDecorator={<ViewModuleRoundedIcon />}
                 size="md"
-                onClick={() => navigate("/add_task")}
+                onClick={() => navigate("/category_form?mode=create")}
               >
                 Add Category
               </Button>

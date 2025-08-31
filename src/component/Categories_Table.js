@@ -14,12 +14,12 @@ import Tooltip from "@mui/joy/Tooltip";
 import Chip from "@mui/joy/Chip";
 import Select from "@mui/joy/Select";
 import Option from "@mui/joy/Option";
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { debounce } from "lodash";
 import NoData from "../assets/alert-bell.svg";
 
-// ⬇ import your RTKQ hook
 import { useGetAllCategoriesQuery } from "../redux/productsSlice";
+import { useNavigate } from "react-router-dom";
 
 function Categories_Table() {
   // ---------- local UI state ----------
@@ -34,6 +34,7 @@ function Categories_Table() {
 
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState("desc");
+  const navigate = useNavigate();
 
   // debounce search input
   const debouncer = useMemo(
@@ -62,9 +63,13 @@ function Categories_Table() {
 
   const rows = data?.data || [];
   const total = data?.meta?.total || 0;
-  const count = data?.meta?.count || 0;
 
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
+
+  // ---------- start & end index ----------
+  const startIndex = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endIndex =
+    total === 0 ? 0 : Math.min((page - 1) * pageSize + rows.length, total);
 
   const handlePrev = () => setPage((p) => Math.max(1, p - 1));
   const handleNext = () => setPage((p) => Math.min(pageCount, p + 1));
@@ -290,11 +295,26 @@ function Categories_Table() {
                   </td>
 
                   <td
-                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
+                    onClick={() =>
+                      navigate(`/category_form?mode=edit&id=${cat._id}`)
+                    }
+                    style={{
+                      padding: "8px",
+                      borderBottom: "1px solid #ddd",
+                      cursor: "pointer",
+                    }}
                   >
-                    <Typography fontWeight="lg" sx={{ color: "primary.700" }}>
-                      {cat.category_code || "-"}
-                    </Typography>
+                    {cat.category_code ? (
+                      <Chip
+                        variant="solid"
+                        color="primary"
+                        sx={{ fontWeight: "lg", cursor: "pointer" }}
+                      >
+                        {cat.category_code}
+                      </Chip>
+                    ) : (
+                      "-"
+                    )}
                   </td>
 
                   <td
@@ -385,17 +405,24 @@ function Categories_Table() {
           flexWrap: "wrap",
         }}
       >
-        <Button
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          startDecorator={<KeyboardArrowLeftIcon />}
-          onClick={handlePrev}
-          disabled={page <= 1 || isFetching}
-        >
-          Previous
-        </Button>
+        <Box display={"flex"} alignItems={"center"} gap={2}>
+          <Button
+            size="sm"
+            variant="outlined"
+            color="neutral"
+            startDecorator={<KeyboardArrowLeftIcon />}
+            onClick={handlePrev}
+            disabled={page <= 1 || isFetching}
+          >
+            Previous
+          </Button>
 
+          <Box>
+            <Typography level="body-sm">
+              Showing {startIndex}–{endIndex} of {total} results
+            </Typography>
+          </Box>
+        </Box>
         <Box>
           <Typography level="body-sm">
             Page {page} of {pageCount}

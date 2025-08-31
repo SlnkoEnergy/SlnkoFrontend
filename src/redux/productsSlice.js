@@ -7,16 +7,13 @@ export const productsApi = createApi({
     credentials: "include",
     prepareHeaders: (headers) => {
       const token = localStorage.getItem("authToken");
-
-      if (token) {
-        headers.set("x-auth-token", token);
-      }
-
+      if (token) headers.set("x-auth-token", token);
       return headers;
     },
   }),
-  tagTypes: ["Products"],
+  tagTypes: ["Products", "Categories"],
   endpoints: (builder) => ({
+    // ===== Products =====
     getProducts: builder.query({
       query: ({ limit, search, page, category }) =>
         `products/product?search=${search}&limit=${limit}&page=${page}&category=${category}`,
@@ -28,11 +25,14 @@ export const productsApi = createApi({
             ]
           : [{ type: "Products", id: "LIST" }],
     }),
-    getCategoriesNameSearch: builder.query({
-      query: ({ page, search, limit, pr, projectId }) =>
-        `products/category?search=${search}&page=${page}&pr=${pr}&project_id=${projectId}`,
-      providesTags: ["Products"],
+
+    getProductById: builder.query({
+      query: (productId) => `products/product/${productId}`,
+      providesTags: (_res, _err, productId) => [
+        { type: "Products", id: productId },
+      ],
     }),
+
     createProduct: builder.mutation({
       query: ({ category, data, description, is_available }) => ({
         url: "products/product",
@@ -41,17 +41,20 @@ export const productsApi = createApi({
       }),
       invalidatesTags: [{ type: "Products", id: "LIST" }],
     }),
-    getProductById: builder.query({
-      query: (productId) => `products/product/${productId}`,
-      providesTags: ["Products"],
-    }),
+
     updateProduct: builder.mutation({
       query: ({ productId, category, data, description, is_available }) => ({
         url: `products/product/${productId}`,
         method: "PUT",
         body: { category, data, description, is_available },
       }),
+      invalidatesTags: (_res, _err, { productId }) => [
+        { type: "Products", id: "LIST" },
+        { type: "Products", id: productId },
+      ],
     }),
+
+    // ===== Categories =====
     getAllCategories: builder.query({
       query: ({
         page = 1,
@@ -65,38 +68,69 @@ export const productsApi = createApi({
         `products/categories?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(
           search
         )}&type=${type}&status=${status}&sortBy=${sortBy}&sortOrder=${sortOrder}`,
-      providesTags: ["Products"],
+      providesTags: (result) =>
+        result?.data
+          ? [
+              { type: "Categories", id: "LIST" },
+              ...result.data.map((c) => ({ type: "Categories", id: c._id })),
+            ]
+          : [{ type: "Categories", id: "LIST" }],
     }),
+
+    getCategoriesNameSearch: builder.query({
+      query: ({ page, search, limit, pr, projectId }) =>
+        `products/category?search=${search}&page=${page}&pr=${pr}&project_id=${projectId}`,
+      providesTags: [{ type: "Categories", id: "LIST" }],
+    }),
+
+    getMaterialCategoryById: builder.query({
+      query: (categoryId) => ({
+        url: `products/category-id?id=${categoryId}`,
+        method: "GET",
+        params: { id: categoryId },
+      }),
+      providesTags: (_res, _err, categoryId) => [
+        { type: "Categories", id: categoryId },
+      ],
+    }),
+
     updateCategories: builder.mutation({
       query: ({ categoryId, body }) => ({
         url: `products/category/${categoryId}`,
         method: "PUT",
         body,
       }),
-      invalidatesTags: ["Products"],
+      invalidatesTags: (_res, _err, { categoryId }) => [
+        { type: "Categories", id: "LIST" },
+        { type: "Categories", id: categoryId },
+      ],
     }),
-   getMaterialCategoryById: builder.query({
-      query: (categoryId) => ({
-        url: `products/category-id?id=${categoryId}`, 
-        method: 'GET',
-        params: { id: categoryId },  
+
+    createCategory: builder.mutation({
+      query: ({ name, description, type, status, fields }) => ({
+        url: "products/category",
+        method: "POST",
+        body: { name, description, type, status, fields },
       }),
-      providesTags: ['Products'],
+      invalidatesTags: [{ type: "Categories", id: "LIST" }],
     }),
   }),
-
-  });
-
+});
 
 export const {
+  // products
   useGetProductsQuery,
   useLazyGetProductsQuery,
+  useGetProductByIdQuery,
+  useLazyGetProductByIdQuery,
+  useCreateProductMutation,
+  useUpdateProductMutation,
+
+  // categories
+  useGetAllCategoriesQuery,
   useGetCategoriesNameSearchQuery,
   useLazyGetCategoriesNameSearchQuery,
-  useCreateProductMutation,
-  useLazyGetProductByIdQuery,
-  useUpdateProductMutation,
-  useGetAllCategoriesQuery,
+  useGetMaterialCategoryByIdQuery,
   useUpdateCategoriesMutation,
-  useGetMaterialCategoryByIdQuery
+  useCreateCategoryMutation,
 } = productsApi;

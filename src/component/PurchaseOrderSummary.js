@@ -43,7 +43,6 @@ import {
   Calendar,
   CalendarSearch,
   Handshake,
-  History,
   PackageCheck,
   Truck,
 } from "lucide-react";
@@ -129,7 +128,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     catInitialData?.totalCount ??
     topCategories.length;
 
-  const hasMoreThan7 = Number(totalCats) > 7;
 
   const { search, state } = useLocation();
   const [sp] = useSearchParams();
@@ -261,8 +259,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     setSelectedpo(po);
     setSelecteditem(itemSearch);
   }, [searchParams]);
-  
-  console.log({selectedpo})
+
+  console.log({ selectedpo });
 
   const applyCategory = (value) => {
     setSelecteditem(value || "");
@@ -494,8 +492,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                 {activeDateFilter === "etd"
                   ? "ETD Date Range"
                   : activeDateFilter === "po"
-                  ? "PO Date Range"
-                  : "Delivery Date Range"}
+                    ? "PO Date Range"
+                    : "Delivery Date Range"}
               </Typography>
 
               <Box display="flex" gap={1}>
@@ -507,8 +505,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       activeDateFilter === "etd"
                         ? etdFrom
                         : activeDateFilter === "po"
-                        ? poFrom
-                        : deliveryFrom
+                          ? poFrom
+                          : deliveryFrom
                     }
                     onChange={(e) => {
                       if (activeDateFilter === "etd")
@@ -529,8 +527,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       activeDateFilter === "etd"
                         ? etdTo
                         : activeDateFilter === "po"
-                        ? poTo
-                        : deliveryTo
+                          ? poTo
+                          : deliveryTo
                     }
                     onChange={(e) => {
                       if (activeDateFilter === "etd") setEtdTo(e.target.value);
@@ -732,8 +730,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const label = isFullyBilled
       ? "Fully Billed"
       : isPending
-      ? "Pending"
-      : status;
+        ? "Pending"
+        : status;
 
     const icon = isFullyBilled ? (
       <CheckRoundedIcon />
@@ -1039,156 +1037,140 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     );
   };
 
-const RenderItem_Vendor = ({ vendor, item, other_item, amount }) => {
-  const categories = Array.isArray(item)
-    ? item.filter(Boolean).map(String)
-    : item
-    ? [String(item)]
-    : [];
+  const RenderItem_Vendor = ({ vendor, item, other_item, amount }) => {
+    const categories = Array.isArray(item)
+      ? item.filter(Boolean).map(String)
+      : item
+        ? [String(item)]
+        : [];
 
-  const onlyOther =
-    categories.length === 1 && categories[0].trim().toLowerCase() === "other";
-  const normalized = onlyOther ? [other_item || "Other"] : categories;
+    const onlyOther =
+      categories.length === 1 && categories[0].trim().toLowerCase() === "other";
+    const normalized = onlyOther ? [other_item || "Other"] : categories;
 
-  const hasMultiple = normalized.length > 1;
-  const first = normalized[0] || "";
-  const rest = normalized.slice(1);
+    const hasMultiple = normalized.length > 1;
+    const first = normalized[0] || "";
+    const rest = normalized.slice(1);
 
-  const truncatedFirst =
-    first.length > 15 ? first.substring(0, 15) + "..." : first;
+    const truncatedFirst =
+      first.length > 15 ? first.substring(0, 15) + "..." : first;
 
-
-  const tooltipContent = (
-    <Box
-      display="flex"
-      flexDirection="column"
-      gap={0.5}
-      sx={{
-        maxWidth: 300, 
-        whiteSpace: "normal", 
-        wordBreak: "break-word",
-      }}
-    >
-      {normalized.map((c, i) => (
-        <Typography
-          key={i}
-          sx={{
-            fontSize: 12,
-            lineHeight: 1.5,
-            color: "white",
-            display: "block",
-          }}
-        >
-          {i + 1}. {c}
-        </Typography>
-      ))}
-    </Box>
-  );
-
-  return (
-    <>
-      <Box display="flex" alignItems="center" gap={0.5}>
-        {(first.length > 15 || hasMultiple) ? (
-          <Tooltip
-            title={tooltipContent}
-            arrow
-            placement="top-start"
-            slotProps={{
-              tooltip: {
-                sx: {
-                  bgcolor: "#374151", // dark gray
-                  color: "white",
-                  maxWidth: 320, // ✅ fix tooltip width
-                  p: 1.2,
-                  whiteSpace: "normal",
-                  wordBreak: "break-word",
-                },
-              },
-              arrow: { sx: { color: "#374151" } },
+    const tooltipContent = (
+      <Box
+        display="flex"
+        flexDirection="column"
+        gap={0.5}
+        sx={{
+          maxWidth: 300,
+          whiteSpace: "normal",
+          wordBreak: "break-word",
+        }}
+      >
+        {normalized.map((c, i) => (
+          <Typography
+            key={i}
+            sx={{
+              fontSize: 12,
+              lineHeight: 1.5,
+              color: "white",
+              display: "block",
             }}
           >
-            <span style={{ fontWeight: 400, fontSize: 14 }}>
-              {truncatedFirst}
-            </span>
-          </Tooltip>
-        ) : (
-          <span style={{ fontWeight: 400, fontSize: 14 }}>{first}</span>
-        )}
+            {i + 1}. {c}
+          </Typography>
+        ))}
+      </Box>
+    );
 
-        {hasMultiple && (
-          <Tooltip
-            title={tooltipContent}
-            arrow
-            placement="top-start"
-            slotProps={{
-              tooltip: {
-                sx: {
-                  bgcolor: "#374151",
-                  color: "white",
-                  maxWidth: 320,
-                  p: 1.2,
-                  whiteSpace: "normal",
-                  wordBreak: "break-word",
+    return (
+      <>
+        <Box display="flex" alignItems="center" gap={0.5}>
+          {first.length > 15 || hasMultiple ? (
+            <Tooltip
+              title={tooltipContent}
+              arrow
+              placement="top-start"
+              slotProps={{
+                tooltip: {
+                  sx: {
+                    bgcolor: "#374151",
+                    color: "white",
+                    maxWidth: 320,
+                    p: 1.2,
+                    whiteSpace: "normal",
+                    wordBreak: "break-word",
+                  },
                 },
-              },
-              arrow: { sx: { color: "#374151" } },
-            }}
-          >
-            <Box
-              component="span"
-              sx={{
-                ml: 0.5,
-                px: 1,
-                fontSize: 12,
-                fontWeight: 600,
-                borderRadius: "12px",
-                bgcolor: "#6b7280",
-                color: "white",
-                cursor: "pointer",
+                arrow: { sx: { color: "#374151" } },
               }}
             >
-              +{rest.length}
-            </Box>
-          </Tooltip>
-        )}
-      </Box>
+              <span style={{ fontWeight: 400, fontSize: 14 }}>
+                {truncatedFirst}
+              </span>
+            </Tooltip>
+          ) : (
+            <span style={{ fontWeight: 400, fontSize: 14 }}>{first}</span>
+          )}
 
-      {!!amount && (
+          {hasMultiple && (
+            <Tooltip
+              title={tooltipContent}
+              arrow
+              placement="top-start"
+              slotProps={{
+                tooltip: {
+                  sx: {
+                    bgcolor: "#374151",
+                    color: "white",
+                    maxWidth: 320,
+                    p: 1.2,
+                    whiteSpace: "normal",
+                    wordBreak: "break-word",
+                  },
+                },
+                arrow: { sx: { color: "#374151" } },
+              }}
+            >
+              <Box
+                component="span"
+                sx={{
+                  ml: 0.5,
+                  px: 1,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  borderRadius: "12px",
+                  bgcolor: "#6b7280",
+                  color: "white",
+                  cursor: "pointer",
+                }}
+              >
+                +{rest.length}
+              </Box>
+            </Tooltip>
+          )}
+        </Box>
+
+        {!!amount && (
+          <Box display="flex" alignItems="center" mt={0.5}>
+            <Money size={12} color="green" />
+            &nbsp;
+            <span style={{ fontSize: 12, fontWeight: 600 }}>Amount : </span>
+            &nbsp;
+            <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+              ₹ {amount}
+            </Typography>
+          </Box>
+        )}
+
         <Box display="flex" alignItems="center" mt={0.5}>
-          <Money size={12} color="green" />
-          &nbsp;
-          <span style={{ fontSize: 12, fontWeight: 600 }}>Amount : </span>&nbsp;
+          <span style={{ fontSize: 12, fontWeight: 600 }}>Vendor : </span>&nbsp;
           <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-            ₹ {amount}
+            {vendor}
           </Typography>
         </Box>
-      )}
-
-      <Box display="flex" alignItems="center" mt={0.5}>
-        <span style={{ fontSize: 12, fontWeight: 600 }}>Vendor : </span>&nbsp;
-        <Typography sx={{ fontSize: 12, fontWeight: 400 }}>{vendor}</Typography>
-      </Box>
-    </>
-  );
-};
-
-
-
-  const EditPo = ({ po_number }) => (
-    <Tooltip title="Edit PO" placement="top">
-      <IconButton color="primary" onClick={() => handleOpen(po_number, "edit")}>
-        <EditNoteIcon />
-      </IconButton>
-    </Tooltip>
-  );
-
-  const ViewPOHistory = ({ po_number }) => (
-    <Tooltip title="View PO History" placement="top">
-      <IconButton color="primary" onClick={() => handleOpen(po_number, "view")}>
-        <History />
-      </IconButton>
-    </Tooltip>
-  );
+      </>
+    );
+  };
 
   const RenderTotalBilled = ({ total_billed = 0, po_value = 0, po_number }) => {
     const billed = Number(total_billed);
@@ -1503,7 +1485,11 @@ const RenderItem_Vendor = ({ vendor, item, other_item, amount }) => {
                       }}
                     >
                       <RenderItem_Vendor
-                        item={po.category_names === "Other" ? "other" : po.category_names}
+                        item={
+                          po.category_names === "Other"
+                            ? "other"
+                            : po.category_names
+                        }
                         other_item={po?.pr?.other_item_name}
                         amount={po?.pr?.amount}
                         vendor={po.vendor}
