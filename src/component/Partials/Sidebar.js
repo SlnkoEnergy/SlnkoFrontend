@@ -1396,6 +1396,38 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <DatabaseIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">My Databases</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/products")}>
+                      Products
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+
             {/* Ops Section */}
             {user?.name === "Prachi Singh" && (
               <ListItem nested>
@@ -2120,6 +2152,38 @@ function Sidebar() {
                   <ListItem sx={{ mt: 0.5 }}>
                     <ListItemButton onClick={() => navigate("/all_task")}>
                       Task View
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <DatabaseIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">My Databases</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/products")}>
+                      Products
                     </ListItemButton>
                   </ListItem>
                 </List>
