@@ -216,13 +216,7 @@ function PaymentRequestForm() {
       setFormData((prev) => ({
         ...prev,
         po_number: data?.po_number || poNum,
-         paid_for: [
-        ...new Set(
-          (data.item || [])
-            .map((it) => it?.category?.name) 
-            .filter(Boolean) 
-        ),
-      ].join(", "),
+         paid_for: data?.item,
         vendor: data?.vendor || prev.vendor,
         po_value: poValueNum === "" ? "" : String(poValueNum),
         total_advance_paid: advPaidNum === "" ? "" : String(advPaidNum),
@@ -467,7 +461,7 @@ function PaymentRequestForm() {
                           : null
                       }
                       onChange={handlePoChange}
-                      options={getFormData.poNumbers.map((po) => ({
+                      options={getFormData.poNumbers?.map((po) => ({
                         value: po,
                         label: po,
                       }))}
