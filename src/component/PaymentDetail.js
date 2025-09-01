@@ -92,8 +92,8 @@ const PaymentDetail = forwardRef((props, ref) => {
               Approved: item.approved || "",
               acc_number: item.acc_number || "",
               benificiary: item.benificiary || "",
-              amt_for_customer: item.amt_for_customer || 0,
-              pay_mod: item.amt_for_customer > 100000 ? "R" : "N",
+              amount_paid: item.amount_paid || 0,
+              pay_mod: item.amount_paid > 100000 ? "R" : "N",
               dbt_date: formatDate(item.dbt_date),
               ifsc: item.ifsc || "",
               comment: remarks,
@@ -204,7 +204,7 @@ const PaymentDetail = forwardRef((props, ref) => {
               escapeValue(row.debitAccount),
               escapeValue(row.acc_number, true),
               escapeValue(row.benificiary),
-              escapeValue(row.amt_for_customer),
+              escapeValue(row.amount_paid),
               escapeValue(row.pay_mod),
               escapeValue(row.dbt_date),
               escapeValue(row.ifsc),
@@ -456,7 +456,7 @@ const PaymentDetail = forwardRef((props, ref) => {
                   <Cell>{row.benificiary}</Cell>
                   <Cell>
                     <Chip size="sm" variant="soft" color="primary">
-                      {row.amt_for_customer}
+                      {row.amount_paid}
                     </Chip>
                   </Cell>
                   <Cell>

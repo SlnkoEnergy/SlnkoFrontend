@@ -433,11 +433,13 @@ function UTRPayment() {
         </Box>
       )}
 
-      <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
-        <Typography sx={{ ...labelStyle, minWidth: 70 }}>🏢 Vendor:</Typography>
-        <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>
-          {vendor}
+      <Box display="flex" alignItems="center" gap={1} mt={0.5}>
+        <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
+          🏢 Vendor:
         </Typography>
+        <Chip color="danger" size="sm" variant="solid" sx={{ fontSize: 12 }}>
+          {vendor}
+        </Chip>
       </Box>
 
       <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
@@ -451,36 +453,52 @@ function UTRPayment() {
     </Box>
   );
 
-  const MatchRow = ({ accountStatus, requestedAmount }) => (
-    <Box mt={1}>
-      <Box display="flex" alignItems="flex-start" gap={1} mb={0.5}>
-        <Typography sx={labelStyle}>💰 Amount Requested:</Typography>
-        <Typography
-          sx={{ ...valueStyle, wordBreak: "break-word", fontSize: "14px" }}
-        >
-          {requestedAmount || "—"}
-        </Typography>
-      </Box>
+  const MatchRow = ({ accountStatus, requestedAmount }) => {
+    const inr = new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
 
-      <Box display="flex" alignItems="flex-start" gap={1}>
-        <Typography sx={labelStyle}>📑 Account Verification:</Typography>
-        {accountStatus === "matched" ? (
-          <Chip
-            color="success"
-            variant="soft"
-            size="sm"
-            startDecorator={<CheckIcon fontSize="small" />}
+    const fmt = (val) => {
+      if (val == null || val === "") return "—";
+      const num = Number(val);
+      if (!Number.isFinite(num)) return "—";
+      return inr.format(num);
+    };
+
+    return (
+      <Box mt={1}>
+        <Box display="flex" alignItems="flex-start" gap={1} mb={0.5}>
+          <Typography sx={labelStyle}>💰 Amount Requested:</Typography>
+          <Typography
+            sx={{ ...valueStyle, wordBreak: "break-word", fontSize: "14px" }}
           >
-            Matched
-          </Chip>
-        ) : (
-          <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>
-            {accountStatus || "Pending"}
+            {fmt(requestedAmount)}
           </Typography>
-        )}
+        </Box>
+
+        <Box display="flex" alignItems="flex-start" gap={1}>
+          <Typography sx={labelStyle}>📑 Account Verification:</Typography>
+          {accountStatus === "matched" ? (
+            <Chip
+              color="success"
+              variant="soft"
+              size="sm"
+              startDecorator={<CheckIcon fontSize="small" />}
+            >
+              Matched
+            </Chip>
+          ) : (
+            <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>
+              {accountStatus || "Pending"}
+            </Typography>
+          )}
+        </Box>
       </Box>
-    </Box>
-  );
+    );
+  };
 
   return (
     <>

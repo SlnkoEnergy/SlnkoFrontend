@@ -31,6 +31,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import Img12 from "../../assets/slnko_blue_logo.png";
 import Axios from "../../utils/Axios";
+import CurrencyRupee from "@mui/icons-material/CurrencyRupee";
 import { useGetCustomerSummaryQuery } from "../../redux/Accounts";
 import { debounce } from "lodash";
 
@@ -500,6 +501,33 @@ const Customer_Payment_Summary = () => {
     extraGST,
   } = balanceSummary || {};
 
+  const formatIndianNumber = (val) => {
+    const n = Number(val);
+    if (!isFinite(n)) return "—";
+    return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(
+      Math.round(Math.abs(n))
+    );
+  };
+
+  const RupeeValue = ({ value }) => {
+    const n = Number(value);
+    const isNeg = n < 0;
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          gap: 4,
+        }}
+      >
+        {isNeg && <span>-</span>}
+        <CurrencyRupee style={{ fontSize: 16, marginBottom: 1 }} />
+        <span>{formatIndianNumber(n)}</span>
+      </span>
+    );
+  };
+
   const Balance_Summary = () => {
     const headerStyle = {
       fontWeight: "bold",
@@ -513,6 +541,63 @@ const Customer_Payment_Summary = () => {
       borderBottom: "1px solid #eee",
     };
 
+    const valueCellStyle = {
+      ...cellStyle,
+      textAlign: "right",
+      fontVariantNumeric: "tabular-nums",
+      whiteSpace: "nowrap",
+    };
+
+    const rows = [
+      ["1", "Total Received", total_received],
+      ["2", "Total Return", total_return],
+      ["3", "Net Balance [(1)-(2)]", netBalance, "#C8C8C6"],
+      ["4", "Total Advance Paid to Vendors", total_advance_paid],
+      ["4A", "Total Adjustment (Debit-Credit)", total_adjustment],
+      [
+        "5",
+        "Balance With Slnko [(3)-(4)-(4A)]",
+        Math.round(balance_with_slnko),
+        "#B6F4C6",
+        true,
+      ],
+      ["6", "Total PO Basic Value", Math.round(total_po_basic)],
+      ["7", "GST Value as per PO", Math.round(gst_as_po_basic)],
+      ["8", "Total PO with GST", Math.round(total_po_with_gst)],
+      [
+        "9",
+        billing_type === "Composite"
+          ? "GST (13.8%)"
+          : billing_type === "Individual"
+            ? "GST (18%)"
+            : "GST (Type - N/A)",
+        gst_with_type_percentage,
+      ],
+      ["10", "Total Billed Value", total_billed_value],
+      ["11", "Net Advance Paid [(4)-(10)]", net_advanced_paid],
+      [
+        "12",
+        "Balance Payable to Vendors [(8)-(10)-(11)]",
+        Math.round(balance_payable_to_vendors),
+        "#B6F4C6",
+        true,
+      ],
+      ["13", "TCS as Applicable", Math.round(tcs_as_applicable)],
+      [
+        "14",
+        "Extra GST Recoverable from Client [(8)-(6)]",
+        Math.round(extraGST),
+      ],
+      [
+        "15",
+        "Balance Required [(5)-(12)-(13)]",
+        Math.round(balance_required),
+        "#B6F4C6",
+        true,
+        Math.round(balance_required) >= 0 ? "green" : "red",
+      ],
+    ];
+
     return (
       <Grid container spacing={2}>
         {/* Balance Summary Section */}
@@ -524,25 +609,16 @@ const Customer_Payment_Summary = () => {
               padding: "16px",
               backgroundColor: "#fff",
               fontSize: "14px",
-              "@media print": {
-                boxShadow: "none",
-                border: "none",
-              },
+              "@media print": { boxShadow: "none", border: "none" },
             }}
           >
             <Typography
               level="h5"
-              sx={{
-                fontWeight: "bold",
-                marginBottom: "12px",
-                fontSize: "16px",
-                "@media print": {
-                  fontSize: "16px",
-                },
-              }}
+              sx={{ fontWeight: "bold", mb: "12px", fontSize: "16px" }}
             >
               Balance Summary
             </Typography>
+
             <table
               style={{
                 width: "100%",
@@ -554,62 +630,11 @@ const Customer_Payment_Summary = () => {
                 <tr style={{ backgroundColor: "#f0f0f0" }}>
                   <th style={headerStyle}>S.No.</th>
                   <th style={headerStyle}>Description</th>
-                  <th style={headerStyle}>Value</th>
+                  <th style={{ ...headerStyle, textAlign: "right" }}>Value</th>
                 </tr>
               </thead>
               <tbody>
-                {[
-                  ["1", "Total Received", total_received],
-                  ["2", "Total Return", total_return],
-                  ["3", "Net Balance [(1)-(2)]", netBalance, "#C8C8C6"],
-                  ["4", "Total Advance Paid to Vendors", total_advance_paid],
-                  ["4A", "Total Adjustment (Debit-Credit)", total_adjustment],
-                  [
-                    "5",
-                    "Balance With Slnko [(3)-(4)-(4A)]",
-                    Math.round(balance_with_slnko),
-                    "#B6F4C6",
-                    true,
-                  ],
-                  ["6", "Total PO Basic Value", Math.round(total_po_basic)],
-                  ["7", "GST Value as per PO", Math.round(gst_as_po_basic)],
-                  ["8", "Total PO with GST", Math.round(total_po_with_gst)],
-                  [
-                    "9",
-                    billing_type === "Composite"
-                      ? "GST (13.8%)"
-                      : billing_type === "Individual"
-                        ? "GST (18%)"
-                        : "GST(Type - N/A)",
-                    gst_with_type_percentage,
-                  ],
-
-                  ["10", "Total Billed Value", total_billed_value],
-                  ["11", "Net Advance Paid [(4)-(10)]", net_advanced_paid],
-                  [
-                    "12",
-                    "Balance Payable to Vendors [(8)-(10)-(11)]",
-                    Math.round(balance_payable_to_vendors),
-                    "#B6F4C6",
-                    true,
-                  ],
-                  ["13", "TCS as Applicable", Math.round(tcs_as_applicable)],
-
-                  [
-                    "14",
-                    "Extra GST Recoverable from Client [(8)-(6)]",
-                    Math.round(extraGST),
-                  ],
-
-                  [
-                    "15",
-                    "Balance Required [(5)-(12)-(13)]",
-                    Math.round(balance_required),
-                    "#B6F4C6",
-                    true,
-                    Math.round(balance_required) >= 0 ? "green" : "red",
-                  ],
-                ].map(([sno, desc, value, bgColor, bold, color], index) => (
+                {rows.map(([sno, desc, value, bgColor, bold, color], index) => (
                   <tr
                     key={index}
                     style={{
@@ -620,7 +645,9 @@ const Customer_Payment_Summary = () => {
                   >
                     <td style={cellStyle}>{sno}</td>
                     <td style={cellStyle}>{desc}</td>
-                    <td style={cellStyle}>{isLoading ? "• • •" : value}</td>
+                    <td style={valueCellStyle}>
+                      {isLoading ? "• • •" : <RupeeValue value={value} />}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -639,12 +666,26 @@ const Customer_Payment_Summary = () => {
                 fontSize: "13px",
                 px: 1.5,
                 py: 0.5,
-                "@media print": {
-                  display: "none",
-                },
+                "@media print": { display: "none" },
               }}
             >
-              GST (Diff): {gst_difference}
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                GST (Diff):{" "}
+                {isLoading ? (
+                  "• • •"
+                ) : (
+                  <>
+                    <CurrencyRupee style={{ fontSize: 16, marginBottom: 1 }} />
+                    {formatIndianNumber(gst_difference)}
+                  </>
+                )}
+              </span>
             </Chip>
           </Box>
         </Grid>

@@ -41,7 +41,6 @@ const Login = () => {
       async (position) => {
         const latitude = position.coords.latitude;
         const longitude = position.coords.longitude;
-
         let fullAddress = "";
         try {
           const res = await fetch(
@@ -50,9 +49,8 @@ const Login = () => {
           const data = await res.json();
           fullAddress = data.display_name || "";
         } catch (err) {
-          toast.error("Reverse geocoding failed");
+          console.log("Reverse geocoding failed");
         }
-
         setGeoInfo({ latitude, longitude, fullAddress });
       }
     );
@@ -65,7 +63,6 @@ const Login = () => {
       toast.error("Location is required to login. Please enable location access.");
       return;
     }
-
     setIsSubmitting(true);
     try {
       const loginPayload = {

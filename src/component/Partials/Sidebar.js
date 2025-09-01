@@ -79,6 +79,7 @@ function Sidebar() {
   };
 
   const isSalesPage = location.pathname === "/sales";
+  const isEngineering = location.pathname === "/overview";
   return (
     <Sheet
       className="Sidebar"
@@ -1963,6 +1964,13 @@ function Sidebar() {
                       Daily Payment Request
                     </ListItemButton>
                   </ListItem>
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/payment-approval")}
+                    >
+                      Payment Approval
+                    </ListItemButton>
+                  </ListItem>
                 </List>
               </Toggler>
             </ListItem>
@@ -2624,7 +2632,7 @@ function Sidebar() {
                   </ListItem>
                   {((user?.department === "Projects" &&
                     user?.name === "Mayank Kumar") ||
-                    user?.name === "Vivek Pandey") && (
+                    user?.name === "Vivek Pandey" || user?.name === "Disha Sharma") && (
                     <ListItem>
                       <ListItemButton
                         onClick={() => navigate("/expense_approval")}
