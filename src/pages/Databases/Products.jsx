@@ -1,17 +1,24 @@
 import Box from "@mui/joy/Box";
 import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider } from "@mui/joy/styles";
-import  { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import Button from "@mui/joy/Button";
 import Breadcrumbs from "@mui/joy/Breadcrumbs";
 import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import ViewModuleRoundedIcon from "@mui/icons-material/ViewModuleRounded";
 import Sidebar from "../../component/Partials/Sidebar";
 import Header from "../../component/Partials/Header";
-import PurchaseReqSummary from "../../component/PurchaseReqSummary";
+import { useNavigate } from "react-router-dom";
+import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
+import { useExportTasksToCsvMutation } from "../../redux/globalTaskSlice";
+import Products_Table from "../../component/Products_Table";
 
-function PurchaseRequestSheet() {
+function Products() {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
 
   useEffect(() => {
     const userData = getUserData();
@@ -25,6 +32,34 @@ function PurchaseRequestSheet() {
     }
     return null;
   };
+
+  const [exportTasksToCsv] = useExportTasksToCsvMutation();
+
+  const handleExport = async (selectedIds) => {
+    try {
+      if (!selectedIds || selectedIds.length === 0) {
+        alert("No tasks selected for export.");
+        return;
+      }
+      const response = await exportTasksToCsv(selectedIds).unwrap();
+
+      const blob = new Blob([response], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "tasks_export.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("Failed to export tasks to CSV.");
+    }
+  };
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -68,20 +103,22 @@ function PurchaseRequestSheet() {
                 color="neutral"
                 sx={{ fontSize: 12, fontWeight: 500 }}
               >
-                CAM
+                My Databases
               </Link>
+
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Purchase Request
+                Products
               </Typography>
             </Breadcrumbs>
           </Box>
+
           <Box
             sx={{
               display: "flex",
-              mb: 1,
+
               gap: 1,
               flexDirection: { xs: "column", sm: "row" },
               alignItems: { xs: "start", sm: "center" },
@@ -91,26 +128,37 @@ function PurchaseRequestSheet() {
             }}
           >
             <Typography level="h2" component="h1">
-              Purchase Request
+              Products
             </Typography>
+
             <Box
               sx={{
                 display: "flex",
-                mb: 1,
-                gap: 1,
                 flexDirection: { xs: "column", sm: "row" },
-                alignItems: { xs: "flex-start", sm: "center" },
-                flexWrap: "wrap",
+                alignItems: "center",
                 justifyContent: "center",
+                gap: 1.5,
+
+                flexWrap: "wrap",
+                borderRadius: "lg",
+                mb: 2,
               }}
             >
-              
+              <Button
+                variant="solid"
+                color="primary"
+                startDecorator={<ViewModuleRoundedIcon />}
+                size="md"
+                onClick={() => navigate("/product_form?mode=create")}
+              >
+                Add Product
+              </Button>
             </Box>
           </Box>
-          <PurchaseReqSummary />
+          <Products_Table />
         </Box>
       </Box>
     </CssVarsProvider>
   );
 }
-export default PurchaseRequestSheet;
+export default Products;

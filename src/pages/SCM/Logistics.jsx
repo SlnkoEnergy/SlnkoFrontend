@@ -1,16 +1,21 @@
 import Box from "@mui/joy/Box";
 import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider } from "@mui/joy/styles";
-import  { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import Button from "@mui/joy/Button";
 import Breadcrumbs from "@mui/joy/Breadcrumbs";
 import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import ViewModuleRoundedIcon from "@mui/icons-material/ViewModuleRounded";
 import Sidebar from "../../component/Partials/Sidebar";
 import Header from "../../component/Partials/Header";
-import PurchaseReqSummary from "../../component/PurchaseReqSummary";
+import { useNavigate } from "react-router-dom";
+import Dash_eng from "../../component/EngDashboard";
+import LogisticsTable from "../../component/LogisticsSummary";
 
-function PurchaseRequestSheet() {
+function Logistics() {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -63,21 +68,26 @@ function PurchaseRequestSheet() {
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
               sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
-              <Link
-                underline="none"
-                color="neutral"
-                sx={{ fontSize: 12, fontWeight: 500 }}
-              >
-                CAM
-              </Link>
+              {user?.department !== "Accounts" && (
+                <Link
+                  underline="none"
+                  color="neutral"
+                  sx={{ fontSize: 12, fontWeight: 500 }}
+                >
+                  Logistics
+                </Link>
+              )}
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Purchase Request
+                {user?.department === "Accounts"
+                  ? "Handover Dashboard"
+                  : "Logistics"}
               </Typography>
             </Breadcrumbs>
           </Box>
+
           <Box
             sx={{
               display: "flex",
@@ -91,26 +101,31 @@ function PurchaseRequestSheet() {
             }}
           >
             <Typography level="h2" component="h1">
-              Purchase Request
+              {user?.department === "Accounts"
+                ? "Logistics"
+                : "Logistics"}
             </Typography>
-            <Box
-              sx={{
-                display: "flex",
-                mb: 1,
-                gap: 1,
-                flexDirection: { xs: "column", sm: "row" },
-                alignItems: { xs: "flex-start", sm: "center" },
-                flexWrap: "wrap",
-                justifyContent: "center",
-              }}
-            >
-              
-            </Box>
+            {user?.department !== "Accounts" && (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: { xs: "column", sm: "row" },
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexWrap: "wrap",
+                  bgcolor: "background.level1",
+                  borderRadius: "lg",
+                  boxShadow: "sm",
+                }}
+              >
+                
+              </Box>
+            )}
           </Box>
-          <PurchaseReqSummary />
+          <LogisticsTable />
         </Box>
       </Box>
     </CssVarsProvider>
   );
 }
-export default PurchaseRequestSheet;
+export default Logistics;

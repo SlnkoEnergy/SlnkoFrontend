@@ -2,12 +2,10 @@ import React from 'react';
 import { CssVarsProvider } from '@mui/joy/styles';
 import CssBaseline from '@mui/joy/CssBaseline';
 import Box from '@mui/joy/Box';
-import Button from '@mui/joy/Button';
 import Breadcrumbs from '@mui/joy/Breadcrumbs';
 import Link from '@mui/joy/Link';
 import Typography from '@mui/joy/Typography';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
-
 import Sidebar from '../../component/Partials/Sidebar';
 import Header from '../../component/Partials/Header';
 import PayRequest from '../../component/Forms/Pay_Request';
@@ -23,13 +21,6 @@ function Add_Project() {
           component="main"
           className="MainContent"
           sx={{
-            // px: { xs: 2, md: 6 },
-            // pt: {
-            //   xs: 'calc(12px + var(--Header-height))',
-            //   sm: 'calc(12px + var(--Header-height))',
-            //   md: 3,
-            // },
-            // pb: { xs: 2, sm: 2, md: 3 },
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
@@ -45,14 +36,6 @@ function Add_Project() {
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
               sx={{ pl: 0 , marginTop: {md:"4%", lg:"0%"}}}
             >
-              {/* <Link
-                underline="none"
-                color="neutral"
-                href="#some-link"
-                aria-label="Home"
-              >
-                <HomeRoundedIcon />
-              </Link> */}
               <Link
                 underline="hover"
                 color="neutral"
@@ -81,10 +64,6 @@ function Add_Project() {
            <PayRequest />
            
           </Box>
-          
-          
-          {/* <OrderTable /> */}
-          {/* <OrderList /> */}
         </Box>
       </Box>
     </CssVarsProvider>

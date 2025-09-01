@@ -1,16 +1,20 @@
 import Box from "@mui/joy/Box";
 import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider } from "@mui/joy/styles";
-import  { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import Button from "@mui/joy/Button";
 import Breadcrumbs from "@mui/joy/Breadcrumbs";
 import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import ViewModuleRoundedIcon from "@mui/icons-material/ViewModuleRounded";
 import Sidebar from "../../component/Partials/Sidebar";
 import Header from "../../component/Partials/Header";
-import PurchaseReqSummary from "../../component/PurchaseReqSummary";
+import { useNavigate } from "react-router-dom";
+import Categories_Table from "../../component/Categories_Table";
 
-function PurchaseRequestSheet() {
+function Categories() {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -25,6 +29,7 @@ function PurchaseRequestSheet() {
     }
     return null;
   };
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -68,21 +73,22 @@ function PurchaseRequestSheet() {
                 color="neutral"
                 sx={{ fontSize: 12, fontWeight: 500 }}
               >
-                CAM
+                My Databases
               </Link>
+
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Purchase Request
+                Categories
               </Typography>
             </Breadcrumbs>
           </Box>
+
           <Box
             sx={{
               display: "flex",
               mb: 1,
-              gap: 1,
               flexDirection: { xs: "column", sm: "row" },
               alignItems: { xs: "start", sm: "center" },
               flexWrap: "wrap",
@@ -91,26 +97,36 @@ function PurchaseRequestSheet() {
             }}
           >
             <Typography level="h2" component="h1">
-              Purchase Request
+              Categories
             </Typography>
+
             <Box
               sx={{
                 display: "flex",
-                mb: 1,
-                gap: 1,
                 flexDirection: { xs: "column", sm: "row" },
-                alignItems: { xs: "flex-start", sm: "center" },
-                flexWrap: "wrap",
+                alignItems: "center",
                 justifyContent: "center",
+                gap: 1.5,
+                flexWrap: "wrap",
+                borderRadius: "lg",
+                mb: 2,
               }}
             >
-              
+              <Button
+                variant="solid"
+                color="primary"
+                startDecorator={<ViewModuleRoundedIcon />}
+                size="md"
+                onClick={() => navigate("/category_form?mode=create")}
+              >
+                Add Category
+              </Button>
             </Box>
           </Box>
-          <PurchaseReqSummary />
+          <Categories_Table />
         </Box>
       </Box>
     </CssVarsProvider>
   );
 }
-export default PurchaseRequestSheet;
+export default Categories;

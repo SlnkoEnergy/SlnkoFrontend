@@ -8,7 +8,7 @@ import {
   Typography,
 } from "@mui/joy";
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import Img7 from "../../assets/update-po.png";
 import Axios from "../../utils/Axios";
@@ -16,8 +16,6 @@ import Axios from "../../utils/Axios";
 const UpdateBillForm = ({ po_number }) => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-
-  console.log("PO Number from props:", po_number);
 
   useEffect(() => {
     const userData = getUserData();
