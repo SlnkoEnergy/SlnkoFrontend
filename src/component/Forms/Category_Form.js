@@ -223,7 +223,13 @@ const CategoryForm = () => {
     );
 
   return (
-    <Box sx={{ maxWidth: 1100, p: { xs: 2, md: 3 }, ml:{xs:0, lg:'21%', xl:'14%'} }}>
+    <Box
+      sx={{
+        maxWidth: 1100,
+        p: { xs: 2, md: 3 },
+        ml: { xs: 0, lg: "21%", xl: "14%" },
+      }}
+    >
       {/* Header */}
       <Box
         sx={{

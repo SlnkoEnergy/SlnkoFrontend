@@ -1650,7 +1650,7 @@ const AddPurchaseOrder = ({
                     size="sm"
                     sx={{ fontWeight: 700, pl: 0.5, pr: 1 }}
                   >
-                    {formData?.submitted_By || "-"}
+                    {formData?.submitted_By?.name || "-"}
                   </Chip>
                 </Box>
               </Sheet>
