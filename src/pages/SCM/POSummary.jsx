@@ -151,11 +151,11 @@ function POSummary() {
                 }}
               >
                 <Button color="primary" size="sm" onClick={handleOpenLogisticsWithSeed}>
-                  Add Logistics Form +
+                  Logistics Form
                 </Button>
                 {user?.name !== "Gagan Tayal" && (
-                  <Button color="primary" size="sm" onClick={() => navigate("/add_vendor")}>
-                    Add Vendor +
+                  <Button color="primary" variant="outlined" size="sm" onClick={() => navigate("/add_vendor")}>
+                    Add Vendor
                   </Button>
                 )}
               </Box>

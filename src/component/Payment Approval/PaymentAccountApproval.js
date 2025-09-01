@@ -39,7 +39,7 @@ import { PaymentProvider } from "../../store/Context/Payment_History";
 import PaymentHistory from "../PaymentHistory";
 
 const PaymentAccountApproval = forwardRef(
-  ({ searchQuery, currentPage, perPage , delaydays}, ref) => {
+  ({ searchQuery, currentPage, perPage, delaydays }, ref) => {
     const [selected, setSelected] = useState([]);
 
     //   const isAccount = user?.department === "Accounts";
@@ -53,7 +53,7 @@ const PaymentAccountApproval = forwardRef(
       page: currentPage,
       pageSize: perPage,
       search: searchQuery,
-      delaydays: delaydays, 
+      delaydays: delaydays,
       tab: "finalApprovalPayments",
     });
 
@@ -76,15 +76,13 @@ const PaymentAccountApproval = forwardRef(
     };
 
     const handleStatusChange = async (_id, newStatus, remarks = "") => {
-      // console.log("📌 handleStatusChange got:", { _id, newStatus, remarks, remarksType: typeof remarks });
-
       if (!user) {
         toast.error("User not found");
         return;
       }
 
       const { department, role } = user;
-      const isInternalManager = department === "Internal" && role === "manager";
+      const isInternalManager = department === "Projects" && role === "visitor";
       const isSCMOrAccountsManager =
         ["SCM", "Accounts"].includes(department) && role === "manager";
 
@@ -220,7 +218,6 @@ const PaymentAccountApproval = forwardRef(
       const nearDue = isFiniteDays ? numDays <= 2 : false;
 
       const showApproveReject = !!showApprove && nearDue;
-
 
       const showExtensionUI = credit_extension === true && !nearDue;
       const showNoExtensionChip = credit_extension !== true || nearDue;
@@ -671,15 +668,18 @@ const PaymentAccountApproval = forwardRef(
             </Box>
           )}
 
-          <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
-            <Typography style={{ fontSize: 12, fontWeight: 600 }}>
+          <Box display="flex" alignItems="center" gap={1} mt={0.5}>
+            <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
               🏢 Vendor:
             </Typography>
-            <Typography
-              sx={{ fontSize: 12, fontWeight: 400, wordBreak: "break-word" }}
+            <Chip
+              color="danger"
+              size="sm"
+              variant="solid"
+              sx={{ fontSize: 12 }}
             >
               {vendor}
-            </Typography>
+            </Chip>
           </Box>
           {/* remainingDays display */}
           <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
@@ -743,14 +743,20 @@ const PaymentAccountApproval = forwardRef(
       totalPaid = 0,
       po_value,
     }) => {
-      const inr = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 });
+      const inr = new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      });
 
       const fmt = (v, dashIfEmpty = false) => {
         if (v === null || v === undefined || v === "") {
-          return dashIfEmpty ? "—" : "0";
+          return dashIfEmpty ? "—" : inr.format(0);
         }
         const num = Number(v);
-        return Number.isFinite(num) ? inr.format(num) : dashIfEmpty ? "—" : "0";
+        if (!Number.isFinite(num)) return dashIfEmpty ? "—" : inr.format(0);
+        return inr.format(num);
       };
 
       const chipColor =
@@ -771,7 +777,7 @@ const PaymentAccountApproval = forwardRef(
                   Requested Amount:&nbsp;
                 </span>
                 <Typography sx={{ fontSize: 13, fontWeight: 400 }}>
-                  ₹ {fmt(amount_requested, true)}
+                  {fmt(amount_requested, true)}
                 </Typography>
               </Box>
             )}
@@ -782,7 +788,7 @@ const PaymentAccountApproval = forwardRef(
               Total PO (incl. GST):&nbsp;
             </span>
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              {po_value == null || po_value === "" ? "—" : `₹ ${fmt(po_value)}`}
+              {po_value == null || po_value === "" ? "—" : fmt(po_value)}
             </Typography>
           </Box>
 
@@ -792,7 +798,7 @@ const PaymentAccountApproval = forwardRef(
               Client Balance:&nbsp;
             </span>
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              ₹ {fmt(ClientBalance)}
+              {fmt(ClientBalance)}
             </Typography>
           </Box>
 
@@ -802,7 +808,7 @@ const PaymentAccountApproval = forwardRef(
               Group Balance:&nbsp;
             </span>
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              ₹ {fmt(groupBalance)}
+              {fmt(groupBalance)}
             </Typography>
           </Box>
 
@@ -827,7 +833,7 @@ const PaymentAccountApproval = forwardRef(
                     level="body-xs"
                     sx={{ fontSize: 11, color: "#fff" }}
                   >
-                    ₹ {fmt(totalCredited)} − ₹ {fmt(totalPaid)} = ₹{" "}
+                    {fmt(totalCredited)} − {fmt(totalPaid)} ={" "}
                     {fmt(
                       (Number(totalCredited) || 0) - (Number(totalPaid) || 0)
                     )}
@@ -841,7 +847,7 @@ const PaymentAccountApproval = forwardRef(
                 color={chipColor}
                 sx={{ fontSize: 12, fontWeight: 500, ml: 0.5 }}
               >
-                ₹ {fmt(creditBalance)}
+                {fmt(creditBalance)}
               </Chip>
             </Tooltip>
           </Box>

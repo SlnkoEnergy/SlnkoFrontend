@@ -34,13 +34,14 @@ export const GlobalTaskApi = createApi({
         search = "",
         status = "",
         createdAt = "",
+        deadline = "",
         department = "",
         limit = "",
         hide_completed = false,
         hide_inprogress = false,
         hide_pending = false,
       }) =>
-        `tasks/task?page=${page}&search=${search}&status=${status}&createdAt=${createdAt}&department=${department}&limit=${limit}&hide_completed=${hide_completed}&hide_inprogress=${hide_inprogress}&hide_pending=${hide_pending}`,
+        `tasks/task?page=${page}&search=${search}&status=${status}&createdAt=${createdAt}&deadline=${deadline}&department=${department}&limit=${limit}&hide_completed=${hide_completed}&hide_inprogress=${hide_inprogress}&hide_pending=${hide_pending}`,
       providesTags: ["Task"],
     }),
 

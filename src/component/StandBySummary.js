@@ -1,91 +1,163 @@
+/* TrashRequest.jsx */
+import { forwardRef, useEffect, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+
 import KeyboardDoubleArrowLeft from "@mui/icons-material/KeyboardDoubleArrowLeft";
 import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
 import KeyboardDoubleArrowRight from "@mui/icons-material/KeyboardDoubleArrowRight";
-import duration from "dayjs/plugin/duration";
 import CheckIcon from "@mui/icons-material/Check";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import BlockIcon from "@mui/icons-material/Block";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
+import RestoreFromTrashIcon from "@mui/icons-material/RestoreFromTrash";
+import CloseRounded from "@mui/icons-material/CloseRounded";
+
 import Box from "@mui/joy/Box";
 import Chip from "@mui/joy/Chip";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
-import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
+import IconButton from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { CircularProgress, Modal, Option, Select, Tooltip, Button, Textarea } from "@mui/joy";
+
+import { toast } from "react-toastify"; // ✅ snackbar
 import NoData from "../assets/alert-bell.svg";
-import {
-  CircularProgress,
-  Modal,
-  Option,
-  Select,
-  Tooltip,
-  useTheme,
-} from "@mui/joy";
 import { PaymentProvider } from "../store/Context/Payment_History";
 import PaymentHistory from "./PaymentHistory";
-import {  useGetTrashRecordQuery } from "../redux/Accounts";
-import dayjs from "dayjs";
+import { useGetTrashRecordQuery, useUpdateRestoreTrashMutation } from "../redux/Accounts";
+
+dayjs.extend(duration);
 
 const TrashRequest = forwardRef(() => {
-  // const theme = useTheme();
   const navigate = useNavigate();
-  const [error, setError] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialPage = parseInt(searchParams.get("page")) || 1;
-  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
+
+  /* ----------------------------- paging / filters ---------------------------- */
+  const initialPage = Number.parseInt(searchParams.get("page") || "1", 10);
+  const initialPageSize = Number.parseInt(searchParams.get("pageSize") || "10", 10);
+
   const [perPage, setPerPage] = useState(initialPageSize);
   const [currentPage, setCurrentPage] = useState(initialPage);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [status, setStatus] = useState("");
+  const [rawSearch, setRawSearch] = useState(searchParams.get("search") || "");
+  const [status] = useState(""); // reserved for future use
 
-  const { data: responseData, isLoading } = useGetTrashRecordQuery({
-    page: currentPage,
-    pageSize: perPage,
-    search: searchQuery,
-    status,
-  });
+  // Debounced search (300ms)
+  const [searchQuery, setSearchQuery] = useState(rawSearch);
+  useEffect(() => {
+    const t = setTimeout(() => setSearchQuery(rawSearch.trim().toLowerCase()), 300);
+    return () => clearTimeout(t);
+  }, [rawSearch]);
 
-  const paginatedData = responseData?.data || [];
-  const total = responseData?.total || 0;
-  const count = responseData?.count || paginatedData.length;
+  // ✅ When search changes, go back to the first page
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
-  const totalPages = Math.ceil(total / perPage);
-  const startIndex = (currentPage - 1) * perPage + 1;
-  const endIndex = Math.min(startIndex + count - 1, total);
+  // Reflect state to URL
+  useEffect(() => {
+    const sp = new URLSearchParams(searchParams);
+    sp.set("page", String(currentPage));
+    sp.set("pageSize", String(perPage));
+    if (searchQuery) sp.set("search", searchQuery);
+    else sp.delete("search");
+    setSearchParams(sp, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, perPage, searchQuery]);
 
-  console.log("Payment Request Data:", paginatedData);
+  /* ---------------------------------- data ---------------------------------- */
+  const {
+    data: responseData,
+    isLoading,
+    isFetching,
+    error,
+    refetch, // ✅ we’ll use this after restore
+  } = useGetTrashRecordQuery(
+    {
+      page: currentPage,
+      pageSize: perPage,
+      search: searchQuery,
+      status,
+    },
+    {
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+      refetchOnMountOrArgChange: true,
+    }
+  );
 
-  const handleSearch = (query) => {
-    setSearchQuery(query.toLowerCase());
+  const paginatedData = responseData?.data ?? [];
+  const total = responseData?.total ?? 0;
+  const count = responseData?.count ?? paginatedData.length;
+
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  const startIndex = total === 0 ? 0 : (currentPage - 1) * perPage + 1;
+  const endIndex = total === 0 ? 0 : Math.min(startIndex + count - 1, total);
+
+  // ✅ If current page becomes larger than the available pages after a reload, clamp it
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [totalPages, currentPage]);
+
+  /* ---------------------------- restore mutation ----------------------------- */
+  const [restoreMutation, { isLoading: isRestoring }] = useUpdateRestoreTrashMutation();
+  const [remarksOpen, setRemarksOpen] = useState(false);
+  const [remarks, setRemarks] = useState("");
+  const pendingRestoreRef = useRef(null); // holds { id }
+
+  const openRemarks = (id) => {
+    pendingRestoreRef.current = { id };
+    setRemarks("");
+    setRemarksOpen(true);
   };
 
-  useEffect(() => {
-    const page = parseInt(searchParams.get("page")) || 1;
-    setCurrentPage(page);
-  }, [searchParams]);
+  const closeRemarks = () => {
+    pendingRestoreRef.current = null;
+    setRemarksOpen(false);
+  };
 
+  const handleConfirmRestore = async () => {
+    const id = pendingRestoreRef.current?.id;
+    if (!id) return;
+
+    try {
+      await restoreMutation({
+        id,
+        remarks: remarks || "Restored from Trash to Draft",
+      }).unwrap();
+
+      // ✅ Snackbar + auto reload
+      toast.success("Request restored to Draft");
+      setRemarksOpen(false);
+      refetch();
+    } catch (e) {
+      toast.error(e?.data?.message || "Restore failed");
+      // keep dialog open so the user can retry or edit remarks
+    }
+  };
+
+  /* --------------------------------- styles --------------------------------- */
   const headerStyle = {
     position: "sticky",
     top: 0,
     zIndex: 2,
-    backgroundColor: "primary.softBg",
+    bgcolor: "primary.softBg",
     fontSize: 14,
-    fontWeight: 600,
-    padding: "12px 16px",
+    fontWeight: 700,
+    p: "12px 16px",
     textAlign: "left",
-    color: "#000",
-    borderBottom: "1px soft",
+    color: "text.primary",
+    borderBottom: "1px solid",
     borderColor: "primary.softBorder",
   };
 
   const cellStyle = {
-    padding: "12px 16px",
+    p: "12px 16px",
     verticalAlign: "top",
     fontSize: 13,
     fontWeight: 400,
@@ -94,7 +166,7 @@ const TrashRequest = forwardRef(() => {
   };
 
   const labelStyle = {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 600,
     fontFamily: "Inter, Roboto, sans-serif",
     color: "#2C3E50",
@@ -107,8 +179,7 @@ const TrashRequest = forwardRef(() => {
     color: "#34495E",
   };
 
-  dayjs.extend(duration);
-
+  /* ------------------------------- subcomponents ------------------------------ */
   const PaymentID = ({ pay_id, dbt_date }) => (
     <>
       {pay_id && (
@@ -118,27 +189,21 @@ const TrashRequest = forwardRef(() => {
             color="primary"
             size="sm"
             sx={{
-              fontWeight: 500,
+              fontWeight: 600,
               fontFamily: "Inter, Roboto, sans-serif",
-              fontSize: 14,
+              fontSize: 13,
               color: "#fff",
-              "&:hover": {
-                boxShadow: "md",
-                opacity: 0.9,
-              },
+              "&:hover": { boxShadow: "md", opacity: 0.95 },
             }}
           >
-            {pay_id || "N/A"}
+            {pay_id}
           </Chip>
         </Box>
       )}
-
       {dbt_date && (
-        <Box display="flex" alignItems="center" mt={0.5} gap={0.8}>
-          <Typography sx={labelStyle}>📅 Created Date:</Typography>
-          <Typography sx={valueStyle}>
-            {dayjs(dbt_date).format("DD-MM-YYYY")}
-          </Typography>
+        <Box display="flex" alignItems="center" mt={0.75} gap={0.8}>
+          <Typography sx={labelStyle}>📅 Created:</Typography>
+          <Typography sx={valueStyle}>{dayjs(dbt_date).format("DD-MM-YYYY")}</Typography>
         </Box>
       )}
     </>
@@ -146,25 +211,14 @@ const TrashRequest = forwardRef(() => {
 
   const ItemFetch = ({ paid_for, po_number, vendor }) => {
     const [open, setOpen] = useState(false);
-
-    const handleOpen = () => setOpen(true);
-    const handleClose = () => setOpen(false);
-
-    // console.log(po_number);
-
     return (
       <>
         {paid_for && (
           <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
-            <Typography sx={{ ...labelStyle, minWidth: 100 }}>
-              📦 Requested For:
-            </Typography>
-            <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>
-              {paid_for}
-            </Typography>
+            <Typography sx={{ ...labelStyle, minWidth: 110 }}>📦 Requested For:</Typography>
+            <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>{paid_for}</Typography>
           </Box>
         )}
-
         {po_number && (
           <Box
             display="flex"
@@ -172,27 +226,18 @@ const TrashRequest = forwardRef(() => {
             gap={1}
             mt={0.5}
             sx={{ cursor: "pointer" }}
-            onClick={handleOpen}
+            onClick={() => setOpen(true)}
           >
-            <Typography sx={{ ...labelStyle, minWidth: 100 }}>
-              🧾 PO Number:
-            </Typography>
-            <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>
-              {po_number}
-            </Typography>
+            <Typography sx={{ ...labelStyle, minWidth: 110 }}>🧾 PO Number:</Typography>
+            <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>{po_number}</Typography>
           </Box>
         )}
-
         <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
-          <Typography sx={{ ...labelStyle, minWidth: 70 }}>
-            🏢 Vendor:
-          </Typography>
-          <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>
-            {vendor}
-          </Typography>
+          <Typography sx={{ ...labelStyle, minWidth: 110 }}>🏢 Vendor:</Typography>
+          <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>{vendor || "—"}</Typography>
         </Box>
 
-        <Modal open={open} onClose={handleClose}>
+        <Modal open={open} onClose={() => setOpen(false)}>
           <Sheet
             variant="outlined"
             sx={{
@@ -204,7 +249,7 @@ const TrashRequest = forwardRef(() => {
               boxShadow: "lg",
               maxHeight: "80vh",
               overflow: "auto",
-              backgroundColor: "#fff",
+              bgcolor: "#fff",
               minWidth: 950,
             }}
           >
@@ -218,60 +263,60 @@ const TrashRequest = forwardRef(() => {
   };
 
   const MatchRow = ({ approved, timers, amount_paid }) => {
-    const [timeLeft, setTimeLeft] = useState("");
-    const [timerColor, setTimerColor] = useState("inherit");
+    const [timeLeft, setTimeLeft] = useState("N/A");
 
-useEffect(() => {
-  if (!timers?.trash_started_at) return;
+    useEffect(() => {
+      if (!timers?.trash_started_at) {
+        setTimeLeft("N/A");
+        return;
+      }
 
-  const isFinal =
-    ["Approved", "Rejected", "Deleted"].includes(approved) ||
-    !!timers?.draft_frozen_at;
+      const isFinal =
+        ["Approved", "Rejected", "Deleted"].includes(approved) || !!timers?.draft_frozen_at;
 
-  if (isFinal) {
-    setTimeLeft("Finalized");
-    setTimerColor("gray");
-    return;
-  }
+      if (isFinal) {
+        setTimeLeft("Finalized");
+        return;
+      }
 
-  const interval = setInterval(() => {
-    const now = dayjs();
-    const trashStartedAt = dayjs(timers.trash_started_at);
-    const totalDiffMs = trashStartedAt.add(15, "day").diff(now);
+      const tick = () => {
+        const now = dayjs();
+        const trashStartedAt = dayjs(timers.trash_started_at);
+        const deadline = trashStartedAt.add(15, "day");
+        const diffMs = deadline.diff(now);
 
-    if (totalDiffMs <= 0) {
-      setTimeLeft("⏱ Expired");
-      setTimerColor("red");
-      return;
-    }
+        if (diffMs <= 0) {
+          setTimeLeft("⏱ Expired");
+          return;
+        }
+        const daysLeft = Math.ceil(dayjs.duration(diffMs).asDays());
+        setTimeLeft(`${daysLeft} day${daysLeft > 1 ? "s" : ""} remaining`);
+      };
 
-    const daysLeft = Math.ceil(dayjs.duration(totalDiffMs).asDays());
-    setTimeLeft(`${daysLeft} day${daysLeft > 1 ? "s" : ""} remaining`);
+      tick();
+      const interval = setInterval(tick, 1000);
+      return () => clearInterval(interval);
+    }, [timers?.trash_started_at, timers?.draft_frozen_at, approved]);
 
-    // Set color based on days left
-    if (daysLeft <= 1) setTimerColor("red");
-    else if (daysLeft <= 3) setTimerColor("primary.main");
-    else setTimerColor("green");
-
-  }, 1000);
-
-  return () => clearInterval(interval);
-}, [timers?.trash_started_at, timers?.draft_frozen_at, approved]);
-
-
+    const chipColor =
+      timeLeft === "Finalized"
+        ? "success"
+        : timeLeft === "⏱ Expired"
+        ? "danger"
+        : timeLeft === "N/A"
+        ? "neutral"
+        : "primary";
 
     return (
       <Box mt={1}>
         <Box display="flex" alignItems="flex-start" gap={1} mb={0.5}>
           <Typography sx={labelStyle}>💰 Amount:</Typography>
-          <Typography
-            sx={{ ...valueStyle, wordBreak: "break-word", fontSize: "14px" }}
-          >
-            {amount_paid || "—"}
+          <Typography sx={{ ...valueStyle, wordBreak: "break-word", fontSize: 14 }}>
+            {amount_paid ?? "—"}
           </Typography>
         </Box>
 
-        <Box display="flex" alignItems="flex-start" gap={1}>
+        <Box display="flex" alignItems="center" gap={1}>
           <Typography sx={labelStyle}>📑 Payment Status:</Typography>
           {["Approved", "Pending", "Rejected", "Deleted"].includes(approved) ? (
             <Chip
@@ -297,42 +342,25 @@ useEffect(() => {
               {approved}
             </Chip>
           ) : (
-            <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>
-              {approved || "Not Found"}
-            </Typography>
+            <Typography sx={valueStyle}>{approved || "Not Found"}</Typography>
           )}
         </Box>
 
-        <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+        <Box display="flex" alignItems="center" gap={1} mt={0.75}>
           <Typography sx={labelStyle}>⏰</Typography>
-          <Chip
-            size="sm"
-            variant="soft"
-            color={
-              timeLeft === "Finalized"
-                ? "success"
-                : timeLeft === "Rejected"
-                  ? "danger"
-                  : timeLeft === "⏰ Expired"
-                    ? "danger"
-                    : timeLeft === "⏸ Frozen"
-                      ? "neutral"
-                      : timeLeft === "NA"
-                        ? "neutral"
-                        : "primary"
-            }
-          >
-            {timeLeft || "N/A"}
+          <Chip size="sm" variant="soft" color={chipColor}>
+            {timeLeft}
           </Chip>
         </Box>
       </Box>
     );
   };
 
+  /* --------------------------------- render --------------------------------- */
   return (
     <>
-
-    <Box
+      {/* Controls */}
+      <Box
         sx={{
           display: "flex",
           justifyContent: "space-between",
@@ -343,24 +371,21 @@ useEffect(() => {
           py: 1,
           ml: { xl: "15%", lg: "18%", sm: 0 },
           maxWidth: { lg: "85%", sm: "100%" },
-          // bgcolor: "background.level1",
           borderRadius: "md",
           mb: 2,
         }}
       >
-        
         <Box
           sx={{
             display: "flex",
             mb: 1,
             gap: 1,
             flexDirection: { xs: "column", sm: "row" },
-            alignItems: { xs: "none", sm: "center" },
+            alignItems: { xs: "stretch", sm: "center" },
             flexWrap: "wrap",
             justifyContent: "center",
           }}
         >
-          {/* {renderFilters()} */}
           <Box
             className="SearchAndFilters-tabletUp"
             sx={{
@@ -373,43 +398,28 @@ useEffect(() => {
             }}
           >
             <FormControl sx={{ flex: 1 }} size="sm">
-              <FormLabel>Search here</FormLabel>
+              <FormLabel>Search</FormLabel>
               <Input
                 size="sm"
-                placeholder="Search by Pay ID, Items, Clients Name or Vendor"
+                placeholder="Search by Pay ID, Item, Client or Vendor"
                 startDecorator={<SearchIcon />}
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
+                value={rawSearch}
+                onChange={(e) => setRawSearch(e.target.value)}
                 sx={{
                   width: 350,
-
                   borderColor: "neutral.outlinedBorder",
-                  borderBottom: searchQuery
-                    ? "2px solid #1976d2"
-                    : "1px solid #ddd",
+                  borderBottom: rawSearch ? "2px solid #1976d2" : "1px solid #ddd",
                   borderRadius: 5,
                   boxShadow: "none",
-                  "&:hover": {
-                    borderBottom: "2px solid #1976d2",
-                  },
-                  "&:focus-within": {
-                    borderBottom: "2px solid #1976d2",
-                  },
+                  "&:hover": { borderBottom: "2px solid #1976d2" },
+                  "&:focus-within": { borderBottom: "2px solid #1976d2" },
                 }}
               />
             </FormControl>
           </Box>
         </Box>
 
-
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 1.5,
-          }}
-        >
+        <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1.5 }}>
           {/* Rows per page */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Typography level="body-sm">Rows per page:</Typography>
@@ -417,12 +427,11 @@ useEffect(() => {
               size="sm"
               value={perPage}
               onChange={(_, value) => {
-                if (value) {
-                  setPerPage(Number(value));
-                  setCurrentPage(1);
-                }
+                if (!value) return;
+                setPerPage(Number(value));
+                setCurrentPage(1); // ✅ reset to first page on size change
               }}
-              sx={{ minWidth: 64 }}
+              sx={{ minWidth: 72 }}
             >
               {[10, 25, 50, 100].map((value) => (
                 <Option key={value} value={value}>
@@ -433,184 +442,103 @@ useEffect(() => {
           </Box>
 
           {/* Pagination info */}
-          <Typography level="body-sm">
-            {`${startIndex}-${endIndex} of ${total}`}
-          </Typography>
+          <Typography level="body-sm">{`${startIndex}-${endIndex} of ${total}`}</Typography>
 
-          {/* Navigation buttons */}
+          {/* Navigation */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <IconButton
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(1)}
-            >
+            <IconButton size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage(1)}>
               <KeyboardDoubleArrowLeft />
             </IconButton>
             <IconButton
               size="sm"
               disabled={currentPage === 1}
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
             >
               <KeyboardArrowLeft />
             </IconButton>
             <IconButton
               size="sm"
               disabled={currentPage === totalPages}
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
             >
               <KeyboardArrowRight />
             </IconButton>
-            <IconButton
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(totalPages)}
-            >
+            <IconButton size="sm" disabled={currentPage === totalPages} onClick={() => setCurrentPage(totalPages)}>
               <KeyboardDoubleArrowRight />
             </IconButton>
           </Box>
         </Box>
-      </Box>  
-
+      </Box>
 
       {/* Table */}
       <Box
         sx={{
-          maxWidth: "100%",
           overflowY: "auto",
-          maxHeight: "600px",
+          maxHeight: 600,
           borderRadius: "12px",
           border: "1px solid",
           borderColor: "divider",
-            marginLeft: { xl: "15%", lg: "18%" },
+          ml: { xl: "15%", lg: "18%" },
           maxWidth: { lg: "85%", sm: "100%" },
           bgcolor: "background.body",
-          "&::-webkit-scrollbar": {
-            width: "8px",
-          },
-          "&::-webkit-scrollbar-track": {
-            background: "#f0f0f0",
-            borderRadius: "8px",
-          },
-          "&::-webkit-scrollbar-thumb": {
-            backgroundColor: "#1976d2",
-            borderRadius: "8px",
-          },
+          "&::-webkit-scrollbar": { width: 8 },
+          "&::-webkit-scrollbar-track": { background: "#f0f0f0", borderRadius: 8 },
+          "&::-webkit-scrollbar-thumb": { backgroundColor: "#1976d2", borderRadius: 8 },
         }}
       >
-        <Box
-          component="table"
-          sx={{ width: "100%", borderCollapse: "collapse" }}
-        >
+        <Box component="table" sx={{ width: "100%", borderCollapse: "collapse" }}>
           <Box component="thead">
             <Box component="tr">
-              {/* <Box component="th" sx={headerStyle}>
-                <Checkbox
-                  size="sm"
-                  checked={selected.length === paginatedData.length}
-                  onChange={handleSelectAll}
-                />
-              </Box> */}
-              {[
-                "Payment Id",
-                "Paid_for",
-                "Payment Status",
-                "UTR",
-                // "",
-              ].map((header, index) => (
-                <Box key={index} component="th" sx={headerStyle}>
-                  {header}
+              {["Payment Id", "Paid For / PO / Vendor", "Payment Status", "Actions"].map((h, i) => (
+                <Box key={i} component="th" sx={headerStyle}>
+                  {h}
                 </Box>
               ))}
             </Box>
           </Box>
+
           <Box component="tbody">
             {error ? (
-              <Typography color="danger" textAlign="center">
-                {error}
-              </Typography>
-            ) : isLoading ? (
               <Box component="tr">
-                <Box
-                  component="td"
-                  colSpan={5}
-                  sx={{
-                    py: 2,
-                    textAlign: "center",
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 1,
-                    }}
-                  >
-                    <CircularProgress size="sm" sx={{ color: "primary.500" }} />
-                    <Typography fontStyle="italic">
-                      Loading payments… please hang tight ⏳
-                    </Typography>
+                <Box component="td" colSpan={4} sx={{ py: 2, textAlign: "center" }}>
+                  <Typography color="danger">
+                    Failed to load: {String(error?.data?.message || error?.error || "Error")}
+                  </Typography>
+                </Box>
+              </Box>
+            ) : isLoading || isFetching ? (
+              <Box component="tr">
+                <Box component="td" colSpan={4} sx={{ py: 3, textAlign: "center" }}>
+                  <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+                    <CircularProgress size="sm" />
+                    <Typography fontStyle="italic">Loading trash requests…</Typography>
                   </Box>
                 </Box>
               </Box>
             ) : paginatedData.length > 0 ? (
-              paginatedData.map((payment, index) => (
+              paginatedData.map((payment, idx) => (
                 <Box
                   component="tr"
-                  key={index}
+                  key={payment._id || payment.pay_id || idx}
                   sx={{
                     backgroundColor: "background.surface",
-                    borderRadius: "8px",
-                    boxShadow: "xs",
                     transition: "all 0.2s",
-                    "&:hover": {
-                      backgroundColor: "neutral.softHoverBg",
-                    },
+                    "&:hover": { backgroundColor: "neutral.softHoverBg" },
                   }}
                 >
-                  {/* <Box component="td" sx={cellStyle}>
-                    <Checkbox
-                      size="sm"
-                      checked={selected.includes(payment.pay_id)}
-                      onChange={(event) =>
-                        handleRowSelect(payment.pay_id, event.target.checked)
-                      }
-                    />
-                  </Box> */}
-                  <Box
-                    component="td"
-                    sx={{
-                      ...cellStyle,
-                      minWidth: 280,
-                      padding: "12px 16px",
-                    }}
-                  >
-                    {/* {payment.pay_id} */}
-                    <Tooltip title="View Summary" arrow>
+                  <Box component="td" sx={{ ...cellStyle, minWidth: 260 }}>
+                    <Tooltip title="View summary" arrow>
                       <span>
-                        <PaymentID
-                          currentPage={currentPage}
-                          p_id={payment.p_id}
-                          pay_id={payment.pay_id}
-                          dbt_date={payment.dbt_date}
-                        />
+                        <PaymentID pay_id={payment.pay_id} dbt_date={payment.dbt_date} />
                       </span>
                     </Tooltip>
                   </Box>
 
-                  <Box component="td" sx={{ ...cellStyle, minWidth: 300 }}>
-                    <ItemFetch
-                      paid_for={payment.paid_for}
-                      po_number={payment.po_number}
-                      p_id={payment.p_id}
-                      vendor={payment.vendor}
-                      customer_name={payment.customer_name}
-                    />
+                  <Box component="td" sx={{ ...cellStyle, minWidth: 320 }}>
+                    <ItemFetch paid_for={payment.paid_for} po_number={payment.po_number} vendor={payment.vendor} />
                   </Box>
-                  <Box component="td" sx={{ ...cellStyle, minWidth: 300 }}>
+
+                  <Box component="td" sx={{ ...cellStyle, minWidth: 280 }}>
                     <MatchRow
                       approved={payment.approved}
                       timers={payment.timers}
@@ -618,39 +546,29 @@ useEffect(() => {
                     />
                   </Box>
 
-                  <Box component="td" sx={{ ...cellStyle, fontSize: 15 }}>
-                    {payment.utr || "-"}
+                  <Box component="td" sx={{ ...cellStyle, minWidth: 120 }}>
+                    <Tooltip title="Restore to Draft" arrow>
+                      <span>
+                        <IconButton
+                          size="sm"
+                          variant="soft"
+                          color="primary"
+                          onClick={() => openRemarks(payment._id)}
+                          disabled={isRestoring}
+                        >
+                          <RestoreFromTrashIcon fontSize="small" />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
                   </Box>
                 </Box>
               ))
             ) : (
               <Box component="tr">
-                <Box
-                  component="td"
-                  colSpan={6}
-                  sx={{
-                    padding: "8px",
-                    textAlign: "center",
-                    fontStyle: "italic",
-                  }}
-                >
-                  <Box
-                    sx={{
-                      fontStyle: "italic",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <img
-                      src={NoData}
-                      alt="No data Image"
-                      style={{ width: "50px", height: "50px" }}
-                    />
-                    <Typography fontStyle={"italic"}>
-                      No trashes available
-                    </Typography>
+                <Box component="td" colSpan={4} sx={{ p: 3, textAlign: "center" }}>
+                  <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+                    <img src={NoData} alt="No data" style={{ width: 56, height: 56 }} />
+                    <Typography fontStyle="italic">No trashes available</Typography>
                   </Box>
                 </Box>
               </Box>
@@ -658,7 +576,57 @@ useEffect(() => {
           </Box>
         </Box>
       </Box>
+
+      {/* Remarks dialog */}
+      <Modal open={remarksOpen} onClose={closeRemarks}>
+        <Sheet
+          variant="outlined"
+          sx={{
+            mx: "auto",
+            mt: "12vh",
+            width: { xs: "92%", sm: 520 },
+            borderRadius: "12px",
+            p: 2.5,
+            boxShadow: "lg",
+            bgcolor: "background.body",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+            <Typography level="title-lg">Restore to Draft</Typography>
+            <IconButton variant="plain" size="sm" onClick={closeRemarks}>
+              <CloseRounded />
+            </IconButton>
+          </Box>
+
+          <Typography level="body-sm" sx={{ mb: 1 }}>
+            Please add a short remark for restoring this request to <b>Draft</b>.
+          </Typography>
+
+          <Textarea
+            minRows={3}
+            value={remarks}
+            onChange={(e) => setRemarks(e.target.value)}
+            placeholder="e.g., Wrongly trashed, moving back to Draft for corrections."
+          />
+
+          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5, mt: 2 }}>
+            <Button variant="plain" color="neutral" onClick={closeRemarks}>
+              Cancel
+            </Button>
+            <Button
+              variant="solid"
+              color="primary"
+              loading={isRestoring}
+              onClick={handleConfirmRestore}
+              disabled={!remarks.trim()}
+            >
+              Restore
+            </Button>
+          </Box>
+        </Sheet>
+      </Modal>
     </>
   );
 });
+
 export default TrashRequest;

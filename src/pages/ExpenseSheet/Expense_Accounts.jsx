@@ -17,22 +17,30 @@ import {
   useExportExpenseToPDFMutation,
 } from "../../redux/Expense/expenseSlice";
 import { toast } from "react-toastify";
-import { CircularProgress } from "@mui/joy";
+import {
+  CircularProgress,
+  Dropdown,
+  Menu,
+  MenuButton,
+  MenuItem,
+} from "@mui/joy";
 
 function Accounts_Expense() {
   const navigate = useNavigate();
   const [triggerExport] = useExportExpenseToCSVMutation();
   const [sheetIds, setSheetIds] = useState([]);
   const [downloadStatus, setDownloadStatus] = useState("");
-  const handleExportCSV = async (sheetIds) => {
+  const handleExportCSV = async (sheetIds, view = "detailed") => {
     try {
-      const blob = await triggerExport({ sheetIds }).unwrap();
+      const dashboard = view === "list";
+      const blob = await triggerExport({ sheetIds, dashboard }).unwrap();
+
       const url = window.URL.createObjectURL(
         new Blob([blob], { type: "text/csv" })
       );
       const a = document.createElement("a");
       a.href = url;
-      a.download = `expenses_${Date.now()}.csv`;
+      a.download = `expenses_${dashboard ? "list" : "detailed"}_${Date.now()}.csv`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -142,18 +150,32 @@ function Accounts_Expense() {
             <Typography level="h2" component="h1">
               Accounts Expense Approval Dashboard
             </Typography>
-
+            {sheetIds.length > 0 && (
             <Box gap={2} display={"flex"} justifyContent={"center"}>
-              <Button
-                color="primary"
-                startDecorator={<DownloadRoundedIcon />}
-                size="sm"
-                onClick={() => {
-                  handleExportCSV(sheetIds);
-                }}
-              >
-                Export to CSV
-              </Button>
+              <Dropdown>
+                <MenuButton
+                  slots={{ root: Button }}
+                  slotProps={{
+                    root: {
+                      color: "primary",
+                      startDecorator: <DownloadRoundedIcon />,
+                      size: "sm",
+                    },
+                  }}
+                >
+                  Export to CSV
+                </MenuButton>
+                <Menu>
+                  <MenuItem onClick={() => handleExportCSV(sheetIds, "list")}>
+                    List view
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => handleExportCSV(sheetIds, "detailed")}
+                  >
+                    Detailed view
+                  </MenuItem>
+                </Menu>
+              </Dropdown>
               <Button
                 variant="outlined"
                 size="sm"
@@ -173,6 +195,7 @@ function Accounts_Expense() {
                 </Box>
               )}
             </Box>
+            )}
           </Box>
 
           <AccountsExpense setSheetIds={setSheetIds} sheetIds={sheetIds} />

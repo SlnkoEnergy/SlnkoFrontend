@@ -24,7 +24,6 @@ import ListItemButton, { listItemButtonClasses } from "@mui/joy/ListItemButton";
 import ListItemContent from "@mui/joy/ListItemContent";
 import Sheet from "@mui/joy/Sheet";
 import Stack from "@mui/joy/Stack";
-import { useColorScheme } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -88,6 +87,7 @@ function Sidebar() {
   };
 
   const isSalesPage = location.pathname === "/sales";
+  const isEngineering = location.pathname === "/overview";
   return (
     <Sheet
       className="Sidebar"
@@ -700,14 +700,14 @@ function Sidebar() {
               >
                 <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/products")}>
-                      Products
+                    <ListItemButton onClick={() => navigate("/categories")}>
+                      Categories
                     </ListItemButton>
                   </ListItem>
 
                   <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/categories")}>
-                      Categories
+                    <ListItemButton onClick={() => navigate("/products")}>
+                      Products
                     </ListItemButton>
                   </ListItem>
                 </List>
@@ -1481,6 +1481,38 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <DatabaseIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">My Databases</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/products")}>
+                      Products
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+
             {/* Ops Section */}
             {user?.name === "Prachi Singh" && (
               <ListItem nested>
@@ -2049,6 +2081,13 @@ function Sidebar() {
                       Daily Payment Request
                     </ListItemButton>
                   </ListItem>
+                  <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/payment-approval")}
+                    >
+                      Payment Approval
+                    </ListItemButton>
+                  </ListItem>
                 </List>
               </Toggler>
             </ListItem>
@@ -2198,6 +2237,38 @@ function Sidebar() {
                   <ListItem sx={{ mt: 0.5 }}>
                     <ListItemButton onClick={() => navigate("/all_task")}>
                       Task View
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
+
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <DatabaseIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">My Databases</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/products")}>
+                      Products
                     </ListItemButton>
                   </ListItem>
                 </List>
@@ -2710,7 +2781,7 @@ function Sidebar() {
                   </ListItem>
                   {((user?.department === "Projects" &&
                     user?.name === "Mayank Kumar") ||
-                    user?.name === "Vivek Pandey") && (
+                    user?.name === "Vivek Pandey" || user?.name === "Disha Sharma") && (
                     <ListItem>
                       <ListItemButton
                         onClick={() => navigate("/expense_approval")}

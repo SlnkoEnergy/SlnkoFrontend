@@ -1,6 +1,7 @@
 // src/components/LogisticsDashboard.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
 
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
@@ -101,6 +102,26 @@ const pageNumbers = (current, total) => {
   return out;
 };
 
+// Compact round "+N" pill (used in two table cells)
+const MorePill = ({ n }) =>
+  n > 0 ? (
+    <Chip
+      size="sm"
+      variant="solid"
+      color="neutral"
+      sx={{
+        px: 0.6,
+        py: 0,
+        lineHeight: 1,
+        borderRadius: "999px",
+        fontWeight: 700,
+        fontSize: "11px",
+      }}
+    >
+      +{n}
+    </Chip>
+  ) : null;
+
 // small helper to extract error text
 const errMsg = (e) =>
   e?.data?.message || e?.error || e?.message || "Failed to update status";
@@ -126,11 +147,9 @@ function StatusCard({ row, onUpdated }) {
   const isLogistic = user?.department === "Logistic";
   const isSuperadmin = user?.role === "superadmin";
 
-  // Ready → Out for Delivery: Logistic OR Superadmin
   const showChangeToOfd =
     current === "ready_to_dispatch" && (isLogistic || isSuperadmin);
 
-  // Out for Delivery → Delivered: Logistic OR Superadmin
   const showMarkDelivered =
     current === "out_for_delivery" && (isLogistic || isSuperadmin);
 
@@ -158,13 +177,33 @@ function StatusCard({ row, onUpdated }) {
     return `${dd} - ${mm} - ${yyyy}`;
   };
 
+  // helper: is any received_qty blank?
+  const hasBlankReceivedQty = (r) => {
+    const items = Array.isArray(r?.items) ? r.items : [];
+    return items.some(
+      (it) =>
+        it == null ||
+        it.received_qty == null ||
+        String(it.received_qty).trim() === ""
+    );
+  };
+
   const handleUpdate = async (targetStatus) => {
     setErrorText("");
+
+    // Block Delivered if any received_qty is blank and toast a message
+    if (targetStatus === "delivered" && hasBlankReceivedQty(row)) {
+      toast.error(
+        "Cannot mark as Delivered. One or more items have blank 'Quantity Received'."
+      );
+      return;
+    }
+
     try {
       await updateStatus({ id: row._id, status: targetStatus, remarks: "" }).unwrap();
       await onUpdated?.();
     } catch (e) {
-      setErrorText(errMsg(e));
+      setErrorText(e?.data?.message || e?.error || e?.message || "Failed to update status");
     }
   };
 
@@ -248,6 +287,7 @@ function StatusCard({ row, onUpdated }) {
   );
 }
 
+
 /* ---------------- component ---------------- */
 export default function LogisticsDashboard() {
   const navigate = useNavigate();
@@ -318,18 +358,52 @@ export default function LogisticsDashboard() {
     return [];
   }, [resp]);
 
-  const meta = resp?.meta || {};
-  const totalCount = meta.total ?? (Array.isArray(resp?.data) ? resp.data.length : 0);
-  const totalPages = Math.max(1, Math.ceil((totalCount || 0) / rowsPerPage));
+// API-aware meta + range with robust fallbacks
+const meta = resp?.meta || {};
+const total = Number(
+  meta?.total ??
+  meta?.totalCount ??
+  meta?.total_count ??
+  resp?.total ??
+  0
+);
+const count = Number(
+  meta?.count ??
+  meta?.pageCount ??
+  meta?.per_page_count ??
+  rows.length
+);
+const apiPage = Number(
+  meta?.page ??
+  meta?.currentPage ??
+  meta?.current_page ??
+  currentPage
+);
+const apiPageSize = Number(
+  meta?.pageSize ??
+  meta?.perPage ??
+  meta?.per_page ??
+  rowsPerPage
+);
 
-  const handlePageChange = (p) => {
-    if (p < 1 || p > totalPages) return;
-    const params = new URLSearchParams(searchParams);
-    params.set("page", String(p));
-    setSearchParams(params);
-    setCurrentPage(p);
-    setSelected([]);
-  };
+const totalPages = Math.max(1, Math.ceil((total || 0) / apiPageSize));
+
+// For "Showing X–Y of Z"
+const startIndex = total ? (apiPage - 1) * apiPageSize + 1 : 0;
+const endIndex = total ? Math.min(startIndex + count - 1, total) : 0;
+
+
+
+const handlePageChange = (p) => {
+  if (p < 1 || p > totalPages) return;
+  const params = new URLSearchParams(searchParams);
+  params.set("page", String(p));
+  setSearchParams(params);
+  setCurrentPage(p);
+  setSelected([]);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
 
   const handleSelectAll = (e) => {
     if (e.target.checked) setSelected(rows.map((r) => r._id));
@@ -348,7 +422,7 @@ export default function LogisticsDashboard() {
         sx={{
           marginLeft: { xl: "15%", lg: "18%" },
           borderRadius: "sm",
-          py: 2,
+          py: 1,
           display: "flex",
           flexWrap: "wrap",
           gap: 1.5,
@@ -406,7 +480,7 @@ export default function LogisticsDashboard() {
             indicatorPlacement="none"
             sx={{
               bgcolor: "background.level1",
-              borderRadius: "md",
+              borderRadius: 9999,
               boxShadow: "sm",
               width: "fit-content",
             }}
@@ -418,7 +492,7 @@ export default function LogisticsDashboard() {
                   value={label}
                   disableIndicator
                   sx={{
-                    borderRadius: "xl",
+                    borderRadius: 9999,
                     fontWeight: "md",
                     "&.Mui-selected": {
                       bgcolor: "background.surface",
@@ -618,27 +692,14 @@ export default function LogisticsDashboard() {
                         <Box
                           sx={{
                             display: "inline-flex",
-                            gap: 8,
                             alignItems: "center",
+                            gap: 0.5,
                           }}
                         >
-                          <Chip size="sm" variant="soft">
+                          <Typography level="body-sm" fontWeight="md">
                             {firstPO}
-                          </Chip>
-                          {extraPO > 0 && (
-                            <Typography
-                              level="body-xs"
-                              sx={{
-                                px: 0.75,
-                                py: 0.25,
-                                border: "1px solid",
-                                borderColor: "neutral.outlinedBorder",
-                                borderRadius: "sm",
-                              }}
-                            >
-                              +{extraPO} more
-                            </Typography>
-                          )}
+                          </Typography>
+                          <MorePill n={extraPO} />
                         </Box>
                       </Tooltip>
                     </td>
@@ -685,27 +746,14 @@ export default function LogisticsDashboard() {
                         <Box
                           sx={{
                             display: "inline-flex",
-                            gap: 8,
                             alignItems: "center",
+                            gap: 0.5,
                           }}
                         >
                           <Typography level="body-sm">
                             {safe(firstLabel)}
                           </Typography>
-                          {extraCount > 0 && (
-                            <Typography
-                              level="body-xs"
-                              sx={{
-                                px: 0.75,
-                                py: 0.25,
-                                border: "1px solid",
-                                borderColor: "neutral.outlinedBorder",
-                                borderRadius: "sm",
-                              }}
-                            >
-                              +{extraCount} more
-                            </Typography>
-                          )}
+                          <MorePill n={extraCount} />
                         </Box>
                       </Tooltip>
                     </td>
@@ -753,20 +801,25 @@ export default function LogisticsDashboard() {
           variant="outlined"
           color="neutral"
           startDecorator={<KeyboardArrowLeftIcon />}
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage <= 1 || isLoading}
+          onClick={() => handlePageChange(apiPage - 1)}
+disabled={apiPage <= 1 || isLoading}
+
+
         >
           Previous
         </Button>
+<Box>
+  {total
+    ? <>Showing {startIndex}–{endIndex} of {total} results</>
+    : <>Showing 0 of 0 results</>}
+</Box>
 
-        <Box>
-          Showing {meta?.count ?? rows.length} of {meta?.total ?? rows.length} results
-        </Box>
+
 
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
-          {pageNumbers(currentPage, totalPages).map((v, idx) =>
+          {pageNumbers(apiPage, totalPages).map((v, idx) =>
             v === "…" ? (
               <Typography key={`dots-${idx}`} level="body-sm" sx={{ px: 1 }}>
                 …
@@ -775,7 +828,8 @@ export default function LogisticsDashboard() {
               <IconButton
                 key={v}
                 size="sm"
-                variant={v === currentPage ? "solid" : "outlined"}
+                variant={v === apiPage ? "solid" : "outlined"}
+
                 color="neutral"
                 onClick={() => handlePageChange(v)}
                 disabled={isLoading}
@@ -791,8 +845,10 @@ export default function LogisticsDashboard() {
           variant="outlined"
           color="neutral"
           endDecorator={<KeyboardArrowRightIcon />}
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage >= totalPages || isLoading}
+          onClick={() => handlePageChange(apiPage + 1)}
+disabled={apiPage >= totalPages || isLoading}
+
+
         >
           Next
         </Button>

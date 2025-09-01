@@ -5,11 +5,10 @@ import Button from "@mui/joy/Button";
 import Chip from "@mui/joy/Chip";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import HourglassTopRoundedIcon from "@mui/icons-material/HourglassTopRounded";
-import IconButton from "@mui/joy/IconButton";
-import Input from "@mui/joy/Input";
+import durationPlugin from "dayjs/plugin/duration";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { forwardRef, useEffect, useState } from "react";
+import { forwardRef, useEffect, useMemo, useState } from "react";
 import NoData from "../../assets/alert-bell.svg";
 import {
   CircularProgress,
@@ -21,7 +20,6 @@ import {
   Tooltip,
   useTheme,
 } from "@mui/joy";
-import { CheckCircle, PenLine, XCircle } from "lucide-react";
 import { PaymentProvider } from "../../store/Context/Payment_History";
 import PaymentHistory from "../PaymentHistory";
 import {
@@ -227,7 +225,55 @@ const CreditRequest = forwardRef(
         </>
       );
     };
-    
+
+    dayjs.extend(durationPlugin);
+
+    function fmtDur(ms) {
+      if (ms <= 0) return "0s";
+      const d = dayjs.duration(ms);
+      const parts = [];
+      const days = Math.floor(d.asDays());
+      const hrs = d.hours();
+      const mins = d.minutes();
+      if (days) parts.push(`${days}d`);
+      if (hrs) parts.push(`${hrs}h`);
+      if (mins || parts.length === 0) parts.push(`${mins}m`);
+      return parts.join(" ");
+    }
+
+    function buildRanges(status_history = [], now = new Date()) {
+      const items = [...status_history]
+        .filter((x) => x?.timestamp)
+        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+      const ranges = [];
+      for (let i = 0; i < items.length; i++) {
+        const cur = items[i];
+        const next = items[i + 1];
+        const start = new Date(cur.timestamp);
+        const end = next ? new Date(next.timestamp) : now;
+        const ms = Math.max(0, end - start);
+        ranges.push({
+          stage: cur.stage || "-",
+          start,
+          end,
+          ms,
+          remarks: cur.remarks || "",
+          user_id: cur.user_id || null,
+        });
+      }
+      return ranges;
+    }
+
+    const colorPool = [
+      "#94a3b8",
+      "#38bdf8",
+      "#34d399",
+      "#f59e0b",
+      "#f472b6",
+      "#60a5fa",
+      "#f87171",
+    ];
 
     const MatchRow = ({
       _id,
@@ -236,7 +282,41 @@ const CreditRequest = forwardRef(
       timers,
       amount_paid,
       credit,
+      status_history = [],
+      user,
     }) => {
+
+       const formatINR = (value) => {
+        if (value == null || value === "") return "—";
+        return new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        }).format(value);
+      };
+
+      const currentStage = useMemo(() => {
+        const last =
+          Array.isArray(status_history) && status_history.length
+            ? status_history[status_history.length - 1]
+            : null;
+
+        if (timers?.draft_frozen_at) return "Frozen";
+
+        return last?.stage || "-";
+      }, [status_history, timers?.draft_frozen_at]);
+
+      const now = useMemo(() => new Date(), []);
+      const ranges = useMemo(
+        () => buildRanges(status_history, now),
+        [status_history, now]
+      );
+      const totalMs = useMemo(
+        () => ranges.reduce((s, r) => s + r.ms, 0),
+        [ranges]
+      );
+
       const [updateCreditExtension, { isLoading }] =
         useUpdateRequestExtensionMutation();
 
@@ -249,13 +329,11 @@ const CreditRequest = forwardRef(
           toast.error("Remarks are required");
           return;
         }
-
         try {
           await updateCreditExtension({
             id: _id,
             credit_remarks: remarks,
           }).unwrap();
-
           toast.success("Credit extension requested successfully");
           setRequested(true);
           setOpen(false);
@@ -264,39 +342,142 @@ const CreditRequest = forwardRef(
           toast.error("Failed to request credit extension");
         }
       };
-      
+
+      const chipColor =
+        {
+          Approved: "success",
+          Pending: "neutral",
+          Rejected: "danger",
+          Deleted: "warning",
+        }[approved] || "neutral";
+
+      const tooltipContent = (
+        <Box sx={{ p: 1, maxWidth: 380 }}>
+          <Typography level="title-sm" sx={{ mb: 0.5 }}>
+            Stage timeline
+          </Typography>
+
+          <Box
+            sx={{
+              display: "flex",
+              width: "100%",
+              height: 10,
+              borderRadius: 999,
+              overflow: "hidden",
+              mb: 1,
+              border: "1px solid var(--joy-palette-neutral-outlinedBorder)",
+            }}
+          >
+            {ranges.map((r, i) => {
+              const widthPct = totalMs ? (r.ms / totalMs) * 100 : 0;
+              const active = r.stage === currentStage;
+              return (
+                <Box
+                  key={`${r.stage}-${i}`}
+                  sx={{
+                    width: `${Math.max(2, widthPct)}%`,
+                    background: active
+                      ? "var(--joy-palette-primary-solidBg)"
+                      : colorPool[i % colorPool.length],
+                    opacity: active ? 1 : 0.85,
+                    outline: active
+                      ? "2px solid var(--joy-palette-primary-700)"
+                      : "none",
+                  }}
+                  title={`${r.stage}: ${fmtDur(r.ms)}`}
+                />
+              );
+            })}
+          </Box>
+
+          {/* Rows */}
+          <Box sx={{ display: "grid", rowGap: 0.5 }}>
+            {ranges.map((r, i) => {
+              const active = r.stage === currentStage;
+              return (
+                <Box
+                  key={`row-${r.stage}-${i}`}
+                  sx={{
+                    display: "flex",
+                    alignItems: "start",
+                    gap: 1,
+                    p: 0.5,
+                    borderRadius: 8,
+                    backgroundColor: active
+                      ? "var(--joy-palette-primary-softBg)"
+                      : "transparent",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      mt: "3px",
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      backgroundColor: active
+                        ? "var(--joy-palette-primary-solidBg)"
+                        : colorPool[i % colorPool.length],
+                      flex: "0 0 auto",
+                    }}
+                  />
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography
+                      level="body-sm"
+                      sx={{ fontWeight: active ? 700 : 500, lineHeight: 1.2 }}
+                    >
+                      {r.stage} {active && "• current"}
+                    </Typography>
+                    <Typography level="body-xs" sx={{ opacity: 0.9 }}>
+                      {dayjs(r.start).format("DD MMM YYYY, HH:mm")} →{" "}
+                      {dayjs(r.end).format("DD MMM YYYY, HH:mm")} (
+                      {fmtDur(r.ms)})
+                    </Typography>
+                    {r.remarks ? (
+                      <Typography level="body-xs" sx={{ opacity: 0.8 }}>
+                        Remarks: {r.remarks}
+                      </Typography>
+                    ) : null}
+                  </Box>
+                </Box>
+              );
+            })}
+          </Box>
+        </Box>
+      );
 
       return (
         <Box mt={1}>
           {/* Amount */}
           <Box display="flex" alignItems="flex-start" gap={1} mb={0.5}>
-            <Typography sx={labelStyle}>💰 Amount:</Typography>
-            <Typography sx={{ ...valueStyle, fontSize: "14px" }}>
-              {amount_paid || "—"}
+            <Typography sx={{ fontWeight: 500 }}>💰 Amount:</Typography>
+            <Typography sx={{ fontSize: "14px" }}>
+              {formatINR(amount_paid)}
             </Typography>
           </Box>
 
-          {/* Payment Status */}
+          {/* Payment Status + hover timeline */}
           <Box display="flex" alignItems="flex-start" gap={1}>
             <Typography sx={labelStyle}>📑 Payment Status:</Typography>
-            <Chip
-              color={
-                {
-                  Approved: "success",
-                  Pending: "neutral",
-                  Rejected: "danger",
-                  Deleted: "warning",
-                }[approved] || "neutral"
-              }
-              variant="solid"
-              size="sm"
+            <Tooltip
+              title={ranges.length ? tooltipContent : "No stage history"}
+              variant="soft"
+              placement="top-start"
+              sx={{ "--Tooltip-radius": "12px", "--Tooltip-offset": "6px" }}
             >
-              {approved}
-            </Chip>
+              <span>
+                <Chip
+                  color={chipColor}
+                  variant="solid"
+                  size="sm"
+                  sx={{ cursor: ranges.length ? "help" : "default" }}
+                >
+                  {approved || "Not Found"}
+                </Chip>
+              </span>
+            </Tooltip>
           </Box>
 
-          {/* Remaining Days */}
-          {/* Remaining Days */}
+          {/* Countdown / Remaining */}
           <Box display="flex" alignItems="center" gap={1} mt={0.5}>
             <Typography sx={labelStyle}>⏰</Typography>
 
@@ -322,13 +503,13 @@ const CreditRequest = forwardRef(
               </Chip>
             )}
 
-            {/* Request Extension Button/State */}
+            {/* Request Extension flow (kept as-is, with a small guard) */}
             {user?.department === "SCM" &&
               credit?.credit_extension === false &&
               remaining_days > 0 &&
               approved !== "Approved" &&
               approved !== "Rejected" &&
-              !timers?.draft_frozen_at && // 🔒 Hide request if frozen
+              !timers?.draft_frozen_at &&
               (requested ? (
                 <Chip
                   size="sm"
@@ -411,16 +592,16 @@ const CreditRequest = forwardRef(
             level="body-sm"
             fontWeight={600}
             mb={0.5}
-            sx={{ color: "#fff" }}
+            sx={{ color: "#fff", textDecoration: "underline" }}
           >
             UTR History
           </Typography>
-          <ul style={{ margin: 0, paddingLeft: "1rem" }}>
+          <ul style={{ margin: 0, paddingLeft: "1rem", color: "#fff" }}>
             {payment.utr_history.map((h, idx) => (
               <li key={idx}>
                 <Typography level="body-sm" sx={{ color: "#fff" }}>
                   {h.utr}{" "}
-                  <span style={{ color: "gray", fontSize: 12, color: "#fff" }}>
+                  <span style={{ color: "#fff", fontSize: 12 }}>
                     ({h.status})
                   </span>
                 </Typography>
@@ -438,7 +619,7 @@ const CreditRequest = forwardRef(
 
       return (
         <Box>
-          {(department === "SCM" && role === "manager") ||
+          {((department === "SCM" || department === "Accounts") && role === "manager") ||
           department === "admin" ||
           department === "superadmin" ? (
             <Tooltip title={historyContent} arrow placement="top">
@@ -597,9 +778,13 @@ const CreditRequest = forwardRef(
                         approved={payment.approved}
                         amount_paid={payment.amount_paid}
                         remaining_days={payment.remaining_days}
-                        credit={payment?.credit}
-                        credit_extension={payment.credit_extension}
+                        credit={payment.credit}
                         timers={payment.timers}
+                        status_history={
+                          payment.status_history ||
+                          payment.approval_status?.status_history ||
+                          []
+                        }
                       />
                     </Box>
 

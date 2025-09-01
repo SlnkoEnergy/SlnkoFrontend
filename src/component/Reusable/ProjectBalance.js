@@ -64,13 +64,6 @@ const ProjectBalances = forwardRef((props, ref) => {
   const [aggregate_MW, setAggregate_MW] = useState(0);
   const [total_Debit, setTotal_Debit] = useState(0);
   const [available_Amount, setAvailable_Amount] = useState(0);
-  const [balanceSlnko, setTotalBalanceSlnko] = useState(0);
-  const [balancePayable, setTotalBalancePayable] = useState(0);
-  const [balanceRequired, setTotalBalanceRequired] = useState(0);
-  const [customerAdjustmentSum, setCustomerAdjustmentSum] = useState(0);
-  const [totalAmountPaid, setTotalAmountPaid] = useState(0);
-  const [totalPoValue, setTotalPoValue] = useState(0);
-  const [totalBillValue, setTotalBillValue] = useState(0);
   const [totals, setTotals] = useState({
     totalBalanceSlnko: 0,
     totalBalancePayable: 0,
@@ -512,8 +505,8 @@ const ProjectBalances = forwardRef((props, ref) => {
           acc.totalDebitSum += project.debitAmount || 0;
           acc.totalAdjustmentSum += project.adjustmentAmount || 0;
           acc.totalmWSum += project.projectMW || 0;
-         acc.advancePaid += project.advancePaid || 0;
-         acc.customerAdjustment += project.customerAdjustment || 0
+          acc.advancePaid += project.advancePaid || 0;
+          acc.customerAdjustment += project.customerAdjustment || 0;
 
           return acc;
         },
@@ -525,9 +518,8 @@ const ProjectBalances = forwardRef((props, ref) => {
           totalDebitSum: 0,
           totalAdjustmentSum: 0,
           totalmWSum: 0,
-          advancePaid:0,
-          customerAdjustment:0,
-
+          advancePaid: 0,
+          customerAdjustment: 0,
         }
       );
 

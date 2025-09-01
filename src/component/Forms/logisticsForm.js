@@ -560,38 +560,84 @@ const AddLogisticForm = () => {
     };
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const normalizedItems = items.map((i) => ({
-        material_po: i.po_id,
-        po_item_id: i.po_item_id || null,
-        category_id: i.category_id ?? null,
-        product_name: i.product_name,
-        product_make: i.product_make,
-        uom: i.uom || "",
-        quantity_requested: String(i.quantity_requested || ""),
-        received_qty: String(i.received_qty || ""),
-        quantity_po: String(i.quantity_po || ""),
-        weight: String(i.ton || ""),
-      }));
+// REPLACE your current handleSubmit with this
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const normalizedItems = items.map((i) => ({
+      material_po: i.po_id,
+      po_item_id: i.po_item_id || null,
+      category_id: i.category_id ?? null,
+      product_name: i.product_name,
+      product_make: i.product_make,
+      uom: i.uom || "",
+      quantity_requested: String(i.quantity_requested || ""),
+      received_qty: String(i.received_qty || ""),
+      quantity_po: String(i.quantity_po || ""),
+      weight: String(i.ton || ""),
+    }));
 
-      const payload = {
-        po_id: transportation,
-        vehicle_number: formData.vehicle_number,
-        driver_number: formData.driver_number,
-        total_ton: String(totalWeight),
-        total_transport_po_value: String(vehicleCost),
-        attachment_url: formData.attachment_url, // server ignores/controls this
-        description: formData.description,
-        items: normalizedItems,
-      };
-      // create
+    const payload = {
+      po_id: transportation,
+      vehicle_number: formData.vehicle_number,
+      driver_number: formData.driver_number,
+      total_ton: String(totalWeight),
+      total_transport_po_value: String(vehicleCost),
+      attachment_url: formData.attachment_url,
+      description: formData.description,
+      items: normalizedItems,
+    };
+
+    if (isEdit && logisticId) {
+      // UPDATE
+      if (selectedFiles.length > 0) {
+        const fd = buildUpdateFormData(payload, selectedFiles);
+        await updateLogistic({ id: logisticId, body: fd }).unwrap();
+      } else {
+        await updateLogistic({ id: logisticId, body: payload }).unwrap();
+      }
+
+      // Optional: write an update entry to history
+      try {
+        const { numericChanges, descChanged, descFrom, descTo } = buildLogChanges(
+          serverBaseline,
+          {
+            total_ton: Number(totalWeight),
+            total_transport_po_value: Number(vehicleCost),
+            description: formData.description,
+          }
+        );
+
+        if (numericChanges.length || descChanged) {
+          const userData = localStorage.getItem("userDetails");
+          const userObj = userData ? JSON.parse(userData) : null;
+          await addLogisticHistory({
+            subject_type: "logistic",
+            subject_id: logisticId,
+            event_type: "update",
+            message: "Logistic updated",
+            createdBy: { name: userObj?.name || "User", user_id: userObj?._id },
+            changes: [
+              ...numericChanges,
+              ...(descChanged
+                ? [{ path: "description", label: "Description", from: descFrom, to: descTo }]
+                : []),
+            ],
+            attachments: [],
+          }).unwrap();
+        }
+      } catch {
+        /* non-blocking */
+      }
+
+      toast.success("Logistic updated successfully");
+      await refetchLogistic();
+    } else {
+      // CREATE
       const res = await addLogistic(payload).unwrap();
-      toast.success("Logistic entry created successfully");
+      const createdId = res?.data?._id || res?._id || res?.id || res?.data?.id || null;
 
-      const createdId =
-        res?.data?._id || res?._id || res?.id || res?.data?.id || null;
+      // Optional: write a creation note to history
       if (createdId) {
         try {
           const userData = localStorage.getItem("userDetails");
@@ -601,26 +647,26 @@ const AddLogisticForm = () => {
             subject_id: createdId,
             event_type: "note",
             message: "Logistic entry created",
-            createdBy: {
-              name: userObj?.name || "User",
-              user_id: userObj?._id,
-            },
+            createdBy: { name: userObj?.name || "User", user_id: userObj?._id },
             changes: [],
             attachments: [],
           }).unwrap();
-        } catch (err) {
-          // non-blocking
+        } catch {
+          /* non-blocking */
         }
       }
 
-      handleReset();
-    } catch (err) {
-      console.error("Failed to submit logistic:", err);
-      toast.error(
-        isEdit ? "Failed to update logistic" : "Failed to create logistic"
-      );
+      toast.success("Logistic entry created successfully");
     }
-  };
+
+    handleReset();
+  } catch (err) {
+    console.error("Failed to submit logistic:", err);
+    toast.error(isEdit ? "Failed to update logistic" : "Failed to create logistic");
+  }
+};
+
+
 
   const handleReset = () => {
     setFormData({

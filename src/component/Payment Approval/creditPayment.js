@@ -92,7 +92,7 @@ const CreditPayment = forwardRef(
       }
 
       const { department, role } = user;
-      const isInternalManager = department === "Internal" && role === "manager";
+      const isInternalManager = department === "Projects" && role === "visitor";
       const isSCMOrAccountsManager =
         ["SCM", "Accounts"].includes(department) && role === "manager";
 
@@ -520,15 +520,18 @@ const CreditPayment = forwardRef(
               </Typography>
             </Box>
           )}
-          <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
-            <Typography style={{ fontSize: 12, fontWeight: 600 }}>
+          <Box display="flex" alignItems="center" gap={1} mt={0.5}>
+            <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
               🏢 Vendor:
             </Typography>
-            <Typography
-              sx={{ fontSize: 12, fontWeight: 400, wordBreak: "break-word" }}
+            <Chip
+              color="danger"
+              size="sm"
+              variant="solid"
+              sx={{ fontSize: 12 }}
             >
               {vendor}
-            </Typography>
+            </Chip>
           </Box>
         </>
       );
@@ -542,21 +545,35 @@ const CreditPayment = forwardRef(
       totalCredited = 0,
       totalPaid = 0,
       po_value,
+      cr_id,
     }) => {
-      const inr = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 });
+      const inr = new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      });
 
       const fmt = (v, dashIfEmpty = false) => {
         if (v === null || v === undefined || v === "") {
-          return dashIfEmpty ? "—" : "0";
+          return dashIfEmpty ? "—" : inr.format(0);
         }
         const num = Number(v);
-        return Number.isFinite(num) ? inr.format(num) : dashIfEmpty ? "—" : "0";
+        if (!Number.isFinite(num)) return dashIfEmpty ? "—" : inr.format(0);
+        return inr.format(num);
       };
 
+      const toNum = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+
+      const hasCreditId = !!cr_id;
+      const computedCredit = hasCreditId
+        ? toNum(totalCredited) - toNum(totalPaid)
+        : 0;
+
       const chipColor =
-        Number(creditBalance) > 0
+        computedCredit > 0
           ? "success"
-          : Number(creditBalance) < 0
+          : computedCredit < 0
             ? "danger"
             : "neutral";
 
@@ -571,7 +588,7 @@ const CreditPayment = forwardRef(
                   Requested Amount:&nbsp;
                 </span>
                 <Typography sx={{ fontSize: 13, fontWeight: 400 }}>
-                  ₹ {fmt(amount_requested, true)}
+                  {fmt(amount_requested, true)}
                 </Typography>
               </Box>
             )}
@@ -582,7 +599,7 @@ const CreditPayment = forwardRef(
               Total PO (incl. GST):&nbsp;
             </span>
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              {po_value == null || po_value === "" ? "—" : `₹ ${fmt(po_value)}`}
+              {po_value == null || po_value === "" ? "—" : fmt(po_value)}
             </Typography>
           </Box>
 
@@ -592,7 +609,7 @@ const CreditPayment = forwardRef(
               Client Balance:&nbsp;
             </span>
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              ₹ {fmt(ClientBalance)}
+              {fmt(ClientBalance)}
             </Typography>
           </Box>
 
@@ -602,7 +619,7 @@ const CreditPayment = forwardRef(
               Group Balance:&nbsp;
             </span>
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-              ₹ {fmt(groupBalance)}
+              {fmt(groupBalance)}
             </Typography>
           </Box>
 
@@ -621,16 +638,19 @@ const CreditPayment = forwardRef(
                     level="body-xs"
                     sx={{ fontSize: 11, fontWeight: 600, color: "#fff" }}
                   >
-                    Total Credited − Total Amount Paid
+                    {hasCreditId
+                      ? "Total Credited − Total Amount Paid"
+                      : "No Credit ID found"}
                   </Typography>
                   <Typography
                     level="body-xs"
                     sx={{ fontSize: 11, color: "#fff" }}
                   >
-                    ₹ {fmt(totalCredited)} − ₹ {fmt(totalPaid)} = ₹{" "}
-                    {fmt(
-                      (Number(totalCredited) || 0) - (Number(totalPaid) || 0)
-                    )}
+                    {hasCreditId
+                      ? `${fmt(totalCredited)} − ${fmt(totalPaid)} = ${fmt(
+                          computedCredit
+                        )}`
+                      : fmt(0)}
                   </Typography>
                 </Box>
               }
@@ -641,7 +661,7 @@ const CreditPayment = forwardRef(
                 color={chipColor}
                 sx={{ fontSize: 12, fontWeight: 500, ml: 0.5 }}
               >
-                ₹ {fmt(creditBalance)}
+                {fmt(computedCredit)}
               </Chip>
             </Tooltip>
           </Box>
@@ -837,6 +857,7 @@ const CreditPayment = forwardRef(
                           creditBalance={payment?.creditBalance}
                           totalCredited={payment?.totalCredited}
                           totalPaid={payment?.totalPaid}
+                          cr_id={payment?.cr_id}
                         />
                       </Box>
                       <Box component="td" sx={{ ...cellStyle }}>

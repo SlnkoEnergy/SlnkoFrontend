@@ -76,20 +76,24 @@ function PaymentRequest() {
     if (userData) setUser(JSON.parse(userData));
   }, []);
 
-  const isAccount = user?.department === "Accounts";
+  const isAccount =
+    user?.department === "Accounts" ||
+    user?.department === "admin" ||
+    user?.department === "superadmin";
 
   const {
     data: responseData,
     isLoading,
     error,
     onRefresh,
-  } = useGetPaymentApprovalQuery({
-    page: currentPage,
-    pageSize: perPage,
-    search: searchQuery,
-    delaydays: delaydays || undefined,
-    ...(isAccount ? { tab: activeTab } : {}),
-  },
+  } = useGetPaymentApprovalQuery(
+    {
+      page: currentPage,
+      pageSize: perPage,
+      search: searchQuery,
+      delaydays: delaydays || undefined,
+      ...(isAccount ? { tab: activeTab } : {}),
+    },
     { refetchOnMountOrArgChange: true }
   );
 
@@ -100,9 +104,6 @@ function PaymentRequest() {
   // const Approved = responseData?.toBeApprovedCount || 0;
 
   const startIndex = (currentPage - 1) * perPage + 1;
-
-
-
 
   const rows = Array.isArray(responseData?.data) ? responseData.data : [];
 
@@ -117,7 +118,8 @@ function PaymentRequest() {
     if (currentPage > 1) params.page = currentPage;
     if (perPage !== 10) params.pageSize = perPage;
     if (searchQuery) params.search = searchQuery;
-    if (delaydays && !Number.isNaN(Number(delaydays))) params.delaydays = String(delaydays);
+    if (delaydays && !Number.isNaN(Number(delaydays)))
+      params.delaydays = String(delaydays);
 
     setSearchParams(params, { replace: true });
   }, [
@@ -152,9 +154,13 @@ function PaymentRequest() {
     }
 
     const { department, role } = user;
-    const isInternalManager = department === "Internal" && role === "manager";
+    const isInternalManager =
+      department === "Projects" &&
+      role === "visitor";
     const isSCMOrAccountsManager =
-      ["SCM", "Accounts"].includes(department) && role === "manager";
+      (["SCM", "Accounts"].includes(department) && role === "manager") ||
+      user?.department === "admin" ||
+      user?.department === "superadmin";
 
     if (newStatus === "Rejected") {
       if (!_id) {
@@ -390,21 +396,15 @@ function PaymentRequest() {
     { value: "2", label: "2 Days" },
     { value: "3", label: "3 Days" },
     { value: "8", label: "8 Days" },
-    { value: "-1", label: "Over Due"},
+    { value: "-1", label: "Over Due" },
     { value: "clear", label: "Clear Filter" },
-  ]
+  ];
 
   const RowMenu = ({ _id, onStatusChange, showApprove }) => {
     const [open, setOpen] = useState(false);
     const [remarks, setRemarks] = useState("");
 
     const handleRejectSubmit = () => {
-      // console.log(
-      //   "📌 RowMenu → handleRejectSubmit remarks:",
-      //   remarks,
-      //   "type:",
-      //   typeof remarks
-      // );
       onStatusChange(_id, "Rejected", remarks);
       setOpen(false);
       setRemarks("");
@@ -765,15 +765,13 @@ function PaymentRequest() {
           </Sheet>
         </Modal>
 
-        <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+         <Box display="flex" alignItems="center" gap={1} mt={0.5}>
           <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
             🏢 Vendor:
           </Typography>
-          <Typography
-            sx={{ fontSize: 12, fontWeight: 400, wordBreak: "break-word" }}
-          >
+          <Chip color="danger" size="sm" variant="solid" sx={{ fontSize: 12 }}>
             {vendor}
-          </Typography>
+          </Chip>
         </Box>
 
         {payment_description && (
@@ -797,6 +795,15 @@ function PaymentRequest() {
     groupBalance,
     po_value,
   }) => {
+     const formatINR = (value) => {
+        if (value == null || value === "") return "0";
+        return new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        }).format(value);
+      };
     return (
       <>
         {amount_requested && (
@@ -806,7 +813,7 @@ function PaymentRequest() {
               Requested Amount:{" "}
             </span>
             <Typography sx={{ fontSize: 13, fontWeight: 400, ml: 0.5 }}>
-              {amount_requested || "-"}
+              {formatINR(amount_requested)}
             </Typography>
           </Box>
         )}
@@ -817,7 +824,7 @@ function PaymentRequest() {
             Total PO (incl. GST):{" "}
           </span>
           <Typography sx={{ fontSize: 12, fontWeight: 400, ml: 0.5 }}>
-            {po_value || "-"}
+            {formatINR(po_value)}
           </Typography>
         </Box>
 
@@ -829,7 +836,7 @@ function PaymentRequest() {
           </span>
           &nbsp;
           <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-            {ClientBalance || "0"}
+            {formatINR(ClientBalance )}
           </Typography>
         </Box>
 
@@ -839,7 +846,7 @@ function PaymentRequest() {
           <span style={{ fontSize: 12, fontWeight: 600 }}>Group Balance: </span>
           &nbsp;
           <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-            {groupBalance || "0"}
+            {formatINR(groupBalance)}
           </Typography>
         </Box>
       </>
@@ -925,19 +932,20 @@ function PaymentRequest() {
             </Typography>
           )}
 
-          {user?.department === "Internal" && user?.role === "manager" && (
+          {user?.department === "Projects" &&
+            user?.role === "visitor" && (
+              <Typography level="h2" component="h1">
+                CAM Payment Approval
+              </Typography>
+            )}
+
+          {((user?.department === "Accounts" && user?.role === "manager") ||
+            user?.department === "admin" ||
+            user?.department === "superadmin") && (
             <Typography level="h2" component="h1">
-              CAM Payment Approval
+              Accounts Payment Approval
             </Typography>
           )}
-
-          {(user?.department === "Accounts" && user?.role === "manager") ||
-            user?.department === "admin" ||
-            (user?.department === "superadmin" && (
-              <Typography level="h2" component="h1">
-                Accounts Payment Approval
-              </Typography>
-            ))}
         </Box>
       </Box>
 
@@ -1023,7 +1031,11 @@ function PaymentRequest() {
                         <Chip
                           size="sm"
                           variant="solid"
-                           color={t.key === "finalApprovalPayments" ? "danger" : "primary"}
+                          color={
+                            t.key === "finalApprovalPayments"
+                              ? "danger"
+                              : "primary"
+                          }
                           sx={{
                             ml: 0.5,
                             fontWeight: 700,
@@ -1055,7 +1067,7 @@ function PaymentRequest() {
                     value={delaydays || null}
                     onChange={(_, v) => {
                       if (v === "clear") {
-                        setDelaydays(""); // reset to default
+                        setDelaydays("");
                       } else {
                         setDelaydays(v ?? "");
                       }
@@ -1063,7 +1075,11 @@ function PaymentRequest() {
                     sx={{ width: 135, height: 35, padding: 1 }}
                   >
                     {DaysOptions.map((n) => (
-                      <Option key={n.value} value={n.value} sx={n.value === "clear" ? { color: "red" } : {}}>
+                      <Option
+                        key={n.value}
+                        value={n.value}
+                        sx={n.value === "clear" ? { color: "red" } : {}}
+                      >
                         {n.label}
                       </Option>
                     ))}
@@ -1204,7 +1220,7 @@ function PaymentRequest() {
                   searchQuery={searchQuery}
                   perPage={perPage}
                   currentPage={currentPage}
-                  delaydays = {delaydays}
+                  delaydays={delaydays}
                   sxRow={{ "&:hover": { bgcolor: "action.hover" } }}
                 />
               )}
@@ -1241,8 +1257,8 @@ function PaymentRequest() {
                 justifyContent: "center",
               }}
             >
-              {user?.department === "Internal" &&
-                user?.role === "manager" &&
+              {user?.department === "Projects" &&
+                user?.role === "visitor" &&
                 renderFilters?.()}
 
               <Box
@@ -1392,8 +1408,7 @@ function PaymentRequest() {
                   <Box component="th" sx={headerStyle}>
                     <Checkbox
                       indeterminate={
-                        selected.length > 0 &&
-                        selected.length < rows.length
+                        selected.length > 0 && selected.length < rows.length
                       }
                       checked={selected.length === rows.length}
                       onChange={handleSelectAll}
@@ -1537,9 +1552,11 @@ function PaymentRequest() {
                         <Box component="td" sx={{ ...cellStyle }}>
                           <RowMenu
                             _id={payment._id}
-                            showApprove={["SCM", "Accounts"].includes(
-                              user?.department
-                            )}
+                            showApprove={
+                              ["SCM", "Accounts"].includes(user?.department) ||
+                              user?.department === "admin" ||
+                              user?.department === "superadmin"
+                            }
                             onStatusChange={(id, status, remarks) =>
                               handleStatusChange(id, status, remarks)
                             }

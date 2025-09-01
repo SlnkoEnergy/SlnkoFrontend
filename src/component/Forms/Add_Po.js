@@ -1023,7 +1023,6 @@ const AddPurchaseOrder = ({
             vendor: formData.name,
             date: formData.date,
             partial_billing: formData.partial_billing || "",
-            submitted_By: formData.submitted_By,
             delivery_type: formData.delivery_type,
             po_basic: String(amounts.untaxed ?? 0),
             gst: String(amounts.tax ?? 0),
@@ -1073,7 +1072,6 @@ const AddPurchaseOrder = ({
           vendor: formData.name,
           date: formData.date,
           partial_billing: formData.partial_billing || "",
-          submitted_By: user.name,
           delivery_type: formData.delivery_type,
           pr_id,
           po_basic: String(amounts.untaxed ?? 0),
@@ -1451,59 +1449,60 @@ const AddPurchaseOrder = ({
 
               {/* Existing action buttons */}
               {!viewMode && (
-                <>
-                  {((effectiveMode === "edit" &&
-                    statusNow === "approval_rejected") ||
-                    fromModal) && (
-                    <Button
-                      component="button"
-                      type="submit"
-                      form="po-form"
-                      name="action"
-                      value="send_approval"
-                      variant="solid"
-                      startDecorator={<Send />}
-                      sx={{
-                        bgcolor: "#214b7b",
-                        color: "#fff",
-                        "&:hover": { bgcolor: "#163553" },
-                      }}
-                      disabled={isSubmitting}
-                    >
-                      Send Approval
-                    </Button>
-                  )}
+  <>
+    {/* Send Approval Button */}
+    {(effectiveMode === "edit" &&
+      statusNow === "approval_rejected") ||
+    fromModal ? (
+      <Button
+        component="button"
+        type="submit"
+        form="po-form"
+        name="action"
+        value="send_approval"
+        variant="solid"
+        startDecorator={<Send />}
+        sx={{
+          bgcolor: "#214b7b",
+          color: "#fff",
+          "&:hover": { bgcolor: "#163553" },
+        }}
+        disabled={isSubmitting}
+      >
+        Send Approval
+      </Button>
+    ) : null}
 
-                  {(effectiveMode === "edit" &&
-                    statusNow === "approval_done" &&
-                    user?.department === "SCM") ||
-                    (user?.name === "IT Team" &&
-                      !fromModal &&
-                      statusNow === "approval_done" && (
-                        <Button
-                          component="button"
-                          type="submit"
-                          form="po-form"
-                          name="action"
-                          value="confirm_order"
-                          variant="outlined"
-                          startDecorator={<ConfirmationNumber />}
-                          sx={{
-                            borderColor: "#214b7b",
-                            color: "#214b7b",
-                            "&:hover": {
-                              bgcolor: "rgba(33, 75, 123, 0.1)",
-                              borderColor: "#163553",
-                              color: "#163553",
-                            },
-                          }}
-                          disabled={isSubmitting}
-                        >
-                          Confirm Order
-                        </Button>
-                      ))}
-                </>
-              )}
+    {/* Confirm Order Button */}
+    {effectiveMode === "edit" &&
+      statusNow === "approval_done" &&
+      !fromModal &&
+      (user?.department === "SCM" || user?.name === "IT Team") && (
+        <Button
+          component="button"
+          type="submit"
+          form="po-form"
+          name="action"
+          value="confirm_order"
+          variant="outlined"
+          startDecorator={<ConfirmationNumber />}
+          sx={{
+            borderColor: "#214b7b",
+            color: "#214b7b",
+            "&:hover": {
+              bgcolor: "rgba(33, 75, 123, 0.1)",
+              borderColor: "#163553",
+              color: "#163553",
+            },
+          }}
+          disabled={isSubmitting}
+        >
+          Confirm Order
+        </Button>
+      )}
+  </>
+)}
+
               {(user?.department === "CAM" ||
                 user?.name === "Sushant Ranjan Dubey" ||
                 user?.name === "Sanjiv Kumar" ||
@@ -1652,7 +1651,7 @@ const AddPurchaseOrder = ({
                     size="sm"
                     sx={{ fontWeight: 700, pl: 0.5, pr: 1 }}
                   >
-                    {formData?.submitted_By || "-"}
+                    {formData?.submitted_By?.name || "-"}
                   </Chip>
                 </Box>
               </Sheet>
@@ -2015,6 +2014,7 @@ const AddPurchaseOrder = ({
                             variant="plain"
                             placeholder="Category"
                             value={l.productCategoryName}
+                            disabled
                             onChange={(e) =>
                               updateLine(
                                 l.id,
@@ -2022,7 +2022,6 @@ const AddPurchaseOrder = ({
                                 e.target.value
                               )
                             }
-                            disabled
                             sx={{
                               whiteSpace: "normal",
                               wordBreak: "break-word",
@@ -2037,10 +2036,10 @@ const AddPurchaseOrder = ({
                             variant="plain"
                             placeholder="Product name"
                             value={l.productName}
+                            disabled
                             onChange={(e) =>
                               updateLine(l.id, "productName", e.target.value)
                             }
-                            disabled
                             sx={{
                               whiteSpace: "normal",
                               wordBreak: "break-word",
@@ -2055,6 +2054,7 @@ const AddPurchaseOrder = ({
                             variant="plain"
                             placeholder="Brief Description"
                             value={l.briefDescription}
+                            disabled
                             onChange={(e) =>
                               updateLine(
                                 l.id,
@@ -2062,7 +2062,6 @@ const AddPurchaseOrder = ({
                                 e.target.value
                               )
                             }
-                            disabled
                             sx={{
                               whiteSpace: "normal",
                               wordBreak: "break-word",
@@ -2500,7 +2499,7 @@ const AddPurchaseOrder = ({
           onClose={() => setInspectionModalOpen(false)}
         >
           <ModalDialog
-            sx={{ maxWidth: 1100, width: "95vw", p: 0, overflow: "auto" }}
+            sx={{ maxWidth: 1100, width: "95vw", p: 0, overflow: "auto", ml:{xs:0, lg:'10%', xl:'8%'} }}
           >
             <InspectionForm
               open

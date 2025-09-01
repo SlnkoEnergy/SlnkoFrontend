@@ -123,7 +123,7 @@ const ProjectBalances = forwardRef((props, ref) => {
       const token = localStorage.getItem("authToken");
 
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/accounting/export-project-balance`,
+        `${process.env.REACT_APP_API_URL}accounting/export-project-balance`,
         { selectedIds, selectAll },
         {
           responseType: "blob",
@@ -370,20 +370,6 @@ const ProjectBalances = forwardRef((props, ref) => {
     );
   };
 
-  const tdLabelStyle = {
-    padding: "10px",
-    fontWeight: 500,
-    color: "#444",
-    whiteSpace: "nowrap",
-  };
-
-  const tdValueStyle = {
-    padding: "10px",
-    textAlign: "right",
-    color: "#111",
-    fontWeight: 500,
-  };
-
   const fontStyleBold = {
     fontFamily: "Inter, sans-serif",
     fontSize: 13,
@@ -583,6 +569,58 @@ const ProjectBalances = forwardRef((props, ref) => {
     );
   };
 
+  const indianWithSign = (x) => {
+    const num = Number(x) || 0;
+    const sign = num < 0 ? "-" : "";
+    const abs = Math.round(Math.abs(num));
+    return `${sign}${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(abs)}`;
+  };
+
+  const trim2 = (s) => s.replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
+
+  const toCompactINR2dp = (n) => {
+    const abs = Math.abs(Number(n) || 0);
+    if (abs >= 1e7) return `${trim2((abs / 1e7).toFixed(2))}Cr`;
+    if (abs >= 1e5) return `${trim2((abs / 1e5).toFixed(2))}L`;
+    if (abs >= 1e3) return `${trim2((abs / 1e3).toFixed(2))}K`;
+    return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(
+      abs
+    );
+  };
+
+  const rupeeCompact = (n) => {
+    const num = Number(n) || 0;
+    const sign = num < 0 ? "-" : "";
+    return `${sign}₹${toCompactINR2dp(num)}`;
+  };
+
+  const fullTooltipINR = (n) => {
+    const num = Number(n) || 0;
+    const sign = num < 0 ? "-" : "";
+    const abs = Math.round(Math.abs(num));
+    const indian = new Intl.NumberFormat("en-IN", {
+      maximumFractionDigits: 0,
+    }).format(abs);
+    return `${sign}₹${indian} (${toCompactINR2dp(num)})`;
+  };
+
+  const isMoneyKey = (key = "") =>
+    /(Credit|Debit|Adjustment|Available|Balance|Payable|Required)/i.test(key);
+
+  const tdLabelStyle = {
+    padding: "10px",
+    borderBottom: "1px solid #eee",
+    fontWeight: 600,
+    fontSize: "0.9rem",
+  };
+  const tdValueStyle = {
+    padding: "10px",
+    borderBottom: "1px solid #eee",
+    textAlign: "right",
+    fontVariantNumeric: "tabular-nums",
+    whiteSpace: "nowrap",
+  };
+
   return (
     <>
       {/* Tablet and Up Filters */}
@@ -592,13 +630,10 @@ const ProjectBalances = forwardRef((props, ref) => {
           marginLeft: { xl: "15%", lg: "18%" },
           borderRadius: "sm",
           py: 2,
-          // display: { xs: "none", sm: "flex" },
           display: "flex",
           flexWrap: "wrap",
           gap: 1.5,
-          "& > *": {
-            minWidth: { xs: "120px", md: "160px" },
-          },
+          "& > *": { minWidth: { xs: "120px", md: "160px" } },
         }}
       >
         <FormControl sx={{ flex: 1 }} size="sm">
@@ -624,7 +659,6 @@ const ProjectBalances = forwardRef((props, ref) => {
           boxShadow: "lg",
         }}
       >
-        {/* Classic Table View (sm and up) */}
         <Box
           sx={{
             display: { xs: "none", sm: "flex" },
@@ -639,17 +673,19 @@ const ProjectBalances = forwardRef((props, ref) => {
                 label: "Total Plant Capacity (MW AC)",
                 icon: <Lightbulb size={16} />,
                 key: "totalProjectKwp",
-                format: (val) => `${val?.toLocaleString("en-IN")} MW AC`,
+                format: (val) => `${(val ?? 0).toLocaleString("en-IN")} MW AC`,
               },
               {
                 label: "Total Credit",
                 icon: <IndianRupee size={16} />,
                 key: "totalCreditSum",
+                format: "inr",
               },
               {
                 label: "Total Debit",
                 icon: <ArrowDownUp size={16} />,
                 key: "totalDebitSum",
+                format: "inr",
               },
             ],
             [
@@ -657,11 +693,13 @@ const ProjectBalances = forwardRef((props, ref) => {
                 label: "Total Adjustment",
                 icon: <Scale size={16} />,
                 key: "totalAdjustmentSum",
+                format: "inr",
               },
               {
                 label: "Available Amount (Old)",
                 icon: <Wallet size={16} />,
                 key: "totalAvailableAmount",
+                format: "inr",
               },
             ],
             [
@@ -669,16 +707,19 @@ const ProjectBalances = forwardRef((props, ref) => {
                 label: "Balance with Slnko",
                 icon: <Banknote size={16} />,
                 key: "totalBalanceSlnko",
+                format: "inr",
               },
               {
                 label: "Balance Payable to Vendors",
                 icon: <ShieldCheck size={16} />,
                 key: "totalBalancePayable",
+                format: "inr",
               },
               {
                 label: "Balance Required",
                 icon: <AlertTriangle size={16} />,
                 key: "totalBalanceRequired",
+                format: "inr",
               },
             ],
           ].map((section, sectionIndex) => (
@@ -695,11 +736,9 @@ const ProjectBalances = forwardRef((props, ref) => {
             >
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <tbody>
-                  {section.map(({ label, icon, key, format }, i) => {
+                  {section.map(({ label, icon, key, format, unit }, i) => {
                     const value = paginatedDataTotals?.[key] || 0;
-                    const formattedValue = format
-                      ? format(value)
-                      : value.toLocaleString("en-IN");
+                    const money = isMoneyKey(key);
 
                     const isRed =
                       key.includes("Debit") || key.includes("Required");
@@ -707,7 +746,6 @@ const ProjectBalances = forwardRef((props, ref) => {
                       key.includes("Credit") ||
                       key.includes("Available") ||
                       key.includes("Balance");
-                    const isBlue = !isRed && !isGreen;
 
                     const chipColor = isRed
                       ? "#d32f2f"
@@ -720,6 +758,34 @@ const ProjectBalances = forwardRef((props, ref) => {
                         ? "rgba(46, 125, 50, 0.08)"
                         : "rgba(0, 82, 204, 0.08)";
 
+                    const chipInner = money ? (
+                      <AnimatedNumber
+                        value={value}
+                        formattingFn={rupeeCompact}
+                      />
+                    ) : format ? (
+                      format(value)
+                    ) : (
+                      value.toLocaleString("en-IN")
+                    );
+
+                    const chip = (
+                      <Box
+                        sx={{
+                          display: "inline-block",
+                          px: 1.5,
+                          py: 0.5,
+                          borderRadius: "6px",
+                          fontWeight: "bold",
+                          fontSize: "0.9rem",
+                          color: chipColor,
+                          backgroundColor: bgColor,
+                        }}
+                      >
+                        {chipInner}
+                      </Box>
+                    );
+
                     return (
                       <tr key={i}>
                         <td style={tdLabelStyle}>
@@ -728,24 +794,15 @@ const ProjectBalances = forwardRef((props, ref) => {
                         <td style={tdValueStyle}>
                           {isLoading ? (
                             <Skeleton width={60} height={18} />
-                          ) : (
-                            <Box
-                              sx={{
-                                display: "inline-block",
-                                px: 1.5,
-                                py: 0.5,
-                                borderRadius: "6px",
-                                fontWeight: "bold",
-                                fontSize: "0.9rem",
-                                color: chipColor,
-                                backgroundColor: bgColor,
-                              }}
+                          ) : money ? (
+                            <Tooltip
+                              title={fullTooltipINR(value)}
+                              placement="top"
                             >
-                              <AnimatedNumber value={value} />
-                              {format
-                                ? ` ${format(0).replace(/\d.*?/, "")}`
-                                : ""}
-                            </Box>
+                              {chip}
+                            </Tooltip>
+                          ) : (
+                            chip
                           )}
                         </td>
                       </tr>
@@ -757,7 +814,6 @@ const ProjectBalances = forwardRef((props, ref) => {
           ))}
         </Box>
 
-        {/* Mobile Stacked View (xs only) */}
         <Box sx={{ display: { xs: "block", sm: "none" } }}>
           {isLoading
             ? Array.from({ length: 7 }).map((_, i) => (
@@ -772,71 +828,70 @@ const ProjectBalances = forwardRef((props, ref) => {
             : [
                 {
                   label: "Total Plant Capacity (MW AC)",
-                  value: `${paginatedDataTotals.totalProjectKwp?.toLocaleString("en-IN")} MW AC`,
+                  key: "totalProjectKwp",
+                  render: (v) => `${(v ?? 0).toLocaleString("en-IN")} MW AC`,
                 },
-                {
-                  label: "Total Credit",
-                  value:
-                    paginatedDataTotals.totalCreditSum?.toLocaleString(
-                      "en-IN"
-                    ) || 0,
-                },
-                {
-                  label: "Total Debit",
-                  value:
-                    paginatedDataTotals.totalDebitSum?.toLocaleString(
-                      "en-IN"
-                    ) || 0,
-                },
+                { label: "Total Credit", key: "totalCreditSum", money: true },
+                { label: "Total Debit", key: "totalDebitSum", money: true },
                 {
                   label: "Total Adjustment",
-                  value:
-                    paginatedDataTotals.totalAdjustmentSum?.toLocaleString(
-                      "en-IN"
-                    ) || 0,
+                  key: "totalAdjustmentSum",
+                  money: true,
                 },
                 {
                   label: "Available Amount (Old)",
-                  value:
-                    paginatedDataTotals.totalAvailableAmount?.toLocaleString(
-                      "en-IN"
-                    ) || 0,
+                  key: "totalAvailableAmount",
+                  money: true,
                 },
                 {
                   label: "Balance with Slnko",
-                  value:
-                    paginatedDataTotals.totalBalanceSlnko?.toLocaleString(
-                      "en-IN"
-                    ) || 0,
+                  key: "totalBalanceSlnko",
+                  money: true,
                 },
                 {
                   label: "Balance Payable to Vendors",
-                  value:
-                    paginatedDataTotals.totalBalancePayable?.toLocaleString(
-                      "en-IN"
-                    ) || 0,
+                  key: "totalBalancePayable",
+                  money: true,
                 },
                 {
                   label: "Balance Required",
-                  value:
-                    paginatedDataTotals.totalBalanceRequired?.toLocaleString(
-                      "en-IN"
-                    ) || 0,
+                  key: "totalBalanceRequired",
+                  money: true,
                 },
-              ].map((item, index) => (
-                <Box
-                  key={index}
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    padding: "12px 15px",
-                    borderBottom: "1px solid #ddd",
-                  }}
-                >
-                  <Box sx={{ fontWeight: "bold" }}>{item.label}</Box>
-                  <Box>{item.value}</Box>
-                </Box>
-              ))}
+              ].map((item, index) => {
+                const raw = paginatedDataTotals?.[item.key] ?? 0;
+
+                const valueNode = item.money ? (
+                  <AnimatedNumber value={raw} formattingFn={rupeeCompact} />
+                ) : item.render ? (
+                  item.render(raw)
+                ) : (
+                  (raw ?? 0).toLocaleString("en-IN")
+                );
+
+                const content = item.money ? (
+                  <Tooltip title={fullTooltipINR(raw)} placement="top">
+                    <Box>{valueNode}</Box>
+                  </Tooltip>
+                ) : (
+                  <Box>{valueNode}</Box>
+                );
+
+                return (
+                  <Box
+                    key={index}
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      padding: "12px 15px",
+                      borderBottom: "1px solid #ddd",
+                    }}
+                  >
+                    <Box sx={{ fontWeight: "bold" }}>{item.label}</Box>
+                    {valueNode}
+                  </Box>
+                );
+              })}
         </Box>
       </Box>
 
