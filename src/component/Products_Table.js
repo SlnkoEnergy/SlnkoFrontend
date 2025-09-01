@@ -9,15 +9,15 @@ import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
-import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
+import { iconButtonClasses } from "@mui/joy/IconButton";
 import NoData from "../assets/alert-bell.svg";
 import { useGetProductsQuery } from "../redux/productsSlice";
-import { Chip, Option, Select, Typography } from "@mui/joy";
+import { Chip, Option, Select, Tooltip, Typography } from "@mui/joy";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 function Products_Table() {
   const [searchParams, setSearchParams] = useSearchParams();
-
+  const category = searchParams.get("category") || "";
   const [currentPage, setCurrentPage] = useState(
     Number(searchParams.get("page")) || 1
   );
@@ -29,6 +29,7 @@ function Products_Table() {
     () => Number(searchParams.get("pageSize")) || 10
   );
   const navigate = useNavigate();
+
   useEffect(() => {
     setSearchParams((prev) => {
       const p = new URLSearchParams(prev);
@@ -38,6 +39,7 @@ function Products_Table() {
 
       if (searchTerm) p.set("search", searchTerm);
       else p.delete("search");
+
       if (rowsPerPage !== 10) p.set("pageSize", String(rowsPerPage));
       else p.delete("pageSize");
 
@@ -45,12 +47,12 @@ function Products_Table() {
     });
   }, [currentPage, searchTerm, rowsPerPage, setSearchParams]);
 
-  const { data: getProducts } = useGetProductsQuery(
+  const { data: getProducts, isFetching } = useGetProductsQuery(
     {
       page: currentPage,
       limit: rowsPerPage,
       search: searchTerm,
-      category:"",
+      category: category,
     },
     {
       refetchOnMountOrArgChange: true,
@@ -76,12 +78,68 @@ function Products_Table() {
     return field?.values?.[0]?.input_values || "-";
   };
 
+  const ProductNameCell = ({ text }) => {
+    const name = typeof text === "string" ? text : "";
+    const truncated = name.length > 15 ? name.slice(0, 15) + "..." : name;
+
+    const tooltipContent = (
+      <Box
+        sx={{
+          maxWidth: 320,
+          whiteSpace: "pre-line",
+          wordBreak: "break-word",
+        }}
+      >
+        <Typography sx={{ fontSize: 12, lineHeight: 1.5, color: "#fff" }}>
+          {name}
+        </Typography>
+      </Box>
+    );
+
+    return name.length > 15 ? (
+      <Tooltip
+        title={tooltipContent}
+        arrow
+        placement="top-start"
+        slotProps={{
+          tooltip: {
+            sx: {
+              bgcolor: "#374151",
+              color: "#fff",
+              maxWidth: 320,
+              p: 1.2,
+              whiteSpace: "normal",
+              wordBreak: "break-word",
+            },
+          },
+          arrow: { sx: { color: "#374151" } },
+        }}
+      >
+        <span style={{ cursor: "default" }}>{truncated}</span>
+      </Tooltip>
+    ) : (
+      <span>{name}</span>
+    );
+  };
+
+  // ---------- Derived pagination numbers ----------
+  const rows = getProducts?.data || [];
+  const total = getProducts?.meta?.total || 0;
+  const page = getProducts?.meta?.page || currentPage;
+  const limit = getProducts?.meta?.limit || rowsPerPage;
+
+  // start & end indices (0 when there are no results)
+  const startIndex = total === 0 ? 0 : (page - 1) * limit + 1;
+  const endIndex =
+    total === 0 ? 0 : Math.min((page - 1) * limit + rows.length, total);
+
   return (
     <>
+      {/* Search / Rows-per-page */}
       <Box
         sx={{
           marginLeft: { xl: "15%", lg: "18%" },
-          py: 2,
+          py: 1,
           display: "flex",
           gap: 1.5,
         }}
@@ -112,12 +170,14 @@ function Products_Table() {
           <Typography level="body-sm">Rows Per Page:</Typography>
           <Select
             value={rowsPerPage}
-            onChange={(e, newValue) => {
+            onChange={(_e, newValue) => {
               if (newValue !== null) {
                 setRowsPerPage(newValue);
+                setCurrentPage(1);
                 setSearchParams((prev) => {
                   const params = new URLSearchParams(prev);
                   params.set("pageSize", newValue);
+                  params.delete("page");
                   return params;
                 });
               }
@@ -130,7 +190,7 @@ function Products_Table() {
               boxShadow: "sm",
             }}
           >
-            {options.map((value) => (
+            {[1, 5, 10, 20, 50, 100].map((value) => (
               <Option key={value} value={value}>
                 {value}
               </Option>
@@ -139,6 +199,7 @@ function Products_Table() {
         </Box>
       </Box>
 
+      {/* Table */}
       <Sheet
         variant="outlined"
         sx={{
@@ -159,8 +220,12 @@ function Products_Table() {
             style={{
               position: "sticky",
               top: 0,
-              background: "#fff",
-              zIndex: 1,
+              background: "#e0e0e0",
+              zIndex: 2,
+              borderBottom: "1px solid #ddd",
+              padding: "8px",
+              textAlign: "left",
+              fontWeight: "bold",
             }}
           >
             <tr>
@@ -191,14 +256,15 @@ function Products_Table() {
           </thead>
 
           <tbody>
-            {getProducts?.data?.length > 0 ? (
-              getProducts.data.map((product) => (
+            {rows.length > 0 ? (
+              rows.map((product) => (
                 <tr key={product._id}>
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
                     <Checkbox size="sm" />
                   </td>
+
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
@@ -212,26 +278,31 @@ function Products_Table() {
                       {product.sku_code}
                     </Chip>
                   </td>
+
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
-                    {product.category?.name}
+                    {product.category?.name || "-"}
                   </td>
+
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
-                    {getValue(product, "Product Name")}
+                    <ProductNameCell text={getValue(product, "Product Name")} />
                   </td>
+
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
                     {getValue(product, "Make")}
                   </td>
+
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
                     ₹ {getValue(product, "Cost")}
                   </td>
+
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
@@ -287,39 +358,32 @@ function Products_Table() {
           flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
           marginLeft: { lg: "18%", xl: "15%" },
+          justifyContent: "space-between",
+          flexWrap: "wrap",
         }}
       >
-        <Button
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          startDecorator={<KeyboardArrowLeftIcon />}
-          onClick={handlePrev}
-          disabled={!getProducts?.meta?.hasPrevPage}
-        >
-          Previous
-        </Button>
+        <Box display={"flex"} alignItems="center" gap={2}>
+          <Button
+            size="sm"
+            variant="outlined"
+            color="neutral"
+            startDecorator={<KeyboardArrowLeftIcon />}
+            onClick={handlePrev}
+            disabled={!getProducts?.meta?.hasPrevPage || isFetching}
+          >
+            Previous
+          </Button>
 
-        <Box>
-          Showing{" "}
-          {Math.min(
-            getProducts?.meta?.total || 0,
-            getProducts?.meta?.limit || 0
-          )}{" "}
-          {Math.min(
-            getProducts?.meta?.total || 0,
-            getProducts?.meta?.limit || 0
-          ) === 1
-            ? "result"
-            : "results"}
+          <Box>
+            <Typography level="body-sm">
+              Showing {startIndex}–{endIndex} of {total} results
+            </Typography>
+          </Box>
         </Box>
 
-        <Box
-          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
-        >
+        <Box>
           <Typography level="body-sm">
-            Page {getProducts?.meta?.page || 1} of{" "}
-            {getProducts?.meta?.totalPages || 1}
+            Page {page} of {getProducts?.meta?.totalPages || 1}
           </Typography>
         </Box>
 
@@ -329,7 +393,7 @@ function Products_Table() {
           color="neutral"
           endDecorator={<KeyboardArrowRightIcon />}
           onClick={handleNext}
-          disabled={!getProducts?.meta?.hasNextPage}
+          disabled={!getProducts?.meta?.hasNextPage || isFetching}
         >
           Next
         </Button>

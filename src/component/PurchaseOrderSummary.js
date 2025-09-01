@@ -21,8 +21,14 @@ import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import { Clock, CheckCircle2, AlarmClockMinusIcon, AlertTriangle } from "lucide-react";
-import CloseIcon from "@mui/icons-material/Close";
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useState,
+} from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
 import { ClickAwayListener } from "@mui/base";
@@ -37,7 +43,6 @@ import {
   Calendar,
   CalendarSearch,
   Handshake,
-  History,
   PackageCheck,
   Truck,
 } from "lucide-react";
@@ -54,14 +59,14 @@ import {
   useGetCategoriesNameSearchQuery,
   useLazyGetCategoriesNameSearchQuery,
 } from "../redux/productsSlice";
-import SearchPickerModal from "../component/SearchPickerModal"; // <-- use your universal modal
+import SearchPickerModal from "../component/SearchPickerModal";
 
 const PurchaseOrderSummary = forwardRef((props, ref) => {
   const { project_code } = props;
   const [po, setPO] = useState("");
   const [selectedpo, setSelectedpo] = useState("");
   const [selectedtype, setSelectedtype] = useState("");
-  const [selected, setSelected] = useState([]); // <-- IDs of checked rows
+  const [selected, setSelected] = useState([]);
   const [selectedPoNumber, setSelectedPoNumber] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -93,7 +98,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const [categorySelectOpen, setCategorySelectOpen] = useState(false);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
 
-  // ===== Data fetching hooks (TOP LEVEL — OK for hooks rules) =====
   const projectId = project_code || "";
 
   // Top 7 categories for the compact Select
@@ -124,7 +128,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     catInitialData?.totalCount ??
     topCategories.length;
 
-  const hasMoreThan7 = Number(totalCats) > 7;
 
   const { search, state } = useLocation();
   const [sp] = useSearchParams();
@@ -257,6 +260,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     setSelectedpo(po);
     setSelecteditem(itemSearch);
   }, [searchParams]);
+
+  console.log({ selectedpo });
 
   const applyCategory = (value) => {
     setSelecteditem(value || "");
@@ -488,8 +493,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                 {activeDateFilter === "etd"
                   ? "ETD Date Range"
                   : activeDateFilter === "po"
-                  ? "PO Date Range"
-                  : "Delivery Date Range"}
+                    ? "PO Date Range"
+                    : "Delivery Date Range"}
               </Typography>
 
               <Box display="flex" gap={1}>
@@ -501,8 +506,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       activeDateFilter === "etd"
                         ? etdFrom
                         : activeDateFilter === "po"
-                        ? poFrom
-                        : deliveryFrom
+                          ? poFrom
+                          : deliveryFrom
                     }
                     onChange={(e) => {
                       if (activeDateFilter === "etd")
@@ -523,8 +528,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       activeDateFilter === "etd"
                         ? etdTo
                         : activeDateFilter === "po"
-                        ? poTo
-                        : deliveryTo
+                          ? poTo
+                          : deliveryTo
                     }
                     onChange={(e) => {
                       if (activeDateFilter === "etd") setEtdTo(e.target.value);
@@ -694,7 +699,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     setCurrentPage(page);
   }, [searchParams]);
 
-
   useImperativeHandle(
     ref,
     () => ({
@@ -727,8 +731,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const label = isFullyBilled
       ? "Fully Billed"
       : isPending
-      ? "Pending"
-      : status;
+        ? "Pending"
+        : status;
 
     const icon = isFullyBilled ? (
       <CheckRoundedIcon />
@@ -1035,28 +1039,132 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   };
 
   const RenderItem_Vendor = ({ vendor, item, other_item, amount }) => {
+    const categories = Array.isArray(item)
+      ? item.filter(Boolean).map(String)
+      : item
+        ? [String(item)]
+        : [];
+
+    const onlyOther =
+      categories.length === 1 && categories[0].trim().toLowerCase() === "other";
+    const normalized = onlyOther ? [other_item || "Other"] : categories;
+
+    const hasMultiple = normalized.length > 1;
+    const first = normalized[0] || "";
+    const rest = normalized.slice(1);
+
+    const truncatedFirst =
+      first.length > 15 ? first.substring(0, 15) + "..." : first;
+
+    const tooltipContent = (
+      <Box
+        display="flex"
+        flexDirection="column"
+        gap={0.5}
+        sx={{
+          maxWidth: 300,
+          whiteSpace: "normal",
+          wordBreak: "break-word",
+        }}
+      >
+        {normalized.map((c, i) => (
+          <Typography
+            key={i}
+            sx={{
+              fontSize: 12,
+              lineHeight: 1.5,
+              color: "white",
+              display: "block",
+            }}
+          >
+            {i + 1}. {c}
+          </Typography>
+        ))}
+      </Box>
+    );
+
     return (
       <>
-        <Box>
-          <span style={{ fontWeight: 400, fontSize: 14 }}>{item}</span>
+        <Box display="flex" alignItems="center" gap={0.5}>
+          {first.length > 15 || hasMultiple ? (
+            <Tooltip
+              title={tooltipContent}
+              arrow
+              placement="top-start"
+              slotProps={{
+                tooltip: {
+                  sx: {
+                    bgcolor: "#374151",
+                    color: "white",
+                    maxWidth: 320,
+                    p: 1.2,
+                    whiteSpace: "normal",
+                    wordBreak: "break-word",
+                  },
+                },
+                arrow: { sx: { color: "#374151" } },
+              }}
+            >
+              <span style={{ fontWeight: 400, fontSize: 14 }}>
+                {truncatedFirst}
+              </span>
+            </Tooltip>
+          ) : (
+            <span style={{ fontWeight: 400, fontSize: 14 }}>{first}</span>
+          )}
+
+          {hasMultiple && (
+            <Tooltip
+              title={tooltipContent}
+              arrow
+              placement="top-start"
+              slotProps={{
+                tooltip: {
+                  sx: {
+                    bgcolor: "#374151",
+                    color: "white",
+                    maxWidth: 320,
+                    p: 1.2,
+                    whiteSpace: "normal",
+                    wordBreak: "break-word",
+                  },
+                },
+                arrow: { sx: { color: "#374151" } },
+              }}
+            >
+              <Box
+                component="span"
+                sx={{
+                  ml: 0.5,
+                  px: 1,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  borderRadius: "12px",
+                  bgcolor: "#6b7280",
+                  color: "white",
+                  cursor: "pointer",
+                }}
+              >
+                +{rest.length}
+              </Box>
+            </Tooltip>
+          )}
         </Box>
+
         {!!amount && (
           <Box display="flex" alignItems="center" mt={0.5}>
             <Money size={12} color="green" />
             &nbsp;
-            <span style={{ fontSize: 12, fontWeight: 600 }}>
-              Amount :{" "}
-            </span>{" "}
+            <span style={{ fontSize: 12, fontWeight: 600 }}>Amount : </span>
             &nbsp;
             <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
               ₹ {amount}
             </Typography>
           </Box>
         )}
+
         <Box display="flex" alignItems="center" mt={0.5}>
-          &nbsp;
-          <span style={{ fontSize: 12, fontWeight: 600 }}>Vendor : </span>{" "}
-          &nbsp;
+          <span style={{ fontSize: 12, fontWeight: 600 }}>Vendor : </span>&nbsp;
           <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
             {vendor}
           </Typography>
@@ -1065,28 +1173,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     );
   };
 
-  const EditPo = ({ po_number }) => (
-    <Tooltip title="Edit PO" placement="top">
-      <IconButton color="primary" onClick={() => handleOpen(po_number, "edit")}>
-        <EditNoteIcon />
-      </IconButton>
-    </Tooltip>
-  );
-
-  const ViewPOHistory = ({ po_number }) => (
-    <Tooltip title="View PO History" placement="top">
-      <IconButton color="primary" onClick={() => handleOpen(po_number, "view")}>
-        <History />
-      </IconButton>
-    </Tooltip>
-  );
-
   const RenderTotalBilled = ({ total_billed = 0, po_value = 0, po_number }) => {
     const billed = Number(total_billed);
     const value = Number(po_value);
-
-    const showAddBilling = billed < value;
-    const showBillingHistory = billed > 0;
 
     const formattedAmount =
       billed > 0
@@ -1165,7 +1254,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         sx={{
           marginLeft: isFromCAM || isFromPR ? 0 : { xl: "15%", lg: "18%" },
           borderRadius: "sm",
-          py: 2,
+          py: 1,
           display: "flex",
           flexWrap: "wrap",
           gap: 1.5,
@@ -1228,7 +1317,10 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                   indeterminate={
                     selected.length > 0 && selected.length < paginatedPo.length
                   }
-                  checked={selected.length === paginatedPo.length && paginatedPo.length > 0}
+                  checked={
+                    selected.length === paginatedPo.length &&
+                    paginatedPo.length > 0
+                  }
                   onChange={handleSelectAll}
                   color={selected.length > 0 ? "primary" : "neutral"}
                 />
@@ -1239,7 +1331,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                 : ["Project ID", "PO Number"]
               )
                 .concat([
-                  "Item Name",
+                  "Category Name",
                   "PO Value(incl. GST)",
                   "Advance Paid",
                   ...(isLogisticsPage ? [] : ["Bill Status"]),
@@ -1395,7 +1487,11 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       }}
                     >
                       <RenderItem_Vendor
-                        item={po.item === "Other" ? "other" : po.item}
+                        item={
+                          po.category_names === "Other"
+                            ? "other"
+                            : po.category_names
+                        }
                         other_item={po?.pr?.other_item_name}
                         amount={po?.pr?.amount}
                         vendor={po.vendor}
@@ -1741,7 +1837,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           </Sheet>
         </Modal>
 
-        {/* Browse-all Categories — universal SearchPickerModal */}
         <SearchPickerModal
           open={categoryModalOpen}
           onClose={() => setCategoryModalOpen(false)}

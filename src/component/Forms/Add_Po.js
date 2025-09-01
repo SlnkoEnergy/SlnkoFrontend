@@ -1023,7 +1023,6 @@ const AddPurchaseOrder = ({
             vendor: formData.name,
             date: formData.date,
             partial_billing: formData.partial_billing || "",
-            submitted_By: formData.submitted_By,
             delivery_type: formData.delivery_type,
             po_basic: String(amounts.untaxed ?? 0),
             gst: String(amounts.tax ?? 0),
@@ -1073,7 +1072,6 @@ const AddPurchaseOrder = ({
           vendor: formData.name,
           date: formData.date,
           partial_billing: formData.partial_billing || "",
-          submitted_By: user.name,
           delivery_type: formData.delivery_type,
           pr_id,
           po_basic: String(amounts.untaxed ?? 0),
@@ -1652,7 +1650,7 @@ const AddPurchaseOrder = ({
                     size="sm"
                     sx={{ fontWeight: 700, pl: 0.5, pr: 1 }}
                   >
-                    {formData?.submitted_By || "-"}
+                    {formData?.submitted_By?.name || "-"}
                   </Chip>
                 </Box>
               </Sheet>
@@ -2022,7 +2020,6 @@ const AddPurchaseOrder = ({
                                 e.target.value
                               )
                             }
-                            disabled
                             sx={{
                               whiteSpace: "normal",
                               wordBreak: "break-word",
@@ -2040,7 +2037,6 @@ const AddPurchaseOrder = ({
                             onChange={(e) =>
                               updateLine(l.id, "productName", e.target.value)
                             }
-                            disabled
                             sx={{
                               whiteSpace: "normal",
                               wordBreak: "break-word",
@@ -2062,7 +2058,6 @@ const AddPurchaseOrder = ({
                                 e.target.value
                               )
                             }
-                            disabled
                             sx={{
                               whiteSpace: "normal",
                               wordBreak: "break-word",
@@ -2500,7 +2495,7 @@ const AddPurchaseOrder = ({
           onClose={() => setInspectionModalOpen(false)}
         >
           <ModalDialog
-            sx={{ maxWidth: 1100, width: "95vw", p: 0, overflow: "auto" }}
+            sx={{ maxWidth: 1100, width: "95vw", p: 0, overflow: "auto", ml:{xs:0, lg:'10%', xl:'8%'} }}
           >
             <InspectionForm
               open

@@ -12,6 +12,12 @@ const baseQuery = fetchBaseQuery({
     return headers;
   },
 });
+const clean = (o) =>
+  Object.fromEntries(
+    Object.entries(o).filter(
+      ([, v]) => v !== undefined && v !== null && v !== ""
+    )
+  );
 export const purchasesApi = createApi({
   reducerPath: "purchasesApi",
   baseQuery,
@@ -21,30 +27,41 @@ export const purchasesApi = createApi({
       query: () => "get-all-pO-IT",
       providesTags: ["Purchase"],
     }),
+   
+
     getPaginatedPOs: builder.query({
-      query: ({
-        page = 1,
-        search = "",
-        status,
-        pageSize = 10,
-        type,
-        project_id,
-        pr_id,
-        item_id,
-        etdFrom,
-        etdTo,
-        deliveryFrom,
-        deliveryTo,
-        filter,
-        itemSearch,
-      }) =>
-        `get-paginated-po?page=${page}&search=${search}&status=${status}&pageSize=${pageSize}&type=${type}&project_id=${project_id}&pr_id=${pr_id}&item_id=${item_id}&etdFrom=${etdFrom}&etdTo=${etdTo}&deliveryFrom=${deliveryFrom}&deliveryTo=${deliveryTo}&filter=${filter}&itemSearch=${itemSearch}`,
+      query: (args = {}) => ({
+        url: "get-paginated-po",
+        params: clean({
+          page: args.page ?? 1,
+          search: args.search ?? "",
+          status: args.status,          // disappears when empty -> new key
+          pageSize: args.pageSize ?? 10,
+          type: args.type,
+          project_id: args.project_id,
+          pr_id: args.pr_id,
+          item_id: args.item_id,
+          etdFrom: args.etdFrom,
+          etdTo: args.etdTo,
+          deliveryFrom: args.deliveryFrom,
+          deliveryTo: args.deliveryTo,
+          filter: args.filter,
+          itemSearch: args.itemSearch,
+        }),
+      }),
       transformResponse: (response) => ({
         data: response.data || [],
         total: response.meta?.total || 0,
         count: response.meta?.count || 0,
       }),
       providesTags: ["Purchase"],
+
+      forceRefetch({ currentArg, previousArg }) {
+        return (
+          JSON.stringify(clean(currentArg || {})) !==
+          JSON.stringify(clean(previousArg || {}))
+        );
+      },
     }),
 
     getItems: builder.query({

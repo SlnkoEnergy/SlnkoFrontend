@@ -110,6 +110,7 @@ import PurchaseRequestForm from "../pages/CAM/PurchaseRequestForm";
 import LogisticsForm from "../pages/SCM/LogisticsForm";
 import Inspection from "../pages/Eng/Inspection";
 import Inspection_Form from "../pages/Eng/Inspection_Form";
+import Category_Form from "../pages/Databases/Category_Form";
 
 function index() {
   return (
@@ -1007,6 +1008,15 @@ function index() {
         element={
           <PrivateRoute>
             <Product_Form />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/category_form"
+        element={
+          <PrivateRoute>
+            <Category_Form />
           </PrivateRoute>
         }
       />
