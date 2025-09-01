@@ -218,7 +218,7 @@ function PaymentRequestForm() {
         po_number: data?.po_number || poNum,
          paid_for: [
         ...new Set(
-          (selectedPo.item || [])
+          (data.item || [])
             .map((it) => it?.category?.name) 
             .filter(Boolean) 
         ),

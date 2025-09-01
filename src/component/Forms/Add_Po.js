@@ -2013,6 +2013,7 @@ const AddPurchaseOrder = ({
                             variant="plain"
                             placeholder="Category"
                             value={l.productCategoryName}
+                            disabled
                             onChange={(e) =>
                               updateLine(
                                 l.id,
@@ -2034,6 +2035,7 @@ const AddPurchaseOrder = ({
                             variant="plain"
                             placeholder="Product name"
                             value={l.productName}
+                            disabled
                             onChange={(e) =>
                               updateLine(l.id, "productName", e.target.value)
                             }
@@ -2051,6 +2053,7 @@ const AddPurchaseOrder = ({
                             variant="plain"
                             placeholder="Brief Description"
                             value={l.briefDescription}
+                            disabled
                             onChange={(e) =>
                               updateLine(
                                 l.id,
