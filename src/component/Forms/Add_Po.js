@@ -2495,7 +2495,7 @@ const AddPurchaseOrder = ({
           onClose={() => setInspectionModalOpen(false)}
         >
           <ModalDialog
-            sx={{ maxWidth: 1100, width: "95vw", p: 0, overflow: "auto" }}
+            sx={{ maxWidth: 1100, width: "95vw", p: 0, overflow: "auto", ml:{xs:0, lg:'10%', xl:'8%'} }}
           >
             <InspectionForm
               open

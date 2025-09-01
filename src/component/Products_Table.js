@@ -139,7 +139,7 @@ function Products_Table() {
       <Box
         sx={{
           marginLeft: { xl: "15%", lg: "18%" },
-          py: 2,
+          py: 1,
           display: "flex",
           gap: 1.5,
         }}
@@ -220,8 +220,12 @@ function Products_Table() {
             style={{
               position: "sticky",
               top: 0,
-              background: "#fff",
-              zIndex: 1,
+              background: "#e0e0e0",
+              zIndex: 2,
+              borderBottom: "1px solid #ddd",
+              padding: "8px",
+              textAlign: "left",
+              fontWeight: "bold",
             }}
           >
             <tr>

@@ -104,30 +104,6 @@ function DashboardENG() {
                 ? "Handover Dashboard"
                 : "Engineering Dashboard"}
             </Typography>
-            {user?.department !== "Accounts" && (
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: { xs: "column", sm: "row" },
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexWrap: "wrap",
-                  bgcolor: "background.level1",
-                  borderRadius: "lg",
-                  boxShadow: "sm",
-                }}
-              >
-                <Button
-                  variant="solid"
-                  color="primary"
-                  startDecorator={<ViewModuleRoundedIcon />}
-                  size="md"
-                  onClick={() => navigate("/module_sheet")}
-                >
-                  Module Sheet Dashboard
-                </Button>
-              </Box>
-            )}
           </Box>
           <Dash_eng />
         </Box>

@@ -295,11 +295,11 @@ function Eng_Inspection() {
         sx={{
           ml: { xl: "15%", lg: "18%" },
           borderRadius: "sm",
-          py: 2,
+          py: 1,
           display: "flex",
           alignItems: "flex-end",
           justifyContent: "space-between",
-          gap: 2,
+          gap: 1.5,
           flexWrap: "wrap",
         }}
       >

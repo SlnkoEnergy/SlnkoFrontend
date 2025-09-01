@@ -1176,9 +1176,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const billed = Number(total_billed);
     const value = Number(po_value);
 
-    const showAddBilling = billed < value;
-    const showBillingHistory = billed > 0;
-
     const formattedAmount =
       billed > 0
         ? new Intl.NumberFormat("en-IN", {
@@ -1252,7 +1249,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         sx={{
           marginLeft: isFromCAM || isFromPR ? 0 : { xl: "15%", lg: "18%" },
           borderRadius: "sm",
-          py: 2,
+          py: 1,
           display: "flex",
           flexWrap: "wrap",
           gap: 1.5,

@@ -15,7 +15,7 @@ import {
   Textarea,
   Typography,
 } from "@mui/joy";
-import  { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Select from "react-select";
 import { toast } from "react-toastify";
@@ -184,7 +184,13 @@ function PaymentRequestForm() {
     setFormData((prev) => ({
       ...prev,
       po_number: selectedPo.po_number,
-      paid_for: selectedPo.item ?? "",
+      paid_for: [
+        ...new Set(
+          (selectedPo.item || [])
+            .map((it) => it?.category?.name) // extract category names
+            .filter(Boolean) // remove null/undefined
+        ),
+      ].join(", "),
       vendor: selectedPo.vendor ?? "",
       po_value: poValue.toString(),
       total_advance_paid: totalAdvancePaid.toString(),
@@ -286,7 +292,7 @@ function PaymentRequestForm() {
       if (!data.credit.credit_remarks)
         e.credit_remarks = "Please add credit remarks.";
     }
-     if (data.dbt_date && data.credit.credit_deadline) {
+    if (data.dbt_date && data.credit.credit_deadline) {
       const dbtDateObj = new Date(data.dbt_date);
       const deadlineDateObj = new Date(data.credit.credit_deadline);
 
@@ -298,12 +304,11 @@ function PaymentRequestForm() {
         const minValidDate = new Date(dbtDateObj);
         minValidDate.setDate(minValidDate.getDate() + 2);
 
-        e.credit_deadline = `Credit deadline must be at least 2 days after the debit date. Earliest allowed: ${minValidDate
-          .toISOString()
-          .split("T")[0]}`;
+        e.credit_deadline = `Credit deadline must be at least 2 days after the debit date. Earliest allowed: ${
+          minValidDate.toISOString().split("T")[0]
+        }`;
       }
     }
-  
 
     return e;
   };
