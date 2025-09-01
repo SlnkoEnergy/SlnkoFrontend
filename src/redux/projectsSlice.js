@@ -1,17 +1,4 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { baseQuery } from "./auth/auth_variable";
-
-// const baseQuery = fetchBaseQuery({
-//   baseUrl: "${process.env.REACT_APP_API_URL}",
-//   prepareHeaders: (headers) => {
-//     const token = localStorage.getItem("authToken");
-//     console.log("Token:", token);
-//     if (token) {
-//       headers.set("x-auth-token", token);
-//     }
-//     return headers;
-//   },
-// });
 
 export const projectsApi = createApi({
   reducerPath: "projectsApi",
@@ -64,7 +51,16 @@ export const projectsApi = createApi({
     getProjectById: builder.query({
       query: (id) => `get-project-iD-IT/${id}`,
       providesTags: ["Project"],
-    })
+    }),
+    getProjectDropdown: builder.query({
+      query: () => "project-dropdown",
+      providesTags: ["Project"],
+    }),
+    getProjectSearchDropdown: builder.query({
+      query: ({ search, page, limit }) =>
+        `project-search?search=${search}&page=${page}&limit=${limit}`,
+      providesTags: ["Project"],
+    }),
   }),
 });
 
@@ -74,5 +70,8 @@ export const {
   useAddProjectMutation,
   useUpdateProjectMutation,
   useGetProjectByPIdQuery,
-  useGetProjectByIdQuery
+  useGetProjectByIdQuery,
+  useGetProjectDropdownQuery,
+  useGetProjectSearchDropdownQuery,
+  useLazyGetProjectSearchDropdownQuery,
 } = projectsApi;

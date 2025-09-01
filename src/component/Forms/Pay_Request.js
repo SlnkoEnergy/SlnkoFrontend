@@ -216,7 +216,13 @@ function PaymentRequestForm() {
       setFormData((prev) => ({
         ...prev,
         po_number: data?.po_number || poNum,
-        paid_for: data?.item || prev.paid_for,
+         paid_for: [
+        ...new Set(
+          (data.item || [])
+            .map((it) => it?.category?.name) 
+            .filter(Boolean) 
+        ),
+      ].join(", "),
         vendor: data?.vendor || prev.vendor,
         po_value: poValueNum === "" ? "" : String(poValueNum),
         total_advance_paid: advPaidNum === "" ? "" : String(advPaidNum),
@@ -288,6 +294,7 @@ function PaymentRequestForm() {
       if (diffDays < 2) {
         const minValidDate = new Date(dbtDateObj);
         minValidDate.setDate(minValidDate.getDate() + 2);
+
         e.credit_deadline = `Credit deadline must be at least 2 days after the debit date. Earliest allowed: ${
           minValidDate.toISOString().split("T")[0]
         }`;

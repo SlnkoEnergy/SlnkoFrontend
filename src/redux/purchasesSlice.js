@@ -12,6 +12,12 @@ const baseQuery = fetchBaseQuery({
     return headers;
   },
 });
+const clean = (o) =>
+  Object.fromEntries(
+    Object.entries(o).filter(
+      ([, v]) => v !== undefined && v !== null && v !== ""
+    )
+  );
 export const purchasesApi = createApi({
   reducerPath: "purchasesApi",
   baseQuery,
@@ -21,29 +27,41 @@ export const purchasesApi = createApi({
       query: () => "get-all-pO-IT",
       providesTags: ["Purchase"],
     }),
+   
+
     getPaginatedPOs: builder.query({
-      query: ({
-        page = 1,
-        search = "",
-        status,
-        pageSize = 10,
-        type,
-        project_id,
-        pr_id,
-        item_id,
-        etdFrom,
-        etdTo,
-        deliveryFrom,
-        deliveryTo,
-        filter
-      }) =>
-        `get-paginated-po?page=${page}&search=${search}&status=${status}&pageSize=${pageSize}&type=${type}&project_id=${project_id}&pr_id=${pr_id}&item_id=${item_id}&etdFrom=${etdFrom}&etdTo=${etdTo}&deliveryFrom=${deliveryFrom}&deliveryTo=${deliveryTo}&filter=${filter}`,
+      query: (args = {}) => ({
+        url: "get-paginated-po",
+        params: clean({
+          page: args.page ?? 1,
+          search: args.search ?? "",
+          status: args.status,          // disappears when empty -> new key
+          pageSize: args.pageSize ?? 10,
+          type: args.type,
+          project_id: args.project_id,
+          pr_id: args.pr_id,
+          item_id: args.item_id,
+          etdFrom: args.etdFrom,
+          etdTo: args.etdTo,
+          deliveryFrom: args.deliveryFrom,
+          deliveryTo: args.deliveryTo,
+          filter: args.filter,
+          itemSearch: args.itemSearch,
+        }),
+      }),
       transformResponse: (response) => ({
         data: response.data || [],
         total: response.meta?.total || 0,
         count: response.meta?.count || 0,
       }),
       providesTags: ["Purchase"],
+
+      forceRefetch({ currentArg, previousArg }) {
+        return (
+          JSON.stringify(clean(currentArg || {})) !==
+          JSON.stringify(clean(previousArg || {}))
+        );
+      },
     }),
 
     getItems: builder.query({
@@ -108,6 +126,113 @@ export const purchasesApi = createApi({
       }),
       invalidatesTags: ["Purchase"],
     }),
+    getLogistics: builder.query({
+      query: ({
+        page = 1,
+        pageSize = 50,
+        search = "",
+        status = "",
+        po_id = "",
+        po_number = "",
+      } = {}) =>
+        `logistics/logistic?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(
+          search
+        )}&status=${encodeURIComponent(status)}&po_id=${encodeURIComponent(
+          po_id
+        )}&po_number=${encodeURIComponent(po_number)}`,
+      transformResponse: (response) => ({
+        data: response?.data || [],
+        total: response?.meta?.total || 0,
+        count:
+          response?.meta?.count || (response?.data ? response.data.length : 0),
+        page: response?.meta?.page || 1,
+        pageSize: response?.meta?.pageSize || 50,
+      }),
+      providesTags: ["Logistic"],
+    }),
+
+    getLogisticById: builder.query({
+      query: (id) => `logistics/logistic/${id}`,
+      providesTags: ["Logistic"],
+    }),
+
+    addLogistic: builder.mutation({
+      query: (newLogistic) => ({
+        url: "logistics/logistic",
+        method: "POST",
+        body: newLogistic,
+      }),
+      invalidatesTags: ["Logistic"],
+    }),
+
+    // purchasesSlice.js (or wherever your API slice is)
+    updateLogistic: builder.mutation({
+      query: ({ id, body }) => ({
+        url: `logistics/logistic/${id}`,
+        method: "PUT",
+        body, // <- now uses 'body'
+      }),
+      invalidatesTags: ["Logistic"],
+    }),
+
+    deleteLogistic: builder.mutation({
+      query: (id) => ({
+        url: `logistic/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Logistic"],
+    }),
+
+    getPoBasic: builder.query({
+      query: ({ page = 1, pageSize = 10, search = "" }) =>
+        `get-po-basic?page=${page}&pageSize=${pageSize}&search=${search}`,
+      transformResponse: (response) => ({
+        data: response.data || [],
+        total:
+          response.total ??
+          response.pagination?.total ??
+          response.meta?.total ??
+          0,
+        count:
+          response.count ??
+          response.pagination?.count ??
+          response.meta?.count ??
+          (response.data ? response.data.length : 0),
+        pagination: response.pagination || null,
+      }),
+      providesTags: ["Purchase"],
+    }),
+
+    updateLogisticStatus: builder.mutation({
+      query: ({ id, status, remarks }) => ({
+        url: `logistics/logistic/${id}/status`,
+        method: "PUT",
+        body: { status, remarks },
+      }),
+      invalidatesTags: ["Logistic"],
+    }),
+
+    // Logistics History
+    getLogisticsHistory: builder.query({
+      query: ({ subject_type, subject_id }) => {
+        const params = new URLSearchParams({
+          subject_type,
+          subject_id,
+        });
+
+        return `/logistics/logistichistory?${params.toString()}`;
+      },
+      providesTags: ["Logistic"],
+    }),
+
+    addLogisticHistory: builder.mutation({
+      query: (newHistory) => ({
+        url: "/logistics/logistichistory",
+        method: "POST",
+        body: newHistory,
+      }),
+      invalidatesTags: ["Logistic"],
+    }),
   }),
 });
 
@@ -120,4 +245,14 @@ export const {
   useUpdatePurchasesMutation,
   useUpdateEtdOrDeliveryDateMutation,
   useUpdatePurchasesStatusMutation,
+  useGetLogisticsQuery,
+  useGetLogisticByIdQuery,
+  useAddLogisticMutation,
+  useUpdateLogisticMutation,
+  useDeleteLogisticMutation,
+  useGetPoBasicQuery,
+  useLazyGetPoBasicQuery,
+  useUpdateLogisticStatusMutation,
+  useLazyGetLogisticsHistoryQuery,
+  useAddLogisticHistoryMutation
 } = purchasesApi;

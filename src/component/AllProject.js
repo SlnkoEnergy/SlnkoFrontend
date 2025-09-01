@@ -90,28 +90,6 @@ const AllProjects = forwardRef((props, ref) => {
     setOpen(true);
   };
 
-  // const states = ["California", "Texas", "New York", "Florida"];
-
-  // useEffect(() => {
-  //   const fetchTableData = async () => {
-  //     try {
-  //       const response = await Axios.get("/get-all-projecT-IT");
-
-  //       const projectsData = Array.isArray(response.data.data)
-  // ? response.data.data
-  //         : [];
-  //       setProjects(projectsData);
-  //     } catch (err) {
-  //       console.error("API Error:", err);
-  //       setError("Failed to fetch table data.");
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   fetchTableData();
-  // }, []);
-
   const { data: getProject = [], isLoading, error } = useGetProjectsQuery();
 
   const [deleteProject] = useDeleteProjectMutation();

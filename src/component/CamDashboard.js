@@ -303,8 +303,8 @@ function Dash_cam() {
     setSearchQuery(query.toLowerCase());
   };
   const handleCreatePR = (project) => {
-    setSelectedPRProject(project);
-    setIsPRModalOpen(true);
+    navigate(`/pr_form?mode=create&projectId=${project.project_id}`);
+    console.log({ project });
   };
 
   const filteredAndSortedData = useMemo(() => {
@@ -364,10 +364,10 @@ function Dash_cam() {
         sx={{
           marginLeft: { xl: "15%", lg: "18%" },
           borderRadius: "sm",
-          py: 2,
+          py: 1,
           display: "flex",
           flexWrap: "wrap",
-          gap: 1.5,
+          gap: 1,
           "& > *": {
             minWidth: { xs: "120px", md: "160px" },
           },
@@ -405,7 +405,7 @@ function Dash_cam() {
             indicatorPlacement="none"
             sx={{
               bgcolor: "background.level1",
-              borderRadius: "md",
+              borderRadius: 9999,
               boxShadow: "sm",
               width: "fit-content",
             }}
@@ -418,7 +418,7 @@ function Dash_cam() {
                     value={label}
                     disableIndicator
                     sx={{
-                      borderRadius: "xl",
+                      borderRadius: 9999,
                       fontWeight: "md",
                       "&.Mui-selected": {
                         bgcolor: "background.surface",
