@@ -1449,59 +1449,60 @@ const AddPurchaseOrder = ({
 
               {/* Existing action buttons */}
               {!viewMode && (
-                <>
-                  {((effectiveMode === "edit" &&
-                    statusNow === "approval_rejected") ||
-                    fromModal) && (
-                    <Button
-                      component="button"
-                      type="submit"
-                      form="po-form"
-                      name="action"
-                      value="send_approval"
-                      variant="solid"
-                      startDecorator={<Send />}
-                      sx={{
-                        bgcolor: "#214b7b",
-                        color: "#fff",
-                        "&:hover": { bgcolor: "#163553" },
-                      }}
-                      disabled={isSubmitting}
-                    >
-                      Send Approval
-                    </Button>
-                  )}
+  <>
+    {/* Send Approval Button */}
+    {(effectiveMode === "edit" &&
+      statusNow === "approval_rejected") ||
+    fromModal ? (
+      <Button
+        component="button"
+        type="submit"
+        form="po-form"
+        name="action"
+        value="send_approval"
+        variant="solid"
+        startDecorator={<Send />}
+        sx={{
+          bgcolor: "#214b7b",
+          color: "#fff",
+          "&:hover": { bgcolor: "#163553" },
+        }}
+        disabled={isSubmitting}
+      >
+        Send Approval
+      </Button>
+    ) : null}
 
-                  {(effectiveMode === "edit" &&
-                    statusNow === "approval_done" &&
-                    user?.department === "SCM") ||
-                    (user?.name === "IT Team" &&
-                      !fromModal &&
-                      statusNow === "approval_done" && (
-                        <Button
-                          component="button"
-                          type="submit"
-                          form="po-form"
-                          name="action"
-                          value="confirm_order"
-                          variant="outlined"
-                          startDecorator={<ConfirmationNumber />}
-                          sx={{
-                            borderColor: "#214b7b",
-                            color: "#214b7b",
-                            "&:hover": {
-                              bgcolor: "rgba(33, 75, 123, 0.1)",
-                              borderColor: "#163553",
-                              color: "#163553",
-                            },
-                          }}
-                          disabled={isSubmitting}
-                        >
-                          Confirm Order
-                        </Button>
-                      ))}
-                </>
-              )}
+    {/* Confirm Order Button */}
+    {effectiveMode === "edit" &&
+      statusNow === "approval_done" &&
+      !fromModal &&
+      (user?.department === "SCM" || user?.name === "IT Team") && (
+        <Button
+          component="button"
+          type="submit"
+          form="po-form"
+          name="action"
+          value="confirm_order"
+          variant="outlined"
+          startDecorator={<ConfirmationNumber />}
+          sx={{
+            borderColor: "#214b7b",
+            color: "#214b7b",
+            "&:hover": {
+              bgcolor: "rgba(33, 75, 123, 0.1)",
+              borderColor: "#163553",
+              color: "#163553",
+            },
+          }}
+          disabled={isSubmitting}
+        >
+          Confirm Order
+        </Button>
+      )}
+  </>
+)}
+
               {(user?.department === "CAM" ||
                 user?.name === "Sushant Ranjan Dubey" ||
                 user?.name === "Sanjiv Kumar" ||

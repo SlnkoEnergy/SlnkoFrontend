@@ -23,8 +23,6 @@ import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 
 const ScopeDetail = ({ project_id, project_code }) => {
-  const uomOptions = ["Nos", "Kg", "Meter", "Litre", "MW", "Lot"];
-
   const {
     data: getScope,
     isLoading,
@@ -57,7 +55,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
     }
 
     const updatedScope = checked ? "slnko" : "client";
-    const idKey = item.item_id; // ✅ use item_id as the unique identifier
+    const idKey = item.item_id;
 
     setItemsState((prev) =>
       prev.map((it) =>
@@ -66,23 +64,6 @@ const ScopeDetail = ({ project_id, project_code }) => {
     );
   };
 
-  const handleQuantityChange = (index, value) => {
-    const nameKey = itemsState[index]?.name; // ✅ use name
-    setItemsState((prev) =>
-      prev.map((item) =>
-        item.name === nameKey ? { ...item, quantity: value } : item
-      )
-    );
-  };
-
-  const handleUomChange = (index, value) => {
-    const nameKey = itemsState[index]?.name; // ✅ use name
-    setItemsState((prev) =>
-      prev.map((item) =>
-        item.name === nameKey ? { ...item, uom: value } : item
-      )
-    );
-  };
 
   const handleSubmit = async () => {
     try {
