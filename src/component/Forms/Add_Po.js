@@ -2256,7 +2256,7 @@ const AddPurchaseOrder = ({
                             onChange={(e) =>
                               updateLine(l.id, "quantity", e.target.value)
                             }
-                            slotProps={{ input: { min: 0, step: "1" } }}
+                            slotProps={{ input: { min: 0, step: "0.00001" } }}
                             {...(inputsDisabled ? disabledInputProps : {})}
                           />
                         </td>
@@ -2269,7 +2269,7 @@ const AddPurchaseOrder = ({
                             onChange={(e) =>
                               updateLine(l.id, "unitPrice", e.target.value)
                             }
-                            slotProps={{ input: { min: 0, step: "0.01" } }}
+                            slotProps={{ input: { min: 0, step: "0.00001" } }}
                             {...(inputsDisabled ? disabledInputProps : {})}
                           />
                         </td>
@@ -2282,7 +2282,7 @@ const AddPurchaseOrder = ({
                             onChange={(e) =>
                               updateLine(l.id, "taxPercent", e.target.value)
                             }
-                            slotProps={{ input: { min: 0, step: "0.01" } }}
+                            slotProps={{ input: { min: 0, step: "0.00001" } }}
                             {...(inputsDisabled ? disabledInputProps : {})}
                           />
                         </td>

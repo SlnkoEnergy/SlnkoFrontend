@@ -805,7 +805,6 @@ export default function Purchase_Request_Form() {
 
       let mapped = rows.map((r, i) => mapBoqRowToLine(r, i));
 
-      // force-map to this category id/name, tag as BOM
       const batchId = Date.now();
       mapped = mapped.map((m, idx) => ({
         id: m.id ?? crypto?.randomUUID?.() ?? `row-${batchId}-${idx + 1}`,
@@ -817,7 +816,6 @@ export default function Purchase_Request_Form() {
         bomCategoryId: catId,
       }));
 
-      // remove prior BOM rows for this category, then merge:
       setLines((prev) => {
         const keep = prev.filter(
           (l) => !(l.fromBOM && l.bomCategoryId === catId)
@@ -853,7 +851,6 @@ export default function Purchase_Request_Form() {
     }
   };
 
-  // Helper to fetch products for ONE category and stash for ONE line
   const fetchProductsForLineCategory = async (lineId, categoryId) => {
     try {
       const res = await triggerGetProducts(
@@ -1296,8 +1293,7 @@ export default function Purchase_Request_Form() {
                         <Chip key={String(opt.value)} size="sm">
                           {typeof opt.label === "string"
                             ? opt.label
-                            : (categoryIdToName[opt.value] ??
-                              String(opt.value))}
+                            : categoryIdToName[opt.value] ?? String(opt.value)}
                         </Chip>
                       ))}
                     </Box>
@@ -1627,8 +1623,8 @@ export default function Purchase_Request_Form() {
                           !l.productCategoryId
                             ? "Pick row category first"
                             : rowProductRows.length
-                              ? "Select product"
-                              : "No products — search more…"
+                            ? "Select product"
+                            : "No products — search more…"
                         }
                         renderValue={() => (
                           <Typography
@@ -1642,8 +1638,8 @@ export default function Purchase_Request_Form() {
                             {l.productName
                               ? l.productName
                               : l.productId
-                                ? l.productId
-                                : "Select product"}
+                              ? l.productId
+                              : "Select product"}
                           </Typography>
                         )}
                         {...(isView ? { disabled: true, sx: DISABLED_SX } : {})}
@@ -1669,7 +1665,9 @@ export default function Purchase_Request_Form() {
                             "";
                           const catName = p?.category?.name || "";
                           const label = p.sku_code
-                            ? `${p.sku_code} – ${name}${catName ? ` (${catName})` : ""}`
+                            ? `${p.sku_code} – ${name}${
+                                catName ? ` (${catName})` : ""
+                              }`
                             : `${name}${catName ? ` (${catName})` : ""}`;
                           return (
                             <Option
