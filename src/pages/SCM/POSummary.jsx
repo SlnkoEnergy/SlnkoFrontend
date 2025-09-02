@@ -68,8 +68,6 @@ function POSummary() {
     "Gagan Tayal",
   ];
 
-  const isAllowed =
-    allowedUsers.includes(user?.name) || user?.department === "admin";
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -139,7 +137,6 @@ function POSummary() {
               Purchase Order Summary
             </Typography>
 
-            {isAllowed && (
               <Box
                 sx={{
                   display: "flex",
@@ -151,16 +148,14 @@ function POSummary() {
                   justifyContent: "center",
                 }}
               >
+                
                 <Button color="primary" size="sm" onClick={handleOpenLogisticsWithSeed}>
                   Logistics Form
                 </Button>
-                {user?.name !== "Gagan Tayal" && (
                   <Button color="primary" variant="outlined" size="sm" onClick={() => navigate("/add_vendor")}>
                     Add Vendor
                   </Button>
-                )}
               </Box>
-            )}
           </Box>
 
           <PurchaseOrder ref={poSummaryRef} />
