@@ -632,6 +632,7 @@ const UpdateExpense = () => {
                 "CAM",
                 "Accounts",
                 "HR",
+                "Marketing",
               ].includes(user?.department) &&
                 user?.role === "manager") ||
                 user?.role === "visitor" ||

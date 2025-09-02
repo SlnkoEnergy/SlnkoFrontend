@@ -23,8 +23,6 @@ import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 
 const ScopeDetail = ({ project_id, project_code }) => {
-  const uomOptions = ["Nos", "Kg", "Meter", "Litre", "MW", "Lot"];
-
   const {
     data: getScope,
     isLoading,
@@ -49,37 +47,23 @@ const ScopeDetail = ({ project_id, project_code }) => {
 
   const handleCheckboxChange = (index, checked) => {
     const item = itemsState[index];
+    if (!item) return;
 
     if (item.pr_status && !checked) {
-      toast.error("Purchase request has been made for this Category");
+      toast.error("Purchase request has been made for this Item");
       return;
     }
+
     const updatedScope = checked ? "slnko" : "client";
-    const category = item?.category;
+    const idKey = item.item_id;
+
     setItemsState((prev) =>
       prev.map((it) =>
-        it.category === category ? { ...it, scope: updatedScope } : it
+        it.item_id === idKey ? { ...it, scope: updatedScope } : it
       )
     );
   };
 
-  const handleQuantityChange = (index, value) => {
-    const category = itemsState[index]?.category;
-    setItemsState((prev) =>
-      prev.map((item) =>
-        item.category === category ? { ...item, quantity: value } : item
-      )
-    );
-  };
-
-  const handleUomChange = (index, value) => {
-    const category = itemsState[index]?.category;
-    setItemsState((prev) =>
-      prev.map((item) =>
-        item.category === category ? { ...item, uom: value } : item
-      )
-    );
-  };
 
   const handleSubmit = async () => {
     try {
@@ -153,20 +137,14 @@ const ScopeDetail = ({ project_id, project_code }) => {
   const supplyItems = itemsState.filter((item) => item.type === "supply");
   const executionItems = itemsState.filter((item) => item.type === "execution");
 
-  const groupedItems = itemsState
-    .slice()
-    .sort((a, b) => {
-      if (a.order !== b.order) return a.order - b.order;
-      return a.category.localeCompare(b.category);
-    })
-    .reduce(
-      (acc, item) => {
-        if (item.type === "supply") acc.supply.push(item);
-        else if (item.type === "execution") acc.execution.push(item);
-        return acc;
-      },
-      { supply: [], execution: [] }
-    );
+  const groupedItems = itemsState.reduce(
+    (acc, item) => {
+      if (item.type === "supply") acc.supply.push(item);
+      else if (item.type === "execution") acc.execution.push(item);
+      return acc;
+    },
+    { supply: [], execution: [] }
+  );
 
   const renderTable = (title, items) => (
     <Box sx={{ mb: 4 }}>
@@ -205,8 +183,6 @@ const ScopeDetail = ({ project_id, project_code }) => {
             <tr>
               <th>Categories</th>
               <th style={{ textAlign: "left" }}>Scope</th>
-              <th style={{ textAlign: "left" }}>Tentative Quantity</th>
-              <th>UoM</th>
             </tr>
           </thead>
           <tbody>
@@ -217,7 +193,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
                 );
                 return (
                   <tr key={item.item_id}>
-                    <td>{item.category}</td>
+                    <td>{item.name}</td>
                     <td style={{ textAlign: "left" }}>
                       <Checkbox
                         variant="soft"
@@ -228,41 +204,13 @@ const ScopeDetail = ({ project_id, project_code }) => {
                         }
                       />
                     </td>
-                    <td style={{ textAlign: "center" }}>
-                      <Input
-                        size="sm"
-                        type="number"
-                        placeholder="0"
-                        value={item.quantity || ""}
-                        disabled={!isOpen}
-                        onChange={(e) =>
-                          handleQuantityChange(indexInAll, e.target.value)
-                        }
-                        sx={{ maxWidth: 80 }}
-                      />
-                    </td>
-                    <td>
-                      <Select
-                        size="sm"
-                        placeholder="Select UoM"
-                        value={item.uom || ""}
-                        disabled={!isOpen}
-                        onChange={(e, val) => handleUomChange(indexInAll, val)}
-                      >
-                        {uomOptions.map((u, i) => (
-                          <Option key={i} value={u}>
-                            {u}
-                          </Option>
-                        ))}
-                      </Select>
-                    </td>
                   </tr>
                 );
               })
             ) : (
               <tr>
                 <td
-                  colSpan={4}
+                  colSpan={2}
                   style={{ textAlign: "center", padding: "10px" }}
                 >
                   No items found

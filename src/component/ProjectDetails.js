@@ -8,8 +8,6 @@ import {
   TabList,
   Tab,
   TabPanel,
-  Textarea,
-  Button,
   Card,
   Divider,
   Stack,
@@ -25,7 +23,7 @@ import PurchaseRequestCard from "./PurchaseRequestCard";
 import { useEffect, useState } from "react";
 import ScopeDetail from "./Scope";
 
-export default function Project_Detail() {
+const Project_Detail = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const project_id = searchParams.get("project_id");
   const {
@@ -185,11 +183,11 @@ export default function Project_Detail() {
               </TabPanel>
 
               <TabPanel value={1}>
-                <Box
-                  maxHeight="70vh"
-                  overflowY="auto"
-                >
-                  <ScopeDetail project_id={project_id} project_code={projectDetails?.code}/>
+                <Box maxHeight="70vh" overflowY="auto">
+                  <ScopeDetail
+                    project_id={project_id}
+                    project_code={projectDetails?.code}
+                  />
                 </Box>
               </TabPanel>
               <TabPanel value={2}>
@@ -214,4 +212,6 @@ export default function Project_Detail() {
       </Box>
     </Box>
   );
-}
+};
+
+export default Project_Detail;

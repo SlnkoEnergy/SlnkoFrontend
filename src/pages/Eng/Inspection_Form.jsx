@@ -1,16 +1,17 @@
 import Box from "@mui/joy/Box";
 import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider } from "@mui/joy/styles";
-import  { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import Button from "@mui/joy/Button";
 import Breadcrumbs from "@mui/joy/Breadcrumbs";
 import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import Sidebar from "../../component/Partials/Sidebar";
 import Header from "../../component/Partials/Header";
-import PurchaseReqSummary from "../../component/PurchaseReqSummary";
+import InspectionForm from "../../component/Forms/Inspection_Form";
 
-function PurchaseRequestSheet() {
+function Inspection_Form() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -63,21 +64,24 @@ function PurchaseRequestSheet() {
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
               sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
-              <Link
-                underline="none"
-                color="neutral"
-                sx={{ fontSize: 12, fontWeight: 500 }}
-              >
-                CAM
-              </Link>
+              {user?.department !== "Accounts" && (
+                <Link
+                  underline="none"
+                  color="neutral"
+                  sx={{ fontSize: 12, fontWeight: 500 }}
+                >
+                  Engineering
+                </Link>
+              )}
               <Typography
                 color="primary"
                 sx={{ fontWeight: 500, fontSize: 12 }}
               >
-                Purchase Request
+                Inspection
               </Typography>
             </Breadcrumbs>
           </Box>
+
           <Box
             sx={{
               display: "flex",
@@ -91,26 +95,13 @@ function PurchaseRequestSheet() {
             }}
           >
             <Typography level="h2" component="h1">
-              Purchase Request
+              Inspection Form
             </Typography>
-            <Box
-              sx={{
-                display: "flex",
-                mb: 1,
-                gap: 1,
-                flexDirection: { xs: "column", sm: "row" },
-                alignItems: { xs: "flex-start", sm: "center" },
-                flexWrap: "wrap",
-                justifyContent: "center",
-              }}
-            >
-              
-            </Box>
           </Box>
-          <PurchaseReqSummary />
+          <InspectionForm />
         </Box>
       </Box>
     </CssVarsProvider>
   );
 }
-export default PurchaseRequestSheet;
+export default Inspection_Form;
