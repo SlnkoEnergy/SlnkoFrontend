@@ -726,18 +726,27 @@ const CreditRequest = forwardRef(
       const createdUtr = payment?.utr_history?.find(
         (h) => h.status === "Created"
       )?.utr;
-      const displayUtr = payment?.utr ? payment.utr : createdUtr || "—";
+
+      const displayUtr = payment?.utr ? payment.utr : createdUtr || "-";
 
       const historyContent = payment?.utr_history?.length ? (
         <Box>
-          <Typography level="body-sm" fontWeight={600} mb={0.5}>
+          <Typography
+            level="body-sm"
+            fontWeight={600}
+            mb={0.5}
+            sx={{ color: "#fff", textDecoration: "underline" }}
+          >
             UTR History
           </Typography>
-          <ul style={{ margin: 0, paddingLeft: "1rem" }}>
+          <ul style={{ margin: 0, paddingLeft: "1rem", color: "#fff" }}>
             {payment.utr_history.map((h, idx) => (
               <li key={idx}>
-                <Typography level="body-sm">
-                  {h.utr} <span style={{ fontSize: 12 }}>({h.status})</span>
+                <Typography level="body-sm" sx={{ color: "#fff" }}>
+                  {h.utr}{" "}
+                  <span style={{ color: "#fff", fontSize: 12 }}>
+                    ({h.status})
+                  </span>
                 </Typography>
               </li>
             ))}
@@ -748,28 +757,24 @@ const CreditRequest = forwardRef(
       );
 
       const content = (
-        <Typography
-          level="body-sm"
-          sx={{ fontWeight: 600, color: "text.primary" }}
-        >
-          {displayUtr}
-        </Typography>
+        <span style={{ fontSize: 15, fontWeight: 600 }}>{displayUtr}</span>
       );
 
-      const canSeeTooltip =
-        ((department === "SCM" || department === "Accounts") &&
-          role === "manager") ||
-        department === "admin" ||
-        department === "superadmin";
-
-      return canSeeTooltip ? (
-        <Tooltip title={historyContent} arrow placement="top">
-          <span>{content}</span>
-        </Tooltip>
-      ) : (
-        content
+      return (
+        <Box>
+          {((department === "SCM" || department === "Accounts") && role === "manager") ||
+          department === "admin" ||
+          department === "superadmin" ? (
+            <Tooltip title={historyContent} arrow placement="top">
+              <span>{content}</span>
+            </Tooltip>
+          ) : (
+            content
+          )}
+        </Box>
       );
     };
+
 
     /* ---------- render ---------- */
     return (
@@ -859,7 +864,7 @@ const CreditRequest = forwardRef(
                   }}
                 >
                   <Box component="td" sx={{ ...cellStyle, minWidth: 280 }}>
-                    <Tooltip title="View Summary" arrow>
+                   
                       <span>
                         <PaymentID
                           cr_id={payment.cr_id}
@@ -867,7 +872,7 @@ const CreditRequest = forwardRef(
                           approved={payment?.approved}
                         />
                       </span>
-                    </Tooltip>
+          
                   </Box>
 
                   <Box component="td" sx={{ ...cellStyle, minWidth: 320 }}>
