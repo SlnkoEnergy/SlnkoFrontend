@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useEffect, useState } from "react";
+import { useMemo, useCallback, useEffect, useState, useRef } from "react";
 import {
   Box,
   Typography,
@@ -287,6 +287,23 @@ const ProductForm = ({
     setImageFile(null);
   };
 
+  const nameRef = useRef(null);
+
+  // Keep caret at the end while typing
+  useEffect(() => {
+    const el = nameRef.current;
+    if (!el) return;
+    if (document.activeElement !== el) return;
+
+    const sel = window.getSelection();
+    if (!sel) return;
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false); // move to end
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }, [form.name]);
+
   return (
     <Box
       sx={{
@@ -408,23 +425,25 @@ const ProductForm = ({
           <Typography level="body-sm" fontWeight="md" mb={0.5}>
             Product Name <span style={{ color: "red" }}>*</span>
           </Typography>
+
           <Box
+            ref={nameRef}
             role="textbox"
             aria-label="Product Name"
             contentEditable={!isReadOnly}
+            dir="ltr"
             suppressContentEditableWarning
             onInput={(e) => {
               if (isReadOnly) return;
-              let text = e.currentTarget.innerText.trim();
-              if (!text) e.currentTarget.innerHTML = "";
-              handleChange("name", text);
+              const text = e.currentTarget.innerText;
+              handleChange("name", text); // don't trim while typing (prevents jumps on spaces)
             }}
             onKeyDown={(e) =>
               !isReadOnly && e.key === "Enter" && e.preventDefault()
             }
             onBlur={(e) => {
               if (isReadOnly) return;
-              let txt = e.currentTarget.innerText.replace(/\s+/g, " ").trim();
+              const txt = e.currentTarget.innerText.replace(/\s+/g, " ").trim();
               if (!txt) e.currentTarget.innerHTML = "";
               handleChange("name", txt);
             }}
@@ -611,8 +630,8 @@ const ProductForm = ({
                   ? "Saving…"
                   : "Save Product"
                 : isUpdating
-                ? "Updating…"
-                : "Save Changes"}
+                  ? "Updating…"
+                  : "Save Changes"}
             </Button>
           )}
 
