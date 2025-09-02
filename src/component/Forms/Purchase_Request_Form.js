@@ -51,6 +51,9 @@ import SearchPickerModal from "../SearchPickerModal";
 import AddPurchaseOrder from "./Add_Po";
 import { toast } from "react-toastify";
 
+// NEW: embedded product creator
+import ProductForm from "./Product_Form";
+
 const EMPTY_LINE = () => ({
   id: crypto.randomUUID(),
   _selected: false,
@@ -66,6 +69,37 @@ const EMPTY_LINE = () => ({
   taxPercent: 0,
   note: "",
 });
+
+// ---------- DARK DISABLED HELPERS ----------
+const DISABLED_SX = {
+  opacity: 1, // prevent Joy default dimming
+  pointerEvents: "none", // truly non-interactive
+  bgcolor: "neutral.softBg", // darker bg; try 'neutral.plainActiveBg' for even darker
+  color: "text.primary",
+  borderColor: "neutral.outlinedBorder",
+};
+
+const disabledInputProps = {
+  disabled: true,
+  sx: DISABLED_SX,
+  slotProps: { input: { sx: { color: "text.primary" } } },
+};
+
+const disabledTextareaProps = {
+  disabled: true,
+  sx: DISABLED_SX,
+  slotProps: { textarea: { sx: { color: "text.primary" } } },
+};
+
+const disabledSelectProps = {
+  disabled: true,
+  sx: DISABLED_SX,
+  // ensure the visible button area also looks dark
+  slotProps: {
+    button: { sx: { color: "text.primary", bgcolor: "neutral.softBg" } },
+  },
+};
+// ------------------------------------------
 
 const compact = (s) =>
   String(s ?? "")
@@ -135,6 +169,26 @@ const getProdField = (row, fieldName) => {
   return f?.values?.[0]?.input_values ?? "";
 };
 
+// NEW: normalize quick "data" for a created product if API didn't return full array
+const buildProductDataFromFields = ({
+  name,
+  description,
+  cost,
+  gst,
+  make,
+  uom,
+}) => [
+  { name: "Product Name", values: [{ input_values: String(name ?? "") }] },
+  {
+    name: "Description",
+    values: [{ input_values: String(description ?? "") }],
+  },
+  { name: "Cost", values: [{ input_values: String(cost ?? "") }] },
+  { name: "GST", values: [{ input_values: String(gst ?? "") }] },
+  { name: "Make", values: [{ input_values: String(make ?? "") }] },
+  { name: "UOM", values: [{ input_values: String(uom ?? "") }] },
+];
+
 export default function Purchase_Request_Form() {
   const [searchParams] = useSearchParams();
   const mode = (searchParams.get("mode") || "create").toLowerCase();
@@ -173,6 +227,11 @@ export default function Purchase_Request_Form() {
   // NEW: per-category BOM toggle + loader
   const [bomFetchByCat, setBomFetchByCat] = useState({});
   const [bomFetching, setBomFetching] = useState({});
+
+  // NEW: inline Create Product modal state
+  const [prodCreateOpen, setProdCreateOpen] = useState(false);
+  const [prodCreateInitial, setProdCreateInitial] = useState(null);
+  const [prodCreateLineId, setProdCreateLineId] = useState(null);
 
   useEffect(() => {
     if (isCreate && projectId && !projectCode) {
@@ -338,6 +397,7 @@ export default function Purchase_Request_Form() {
   const [activeLineId, setActiveLineId] = useState(null);
 
   // Show SKU, Product Name, and Category in the modal
+  // Show SKU, Product Name, Category, and Make in the modal
   const productColumns = [
     { key: "sku_code", label: "Code", width: 160 },
     {
@@ -351,6 +411,12 @@ export default function Purchase_Request_Form() {
       label: "Category",
       width: 220,
       render: (row) => row?.category?.name || "-",
+    },
+    {
+      key: "make",
+      label: "Make",
+      width: 160,
+      render: (row) => getProdField(row, "Make") || "-",
     },
   ];
 
@@ -383,7 +449,8 @@ export default function Purchase_Request_Form() {
     const pickedGST = Number(getProdField(row, "GST") || 0);
     const pickedMake = getProdField(row, "Make" || "");
     const pickedDescription = getProdField(row, "Description" || "");
-    const pickedUOM = getProdField(row, "UOM" || "");
+    const pickedUOM =
+      getProdField(row, "UOM" || "") || getProdField(row, "UoM" || "");
     const catId = row?.category?._id || "";
     const catName = row?.category?.name || "";
 
@@ -512,7 +579,7 @@ export default function Purchase_Request_Form() {
       });
       return next;
     });
-  }, [category]);
+  }, [category, lines]);
 
   // ---------- Amounts ----------
   const amounts = useMemo(() => {
@@ -565,9 +632,6 @@ export default function Purchase_Request_Form() {
   // ---------- Form actions ----------
   const resetForm = () => {
     if (isView) return;
-    setProjectCode(isCreate ? projectId || "" : "");
-    setProjectLocation("");
-    setProjectName("");
     setDeliverTo("");
     setCategory([]);
     setCategoryIdToName({});
@@ -674,7 +738,6 @@ export default function Purchase_Request_Form() {
     setPoModalOpen(true);
   };
 
-  const commonDisable = isView ? { disabled: true } : {};
   const selectedCode = (projectCode || "").trim();
   const rowsP = projectRows || [];
   const hasSelectedInList = rowsP.some((r) => r.code === selectedCode);
@@ -706,7 +769,7 @@ export default function Purchase_Request_Form() {
           .filter((l) => l.fromBOM && l.bomCategoryId === catId)
           .map((l) => l.id)
       );
-      // Clear any cached product options for removed lines
+      // Clear cached product options for removed lines
       setLineProducts((old) => {
         const next = { ...old };
         toRemoveIds.forEach((lid) => delete next[lid]);
@@ -730,7 +793,6 @@ export default function Purchase_Request_Form() {
     try {
       setBomFetching((prev) => ({ ...prev, [catId]: true }));
 
-      // fetch only for this category name
       const args = {
         project_id: projectId,
         category_mode: "exact",
@@ -743,7 +805,6 @@ export default function Purchase_Request_Form() {
 
       let mapped = rows.map((r, i) => mapBoqRowToLine(r, i));
 
-      // force-map to this category id/name, tag as BOM
       const batchId = Date.now();
       mapped = mapped.map((m, idx) => ({
         id: m.id ?? crypto?.randomUUID?.() ?? `row-${batchId}-${idx + 1}`,
@@ -755,7 +816,6 @@ export default function Purchase_Request_Form() {
         bomCategoryId: catId,
       }));
 
-      // remove prior BOM rows for this category, then merge:
       setLines((prev) => {
         const keep = prev.filter(
           (l) => !(l.fromBOM && l.bomCategoryId === catId)
@@ -785,14 +845,12 @@ export default function Purchase_Request_Form() {
     } catch (e) {
       console.error("Fetch BOM failed:", e);
       toast.error("Failed to fetch BOM for this category.");
-      // rollback toggle
       setBomFetchByCat((prev) => ({ ...prev, [catId]: false }));
     } finally {
       setBomFetching((prev) => ({ ...prev, [catId]: false }));
     }
   };
 
-  // Helper to fetch products for ONE category and stash for ONE line
   const fetchProductsForLineCategory = async (lineId, categoryId) => {
     try {
       const res = await triggerGetProducts(
@@ -816,18 +874,105 @@ export default function Purchase_Request_Form() {
     }
   };
 
-  const [user, setUser] = useState(null);
+  // NEW: open embedded creator with row data/category prefilled
+  const openCreateProductForLine = (line) => {
+    if (!line?.productCategoryId) {
+      toast.error("Pick the row's Category first.");
+      return;
+    }
+    setProdCreateLineId(line.id);
+    setProdCreateInitial({
+      name: line.productName || "",
+      Description: line.briefDescription || "",
+      make: line.make || "",
+      unitOfMeasure: line.uom || "",
+      cost: line.unitPrice || "",
+      gst: line.taxPercent || "",
+      productCategory: line.productCategoryId,
+      productCategoryName: line.productCategoryName,
+    });
+    setProdCreateOpen(true);
+  };
 
+  // NEW: after create, paste values into row + cache option
+  const handleProductCreatedIntoRow = (p) => {
+    try {
+      if (!p || !prodCreateLineId) return;
+
+      const name = getProdField(p, "Product Name") || p?.sku_code || "";
+      const description = getProdField(p, "Description") || "";
+      const cost = Number(getProdField(p, "Cost") || 0);
+      const gst = Number(getProdField(p, "GST") || 0);
+      const make = getProdField(p, "Make") || "";
+      const uom = getProdField(p, "UOM") || getProdField(p, "UoM") || "";
+
+      const catId = p?.category?._id || p?.category || "";
+      const catName = p?.category?.name || categoryIdToName[catId] || "";
+
+      // 1) fill row
+      setLines((prev) =>
+        prev.map((l) =>
+          l.id === prodCreateLineId
+            ? {
+                ...l,
+                productId: p?._id || "",
+                productName: name,
+                briefDescription: description,
+                productCategoryId: catId || l.productCategoryId,
+                productCategoryName: catName || l.productCategoryName,
+                unitPrice: cost,
+                taxPercent: gst,
+                make,
+                uom,
+              }
+            : l
+        )
+      );
+
+      // 2) push into row cache so Select shows it
+      setLineProducts((prev) => {
+        const current = Array.isArray(prev[prodCreateLineId])
+          ? [...prev[prodCreateLineId]]
+          : [];
+        const normalized = {
+          _id: p?._id,
+          category: p?.category?._id
+            ? p.category
+            : { _id: catId, name: catName },
+          data: Array.isArray(p?.data)
+            ? p.data
+            : buildProductDataFromFields({
+                name,
+                description,
+                cost,
+                gst,
+                make,
+                uom,
+              }),
+          sku_code: p?.sku_code || "",
+        };
+        const ix = current.findIndex((x) => x?._id === normalized._id);
+        if (ix >= 0) current[ix] = normalized;
+        else current.unshift(normalized);
+        return { ...prev, [prodCreateLineId]: current };
+      });
+
+      toast.success("Product created and filled into the row.");
+    } finally {
+      setProdCreateOpen(false);
+      setProdCreateInitial(null);
+      setProdCreateLineId(null);
+    }
+  };
+
+  const [user, setUser] = useState(null);
   useEffect(() => {
     const userData = getUserData();
     setUser(userData);
   }, []);
-
   const getUserData = () => {
     const userData = localStorage.getItem("userDetails");
-    if (userData) {
-      return JSON.parse(userData);
-    }
+    if (userData) return JSON.parse(userData);
     return null;
   };
 
@@ -987,7 +1132,7 @@ export default function Purchase_Request_Form() {
                   projLoading ? "Loading..." : "Search or pick a project"
                 }
                 renderValue={() => selectedCode || "Select project code"}
-                disabled={shouldFetchProject || isView}
+                {...(isView ? disabledSelectProps : {})}
               >
                 {!hasSelectedInList && selectedCode && (
                   <Option key={`selected-${selectedCode}`} value={selectedCode}>
@@ -1007,8 +1152,7 @@ export default function Purchase_Request_Form() {
               <Input
                 value={projectCode}
                 onChange={(e) => setProjectCode(e.target.value)}
-                placeholder="Project Code"
-                disabled={shouldFetchProject || isView}
+                {...(isView ? disabledInputProps : {})}
               />
             )}
           </Grid>
@@ -1021,7 +1165,7 @@ export default function Purchase_Request_Form() {
             <Input
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
-              disabled={shouldFetchProject || isView}
+              {...disabledInputProps}
             />
           </Grid>
 
@@ -1033,7 +1177,7 @@ export default function Purchase_Request_Form() {
             <Input
               value={projectLocation}
               onChange={(e) => setProjectLocation(e.target.value)}
-              disabled={shouldFetchProject || isView}
+              {...disabledInputProps}
             />
           </Grid>
 
@@ -1149,8 +1293,7 @@ export default function Purchase_Request_Form() {
                         <Chip key={String(opt.value)} size="sm">
                           {typeof opt.label === "string"
                             ? opt.label
-                            : (categoryIdToName[opt.value] ??
-                              String(opt.value))}
+                            : categoryIdToName[opt.value] ?? String(opt.value)}
                         </Chip>
                       ))}
                     </Box>
@@ -1158,7 +1301,6 @@ export default function Purchase_Request_Form() {
                     "Search or pick categories"
                   )
                 }
-                {...commonDisable}
               >
                 {missingSelected?.map((catId) => (
                   <Option key={`selected-${catId}`} value={catId}>
@@ -1179,7 +1321,7 @@ export default function Purchase_Request_Form() {
             </Grid>
           )}
 
-          {/* NEW: Per-category "Fetch from BOM" toggles */}
+          {/* Fetch from BOM toggles */}
           {!isView && category.length > 0 && (
             <Grid xs={12}>
               <Typography level="body-md" sx={{ mb: 0.5, fontWeight: 600 }}>
@@ -1253,7 +1395,7 @@ export default function Purchase_Request_Form() {
             <Input
               value={deliverTo}
               onChange={(e) => setDeliverTo(e.target.value)}
-              {...(commonDisable || {})}
+              {...(isView ? disabledInputProps : {})}
             />
           </Grid>
         </Grid>
@@ -1353,7 +1495,6 @@ export default function Purchase_Request_Form() {
                           ? "Pick categories above first"
                           : "Select category"
                       }
-                      disabled={isView || category.length === 0}
                       renderValue={() =>
                         l.productCategoryName || "Select category"
                       }
@@ -1368,6 +1509,7 @@ export default function Purchase_Request_Form() {
                           },
                         },
                       }}
+                      {...(isView ? disabledSelectProps : {})}
                     >
                       {(category || []).map((catId) => (
                         <Option key={catId} value={catId}>
@@ -1397,6 +1539,12 @@ export default function Purchase_Request_Form() {
                               overflowWrap: "anywhere",
                               alignItems: "flex-start",
                               py: 0.25,
+                              ...(isView
+                                ? {
+                                    bgcolor: "neutral.softBg",
+                                    color: "text.primary",
+                                  }
+                                : {}),
                             },
                           },
                           listbox: {
@@ -1415,6 +1563,10 @@ export default function Purchase_Request_Form() {
                             setProductModalOpen(true);
                             return;
                           }
+                          if (v === "__CREATE_PRODUCT__") {
+                            openCreateProductForLine(l);
+                            return;
+                          }
                           const prod = (rowProductRows || []).find(
                             (p) => p._id === v
                           );
@@ -1430,7 +1582,10 @@ export default function Purchase_Request_Form() {
                             );
                             const gst = Number(getProdField(prod, "GST") || 0);
                             const make = getProdField(prod, "Make") || "";
-                            const uom = getProdField(prod, "UOM") || "";
+                            const uom =
+                              getProdField(prod, "UOM") ||
+                              getProdField(prod, "UoM") ||
+                              "";
                             const catId =
                               prod?.category?._id || l.productCategoryId || "";
                             const catName =
@@ -1468,10 +1623,9 @@ export default function Purchase_Request_Form() {
                           !l.productCategoryId
                             ? "Pick row category first"
                             : rowProductRows.length
-                              ? "Select product"
-                              : "No products — search more…"
+                            ? "Select product"
+                            : "No products — search more…"
                         }
-                        disabled={isView || !l.productCategoryId}
                         renderValue={() => (
                           <Typography
                             level="body-sm"
@@ -1484,12 +1638,13 @@ export default function Purchase_Request_Form() {
                             {l.productName
                               ? l.productName
                               : l.productId
-                                ? l.productId
-                                : "Select product"}
+                              ? l.productId
+                              : "Select product"}
                           </Typography>
                         )}
+                        {...(isView ? { disabled: true, sx: DISABLED_SX } : {})}
                       >
-                        {/* keep selected if it's not in the current options */}
+                        {/* keep selected if not in current options */}
                         {!inlineHasSelected && selectedProdId && (
                           <Option
                             key={`sel-${selectedProdId}`}
@@ -1510,7 +1665,9 @@ export default function Purchase_Request_Form() {
                             "";
                           const catName = p?.category?.name || "";
                           const label = p.sku_code
-                            ? `${p.sku_code} – ${name}${catName ? ` (${catName})` : ""}`
+                            ? `${p.sku_code} – ${name}${
+                                catName ? ` (${catName})` : ""
+                              }`
                             : `${name}${catName ? ` (${catName})` : ""}`;
                           return (
                             <Option
@@ -1526,10 +1683,15 @@ export default function Purchase_Request_Form() {
                           );
                         })}
 
-                        {/* allow searching with modal (filters to row's category) */}
                         <Option value="__SEARCH_MORE_PROD__" color="primary">
                           Search more…
                         </Option>
+
+                        {!!l.productCategoryId && (
+                          <Option value="__CREATE_PRODUCT__" color="success">
+                            + Create new product…
+                          </Option>
+                        )}
                       </Select>
                     </Box>
                   </td>
@@ -1542,7 +1704,7 @@ export default function Purchase_Request_Form() {
                       size="sm"
                       value={l.make}
                       onChange={(e) => updateLine(l.id, "make", e.target.value)}
-                      disabled={isView}
+                      {...(isView ? disabledInputProps : {})}
                     />
                   </td>
 
@@ -1555,8 +1717,14 @@ export default function Purchase_Request_Form() {
                       onChange={(e) =>
                         updateLine(l.id, "quantity", e.target.value)
                       }
-                      slotProps={{ input: { min: 0, step: "1" } }}
-                      disabled={isView}
+                      slotProps={{
+                        input: {
+                          min: 0,
+                          step: "1",
+                          ...(isView ? { sx: { color: "text.primary" } } : {}),
+                        },
+                      }}
+                      {...(isView ? { disabled: true, sx: DISABLED_SX } : {})}
                     />
                   </td>
 
@@ -1566,8 +1734,12 @@ export default function Purchase_Request_Form() {
                       size="sm"
                       value={l.uom}
                       onChange={(e) => updateLine(l.id, "uom", e.target.value)}
-                      slotProps={{ input: { min: 0, step: "1" } }}
-                      disabled={isView}
+                      slotProps={{
+                        input: {
+                          ...(isView ? { sx: { color: "text.primary" } } : {}),
+                        },
+                      }}
+                      {...(isView ? { disabled: true, sx: DISABLED_SX } : {})}
                     />
                   </td>
 
@@ -1580,8 +1752,14 @@ export default function Purchase_Request_Form() {
                       onChange={(e) =>
                         updateLine(l.id, "unitPrice", e.target.value)
                       }
-                      slotProps={{ input: { min: 0, step: "0.01" } }}
-                      disabled={isView}
+                      slotProps={{
+                        input: {
+                          min: 0,
+                          step: "0.01",
+                          ...(isView ? { sx: { color: "text.primary" } } : {}),
+                        },
+                      }}
+                      {...(isView ? { disabled: true, sx: DISABLED_SX } : {})}
                     />
                   </td>
 
@@ -1594,8 +1772,14 @@ export default function Purchase_Request_Form() {
                       onChange={(e) =>
                         updateLine(l.id, "taxPercent", e.target.value)
                       }
-                      slotProps={{ input: { min: 0, step: "0.01" } }}
-                      disabled={isView}
+                      slotProps={{
+                        input: {
+                          min: 0,
+                          step: "0.01",
+                          ...(isView ? { sx: { color: "text.primary" } } : {}),
+                        },
+                      }}
+                      {...(isView ? { disabled: true, sx: DISABLED_SX } : {})}
                     />
                   </td>
 
@@ -1616,7 +1800,6 @@ export default function Purchase_Request_Form() {
                           });
                           removeLine(l.id);
                         }}
-                        disabled={isView}
                       >
                         <DeleteOutline />
                       </IconButton>
@@ -1657,7 +1840,7 @@ export default function Purchase_Request_Form() {
           placeholder="Write Description of PR"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          disabled={isView}
+          {...(isView ? disabledTextareaProps : {})}
         />
 
         {/* Summary */}
@@ -1767,6 +1950,24 @@ export default function Purchase_Request_Form() {
         pageSize={7}
         backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
       />
+
+      {/* Create Product (embedded) */}
+      <Modal open={prodCreateOpen} onClose={() => setProdCreateOpen(false)}>
+        <ModalDialog
+          size="lg"
+          sx={{ width: 980, maxWidth: "98vw", p: 1, overflow: "auto" }}
+        >
+          <ModalClose />
+          {prodCreateOpen && (
+            <ProductForm
+              embedded
+              initialForm={prodCreateInitial}
+              onCreated={handleProductCreatedIntoRow}
+              onClose={() => setProdCreateOpen(false)}
+            />
+          )}
+        </ModalDialog>
+      </Modal>
 
       {/* PO Modal */}
       <Modal open={poModalOpen} onClose={() => setPoModalOpen(false)}>

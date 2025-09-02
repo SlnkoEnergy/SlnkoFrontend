@@ -2390,6 +2390,38 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
+
+            <ListItem nested>
+              <Toggler
+                renderToggle={({ open, setOpen }) => (
+                  <ListItemButton onClick={() => setOpen(!open)}>
+                    <DatabaseIcon />
+                    <ListItemContent>
+                      <Typography level="title-sm">My Databases</Typography>
+                    </ListItemContent>
+                    <KeyboardArrowDownIcon
+                      sx={[
+                        open
+                          ? {
+                              transform: "rotate(180deg)",
+                            }
+                          : {
+                              transform: "none",
+                            },
+                      ]}
+                    />
+                  </ListItemButton>
+                )}
+              >
+                <List sx={{ gap: 0.5 }}>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/products")}>
+                      Products
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Toggler>
+            </ListItem>
           </List>
         ) : user?.role === "manager" && user?.name === "Ranvijay Singh" ? (
           <List
@@ -2698,7 +2730,8 @@ function Sidebar() {
                   </ListItem>
                   {((user?.department === "Projects" &&
                     user?.name === "Mayank Kumar") ||
-                    user?.name === "Vivek Pandey" || user?.name === "Disha Sharma") && (
+                    user?.name === "Vivek Pandey" ||
+                    user?.name === "Disha Sharma") && (
                     <ListItem>
                       <ListItemButton
                         onClick={() => navigate("/expense_approval")}

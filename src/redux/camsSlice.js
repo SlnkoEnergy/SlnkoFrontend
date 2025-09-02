@@ -80,7 +80,8 @@ export const camsApi = createApi({
 
     // Purchase Request
     getMaterialCategory: builder.query({
-      query: ({project_id}) => `engineering/material-category-drop?project_id=${project_id}`,
+      query: ({ project_id }) =>
+        `engineering/material-category-drop?project_id=${project_id}`,
     }),
     createPurchaseRequest: builder.mutation({
       query: (payload) => ({
@@ -101,7 +102,7 @@ export const camsApi = createApi({
       query: ({
         page = 1,
         search = "",
-        limit=10,
+        limit = 10,
         itemSearch = "",
         poValueSearch = "",
         statusSearch = "",
@@ -109,7 +110,7 @@ export const camsApi = createApi({
         createdTo = "",
         etdFrom = "",
         etdTo = "",
-        open_pr=false
+        open_pr = false,
       }) =>
         `purchaseRequest/purchase-request?page=${page}&search=${search}&itemSearch=${itemSearch}&poValueSearch=${poValueSearch}&statusSearch=${statusSearch}&createdFrom=${createdFrom}&createdTo=${createdTo}&etdFrom=${etdFrom}&etdTo=${etdTo}&open_pr=${open_pr}&limit=${limit}`,
       transformResponse: (response) =>
@@ -129,30 +130,29 @@ export const camsApi = createApi({
       }),
     }),
     fetchFromBOM: builder.query({
-  query: (params) => ({
-    url: "purchaseRequest/fetch-boq",
-    params,  
-  }),
-}),
+      query: (params) => ({
+        url: "purchaseRequest/fetch-boq",
+        params,
+      }),
+    }),
 
     // Scope
     getScopeByProjectId: builder.query({
-      query:({project_id})=>
-        `scope/scope?project_id=${project_id}`
+      query: ({ project_id }) => `scope/scope?project_id=${project_id}`,
     }),
     updateScopeByProjectId: builder.mutation({
-       query: ({ project_id, payload }) => ({
+      query: ({ project_id, payload }) => ({
         url: `scope/scope?project_id=${project_id}`,
         method: "PUT",
         body: payload,
       }),
     }),
     updateScopeStatus: builder.mutation({
-      query: ({project_id, status, remarks}) => ({
+      query: ({ project_id, status, remarks }) => ({
         url: `scope/${project_id}/updateStatus`,
         method: "PUT",
-        body: {status, remarks},
-      })
+        body: { status, remarks },
+      }),
     }),
     generateScopePdf: builder.mutation({
       query: ({ project_id }) => ({
@@ -160,7 +160,7 @@ export const camsApi = createApi({
         method: "GET",
         responseHandler: (response) => response.blob(),
       }),
-    })
+    }),
   }),
 });
 
@@ -182,5 +182,5 @@ export const {
   useGetScopeByProjectIdQuery,
   useUpdateScopeByProjectIdMutation,
   useUpdateScopeStatusMutation,
-  useGenerateScopePdfMutation
+  useGenerateScopePdfMutation,
 } = camsApi;

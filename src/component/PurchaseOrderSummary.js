@@ -1227,15 +1227,15 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       case "approval_pending":
         return "#214b7b";
       case "approval_done":
-        return "#90EE90";
+        return "#7ACA82";
       case "ready_to_dispatch":
         return "red";
       case "out_for_delivery":
         return "orange";
       case "partially_delivered":
-     return "#f59e0b"; // amber
-   case "short_quantity":
-     return "#b45309"; // darker amber
+        return "#f59e0b"; // amber
+      case "short_quantity":
+        return "#b45309"; // darker amber
       case "delivered":
         return "green";
       case "etd pending":
