@@ -326,8 +326,8 @@ function Dash_eng() {
               {[
                 "",
                 "Project Id",
-                "Customer",
                 "Project Name",
+                "Customer",
                 "Mobile",
                 "State",
                 "Capacity(AC/DC)",

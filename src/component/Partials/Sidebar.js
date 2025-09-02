@@ -29,7 +29,13 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Main_Logo from "../../assets/protrac_logo.png";
 import { closeSidebar } from "../../utils/utils";
+import {
+  NovuProvider,
+  PopoverNotificationCenter,
+} from "@novu/notification-center";
 import DatabaseIcon from "@mui/icons-material/Storage";
+import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
+import ColorSchemeToggle from "./ColorSchemeToggle";
 
 function Toggler({ defaultExpanded = false, renderToggle, children }) {
   const [open, setOpen] = useState(defaultExpanded);
@@ -58,9 +64,11 @@ function Sidebar() {
   const navigate = useNavigate();
   // const { mode } = useColorScheme();
   const [user, setUser] = useState(null);
+  const [subscribeId, setSubscribeId] = useState("");
   const location = useLocation();
   useEffect(() => {
     const userData = getUserData();
+    setSubscribeId(userData.userID);
     setUser(userData);
   }, []);
 
@@ -86,7 +94,7 @@ function Sidebar() {
       sx={{
         position: "fixed",
         transition: "transform 0.4s, width 0.4s",
-        zIndex: 10000,
+        zIndex: 100,
         height: "100dvh",
         width: "var(--Sidebar-width)",
         top: 0,
@@ -140,16 +148,93 @@ function Sidebar() {
         }}
         onClick={() => closeSidebar()}
       />
-      <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-        <IconButton variant="soft" color="primary" size="sm">
-          <img
-            src={Main_Logo}
-            alt="Protrac"
-            style={{ width: "70px", height: "60px" }}
-          />
-        </IconButton>
-        {/* <ColorSchemeToggle sx={{ ml: "auto" }} /> */}
+
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          position: "relative",
+          gap: 10,
+        }}
+      >
+        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+          <IconButton variant="soft" color="primary" size="sm">
+            <img
+              src={Main_Logo}
+              alt="Protrac"
+              style={{ width: "70px", height: "60px" }}
+            />
+          </IconButton>
+        </Box>
+        <Box
+          sx={{
+            zIndex: 200000,
+            position: "relative",
+            display: { xs: "none", sm: "none", md: "none", lg: "block" },
+          }}
+        >
+          <NovuProvider
+            subscriberId={subscribeId}
+            applicationIdentifier={process.env.REACT_APP_NOVU_IDENTIFIER}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "end",
+                p: 1,
+                position: "relative",
+                zIndex: 20000000,
+              }}
+            >
+              <PopoverNotificationCenter
+                colorScheme="light"
+                position="bottom-end"
+                offset={20}
+                onNotificationClick={(notification) => {
+                  const link = notification?.payload?.link;
+                  if (link) {
+                    navigate(notification.payload.link);
+                  }
+                }}
+              >
+                {({ unseenCount }) => (
+                  <IconButton
+                    sx={{
+                      position: "relative",
+                      bgcolor: "transparent", // ghost-like
+                      "&:hover": { bgcolor: "action.hover" },
+                    }}
+                  >
+                    <NotificationsNoneIcon
+                      sx={{ width: 20, height: 20, color: "text.primary" }} // Bell equivalent
+                    />
+
+                    {(unseenCount ?? 0) > 0 && (
+                      <Box
+                        component="span"
+                        sx={{
+                          position: "absolute",
+                          top: -4,
+                          right: -4,
+                          backgroundColor: "#ef4444", // red-500
+                          color: "white",
+                          borderRadius: "9999px",
+                          px: 0.5,
+                          fontSize: "0.75rem",
+                          lineHeight: "1rem",
+                        }}
+                      >
+                        {unseenCount ?? 0}
+                      </Box>
+                    )}
+                  </IconButton>
+                )}
+              </PopoverNotificationCenter>
+            </Box>
+          </NovuProvider>
+        </Box>
       </Box>
+
       <Input
         size="sm"
         startDecorator={<SearchRoundedIcon />}
