@@ -1553,6 +1553,9 @@ export default function Purchase_Request_Form() {
                                 whiteSpace: "normal",
                                 overflowWrap: "anywhere",
                                 wordBreak: "break-word",
+                                width: "fit-content",
+                                minWidth: 120,
+                                maxWidth: 220,
                               },
                             },
                           },
@@ -1623,8 +1626,8 @@ export default function Purchase_Request_Form() {
                           !l.productCategoryId
                             ? "Pick row category first"
                             : rowProductRows.length
-                            ? "Select product"
-                            : "No products — search more…"
+                              ? "Select product"
+                              : "No products — search more…"
                         }
                         renderValue={() => (
                           <Typography
@@ -1638,8 +1641,8 @@ export default function Purchase_Request_Form() {
                             {l.productName
                               ? l.productName
                               : l.productId
-                              ? l.productId
-                              : "Select product"}
+                                ? l.productId
+                                : "Select product"}
                           </Typography>
                         )}
                         {...(isView ? { disabled: true, sx: DISABLED_SX } : {})}
