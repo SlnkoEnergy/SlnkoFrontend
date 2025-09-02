@@ -1141,7 +1141,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
-        ) : user?.name === "Guddu Rani Dubey" ||
+        ) : user?.name === "Guddu Rani Dubey" || user?.name === "Varun Mishra" ||
           (user?.name === "Prachi Singh" && user?.department === "Internal") ? (
           <List
             size="sm"
@@ -2196,6 +2196,8 @@ function Sidebar() {
             user?.name === "Tanvi Jha" ||
             user?.name === "Saresh" ||
             user?.name === "Deepika Singh" ||
+            user?.name === "Rahul Kushwaha" ||
+            user?.name === "Subhadra" ||
             user?.name === "Izhan Mustafa") ? (
           <List
             size="sm"

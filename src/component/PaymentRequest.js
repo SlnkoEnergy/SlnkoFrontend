@@ -160,6 +160,7 @@ const PaymentRequest = forwardRef(() => {
             {" "}
             {(user?.name === "IT Team" ||
               user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
               user?.name === "Prachi Singh" ||
               user?.department === "admin" ||
               user?.name === "Shubham Gupta" ||
@@ -175,6 +176,7 @@ const PaymentRequest = forwardRef(() => {
             )}
             {(user?.name === "IT Team" ||
               user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
               user?.name === "Prachi Singh" ||
               user?.department === "admin" ||
               user?.name === "Ajay Singh" ||
