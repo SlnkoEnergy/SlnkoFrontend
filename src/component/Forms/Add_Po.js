@@ -1505,6 +1505,8 @@ const AddPurchaseOrder = ({
               {(user?.department === "CAM" ||
                 user?.name === "Sushant Ranjan Dubey" ||
                 user?.name === "Sanjiv Kumar" ||
+                user?.name === "Guddu Rani Dubey" ||
+                user?.name === "Varun Mishra" ||
                 user?.name === "IT Team") &&
                 isApprovalPending && (
                   <Box display="flex" gap={2}>
@@ -1537,6 +1539,7 @@ const AddPurchaseOrder = ({
                   <Box display="flex" gap={2}>
                     {(user?.department === "SCM" ||
                       user?.name === "Guddu Rani Dubey" ||
+                      user?.name === "Varun Mishra" ||
                       user?.name === "IT Team") && (
                       <Box>
                         <Button

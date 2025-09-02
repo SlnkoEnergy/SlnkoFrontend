@@ -609,6 +609,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           {(user?.name === "IT Team" ||
             user?.name === "admin" ||
             user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
             user?.name === "Prachi Singh" ||
             user?.department === "SCM") &&
             (current_status?.status === "delivered" ? (

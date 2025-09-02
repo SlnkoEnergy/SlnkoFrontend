@@ -205,6 +205,7 @@ const ProjectBalances = forwardRef((props, ref) => {
         <Box mt={3} sx={{ display: "flex", gap: 1 }}>
           {(user?.name === "IT Team" ||
             user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
             user?.name === "Prachi Singh" ||
             user?.department === "admin" ||
             user?.name === "Naresh Kumar" ||
@@ -259,6 +260,7 @@ const ProjectBalances = forwardRef((props, ref) => {
           <Menu size="sm" sx={{ minWidth: 100 }}>
             {(user?.name === "IT Team" ||
               user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
               user?.name === "Prachi Singh" ||
               user?.department === "admin" ||
               user?.department === "Accounts") && (

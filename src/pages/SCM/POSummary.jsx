@@ -58,6 +58,7 @@ function POSummary() {
   const allowedUsers = [
     "IT Team",
     "Guddu Rani Dubey",
+    "Varun Mishra",
     "Prachi Singh",
     "Ajay Singh",
     "Aryan Maheshwari",

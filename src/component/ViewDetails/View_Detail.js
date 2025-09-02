@@ -930,6 +930,7 @@ const Customer_Payment_Summary = () => {
 
           {(user?.name === "IT Team" ||
             user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
             user?.name === "Prachi Singh" ||
             user?.name === "admin") && (
             <Box>
@@ -1144,6 +1145,7 @@ const Customer_Payment_Summary = () => {
 
           {(user?.name === "IT Team" ||
             user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
             user?.name === "Prachi Singh" ||
             user?.name === "admin") && (
             <Box>
@@ -1348,7 +1350,7 @@ const Customer_Payment_Summary = () => {
           />
 
           {/* Delete Button (Admin only) */}
-          {["IT Team", "Guddu Rani Dubey", "Prachi Singh", "admin"].includes(
+          {["IT Team", "Guddu Rani Dubey","Varun Mishra", "Prachi Singh", "admin"].includes(
             user?.name
           ) && (
             <IconButton
@@ -1549,6 +1551,7 @@ const Customer_Payment_Summary = () => {
           </Box>
           {(user?.name === "IT Team" ||
             user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
             user?.name === "Prachi Singh" ||
             user?.name === "admin") && (
             <Box>
