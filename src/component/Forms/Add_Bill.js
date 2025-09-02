@@ -60,6 +60,28 @@ const AMOUNT_LABELS_BY_PATH = {
   total: "Total",
 };
 
+/* -------- darker disabled helpers (same as PO form) -------- */
+const DISABLED_SX = {
+  opacity: 1,
+  pointerEvents: "none",
+  bgcolor: "neutral.softBg",
+  color: "text.primary",
+  borderColor: "neutral.outlinedBorder",
+};
+
+const disabledInputProps = {
+  disabled: true,
+  sx: DISABLED_SX,
+  slotProps: { input: { sx: { color: "text.primary" } } },
+};
+
+const disabledTextareaProps = {
+  disabled: true,
+  sx: DISABLED_SX,
+  slotProps: { textarea: { sx: { color: "text.primary" } } },
+};
+/* ----------------------------------------------------------- */
+
 export default function VendorBillForm({
   poData,
   poLines,
@@ -678,6 +700,10 @@ export default function VendorBillForm({
                     borderBottom: "2px solid #214b7b",
                     borderRadius: 0,
                     "&:hover": { borderBottomColor: "#163553" },
+                    ...(loading ? DISABLED_SX : {}),
+                  }}
+                  slotProps={{
+                    input: loading ? { sx: { color: "text.primary" } } : {},
                   }}
                 />
               </Box>
@@ -689,9 +715,9 @@ export default function VendorBillForm({
                   Project Id
                 </Typography>
                 <Input
-                  disabled
                   value={form.project_code}
                   onChange={(e) => setHeader("project_code", e.target.value)}
+                  {...disabledInputProps}
                 />
               </Grid>
 
@@ -700,9 +726,9 @@ export default function VendorBillForm({
                   PO Number
                 </Typography>
                 <Input
-                  disabled
                   value={form.po_number}
                   onChange={(e) => setHeader("po_number", e.target.value)}
+                  {...disabledInputProps}
                 />
               </Grid>
 
@@ -711,10 +737,10 @@ export default function VendorBillForm({
                   PO Value (With GST)
                 </Typography>
                 <Input
-                  disabled
                   type="number"
                   value={form.po_value}
                   onChange={(e) => setHeader("po_value", toNum(e.target.value))}
+                  {...disabledInputProps}
                 />
               </Grid>
 
@@ -723,10 +749,10 @@ export default function VendorBillForm({
                   PO Date
                 </Typography>
                 <Input
-                  disabled
                   type="date"
                   value={form.po_date || form.createdAt}
                   onChange={(e) => setHeader("po_date", e.target.value)}
+                  {...disabledInputProps}
                 />
               </Grid>
 
@@ -735,9 +761,9 @@ export default function VendorBillForm({
                   Vendor
                 </Typography>
                 <Input
-                  disabled
                   value={form.vendor}
                   onChange={(e) => setHeader("vendor", e.target.value)}
+                  {...disabledInputProps}
                 />
               </Grid>
 
@@ -750,6 +776,10 @@ export default function VendorBillForm({
                   value={form.billDate}
                   onChange={(e) => setHeader("billDate", e.target.value)}
                   disabled={loading}
+                  sx={{ ...(loading ? DISABLED_SX : {}) }}
+                  slotProps={{
+                    input: loading ? { sx: { color: "text.primary" } } : {},
+                  }}
                 />
               </Grid>
             </Grid>
@@ -809,10 +839,11 @@ export default function VendorBillForm({
                         onChange={(e) =>
                           updateLine(l.id, "Category", e.target.value)
                         }
-                        disabled
+                        {...disabledTextareaProps}
                         sx={{
                           whiteSpace: "normal",
                           wordBreak: "break-word",
+                          ...DISABLED_SX,
                         }}
                       />
                     </td>
@@ -827,10 +858,11 @@ export default function VendorBillForm({
                         onChange={(e) =>
                           updateLine(l.id, "product_name", e.target.value)
                         }
-                        disabled
+                        {...disabledTextareaProps}
                         sx={{
                           whiteSpace: "normal",
                           wordBreak: "break-word",
+                          ...DISABLED_SX,
                         }}
                       />
                     </td>
@@ -845,10 +877,11 @@ export default function VendorBillForm({
                         onChange={(e) =>
                           updateLine(l.id, "product_make", e.target.value)
                         }
-                        disabled
+                        {...disabledTextareaProps}
                         sx={{
                           whiteSpace: "normal",
                           wordBreak: "break-word",
+                          ...DISABLED_SX,
                         }}
                       />
                     </td>
@@ -862,7 +895,7 @@ export default function VendorBillForm({
                         onChange={(e) =>
                           updateLine(l.id, "uom", e.target.value)
                         }
-                        disabled
+                        {...disabledInputProps}
                       />
                     </td>
                     <td>
@@ -875,7 +908,7 @@ export default function VendorBillForm({
                         onChange={(e) =>
                           updateLine(l.id, "qty", toNum(e.target.value))
                         }
-                        disabled={loading}
+                        {...(loading ? disabledInputProps : {})}
                       />
                     </td>
                     <td>
@@ -888,7 +921,7 @@ export default function VendorBillForm({
                         onChange={(e) =>
                           updateLine(l.id, "price", toNum(e.target.value))
                         }
-                        disabled={loading}
+                        {...(loading ? disabledInputProps : {})}
                       />
                     </td>
                     <td>
@@ -901,7 +934,7 @@ export default function VendorBillForm({
                         onChange={(e) =>
                           updateLine(l.id, "tax", toNum(e.target.value))
                         }
-                        disabled={loading}
+                        {...(loading ? disabledInputProps : {})}
                       />
                     </td>
                     <td>
@@ -946,7 +979,10 @@ export default function VendorBillForm({
             value={form.description}
             onChange={(e) => setHeader("description", e.target.value)}
             disabled={loading}
-            sx={{ mt: 2 }}
+            sx={{ mt: 2, ...(loading ? DISABLED_SX : {}) }}
+            slotProps={{
+              textarea: loading ? { sx: { color: "text.primary" } } : {},
+            }}
           />
 
           {/* Totals block */}
