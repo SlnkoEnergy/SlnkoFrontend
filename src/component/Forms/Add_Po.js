@@ -60,6 +60,63 @@ const SEARCH_MORE_VENDOR = "__SEARCH_MORE_VENDOR__";
 const SEARCH_MORE_MAKE = "__SEARCH_MORE_MAKE__";
 const CREATE_PRODUCT_INLINE = "__CREATE_PRODUCT_INLINE__";
 
+/* ---------- DARK DISABLED HELPERS ---------- */
+const DISABLED_SX = {
+  opacity: 1, // prevent Joy default dimming (keeps text crisp)
+  pointerEvents: "none", // truly non-interactive
+  bgcolor: "neutral.softBg", // darker bg
+  color: "text.primary",
+  borderColor: "neutral.outlinedBorder",
+};
+
+const disabledInputProps = {
+  disabled: true,
+  sx: DISABLED_SX,
+  slotProps: { input: { sx: { color: "text.primary" } } },
+};
+
+const disabledTextareaProps = {
+  disabled: true,
+  sx: DISABLED_SX,
+  slotProps: { textarea: { sx: { color: "text.primary" } } },
+};
+
+const disabledSelectProps = {
+  disabled: true,
+  sx: DISABLED_SX,
+  slotProps: {
+    button: { sx: { color: "text.primary", bgcolor: "neutral.softBg" } },
+  },
+};
+
+// react-select dark-disabled styles (uses Joy palette CSS vars)
+const rsx = {
+  control: (base, state) => ({
+    ...base,
+    minHeight: 40,
+    boxShadow: "none",
+    borderColor: "var(--joy-palette-neutral-outlinedBorder)",
+    backgroundColor: state.isDisabled
+      ? "var(--joy-palette-neutral-softBg)"
+      : base.backgroundColor,
+    opacity: 1,
+    cursor: state.isDisabled ? "not-allowed" : base.cursor,
+  }),
+  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+  dropdownIndicator: (base) => ({ ...base, padding: 4 }),
+  valueContainer: (base) => ({ ...base, padding: "0 6px" }),
+  singleValue: (base) => ({
+    ...base,
+    color: "var(--joy-palette-text-primary)",
+  }),
+  placeholder: (base) => ({
+    ...base,
+    color: "var(--joy-palette-text-tertiary)",
+  }),
+  input: (base) => ({ ...base, color: "var(--joy-palette-text-primary)" }),
+};
+/* ------------------------------------------- */
+
 const makeEmptyLine = () => ({
   id: crypto.randomUUID(),
   productId: "",
@@ -850,7 +907,6 @@ const AddPurchaseOrder = ({
           vendor: formData?.name,
           date: formData.date,
           partial_billing: formData.partial_billing || "",
-          submitted_By: formData.submitted_By,
           delivery_type: formData.delivery_type,
           po_basic: String(amounts.untaxed ?? 0),
           gst: String(amounts.tax ?? 0),
@@ -1449,59 +1505,60 @@ const AddPurchaseOrder = ({
 
               {/* Existing action buttons */}
               {!viewMode && (
-  <>
-    {/* Send Approval Button */}
-    {(effectiveMode === "edit" &&
-      statusNow === "approval_rejected") ||
-    fromModal ? (
-      <Button
-        component="button"
-        type="submit"
-        form="po-form"
-        name="action"
-        value="send_approval"
-        variant="solid"
-        startDecorator={<Send />}
-        sx={{
-          bgcolor: "#214b7b",
-          color: "#fff",
-          "&:hover": { bgcolor: "#163553" },
-        }}
-        disabled={isSubmitting}
-      >
-        Send Approval
-      </Button>
-    ) : null}
+                <>
+                  {/* Send Approval Button */}
+                  {(effectiveMode === "edit" &&
+                    statusNow === "approval_rejected") ||
+                  fromModal ? (
+                    <Button
+                      component="button"
+                      type="submit"
+                      form="po-form"
+                      name="action"
+                      value="send_approval"
+                      variant="solid"
+                      startDecorator={<Send />}
+                      sx={{
+                        bgcolor: "#214b7b",
+                        color: "#fff",
+                        "&:hover": { bgcolor: "#163553" },
+                      }}
+                      disabled={isSubmitting}
+                    >
+                      Send Approval
+                    </Button>
+                  ) : null}
 
-    {/* Confirm Order Button */}
-    {effectiveMode === "edit" &&
-      statusNow === "approval_done" &&
-      !fromModal &&
-      (user?.department === "SCM" || user?.name === "IT Team") && (
-        <Button
-          component="button"
-          type="submit"
-          form="po-form"
-          name="action"
-          value="confirm_order"
-          variant="outlined"
-          startDecorator={<ConfirmationNumber />}
-          sx={{
-            borderColor: "#214b7b",
-            color: "#214b7b",
-            "&:hover": {
-              bgcolor: "rgba(33, 75, 123, 0.1)",
-              borderColor: "#163553",
-              color: "#163553",
-            },
-          }}
-          disabled={isSubmitting}
-        >
-          Confirm Order
-        </Button>
-      )}
-  </>
-)}
+                  {/* Confirm Order Button */}
+                  {effectiveMode === "edit" &&
+                    statusNow === "approval_done" &&
+                    !fromModal &&
+                    (user?.department === "SCM" ||
+                      user?.name === "IT Team") && (
+                      <Button
+                        component="button"
+                        type="submit"
+                        form="po-form"
+                        name="action"
+                        value="confirm_order"
+                        variant="outlined"
+                        startDecorator={<ConfirmationNumber />}
+                        sx={{
+                          borderColor: "#214b7b",
+                          color: "#214b7b",
+                          "&:hover": {
+                            bgcolor: "rgba(33, 75, 123, 0.1)",
+                            borderColor: "#163553",
+                            color: "#163553",
+                          },
+                        }}
+                        disabled={isSubmitting}
+                      >
+                        Confirm Order
+                      </Button>
+                    )}
+                </>
+              )}
 
               {(user?.department === "CAM" ||
                 user?.name === "Sushant Ranjan Dubey" ||
@@ -1598,6 +1655,15 @@ const AddPurchaseOrder = ({
                     borderRadius: 0,
                     "&:hover": { borderBottomColor: "#163553" },
                     "& input::placeholder": { color: "#9aa8b5", opacity: 1 },
+                    ...(statusNow === "po_created" ? DISABLED_SX : {}),
+                  }}
+                  slotProps={{
+                    input: {
+                      sx:
+                        statusNow === "po_created"
+                          ? { color: "text.primary" }
+                          : undefined,
+                    },
                   }}
                 />
               </Box>
@@ -1827,7 +1893,10 @@ const AddPurchaseOrder = ({
                   <Typography level="body1" fontWeight="bold" mb={0.5}>
                     Project Code
                   </Typography>
-                  <Input disabled value={formData.project_code} />
+                  <Input
+                    value={formData.project_code}
+                    {...disabledInputProps}
+                  />
                 </Grid>
 
                 <Grid xs={12} md={4}>
@@ -1835,12 +1904,7 @@ const AddPurchaseOrder = ({
                     Vendor
                   </Typography>
                   <ReactSelect
-                    styles={{
-                      control: (base) => ({ ...base, minHeight: 40 }),
-                      dropdownIndicator: (base) => ({ ...base, padding: 4 }),
-                      valueContainer: (base) => ({ ...base, padding: "0 6px" }),
-                      menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                    }}
+                    styles={rsx}
                     menuPortalTarget={document.body}
                     isClearable
                     isLoading={vendorsLoading}
@@ -1875,7 +1939,7 @@ const AddPurchaseOrder = ({
                     type="date"
                     value={formData.date}
                     onChange={handleChange}
-                    disabled={inputsDisabled}
+                    {...(inputsDisabled ? disabledInputProps : {})}
                   />
                 </Grid>
 
@@ -1884,16 +1948,11 @@ const AddPurchaseOrder = ({
                     Delivery Type
                   </Typography>
                   <ReactSelect
-                    styles={{
-                      control: (base) => ({ ...base, minHeight: 40 }),
-                      dropdownIndicator: (base) => ({ ...base, padding: 4 }),
-                      valueContainer: (base) => ({ ...base, padding: "0 6px" }),
-                      menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                    }}
+                    styles={rsx}
                     menuPortalTarget={document.body}
                     isClearable
                     options={[
-                      { value: "afor", label: "Afor" },
+                      { value: "for", label: "For" },
                       { value: "slnko", label: "Slnko" },
                     ]}
                     value={
@@ -1901,8 +1960,8 @@ const AddPurchaseOrder = ({
                         ? {
                             value: formData.delivery_type,
                             label:
-                              formData.delivery_type === "afor"
-                                ? "Afor"
+                              formData.delivery_type === "for"
+                                ? "For"
                                 : formData.delivery_type === "slnko"
                                   ? "Slnko"
                                   : "",
@@ -1996,6 +2055,9 @@ const AddPurchaseOrder = ({
                     );
                     const selectValue = inList ? selectedMakeSafe : "";
 
+                    const makeDisabled =
+                      inputsDisabled || !l.productCategoryId || !l.productName;
+
                     return (
                       <tr key={l.id}>
                         {inspectionEnabled && (
@@ -2014,7 +2076,6 @@ const AddPurchaseOrder = ({
                             variant="plain"
                             placeholder="Category"
                             value={l.productCategoryName}
-                            disabled
                             onChange={(e) =>
                               updateLine(
                                 l.id,
@@ -2022,9 +2083,11 @@ const AddPurchaseOrder = ({
                                 e.target.value
                               )
                             }
+                            {...disabledTextareaProps}
                             sx={{
                               whiteSpace: "normal",
                               wordBreak: "break-word",
+                              ...DISABLED_SX,
                             }}
                           />
                         </td>
@@ -2036,13 +2099,14 @@ const AddPurchaseOrder = ({
                             variant="plain"
                             placeholder="Product name"
                             value={l.productName}
-                            disabled
                             onChange={(e) =>
                               updateLine(l.id, "productName", e.target.value)
                             }
+                            {...disabledTextareaProps}
                             sx={{
                               whiteSpace: "normal",
                               wordBreak: "break-word",
+                              ...DISABLED_SX,
                             }}
                           />
                         </td>
@@ -2054,7 +2118,6 @@ const AddPurchaseOrder = ({
                             variant="plain"
                             placeholder="Brief Description"
                             value={l.briefDescription}
-                            disabled
                             onChange={(e) =>
                               updateLine(
                                 l.id,
@@ -2062,9 +2125,11 @@ const AddPurchaseOrder = ({
                                 e.target.value
                               )
                             }
+                            {...disabledTextareaProps}
                             sx={{
                               whiteSpace: "normal",
                               wordBreak: "break-word",
+                              ...DISABLED_SX,
                             }}
                           />
                         </td>
@@ -2094,6 +2159,7 @@ const AddPurchaseOrder = ({
                                   boxShadow: "none",
                                   bgcolor: "transparent",
                                   p: 0,
+                                  ...(makeDisabled ? DISABLED_SX : {}),
                                 }}
                                 slotProps={{
                                   button: {
@@ -2103,6 +2169,12 @@ const AddPurchaseOrder = ({
                                       overflowWrap: "anywhere",
                                       alignItems: "flex-start",
                                       py: 0.25,
+                                      ...(makeDisabled
+                                        ? {
+                                            bgcolor: "neutral.softBg",
+                                            color: "text.primary",
+                                          }
+                                        : {}),
                                     },
                                   },
                                   listbox: {
@@ -2128,11 +2200,7 @@ const AddPurchaseOrder = ({
                                   updateLine(l.id, "make", v || "");
                                 }}
                                 placeholder="Make"
-                                disabled={
-                                  inputsDisabled ||
-                                  !l.productCategoryId ||
-                                  !l.productName
-                                }
+                                disabled={makeDisabled}
                                 renderValue={() => (
                                   <Typography
                                     level="body-sm"
@@ -2189,7 +2257,7 @@ const AddPurchaseOrder = ({
                               updateLine(l.id, "quantity", e.target.value)
                             }
                             slotProps={{ input: { min: 0, step: "1" } }}
-                            disabled={inputsDisabled}
+                            {...(inputsDisabled ? disabledInputProps : {})}
                           />
                         </td>
                         <td>
@@ -2202,7 +2270,7 @@ const AddPurchaseOrder = ({
                               updateLine(l.id, "unitPrice", e.target.value)
                             }
                             slotProps={{ input: { min: 0, step: "0.01" } }}
-                            disabled={inputsDisabled}
+                            {...(inputsDisabled ? disabledInputProps : {})}
                           />
                         </td>
                         <td>
@@ -2215,7 +2283,7 @@ const AddPurchaseOrder = ({
                               updateLine(l.id, "taxPercent", e.target.value)
                             }
                             slotProps={{ input: { min: 0, step: "0.01" } }}
-                            disabled={inputsDisabled}
+                            {...(inputsDisabled ? disabledInputProps : {})}
                           />
                         </td>
                         <td>
@@ -2499,7 +2567,13 @@ const AddPurchaseOrder = ({
           onClose={() => setInspectionModalOpen(false)}
         >
           <ModalDialog
-            sx={{ maxWidth: 1100, width: "95vw", p: 0, overflow: "auto", ml:{xs:0, lg:'10%', xl:'8%'} }}
+            sx={{
+              maxWidth: 1100,
+              width: "95vw",
+              p: 0,
+              overflow: "auto",
+              ml: { xs: 0, lg: "10%", xl: "8%" },
+            }}
           >
             <InspectionForm
               open
