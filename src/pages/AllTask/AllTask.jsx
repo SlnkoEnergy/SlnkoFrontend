@@ -70,17 +70,16 @@ function AllTask() {
           component="main"
           className="MainContent"
           sx={{
-            px: { xs: 2, md: 6 },
+            px: { xs: 2, md: 4 },
             pt: {
               xs: "calc(12px + var(--Header-height))",
               sm: "calc(12px + var(--Header-height))",
-              md: 3,
+              md: 1,
             },
-            pb: { xs: 2, sm: 2, md: 3 },
+            pb: { xs: 2, sm: 2, md: 1 },
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            minWidth: 0,
             height: "100dvh",
             gap: 1,
           }}
@@ -138,16 +137,13 @@ function AllTask() {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 1.5,
-                p: 2,
                 flexWrap: "wrap",
-
                 borderRadius: "lg",
-
-                mb: 2,
               }}
             >
-              <Button
-                variant="solid"
+              {selectedIds && selectedIds.length > 0 && (
+                <Button
+                variant="outlined"
                 color="primary"
                 startDecorator={<DownloadRoundedIcon />}
                 size="md"
@@ -155,6 +151,7 @@ function AllTask() {
               >
                 Export to CSV
               </Button>
+              )}
 
               <Button
                 variant="solid"

@@ -375,31 +375,6 @@ function Dash_task({ selected, setSelected }) {
             onChange={(e) => setDeadlineDateFilter(e.target.value)}
           />
         </FormControl>
-
-        <FormControl size="sm">
-          <FormLabel>Items per page</FormLabel>
-          <Select
-            value={itemsPerPage}
-            onChange={(_e, newValue) => {
-              setItemsPerPage(Number(newValue));
-              setCurrentPage(1);
-            }}
-            sx={{
-              height: "32px",
-              borderRadius: "6px",
-              padding: "0 8px",
-              borderColor: "#ccc",
-              backgroundColor: "#fff",
-            }}
-          >
-            {[5, 10, 20, 50, 100].map((n) => (
-              <Option key={n} value={n}>
-                {n}
-              </Option>
-            ))}
-          </Select>
-        </FormControl>
-
         <FormControl size="sm">
           <FormLabel>Department</FormLabel>
           <Select
@@ -1034,6 +1009,7 @@ function Dash_task({ selected, setSelected }) {
 
       {/* Pagination */}
       <Box
+         className="Pagination-laptopUp"
         sx={{
           pt: 2,
           gap: 1,
@@ -1041,9 +1017,7 @@ function Dash_task({ selected, setSelected }) {
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          justifyContent: "center",
           marginLeft: { lg: "18%", xl: "15%" },
-          flexWrap: "wrap",
         }}
       >
         <Button
@@ -1062,7 +1036,9 @@ function Dash_task({ selected, setSelected }) {
           {data?.tasks?.length || 0} of {totalCount} results
         </Box>
 
-        <Box sx={{ display: "flex", gap: 1 }}>
+        <Box
+          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
+        >
           <IconButton size="sm" variant="contained" color="neutral">
             {currentPage}
           </IconButton>
@@ -1077,6 +1053,29 @@ function Dash_task({ selected, setSelected }) {
             </IconButton>
           )}
         </Box>
+
+         <FormControl size="sm">
+          <Select
+            value={itemsPerPage}
+            onChange={(_e, newValue) => {
+              setItemsPerPage(Number(newValue));
+              setCurrentPage(1);
+            }}
+            sx={{
+              height: "32px",
+              borderRadius: "6px",
+              padding: "0 8px",
+              borderColor: "#ccc",
+              backgroundColor: "#fff",
+            }}
+          >
+            {[5, 10, 20, 50, 100].map((n) => (
+              <Option key={n} value={n}>
+                {n}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
 
         <Button
           size="sm"
