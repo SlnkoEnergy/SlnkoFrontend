@@ -23,7 +23,7 @@ import NoData from "../assets/alert-bell.svg";
 import Axios from "../utils/Axios";
 import { useGetUtrSubmissionQuery } from "../redux/Accounts";
 import dayjs from "dayjs";
-import { CircularProgress } from "@mui/joy";
+import { CircularProgress, Tooltip } from "@mui/joy";
 import { EditIcon } from "lucide-react";
 
 function UTRPayment() {
@@ -420,6 +420,27 @@ function UTRPayment() {
     </>
   );
 
+  const OneLineEllipsis = ({ text, sx = {}, placement = "top" }) => {
+    if (!text) return <Typography level="body-sm">—</Typography>;
+    return (
+      <Tooltip title={text} placement={placement} variant="soft">
+        <Typography
+          level="body-sm"
+          sx={{
+            maxWidth: { xs: 220, sm: 320, md: 420 },
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            color: "text.primary",
+            ...sx,
+          }}
+        >
+          {text}
+        </Typography>
+      </Tooltip>
+    );
+  };
+
   const PaymentDetail = ({ requestedFor, paymentDesc, vendor }) => (
     <Box>
       {requestedFor && (
@@ -427,9 +448,7 @@ function UTRPayment() {
           <Typography sx={{ ...labelStyle, minWidth: 100 }}>
             📦 Requested For:
           </Typography>
-          <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>
-            {requestedFor}
-          </Typography>
+          <OneLineEllipsis text={requestedFor} />
         </Box>
       )}
 
@@ -655,7 +674,14 @@ function UTRPayment() {
                       projectName={payment.projectName}
                     />
                   </Box>
-                  <Box component="td" sx={{ ...cellStyle, minWidth: 300 }}>
+                  <Box
+                    component="td"
+                    sx={{
+                      ...cellStyle,
+                      minWidth: 300,
+                      "& > div": { minWidth: 0 },
+                    }}
+                  >
                     <PaymentDetail
                       requestedFor={payment.requestedFor}
                       vendor={payment.vendor}
