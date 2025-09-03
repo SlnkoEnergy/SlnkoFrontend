@@ -362,7 +362,7 @@ const PaymentRequest = forwardRef(() => {
               }}
               sx={{ minWidth: 64 }}
             >
-              {[10, 25, 50, 100].map((value) => (
+              {[10, 25, 50, 500].map((value) => (
                 <Option key={value} value={value}>
                   {value}
                 </Option>

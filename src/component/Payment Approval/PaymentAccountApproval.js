@@ -594,6 +594,27 @@ const PaymentAccountApproval = forwardRef(
       );
     };
 
+    const OneLineEllipsis = ({ text, sx = {}, placement = "top" }) => {
+      if (!text) return <Typography level="body-sm">—</Typography>;
+      return (
+        <Tooltip title={text} placement={placement} variant="soft">
+          <Typography
+            level="body-sm"
+            sx={{
+              maxWidth: { xs: 220, sm: 320, md: 420 },
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              color: "text.primary",
+              ...sx,
+            }}
+          >
+            {text}
+          </Typography>
+        </Tooltip>
+      );
+    };
+
     const RequestedData = ({
       request_for,
       payment_description,
@@ -602,35 +623,122 @@ const PaymentAccountApproval = forwardRef(
       po_number,
     }) => {
       const [open, setOpen] = useState(false);
-
       const handleOpen = () => setOpen(true);
       const handleClose = () => setOpen(false);
+
       return (
         <>
-          {request_for && (
-            <Box>
-              <span style={{ cursor: "pointer", fontWeight: 400 }}>
-                {request_for}
-              </span>
-            </Box>
-          )}
+          <Box sx={{ minWidth: 0 }}>
+            <OneLineEllipsis text={request_for} />
+          </Box>
 
           {po_number && (
             <Box
               display="flex"
               alignItems="center"
               mt={0.5}
-              sx={{ cursor: "pointer" }}
+              gap={0.5}
+              sx={{ cursor: "pointer", minWidth: 0 }}
               onClick={handleOpen}
+              title="View payment history"
             >
               <FileText size={12} />
-              <span style={{ fontSize: 12, fontWeight: 600 }}>PO Number: </span>
-              &nbsp;
-              <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-                {po_number}
+              <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+                PO Number:
               </Typography>
+              <OneLineEllipsis
+                text={po_number}
+                sx={{ ml: 0.5, maxWidth: { xs: 200, sm: 260, md: 320 } }}
+              />
             </Box>
           )}
+
+          {payment_description && (
+            <Box display="flex" alignItems="center" mt={0.5} gap={0.5}>
+              <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+                Payment Description:
+              </Typography>
+              <OneLineEllipsis
+                text={payment_description}
+                sx={{ maxWidth: { xs: 220, sm: 320, md: 420 } }}
+              />
+            </Box>
+          )}
+
+          {/* Vendor */}
+          <Box display="flex" alignItems="center" gap={1} mt={0.5}>
+            <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+              🏢 Vendor:
+            </Typography>
+            <Chip
+              color="danger"
+              size="sm"
+              variant="solid"
+              sx={{ fontSize: 12, maxWidth: 280 }}
+            >
+              <Tooltip title={vendor} variant="soft">
+                <span
+                  style={{
+                    display: "inline-block",
+                    maxWidth: 260,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {vendor || "—"}
+                </span>
+              </Tooltip>
+            </Chip>
+          </Box>
+
+          {/* Remaining days (kept same logic) */}
+          <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
+            <Typography sx={{ fontSize: 12, fontWeight: 600 }}>⏰</Typography>
+            {(() => {
+              const d = Number(remainingDays);
+              const isNil =
+                remainingDays === null ||
+                remainingDays === undefined ||
+                Number.isNaN(d);
+
+              if (isNil) {
+                return (
+                  <Chip size="sm" variant="soft" color="neutral">
+                    No deadline
+                  </Chip>
+                );
+              }
+              if (d < 0) {
+                return (
+                  <Chip size="sm" variant="soft" color="danger">
+                    Overdue by {Math.abs(d)} day{Math.abs(d) === 1 ? "" : "s"}
+                  </Chip>
+                );
+              }
+              if (d === 0) {
+                return (
+                  <Chip size="sm" variant="soft" color="warning">
+                    Due today
+                  </Chip>
+                );
+              }
+              if (d <= 2) {
+                return (
+                  <Chip size="sm" variant="soft" color="warning">
+                    {d} day{d === 1 ? "" : "s"} remaining
+                  </Chip>
+                );
+              }
+              return (
+                <Chip size="sm" variant="soft" color="success">
+                  {d} days remaining
+                </Chip>
+              );
+            })()}
+          </Box>
+
+          {/* Modal (unchanged except small SX tidy) */}
           <Modal open={open} onClose={handleClose}>
             <Sheet
               tabIndex={-1}
@@ -655,81 +763,6 @@ const PaymentAccountApproval = forwardRef(
               )}
             </Sheet>
           </Modal>
-
-          {payment_description && (
-            <Box display="flex" alignItems="center" mt={0.5}>
-              <span style={{ fontSize: 12, fontWeight: 600 }}>
-                Payment Description:{" "}
-              </span>
-              &nbsp;
-              <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-                {payment_description}
-              </Typography>
-            </Box>
-          )}
-
-          <Box display="flex" alignItems="center" gap={1} mt={0.5}>
-            <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
-              🏢 Vendor:
-            </Typography>
-            <Chip
-              color="danger"
-              size="sm"
-              variant="solid"
-              sx={{ fontSize: 12 }}
-            >
-              {vendor}
-            </Chip>
-          </Box>
-          {/* remainingDays display */}
-          <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
-            <Typography sx={labelStyle}>⏰</Typography>
-            {(() => {
-              const d = Number(remainingDays);
-              const isNil =
-                remainingDays === null ||
-                remainingDays === undefined ||
-                Number.isNaN(d);
-
-              if (isNil) {
-                return (
-                  <Chip size="sm" variant="soft" color="neutral">
-                    No deadline
-                  </Chip>
-                );
-              }
-
-              if (d < 0) {
-                return (
-                  <Chip size="sm" variant="soft" color="danger">
-                    Overdue by {Math.abs(d)} day{Math.abs(d) === 1 ? "" : "s"}
-                  </Chip>
-                );
-              }
-
-              if (d === 0) {
-                return (
-                  <Chip size="sm" variant="soft" color="warning">
-                    Due today
-                  </Chip>
-                );
-              }
-
-              if (d <= 2) {
-                return (
-                  <Chip size="sm" variant="soft" color="warning">
-                    {d} day{d === 1 ? "" : "s"} remaining
-                  </Chip>
-                );
-              }
-
-              return (
-                <Chip size="sm" variant="soft" color="success">
-                  {d} days remaining
-                </Chip>
-              );
-            })()}
-          </Box>
         </>
       );
     };
@@ -1015,6 +1048,7 @@ const PaymentAccountApproval = forwardRef(
                           ...cellStyle,
                           fontSize: 14,
                           minWidth: 300,
+                          "& > div": { minWidth: 0 },
                         }}
                       >
                         <RequestedData
@@ -1025,6 +1059,7 @@ const PaymentAccountApproval = forwardRef(
                           remainingDays={payment?.remainingDays}
                         />
                       </Box>
+
                       <Box
                         component="td"
                         sx={{

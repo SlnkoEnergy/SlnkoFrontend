@@ -705,6 +705,27 @@ function PaymentRequest() {
     );
   };
 
+    const OneLineEllipsis = ({ text, sx = {}, placement = "top" }) => {
+        if (!text) return <Typography level="body-sm">—</Typography>;
+        return (
+          <Tooltip title={text} placement={placement} variant="soft">
+            <Typography
+              level="body-sm"
+              sx={{
+                maxWidth: { xs: 220, sm: 320, md: 420 },
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                color: "text.primary",
+                ...sx,
+              }}
+            >
+              {text}
+            </Typography>
+          </Tooltip>
+        );
+      };
+
   const RequestedData = ({
     request_for,
     payment_description,
@@ -719,11 +740,9 @@ function PaymentRequest() {
     return (
       <>
         {request_for && (
-          <Box>
-            <span style={{ cursor: "pointer", fontWeight: 400 }}>
-              {request_for}
-            </span>
-          </Box>
+           <Box sx={{ minWidth: 0 }}>
+              <OneLineEllipsis text={request_for} />
+            </Box>
         )}
         {po_number && (
           <Box
@@ -1522,8 +1541,9 @@ function PaymentRequest() {
                           component="td"
                           sx={{
                             ...cellStyle,
-                            fontSize: 14,
+                            fontSize: 14,     
                             minWidth: 300,
+                            "& > div": { minWidth: 0 },
                           }}
                         >
                           <RequestedData
