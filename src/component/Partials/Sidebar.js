@@ -87,7 +87,6 @@ function Sidebar() {
   };
 
   const isSalesPage = location.pathname === "/sales";
-  const isEngineering = location.pathname === "/overview";
   return (
     <Sheet
       className="Sidebar"
@@ -166,73 +165,7 @@ function Sidebar() {
             />
           </IconButton>
         </Box>
-        <Box
-          sx={{
-            zIndex: 200000,
-            position: "relative",
-            display: { xs: "none", sm: "none", md: "none", lg: "block" },
-          }}
-        >
-          <NovuProvider
-            subscriberId={subscribeId}
-            applicationIdentifier={process.env.REACT_APP_NOVU_IDENTIFIER}
-          >
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "end",
-                p: 1,
-                position: "relative",
-                zIndex: 20000000,
-              }}
-            >
-              <PopoverNotificationCenter
-                colorScheme="light"
-                position="bottom-end"
-                offset={20}
-                onNotificationClick={(notification) => {
-                  const link = notification?.payload?.link;
-                  if (link) {
-                    navigate(notification.payload.link);
-                  }
-                }}
-              >
-                {({ unseenCount }) => (
-                  <IconButton
-                    sx={{
-                      position: "relative",
-                      bgcolor: "transparent", // ghost-like
-                      "&:hover": { bgcolor: "action.hover" },
-                    }}
-                  >
-                    <NotificationsNoneIcon
-                      sx={{ width: 20, height: 20, color: "text.primary" }} // Bell equivalent
-                    />
-
-                    {(unseenCount ?? 0) > 0 && (
-                      <Box
-                        component="span"
-                        sx={{
-                          position: "absolute",
-                          top: -4,
-                          right: -4,
-                          backgroundColor: "#ef4444", // red-500
-                          color: "white",
-                          borderRadius: "9999px",
-                          px: 0.5,
-                          fontSize: "0.75rem",
-                          lineHeight: "1rem",
-                        }}
-                      >
-                        {unseenCount ?? 0}
-                      </Box>
-                    )}
-                  </IconButton>
-                )}
-              </PopoverNotificationCenter>
-            </Box>
-          </NovuProvider>
-        </Box>
+       
       </Box>
 
       <Input
