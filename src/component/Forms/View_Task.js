@@ -130,16 +130,9 @@ const ViewTaskPage = () => {
     >
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Typography level="h4">Task Details</Typography>
-        <Stack direction="row" spacing={1}>
-          <Button color="danger" onClick={handleDelete}>
-            Remove Task
-          </Button>
-        </Stack>
       </Stack>
 
-      <Divider sx={{ my: 2 }} />
-
-      <Stack direction="row" spacing={4} flexWrap="wrap">
+      <Stack direction="row" spacing={4} flexWrap="wrap" mt={1}>
         {/* Left Panel: Project & Task Details */}
         <Box borderRadius="md" p={2} border="1px solid #eee" minWidth="300px">
           <Stack spacing={2} alignItems="center">
