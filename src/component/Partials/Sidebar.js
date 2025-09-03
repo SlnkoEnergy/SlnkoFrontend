@@ -2197,6 +2197,8 @@ function Sidebar() {
             user?.name === "Saresh" ||
             user?.name === "Deepika Singh" ||
             user?.name === "Rahul Kushwaha" ||
+            user?.name === "Prince Srivastav" ||
+            user?.name === "Aditya Kashyap" ||
             user?.name === "Subhadra" ||
             user?.name === "Izhan Mustafa") ? (
           <List
