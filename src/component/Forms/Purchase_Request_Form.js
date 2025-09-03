@@ -734,6 +734,7 @@ export default function Purchase_Request_Form() {
 
     setPoSeed({
       pr_id: prId || null,
+      pr_no:prno || null,
       project_id: projectId || null,
       project_code: projectCode || "",
       p_id: pId || "",
@@ -1999,6 +2000,7 @@ export default function Purchase_Request_Form() {
               onSuccess={handlePoSubmitted}
               onClose={() => setPoModalOpen(false)}
               pr_id={poSeed.pr_id}
+              pr_no={poSeed.pr_no}
               p_id={poSeed.p_id}
               project_id={poSeed.project_id}
               project_code={poSeed.project_code}
