@@ -31,7 +31,7 @@ const Notification = () => {
         sx={{
           zIndex: 200000,
           position: "relative",
-          display:  "block",
+          display: "block",
         }}
       >
         <NovuProvider
@@ -42,9 +42,8 @@ const Notification = () => {
             sx={{
               display: "flex",
               justifyContent: "end",
-            //   p: 1,
+              //   p: 1,
               position: "relative",
-              
             }}
           >
             <PopoverNotificationCenter
@@ -62,20 +61,20 @@ const Notification = () => {
               {({ unseenCount }) => (
                 <IconButton
                   sx={{
-                    bgcolor: "white", 
-                    // color:"white",
-                    "&:hover": { bgcolor: "action.hover" },
+                    "&:hover": {
+                      bgcolor: "rgba(255,255,255,0.1)",
+                    },
                   }}
                 >
                   <NotificationsNoneIcon
-                    sx={{ width: 20, height: 20, color: "text.primary" }} 
+                    sx={{ width: 28, height: 28, color: "white" }}
                   />
 
                   {(unseenCount ?? 0) > 0 && (
                     <Box
                       component="span"
-                      sx={{  
-                        backgroundColor: "#ef4444", 
+                      sx={{
+                        backgroundColor: "#ef4444",
                         color: "white",
                         borderRadius: "9999px",
                         px: 0.5,

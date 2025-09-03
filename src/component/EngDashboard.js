@@ -57,8 +57,6 @@ function Dash_eng() {
 
   const HandOverSheet = Array.isArray(getHandOverSheet?.data)
     ? getHandOverSheet.data.map((entry) => {
-        console.log("Entry :", entry);
-
         return {
           ...entry,
           p_id: entry.p_id,

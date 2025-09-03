@@ -21,19 +21,19 @@ export default function SubHeader({
     <Sheet
       variant="primary"
       sx={(theme) => ({
-        position:"fixed",
-        top:'60px',
-        zIndex: 100, 
+        position: "fixed",
+        top: "60px",
+        zIndex: 100,
         backdropFilter: "saturate(180%) blur(8px)",
-        backgroundColor: '#f8f9fa',
+        backgroundColor: "#f8f9fa",
         borderBottom: `1px solid ${theme.vars.palette.neutral.outlinedBorder}`,
         boxShadow: "sm",
-        width:{xs: '100%',lg:'calc(100% - var(--Sidebar-width))'},
-        height:"48px",
-        ml:{
-            md:'0px',
-            lg:"var(--Sidebar-width)"
-        }
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+        height: "48px",
+        ml: {
+          md: "0px",
+          lg: "var(--Sidebar-width)",
+        },
       })}
     >
       {/* Main row */}
@@ -43,23 +43,18 @@ export default function SubHeader({
           gridTemplateColumns: "auto 1fr auto",
           alignItems: "center",
           gap: { xs: 1, sm: 1.5, md: 1 },
-          px: { xs: 1, sm: 2, md: 3 },
+          px: { xs: 1, sm: 2, md: 2.2 },
           py: { xs: 1, md: 1 },
-          // minHeight: 64,
         }}
       >
         {/* Left: Back button */}
         <Box sx={{ display: "flex", alignItems: "center" }}>
           {isBackEnabled ? (
-            <IconButton
-              size='sm'
-              onClick={handleBack}
-              aria-label="Go back"
-            >
+            <IconButton size="sm" onClick={handleBack} aria-label="Go back">
               <ArrowBackIosNewRounded fontSize="small" />
             </IconButton>
           ) : (
-            <Box sx={{ width: 36, height: 36 }} />
+            <Box sx={{ display: "none" }} />
           )}
         </Box>
 

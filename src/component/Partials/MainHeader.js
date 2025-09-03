@@ -3,14 +3,25 @@ import { useNavigate } from "react-router-dom";
 import Sheet from "@mui/joy/Sheet";
 import Box from "@mui/joy/Box";
 import Typography from "@mui/joy/Typography";
-import { Avatar, Dropdown, IconButton, Menu, MenuButton, MenuItem, MenuList } from "@mui/joy";
+import {
+  Avatar,
+  Dropdown,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
+  ListItemDecorator,
+  ListDivider,
+} from "@mui/joy";
 import Notification from "./Notification";
-import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
 import { useState } from "react";
 
 export default function MainHeader({ title, children }) {
   const navigate = useNavigate();
-const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   return (
     <Sheet
       variant="primary"
@@ -46,11 +57,12 @@ const [open, setOpen] = useState(false);
           <Typography
             level="h5"
             sx={{
-              fontWeight: 650,
+              fontWeight: 600,
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
               color: "white",
+              letterSpacing: 0.5,
             }}
           >
             {title}
@@ -82,32 +94,68 @@ const [open, setOpen] = useState(false);
           }}
         >
           <Notification />
-          <Dropdown open={open} onOpenChange={(_, isOpen) => setOpen(isOpen)}>
-          <MenuButton
-        slots={{ root: IconButton }}
-        slotProps={{
-          root: {
-            variant: "plain",
-            color: "neutral",
-            sx: { p: 0, borderRadius: "50%" },
-          },
-        }}
-      >
-        <Avatar
-          src="https://i.pravatar.cc/40?img=3" // replace with user image
-          size="sm"
-          sx={{ mr: 0.5 }}
-        />
-        <ArrowDropDownIcon fontSize="small" />
-      </MenuButton>
+          <Dropdown>
+            <MenuButton
+              variant="plain"
+              color="neutral"
+              sx={{
+                p: 0,
+                borderRadius: "50%",
+                "&:hover": { backgroundColor: "transparent" },
+              }}
+            >
+              <Avatar src="https://i.pravatar.cc/40?img=3" size="md" />
+            </MenuButton>
 
-      <Menu>
-        <MenuList>
-          <MenuItem>Switch Store</MenuItem>
-          <MenuItem>Logout</MenuItem>
-        </MenuList>
-      </Menu>
-</Dropdown>
+            <Menu
+              placement="bottom-end"
+              sx={{
+                p: 0,
+                borderRadius: "md",
+                border: "none",
+                zIndex: 10000,
+                "--ListItemDecorator-size": "1.5em",
+                "& .MuiMenuItem-root": {
+                  borderRadius: "sm",
+                  "&:hover": { bgcolor: "neutral.softBg" },
+                },
+              }}
+            >
+              <MenuList
+                variant="plain"
+                sx={{
+                  outline: "none",
+                  border: "none",
+                  p: 0.5,
+                  "& .MuiMenuItem-root": {
+                    borderRadius: "sm",
+                    "&:hover": { bgcolor: "neutral.softBg" },
+                  },
+                }}
+              >
+                <MenuItem>
+                  <ListItemDecorator>
+                    <PersonOutlineIcon fontSize="small" />
+                  </ListItemDecorator>
+                  My Profile
+                </MenuItem>
+                <ListDivider />
+                <MenuItem>
+                  <ListItemDecorator>
+                    <GroupOutlinedIcon fontSize="small" />
+                  </ListItemDecorator>
+                  Users
+                </MenuItem>
+                <ListDivider />
+                <MenuItem color="danger">
+                  <ListItemDecorator>
+                    <LogoutRoundedIcon fontSize="small" />
+                  </ListItemDecorator>
+                  Logout
+                </MenuItem>
+              </MenuList>
+            </Menu>
+          </Dropdown>
         </Box>
       </Box>
     </Sheet>
