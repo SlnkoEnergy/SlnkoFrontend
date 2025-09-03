@@ -612,7 +612,7 @@ const Overview = () => {
           </Box>
           <Divider sx={{ mb: 3, mt: 3 }} />
 
-          <Box sx={{ display: "grid", gap: 3 }}>
+          <Box sx={{ display: "grid", gap: 3, gridTemplateColumns:'1fr 1fr' }}>
             {selected === "summary" ? (
               boqSummaryData && boqSummaryData.length > 0 ? (
                 boqSummaryData.map((summary, i) => (
@@ -624,6 +624,7 @@ const Overview = () => {
                       borderRadius: "lg",
                       boxShadow: "sm",
                       bgcolor: "background.surface",
+                      
                     }}
                   >
                     <Typography level="title-md" sx={{ mb: 1 }}>
@@ -674,8 +675,6 @@ const Overview = () => {
                       borderRadius: "lg",
                       boxShadow: "sm",
                       bgcolor: "background.surface",
-                      position: "relative",
-                      maxHeight: "70vh",
                     }}
                   >
                     <Typography level="title-md" sx={{ mb: 1 }}>
