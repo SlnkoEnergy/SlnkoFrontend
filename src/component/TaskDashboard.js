@@ -60,10 +60,25 @@ function Dash_task({ selected, setSelected }) {
   const [departmentFilter, setDepartmentFilter] = useState(
     searchParams.get("department") || ""
   );
-
   const [deadlineDateFilter, setDeadlineDateFilter] = useState(
     searchParams.get("deadline") || ""
-  )
+  );
+
+  // NEW: UI + query state for name filters (persisted via URL)
+  const [assignedToName, setAssignedToName] = useState(
+    searchParams.get("assignedToName") || ""
+  );
+  const [createdByName, setCreatedByName] = useState(
+    searchParams.get("createdByName") || ""
+  );
+
+  // Raw inputs for debounced typing (so UI updates immediately)
+  const [rawAssignedToName, setRawAssignedToName] = useState(
+    searchParams.get("assignedToName") || ""
+  );
+  const [rawCreatedByName, setRawCreatedByName] = useState(
+    searchParams.get("createdByName") || ""
+  );
 
   const [prioritySortOrder, setPrioritySortOrder] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(
@@ -82,7 +97,11 @@ function Dash_task({ selected, setSelected }) {
     hide_completed: hideCompleted,
     hide_pending: hidePending,
     hide_inprogress: hideProgress,
+    // NEW: send to backend
+    assignedToName,
+    createdByName,
   });
+
   const { data: deptApiData, isLoading: isDeptLoading } = useGetAllDeptQuery();
   const deptList = deptApiData?.data?.filter((d) => d) || [];
 
@@ -94,6 +113,8 @@ function Dash_task({ selected, setSelected }) {
     if (dateFilter) params.createdAt = dateFilter;
     if (deadlineDateFilter) params.deadline = deadlineDateFilter;
     if (departmentFilter) params.department = departmentFilter;
+    if (assignedToName) params.assignedToName = assignedToName; // NEW
+    if (createdByName) params.createdByName = createdByName; // NEW
     if (currentPage) params.page = currentPage;
     if (itemsPerPage) params.limit = itemsPerPage;
 
@@ -104,6 +125,8 @@ function Dash_task({ selected, setSelected }) {
     dateFilter,
     deadlineDateFilter,
     departmentFilter,
+    assignedToName, // NEW
+    createdByName, // NEW
     currentPage,
     itemsPerPage,
     setSearchParams,
@@ -112,6 +135,23 @@ function Dash_task({ selected, setSelected }) {
   const debouncedSearch = useCallback(
     debounce((value) => {
       setSearchQuery(value);
+      setCurrentPage(1);
+    }, 300),
+    []
+  );
+
+  // NEW: debounce filters for names
+  const debouncedAssignedToName = useCallback(
+    debounce((value) => {
+      setAssignedToName(value);
+      setCurrentPage(1);
+    }, 300),
+    []
+  );
+
+  const debouncedCreatedByName = useCallback(
+    debounce((value) => {
+      setCreatedByName(value);
       setCurrentPage(1);
     }, 300),
     []
@@ -140,6 +180,17 @@ function Dash_task({ selected, setSelected }) {
   const handleSearch = (value) => {
     setRawSearch(value);
     debouncedSearch(value);
+  };
+
+  // NEW: handlers for the two name filters
+  const handleAssignedToName = (value) => {
+    setRawAssignedToName(value);
+    debouncedAssignedToName(value);
+  };
+
+  const handleCreatedByName = (value) => {
+    setRawCreatedByName(value);
+    debouncedCreatedByName(value);
   };
 
   const handleSelectAll = (event) => {
@@ -266,6 +317,7 @@ function Dash_task({ selected, setSelected }) {
             onChange={(e) => setDateFilter(e.target.value)}
           />
         </FormControl>
+
         <FormControl size="sm">
           <FormLabel>Filter By Deadline</FormLabel>
           <Input
@@ -275,6 +327,7 @@ function Dash_task({ selected, setSelected }) {
             onChange={(e) => setDeadlineDateFilter(e.target.value)}
           />
         </FormControl>
+
         <FormControl size="sm">
           <FormLabel>Items per page</FormLabel>
           <Select
@@ -323,6 +376,28 @@ function Dash_task({ selected, setSelected }) {
               </Option>
             ))}
           </Select>
+        </FormControl>
+
+        {/* NEW: Assigned To (Name) */}
+        <FormControl size="sm" sx={{ minWidth: { xs: "160px", md: "200px" } }}>
+          <FormLabel>Assigned To (Name)</FormLabel>
+          <Input
+            size="sm"
+            placeholder="e.g. Rounik"
+            value={rawAssignedToName}
+            onChange={(e) => handleAssignedToName(e.target.value)}
+          />
+        </FormControl>
+
+        {/* NEW: Created By (Name) */}
+        <FormControl size="sm" sx={{ minWidth: { xs: "160px", md: "200px" } }}>
+          <FormLabel>Created By (Name)</FormLabel>
+          <Input
+            size="sm"
+            placeholder="e.g. Siddharth"
+            value={rawCreatedByName}
+            onChange={(e) => handleCreatedByName(e.target.value)}
+          />
         </FormControl>
 
         <Dropdown>
@@ -393,10 +468,7 @@ function Dash_task({ selected, setSelected }) {
           maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
-        <Box
-          component="table"
-          sx={{ width: "100%", borderCollapse: "collapse" }}
-        >
+        <Box component="table" sx={{ width: "100%", borderCollapse: "collapse" }}>
           <thead
             style={{
               position: "sticky",
@@ -428,11 +500,7 @@ function Dash_task({ selected, setSelected }) {
                       color="neutral"
                       onClick={() =>
                         setPrioritySortOrder((prev) =>
-                          prev === "asc"
-                            ? "desc"
-                            : prev === "desc"
-                              ? null
-                              : "asc"
+                          prev === "asc" ? "desc" : prev === "desc" ? null : "asc"
                         )
                       }
                     >
@@ -441,10 +509,7 @@ function Dash_task({ selected, setSelected }) {
                       ) : prioritySortOrder === "desc" ? (
                         <ArrowDownwardIcon fontSize="small" />
                       ) : (
-                        <ArrowUpwardIcon
-                          fontSize="small"
-                          sx={{ opacity: 0.3 }}
-                        />
+                        <ArrowUpwardIcon fontSize="small" sx={{ opacity: 0.3 }} />
                       )}
                     </IconButton>
                   </Tooltip>
@@ -473,9 +538,7 @@ function Dash_task({ selected, setSelected }) {
             {filteredData.length > 0 ? (
               filteredData.map((task) => (
                 <tr key={task._id}>
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
-                  >
+                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
                     <Checkbox
                       size="sm"
                       checked={selected.includes(task._id)}
@@ -484,9 +547,7 @@ function Dash_task({ selected, setSelected }) {
                   </td>
 
                   {/* Task Info */}
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
-                  >
+                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
                     <Typography
                       fontWeight="lg"
                       sx={{ cursor: "pointer", color: "primary.700" }}
@@ -497,13 +558,11 @@ function Dash_task({ selected, setSelected }) {
                     <Box display="flex" alignItems="center" gap={0.5}>
                       <Tooltip title="Priority">
                         <Box display="flex">
-                          {[...Array(Number(task.priority || 0))].map(
-                            (_, i) => (
-                              <Typography key={i} level="body-sm">
-                                ⭐
-                              </Typography>
-                            )
-                          )}
+                          {[...Array(Number(task.priority || 0))].map((_, i) => (
+                            <Typography key={i} level="body-sm">
+                              ⭐
+                            </Typography>
+                          ))}
                         </Box>
                       </Tooltip>
                     </Box>
@@ -526,20 +585,14 @@ function Dash_task({ selected, setSelected }) {
                   </td>
 
                   {/* Title + Assigned To + Deadline */}
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
-                  >
+                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
                     <Typography fontWeight="lg">{task.title || "-"}</Typography>
 
                     {task.assigned_to?.length > 0 ? (
                       <Tooltip
                         title={
                           <Box sx={{ px: 1, py: 0.5 }}>
-                            <Typography
-                              level="body-sm"
-                              fontWeight="md"
-                              mb={0.5}
-                            >
+                            <Typography level="body-sm" fontWeight="md" mb={0.5}>
                               Assigned To:
                             </Typography>
                             {task.assigned_to.map((a, i) => (
@@ -613,15 +666,13 @@ function Dash_task({ selected, setSelected }) {
                         const today = toMidnight(new Date());
                         const deadline = toMidnight(task.deadline);
 
-                        // Derive start date (createdAt or first status update)
                         const startDate =
                           task?.createdAt ??
                           task?.status_history?.[0]?.updatedAt ??
-                          today; // fallback to avoid NaN if missing
+                          today;
 
-                        // Find a completion record
                         const completedFromHistory = task?.status_history
-                          ?.slice() // don’t mutate original
+                          ?.slice()
                           .reverse()
                           .find((s) => s?.status === "completed");
 
@@ -634,7 +685,6 @@ function Dash_task({ selected, setSelected }) {
                             : undefined);
 
                         if (completionDate) {
-                          // Task completed: show duration and late/ontime vs deadline
                           const elapsedDays = daysBetween(
                             completionDate,
                             startDate
@@ -668,7 +718,6 @@ function Dash_task({ selected, setSelected }) {
                           }
                         }
 
-                        // Not completed yet: show delay if past deadline, else on time
                         if (
                           deadline < today &&
                           task?.current_status?.status !== "completed"
@@ -698,9 +747,7 @@ function Dash_task({ selected, setSelected }) {
                       })()}
                   </td>
 
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
-                  >
+                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
                     {task.type ? (
                       <Box
                         display="inline-flex"
@@ -723,10 +770,7 @@ function Dash_task({ selected, setSelected }) {
                   </td>
 
                   {/* Project Info */}
-
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
-                  >
+                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
                     {Array.isArray(task.project_details) &&
                     task.project_details.length > 0 ? (
                       task.project_details.length === 1 ? (
@@ -744,28 +788,25 @@ function Dash_task({ selected, setSelected }) {
                             <Box
                               sx={{ maxHeight: 200, overflowY: "auto", pr: 1 }}
                             >
-                              {task.project_details
-                                .slice(1)
-                                .map((project, index) => (
-                                  <Box key={project._id} sx={{ mb: 1 }}>
-                                    <Typography level="body-md" fontWeight="lg">
-                                      {project.code}
-                                    </Typography>
-                                    <Typography level="body-sm">
-                                      {project.name}
-                                    </Typography>
-                                    {index !==
-                                      task.project_details.length - 2 && (
-                                      <Box
-                                        sx={{
-                                          height: "1px",
-                                          backgroundColor: "#eee",
-                                          my: 1,
-                                        }}
-                                      />
-                                    )}
-                                  </Box>
-                                ))}
+                              {task.project_details.slice(1).map((project, index) => (
+                                <Box key={project._id} sx={{ mb: 1 }}>
+                                  <Typography level="body-md" fontWeight="lg">
+                                    {project.code}
+                                  </Typography>
+                                  <Typography level="body-sm">
+                                    {project.name}
+                                  </Typography>
+                                  {index !== task.project_details.length - 2 && (
+                                    <Box
+                                      sx={{
+                                        height: "1px",
+                                        backgroundColor: "#eee",
+                                        my: 1,
+                                      }}
+                                    />
+                                  )}
+                                </Box>
+                              ))}
                             </Box>
                           }
                           arrow
@@ -787,7 +828,7 @@ function Dash_task({ selected, setSelected }) {
                               <Typography fontWeight="lg">
                                 {task.project_details[0].code || "-"}
                               </Typography>
-                              <Typography level="body-sm">
+                            <Typography level="body-sm">
                                 {task.project_details[0].name || "-"}
                               </Typography>
                             </Box>
@@ -829,9 +870,7 @@ function Dash_task({ selected, setSelected }) {
                   >
                     <Tooltip
                       title={
-                        <Typography
-                          sx={{ whiteSpace: "pre-line", maxWidth: "300px" }}
-                        >
+                        <Typography sx={{ whiteSpace: "pre-line", maxWidth: "300px" }}>
                           {task.description || ""}
                         </Typography>
                       }
@@ -856,9 +895,7 @@ function Dash_task({ selected, setSelected }) {
                   </td>
 
                   {/* Status */}
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
-                  >
+                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
                     <Tooltip title={task.current_status?.remarks || ""}>
                       <Chip
                         variant="soft"
@@ -866,12 +903,12 @@ function Dash_task({ selected, setSelected }) {
                           task.current_status?.status === "draft"
                             ? "primary"
                             : task.current_status?.status === "pending"
-                              ? "danger"
-                              : task.current_status?.status === "in progress"
-                                ? "warning"
-                                : task.current_status?.status === "completed"
-                                  ? "success"
-                                  : "neutral"
+                            ? "danger"
+                            : task.current_status?.status === "in progress"
+                            ? "warning"
+                            : task.current_status?.status === "completed"
+                            ? "success"
+                            : "neutral"
                         }
                         size="sm"
                       >
@@ -886,10 +923,7 @@ function Dash_task({ selected, setSelected }) {
               ))
             ) : (
               <tr>
-                <td
-                  colSpan={6}
-                  style={{ textAlign: "center", padding: "16px" }}
-                >
+                <td colSpan={6} style={{ textAlign: "center", padding: "16px" }}>
                   <Box
                     sx={{
                       display: "flex",
