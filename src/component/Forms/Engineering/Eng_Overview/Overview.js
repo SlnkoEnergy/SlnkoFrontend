@@ -523,15 +523,14 @@ const Overview = () => {
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: "100vh",
-        maxHeight: isFromCamDash ? "70vh" : "90vh",
-        width: { xs: "96vw", lg: "75vw", xl: "80vw" },
+        maxHeight: isFromCamDash ? "70vh" : "85vh",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
         bgcolor: "background.body",
         overflowY: isFromCamDash ? "auto" : "auto",
         overflowX: "auto",
-        marginLeft: isFromCamDash
-          ? "0%"
-          : { xs: "2%", lg: "19.6%", xl: "16.7%" },
+        ml: {
+          lg: "var(--Sidebar-width)",
+        },
       }}
     >
       <Box
